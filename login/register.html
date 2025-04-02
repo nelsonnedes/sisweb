@@ -401,15 +401,26 @@
     </div>
     
     <!-- Scripts -->
-    <script src="../js/auth.js"></script>
-    <script src="../js/utils.js"></script>
-    <script>
+    <script type="module">
+        // Importar Firebase e funções de autenticação
+        import { register } from '../js/auth.js';
+        import { auth } from './firebase-config.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
         // Verificar se já está logado
         document.addEventListener('DOMContentLoaded', function() {
-            const currentUser = localStorage.getItem('currentUser');
-            if (currentUser) {
-                window.location.href = '../index.html';
-            }
+            // Observar estado de autenticação do Firebase
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    // Se usuário já está logado, redirecionar para dashboard
+                    const isGitHubPages = window.location.hostname.includes('github.io');
+                    if (isGitHubPages) {
+                        window.location.href = '/sisweb/pages/dashboard.html';
+                    } else {
+                        window.location.href = '../pages/dashboard.html';
+                    }
+                }
+            });
             
             // Configurar o logo com base no ambiente
             const isGitHubPages = window.location.hostname.includes('github.io');
@@ -478,25 +489,42 @@
         confirmPassword.addEventListener('input', validatePassword);
         
         // Funções do modal de recuperação de senha
-        function showForgotPassword() {
+        window.showForgotPassword = function() {
             document.getElementById('forgotPasswordModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
         }
         
-        function closeForgotPasswordModal() {
+        window.closeForgotPasswordModal = function() {
             document.getElementById('forgotPasswordModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
         }
         
-        function handleForgotPassword(event) {
+        window.handleForgotPassword = async function(event) {
             event.preventDefault();
             const email = document.getElementById('recoveryEmail').value;
-            // Implementar lógica de recuperação de senha
-            showAlert('Link de recuperação enviado para seu e-mail!', 'success');
-            closeForgotPasswordModal();
+            
+            if (!email) {
+                showError('Por favor, informe seu email.');
+                return false;
+            }
+            
+            try {
+                // Importar função do Firebase
+                const { sendPasswordResetEmail } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+                await sendPasswordResetEmail(auth, email);
+                
+                showAlert('Link de recuperação enviado para seu e-mail!', 'success');
+                closeForgotPasswordModal();
+            } catch (error) {
+                console.error("Erro ao enviar e-mail de recuperação:", error);
+                showError('Não foi possível enviar o email de recuperação. Verifique se o email está correto.');
+            }
+            
             return false;
         }
         
-        // Função de registro
-        function handleRegister(event) {
+        // Registrar o formulário
+        document.getElementById('registerForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             
             const name = document.getElementById('name').value;
@@ -520,27 +548,46 @@
             
             // Mostrar loading
             showLoading();
+            hideError();
             
-            // Simular registro (substituir por chamada real à API)
-            setTimeout(() => {
-                // Salvar usuário
-                const users = JSON.parse(localStorage.getItem('users') || '[]');
-                users.push({
+            try {
+                // Usar a função register do auth.js
+                const result = await register({
                     name,
                     email,
                     username,
                     role,
-                    password: btoa(password), // Criptografia básica (substituir por método mais seguro)
-                    createdAt: new Date().toISOString()
+                    password
                 });
-                localStorage.setItem('users', JSON.stringify(users));
                 
-                // Redirecionar para login
-                window.location.href = 'index.html';
-            }, 1500);
-            
-            return false;
-        }
+                if (result) {
+                    // Redirecionar para login após registro bem-sucedido
+                    const isGitHubPages = window.location.hostname.includes('github.io');
+                    if (isGitHubPages) {
+                        window.location.href = '/sisweb/login/index.html';
+                    } else {
+                        window.location.href = './index.html';
+                    }
+                } else {
+                    showError('Erro ao registrar usuário. Tente novamente.');
+                    hideLoading();
+                }
+            } catch (error) {
+                console.error("Erro ao registrar:", error);
+                
+                let errorMsg = 'Erro ao registrar usuário. Tente novamente.';
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMsg = 'Este email já está sendo usado por outra conta.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMsg = 'Email inválido.';
+                } else if (error.code === 'auth/weak-password') {
+                    errorMsg = 'Senha muito fraca.';
+                }
+                
+                showError(errorMsg);
+                hideLoading();
+            }
+        });
         
         function showAlert(message, type) {
             const alert = document.createElement('div');
