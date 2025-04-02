@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permissões - SisWeb</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f6fa;
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            margin-left: 250px;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .page-title {
+            color: #2c3e50;
+            font-size: 24px;
+        }
+        
+        .page-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .roles-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .role-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .role-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .role-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+        }
+        
+        .role-icon.admin {
+            background-color: #e74c3c;
+        }
+        
+        .role-icon.manager {
+            background-color: #f39c12;
+        }
+        
+        .role-icon.seller {
+            background-color: #3498db;
+        }
+        
+        .role-icon.stock {
+            background-color: #2ecc71;
+        }
+        
+        .role-info {
+            flex: 1;
+        }
+        
+        .role-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .role-users {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .permissions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .permission-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            font-size: 13px;
+            color: #2c3e50;
+        }
+        
+        .permission-item i {
+            font-size: 14px;
+            color: #3498db;
+        }
+        
+        .role-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .role-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .role-btn.edit {
+            background-color: #f8f9fa;
+            color: #3498db;
+        }
+        
+        .role-btn.edit:hover {
+            background-color: #e9ecef;
+        }
+        
+        .role-btn.users {
+            background-color: #f8f9fa;
+            color: #2ecc71;
+        }
+        
+        .role-btn.users:hover {
+            background-color: #e9ecef;
+        }
+        
+        .role-btn.delete {
+            background-color: #f8f9fa;
+            color: #e74c3c;
+        }
+        
+        .role-btn.delete:hover {
+            background-color: #e9ecef;
+        }
+        
+        .role-btn i {
+            font-size: 14px;
+        }
+        
+        .add-role {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px dashed #ddd;
+        }
+        
+        .add-role:hover {
+            border-color: #3498db;
+            background-color: #f8f9fa;
+        }
+        
+        .add-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #3498db;
+        }
+        
+        .add-text {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .modal-content {
+            position: relative;
+            background-color: white;
+            width: 90%;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .modal-close {
+            font-size: 20px;
+            color: #95a5a6;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .modal-close:hover {
+            color: #7f8c8d;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            background-color: white;
+            cursor: pointer;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .permissions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .permission-group {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+        }
+        
+        .permission-group-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .permission-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .permission-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #2c3e50;
+        }
+        
+        .permission-option input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                margin-left: 0;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .roles-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 20px auto;
+            }
+            
+            .permissions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Menu Component -->
+        <sisweb-menu></sisweb-menu>
+        
+        <!-- Main Content -->
+        <div class="content">
+            <div class="page-header">
+                <h1 class="page-title">Permissões</h1>
+                <div class="page-actions">
+                    <button class="btn btn-secondary" onclick="refreshPermissions()">
+                        <i class="fas fa-sync"></i> Atualizar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Roles Grid -->
+            <div class="roles-container">
+                <!-- Administrator Role -->
+                <div class="role-card">
+                    <div class="role-header">
+                        <div class="role-icon admin">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div class="role-info">
+                            <div class="role-name">Administrador</div>
+                            <div class="role-users">2 usuários</div>
+                        </div>
+                    </div>
+                    <div class="permissions-list">
+                        <div class="permission-item">
+                            <i class="fas fa-check-circle"></i>
+                            Acesso Total ao Sistema
+                        </div>
+                        <div class="permission-item">
+                            <i class="fas fa-check-circle"></i>
+                            Gerenciamento de Usuários
+                        </div>
+                        <div class="permission-item">
+                            <i class="fas fa-check-circle"></i>
+                            Configurações do Sistema
+                        </div>
+                    </div>
+                    <div class="role-actions">
+                        <button class="role-btn edit" onclick="editRole('admin')">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="role-btn users" onclick="viewUsers('admin')">
+                            <i class="fas fa-users"></i> Usuários
+                        </button>
+                        <button class="role-btn delete" onclick="deleteRole('admin')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Manager Role -->
+                <div class="role-card">
+                    <div class="role-header">
+                        <div class="role-icon manager">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div class="role-info">
+                            <div class="role-name">Gerente</div>
+                            <div class="role-users">3 usuários</div>
+                        </div>
+                    </div>
+                    <div class="permissions-list">
+                        <div class="permission-item">
+                            <i class="fas fa-check-circle"></i>
+                            Gerenciamento de Vendas
+                        </div>
+                        <div class="permission-item">
+                            <i class="fas fa-check-circle"></i>
+                            Relatórios
+                        </div>
+                        <div class="permission-item">
+                            <i class="fas fa-check-circle"></i>
+                            Gestão de Estoque
+                        </div>
+                    </div>
+                    <div class="role-actions">
+                        <button class="role-btn edit" onclick="editRole('manager')">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="role-btn users" onclick="viewUsers('manager')">
+                            <i class="fas fa-users"></i> Usuários
+                        </button>
+                        <button class="role-btn delete" onclick="deleteRole('manager')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Seller Role -->
+                <div class="role-card">
+                    <div class="role-header">
+                        <div class="role-icon seller">
+                            <i class="fas fa-user-tag"></i>
+                        </div>
+                        <div class="role-info">
+                            <div class="role-name">Vendedor</div>
+                            <div class="role-users">5 usuários</div>
+                        </div>
+                    </div>
+                    <div class="permissions-list">
+                        <div class="permission-item">
+                            <i class="fas fa-check-circle"></i>
+                            Realizar Vendas
+                        </div>
+                        <div class="permission-item">
+                            <i class="fas fa-check-circle"></i>
+                            Consultar Produtos
+                        </div>
+                        <div class="permission-item">
+                            <i class="fas fa-check-circle"></i>
+                            Relatórios de Vendas
+                        </div>
+                    </div>
+                    <div class="role-actions">
+                        <button class="role-btn edit" onclick="editRole('seller')">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="role-btn users" onclick="viewUsers('seller')">
+                            <i class="fas fa-users"></i> Usuários
+                        </button>
+                        <button class="role-btn delete" onclick="deleteRole('seller')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Stock Keeper Role -->
+                <div class="role-card">
+                    <div class="role-header">
+                        <div class="role-icon stock">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <div class="role-info">
+                            <div class="role-name">Estoquista</div>
+                            <div class="role-users">2 usuários</div>
+                        </div>
+                    </div>
+                    <div class="permissions-list">
+                        <div class="permission-item">
+                            <i class="fas fa-check-circle"></i>
+                            Gestão de Estoque
+                        </div>
+                        <div class="permission-item">
+                            <i class="fas fa-check-circle"></i>
+                            Controle de Entrada/Saída
+                        </div>
+                        <div class="permission-item">
+                            <i class="fas fa-check-circle"></i>
+                            Relatórios de Estoque
+                        </div>
+                    </div>
+                    <div class="role-actions">
+                        <button class="role-btn edit" onclick="editRole('stock')">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="role-btn users" onclick="viewUsers('stock')">
+                            <i class="fas fa-users"></i> Usuários
+                        </button>
+                        <button class="role-btn delete" onclick="deleteRole('stock')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Add New Role -->
+                <div class="add-role" onclick="showAddModal()">
+                    <div class="add-icon">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="add-text">Adicionar Novo Papel</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Role Modal -->
+    <div class="modal" id="roleModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Configurar Papel</h2>
+                <div class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <form id="roleForm">
+                <div class="form-group">
+                    <label class="form-label">Nome do Papel</label>
+                    <input type="text" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Ícone</label>
+                    <select class="form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="admin">Administrador</option>
+                        <option value="manager">Gerente</option>
+                        <option value="seller">Vendedor</option>
+                        <option value="stock">Estoquista</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Permissões</label>
+                    <div class="permissions-grid">
+                        <div class="permission-group">
+                            <div class="permission-group-title">Sistema</div>
+                            <div class="permission-options">
+                                <div class="permission-option">
+                                    <input type="checkbox" id="sys_access">
+                                    <label for="sys_access">Acesso Total</label>
+                                </div>
+                                <div class="permission-option">
+                                    <input type="checkbox" id="sys_config">
+                                    <label for="sys_config">Configurações</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="permission-group">
+                            <div class="permission-group-title">Usuários</div>
+                            <div class="permission-options">
+                                <div class="permission-option">
+                                    <input type="checkbox" id="user_view">
+                                    <label for="user_view">Visualizar</label>
+                                </div>
+                                <div class="permission-option">
+                                    <input type="checkbox" id="user_edit">
+                                    <label for="user_edit">Editar</label>
+                                </div>
+                                <div class="permission-option">
+                                    <input type="checkbox" id="user_delete">
+                                    <label for="user_delete">Excluir</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="permission-group">
+                            <div class="permission-group-title">Vendas</div>
+                            <div class="permission-options">
+                                <div class="permission-option">
+                                    <input type="checkbox" id="sale_view">
+                                    <label for="sale_view">Visualizar</label>
+                                </div>
+                                <div class="permission-option">
+                                    <input type="checkbox" id="sale_create">
+                                    <label for="sale_create">Criar</label>
+                                </div>
+                                <div class="permission-option">
+                                    <input type="checkbox" id="sale_edit">
+                                    <label for="sale_edit">Editar</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="permission-group">
+                            <div class="permission-group-title">Estoque</div>
+                            <div class="permission-options">
+                                <div class="permission-option">
+                                    <input type="checkbox" id="stock_view">
+                                    <label for="stock_view">Visualizar</label>
+                                </div>
+                                <div class="permission-option">
+                                    <input type="checkbox" id="stock_edit">
+                                    <label for="stock_edit">Editar</label>
+                                </div>
+                                <div class="permission-option">
+                                    <input type="checkbox" id="stock_delete">
+                                    <label for="stock_delete">Excluir</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../components/menu.js"></script>
+    <script>
+        // Atualizar permissões
+        function refreshPermissions() {
+            showAlert('Permissões atualizadas com sucesso!', 'success');
+        }
+        
+        // Editar papel
+        function editRole(type) {
+            showModal();
+            // Implementar edição
+            console.log('Editando papel:', type);
+        }
+        
+        // Visualizar usuários do papel
+        function viewUsers(type) {
+            // Implementar visualização
+            console.log('Visualizando usuários do papel:', type);
+        }
+        
+        // Deletar papel
+        function deleteRole(type) {
+            if (confirm('Tem certeza que deseja excluir este papel? Esta ação afetará todos os usuários associados.')) {
+                const card = event.target.closest('.role-card');
+                card.remove();
+                showAlert('Papel excluído com sucesso!', 'success');
+            }
+        }
+        
+        // Mostrar modal
+        function showModal() {
+            document.getElementById('roleModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // Mostrar modal de adição
+        function showAddModal() {
+            document.getElementById('roleForm').reset();
+            showModal();
+        }
+        
+        // Fechar modal
+        function closeModal() {
+            document.getElementById('roleModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+        
+        // Enviar formulário
+        document.getElementById('roleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            closeModal();
+            showAlert('Papel salvo com sucesso!', 'success');
+        });
+    </script>
+</body>
+</html> 

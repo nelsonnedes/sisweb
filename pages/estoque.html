@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estoque - SisWeb</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f6fa;
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            margin-left: 250px;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .page-title {
+            color: #2c3e50;
+            font-size: 24px;
+        }
+        
+        .page-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-label {
+            font-size: 12px;
+            color: #95a5a6;
+        }
+        
+        .filter-input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .filter-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .inventory-table {
+            width: 100%;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .inventory-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .inventory-table th,
+        .inventory-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .inventory-table th {
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        
+        .inventory-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .inventory-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .inventory-actions button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            color: white;
+        }
+        
+        .btn-view {
+            background-color: #3498db;
+        }
+        
+        .btn-view:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-edit {
+            background-color: #f1c40f;
+        }
+        
+        .btn-edit:hover {
+            background-color: #f39c12;
+        }
+        
+        .btn-delete {
+            background-color: #e74c3c;
+        }
+        
+        .btn-delete:hover {
+            background-color: #c0392b;
+        }
+        
+        .stock-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .stock-high {
+            background-color: #d4f8e5;
+            color: #27ae60;
+        }
+        
+        .stock-medium {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .stock-low {
+            background-color: #fde2e2;
+            color: #e74c3c;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .pagination button:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .pagination button.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .pagination button:disabled {
+            background-color: #f8f9fa;
+            color: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .movement-type {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .movement-type button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .movement-type button.active {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .movement-type button:not(.active) {
+            background-color: #f8f9fa;
+            color: #2c3e50;
+        }
+        
+        .movement-type button:not(.active):hover {
+            background-color: #e9ecef;
+        }
+        
+        .movement-form {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .movement-form .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .movement-form label {
+            font-size: 12px;
+            color: #95a5a6;
+        }
+        
+        .movement-form input,
+        .movement-form select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .movement-form input:focus,
+        .movement-form select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .movement-form .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .movement-history {
+            margin-top: 30px;
+        }
+        
+        .movement-history-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .movement-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .movement-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .movement-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .movement-date {
+            font-size: 12px;
+            color: #95a5a6;
+        }
+        
+        .movement-details {
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        
+        .movement-amount {
+            font-size: 16px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .movement-amount.positive {
+            color: #27ae60;
+        }
+        
+        .movement-amount.negative {
+            color: #e74c3c;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                margin-left: 0;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .filters {
+                flex-direction: column;
+            }
+            
+            .inventory-table {
+                overflow-x: auto;
+            }
+            
+            .movement-type {
+                flex-direction: column;
+            }
+            
+            .movement-form {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Menu Component -->
+        <sisweb-menu></sisweb-menu>
+        
+        <!-- Main Content -->
+        <div class="content">
+            <div class="page-header">
+                <h1 class="page-title">Estoque</h1>
+                <div class="page-actions">
+                    <button class="btn btn-secondary" onclick="exportInventory()">
+                        <i class="fas fa-file-export"></i> Exportar
+                    </button>
+                    <button class="btn btn-primary" onclick="showAddMovementModal()">
+                        <i class="fas fa-plus"></i> Nova Movimentação
+                    </button>
+                </div>
+            </div>
+            
+            <div class="filters">
+                <div class="filter-group">
+                    <label class="filter-label">Buscar</label>
+                    <input type="text" class="filter-input" placeholder="Buscar no estoque..." onkeyup="filterInventory(this.value)">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Espécie</label>
+                    <select class="filter-input" onchange="filterBySpecies(this.value)">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Status</label>
+                    <select class="filter-input" onchange="filterByStatus(this.value)">
+                        <option value="">Todos</option>
+                        <option value="high">Estoque Alto</option>
+                        <option value="medium">Estoque Médio</option>
+                        <option value="low">Estoque Baixo</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="inventory-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Espécie</th>
+                            <th>Quantidade (m³)</th>
+                            <th>Valor Total (R$)</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTableBody">
+                        <!-- Itens do estoque serão inseridos aqui via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination">
+                <button onclick="changePage('prev')" id="prevPage">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="active" id="currentPage">1</button>
+                <button onclick="changePage('next')" id="nextPage">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            
+            <div class="movement-history">
+                <h2 class="movement-history-title">Histórico de Movimentações</h2>
+                <div class="movement-list" id="movementList">
+                    <!-- Movimentações serão inseridas aqui via JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Movimentação -->
+    <div id="movementModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Nova Movimentação</h2>
+                <button class="close" onclick="closeMovementModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="movement-type">
+                    <button type="button" class="active" onclick="setMovementType('entry')">
+                        <i class="fas fa-arrow-down"></i> Entrada
+                    </button>
+                    <button type="button" onclick="setMovementType('exit')">
+                        <i class="fas fa-arrow-up"></i> Saída
+                    </button>
+                </div>
+                
+                <form id="movementForm" onsubmit="return handleMovementSubmit(event)">
+                    <div class="movement-form">
+                        <div class="form-group">
+                            <label for="speciesId">Espécie</label>
+                            <select id="speciesId" name="speciesId" required onchange="loadSpeciesDetails()">
+                                <option value="">Selecione uma espécie</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="movementDate">Data</label>
+                            <input type="date" id="movementDate" name="date" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="movementQuantity">Quantidade (m³)</label>
+                            <input type="number" id="movementQuantity" name="quantity" step="0.001" min="0" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="movementValue">Valor Unitário (R$)</label>
+                            <input type="number" id="movementValue" name="value" step="0.01" min="0" required>
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label for="movementNotes">Observações</label>
+                            <textarea id="movementNotes" name="notes" rows="3"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeMovementModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../components/menu.js"></script>
+    <script>
+        // Variáveis globais
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let inventory = [];
+        let filteredInventory = [];
+        let species = [];
+        let movements = [];
+        let currentMovementType = 'entry';
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSpecies();
+            loadInventory();
+            loadMovements();
+            setupEventListeners();
+        });
+        
+        // Carregar espécies
+        function loadSpecies() {
+            species = getData('species', []);
+            const selects = document.querySelectorAll('select[id="speciesId"]');
+            selects.forEach(select => {
+                select.innerHTML = '<option value="">Selecione uma espécie</option>' +
+                    species.map(specie => `
+                        <option value="${specie.id}">${specie.name}</option>
+                    `).join('');
+            });
+        }
+        
+        // Carregar estoque
+        function loadInventory() {
+            inventory = getData('inventory', []);
+            filteredInventory = [...inventory];
+            renderInventory();
+        }
+        
+        // Carregar movimentações
+        function loadMovements() {
+            movements = getData('movements', []);
+            renderMovements();
+        }
+        
+        // Configurar listeners de eventos
+        function setupEventListeners() {
+            // Implementar conforme necessidade
+        }
+        
+        // Renderizar estoque na tabela
+        function renderInventory() {
+            const tbody = document.getElementById('inventoryTableBody');
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageItems = filteredInventory.slice(start, end);
+            
+            tbody.innerHTML = pageItems.map(item => {
+                const specie = species.find(s => s.id === item.speciesId);
+                return `
+                    <tr>
+                        <td>${item.id}</td>
+                        <td>${specie ? specie.name : 'Espécie não encontrada'}</td>
+                        <td>${formatVolume(item.quantity)}</td>
+                        <td>${formatCurrency(item.totalValue)}</td>
+                        <td>
+                            <span class="stock-badge stock-${getStockStatus(item.quantity)}">
+                                ${getStockStatusText(item.quantity)}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="inventory-actions">
+                                <button class="btn-view" onclick="viewInventory(${item.id})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn-edit" onclick="editInventory(${item.id})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-delete" onclick="deleteInventory(${item.id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            updatePagination();
+        }
+        
+        // Renderizar movimentações
+        function renderMovements() {
+            const list = document.getElementById('movementList');
+            list.innerHTML = movements.slice(0, 10).map(movement => {
+                const specie = species.find(s => s.id === movement.speciesId);
+                return `
+                    <div class="movement-item">
+                        <div class="movement-info">
+                            <span class="movement-date">${formatDate(movement.date)}</span>
+                            <span class="movement-details">
+                                ${movement.type === 'entry' ? 'Entrada' : 'Saída'} de ${specie ? specie.name : 'Espécie não encontrada'}
+                            </span>
+                        </div>
+                        <span class="movement-amount ${movement.type === 'entry' ? 'positive' : 'negative'}">
+                            ${movement.type === 'entry' ? '+' : '-'}${formatVolume(movement.quantity)}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Atualizar paginação
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredInventory.length / itemsPerPage);
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = currentPage === totalPages;
+        }
+        
+        // Mudar página
+        function changePage(direction) {
+            const totalPages = Math.ceil(filteredInventory.length / itemsPerPage);
+            
+            if (direction === 'prev' && currentPage > 1) {
+                currentPage--;
+            } else if (direction === 'next' && currentPage < totalPages) {
+                currentPage++;
+            }
+            
+            renderInventory();
+        }
+        
+        // Filtrar estoque
+        function filterInventory(searchTerm) {
+            searchTerm = searchTerm.toLowerCase();
+            filteredInventory = inventory.filter(item => {
+                const specie = species.find(s => s.id === item.speciesId);
+                return (
+                    item.id.toString().includes(searchTerm) ||
+                    (specie && specie.name.toLowerCase().includes(searchTerm))
+                );
+            });
+            currentPage = 1;
+            renderInventory();
+        }
+        
+        // Filtrar por espécie
+        function filterBySpecies(speciesId) {
+            if (!speciesId) {
+                filteredInventory = [...inventory];
+            } else {
+                filteredInventory = inventory.filter(item => item.speciesId === parseInt(speciesId));
+            }
+            currentPage = 1;
+            renderInventory();
+        }
+        
+        // Filtrar por status
+        function filterByStatus(status) {
+            if (!status) {
+                filteredInventory = [...inventory];
+            } else {
+                filteredInventory = inventory.filter(item => getStockStatus(item.quantity) === status);
+            }
+            currentPage = 1;
+            renderInventory();
+        }
+        
+        // Carregar detalhes da espécie
+        function loadSpeciesDetails() {
+            const speciesId = document.getElementById('speciesId').value;
+            const specie = species.find(s => s.id === parseInt(speciesId));
+            
+            if (specie) {
+                // Implementar lógica para carregar detalhes da espécie
+                // Por exemplo, preencher campos automáticos baseados na espécie
+            }
+        }
+        
+        // Definir tipo de movimentação
+        function setMovementType(type) {
+            currentMovementType = type;
+            const buttons = document.querySelectorAll('.movement-type button');
+            buttons.forEach(button => {
+                button.classList.remove('active');
+                if (button.textContent.includes(type === 'entry' ? 'Entrada' : 'Saída')) {
+                    button.classList.add('active');
+                }
+            });
+        }
+        
+        // Mostrar modal de movimentação
+        function showAddMovementModal() {
+            document.getElementById('modalTitle').textContent = 'Nova Movimentação';
+            document.getElementById('movementForm').reset();
+            setMovementType('entry');
+            document.getElementById('movementModal').style.display = 'block';
+        }
+        
+        // Fechar modal de movimentação
+        function closeMovementModal() {
+            document.getElementById('movementModal').style.display = 'none';
+        }
+        
+        // Visualizar item do estoque
+        function viewInventory(itemId) {
+            const item = inventory.find(i => i.id === itemId);
+            if (!item) return;
+            
+            // Implementar visualização detalhada do item
+            alert('Visualização detalhada do item ' + itemId);
+        }
+        
+        // Editar item do estoque
+        function editInventory(itemId) {
+            const item = inventory.find(i => i.id === itemId);
+            if (!item) return;
+            
+            // Implementar edição do item
+            alert('Edição do item ' + itemId);
+        }
+        
+        // Excluir item do estoque
+        function deleteInventory(itemId) {
+            if (!confirm('Tem certeza que deseja excluir este item do estoque?')) return;
+            
+            const index = inventory.findIndex(i => i.id === itemId);
+            if (index === -1) return;
+            
+            inventory.splice(index, 1);
+            saveData('inventory', inventory);
+            loadInventory();
+            
+            showAlert('Item excluído com sucesso!', 'success');
+        }
+        
+        // Manipular envio do formulário
+        function handleMovementSubmit(event) {
+            event.preventDefault();
+            
+            const formData = {
+                speciesId: parseInt(document.getElementById('speciesId').value),
+                date: document.getElementById('movementDate').value,
+                type: currentMovementType,
+                quantity: parseFloat(document.getElementById('movementQuantity').value),
+                value: parseFloat(document.getElementById('movementValue').value),
+                notes: document.getElementById('movementNotes').value
+            };
+            
+            // Adicionar movimentação
+            formData.id = generateId(movements);
+            movements.push(formData);
+            saveData('movements', movements);
+            
+            // Atualizar estoque
+            const inventoryItem = inventory.find(i => i.speciesId === formData.speciesId);
+            if (inventoryItem) {
+                if (formData.type === 'entry') {
+                    inventoryItem.quantity += formData.quantity;
+                    inventoryItem.totalValue += formData.quantity * formData.value;
+                } else {
+                    inventoryItem.quantity -= formData.quantity;
+                    inventoryItem.totalValue -= formData.quantity * formData.value;
+                }
+            } else {
+                inventory.push({
+                    id: generateId(inventory),
+                    speciesId: formData.speciesId,
+                    quantity: formData.type === 'entry' ? formData.quantity : -formData.quantity,
+                    totalValue: formData.type === 'entry' ? formData.quantity * formData.value : -formData.quantity * formData.value
+                });
+            }
+            
+            saveData('inventory', inventory);
+            loadInventory();
+            loadMovements();
+            closeMovementModal();
+            
+            showAlert('Movimentação registrada com sucesso!', 'success');
+            return false;
+        }
+        
+        // Exportar estoque
+        function exportInventory() {
+            const jsonData = exportToJson('inventory');
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'estoque.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // Obter status do estoque
+        function getStockStatus(quantity) {
+            if (quantity >= 100) return 'high';
+            if (quantity >= 50) return 'medium';
+            return 'low';
+        }
+        
+        // Obter texto do status do estoque
+        function getStockStatusText(quantity) {
+            const statusMap = {
+                high: 'Estoque Alto',
+                medium: 'Estoque Médio',
+                low: 'Estoque Baixo'
+            };
+            return statusMap[getStockStatus(quantity)];
+        }
+    </script>
+</body>
+</html> 

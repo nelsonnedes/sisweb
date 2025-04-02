@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Romaneios - SisWeb</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f6fa;
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            margin-left: 250px;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .page-title {
+            color: #2c3e50;
+            font-size: 24px;
+        }
+        
+        .page-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-label {
+            font-size: 12px;
+            color: #95a5a6;
+        }
+        
+        .filter-input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .filter-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .shipping-orders-table {
+            width: 100%;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .shipping-orders-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .shipping-orders-table th,
+        .shipping-orders-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .shipping-orders-table th {
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        
+        .shipping-orders-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .order-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .order-actions button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            color: white;
+        }
+        
+        .btn-view {
+            background-color: #3498db;
+        }
+        
+        .btn-view:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-edit {
+            background-color: #f1c40f;
+        }
+        
+        .btn-edit:hover {
+            background-color: #f39c12;
+        }
+        
+        .btn-delete {
+            background-color: #e74c3c;
+        }
+        
+        .btn-delete:hover {
+            background-color: #c0392b;
+        }
+        
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-processing {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+        
+        .status-shipped {
+            background-color: #d4f8e5;
+            color: #27ae60;
+        }
+        
+        .status-delivered {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+        
+        .status-cancelled {
+            background-color: #fde2e2;
+            color: #e74c3c;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .pagination button:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .pagination button.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .pagination button:disabled {
+            background-color: #f8f9fa;
+            color: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                margin-left: 0;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .filters {
+                flex-direction: column;
+            }
+            
+            .shipping-orders-table {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Menu Component -->
+        <sisweb-menu></sisweb-menu>
+        
+        <!-- Main Content -->
+        <div class="content">
+            <div class="page-header">
+                <h1 class="page-title">Romaneios</h1>
+                <div class="page-actions">
+                    <button class="btn btn-secondary" onclick="exportShippingOrders()">
+                        <i class="fas fa-file-export"></i> Exportar
+                    </button>
+                    <button class="btn btn-primary" onclick="showAddShippingOrderModal()">
+                        <i class="fas fa-plus"></i> Novo Romaneio
+                    </button>
+                </div>
+            </div>
+            
+            <div class="filters">
+                <div class="filter-group">
+                    <label class="filter-label">Buscar</label>
+                    <input type="text" class="filter-input" placeholder="Buscar romaneios..." onkeyup="filterShippingOrders(this.value)">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Tipo</label>
+                    <select class="filter-input" onchange="filterByType(this.value)">
+                        <option value="">Todos</option>
+                        <option value="TL">Tábuas Longas</option>
+                        <option value="PC">Pacotes</option>
+                        <option value="PES">Pés</option>
+                        <option value="TORA">Tora</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Status</label>
+                    <select class="filter-input" onchange="filterByStatus(this.value)">
+                        <option value="">Todos</option>
+                        <option value="pending">Pendente</option>
+                        <option value="processing">Em Processamento</option>
+                        <option value="shipped">Enviado</option>
+                        <option value="delivered">Entregue</option>
+                        <option value="cancelled">Cancelado</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Data Inicial</label>
+                    <input type="date" class="filter-input" onchange="filterByDate()">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Data Final</label>
+                    <input type="date" class="filter-input" onchange="filterByDate()">
+                </div>
+            </div>
+            
+            <div class="shipping-orders-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tipo</th>
+                            <th>Cliente</th>
+                            <th>Data</th>
+                            <th>Valor (R$)</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shippingOrdersTableBody">
+                        <!-- Romaneios serão inseridos aqui via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination">
+                <button onclick="changePage('prev')" id="prevPage">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="active" id="currentPage">1</button>
+                <button onclick="changePage('next')" id="nextPage">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Romaneio -->
+    <div id="shippingOrderModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Novo Romaneio</h2>
+                <button class="close" onclick="closeShippingOrderModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="shippingOrderForm" onsubmit="return handleShippingOrderSubmit(event)">
+                    <div class="form-group">
+                        <label for="orderType">Tipo de Romaneio</label>
+                        <select id="orderType" name="type" required onchange="updateFormFields()">
+                            <option value="TL">Tábuas Longas</option>
+                            <option value="PC">Pacotes</option>
+                            <option value="PES">Pés</option>
+                            <option value="TORA">Tora</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="clientId">Cliente</label>
+                        <select id="clientId" name="clientId" required>
+                            <option value="">Selecione um cliente</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="orderDate">Data</label>
+                        <input type="date" id="orderDate" name="date" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="orderValue">Valor (R$)</label>
+                        <input type="number" id="orderValue" name="value" step="0.01" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="orderStatus">Status</label>
+                        <select id="orderStatus" name="status" required>
+                            <option value="pending">Pendente</option>
+                            <option value="processing">Em Processamento</option>
+                            <option value="shipped">Enviado</option>
+                            <option value="delivered">Entregue</option>
+                            <option value="cancelled">Cancelado</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="orderNotes">Observações</label>
+                        <textarea id="orderNotes" name="notes" rows="4"></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeShippingOrderModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../components/menu.js"></script>
+    <script>
+        // Variáveis globais
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let shippingOrders = [];
+        let filteredShippingOrders = [];
+        let clients = [];
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            loadClients();
+            loadShippingOrders();
+            setupEventListeners();
+        });
+        
+        // Carregar clientes
+        function loadClients() {
+            clients = getData('clients', []);
+            const select = document.getElementById('clientId');
+            select.innerHTML = '<option value="">Selecione um cliente</option>' +
+                clients.map(client => `
+                    <option value="${client.id}">${client.name}</option>
+                `).join('');
+        }
+        
+        // Carregar romaneios
+        function loadShippingOrders() {
+            shippingOrders = getData('shippingOrders', []);
+            filteredShippingOrders = [...shippingOrders];
+            renderShippingOrders();
+        }
+        
+        // Configurar listeners de eventos
+        function setupEventListeners() {
+            // Implementar conforme necessidade
+        }
+        
+        // Renderizar romaneios na tabela
+        function renderShippingOrders() {
+            const tbody = document.getElementById('shippingOrdersTableBody');
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageOrders = filteredShippingOrders.slice(start, end);
+            
+            tbody.innerHTML = pageOrders.map(order => {
+                const client = clients.find(c => c.id === order.clientId);
+                return `
+                    <tr>
+                        <td>${order.id}</td>
+                        <td>${getOrderTypeText(order.type)}</td>
+                        <td>${client ? client.name : 'Cliente não encontrado'}</td>
+                        <td>${formatDate(order.date)}</td>
+                        <td>${formatCurrency(order.value)}</td>
+                        <td>
+                            <span class="status-badge status-${order.status}">
+                                ${getStatusText(order.status)}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="order-actions">
+                                <button class="btn-view" onclick="viewShippingOrder(${order.id})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn-edit" onclick="editShippingOrder(${order.id})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-delete" onclick="deleteShippingOrder(${order.id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            updatePagination();
+        }
+        
+        // Atualizar paginação
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredShippingOrders.length / itemsPerPage);
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = currentPage === totalPages;
+        }
+        
+        // Mudar página
+        function changePage(direction) {
+            const totalPages = Math.ceil(filteredShippingOrders.length / itemsPerPage);
+            
+            if (direction === 'prev' && currentPage > 1) {
+                currentPage--;
+            } else if (direction === 'next' && currentPage < totalPages) {
+                currentPage++;
+            }
+            
+            renderShippingOrders();
+        }
+        
+        // Filtrar romaneios
+        function filterShippingOrders(searchTerm) {
+            searchTerm = searchTerm.toLowerCase();
+            filteredShippingOrders = shippingOrders.filter(order => {
+                const client = clients.find(c => c.id === order.clientId);
+                return (
+                    order.id.toString().includes(searchTerm) ||
+                    (client && client.name.toLowerCase().includes(searchTerm))
+                );
+            });
+            currentPage = 1;
+            renderShippingOrders();
+        }
+        
+        // Filtrar por tipo
+        function filterByType(type) {
+            if (!type) {
+                filteredShippingOrders = [...shippingOrders];
+            } else {
+                filteredShippingOrders = shippingOrders.filter(order => order.type === type);
+            }
+            currentPage = 1;
+            renderShippingOrders();
+        }
+        
+        // Filtrar por status
+        function filterByStatus(status) {
+            if (!status) {
+                filteredShippingOrders = [...shippingOrders];
+            } else {
+                filteredShippingOrders = shippingOrders.filter(order => order.status === status);
+            }
+            currentPage = 1;
+            renderShippingOrders();
+        }
+        
+        // Filtrar por data
+        function filterByDate() {
+            const startDate = document.querySelector('input[type="date"]:first-of-type').value;
+            const endDate = document.querySelector('input[type="date"]:last-of-type').value;
+            
+            filteredShippingOrders = shippingOrders.filter(order => {
+                const orderDate = new Date(order.date);
+                const start = startDate ? new Date(startDate) : null;
+                const end = endDate ? new Date(endDate) : null;
+                
+                if (start && end) {
+                    return orderDate >= start && orderDate <= end;
+                } else if (start) {
+                    return orderDate >= start;
+                } else if (end) {
+                    return orderDate <= end;
+                }
+                return true;
+            });
+            
+            currentPage = 1;
+            renderShippingOrders();
+        }
+        
+        // Atualizar campos do formulário
+        function updateFormFields() {
+            const type = document.getElementById('orderType').value;
+            // Implementar lógica específica para cada tipo de romaneio
+        }
+        
+        // Mostrar modal de romaneio
+        function showAddShippingOrderModal() {
+            document.getElementById('modalTitle').textContent = 'Novo Romaneio';
+            document.getElementById('shippingOrderForm').reset();
+            document.getElementById('shippingOrderModal').style.display = 'block';
+        }
+        
+        // Fechar modal de romaneio
+        function closeShippingOrderModal() {
+            document.getElementById('shippingOrderModal').style.display = 'none';
+        }
+        
+        // Visualizar romaneio
+        function viewShippingOrder(orderId) {
+            const order = shippingOrders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            // Implementar visualização detalhada do romaneio
+            alert('Visualização detalhada do romaneio ' + orderId);
+        }
+        
+        // Editar romaneio
+        function editShippingOrder(orderId) {
+            const order = shippingOrders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            document.getElementById('modalTitle').textContent = 'Editar Romaneio';
+            document.getElementById('orderType').value = order.type;
+            document.getElementById('clientId').value = order.clientId;
+            document.getElementById('orderDate').value = order.date;
+            document.getElementById('orderValue').value = order.value;
+            document.getElementById('orderStatus').value = order.status;
+            document.getElementById('orderNotes').value = order.notes || '';
+            
+            document.getElementById('shippingOrderModal').style.display = 'block';
+        }
+        
+        // Excluir romaneio
+        function deleteShippingOrder(orderId) {
+            if (!confirm('Tem certeza que deseja excluir este romaneio?')) return;
+            
+            const index = shippingOrders.findIndex(o => o.id === orderId);
+            if (index === -1) return;
+            
+            shippingOrders.splice(index, 1);
+            saveData('shippingOrders', shippingOrders);
+            loadShippingOrders();
+            
+            showAlert('Romaneio excluído com sucesso!', 'success');
+        }
+        
+        // Manipular envio do formulário
+        function handleShippingOrderSubmit(event) {
+            event.preventDefault();
+            
+            const formData = {
+                type: document.getElementById('orderType').value,
+                clientId: parseInt(document.getElementById('clientId').value),
+                date: document.getElementById('orderDate').value,
+                value: parseFloat(document.getElementById('orderValue').value),
+                status: document.getElementById('orderStatus').value,
+                notes: document.getElementById('orderNotes').value
+            };
+            
+            // Adicionar ou atualizar romaneio
+            const orderId = document.getElementById('shippingOrderForm').dataset.orderId;
+            if (orderId) {
+                // Atualizar romaneio existente
+                const index = shippingOrders.findIndex(o => o.id === parseInt(orderId));
+                if (index !== -1) {
+                    shippingOrders[index] = { ...shippingOrders[index], ...formData };
+                }
+            } else {
+                // Adicionar novo romaneio
+                formData.id = generateId(shippingOrders);
+                shippingOrders.push(formData);
+            }
+            
+            // Salvar e atualizar
+            saveData('shippingOrders', shippingOrders);
+            loadShippingOrders();
+            closeShippingOrderModal();
+            
+            showAlert('Romaneio salvo com sucesso!', 'success');
+            return false;
+        }
+        
+        // Exportar romaneios
+        function exportShippingOrders() {
+            const jsonData = exportToJson('shippingOrders');
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'romaneios.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // Obter texto do tipo de romaneio
+        function getOrderTypeText(type) {
+            const typeMap = {
+                TL: 'Tábuas Longas',
+                PC: 'Pacotes',
+                PES: 'Pés',
+                TORA: 'Tora'
+            };
+            return typeMap[type] || type;
+        }
+        
+        // Obter texto do status
+        function getStatusText(status) {
+            const statusMap = {
+                pending: 'Pendente',
+                processing: 'Em Processamento',
+                shipped: 'Enviado',
+                delivered: 'Entregue',
+                cancelled: 'Cancelado'
+            };
+            return statusMap[status] || status;
+        }
+    </script>
+</body>
+</html> 

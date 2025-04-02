@@ -1,0 +1,30 @@
+# Para ver o status do repositório
+git status
+
+# Para criar novas branches para desenvolvimento de funcionalidades
+git checkout -b nome-da-funcionalidade
+
+# Para fazer commit de novas alterações
+git add .
+git commit -m "Descrição das alterações"
+
+# Para enviar novas alterações para o GitHub
+git push origin master:main
+
+
+# Renomear o branch master para main localmente
+git branch -m master main
+
+# Da próxima vez, você poderá usar simplesmente
+git push origin main
+
+Seu projeto agora está configurado com Firebase como backend, o que oferece:
+Autenticação de usuários
+Armazenamento de dados em tempo real
+Escalabilidade para crescimento futuro
+Sincronização entre dispositivos
+Maior segurança comparado ao localStorage
+Lembre-se de seguir as melhores práticas ao continuar o desenvolvimento:
+Faça commits frequentes com mensagens claras
+Use branches para desenvolver novas funcionalidades
+Teste as alterações antes de fazer push para o repositório principal
