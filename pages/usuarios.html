@@ -1237,7 +1237,7 @@
                     // Excluir do Firestore
                     await deleteDoc(userDocRef);
                     
-                    showAlert('Usuário excluído com sucesso!', 'success');
+                showAlert('Usuário excluído com sucesso!', 'success');
                 } catch (error) {
                     console.error('Erro ao excluir usuário:', error);
                     showAlert('Erro ao excluir usuário', 'error');
