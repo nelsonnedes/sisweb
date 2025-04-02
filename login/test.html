@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Firebase - SisWeb</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Teste de Conexão Firebase</h1>
+    
+    <div class="card">
+        <h2>Status da Inicialização</h2>
+        <div id="initStatus">Verificando...</div>
+    </div>
+    
+    <div class="card">
+        <h2>Teste de Registro</h2>
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="registerEmail">E-mail:</label>
+                <input type="email" id="registerEmail" required>
+            </div>
+            <div class="form-group">
+                <label for="registerPassword">Senha:</label>
+                <input type="password" id="registerPassword" required>
+            </div>
+            <button type="submit">Testar Registro</button>
+        </form>
+        <h3>Resultado:</h3>
+        <pre id="registerResult">Aguardando teste...</pre>
+    </div>
+    
+    <div class="card">
+        <h2>Teste de Login</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="loginEmail">E-mail:</label>
+                <input type="email" id="loginEmail" required>
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Senha:</label>
+                <input type="password" id="loginPassword" required>
+            </div>
+            <button type="submit">Testar Login</button>
+        </form>
+        <h3>Resultado:</h3>
+        <pre id="loginResult">Aguardando teste...</pre>
+    </div>
+    
+    <div class="card">
+        <h2>Console de Depuração</h2>
+        <pre id="debugConsole"></pre>
+    </div>
+    
+    <script type="module">
+        // Importar módulos necessários
+        import { app, auth, db } from '../js/firebase-config.js';
+        import { testUserRegistration, testUserLogin } from '../js/firebase-test.js';
+        
+        // Função para adicionar mensagens ao console de depuração
+        function logDebug(message) {
+            const debugConsole = document.getElementById('debugConsole');
+            const timestamp = new Date().toLocaleTimeString();
+            debugConsole.textContent += `[${timestamp}] ${message}\n`;
+            debugConsole.scrollTop = debugConsole.scrollHeight;
+            console.log(message);
+        }
+        
+        // Sobrescrever console.log para capturar no nosso depurador
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        
+        console.log = function() {
+            const args = Array.from(arguments).join(' ');
+            logDebug(args);
+            originalConsoleLog.apply(console, arguments);
+        };
+        
+        console.error = function() {
+            const args = Array.from(arguments).join(' ');
+            logDebug(`ERRO: ${args}`);
+            originalConsoleError.apply(console, arguments);
+        };
+        
+        // Verificar status da inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            const initStatus = document.getElementById('initStatus');
+            
+            if (app && auth && db) {
+                initStatus.innerHTML = `
+                    <div class="success">
+                        <strong>Firebase inicializado com sucesso!</strong><br>
+                        Firebase App: ${app.name}<br>
+                        Firebase Auth: ${auth.name}<br>
+                        Firebase DB: ${db.name}<br>
+                    </div>
+                `;
+                logDebug("Firebase inicializado com sucesso!");
+            } else {
+                initStatus.innerHTML = `
+                    <div class="error">
+                        <strong>Erro ao inicializar o Firebase!</strong><br>
+                        Firebase App: ${app ? 'OK' : 'Falha'}<br>
+                        Firebase Auth: ${auth ? 'OK' : 'Falha'}<br>
+                        Firebase DB: ${db ? 'OK' : 'Falha'}<br>
+                    </div>
+                `;
+                logDebug("Erro ao inicializar o Firebase!");
+            }
+        });
+        
+        // Formulário de registro
+        document.getElementById('registerForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const registerResult = document.getElementById('registerResult');
+            registerResult.textContent = 'Processando...';
+            
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            
+            logDebug(`Iniciando teste de registro com email: ${email}`);
+            
+            try {
+                const result = await testUserRegistration(email, password);
+                
+                if (result.success) {
+                    registerResult.innerHTML = `<div class="success">${JSON.stringify(result, null, 2)}</div>`;
+                    document.getElementById('loginEmail').value = email;
+                    document.getElementById('loginPassword').value = password;
+                } else {
+                    registerResult.innerHTML = `<div class="error">${JSON.stringify(result, null, 2)}</div>`;
+                }
+            } catch (error) {
+                registerResult.innerHTML = `<div class="error">Erro: ${error.message}</div>`;
+                console.error('Erro no teste de registro:', error);
+            }
+        });
+        
+        // Formulário de login
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const loginResult = document.getElementById('loginResult');
+            loginResult.textContent = 'Processando...';
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            logDebug(`Iniciando teste de login com email: ${email}`);
+            
+            try {
+                const result = await testUserLogin(email, password);
+                
+                if (result.success) {
+                    loginResult.innerHTML = `<div class="success">${JSON.stringify(result, null, 2)}</div>`;
+                } else {
+                    loginResult.innerHTML = `<div class="error">${JSON.stringify(result, null, 2)}</div>`;
+                }
+            } catch (error) {
+                loginResult.innerHTML = `<div class="error">Erro: ${error.message}</div>`;
+                console.error('Erro no teste de login:', error);
+            }
+        });
+    </script>
+</body>
+</html> 

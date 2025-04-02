@@ -539,6 +539,7 @@
         
         // Função para processar o registro
         async function handleRegister() {
+            console.log("Iniciando processo de registro...");
             const name = document.getElementById('name').value.trim();
             const email = document.getElementById('email').value.trim();
             const username = document.getElementById('username').value.trim();
@@ -546,65 +547,117 @@
             const password = passwordInput.value;
             const confirmPassword = confirmPasswordInput.value;
             
+            console.log("Dados do formulário coletados:", {
+                name, email, username, role, 
+                password: password ? "***" : null,
+                confirmPassword: confirmPassword ? "***" : null
+            });
+            
             // Validar campos
             if (!isValidString(name, 3, 100)) {
+                console.error("Nome inválido:", name);
                 showError('O nome deve ter entre 3 e 100 caracteres.');
                 return;
             }
             
             if (!isValidEmail(email)) {
+                console.error("E-mail inválido:", email);
                 showError('Por favor, informe um e-mail válido.');
                 return;
             }
             
             if (!isValidString(username, 3, 30)) {
+                console.error("Nome de usuário inválido:", username);
                 showError('O nome de usuário deve ter entre 3 e 30 caracteres.');
                 return;
             }
             
             if (password.length < 6) {
+                console.error("Senha muito curta, comprimento:", password.length);
                 showError('A senha deve ter pelo menos 6 caracteres.');
                 return;
             }
             
             if (password !== confirmPassword) {
+                console.error("Senhas não coincidem");
                 showError('As senhas não coincidem.');
                 return;
             }
             
+            console.log("Validações locais passaram, mostrando loading...");
             // Mostrar loading
             showLoading();
             hideError();
             
             try {
-                // Usar a função register do auth.js
-                const result = await register({
+                console.log("Chamando função register do auth.js...");
+                // Criar objeto de dados do usuário
+                const userData = {
                     name,
                     email,
                     username,
                     role,
                     password
-                });
+                };
+                
+                console.log("Dados do usuário para registro:", JSON.stringify(userData, (key, value) => 
+                    key === 'password' ? '***' : value, 2));
+                    
+                // Testar a função direta para depuração
+                try {
+                    console.log("Tentando usar a importação direta...");
+                    const { testUserRegistration } = await import('../js/firebase-test.js');
+                    const testResult = await testUserRegistration(email, password);
+                    console.log("Resultado do teste direto:", JSON.stringify(testResult));
+                    
+                    if (testResult.success) {
+                        console.log("Teste direto bem-sucedido!");
+                        showAlert("Usuário criado com sucesso!", 'success');
+                        
+                        // Redirecionar para login após 3 segundos
+                        setTimeout(() => {
+                            const isGitHubPages = window.location.hostname.includes('github.io');
+                            const redirectUrl = isGitHubPages ? '/sisweb/login/index.html' : './index.html';
+                            console.log("Redirecionando para:", redirectUrl);
+                            window.location.href = redirectUrl;
+                        }, 3000);
+                    } else {
+                        console.error("Falha no teste direto:", testResult.message);
+                        showError(testResult.message || "Falha ao criar usuário.");
+                    }
+                    
+                    hideLoading();
+                    return;
+                } catch (testError) {
+                    console.error("Erro no teste direto:", testError);
+                    // Continuar com o fluxo normal se o teste falhar
+                }
+                
+                // Usar a função register do auth.js como plano B
+                const result = await register(userData);
+                
+                console.log("Resultado do registro:", JSON.stringify(result, null, 2));
                 
                 if (result.success) {
+                    console.log("Registro bem-sucedido, mostrando alerta de sucesso");
                     showAlert(result.message, 'success');
                     
+                    console.log("Configurando redirecionamento após 3 segundos");
                     // Redirecionar para login após 3 segundos
                     setTimeout(() => {
                         const isGitHubPages = window.location.hostname.includes('github.io');
-                        if (isGitHubPages) {
-                            window.location.href = '/sisweb/login/index.html';
-                        } else {
-                            window.location.href = './index.html';
-                        }
+                        const redirectUrl = isGitHubPages ? '/sisweb/login/index.html' : './index.html';
+                        console.log("Redirecionando para:", redirectUrl);
+                        window.location.href = redirectUrl;
                     }, 3000);
                 } else {
+                    console.error("Falha no registro:", result.message);
                     showError(result.message);
                     hideLoading();
                 }
             } catch (error) {
-                console.error("Erro ao registrar:", error);
-                showError('Ocorreu um erro durante o registro. Tente novamente mais tarde.');
+                console.error("Exceção ao registrar:", error);
+                showError('Ocorreu um erro durante o registro: ' + (error.message || "Tente novamente mais tarde."));
                 hideLoading();
             }
         }
