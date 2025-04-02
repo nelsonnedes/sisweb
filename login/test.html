@@ -108,114 +108,238 @@
     
     <script type="module">
         // Importar módulos necessários
-        import { app, auth, db } from '../js/firebase-config.js';
-        import { testUserRegistration, testUserLogin } from '../js/firebase-test.js';
-        
-        // Função para adicionar mensagens ao console de depuração
-        function logDebug(message) {
-            const debugConsole = document.getElementById('debugConsole');
-            const timestamp = new Date().toLocaleTimeString();
-            debugConsole.textContent += `[${timestamp}] ${message}\n`;
-            debugConsole.scrollTop = debugConsole.scrollHeight;
-            console.log(message);
-        }
-        
-        // Sobrescrever console.log para capturar no nosso depurador
-        const originalConsoleLog = console.log;
-        const originalConsoleError = console.error;
-        
-        console.log = function() {
-            const args = Array.from(arguments).join(' ');
-            logDebug(args);
-            originalConsoleLog.apply(console, arguments);
-        };
-        
-        console.error = function() {
-            const args = Array.from(arguments).join(' ');
-            logDebug(`ERRO: ${args}`);
-            originalConsoleError.apply(console, arguments);
-        };
-        
-        // Verificar status da inicialização
-        document.addEventListener('DOMContentLoaded', function() {
-            const initStatus = document.getElementById('initStatus');
+        try {
+            // Função para adicionar mensagens ao console de depuração
+            function logDebug(message) {
+                const debugConsole = document.getElementById('debugConsole');
+                const timestamp = new Date().toLocaleTimeString();
+                debugConsole.textContent += `[${timestamp}] ${message}\n`;
+                debugConsole.scrollTop = debugConsole.scrollHeight;
+                console.log(message);
+            }
             
-            if (app && auth && db) {
-                initStatus.innerHTML = `
-                    <div class="success">
-                        <strong>Firebase inicializado com sucesso!</strong><br>
-                        Firebase App: ${app.name}<br>
-                        Firebase Auth: ${auth.name}<br>
-                        Firebase DB: ${db.name}<br>
-                    </div>
-                `;
-                logDebug("Firebase inicializado com sucesso!");
-            } else {
-                initStatus.innerHTML = `
+            // Sobrescrever console.log para capturar no nosso depurador
+            const originalConsoleLog = console.log;
+            const originalConsoleError = console.error;
+            
+            console.log = function() {
+                const args = Array.from(arguments).join(' ');
+                logDebug(args);
+                originalConsoleLog.apply(console, arguments);
+            };
+            
+            console.error = function() {
+                const args = Array.from(arguments).join(' ');
+                logDebug(`ERRO: ${args}`);
+                originalConsoleError.apply(console, arguments);
+            };
+            
+            logDebug("Iniciando carregamento da página de teste...");
+            
+            // Tentar carregar Firebase diretamente
+            logDebug("Tentando carregar Firebase diretamente...");
+            
+            import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js").then(module => {
+                const { initializeApp } = module;
+                logDebug("Firebase App carregado com sucesso");
+                
+                // Configuração do Firebase
+                const firebaseConfig = {
+                    apiKey: "AIzaSyCJoql30uCoRhc3UHCnyl57M1vFCT2-N1o",
+                    authDomain: "dbsisweb.firebaseapp.com",
+                    projectId: "dbsisweb",
+                    storageBucket: "dbsisweb.appspot.com",
+                    messagingSenderId: "711476232625",
+                    appId: "1:711476232625:web:a00e3508487856b3613d90",
+                    measurementId: "G-M0M8LFVGDC"
+                };
+                
+                logDebug("Configuração Firebase: " + JSON.stringify(firebaseConfig));
+                
+                // Inicializar Firebase
+                const app = initializeApp(firebaseConfig);
+                logDebug("Firebase App inicializado: " + app.name);
+                
+                // Carregar Auth
+                import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js").then(authModule => {
+                    const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = authModule;
+                    const auth = getAuth(app);
+                    logDebug("Firebase Auth inicializado: " + auth.name);
+                    
+                    // Carregar Firestore
+                    import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js").then(firestoreModule => {
+                        const { getFirestore, doc, setDoc, serverTimestamp } = firestoreModule;
+                        const db = getFirestore(app);
+                        logDebug("Firestore inicializado: " + db.name);
+                        
+                        // Atualizar status na UI
+                        document.getElementById('initStatus').innerHTML = `
+                            <div class="success">
+                                <strong>Firebase inicializado com sucesso!</strong><br>
+                                Firebase App: ${app.name}<br>
+                                Firebase Auth: ${auth.name}<br>
+                                Firebase DB: ${db.name}<br>
+                            </div>
+                        `;
+                        
+                        // Implementar função de teste de registro
+                        async function testUserRegistration(email, password) {
+                            logDebug("========== TESTE DE REGISTRO ==========");
+                            logDebug("Tentando registrar: " + email);
+                            
+                            try {
+                                // Criar usuário no Firebase Authentication
+                                logDebug("Chamando createUserWithEmailAndPassword...");
+                                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                                logDebug("Usuário criado: " + userCredential.user.uid);
+                                
+                                // Criar documento do usuário no Firestore
+                                const userDoc = {
+                                    email: email,
+                                    name: "Usuário Teste",
+                                    username: email.split('@')[0],
+                                    role: "user",
+                                    created: serverTimestamp(),
+                                    lastLogin: null
+                                };
+                                
+                                logDebug("Criando documento no Firestore...");
+                                await setDoc(doc(db, "users", userCredential.user.uid), userDoc);
+                                logDebug("Documento criado com sucesso!");
+                                
+                                return {
+                                    success: true,
+                                    message: "Usuário de teste criado com sucesso!"
+                                };
+                            } catch (error) {
+                                logDebug("Erro no teste de registro: " + error.code + " " + error.message);
+                                return {
+                                    success: false,
+                                    message: error.message,
+                                    code: error.code
+                                };
+                            }
+                        }
+                        
+                        // Implementar função de teste de login
+                        async function testUserLogin(email, password) {
+                            logDebug("========== TESTE DE LOGIN ==========");
+                            logDebug("Tentando fazer login com: " + email);
+                            
+                            try {
+                                logDebug("Chamando signInWithEmailAndPassword...");
+                                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                                logDebug("Login bem-sucedido: " + userCredential.user.uid);
+                                
+                                return {
+                                    success: true,
+                                    message: "Login de teste realizado com sucesso!"
+                                };
+                            } catch (error) {
+                                logDebug("Erro no teste de login: " + error.code + " " + error.message);
+                                return {
+                                    success: false,
+                                    message: error.message,
+                                    code: error.code
+                                };
+                            }
+                        }
+                        
+                        // Configurar os formulários
+                        // Formulário de registro
+                        document.getElementById('registerForm').addEventListener('submit', async function(event) {
+                            event.preventDefault();
+                            
+                            const registerResult = document.getElementById('registerResult');
+                            registerResult.textContent = 'Processando...';
+                            
+                            const email = document.getElementById('registerEmail').value;
+                            const password = document.getElementById('registerPassword').value;
+                            
+                            logDebug(`Iniciando teste de registro com email: ${email}`);
+                            
+                            try {
+                                const result = await testUserRegistration(email, password);
+                                
+                                if (result.success) {
+                                    registerResult.innerHTML = `<div class="success">${JSON.stringify(result, null, 2)}</div>`;
+                                    document.getElementById('loginEmail').value = email;
+                                    document.getElementById('loginPassword').value = password;
+                                } else {
+                                    registerResult.innerHTML = `<div class="error">${JSON.stringify(result, null, 2)}</div>`;
+                                }
+                            } catch (error) {
+                                registerResult.innerHTML = `<div class="error">Erro: ${error.message}</div>`;
+                                logDebug('Erro no teste de registro: ' + error);
+                            }
+                        });
+                        
+                        // Formulário de login
+                        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+                            event.preventDefault();
+                            
+                            const loginResult = document.getElementById('loginResult');
+                            loginResult.textContent = 'Processando...';
+                            
+                            const email = document.getElementById('loginEmail').value;
+                            const password = document.getElementById('loginPassword').value;
+                            
+                            logDebug(`Iniciando teste de login com email: ${email}`);
+                            
+                            try {
+                                const result = await testUserLogin(email, password);
+                                
+                                if (result.success) {
+                                    loginResult.innerHTML = `<div class="success">${JSON.stringify(result, null, 2)}</div>`;
+                                } else {
+                                    loginResult.innerHTML = `<div class="error">${JSON.stringify(result, null, 2)}</div>`;
+                                }
+                            } catch (error) {
+                                loginResult.innerHTML = `<div class="error">Erro: ${error.message}</div>`;
+                                logDebug('Erro no teste de login: ' + error);
+                            }
+                        });
+                        
+                    }).catch(error => {
+                        document.getElementById('initStatus').innerHTML = `
+                            <div class="error">
+                                <strong>Erro ao inicializar o Firestore!</strong><br>
+                                Erro: ${error.message}
+                            </div>
+                        `;
+                        logDebug("Erro ao carregar Firestore: " + error);
+                    });
+                    
+                }).catch(error => {
+                    document.getElementById('initStatus').innerHTML = `
+                        <div class="error">
+                            <strong>Erro ao inicializar o Firebase Auth!</strong><br>
+                            Erro: ${error.message}
+                        </div>
+                    `;
+                    logDebug("Erro ao carregar Firebase Auth: " + error);
+                });
+                
+            }).catch(error => {
+                document.getElementById('initStatus').innerHTML = `
                     <div class="error">
-                        <strong>Erro ao inicializar o Firebase!</strong><br>
-                        Firebase App: ${app ? 'OK' : 'Falha'}<br>
-                        Firebase Auth: ${auth ? 'OK' : 'Falha'}<br>
-                        Firebase DB: ${db ? 'OK' : 'Falha'}<br>
+                        <strong>Erro ao inicializar o Firebase App!</strong><br>
+                        Erro: ${error.message}
                     </div>
                 `;
-                logDebug("Erro ao inicializar o Firebase!");
-            }
-        });
-        
-        // Formulário de registro
-        document.getElementById('registerForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
+                logDebug("Erro ao carregar Firebase App: " + error);
+            });
             
-            const registerResult = document.getElementById('registerResult');
-            registerResult.textContent = 'Processando...';
-            
-            const email = document.getElementById('registerEmail').value;
-            const password = document.getElementById('registerPassword').value;
-            
-            logDebug(`Iniciando teste de registro com email: ${email}`);
-            
-            try {
-                const result = await testUserRegistration(email, password);
-                
-                if (result.success) {
-                    registerResult.innerHTML = `<div class="success">${JSON.stringify(result, null, 2)}</div>`;
-                    document.getElementById('loginEmail').value = email;
-                    document.getElementById('loginPassword').value = password;
-                } else {
-                    registerResult.innerHTML = `<div class="error">${JSON.stringify(result, null, 2)}</div>`;
-                }
-            } catch (error) {
-                registerResult.innerHTML = `<div class="error">Erro: ${error.message}</div>`;
-                console.error('Erro no teste de registro:', error);
-            }
-        });
-        
-        // Formulário de login
-        document.getElementById('loginForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            
-            const loginResult = document.getElementById('loginResult');
-            loginResult.textContent = 'Processando...';
-            
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            logDebug(`Iniciando teste de login com email: ${email}`);
-            
-            try {
-                const result = await testUserLogin(email, password);
-                
-                if (result.success) {
-                    loginResult.innerHTML = `<div class="success">${JSON.stringify(result, null, 2)}</div>`;
-                } else {
-                    loginResult.innerHTML = `<div class="error">${JSON.stringify(result, null, 2)}</div>`;
-                }
-            } catch (error) {
-                loginResult.innerHTML = `<div class="error">Erro: ${error.message}</div>`;
-                console.error('Erro no teste de login:', error);
-            }
-        });
+        } catch (error) {
+            document.getElementById('debugConsole').textContent += `ERRO CRÍTICO: ${error.message}\n`;
+            document.getElementById('initStatus').innerHTML = `
+                <div class="error">
+                    <strong>Erro crítico ao inicializar a página!</strong><br>
+                    Erro: ${error.message}
+                </div>
+            `;
+            console.error("Erro crítico:", error);
+        }
     </script>
 </body>
 </html> 
