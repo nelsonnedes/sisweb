@@ -296,6 +296,7 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 1000;
+            overflow-y: auto;
         }
         
         .modal-content {
@@ -307,6 +308,8 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-height: 80vh;
+            overflow-y: auto;
         }
         
         .modal-header {
@@ -781,7 +784,12 @@
         // Mostrar modal de adição
         function showAddModal() {
             document.getElementById('userForm').reset();
-            document.getElementById('userModal').style.display = 'block';
+            const modal = document.getElementById('userModal');
+            modal.style.display = 'block';
+            // Garantir que a rolagem comece do topo
+            modal.scrollTop = 0;
+            // Bloquear rolagem do body para evitar dois scrollbars
+            document.body.style.overflow = 'hidden';
         }
         
         // Editar usuário
@@ -789,14 +797,24 @@
             document.getElementById('userForm').reset();
             // Implementar edição
             console.log('Editando usuário:', id);
-            document.getElementById('userModal').style.display = 'block';
+            const modal = document.getElementById('userModal');
+            modal.style.display = 'block';
+            // Garantir que a rolagem comece do topo
+            modal.scrollTop = 0;
+            // Bloquear rolagem do body para evitar dois scrollbars
+            document.body.style.overflow = 'hidden';
         }
         
         // Editar permissões
         function editPermissions(id) {
             // Implementar edição de permissões
             console.log('Editando permissões do usuário:', id);
-            document.getElementById('permissionsModal').style.display = 'block';
+            const modal = document.getElementById('permissionsModal');
+            modal.style.display = 'block';
+            // Garantir que a rolagem comece do topo
+            modal.scrollTop = 0;
+            // Bloquear rolagem do body para evitar dois scrollbars
+            document.body.style.overflow = 'hidden';
         }
         
         // Deletar usuário
@@ -811,6 +829,8 @@
         // Fechar modal
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
+            // Restaurar rolagem do body
+            document.body.style.overflow = 'auto';
         }
         
         // Filtrar usuários
