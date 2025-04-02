@@ -775,83 +775,627 @@
     <script src="../js/storage.js"></script>
     <script src="../js/utils.js"></script>
     <script src="../components/menu.js"></script>
-    <script>
-        // Atualizar usuários
-        function refreshUsers() {
-            showAlert('Usuários atualizados com sucesso!', 'success');
-        }
+    <script type="module">
+        // Importar Firebase
+        import { auth, db } from '../js/firebase-config.js';
+        import { 
+            collection, 
+            getDocs, 
+            doc, 
+            getDoc, 
+            addDoc, 
+            updateDoc, 
+            deleteDoc, 
+            query, 
+            where, 
+            serverTimestamp,
+            onSnapshot,
+            orderBy,
+            setDoc
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { 
+            createUserWithEmailAndPassword, 
+            updateProfile, 
+            deleteUser 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         
-        // Mostrar modal de adição
-        function showAddModal() {
-            document.getElementById('userForm').reset();
-            const modal = document.getElementById('userModal');
-            modal.style.display = 'block';
-            // Garantir que a rolagem comece do topo
-            modal.scrollTop = 0;
-            // Bloquear rolagem do body para evitar dois scrollbars
-            document.body.style.overflow = 'hidden';
-        }
+        // Variáveis globais
+        let currentUserId = null;
+        let usersData = [];
+        let userListener = null;
         
-        // Editar usuário
-        function editUser(id) {
-            document.getElementById('userForm').reset();
-            // Implementar edição
-            console.log('Editando usuário:', id);
-            const modal = document.getElementById('userModal');
-            modal.style.display = 'block';
-            // Garantir que a rolagem comece do topo
-            modal.scrollTop = 0;
-            // Bloquear rolagem do body para evitar dois scrollbars
-            document.body.style.overflow = 'hidden';
-        }
+        // Elementos do DOM
+        const usersGrid = document.querySelector('.users-grid');
+        const searchInput = document.querySelector('.search-input');
+        const roleFilter = document.querySelector('.filter-select:nth-of-type(1)');
+        const statusFilter = document.querySelector('.filter-select:nth-of-type(2)');
+        const userForm = document.getElementById('userForm');
+        const permissionsForm = document.getElementById('permissionsForm');
         
-        // Editar permissões
-        function editPermissions(id) {
-            // Implementar edição de permissões
-            console.log('Editando permissões do usuário:', id);
-            const modal = document.getElementById('permissionsModal');
-            modal.style.display = 'block';
-            // Garantir que a rolagem comece do topo
-            modal.scrollTop = 0;
-            // Bloquear rolagem do body para evitar dois scrollbars
-            document.body.style.overflow = 'hidden';
-        }
-        
-        // Deletar usuário
-        function deleteUser(id) {
-            if (confirm('Tem certeza que deseja excluir este usuário?')) {
-                showAlert('Usuário excluído com sucesso!', 'success');
-                // Implementar exclusão
-                console.log('Deletando usuário:', id);
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Verificar se o usuário atual tem permissão para gerenciar usuários
+            const currentUser = JSON.parse(sessionStorage.getItem('userData') || '{}');
+            if (currentUser.role !== 'admin' && currentUser.role !== 'manager') {
+                showAlert('Você não tem permissão para acessar esta página.', 'error');
+                window.location.href = 'dashboard.html';
+                return;
             }
+            
+            // Carregar usuários
+            setupUserListener();
+            
+            // Adicionar listeners para filtros
+            searchInput.addEventListener('input', filterUsers);
+            roleFilter.addEventListener('change', filterUsers);
+            statusFilter.addEventListener('change', filterUsers);
+            
+            // Configurar formulários
+            setupForms();
+        });
+        
+        // Configurar observador de usuários
+        function setupUserListener() {
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, orderBy('name'));
+            
+            // Parar listener anterior se existir
+            if (userListener) {
+                userListener();
+            }
+            
+            // Criar novo listener
+            userListener = onSnapshot(q, (snapshot) => {
+                usersData = [];
+                snapshot.forEach((doc) => {
+                    usersData.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                renderUsers(usersData);
+            }, (error) => {
+                console.error("Erro ao obter usuários:", error);
+                showAlert('Erro ao carregar usuários. Tente novamente.', 'error');
+            });
         }
         
-        // Fechar modal
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-            // Restaurar rolagem do body
-            document.body.style.overflow = 'auto';
+        // Renderizar usuários na tela
+        function renderUsers(users) {
+            usersGrid.innerHTML = '';
+            
+            if (users.length === 0) {
+                usersGrid.innerHTML = '<div class="user-card"><div class="user-header">Nenhum usuário encontrado</div></div>';
+                return;
+            }
+            
+            users.forEach(user => {
+                // Determinar ícone com base no papel
+                let roleIcon = 'user';
+                if (user.role === 'admin') roleIcon = 'user-shield';
+                else if (user.role === 'manager') roleIcon = 'user-tie';
+                else if (user.role === 'seller') roleIcon = 'user-tag';
+                else if (user.role === 'stock') roleIcon = 'boxes';
+                
+                // Determinar label e classe de status
+                let statusLabel = 'Ativo';
+                let statusClass = 'status-active';
+                let statusIcon = 'check-circle';
+                
+                if (user.status === 'inactive') {
+                    statusLabel = 'Inativo';
+                    statusClass = 'status-inactive';
+                    statusIcon = 'times-circle';
+                } else if (user.status === 'pending') {
+                    statusLabel = 'Pendente';
+                    statusClass = 'status-pending';
+                    statusIcon = 'clock';
+                }
+                
+                // Formatar última data de acesso
+                let lastLogin = 'Nunca acessou';
+                if (user.lastLogin) {
+                    const lastLoginDate = user.lastLogin.toDate();
+                    const now = new Date();
+                    const diffMs = now - lastLoginDate;
+                    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                    
+                    if (diffDays > 0) {
+                        lastLogin = `${diffDays}d atrás`;
+                    } else if (diffHours > 0) {
+                        lastLogin = `${diffHours}h atrás`;
+                    } else if (diffMinutes > 0) {
+                        lastLogin = `${diffMinutes}m atrás`;
+                    } else {
+                        lastLogin = 'Agora mesmo';
+                    }
+                }
+                
+                // Traduzir papel do usuário
+                let roleLabel = 'Usuário';
+                if (user.role === 'admin') roleLabel = 'Administrador';
+                else if (user.role === 'manager') roleLabel = 'Gerente';
+                else if (user.role === 'seller') roleLabel = 'Vendedor';
+                else if (user.role === 'stock') roleLabel = 'Estoquista';
+                
+                // Criar card do usuário
+                const userCard = document.createElement('div');
+                userCard.className = 'user-card';
+                userCard.innerHTML = `
+                    <div class="user-header">
+                        <div class="user-avatar">
+                            <i class="fas fa-${roleIcon}"></i>
+                        </div>
+                        <div class="user-info">
+                            <div class="user-name">${user.name}</div>
+                            <div class="user-role">
+                                <i class="fas fa-user-tag"></i>
+                                ${roleLabel}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="user-details">
+                        <div class="detail-item">
+                            <i class="fas fa-envelope"></i>
+                            ${user.email}
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-phone"></i>
+                            ${user.phone || 'Não informado'}
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-calendar"></i>
+                            Último acesso: ${lastLogin}
+                        </div>
+                    </div>
+                    <div class="user-status ${statusClass}">
+                        <i class="fas fa-${statusIcon}"></i>
+                        ${statusLabel}
+                    </div>
+                    <div class="user-actions">
+                        <button class="action-btn edit" onclick="window.editUser('${user.id}')">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="action-btn permissions" onclick="window.editPermissions('${user.id}')">
+                            <i class="fas fa-key"></i> Permissões
+                        </button>
+                        <button class="action-btn delete" onclick="window.deleteUser('${user.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                usersGrid.appendChild(userCard);
+            });
+        }
+        
+        // Configurar formulários
+        function setupForms() {
+            // Formulário de usuário
+            userForm.innerHTML = `
+                <div class="form-group">
+                    <label class="form-label">Nome Completo</label>
+                    <input type="text" class="form-input" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">E-mail</label>
+                    <input type="email" class="form-input" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Telefone</label>
+                    <input type="tel" class="form-input" name="phone">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Papel</label>
+                    <select class="form-select" name="role" required>
+                        <option value="">Selecione...</option>
+                        <option value="admin">Administrador</option>
+                        <option value="manager">Gerente</option>
+                        <option value="seller">Vendedor</option>
+                        <option value="stock">Estoquista</option>
+                        <option value="user">Usuário Básico</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" name="status" required>
+                        <option value="">Selecione...</option>
+                        <option value="active">Ativo</option>
+                        <option value="inactive">Inativo</option>
+                        <option value="pending">Pendente</option>
+                    </select>
+                </div>
+                
+                <div class="form-group password-group">
+                    <label class="form-label">Senha</label>
+                    <input type="password" class="form-input" name="password" minlength="6" required>
+                </div>
+                
+                <div class="form-group password-group">
+                    <label class="form-label">Confirmar Senha</label>
+                    <input type="password" class="form-input" name="confirmPassword" minlength="6" required>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="window.closeModal('userModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            `;
+            
+            // Formulário de permissões
+            permissionsForm.innerHTML = `
+                <div class="form-group">
+                    <label class="form-label">Papel</label>
+                    <select class="form-select" name="role" required>
+                        <option value="">Selecione...</option>
+                        <option value="admin">Administrador</option>
+                        <option value="manager">Gerente</option>
+                        <option value="seller">Vendedor</option>
+                        <option value="stock">Estoquista</option>
+                        <option value="user">Usuário Básico</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Permissões</label>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="perm_system" name="permissions" value="system">
+                        <label for="perm_system">Acesso ao Sistema</label>
+                    </div>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="perm_users" name="permissions" value="users">
+                        <label for="perm_users">Gerenciar Usuários</label>
+                    </div>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="perm_sales" name="permissions" value="sales">
+                        <label for="perm_sales">Gerenciar Vendas</label>
+                    </div>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="perm_stock" name="permissions" value="stock">
+                        <label for="perm_stock">Gerenciar Estoque</label>
+                    </div>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="perm_reports" name="permissions" value="reports">
+                        <label for="perm_reports">Visualizar Relatórios</label>
+                    </div>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="perm_settings" name="permissions" value="settings">
+                        <label for="perm_settings">Configurações</label>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="window.closeModal('permissionsModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            `;
+            
+            // Adicionar listeners
+            userForm.addEventListener('submit', handleUserSubmit);
+            permissionsForm.addEventListener('submit', handlePermissionsSubmit);
         }
         
         // Filtrar usuários
         function filterUsers() {
-            // Implementar filtro
-            console.log('Filtrando usuários...');
+            const searchTerm = searchInput.value.toLowerCase();
+            const roleValue = roleFilter.value;
+            const statusValue = statusFilter.value;
+            
+            const filteredUsers = usersData.filter(user => {
+                // Filtrar por termo de busca
+                const searchMatch = 
+                    user.name?.toLowerCase().includes(searchTerm) || 
+                    user.email?.toLowerCase().includes(searchTerm) ||
+                    user.phone?.toLowerCase().includes(searchTerm);
+                
+                // Filtrar por papel
+                const roleMatch = roleValue ? user.role === roleValue : true;
+                
+                // Filtrar por status
+                const statusMatch = statusValue ? user.status === statusValue : true;
+                
+                return searchMatch && roleMatch && statusMatch;
+            });
+            
+            renderUsers(filteredUsers);
         }
         
-        // Enviar formulário de usuário
-        document.getElementById('userForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            closeModal('userModal');
-            showAlert('Usuário salvo com sucesso!', 'success');
-        });
+        // Mostrar modal de adição
+        window.showAddModal = function() {
+            // Resetar formulário e ID atual
+            userForm.reset();
+            currentUserId = null;
+            
+            // Mostrar campos de senha
+            const passwordGroups = userForm.querySelectorAll('.password-group');
+            passwordGroups.forEach(group => {
+                group.style.display = 'block';
+            });
+            
+            // Habilitar campo de e-mail
+            userForm.querySelector('[name="email"]').readOnly = false;
+            
+            // Atualizar título do modal
+            document.querySelector('#userModal .modal-title').textContent = 'Novo Usuário';
+            
+            // Mostrar modal
+            const modal = document.getElementById('userModal');
+            modal.style.display = 'block';
+            modal.scrollTop = 0;
+            document.body.style.overflow = 'hidden';
+        };
         
-        // Enviar formulário de permissões
-        document.getElementById('permissionsForm').addEventListener('submit', function(e) {
+        // Editar usuário
+        window.editUser = async function(id) {
+            try {
+                currentUserId = id;
+                
+                // Obter dados do usuário
+                const userDocRef = doc(db, 'users', id);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (!userDoc.exists()) {
+                    throw new Error('Usuário não encontrado');
+                }
+                
+                const userData = userDoc.data();
+                
+                // Preencher formulário
+                const form = document.getElementById('userForm');
+                form.querySelector('[name="name"]').value = userData.name || '';
+                form.querySelector('[name="email"]').value = userData.email || '';
+                form.querySelector('[name="phone"]').value = userData.phone || '';
+                form.querySelector('[name="role"]').value = userData.role || '';
+                form.querySelector('[name="status"]').value = userData.status || 'active';
+                
+                // Esconder campos de senha na edição
+                const passwordGroups = form.querySelectorAll('.password-group');
+                passwordGroups.forEach(group => {
+                    group.style.display = 'none';
+                });
+                
+                // Desabilitar campo de e-mail (não pode ser alterado)
+                form.querySelector('[name="email"]').readOnly = true;
+                
+                // Atualizar título do modal
+                document.querySelector('#userModal .modal-title').textContent = 'Editar Usuário';
+                
+                // Mostrar modal
+                const modal = document.getElementById('userModal');
+                modal.style.display = 'block';
+                modal.scrollTop = 0;
+                document.body.style.overflow = 'hidden';
+            } catch (error) {
+                console.error('Erro ao editar usuário:', error);
+                showAlert('Erro ao carregar dados do usuário', 'error');
+            }
+        };
+        
+        // Editar permissões
+        window.editPermissions = async function(id) {
+            try {
+                currentUserId = id;
+                
+                // Obter dados do usuário
+                const userDocRef = doc(db, 'users', id);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (!userDoc.exists()) {
+                    throw new Error('Usuário não encontrado');
+                }
+                
+                const userData = userDoc.data();
+                
+                // Preencher formulário
+                const form = document.getElementById('permissionsForm');
+                form.querySelector('[name="role"]').value = userData.role || '';
+                
+                // Marcar checkboxes de permissões
+                const permissions = userData.permissions || [];
+                form.querySelectorAll('[name="permissions"]').forEach(checkbox => {
+                    checkbox.checked = permissions.includes(checkbox.value);
+                });
+                
+                // Atualizar título do modal
+                document.querySelector('#permissionsModal .modal-title').textContent = 
+                    `Permissões - ${userData.name}`;
+                
+                // Mostrar modal
+                const modal = document.getElementById('permissionsModal');
+                modal.style.display = 'block';
+                modal.scrollTop = 0;
+                document.body.style.overflow = 'hidden';
+            } catch (error) {
+                console.error('Erro ao editar permissões:', error);
+                showAlert('Erro ao carregar permissões do usuário', 'error');
+            }
+        };
+        
+        // Deletar usuário
+        window.deleteUser = async function(id) {
+            if (confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) {
+                try {
+                    // Obter referência do documento
+                    const userDocRef = doc(db, 'users', id);
+                    
+                    // Excluir do Firestore
+                    await deleteDoc(userDocRef);
+                    
+                    showAlert('Usuário excluído com sucesso!', 'success');
+                } catch (error) {
+                    console.error('Erro ao excluir usuário:', error);
+                    showAlert('Erro ao excluir usuário', 'error');
+                }
+            }
+        };
+        
+        // Atualizar usuários
+        window.refreshUsers = function() {
+            // Recarregar usuários
+            setupUserListener();
+            showAlert('Usuários atualizados com sucesso!', 'success');
+        };
+        
+        // Fechar modal
+        window.closeModal = function(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            document.body.style.overflow = 'auto';
+        };
+        
+        // Manipular envio do formulário de usuário
+        async function handleUserSubmit(e) {
             e.preventDefault();
-            closeModal('permissionsModal');
-            showAlert('Permissões salvas com sucesso!', 'success');
-        });
+            
+            try {
+                // Obter dados do formulário
+                const formData = new FormData(userForm);
+                const userData = {
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    phone: formData.get('phone'),
+                    role: formData.get('role'),
+                    status: formData.get('status')
+                };
+                
+                // Adicionar timestamps
+                if (!currentUserId) {
+                    userData.created = serverTimestamp();
+                }
+                userData.updated = serverTimestamp();
+                
+                if (currentUserId) {
+                    // Atualização
+                    const userDocRef = doc(db, 'users', currentUserId);
+                    await updateDoc(userDocRef, userData);
+                    
+                    showAlert('Usuário atualizado com sucesso!', 'success');
+                } else {
+                    // Criação
+                    const password = formData.get('password');
+                    const confirmPassword = formData.get('confirmPassword');
+                    
+                    // Validar senhas
+                    if (password !== confirmPassword) {
+                        throw new Error('As senhas não coincidem');
+                    }
+                    
+                    // Criar usuário no Firebase Auth
+                    const userCredential = await createUserWithEmailAndPassword(
+                        auth, 
+                        userData.email, 
+                        password
+                    );
+                    
+                    // Configurar displayName
+                    await updateProfile(userCredential.user, {
+                        displayName: userData.name
+                    });
+                    
+                    // Adicionar ao Firestore
+                    await setDoc(doc(db, 'users', userCredential.user.uid), userData);
+                    
+                    showAlert('Usuário criado com sucesso!', 'success');
+                }
+                
+                // Fechar modal
+                window.closeModal('userModal');
+            } catch (error) {
+                console.error('Erro ao salvar usuário:', error);
+                
+                let errorMsg = 'Erro ao salvar usuário. Tente novamente.';
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMsg = 'Este e-mail já está sendo usado por outra conta.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMsg = 'E-mail inválido.';
+                } else if (error.code === 'auth/weak-password') {
+                    errorMsg = 'Senha muito fraca.';
+                } else if (error.message) {
+                    errorMsg = error.message;
+                }
+                
+                showAlert(errorMsg, 'error');
+            }
+        }
+        
+        // Manipular envio do formulário de permissões
+        async function handlePermissionsSubmit(e) {
+            e.preventDefault();
+            
+            try {
+                // Obter dados do formulário
+                const formData = new FormData(permissionsForm);
+                const role = formData.get('role');
+                
+                // Obter permissões selecionadas
+                const permissionsCheckboxes = permissionsForm.querySelectorAll('[name="permissions"]:checked');
+                const permissions = Array.from(permissionsCheckboxes).map(checkbox => checkbox.value);
+                
+                // Atualizar no Firestore
+                const userDocRef = doc(db, 'users', currentUserId);
+                await updateDoc(userDocRef, {
+                    role,
+                    permissions,
+                    updated: serverTimestamp()
+                });
+                
+                showAlert('Permissões salvas com sucesso!', 'success');
+                window.closeModal('permissionsModal');
+            } catch (error) {
+                console.error('Erro ao salvar permissões:', error);
+                showAlert('Erro ao salvar permissões. Tente novamente.', 'error');
+            }
+        }
+        
+        // Função para mostrar alertas
+        function showAlert(message, type) {
+            const alertElement = document.createElement('div');
+            alertElement.className = `alert alert-${type}`;
+            alertElement.textContent = message;
+            alertElement.style.position = 'fixed';
+            alertElement.style.top = '20px';
+            alertElement.style.right = '20px';
+            alertElement.style.padding = '15px 20px';
+            alertElement.style.borderRadius = '5px';
+            alertElement.style.zIndex = '9999';
+            alertElement.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+            
+            if (type === 'success') {
+                alertElement.style.backgroundColor = '#d4edda';
+                alertElement.style.color = '#155724';
+                alertElement.style.borderColor = '#c3e6cb';
+            } else if (type === 'error') {
+                alertElement.style.backgroundColor = '#f8d7da';
+                alertElement.style.color = '#721c24';
+                alertElement.style.borderColor = '#f5c6cb';
+            } else if (type === 'warning') {
+                alertElement.style.backgroundColor = '#fff3cd';
+                alertElement.style.color = '#856404';
+                alertElement.style.borderColor = '#ffeeba';
+            } else {
+                alertElement.style.backgroundColor = '#d1ecf1';
+                alertElement.style.color = '#0c5460';
+                alertElement.style.borderColor = '#bee5eb';
+            }
+            
+            document.body.appendChild(alertElement);
+            
+            // Remover após 3 segundos
+            setTimeout(() => {
+                alertElement.style.opacity = '0';
+                alertElement.style.transition = 'opacity 0.5s';
+                
+                setTimeout(() => {
+                    document.body.removeChild(alertElement);
+                }, 500);
+            }, 3000);
+        }
     </script>
 </body>
 </html> 
