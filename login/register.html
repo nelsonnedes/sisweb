@@ -590,74 +590,84 @@
             hideError();
             
             try {
-                console.log("Chamando função register do auth.js...");
-                // Criar objeto de dados do usuário
-                const userData = {
-                    name,
-                    email,
-                    username,
-                    role,
-                    password
+                // MÉTODO DIRETO: Criação de usuário diretamente usando as APIs do Firebase
+                console.log("Usando método direto de criação de usuário com Firebase...");
+                
+                // Importar funções necessárias do Firebase Auth e Firestore
+                console.log("Importando funções do Firebase...");
+                const { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+                const { doc, setDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                
+                // Criar usuário no Firebase Authentication
+                console.log("Criando usuário no Firebase Authentication...");
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                console.log("Usuário criado com ID:", user.uid);
+                
+                // Atualizar displayName do usuário
+                console.log("Atualizando displayName do usuário...");
+                await updateProfile(user, {
+                    displayName: name
+                });
+                
+                // Enviar e-mail de verificação
+                console.log("Enviando e-mail de verificação...");
+                await sendEmailVerification(user);
+                
+                // Criar documento do usuário no Firestore
+                console.log("Criando documento do usuário no Firestore...");
+                const userDoc = {
+                    username: username,
+                    name: name || username,
+                    email: email,
+                    role: role || 'user',
+                    created: serverTimestamp(),
+                    lastLogin: serverTimestamp(),
+                    emailVerified: false
                 };
                 
-                console.log("Dados do usuário para registro:", JSON.stringify(userData, (key, value) => 
-                    key === 'password' ? '***' : value, 2));
-                    
-                // Testar a função direta para depuração
-                try {
-                    console.log("Tentando usar a importação direta...");
-                    const { testUserRegistration } = await import('../js/firebase-test.js');
-                    const testResult = await testUserRegistration(email, password);
-                    console.log("Resultado do teste direto:", JSON.stringify(testResult));
-                    
-                    if (testResult.success) {
-                        console.log("Teste direto bem-sucedido!");
-                        showAlert("Usuário criado com sucesso!", 'success');
-                        
-                        // Redirecionar para login após 3 segundos
-                        setTimeout(() => {
-                            const isGitHubPages = window.location.hostname.includes('github.io');
-                            const redirectUrl = isGitHubPages ? '/sisweb/login/index.html' : './index.html';
-                            console.log("Redirecionando para:", redirectUrl);
-                            window.location.href = redirectUrl;
-                        }, 3000);
-                    } else {
-                        console.error("Falha no teste direto:", testResult.message);
-                        showError(testResult.message || "Falha ao criar usuário.");
-                    }
-                    
-                    hideLoading();
-                    return;
-                } catch (testError) {
-                    console.error("Erro no teste direto:", testError);
-                    // Continuar com o fluxo normal se o teste falhar
-                }
+                await setDoc(doc(db, "users", user.uid), userDoc);
+                console.log("Documento do usuário criado com sucesso!");
                 
-                // Usar a função register do auth.js como plano B
-                const result = await register(userData);
+                // Mostrar sucesso
+                showAlert('Cadastro realizado com sucesso! Verifique seu e-mail para ativar sua conta.', 'success');
                 
-                console.log("Resultado do registro:", JSON.stringify(result, null, 2));
+                // Redirecionar para login após 3 segundos
+                setTimeout(() => {
+                    const isGitHubPages = window.location.hostname.includes('github.io');
+                    const redirectUrl = isGitHubPages ? '/sisweb/login/index.html' : './index.html';
+                    console.log("Redirecionando para:", redirectUrl);
+                    window.location.href = redirectUrl;
+                }, 3000);
                 
-                if (result.success) {
-                    console.log("Registro bem-sucedido, mostrando alerta de sucesso");
-                    showAlert(result.message, 'success');
-                    
-                    console.log("Configurando redirecionamento após 3 segundos");
-                    // Redirecionar para login após 3 segundos
-                    setTimeout(() => {
-                        const isGitHubPages = window.location.hostname.includes('github.io');
-                        const redirectUrl = isGitHubPages ? '/sisweb/login/index.html' : './index.html';
-                        console.log("Redirecionando para:", redirectUrl);
-                        window.location.href = redirectUrl;
-                    }, 3000);
-                } else {
-                    console.error("Falha no registro:", result.message);
-                    showError(result.message);
-                    hideLoading();
-                }
             } catch (error) {
                 console.error("Exceção ao registrar:", error);
-                showError('Ocorreu um erro durante o registro: ' + (error.message || "Tente novamente mais tarde."));
+                let errorMessage = 'Ocorreu um erro durante o registro.';
+                
+                // Tratar erros específicos do Firebase
+                if (error.code) {
+                    switch (error.code) {
+                        case 'auth/email-already-in-use':
+                            errorMessage = 'Este e-mail já está sendo usado por outra conta.';
+                            break;
+                        case 'auth/invalid-email':
+                            errorMessage = 'E-mail inválido.';
+                            break;
+                        case 'auth/weak-password':
+                            errorMessage = 'Senha muito fraca. Use pelo menos 6 caracteres.';
+                            break;
+                        case 'auth/operation-not-allowed':
+                            errorMessage = 'Operação não permitida.';
+                            break;
+                        case 'auth/network-request-failed':
+                            errorMessage = 'Falha na conexão com a internet.';
+                            break;
+                        default:
+                            errorMessage = error.message || 'Tente novamente mais tarde.';
+                    }
+                }
+                
+                showError(errorMessage);
                 hideLoading();
             }
         }
