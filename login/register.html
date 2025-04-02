@@ -295,7 +295,7 @@
 <body>
     <div class="register-container">
         <div class="register-header">
-            <img src="../assets/logo.png" alt="SisWeb Logo">
+            <img src="../assets/logo.svg" id="logoImage" alt="SisWeb Logo">
             <h1>Criar Conta</h1>
             <p>Preencha os dados para se registrar no SisWeb</p>
         </div>
@@ -353,11 +353,7 @@
                     <div class="password-requirements">
                         A senha deve conter:
                         <ul>
-                            <li id="length">Pelo menos 8 caracteres</li>
-                            <li id="uppercase">Uma letra maiúscula</li>
-                            <li id="lowercase">Uma letra minúscula</li>
-                            <li id="number">Um número</li>
-                            <li id="special">Um caractere especial</li>
+                            <li id="length">Pelo menos 6 números</li>
                         </ul>
                     </div>
                 </div>
@@ -414,6 +410,15 @@
             if (currentUser) {
                 window.location.href = '../index.html';
             }
+            
+            // Configurar o logo com base no ambiente
+            const isGitHubPages = window.location.hostname.includes('github.io');
+            const logoImage = document.getElementById('logoImage');
+            if (isGitHubPages) {
+                logoImage.src = '/sisweb/assets/logo.svg';
+            } else {
+                logoImage.src = '../assets/logo.svg';
+            }
         });
         
         // Função para exibir mensagem de erro
@@ -443,22 +448,23 @@
         const password = document.getElementById('password');
         const confirmPassword = document.getElementById('confirmPassword');
         const requirements = {
-            length: /.{8,}/,
-            uppercase: /[A-Z]/,
-            lowercase: /[a-z]/,
-            number: /[0-9]/,
-            special: /[!@#$%^&*(),.?":{}|<>]/
+            length: /^[0-9]{6,}$/
         };
         
         function validatePassword() {
             const value = password.value;
-            for (const [requirement, regex] of Object.entries(requirements)) {
-                const element = document.getElementById(requirement);
-                if (regex.test(value)) {
-                    element.style.color = '#27ae60';
-                } else {
-                    element.style.color = '#7f8c8d';
-                }
+            const numberOnlyPattern = /^[0-9]+$/;
+            
+            // Verificar se contém apenas números
+            if (!numberOnlyPattern.test(value)) {
+                password.setCustomValidity('A senha deve conter apenas números');
+                document.getElementById('length').style.color = '#7f8c8d';
+            } else if (value.length < 6) {
+                password.setCustomValidity('A senha deve ter pelo menos 6 números');
+                document.getElementById('length').style.color = '#7f8c8d';
+            } else {
+                password.setCustomValidity('');
+                document.getElementById('length').style.color = '#27ae60';
             }
             
             if (confirmPassword.value && value !== confirmPassword.value) {
@@ -500,17 +506,10 @@
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
             
-            // Validação de senha
-            let isValid = true;
-            for (const [requirement, regex] of Object.entries(requirements)) {
-                if (!regex.test(password)) {
-                    isValid = false;
-                    break;
-                }
-            }
-            
-            if (!isValid) {
-                showError('A senha não atende aos requisitos mínimos de segurança.');
+            // Validação de senha (apenas números, min 6 dígitos)
+            const numberOnlyPattern = /^[0-9]{6,}$/;
+            if (!numberOnlyPattern.test(password)) {
+                showError('A senha deve conter apenas números e ter no mínimo 6 dígitos.');
                 return false;
             }
             
