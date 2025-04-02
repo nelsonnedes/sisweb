@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico - SisWeb</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #444;
+        }
+        .test-container {
+            margin-bottom: 20px;
+        }
+        .test-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .test-result {
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0069d9;
+        }
+        input {
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 300px;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            border: 1px solid #ddd;
+        }
+        .logs {
+            height: 200px;
+            overflow-y: auto;
+            background-color: #282c34;
+            color: #abb2bf;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Diagnóstico do SisWeb</h1>
+    
+    <div class="section">
+        <h2>Status de Conexão</h2>
+        <div class="test-container">
+            <div class="test-title">Firebase App:</div>
+            <div id="firebase-status" class="test-result pending">Verificando...</div>
+        </div>
+        <div class="test-container">
+            <div class="test-title">Firebase Auth:</div>
+            <div id="auth-status" class="test-result pending">Verificando...</div>
+        </div>
+        <div class="test-container">
+            <div class="test-title">Firestore:</div>
+            <div id="firestore-status" class="test-result pending">Verificando...</div>
+        </div>
+        <button id="check-connection">Verificar Conexão</button>
+    </div>
+    
+    <div class="section">
+        <h2>Teste de Login</h2>
+        <div class="input-group">
+            <label for="login-email">E-mail:</label><br>
+            <input type="email" id="login-email" placeholder="seu@email.com">
+        </div>
+        <div class="input-group">
+            <label for="login-password">Senha:</label><br>
+            <input type="password" id="login-password" placeholder="Sua senha">
+        </div>
+        <button id="test-login">Testar Login</button>
+        <div class="test-container">
+            <div class="test-title">Resultado:</div>
+            <div id="login-result" class="test-result pending">Aguardando teste...</div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Verificação do Banco de Dados</h2>
+        <div class="test-container">
+            <div class="test-title">Inicialização do Banco:</div>
+            <div id="db-init-status" class="test-result pending">Aguardando teste...</div>
+        </div>
+        <button id="init-database">Inicializar Banco de Dados</button>
+        
+        <div class="test-container" style="margin-top: 20px;">
+            <div class="test-title">Coleções existentes:</div>
+            <div id="collections-list" class="test-result pending">Aguardando verificação...</div>
+        </div>
+        <button id="check-collections">Verificar Coleções</button>
+    </div>
+    
+    <div class="section">
+        <h2>Logs de Execução</h2>
+        <div id="logs" class="logs"></div>
+    </div>
+    
+    <script type="module">
+        // Importar Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            signOut 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            getDocs,
+            doc,
+            getDoc,
+            setDoc,
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        
+        // Adicionar log personalizado
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            let color = '#abb2bf'; // default
+            if (type === 'error') color = '#e06c75';
+            else if (type === 'success') color = '#98c379';
+            else if (type === 'warning') color = '#e5c07b';
+            
+            logs.innerHTML += `<div style="color: ${color};">[${timestamp}] ${message}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+            
+            // Também exibir no console do navegador
+            if (type === 'error') console.error(message);
+            else if (type === 'warning') console.warn(message);
+            else console.log(message);
+        }
+        
+        // Sobrescrever console.log para capturar todos os logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = function() {
+            log(Array.from(arguments).join(' '));
+            originalLog.apply(console, arguments);
+        };
+        
+        console.error = function() {
+            log(Array.from(arguments).join(' '), 'error');
+            originalError.apply(console, arguments);
+        };
+        
+        console.warn = function() {
+            log(Array.from(arguments).join(' '), 'warning');
+            originalWarn.apply(console, arguments);
+        };
+        
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCJoql30uCoRhc3UHCnyl57M1vFCT2-N1o",
+            authDomain: "dbsisweb.firebaseapp.com",
+            projectId: "dbsisweb",
+            storageBucket: "dbsisweb.appspot.com",
+            messagingSenderId: "711476232625",
+            appId: "1:711476232625:web:a00e3508487856b3613d90",
+            measurementId: "G-M0M8LFVGDC"
+        };
+        
+        // Variáveis para os serviços do Firebase
+        let app;
+        let auth;
+        let db;
+        
+        // Inicializar Firebase
+        function initializeFirebase() {
+            try {
+                log("Inicializando Firebase...");
+                app = initializeApp(firebaseConfig);
+                updateStatus('firebase-status', 'success', 'Firebase inicializado com sucesso!');
+                log("Firebase App inicializado com sucesso", 'success');
+                
+                // Inicializar Auth
+                auth = getAuth(app);
+                updateStatus('auth-status', 'success', 'Firebase Auth inicializado com sucesso!');
+                log("Firebase Auth inicializado com sucesso", 'success');
+                
+                // Inicializar Firestore
+                db = getFirestore(app);
+                updateStatus('firestore-status', 'success', 'Firestore inicializado com sucesso!');
+                log("Firestore inicializado com sucesso", 'success');
+                
+                return true;
+            } catch (error) {
+                log("Erro ao inicializar Firebase: " + error.message, 'error');
+                updateStatus('firebase-status', 'error', 'Erro ao inicializar Firebase: ' + error.message);
+                return false;
+            }
+        }
+        
+        // Atualizar status na interface
+        function updateStatus(elementId, status, message) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            // Remover classes anteriores
+            element.classList.remove('pending', 'success', 'error');
+            
+            // Adicionar nova classe e mensagem
+            element.classList.add(status);
+            element.textContent = message;
+        }
+        
+        // Testar login
+        async function testLogin() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            
+            if (!email || !password) {
+                updateStatus('login-result', 'error', 'E-mail e senha são obrigatórios');
+                return;
+            }
+            
+            try {
+                log(`Tentando fazer login com: ${email}`);
+                updateStatus('login-result', 'pending', 'Processando login...');
+                
+                // Login com Firebase
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                log(`Login bem-sucedido para: ${user.email}`, 'success');
+                
+                // Verificar se o usuário existe no Firestore
+                try {
+                    const userDocRef = doc(db, "users", user.uid);
+                    const userDoc = await getDoc(userDocRef);
+                    
+                    if (userDoc.exists()) {
+                        log("Documento do usuário encontrado no Firestore", 'success');
+                        updateStatus('login-result', 'success', `Login bem-sucedido! Usuário: ${user.email}`);
+                    } else {
+                        log("Documento do usuário não encontrado no Firestore", 'warning');
+                        updateStatus('login-result', 'success', `Login bem-sucedido, mas dados de usuário não encontrados no Firestore.`);
+                    }
+                } catch (firestoreError) {
+                    log("Erro ao acessar documento do usuário: " + firestoreError.message, 'error');
+                    updateStatus('login-result', 'error', `Login bem-sucedido, mas erro ao acessar dados: ${firestoreError.message}`);
+                }
+                
+                // Deslogar para não manter a sessão nesta página
+                await signOut(auth);
+                
+            } catch (error) {
+                log("Erro no login: " + error.message, 'error');
+                updateStatus('login-result', 'error', `Erro no login: ${error.message}`);
+            }
+        }
+        
+        // Inicializar banco de dados
+        async function initializeDatabase() {
+            try {
+                log("Iniciando inicialização do banco de dados...");
+                updateStatus('db-init-status', 'pending', 'Inicializando banco de dados...');
+                
+                // Verificar se o banco está acessível
+                try {
+                    log("Verificando acesso ao Firestore...");
+                    const settingsRef = doc(db, "settings", "check");
+                    await getDoc(settingsRef);
+                    log("Acesso ao Firestore confirmado!", 'success');
+                } catch (accessError) {
+                    log("Erro ao acessar Firestore: " + accessError.message, 'error');
+                    updateStatus('db-init-status', 'error', `Erro ao acessar Firestore: ${accessError.message}`);
+                    return;
+                }
+                
+                // Criar coleções iniciais
+                const collections = [
+                    "users",         // Usuários do sistema
+                    "clients",       // Clientes
+                    "species",       // Espécies de madeira
+                    "romaneios",     // Romaneios
+                    "inventory",     // Estoque
+                    "orders",        // Pedidos
+                    "financial",     // Financeiro
+                    "logs",          // Logs do sistema
+                    "company",       // Dados da empresa
+                    "settings",      // Configurações
+                    "subscriptions"  // Assinaturas
+                ];
+                
+                for (const collName of collections) {
+                    log(`Verificando coleção: ${collName}...`);
+                    
+                    try {
+                        const querySnapshot = await getDocs(collection(db, collName));
+                        
+                        if (querySnapshot.empty) {
+                            log(`Coleção ${collName} vazia, criando documento inicial...`);
+                            
+                            await setDoc(doc(db, collName, "initial"), {
+                                created: serverTimestamp(),
+                                description: `Documento inicial para coleção ${collName}`
+                            });
+                            
+                            log(`Documento inicial criado para coleção ${collName}`, 'success');
+                        } else {
+                            log(`Coleção ${collName} já tem ${querySnapshot.size} documentos.`, 'success');
+                        }
+                    } catch (collError) {
+                        log(`Erro ao verificar coleção ${collName}: ${collError.message}`, 'error');
+                    }
+                }
+                
+                // Verificar se o usuário admin já existe
+                log("Verificando se o usuário admin já existe...");
+                try {
+                    const adminDoc = await getDoc(doc(db, "users", "admin"));
+                    
+                    if (!adminDoc.exists()) {
+                        log("Usuário admin não encontrado, criando...");
+                        
+                        // Dados do usuário admin
+                        const adminUser = {
+                            username: "admin",
+                            name: "Administrador",
+                            email: "admin@sisweb.com.br",
+                            role: "admin",
+                            created: serverTimestamp(),
+                            lastLogin: null,
+                            emailVerified: true
+                        };
+                        
+                        // Salvar no Firestore
+                        await setDoc(doc(db, "users", "admin"), adminUser);
+                        log("Usuário administrador criado com sucesso!", 'success');
+                    } else {
+                        log("Usuário administrador já existe", 'success');
+                    }
+                } catch (adminError) {
+                    log("Erro ao verificar/criar usuário admin: " + adminError.message, 'error');
+                }
+                
+                // Inicialização concluída
+                updateStatus('db-init-status', 'success', 'Banco de dados inicializado com sucesso!');
+                log("Banco de dados inicializado com sucesso!", 'success');
+                
+            } catch (error) {
+                log("Erro ao inicializar banco de dados: " + error.message, 'error');
+                updateStatus('db-init-status', 'error', `Erro ao inicializar banco de dados: ${error.message}`);
+            }
+        }
+        
+        // Verificar coleções existentes
+        async function checkCollections() {
+            try {
+                log("Verificando coleções existentes...");
+                updateStatus('collections-list', 'pending', 'Verificando coleções...');
+                
+                const collections = [
+                    "users", "clients", "species", "romaneios", "inventory",
+                    "orders", "financial", "logs", "company", "settings", "subscriptions"
+                ];
+                
+                let results = [];
+                
+                for (const collName of collections) {
+                    try {
+                        const querySnapshot = await getDocs(collection(db, collName));
+                        results.push({
+                            name: collName,
+                            exists: true,
+                            documentCount: querySnapshot.size
+                        });
+                        log(`Coleção ${collName}: ${querySnapshot.size} documentos`, 'success');
+                    } catch (error) {
+                        results.push({
+                            name: collName,
+                            exists: false,
+                            error: error.message
+                        });
+                        log(`Erro ao verificar coleção ${collName}: ${error.message}`, 'error');
+                    }
+                }
+                
+                // Exibir resultados na interface
+                let html = '<ul>';
+                for (const result of results) {
+                    if (result.exists) {
+                        html += `<li style="color: green;">${result.name}: ${result.documentCount} documentos</li>`;
+                    } else {
+                        html += `<li style="color: red;">${result.name}: Erro - ${result.error}</li>`;
+                    }
+                }
+                html += '</ul>';
+                
+                updateStatus('collections-list', 'success', html);
+                
+            } catch (error) {
+                log("Erro ao verificar coleções: " + error.message, 'error');
+                updateStatus('collections-list', 'error', `Erro ao verificar coleções: ${error.message}`);
+            }
+        }
+        
+        // Configurar handlers para os botões
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar Firebase ao carregar a página
+            initializeFirebase();
+            
+            // Verificar conexão
+            document.getElementById('check-connection').addEventListener('click', initializeFirebase);
+            
+            // Testar login
+            document.getElementById('test-login').addEventListener('click', testLogin);
+            
+            // Inicializar banco de dados
+            document.getElementById('init-database').addEventListener('click', initializeDatabase);
+            
+            // Verificar coleções
+            document.getElementById('check-collections').addEventListener('click', checkCollections);
+        });
+    </script>
+</body>
+</html> 
