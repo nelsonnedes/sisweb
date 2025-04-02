@@ -1,9 +1,9 @@
 /**
- * Script de inicialização do banco de dados Firestore
+ * Script de inicialização do banco de dados
  * Cria a estrutura inicial do banco de dados e adiciona dados iniciais
  */
 
-import { db } from './firebase-config.js';
+import { db, rtdb } from './firebase-config.js';
 import { 
     collection, 
     doc, 
@@ -16,45 +16,82 @@ import {
     getDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+import { initializeRealtimeDatabase } from './rtdb-init.js';
+
 /**
  * Inicializa o banco de dados com coleções necessárias
  * @returns {Promise<Object>} Status da inicialização
  */
 export async function initializeDatabase() {
     try {
-        console.log("Iniciando inicialização do banco de dados Firestore...");
+        console.log("Iniciando inicialização do banco de dados...");
         
-        // Verificar se o banco está acessível
+        // Verificar se estamos usando Firestore ou Realtime Database
+        let firestore = false;
+        let realtimeDB = false;
+        
+        // Tentar inicializar Realtime Database
         try {
-            console.log("Verificando acesso ao Firestore...");
-            const settingsRef = doc(db, "settings", "check");
-            await getDoc(settingsRef);
-            console.log("Acesso ao Firestore confirmado!");
-        } catch (accessError) {
-            console.error("Erro ao acessar Firestore:", accessError);
-            return { 
-                success: false, 
-                message: "Erro ao acessar o Firestore. Verifique a conexão com a internet e as configurações do Firebase." 
-            };
+            console.log("Tentando inicializar Realtime Database...");
+            const rtdbResult = await initializeRealtimeDatabase();
+            if (rtdbResult.success) {
+                console.log("Realtime Database inicializado com sucesso:", rtdbResult.message);
+                realtimeDB = true;
+            } else {
+                console.warn("Aviso ao inicializar Realtime Database:", rtdbResult.message);
+            }
+        } catch (rtdbError) {
+            console.error("Erro ao inicializar Realtime Database:", rtdbError);
         }
         
-        // Verificar se o usuário admin já existe
-        const adminExists = await checkAdminExists();
-        console.log(`Verificação de admin existente: ${adminExists}`);
-        
-        if (!adminExists) {
-            // Criar usuário admin
-            await createAdminUser();
+        // Tentar inicializar Firestore se necessário
+        if (!realtimeDB) {
+            try {
+                console.log("Tentando inicializar Firestore...");
+                // Verificar se o banco está acessível
+                try {
+                    console.log("Verificando acesso ao Firestore...");
+                    const settingsRef = doc(db, "settings", "check");
+                    await getDoc(settingsRef);
+                    console.log("Acesso ao Firestore confirmado!");
+                    firestore = true;
+                } catch (accessError) {
+                    console.error("Erro ao acessar Firestore:", accessError);
+                    return { 
+                        success: false, 
+                        message: "Erro ao acessar o Firestore. Verifique a conexão com a internet e as configurações do Firebase." 
+                    };
+                }
+                
+                // Verificar se o usuário admin já existe
+                const adminExists = await checkAdminExists();
+                console.log(`Verificação de admin existente: ${adminExists}`);
+                
+                if (!adminExists) {
+                    // Criar usuário admin
+                    await createAdminUser();
+                }
+                
+                // Criar coleções iniciais se não existirem
+                await initializeCollections();
+                
+                // Inicializar dados de demonstração
+                await initializeDemoData();
+                
+                console.log("Firestore inicializado com sucesso!");
+                firestore = true;
+            } catch (firestoreError) {
+                console.error("Erro ao inicializar Firestore:", firestoreError);
+            }
         }
         
-        // Criar coleções iniciais se não existirem
-        await initializeCollections();
-        
-        // Inicializar dados de demonstração
-        await initializeDemoData();
-        
-        console.log("Banco de dados inicializado com sucesso!");
-        return { success: true, message: "Banco de dados inicializado com sucesso!" };
+        if (realtimeDB || firestore) {
+            console.log("Banco de dados inicializado com sucesso!");
+            return { success: true, message: "Banco de dados inicializado com sucesso!" };
+        } else {
+            console.error("Nenhum banco de dados foi inicializado!");
+            return { success: false, message: "Falha ao inicializar o banco de dados. Nenhum banco disponível." };
+        }
     } catch (error) {
         console.error("Erro ao inicializar banco de dados:", error);
         return { success: false, message: "Erro ao inicializar banco de dados: " + error.message };
@@ -198,73 +235,82 @@ async function initializeSettings() {
             }
         };
         
-        // Salvar configurações
-        await setDoc(settingsDoc, initialSettings);
-        
-        console.log("Configurações inicializadas com sucesso!");
+        // Verificar se já existe
+        const settingsSnapshot = await getDoc(settingsDoc);
+        if (!settingsSnapshot.exists()) {
+            await setDoc(settingsDoc, initialSettings);
+            console.log("Configurações iniciais criadas");
+        }
     } catch (error) {
         console.error("Erro ao inicializar configurações:", error);
     }
 }
 
 /**
- * Inicializa dados de demonstração para teste
+ * Inicializa dados de demonstração
  * @returns {Promise<void>}
  */
 async function initializeDemoData() {
     try {
-        // Verificar se já existem dados de demonstração
-        const demoFlagRef = doc(db, "settings", "demoData");
+        // Verificar se existem clientes
+        const clientsSnapshot = await getDocs(collection(db, "clients"));
         
-        // Criar espécies de madeira de exemplo
-        const especiesData = [
-            { 
-                name: "Pinus", 
-                description: "Madeira macia, fácil de trabalhar",
-                density: 480,
-                averagePrice: 1200.00,
-                unit: "m³",
-                category: "Madeira de reflorestamento",
-                active: true
-            },
-            { 
-                name: "Eucalipto", 
-                description: "Alta resistência, versátil",
-                density: 650,
-                averagePrice: 1500.00,
-                unit: "m³",
-                category: "Madeira de reflorestamento",
-                active: true
-            },
-            { 
-                name: "Cedro", 
-                description: "Madeira nobre, resistente a insetos",
-                density: 600,
-                averagePrice: 3500.00,
-                unit: "m³",
-                category: "Madeira nobre",
-                active: true
-            }
-        ];
-        
-        // Salvar as espécies
-        for (let i = 0; i < especiesData.length; i++) {
-            const especieDoc = {
-                ...especiesData[i],
-                created: serverTimestamp(),
-                updated: serverTimestamp()
-            };
+        // Se não houver clientes (exceto o documento inicial), criar alguns exemplos
+        if (clientsSnapshot.size <= 1) {
+            console.log("Criando clientes de demonstração...");
             
-            await setDoc(doc(db, "species", `demo-especie-${i+1}`), especieDoc);
+            // Cliente 1
+            await setDoc(doc(db, "clients", "demo1"), {
+                name: "Madeireira Exemplo Ltda",
+                email: "contato@madeireiraexemplo.com.br",
+                phone: "(11) 98765-4321",
+                address: "Rua das Madeiras, 123",
+                city: "São Paulo",
+                state: "SP",
+                created: serverTimestamp()
+            });
+            
+            // Cliente 2
+            await setDoc(doc(db, "clients", "demo2"), {
+                name: "Construtora Modelo S.A.",
+                email: "contato@construtoramodelo.com.br",
+                phone: "(11) 91234-5678",
+                address: "Av. das Construções, 456",
+                city: "São Paulo",
+                state: "SP",
+                created: serverTimestamp()
+            });
+            
+            console.log("Clientes de demonstração criados");
         }
         
-        // Salvar flag de dados de demonstração
-        await setDoc(demoFlagRef, {
-            created: serverTimestamp(),
-            hasDemo: true
-        });
+        // Verificar se existem espécies
+        const speciesSnapshot = await getDocs(collection(db, "species"));
         
-        console.log("Dados de demonstração inicializados com sucesso!");
+        // Se não houver espécies (exceto o documento inicial), criar alguns exemplos
+        if (speciesSnapshot.size <= 1) {
+            console.log("Criando espécies de demonstração...");
+            
+            // Espécie 1
+            await setDoc(doc(db, "species", "demo1"), {
+                name: "Cedro",
+                scientificName: "Cedrela fissilis",
+                density: 550,
+                price: 250.00,
+                unit: "m³"
+            });
+            
+            // Espécie 2
+            await setDoc(doc(db, "species", "demo2"), {
+                name: "Ipê",
+                scientificName: "Handroanthus sp.",
+                density: 1050,
+                price: 450.00,
+                unit: "m³"
+            });
+            
+            console.log("Espécies de demonstração criadas");
+        }
     } catch (error) {
         console.error("Erro ao criar dados de demonstração:", error);
     }

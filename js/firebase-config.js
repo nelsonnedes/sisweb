@@ -7,6 +7,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, connectAuthEmulator } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, connectFirestoreEmulator } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getDatabase } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getStorage, connectStorageEmulator } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
 
@@ -14,6 +15,7 @@ import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase
 const firebaseConfig = {
   apiKey: "AIzaSyCJoql30uCoRhc3UHCnyl57M1vFCT2-N1o",
   authDomain: "dbsisweb.firebaseapp.com",
+  databaseURL: "https://dbsisweb-default-rtdb.firebaseio.com",
   projectId: "dbsisweb",
   storageBucket: "dbsisweb.appspot.com",
   messagingSenderId: "711476232625",
@@ -31,6 +33,8 @@ console.log('Inicializando Firebase Authentication...');
 const auth = getAuth(app);
 console.log('Inicializando Firestore...');
 const db = getFirestore(app);
+console.log('Inicializando Realtime Database...');
+const rtdb = getDatabase(app);
 console.log('Inicializando Firebase Storage...');
 const storage = getStorage(app);
 let analytics = null;
@@ -64,5 +68,12 @@ if (db) {
   console.error('ERRO: Firestore não foi inicializado');
 }
 
+// Verificar se o Realtime Database foi inicializado corretamente
+if (rtdb) {
+  console.log('Realtime Database inicializado com sucesso:', rtdb.app.name);
+} else {
+  console.error('ERRO: Realtime Database não foi inicializado');
+}
+
 // Exportar os serviços para uso em outros arquivos
-export { app, auth, db, storage, analytics }; 
+export { app, auth, db, rtdb, storage, analytics }; 

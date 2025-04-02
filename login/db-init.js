@@ -4,4 +4,5 @@
  */
 
 // Reexportar as funções de inicialização do banco de dados
-export * from '../js/db-init.js'; 
+export * from '../js/db-init.js';
+export * from '../js/rtdb-init.js'; 

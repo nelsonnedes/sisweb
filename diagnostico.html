@@ -107,6 +107,10 @@
             <div class="test-title">Firestore:</div>
             <div id="firestore-status" class="test-result pending">Verificando...</div>
         </div>
+        <div class="test-container">
+            <div class="test-title">Realtime Database:</div>
+            <div id="rtdb-status" class="test-result pending">Verificando...</div>
+        </div>
         <button id="check-connection">Verificar Conexão</button>
     </div>
     
@@ -164,6 +168,13 @@
             setDoc,
             serverTimestamp 
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import {
+            getDatabase,
+            ref,
+            set,
+            get,
+            child
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         
         // Adicionar log personalizado
         function log(message, type = 'info') {
@@ -208,6 +219,7 @@
         const firebaseConfig = {
             apiKey: "AIzaSyCJoql30uCoRhc3UHCnyl57M1vFCT2-N1o",
             authDomain: "dbsisweb.firebaseapp.com",
+            databaseURL: "https://dbsisweb-default-rtdb.firebaseio.com",
             projectId: "dbsisweb",
             storageBucket: "dbsisweb.appspot.com",
             messagingSenderId: "711476232625",
@@ -219,6 +231,7 @@
         let app;
         let auth;
         let db;
+        let rtdb;
         
         // Inicializar Firebase
         function initializeFirebase() {
@@ -237,6 +250,11 @@
                 db = getFirestore(app);
                 updateStatus('firestore-status', 'success', 'Firestore inicializado com sucesso!');
                 log("Firestore inicializado com sucesso", 'success');
+                
+                // Inicializar Realtime Database
+                rtdb = getDatabase(app);
+                updateStatus('rtdb-status', 'success', 'Realtime Database inicializado com sucesso!');
+                log("Realtime Database inicializado com sucesso", 'success');
                 
                 return true;
             } catch (error) {
@@ -279,21 +297,58 @@
                 
                 log(`Login bem-sucedido para: ${user.email}`, 'success');
                 
-                // Verificar se o usuário existe no Firestore
+                // Verificar se o usuário existe no Firestore e/ou Realtime Database
+                let userFoundInFirestore = false;
+                let userFoundInRtdb = false;
+                
                 try {
+                    // Verificar no Firestore
                     const userDocRef = doc(db, "users", user.uid);
                     const userDoc = await getDoc(userDocRef);
                     
                     if (userDoc.exists()) {
                         log("Documento do usuário encontrado no Firestore", 'success');
-                        updateStatus('login-result', 'success', `Login bem-sucedido! Usuário: ${user.email}`);
+                        userFoundInFirestore = true;
                     } else {
                         log("Documento do usuário não encontrado no Firestore", 'warning');
-                        updateStatus('login-result', 'success', `Login bem-sucedido, mas dados de usuário não encontrados no Firestore.`);
                     }
                 } catch (firestoreError) {
-                    log("Erro ao acessar documento do usuário: " + firestoreError.message, 'error');
-                    updateStatus('login-result', 'error', `Login bem-sucedido, mas erro ao acessar dados: ${firestoreError.message}`);
+                    log("Erro ao acessar documento do usuário no Firestore: " + firestoreError.message, 'error');
+                }
+                
+                try {
+                    // Verificar no Realtime Database
+                    const dbRef = ref(rtdb);
+                    const snapshot = await get(child(dbRef, `users/${user.uid}`));
+                    
+                    if (snapshot.exists()) {
+                        log("Dados do usuário encontrados no Realtime Database", 'success');
+                        userFoundInRtdb = true;
+                    } else {
+                        log("Dados do usuário não encontrados no Realtime Database", 'warning');
+                        
+                        // Se o usuário não foi encontrado no RTDB, mas existe no Auth, vamos criar
+                        if (!userFoundInRtdb) {
+                            log("Criando usuário no Realtime Database...", 'warning');
+                            await set(ref(rtdb, `users/${user.uid}`), {
+                                email: user.email,
+                                name: user.displayName || "Usuário",
+                                role: "user",
+                                created: Date.now(),
+                                lastLogin: Date.now()
+                            });
+                            log("Usuário criado no Realtime Database", 'success');
+                            userFoundInRtdb = true;
+                        }
+                    }
+                } catch (rtdbError) {
+                    log("Erro ao acessar dados do usuário no Realtime Database: " + rtdbError.message, 'error');
+                }
+                
+                if (userFoundInFirestore || userFoundInRtdb) {
+                    updateStatus('login-result', 'success', `Login bem-sucedido! Usuário: ${user.email}`);
+                } else {
+                    updateStatus('login-result', 'warning', `Login bem-sucedido, mas dados de usuário não encontrados. Foi criado um perfil básico.`);
                 }
                 
                 // Deslogar para não manter a sessão nesta página
@@ -311,83 +366,167 @@
                 log("Iniciando inicialização do banco de dados...");
                 updateStatus('db-init-status', 'pending', 'Inicializando banco de dados...');
                 
-                // Verificar se o banco está acessível
+                // Vamos inicializar primeiro o Realtime Database
                 try {
-                    log("Verificando acesso ao Firestore...");
-                    const settingsRef = doc(db, "settings", "check");
-                    await getDoc(settingsRef);
-                    log("Acesso ao Firestore confirmado!", 'success');
-                } catch (accessError) {
-                    log("Erro ao acessar Firestore: " + accessError.message, 'error');
-                    updateStatus('db-init-status', 'error', `Erro ao acessar Firestore: ${accessError.message}`);
-                    return;
-                }
-                
-                // Criar coleções iniciais
-                const collections = [
-                    "users",         // Usuários do sistema
-                    "clients",       // Clientes
-                    "species",       // Espécies de madeira
-                    "romaneios",     // Romaneios
-                    "inventory",     // Estoque
-                    "orders",        // Pedidos
-                    "financial",     // Financeiro
-                    "logs",          // Logs do sistema
-                    "company",       // Dados da empresa
-                    "settings",      // Configurações
-                    "subscriptions"  // Assinaturas
-                ];
-                
-                for (const collName of collections) {
-                    log(`Verificando coleção: ${collName}...`);
+                    log("Inicializando estruturas no Realtime Database...");
+                    
+                    // Verificar se o banco está acessível
+                    const dbRef = ref(rtdb);
                     
                     try {
-                        const querySnapshot = await getDocs(collection(db, collName));
-                        
-                        if (querySnapshot.empty) {
-                            log(`Coleção ${collName} vazia, criando documento inicial...`);
-                            
-                            await setDoc(doc(db, collName, "initial"), {
-                                created: serverTimestamp(),
-                                description: `Documento inicial para coleção ${collName}`
-                            });
-                            
-                            log(`Documento inicial criado para coleção ${collName}`, 'success');
-                        } else {
-                            log(`Coleção ${collName} já tem ${querySnapshot.size} documentos.`, 'success');
-                        }
-                    } catch (collError) {
-                        log(`Erro ao verificar coleção ${collName}: ${collError.message}`, 'error');
+                        // Tentar acessar o nó de verificação
+                        await get(child(dbRef, 'settings/check'));
+                        log("Acesso ao Realtime Database confirmado!", 'success');
+                    } catch (checkError) {
+                        // Se não conseguir acessar, criar o nó
+                        log("Criando estrutura inicial de verificação...");
+                        await set(ref(rtdb, 'settings/check'), {
+                            created: Date.now(),
+                            status: 'ok'
+                        });
+                        log("Estrutura inicial criada com sucesso", 'success');
                     }
-                }
-                
-                // Verificar se o usuário admin já existe
-                log("Verificando se o usuário admin já existe...");
-                try {
-                    const adminDoc = await getDoc(doc(db, "users", "admin"));
                     
-                    if (!adminDoc.exists()) {
-                        log("Usuário admin não encontrado, criando...");
+                    // Criar estruturas básicas
+                    const structures = [
+                        "users",         // Usuários do sistema
+                        "clients",       // Clientes
+                        "species",       // Espécies de madeira
+                        "romaneios",     // Romaneios
+                        "inventory",     // Estoque
+                        "orders",        // Pedidos
+                        "financial",     // Financeiro
+                        "logs",          // Logs do sistema
+                        "company",       // Dados da empresa
+                        "settings",      // Configurações
+                        "subscriptions"  // Assinaturas
+                    ];
+                    
+                    for (const structureName of structures) {
+                        log(`Verificando estrutura: ${structureName}...`);
                         
-                        // Dados do usuário admin
-                        const adminUser = {
+                        try {
+                            const snapshot = await get(child(dbRef, structureName));
+                            
+                            if (!snapshot.exists() && structureName !== "users") {
+                                log(`Criando estrutura inicial para ${structureName}...`);
+                                await set(ref(rtdb, `${structureName}/initial`), {
+                                    created: Date.now(),
+                                    description: `Documento inicial para estrutura ${structureName}`
+                                });
+                                log(`Estrutura ${structureName} criada com sucesso`, 'success');
+                            } else {
+                                log(`Estrutura ${structureName} já existe`, 'success');
+                            }
+                        } catch (structError) {
+                            log(`Erro ao verificar estrutura ${structureName}: ${structError.message}`, 'error');
+                        }
+                    }
+                    
+                    // Verificar o usuário admin
+                    const adminSnapshot = await get(child(dbRef, 'users/admin'));
+                    if (!adminSnapshot.exists()) {
+                        log("Criando usuário administrador...");
+                        await set(ref(rtdb, 'users/admin'), {
                             username: "admin",
                             name: "Administrador",
                             email: "admin@sisweb.com.br",
                             role: "admin",
-                            created: serverTimestamp(),
+                            created: Date.now(),
                             lastLogin: null,
                             emailVerified: true
-                        };
-                        
-                        // Salvar no Firestore
-                        await setDoc(doc(db, "users", "admin"), adminUser);
-                        log("Usuário administrador criado com sucesso!", 'success');
+                        });
+                        log("Usuário administrador criado com sucesso", 'success');
                     } else {
                         log("Usuário administrador já existe", 'success');
                     }
-                } catch (adminError) {
-                    log("Erro ao verificar/criar usuário admin: " + adminError.message, 'error');
+                    
+                    // Inicializar configurações gerais
+                    const settingsSnapshot = await get(child(dbRef, 'settings/general'));
+                    if (!settingsSnapshot.exists()) {
+                        log("Criando configurações gerais...");
+                        await set(ref(rtdb, 'settings/general'), {
+                            systemName: "SisWeb - Sistema de Gestão de Madeiras",
+                            version: "1.0.0",
+                            defaultCurrency: "BRL",
+                            defaultVolumeUnit: "m³",
+                            lastUpdate: Date.now(),
+                            features: {
+                                enableBackup: true,
+                                enableNotifications: true,
+                                enableReports: true,
+                                enableOfflineMode: true
+                            },
+                            ui: {
+                                theme: "light",
+                                language: "pt_BR",
+                                dateFormat: "DD/MM/YYYY",
+                                decimalSeparator: ","
+                            }
+                        });
+                        log("Configurações gerais criadas com sucesso", 'success');
+                    } else {
+                        log("Configurações gerais já existem", 'success');
+                    }
+                    
+                    // Criar dados de demonstração
+                    const demoSnapshot = await get(child(dbRef, 'demo'));
+                    if (!demoSnapshot.exists()) {
+                        log("Criando dados de demonstração...");
+                        
+                        // Criar alguns clientes de demonstração
+                        await set(ref(rtdb, 'clients/demo1'), {
+                            name: "Madeireira Exemplo Ltda",
+                            email: "contato@madeireiraexemplo.com.br",
+                            phone: "(11) 98765-4321",
+                            address: "Rua das Madeiras, 123",
+                            city: "São Paulo",
+                            state: "SP",
+                            created: Date.now()
+                        });
+                        
+                        await set(ref(rtdb, 'clients/demo2'), {
+                            name: "Construtora Modelo S.A.",
+                            email: "contato@construtoramodelo.com.br",
+                            phone: "(11) 91234-5678",
+                            address: "Av. das Construções, 456",
+                            city: "São Paulo",
+                            state: "SP",
+                            created: Date.now()
+                        });
+                        
+                        // Criar algumas espécies de madeira de demonstração
+                        await set(ref(rtdb, 'species/demo1'), {
+                            name: "Cedro",
+                            scientificName: "Cedrela fissilis",
+                            density: 550,
+                            price: 250.00,
+                            unit: "m³"
+                        });
+                        
+                        await set(ref(rtdb, 'species/demo2'), {
+                            name: "Ipê",
+                            scientificName: "Handroanthus sp.",
+                            density: 1050,
+                            price: 450.00,
+                            unit: "m³"
+                        });
+                        
+                        // Marcar que os dados de demonstração foram criados
+                        await set(ref(rtdb, 'demo'), {
+                            created: Date.now(),
+                            status: 'demo data created'
+                        });
+                        
+                        log("Dados de demonstração criados com sucesso", 'success');
+                    } else {
+                        log("Dados de demonstração já existem", 'success');
+                    }
+                    
+                    log("Realtime Database inicializado com sucesso!", 'success');
+                    
+                } catch (rtdbError) {
+                    log("Erro ao inicializar Realtime Database: " + rtdbError.message, 'error');
                 }
                 
                 // Inicialização concluída
@@ -403,42 +542,95 @@
         // Verificar coleções existentes
         async function checkCollections() {
             try {
-                log("Verificando coleções existentes...");
-                updateStatus('collections-list', 'pending', 'Verificando coleções...');
+                log("Verificando estruturas existentes...");
+                updateStatus('collections-list', 'pending', 'Verificando estruturas...');
                 
-                const collections = [
+                const structures = [
                     "users", "clients", "species", "romaneios", "inventory",
                     "orders", "financial", "logs", "company", "settings", "subscriptions"
                 ];
                 
                 let results = [];
                 
-                for (const collName of collections) {
+                // Verificar no Realtime Database
+                log("Verificando estruturas no Realtime Database...");
+                const dbRef = ref(rtdb);
+                
+                for (const structureName of structures) {
                     try {
-                        const querySnapshot = await getDocs(collection(db, collName));
-                        results.push({
-                            name: collName,
-                            exists: true,
-                            documentCount: querySnapshot.size
-                        });
-                        log(`Coleção ${collName}: ${querySnapshot.size} documentos`, 'success');
+                        const snapshot = await get(child(dbRef, structureName));
+                        
+                        if (snapshot.exists()) {
+                            const childCount = Object.keys(snapshot.val()).length;
+                            results.push({
+                                name: structureName,
+                                exists: true,
+                                database: 'rtdb',
+                                documentCount: childCount
+                            });
+                            log(`RTDB: ${structureName}: ${childCount} nós`, 'success');
+                        } else {
+                            results.push({
+                                name: structureName,
+                                exists: false,
+                                database: 'rtdb',
+                                error: 'Estrutura não encontrada'
+                            });
+                            log(`RTDB: ${structureName}: Estrutura não encontrada`, 'warning');
+                        }
                     } catch (error) {
                         results.push({
-                            name: collName,
+                            name: structureName,
                             exists: false,
+                            database: 'rtdb',
                             error: error.message
                         });
-                        log(`Erro ao verificar coleção ${collName}: ${error.message}`, 'error');
+                        log(`RTDB: Erro ao verificar ${structureName}: ${error.message}`, 'error');
                     }
                 }
                 
                 // Exibir resultados na interface
-                let html = '<ul>';
+                let html = '<div style="margin-bottom: 10px; font-weight: bold;">Realtime Database Structures:</div><ul>';
                 for (const result of results) {
+                    if (result.exists) {
+                        html += `<li style="color: green;">${result.name}: ${result.documentCount} nós</li>`;
+                    } else {
+                        html += `<li style="color: red;">${result.name}: ${result.error}</li>`;
+                    }
+                }
+                html += '</ul>';
+                
+                // Verificar no Firestore também
+                let firestoreResults = [];
+                log("Verificando coleções no Firestore...");
+                
+                for (const collName of structures) {
+                    try {
+                        const querySnapshot = await getDocs(collection(db, collName));
+                        firestoreResults.push({
+                            name: collName,
+                            exists: true,
+                            database: 'firestore',
+                            documentCount: querySnapshot.size
+                        });
+                        log(`Firestore: ${collName}: ${querySnapshot.size} documentos`, 'success');
+                    } catch (error) {
+                        firestoreResults.push({
+                            name: collName,
+                            exists: false,
+                            database: 'firestore',
+                            error: error.message
+                        });
+                        log(`Firestore: Erro ao verificar ${collName}: ${error.message}`, 'error');
+                    }
+                }
+                
+                html += '<div style="margin: 15px 0 10px 0; font-weight: bold;">Firestore Collections:</div><ul>';
+                for (const result of firestoreResults) {
                     if (result.exists) {
                         html += `<li style="color: green;">${result.name}: ${result.documentCount} documentos</li>`;
                     } else {
-                        html += `<li style="color: red;">${result.name}: Erro - ${result.error}</li>`;
+                        html += `<li style="color: red;">${result.name}: ${result.error}</li>`;
                     }
                 }
                 html += '</ul>';
