@@ -798,6 +798,15 @@
             updateProfile, 
             deleteUser 
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { initializeDatabase } from '../js/db-init.js';
+        
+        // Garantir que o banco de dados está inicializado
+        try {
+            await initializeDatabase();
+            console.log("Banco de dados inicializado com sucesso na página de usuários!");
+        } catch (error) {
+            console.error("Erro ao inicializar banco de dados na página de usuários:", error);
+        }
         
         // Variáveis globais
         let currentUserId = null;
