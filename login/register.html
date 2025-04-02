@@ -142,6 +142,13 @@
             text-decoration: underline;
         }
         
+        .login-link {
+            display: inline-block;
+            margin-top: 5px;
+            font-weight: 500;
+            font-size: 15px;
+        }
+        
         .error-message {
             background-color: #fee2e2;
             color: #dc2626;
@@ -367,9 +374,8 @@
             <button type="submit" class="register-button">Criar Conta</button>
             
             <div class="register-footer">
-                Já tem uma conta? <a href="index.html">Faça login</a>
-                <br>
-                <a href="#" onclick="showForgotPassword()">Esqueceu a senha?</a>
+                <p>Já tem uma conta? <a href="index.html" class="login-link">Faça login</a></p>
+                <p><a href="#" onclick="showForgotPassword()">Esqueceu a senha?</a></p>
             </div>
             
             <div class="loading">
