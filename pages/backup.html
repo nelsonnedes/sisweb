@@ -344,6 +344,7 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 1000;
+            overflow-y: auto;
         }
         
         .modal-content {
@@ -355,6 +356,8 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-height: 80vh;
+            overflow-y: auto;
         }
         
         .modal-header {
@@ -900,21 +903,25 @@
         // Mostrar modal de agendamento
         function showScheduleModal() {
             document.getElementById('scheduleModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
         }
         
         // Mostrar modal de restauração
         function showRestoreModal() {
             document.getElementById('restoreModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
         }
         
         // Mostrar modal de configurações
         function showSettingsModal() {
             document.getElementById('settingsModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
         }
         
         // Fechar modal
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
+            document.body.style.overflow = 'auto';
         }
         
         // Filtrar backups

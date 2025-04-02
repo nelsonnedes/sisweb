@@ -302,6 +302,7 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 1000;
+            overflow-y: auto;
         }
         
         .modal-content {
@@ -313,6 +314,8 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-height: 80vh;
+            overflow-y: auto;
         }
         
         .modal-header {
@@ -717,6 +720,7 @@
         // Mostrar modal
         function showModal() {
             document.getElementById('integrationModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
         }
         
         // Mostrar modal de adição
@@ -728,6 +732,7 @@
         // Fechar modal
         function closeModal() {
             document.getElementById('integrationModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
         }
         
         // Enviar formulário
