@@ -12,7 +12,8 @@ import {
     query, 
     where, 
     limit, 
-    serverTimestamp 
+    serverTimestamp,
+    getDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /**
@@ -21,10 +22,25 @@ import {
  */
 export async function initializeDatabase() {
     try {
-        console.log("Inicializando banco de dados...");
+        console.log("Iniciando inicialização do banco de dados Firestore...");
+        
+        // Verificar se o banco está acessível
+        try {
+            console.log("Verificando acesso ao Firestore...");
+            const settingsRef = doc(db, "settings", "check");
+            await getDoc(settingsRef);
+            console.log("Acesso ao Firestore confirmado!");
+        } catch (accessError) {
+            console.error("Erro ao acessar Firestore:", accessError);
+            return { 
+                success: false, 
+                message: "Erro ao acessar o Firestore. Verifique a conexão com a internet e as configurações do Firebase." 
+            };
+        }
         
         // Verificar se o usuário admin já existe
         const adminExists = await checkAdminExists();
+        console.log(`Verificação de admin existente: ${adminExists}`);
         
         if (!adminExists) {
             // Criar usuário admin
