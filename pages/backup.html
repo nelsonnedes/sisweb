@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backup - SisWeb</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f6fa;
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            margin-left: 250px;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .page-title {
+            color: #2c3e50;
+            font-size: 24px;
+        }
+        
+        .page-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .backup-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .stat-icon.total {
+            background-color: #3498db;
+        }
+        
+        .stat-icon.size {
+            background-color: #2ecc71;
+        }
+        
+        .stat-icon.last {
+            background-color: #f39c12;
+        }
+        
+        .stat-icon.schedule {
+            background-color: #9b59b6;
+        }
+        
+        .stat-info {
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .backup-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .action-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .action-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin: 0 auto 15px;
+            color: #3498db;
+        }
+        
+        .action-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .action-description {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+        
+        .backup-list {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .backup-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .backup-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .backup-filters {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        
+        .backup-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .backup-table th,
+        .backup-table td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .backup-table th {
+            font-size: 14px;
+            font-weight: 500;
+            color: #7f8c8d;
+            background-color: #f8f9fa;
+        }
+        
+        .backup-table td {
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        
+        .backup-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-success {
+            background-color: #e8f5e9;
+            color: #2ecc71;
+        }
+        
+        .status-warning {
+            background-color: #fff3e0;
+            color: #f39c12;
+        }
+        
+        .status-error {
+            background-color: #fbe9e7;
+            color: #e74c3c;
+        }
+        
+        .backup-actions-cell {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .action-btn.restore {
+            background-color: #f8f9fa;
+            color: #3498db;
+        }
+        
+        .action-btn.restore:hover {
+            background-color: #e9ecef;
+        }
+        
+        .action-btn.download {
+            background-color: #f8f9fa;
+            color: #2ecc71;
+        }
+        
+        .action-btn.download:hover {
+            background-color: #e9ecef;
+        }
+        
+        .action-btn.delete {
+            background-color: #f8f9fa;
+            color: #e74c3c;
+        }
+        
+        .action-btn.delete:hover {
+            background-color: #e9ecef;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            position: relative;
+            background-color: white;
+            width: 90%;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .modal-close {
+            font-size: 20px;
+            color: #95a5a6;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .modal-close:hover {
+            color: #7f8c8d;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            background-color: white;
+            cursor: pointer;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .form-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        
+        .form-checkbox input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                margin-left: 0;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .backup-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .backup-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .backup-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .backup-filters {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+            
+            .filter-select {
+                flex: 1;
+                min-width: 150px;
+            }
+            
+            .backup-table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 20px auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Menu Component -->
+        <sisweb-menu></sisweb-menu>
+        
+        <!-- Main Content -->
+        <div class="content">
+            <div class="page-header">
+                <h1 class="page-title">Backup</h1>
+                <div class="page-actions">
+                    <button class="btn btn-secondary" onclick="refreshBackups()">
+                        <i class="fas fa-sync"></i> Atualizar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Backup Statistics -->
+            <div class="backup-stats">
+                <div class="stat-card">
+                    <div class="stat-icon total">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value">12</div>
+                        <div class="stat-label">Total de Backups</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon size">
+                        <i class="fas fa-hdd"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value">2.5 GB</div>
+                        <div class="stat-label">Espaço Total</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon last">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value">2h atrás</div>
+                        <div class="stat-label">Último Backup</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon schedule">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value">Diário</div>
+                        <div class="stat-label">Agendamento</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Backup Actions -->
+            <div class="backup-actions">
+                <div class="action-card" onclick="createBackup()">
+                    <div class="action-icon">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="action-title">Criar Backup</div>
+                    <div class="action-description">Realizar backup manual do sistema</div>
+                </div>
+                
+                <div class="action-card" onclick="showScheduleModal()">
+                    <div class="action-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="action-title">Agendar Backup</div>
+                    <div class="action-description">Configurar backup automático</div>
+                </div>
+                
+                <div class="action-card" onclick="showRestoreModal()">
+                    <div class="action-icon">
+                        <i class="fas fa-undo"></i>
+                    </div>
+                    <div class="action-title">Restaurar Backup</div>
+                    <div class="action-description">Recuperar dados de um backup</div>
+                </div>
+                
+                <div class="action-card" onclick="showSettingsModal()">
+                    <div class="action-icon">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <div class="action-title">Configurações</div>
+                    <div class="action-description">Ajustar configurações de backup</div>
+                </div>
+            </div>
+            
+            <!-- Backup List -->
+            <div class="backup-list">
+                <div class="backup-header">
+                    <h2 class="backup-title">Histórico de Backups</h2>
+                    <div class="backup-filters">
+                        <select class="filter-select" onchange="filterBackups()">
+                            <option value="">Todos os Tipos</option>
+                            <option value="manual">Manual</option>
+                            <option value="automatic">Automático</option>
+                        </select>
+                        <select class="filter-select" onchange="filterBackups()">
+                            <option value="">Todos os Status</option>
+                            <option value="success">Sucesso</option>
+                            <option value="warning">Aviso</option>
+                            <option value="error">Erro</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <table class="backup-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Tipo</th>
+                            <th>Tamanho</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2024-03-20 15:30</td>
+                            <td>Automático</td>
+                            <td>250 MB</td>
+                            <td>
+                                <span class="backup-status status-success">
+                                    <i class="fas fa-check-circle"></i>
+                                    Sucesso
+                                </span>
+                            </td>
+                            <td class="backup-actions-cell">
+                                <button class="action-btn restore" onclick="restoreBackup(1)">
+                                    <i class="fas fa-undo"></i>
+                                    Restaurar
+                                </button>
+                                <button class="action-btn download" onclick="downloadBackup(1)">
+                                    <i class="fas fa-download"></i>
+                                    Baixar
+                                </button>
+                                <button class="action-btn delete" onclick="deleteBackup(1)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td>2024-03-19 15:30</td>
+                            <td>Automático</td>
+                            <td>245 MB</td>
+                            <td>
+                                <span class="backup-status status-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Aviso
+                                </span>
+                            </td>
+                            <td class="backup-actions-cell">
+                                <button class="action-btn restore" onclick="restoreBackup(2)">
+                                    <i class="fas fa-undo"></i>
+                                    Restaurar
+                                </button>
+                                <button class="action-btn download" onclick="downloadBackup(2)">
+                                    <i class="fas fa-download"></i>
+                                    Baixar
+                                </button>
+                                <button class="action-btn delete" onclick="deleteBackup(2)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td>2024-03-18 15:30</td>
+                            <td>Manual</td>
+                            <td>240 MB</td>
+                            <td>
+                                <span class="backup-status status-error">
+                                    <i class="fas fa-times-circle"></i>
+                                    Erro
+                                </span>
+                            </td>
+                            <td class="backup-actions-cell">
+                                <button class="action-btn restore" onclick="restoreBackup(3)">
+                                    <i class="fas fa-undo"></i>
+                                    Restaurar
+                                </button>
+                                <button class="action-btn download" onclick="downloadBackup(3)">
+                                    <i class="fas fa-download"></i>
+                                    Baixar
+                                </button>
+                                <button class="action-btn delete" onclick="deleteBackup(3)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Schedule Modal -->
+    <div class="modal" id="scheduleModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Agendar Backup</h2>
+                <div class="modal-close" onclick="closeModal('scheduleModal')">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <form id="scheduleForm">
+                <div class="form-group">
+                    <label class="form-label">Frequência</label>
+                    <select class="form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="daily">Diário</option>
+                        <option value="weekly">Semanal</option>
+                        <option value="monthly">Mensal</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Horário</label>
+                    <input type="time" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Dias da Semana</label>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="monday">
+                        <label for="monday">Segunda</label>
+                    </div>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="tuesday">
+                        <label for="tuesday">Terça</label>
+                    </div>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="wednesday">
+                        <label for="wednesday">Quarta</label>
+                    </div>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="thursday">
+                        <label for="thursday">Quinta</label>
+                    </div>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="friday">
+                        <label for="friday">Sexta</label>
+                    </div>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="saturday">
+                        <label for="saturday">Sábado</label>
+                    </div>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="sunday">
+                        <label for="sunday">Domingo</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Retenção</label>
+                    <select class="form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="7">7 dias</option>
+                        <option value="15">15 dias</option>
+                        <option value="30">30 dias</option>
+                        <option value="90">90 dias</option>
+                    </select>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('scheduleModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Restore Modal -->
+    <div class="modal" id="restoreModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Restaurar Backup</h2>
+                <div class="modal-close" onclick="closeModal('restoreModal')">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <form id="restoreForm">
+                <div class="form-group">
+                    <label class="form-label">Selecionar Backup</label>
+                    <select class="form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="1">2024-03-20 15:30</option>
+                        <option value="2">2024-03-19 15:30</option>
+                        <option value="3">2024-03-18 15:30</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Opções de Restauração</label>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="restore_data">
+                        <label for="restore_data">Dados</label>
+                    </div>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="restore_config">
+                        <label for="restore_config">Configurações</label>
+                    </div>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="restore_files">
+                        <label for="restore_files">Arquivos</label>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('restoreModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Restaurar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Configurações de Backup</h2>
+                <div class="modal-close" onclick="closeModal('settingsModal')">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <form id="settingsForm">
+                <div class="form-group">
+                    <label class="form-label">Local de Armazenamento</label>
+                    <select class="form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="local">Local</option>
+                        <option value="cloud">Nuvem</option>
+                        <option value="external">Disco Externo</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Compactação</label>
+                    <select class="form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="none">Nenhuma</option>
+                        <option value="low">Baixa</option>
+                        <option value="medium">Média</option>
+                        <option value="high">Alta</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Criptografia</label>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="encrypt_backup">
+                        <label for="encrypt_backup">Ativar criptografia</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Notificações</label>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="notify_success">
+                        <label for="notify_success">Sucesso</label>
+                    </div>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="notify_warning">
+                        <label for="notify_warning">Avisos</label>
+                    </div>
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="notify_error">
+                        <label for="notify_error">Erros</label>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('settingsModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../components/menu.js"></script>
+    <script>
+        // Atualizar backups
+        function refreshBackups() {
+            showAlert('Backups atualizados com sucesso!', 'success');
+        }
+        
+        // Criar backup
+        function createBackup() {
+            showAlert('Iniciando backup...', 'info');
+            // Implementar criação
+            console.log('Criando backup...');
+        }
+        
+        // Mostrar modal de agendamento
+        function showScheduleModal() {
+            document.getElementById('scheduleModal').style.display = 'block';
+        }
+        
+        // Mostrar modal de restauração
+        function showRestoreModal() {
+            document.getElementById('restoreModal').style.display = 'block';
+        }
+        
+        // Mostrar modal de configurações
+        function showSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'block';
+        }
+        
+        // Fechar modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // Filtrar backups
+        function filterBackups() {
+            // Implementar filtro
+            console.log('Filtrando backups...');
+        }
+        
+        // Restaurar backup
+        function restoreBackup(id) {
+            if (confirm('Tem certeza que deseja restaurar este backup? Esta ação substituirá os dados atuais.')) {
+                showAlert('Iniciando restauração...', 'info');
+                // Implementar restauração
+                console.log('Restaurando backup:', id);
+            }
+        }
+        
+        // Baixar backup
+        function downloadBackup(id) {
+            showAlert('Iniciando download...', 'info');
+            // Implementar download
+            console.log('Baixando backup:', id);
+        }
+        
+        // Deletar backup
+        function deleteBackup(id) {
+            if (confirm('Tem certeza que deseja excluir este backup?')) {
+                showAlert('Backup excluído com sucesso!', 'success');
+                // Implementar exclusão
+                console.log('Deletando backup:', id);
+            }
+        }
+        
+        // Enviar formulário de agendamento
+        document.getElementById('scheduleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            closeModal('scheduleModal');
+            showAlert('Agendamento salvo com sucesso!', 'success');
+        });
+        
+        // Enviar formulário de restauração
+        document.getElementById('restoreForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            closeModal('restoreModal');
+            showAlert('Iniciando restauração...', 'info');
+        });
+        
+        // Enviar formulário de configurações
+        document.getElementById('settingsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            closeModal('settingsModal');
+            showAlert('Configurações salvas com sucesso!', 'success');
+        });
+    </script>
+</body>
+</html> 

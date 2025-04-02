@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil - SisWeb</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f6fa;
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            margin-left: 250px;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .page-title {
+            color: #2c3e50;
+            font-size: 24px;
+        }
+        
+        .page-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .profile-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .profile-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        
+        .profile-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .profile-card-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .profile-card-title i {
+            color: #3498db;
+        }
+        
+        .profile-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .profile-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .profile-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .profile-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .profile-item-title {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .profile-item-description {
+            font-size: 12px;
+            color: #95a5a6;
+        }
+        
+        .profile-item-input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            width: 200px;
+        }
+        
+        .profile-item-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .profile-item-select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            width: 200px;
+            background-color: white;
+        }
+        
+        .profile-item-select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .profile-item-toggle {
+            position: relative;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .profile-item-toggle input {
+            display: none;
+        }
+        
+        .profile-item-toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #95a5a6;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .profile-item-toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .profile-item-toggle-slider {
+            background-color: #3498db;
+        }
+        
+        input:checked + .profile-item-toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        .profile-item-textarea {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            width: 100%;
+            height: 100px;
+            resize: vertical;
+        }
+        
+        .profile-item-textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .profile-avatar {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .avatar-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+        
+        .avatar-image {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            background-color: #3498db;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            font-weight: 500;
+        }
+        
+        .avatar-upload {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 30px;
+            height: 30px;
+            background-color: #3498db;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .avatar-upload:hover {
+            background-color: #2980b9;
+        }
+        
+        .avatar-upload input {
+            display: none;
+        }
+        
+        .avatar-info {
+            flex: 1;
+        }
+        
+        .avatar-name {
+            font-size: 20px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .avatar-role {
+            font-size: 14px;
+            color: #95a5a6;
+        }
+        
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .activity-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #3498db;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .activity-info {
+            flex: 1;
+        }
+        
+        .activity-title {
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 2px;
+        }
+        
+        .activity-meta {
+            font-size: 12px;
+            color: #95a5a6;
+        }
+        
+        .profile-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                margin-left: 0;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .profile-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .profile-item-input,
+            .profile-item-select {
+                width: 100%;
+            }
+            
+            .profile-avatar {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Menu Component -->
+        <sisweb-menu></sisweb-menu>
+        
+        <!-- Main Content -->
+        <div class="content">
+            <div class="page-header">
+                <h1 class="page-title">Perfil</h1>
+                <div class="page-actions">
+                    <button class="btn btn-secondary" onclick="resetProfile()">
+                        <i class="fas fa-undo"></i> Restaurar Padrão
+                    </button>
+                    <button class="btn btn-primary" onclick="saveProfile()">
+                        <i class="fas fa-save"></i> Salvar Alterações
+                    </button>
+                </div>
+            </div>
+            
+            <div class="profile-grid">
+                <!-- Informações Pessoais -->
+                <div class="profile-card">
+                    <div class="profile-card-header">
+                        <h2 class="profile-card-title">
+                            <i class="fas fa-user"></i> Informações Pessoais
+                        </h2>
+                    </div>
+                    <div class="profile-avatar">
+                        <div class="avatar-container">
+                            <div class="avatar-image" id="avatarImage">
+                                <!-- Avatar será inserido via JavaScript -->
+                            </div>
+                            <label class="avatar-upload">
+                                <i class="fas fa-camera"></i>
+                                <input type="file" accept="image/*" onchange="updateAvatar(this)">
+                            </label>
+                        </div>
+                        <div class="avatar-info">
+                            <div class="avatar-name" id="avatarName">
+                                <!-- Nome será inserido via JavaScript -->
+                            </div>
+                            <div class="avatar-role" id="avatarRole">
+                                <!-- Papel será inserido via JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="profile-section">
+                        <div class="profile-group">
+                            <div class="profile-item">
+                                <div class="profile-item-info">
+                                    <span class="profile-item-title">Nome Completo</span>
+                                    <span class="profile-item-description">Seu nome completo</span>
+                                </div>
+                                <input type="text" class="profile-item-input" id="fullName" placeholder="Nome Completo">
+                            </div>
+                            
+                            <div class="profile-item">
+                                <div class="profile-item-info">
+                                    <span class="profile-item-title">Email</span>
+                                    <span class="profile-item-description">Seu email de contato</span>
+                                </div>
+                                <input type="email" class="profile-item-input" id="email" placeholder="email@exemplo.com">
+                            </div>
+                            
+                            <div class="profile-item">
+                                <div class="profile-item-info">
+                                    <span class="profile-item-title">Telefone</span>
+                                    <span class="profile-item-description">Seu número de telefone</span>
+                                </div>
+                                <input type="text" class="profile-item-input" id="phone" placeholder="(00) 0000-0000">
+                            </div>
+                            
+                            <div class="profile-item">
+                                <div class="profile-item-info">
+                                    <span class="profile-item-title">Departamento</span>
+                                    <span class="profile-item-description">Seu departamento</span>
+                                </div>
+                                <select class="profile-item-select" id="department">
+                                    <option value="">Selecione um departamento</option>
+                                    <option value="admin">Administração</option>
+                                    <option value="sales">Vendas</option>
+                                    <option value="stock">Estoque</option>
+                                    <option value="finance">Financeiro</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Preferências -->
+                <div class="profile-card">
+                    <div class="profile-card-header">
+                        <h2 class="profile-card-title">
+                            <i class="fas fa-sliders-h"></i> Preferências
+                        </h2>
+                    </div>
+                    <div class="profile-section">
+                        <div class="profile-group">
+                            <div class="profile-item">
+                                <div class="profile-item-info">
+                                    <span class="profile-item-title">Idioma</span>
+                                    <span class="profile-item-description">Idioma preferido do sistema</span>
+                                </div>
+                                <select class="profile-item-select" id="language">
+                                    <option value="pt-BR">Português (Brasil)</option>
+                                    <option value="en-US">English (US)</option>
+                                    <option value="es-ES">Español</option>
+                                </select>
+                            </div>
+                            
+                            <div class="profile-item">
+                                <div class="profile-item-info">
+                                    <span class="profile-item-title">Tema</span>
+                                    <span class="profile-item-description">Tema visual do sistema</span>
+                                </div>
+                                <select class="profile-item-select" id="theme">
+                                    <option value="light">Claro</option>
+                                    <option value="dark">Escuro</option>
+                                    <option value="system">Sistema</option>
+                                </select>
+                            </div>
+                            
+                            <div class="profile-item">
+                                <div class="profile-item-info">
+                                    <span class="profile-item-title">Notificações</span>
+                                    <span class="profile-item-description">Receber notificações do sistema</span>
+                                </div>
+                                <label class="profile-item-toggle">
+                                    <input type="checkbox" id="notifications" checked>
+                                    <span class="profile-item-toggle-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="profile-item">
+                                <div class="profile-item-info">
+                                    <span class="profile-item-title">Email</span>
+                                    <span class="profile-item-description">Receber notificações por email</span>
+                                </div>
+                                <label class="profile-item-toggle">
+                                    <input type="checkbox" id="emailNotifications">
+                                    <span class="profile-item-toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Segurança -->
+                <div class="profile-card">
+                    <div class="profile-card-header">
+                        <h2 class="profile-card-title">
+                            <i class="fas fa-shield-alt"></i> Segurança
+                        </h2>
+                    </div>
+                    <div class="profile-section">
+                        <div class="profile-group">
+                            <div class="profile-item">
+                                <div class="profile-item-info">
+                                    <span class="profile-item-title">Senha Atual</span>
+                                    <span class="profile-item-description">Sua senha atual</span>
+                                </div>
+                                <input type="password" class="profile-item-input" id="currentPassword" placeholder="Senha atual">
+                            </div>
+                            
+                            <div class="profile-item">
+                                <div class="profile-item-info">
+                                    <span class="profile-item-title">Nova Senha</span>
+                                    <span class="profile-item-description">Digite sua nova senha</span>
+                                </div>
+                                <input type="password" class="profile-item-input" id="newPassword" placeholder="Nova senha">
+                            </div>
+                            
+                            <div class="profile-item">
+                                <div class="profile-item-info">
+                                    <span class="profile-item-title">Confirmar Senha</span>
+                                    <span class="profile-item-description">Confirme sua nova senha</span>
+                                </div>
+                                <input type="password" class="profile-item-input" id="confirmPassword" placeholder="Confirmar senha">
+                            </div>
+                            
+                            <div class="profile-item">
+                                <div class="profile-item-info">
+                                    <span class="profile-item-title">Autenticação em Dois Fatores</span>
+                                    <span class="profile-item-description">Habilitar verificação em duas etapas</span>
+                                </div>
+                                <label class="profile-item-toggle">
+                                    <input type="checkbox" id="twoFactorAuth">
+                                    <span class="profile-item-toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="profile-actions">
+                            <button class="btn btn-primary" onclick="changePassword()">
+                                <i class="fas fa-key"></i> Alterar Senha
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Atividade Recente -->
+                <div class="profile-card">
+                    <div class="profile-card-header">
+                        <h2 class="profile-card-title">
+                            <i class="fas fa-history"></i> Atividade Recente
+                        </h2>
+                    </div>
+                    <div class="activity-list" id="activityList">
+                        <!-- Atividades serão inseridas via JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../components/menu.js"></script>
+    <script>
+        // Variáveis globais
+        let profile = {};
+        let activities = [];
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProfile();
+            loadActivities();
+        });
+        
+        // Carregar perfil
+        function loadProfile() {
+            profile = getData('user_profile', {
+                name: 'Usuário',
+                email: 'usuario@sisweb.com.br',
+                phone: '',
+                department: '',
+                language: 'pt-BR',
+                theme: 'light',
+                notifications: true,
+                emailNotifications: false,
+                twoFactorAuth: false,
+                avatar: null
+            });
+            
+            // Preencher campos
+            document.getElementById('avatarName').textContent = profile.name;
+            document.getElementById('avatarRole').textContent = getRoleName(profile.department);
+            document.getElementById('avatarImage').textContent = profile.name.charAt(0);
+            
+            document.getElementById('fullName').value = profile.name;
+            document.getElementById('email').value = profile.email;
+            document.getElementById('phone').value = profile.phone;
+            document.getElementById('department').value = profile.department;
+            
+            document.getElementById('language').value = profile.language;
+            document.getElementById('theme').value = profile.theme;
+            document.getElementById('notifications').checked = profile.notifications;
+            document.getElementById('emailNotifications').checked = profile.emailNotifications;
+            document.getElementById('twoFactorAuth').checked = profile.twoFactorAuth;
+        }
+        
+        // Carregar atividades
+        function loadActivities() {
+            activities = getData('user_activities', [
+                {
+                    id: 1,
+                    type: 'login',
+                    title: 'Login no Sistema',
+                    description: 'Acesso realizado com sucesso',
+                    date: new Date().toISOString()
+                },
+                {
+                    id: 2,
+                    type: 'settings',
+                    title: 'Alteração de Configurações',
+                    description: 'Preferências atualizadas',
+                    date: new Date(Date.now() - 3600000).toISOString()
+                }
+            ]);
+            
+            renderActivities();
+        }
+        
+        // Renderizar atividades
+        function renderActivities() {
+            const list = document.getElementById('activityList');
+            
+            list.innerHTML = activities.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas ${getActivityIcon(activity.type)}"></i>
+                    </div>
+                    <div class="activity-info">
+                        <div class="activity-title">${activity.title}</div>
+                        <div class="activity-meta">
+                            ${formatDateTime(new Date(activity.date))}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Atualizar avatar
+        function updateAvatar(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const avatarImage = document.getElementById('avatarImage');
+                    avatarImage.style.backgroundImage = `url(${e.target.result})`;
+                    avatarImage.textContent = '';
+                    
+                    profile.avatar = e.target.result;
+                    saveProfile();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Salvar perfil
+        function saveProfile() {
+            // Atualizar objeto de perfil
+            profile.name = document.getElementById('fullName').value;
+            profile.email = document.getElementById('email').value;
+            profile.phone = document.getElementById('phone').value;
+            profile.department = document.getElementById('department').value;
+            
+            profile.language = document.getElementById('language').value;
+            profile.theme = document.getElementById('theme').value;
+            profile.notifications = document.getElementById('notifications').checked;
+            profile.emailNotifications = document.getElementById('emailNotifications').checked;
+            profile.twoFactorAuth = document.getElementById('twoFactorAuth').checked;
+            
+            // Salvar no storage
+            saveData('user_profile', profile);
+            
+            // Atualizar avatar
+            document.getElementById('avatarName').textContent = profile.name;
+            document.getElementById('avatarRole').textContent = getRoleName(profile.department);
+            
+            showAlert('Perfil atualizado com sucesso!', 'success');
+        }
+        
+        // Restaurar perfil
+        function resetProfile() {
+            if (!confirm('Tem certeza que deseja restaurar as configurações padrão?')) return;
+            
+            profile = {
+                name: 'Usuário',
+                email: 'usuario@sisweb.com.br',
+                phone: '',
+                department: '',
+                language: 'pt-BR',
+                theme: 'light',
+                notifications: true,
+                emailNotifications: false,
+                twoFactorAuth: false,
+                avatar: null
+            };
+            
+            saveData('user_profile', profile);
+            loadProfile();
+            
+            showAlert('Perfil restaurado com sucesso!', 'success');
+        }
+        
+        // Alterar senha
+        function changePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showAlert('Preencha todos os campos!', 'error');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showAlert('As senhas não coincidem!', 'error');
+                return;
+            }
+            
+            // Implementar alteração de senha
+            showAlert('Senha alterada com sucesso!', 'success');
+            
+            // Limpar campos
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        }
+        
+        // Obter nome do papel
+        function getRoleName(role) {
+            const roles = {
+                admin: 'Administrador',
+                sales: 'Vendedor',
+                stock: 'Estoquista',
+                finance: 'Financeiro'
+            };
+            return roles[role] || 'Usuário';
+        }
+        
+        // Obter ícone da atividade
+        function getActivityIcon(type) {
+            const icons = {
+                login: 'fa-sign-in-alt',
+                settings: 'fa-cog',
+                order: 'fa-shopping-cart',
+                stock: 'fa-box',
+                notification: 'fa-bell'
+            };
+            return icons[type] || 'fa-info-circle';
+        }
+    </script>
+</body>
+</html> 

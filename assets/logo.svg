@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background Circle -->
+    <circle cx="100" cy="100" r="90" fill="#3498db" opacity="0.1"/>
+    
+    <!-- Tree Trunk -->
+    <rect x="85" y="100" width="30" height="60" fill="#8B4513"/>
+    
+    <!-- Tree Branches -->
+    <path d="M40,100 Q100,40 160,100" stroke="#2ecc71" stroke-width="20" fill="none"/>
+    <path d="M50,80 Q100,20 150,80" stroke="#2ecc71" stroke-width="20" fill="none"/>
+    <path d="M60,60 Q100,0 140,60" stroke="#2ecc71" stroke-width="20" fill="none"/>
+    
+    <!-- Text -->
+    <text x="100" y="190" font-family="Arial" font-size="24" fill="#2c3e50" text-anchor="middle">SisWeb</text>
+</svg> 

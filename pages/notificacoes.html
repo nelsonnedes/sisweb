@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notificações - SisWeb</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f6fa;
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            margin-left: 250px;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .page-title {
+            color: #2c3e50;
+            font-size: 24px;
+        }
+        
+        .page-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .notifications-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .notification-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+        
+        .notification-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .notification-card.unread {
+            border-left: 4px solid #3498db;
+        }
+        
+        .notification-card.important {
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #3498db;
+        }
+        
+        .notification-icon.important {
+            background-color: #fde8e8;
+            color: #e74c3c;
+        }
+        
+        .notification-icon.warning {
+            background-color: #fff3e0;
+            color: #f39c12;
+        }
+        
+        .notification-icon.success {
+            background-color: #e8f5e9;
+            color: #2ecc71;
+        }
+        
+        .notification-info {
+            flex: 1;
+        }
+        
+        .notification-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .notification-message {
+            font-size: 14px;
+            color: #7f8c8d;
+            line-height: 1.5;
+        }
+        
+        .notification-time {
+            font-size: 12px;
+            color: #95a5a6;
+            margin-top: 5px;
+        }
+        
+        .notification-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .notification-btn {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: white;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .notification-btn:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .notification-btn.primary {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .notification-btn.primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .filters-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .filters-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .filters-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .filter-btn {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: white;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .filter-btn:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .filter-btn.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .filter-btn i {
+            font-size: 14px;
+        }
+        
+        .settings-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .settings-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .settings-list {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .setting-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .setting-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .setting-description {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .setting-toggle {
+            position: relative;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .setting-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .setting-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .setting-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .setting-slider {
+            background-color: #3498db;
+        }
+        
+        input:checked + .setting-slider:before {
+            transform: translateX(26px);
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                margin-left: 0;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .notifications-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .filters-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Menu Component -->
+        <sisweb-menu></sisweb-menu>
+        
+        <!-- Main Content -->
+        <div class="content">
+            <div class="page-header">
+                <h1 class="page-title">Notificações</h1>
+                <div class="page-actions">
+                    <button class="btn btn-secondary" onclick="markAllAsRead()">
+                        <i class="fas fa-check-double"></i> Marcar Todas como Lidas
+                    </button>
+                    <button class="btn btn-primary" onclick="clearAll()">
+                        <i class="fas fa-trash"></i> Limpar Todas
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Filters -->
+            <div class="filters-container">
+                <div class="filters-header">
+                    <h2 class="filters-title">Filtros</h2>
+                    <div class="filters-actions">
+                        <button class="btn btn-secondary" onclick="resetFilters()">
+                            <i class="fas fa-undo"></i> Resetar
+                        </button>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <button class="filter-btn active" onclick="filterNotifications('all')">
+                        <i class="fas fa-bell"></i> Todas
+                    </button>
+                    <button class="filter-btn" onclick="filterNotifications('unread')">
+                        <i class="fas fa-envelope"></i> Não Lidas
+                    </button>
+                    <button class="filter-btn" onclick="filterNotifications('important')">
+                        <i class="fas fa-exclamation-circle"></i> Importantes
+                    </button>
+                    <button class="filter-btn" onclick="filterNotifications('system')">
+                        <i class="fas fa-cog"></i> Sistema
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Notifications List -->
+            <div class="notifications-container">
+                <!-- Example Notifications -->
+                <div class="notification-card unread important">
+                    <div class="notification-header">
+                        <div class="notification-icon important">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <div class="notification-info">
+                            <div class="notification-title">Estoque Baixo</div>
+                            <div class="notification-message">
+                                O produto "Tábua de Madeira 2x4" está com estoque abaixo do mínimo.
+                            </div>
+                            <div class="notification-time">Há 5 minutos</div>
+                        </div>
+                    </div>
+                    <div class="notification-actions">
+                        <button class="notification-btn" onclick="viewNotification(1)">
+                            <i class="fas fa-eye"></i> Visualizar
+                        </button>
+                        <button class="notification-btn primary" onclick="markAsRead(1)">
+                            <i class="fas fa-check"></i> Marcar como Lida
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="notification-card">
+                    <div class="notification-header">
+                        <div class="notification-icon success">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="notification-info">
+                            <div class="notification-title">Pedido Confirmado</div>
+                            <div class="notification-message">
+                                O pedido #1234 foi confirmado pelo cliente.
+                            </div>
+                            <div class="notification-time">Há 1 hora</div>
+                        </div>
+                    </div>
+                    <div class="notification-actions">
+                        <button class="notification-btn" onclick="viewNotification(2)">
+                            <i class="fas fa-eye"></i> Visualizar
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="notification-card warning">
+                    <div class="notification-header">
+                        <div class="notification-icon warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="notification-info">
+                            <div class="notification-title">Aviso de Manutenção</div>
+                            <div class="notification-message">
+                                O sistema passará por manutenção programada amanhã às 02h.
+                            </div>
+                            <div class="notification-time">Há 2 horas</div>
+                        </div>
+                    </div>
+                    <div class="notification-actions">
+                        <button class="notification-btn" onclick="viewNotification(3)">
+                            <i class="fas fa-eye"></i> Visualizar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notification Settings -->
+            <div class="settings-container">
+                <div class="settings-header">
+                    <h2 class="settings-title">Configurações de Notificação</h2>
+                </div>
+                <div class="settings-list">
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-title">Notificações do Sistema</div>
+                            <div class="setting-description">
+                                Receber notificações sobre atualizações e manutenções
+                            </div>
+                        </div>
+                        <label class="setting-toggle">
+                            <input type="checkbox" checked onchange="toggleSetting('system')">
+                            <span class="setting-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-title">Alertas de Estoque</div>
+                            <div class="setting-description">
+                                Notificações quando produtos estiverem com estoque baixo
+                            </div>
+                        </div>
+                        <label class="setting-toggle">
+                            <input type="checkbox" checked onchange="toggleSetting('stock')">
+                            <span class="setting-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-title">Novos Pedidos</div>
+                            <div class="setting-description">
+                                Receber notificações sobre novos pedidos
+                            </div>
+                        </div>
+                        <label class="setting-toggle">
+                            <input type="checkbox" checked onchange="toggleSetting('orders')">
+                            <span class="setting-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-title">Notificações por Email</div>
+                            <div class="setting-description">
+                                Receber notificações importantes por email
+                            </div>
+                        </div>
+                        <label class="setting-toggle">
+                            <input type="checkbox" onchange="toggleSetting('email')">
+                            <span class="setting-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../components/menu.js"></script>
+    <script>
+        // Marcar todas como lidas
+        function markAllAsRead() {
+            const cards = document.querySelectorAll('.notification-card');
+            cards.forEach(card => {
+                card.classList.remove('unread');
+            });
+            
+            showAlert('Todas as notificações foram marcadas como lidas!', 'success');
+        }
+        
+        // Limpar todas as notificações
+        function clearAll() {
+            if (confirm('Tem certeza que deseja limpar todas as notificações?')) {
+                const container = document.querySelector('.notifications-container');
+                container.innerHTML = '';
+                showAlert('Todas as notificações foram removidas!', 'success');
+            }
+        }
+        
+        // Filtrar notificações
+        function filterNotifications(type) {
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const cards = document.querySelectorAll('.notification-card');
+            cards.forEach(card => {
+                if (type === 'all' || card.classList.contains(type)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        
+        // Resetar filtros
+        function resetFilters() {
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            buttons[0].classList.add('active');
+            
+            const cards = document.querySelectorAll('.notification-card');
+            cards.forEach(card => card.style.display = 'flex');
+        }
+        
+        // Visualizar notificação
+        function viewNotification(id) {
+            // Implementar visualização detalhada
+            console.log('Visualizando notificação:', id);
+        }
+        
+        // Marcar como lida
+        function markAsRead(id) {
+            const card = event.target.closest('.notification-card');
+            card.classList.remove('unread');
+            showAlert('Notificação marcada como lida!', 'success');
+        }
+        
+        // Alternar configuração
+        function toggleSetting(setting) {
+            const checkbox = event.target;
+            const enabled = checkbox.checked;
+            
+            // Implementar salvamento da configuração
+            console.log(`Configuração ${setting}: ${enabled ? 'ativada' : 'desativada'}`);
+            
+            showAlert(
+                `Notificações ${setting} ${enabled ? 'ativadas' : 'desativadas'} com sucesso!`,
+                'success'
+            );
+        }
+    </script>
+</body>
+</html> 

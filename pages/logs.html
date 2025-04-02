@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logs - SisWeb</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f6fa;
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            margin-left: 250px;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .page-title {
+            color: #2c3e50;
+            font-size: 24px;
+        }
+        
+        .page-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .stat-icon.info {
+            background-color: #3498db;
+        }
+        
+        .stat-icon.error {
+            background-color: #e74c3c;
+        }
+        
+        .stat-icon.warning {
+            background-color: #f39c12;
+        }
+        
+        .stat-icon.success {
+            background-color: #2ecc71;
+        }
+        
+        .stat-info {
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .filters-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .filters-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .filters-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .filter-btn {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: white;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .filter-btn:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .filter-btn.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .filter-btn i {
+            font-size: 14px;
+        }
+        
+        .logs-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .logs-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .logs-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .logs-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .log-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        .log-item:hover {
+            background-color: #f1f2f6;
+        }
+        
+        .log-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: white;
+        }
+        
+        .log-icon.info {
+            background-color: #3498db;
+        }
+        
+        .log-icon.error {
+            background-color: #e74c3c;
+        }
+        
+        .log-icon.warning {
+            background-color: #f39c12;
+        }
+        
+        .log-icon.success {
+            background-color: #2ecc71;
+        }
+        
+        .log-info {
+            flex: 1;
+        }
+        
+        .log-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .log-message {
+            font-size: 13px;
+            color: #7f8c8d;
+            line-height: 1.5;
+            margin-bottom: 5px;
+        }
+        
+        .log-meta {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 12px;
+            color: #95a5a6;
+        }
+        
+        .log-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .log-btn {
+            padding: 5px;
+            color: #95a5a6;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .log-btn:hover {
+            color: #3498db;
+        }
+        
+        .log-btn.delete:hover {
+            color: #e74c3c;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .page-btn {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: white;
+            color: #2c3e50;
+        }
+        
+        .page-btn:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .page-btn.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                margin-left: 0;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .filters-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .logs-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .logs-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Menu Component -->
+        <sisweb-menu></sisweb-menu>
+        
+        <!-- Main Content -->
+        <div class="content">
+            <div class="page-header">
+                <h1 class="page-title">Logs do Sistema</h1>
+                <div class="page-actions">
+                    <button class="btn btn-secondary" onclick="exportLogs('json')">
+                        <i class="fas fa-file-export"></i> Exportar JSON
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportLogs('csv')">
+                        <i class="fas fa-file-csv"></i> Exportar CSV
+                    </button>
+                    <button class="btn btn-danger" onclick="clearLogs()">
+                        <i class="fas fa-trash"></i> Limpar Logs
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Statistics -->
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon info">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value">1,234</div>
+                        <div class="stat-label">Total de Logs</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon error">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value">45</div>
+                        <div class="stat-label">Erros</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value">89</div>
+                        <div class="stat-label">Avisos</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value">1,100</div>
+                        <div class="stat-label">Sucessos</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filters -->
+            <div class="filters-container">
+                <div class="filters-header">
+                    <h2 class="filters-title">Filtros</h2>
+                    <div class="filters-actions">
+                        <button class="btn btn-secondary" onclick="resetFilters()">
+                            <i class="fas fa-undo"></i> Resetar
+                        </button>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <button class="filter-btn active" onclick="filterLogs('all')">
+                        <i class="fas fa-list"></i> Todos
+                    </button>
+                    <button class="filter-btn" onclick="filterLogs('error')">
+                        <i class="fas fa-exclamation-circle"></i> Erros
+                    </button>
+                    <button class="filter-btn" onclick="filterLogs('warning')">
+                        <i class="fas fa-exclamation-triangle"></i> Avisos
+                    </button>
+                    <button class="filter-btn" onclick="filterLogs('info')">
+                        <i class="fas fa-info-circle"></i> Informações
+                    </button>
+                    <button class="filter-btn" onclick="filterLogs('success')">
+                        <i class="fas fa-check-circle"></i> Sucessos
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Logs List -->
+            <div class="logs-container">
+                <div class="logs-header">
+                    <h2 class="logs-title">Registros de Log</h2>
+                    <div class="logs-actions">
+                        <button class="btn btn-secondary" onclick="refreshLogs()">
+                            <i class="fas fa-sync"></i> Atualizar
+                        </button>
+                    </div>
+                </div>
+                <div class="logs-list">
+                    <!-- Example Logs -->
+                    <div class="log-item">
+                        <div class="log-icon error">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <div class="log-info">
+                            <div class="log-title">Erro de Conexão</div>
+                            <div class="log-message">
+                                Falha ao conectar ao banco de dados. Tentativa de reconexão em 5 segundos.
+                            </div>
+                            <div class="log-meta">
+                                <span>Há 5 minutos</span>
+                                <span>Usuário: admin</span>
+                                <span>IP: 192.168.1.100</span>
+                            </div>
+                        </div>
+                        <div class="log-actions">
+                            <button class="log-btn" onclick="viewLogDetails(1)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="log-btn delete" onclick="deleteLog(1)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="log-item">
+                        <div class="log-icon warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="log-info">
+                            <div class="log-title">Estoque Baixo</div>
+                            <div class="log-message">
+                                O produto "Tábua de Madeira 2x4" está com estoque abaixo do mínimo.
+                            </div>
+                            <div class="log-meta">
+                                <span>Há 15 minutos</span>
+                                <span>Usuário: sistema</span>
+                                <span>IP: 192.168.1.1</span>
+                            </div>
+                        </div>
+                        <div class="log-actions">
+                            <button class="log-btn" onclick="viewLogDetails(2)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="log-btn delete" onclick="deleteLog(2)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="log-item">
+                        <div class="log-icon success">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="log-info">
+                            <div class="log-title">Backup Realizado</div>
+                            <div class="log-message">
+                                Backup do banco de dados concluído com sucesso.
+                            </div>
+                            <div class="log-meta">
+                                <span>Há 1 hora</span>
+                                <span>Usuário: sistema</span>
+                                <span>IP: 192.168.1.1</span>
+                            </div>
+                        </div>
+                        <div class="log-actions">
+                            <button class="log-btn" onclick="viewLogDetails(3)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="log-btn delete" onclick="deleteLog(3)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button class="page-btn" onclick="changePage('prev')" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="page-btn active">1</button>
+                    <button class="page-btn">2</button>
+                    <button class="page-btn">3</button>
+                    <button class="page-btn" onclick="changePage('next')">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../components/menu.js"></script>
+    <script>
+        // Exportar logs
+        function exportLogs(format) {
+            // Implementar exportação
+            console.log(`Exportando logs em formato ${format}`);
+            showAlert(`Logs exportados com sucesso em formato ${format.toUpperCase()}!`, 'success');
+        }
+        
+        // Limpar logs
+        function clearLogs() {
+            if (confirm('Tem certeza que deseja limpar todos os logs? Esta ação não pode ser desfeita.')) {
+                const list = document.querySelector('.logs-list');
+                list.innerHTML = '';
+                showAlert('Todos os logs foram removidos!', 'success');
+            }
+        }
+        
+        // Filtrar logs
+        function filterLogs(type) {
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const items = document.querySelectorAll('.log-item');
+            items.forEach(item => {
+                if (type === 'all' || item.querySelector('.log-icon').classList.contains(type)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        // Resetar filtros
+        function resetFilters() {
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            buttons[0].classList.add('active');
+            
+            const items = document.querySelectorAll('.log-item');
+            items.forEach(item => item.style.display = 'flex');
+        }
+        
+        // Atualizar logs
+        function refreshLogs() {
+            // Implementar atualização
+            showAlert('Logs atualizados com sucesso!', 'success');
+        }
+        
+        // Visualizar detalhes do log
+        function viewLogDetails(id) {
+            // Implementar visualização detalhada
+            console.log('Visualizando detalhes do log:', id);
+        }
+        
+        // Deletar log
+        function deleteLog(id) {
+            if (confirm('Tem certeza que deseja excluir este log?')) {
+                const item = event.target.closest('.log-item');
+                item.remove();
+                showAlert('Log excluído com sucesso!', 'success');
+            }
+        }
+        
+        // Mudar página
+        function changePage(direction) {
+            // Implementar paginação
+            console.log(`Mudando para página ${direction === 'prev' ? 'anterior' : 'próxima'}`);
+        }
+    </script>
+</body>
+</html> 
