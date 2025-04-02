@@ -302,7 +302,7 @@
         
         <div class="error-message" id="errorMessage"></div>
         
-        <form id="registerForm" onsubmit="return handleRegister(event)">
+        <form id="registerForm" method="POST" onsubmit="return false;">
             <div class="form-row">
                 <div class="form-group">
                     <label for="name">Nome Completo</label>
@@ -524,9 +524,16 @@
         }
         
         // Registrar o formulário
-        document.getElementById('registerForm').addEventListener('submit', async function(event) {
+        document.getElementById('registerForm').addEventListener('submit', function(event) {
             event.preventDefault();
-            
+            handleRegister();
+        });
+        
+        // Adicionar botão de submissão direto
+        document.querySelector('.register-button').addEventListener('click', handleRegister);
+        
+        // Função para processar o registro
+        async function handleRegister() {
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const username = document.getElementById('username').value;
@@ -587,7 +594,7 @@
                 showError(errorMsg);
                 hideLoading();
             }
-        });
+        }
         
         function showAlert(message, type) {
             const alert = document.createElement('div');
