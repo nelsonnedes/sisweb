@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - SisWeb</title>
     
+    <!-- Favicon -->
+    <link rel="icon" href="../assets/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="../assets/favicon.ico" type="image/x-icon">
+    
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
@@ -519,16 +523,29 @@
         passwordInput.addEventListener('input', validatePassword);
         confirmPasswordInput.addEventListener('input', validatePassword);
         
-        // Funções do modal de recuperação de senha
-        window.showForgotPassword = function() {
-            document.getElementById('forgotPasswordModal').style.display = 'block';
-            document.body.style.overflow = 'hidden';
+        // Registrar o formulário
+        document.getElementById('registerForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            handleRegister();
+        });
+        
+        // Adicionar botão de submissão direto
+        document.querySelector('.register-button').addEventListener('click', function() {
+            handleRegister();
+        });
+        
+        // Modal de recuperação de senha
+        const resetPasswordLink = document.getElementById('resetPasswordLink');
+        if (resetPasswordLink) {
+            resetPasswordLink.addEventListener('click', function(event) {
+                event.preventDefault();
+                document.getElementById('forgotPasswordModal').style.display = 'block';
+            });
         }
         
         window.closeForgotPasswordModal = function() {
             document.getElementById('forgotPasswordModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
+        };
         
         window.handleForgotPassword = async function(event) {
             event.preventDefault();
@@ -557,14 +574,42 @@
             return false;
         }
         
-        // Registrar o formulário
-        document.getElementById('registerForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            handleRegister();
-        });
-        
-        // Adicionar botão de submissão direto
-        document.querySelector('.register-button').addEventListener('click', handleRegister);
+        // Função para mostrar alertas
+        function showAlert(message, type) {
+            // Remover alertas anteriores
+            const existingAlerts = document.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => alert.remove());
+            
+            // Criar novo alerta
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            // Adicionar estilos
+            alert.style.position = 'fixed';
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.padding = '15px';
+            alert.style.borderRadius = '5px';
+            alert.style.zIndex = '9999';
+            
+            if (type === 'success') {
+                alert.style.backgroundColor = '#d4edda';
+                alert.style.color = '#155724';
+                alert.style.border = '1px solid #c3e6cb';
+            } else if (type === 'error') {
+                alert.style.backgroundColor = '#f8d7da';
+                alert.style.color = '#721c24';
+                alert.style.border = '1px solid #f5c6cb';
+            }
+            
+            document.body.appendChild(alert);
+            
+            // Remover o alerta após 3 segundos
+            setTimeout(() => {
+                alert.remove();
+            }, 3000);
+        }
         
         // Função para processar o registro
         async function handleRegister() {
@@ -734,42 +779,6 @@
                 showError(errorMessage);
                 hideLoading();
             }
-        }
-        
-        function showAlert(message, type) {
-            // Remover alertas anteriores
-            const existingAlerts = document.querySelectorAll('.alert');
-            existingAlerts.forEach(alert => alert.remove());
-            
-            // Criar novo alerta
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.textContent = message;
-            
-            // Adicionar estilos
-            alert.style.position = 'fixed';
-            alert.style.top = '20px';
-            alert.style.right = '20px';
-            alert.style.padding = '15px';
-            alert.style.borderRadius = '5px';
-            alert.style.zIndex = '9999';
-            
-            if (type === 'success') {
-                alert.style.backgroundColor = '#d4edda';
-                alert.style.color = '#155724';
-                alert.style.border = '1px solid #c3e6cb';
-            } else if (type === 'error') {
-                alert.style.backgroundColor = '#f8d7da';
-                alert.style.color = '#721c24';
-                alert.style.border = '1px solid #f5c6cb';
-            }
-            
-            document.body.appendChild(alert);
-            
-            // Remover o alerta após 3 segundos
-            setTimeout(() => {
-                alert.remove();
-            }, 3000);
         }
     </script>
 </body>
