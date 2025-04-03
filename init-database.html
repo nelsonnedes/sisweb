@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicializar Banco de Dados - SisWeb</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+        .header img {
+            height: 60px;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+        .info {
+            background-color: #e2f3f8;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        .btn-success {
+            background-color: #2ecc71;
+        }
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        .console {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .tab.active {
+            border-bottom: 2px solid #3498db;
+            color: #3498db;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .timestamp {
+            color: #95a5a6;
+            font-size: 0.8em;
+            margin-right: 5px;
+        }
+        .text-success {
+            color: #2ecc71;
+        }
+        .text-error {
+            color: #e74c3c;
+        }
+        .text-warning {
+            color: #f39c12;
+        }
+        .center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="assets/logo.svg" alt="SisWeb">
+            <h1>Inicializar Banco de Dados</h1>
+        </div>
+
+        <div id="loginSection">
+            <h2 class="center">Login Administrativo</h2>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username">E-mail:</label>
+                    <input type="text" id="username" value="admin@sisweb.com.br" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Senha:</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit">Entrar</button>
+            </form>
+        </div>
+
+        <div id="adminSection" style="display: none;">
+            <div class="tabs">
+                <div class="tab active" data-target="actions">Ações</div>
+                <div class="tab" data-target="rtdb">Realtime Database</div>
+                <div class="tab" data-target="firestore">Firestore</div>
+                <div class="tab" data-target="logs">Logs</div>
+            </div>
+
+            <div id="actions" class="tab-content active">
+                <div>
+                    <h3>Firebase Realtime Database</h3>
+                    <button onclick="initializeRealtimeDB()" class="btn-success">Inicializar Realtime Database</button>
+                    <button class="btn-danger" onclick="clearRealtimeDB()">Limpar Realtime Database</button>
+                </div>
+                <div style="margin-top: 20px;">
+                    <h3>Firebase Firestore</h3>
+                    <button onclick="initializeFirestore()" class="btn-success">Inicializar Firestore</button>
+                    <button class="btn-danger" onclick="clearFirestore()">Limpar Firestore</button>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button class="btn-danger" onclick="logout()">Sair do Admin</button>
+                </div>
+                <div id="status" class="status info">
+                    Conectado como administrador. Selecione uma das ações acima.
+                </div>
+            </div>
+
+            <div id="rtdb" class="tab-content">
+                <h3>Estrutura do Realtime Database</h3>
+                <div id="rtdbStructure" class="console">
+                    Aguardando dados...
+                </div>
+            </div>
+
+            <div id="firestore" class="tab-content">
+                <h3>Coleções do Firestore</h3>
+                <div id="firestoreStructure" class="console">
+                    Aguardando dados...
+                </div>
+            </div>
+
+            <div id="logs" class="tab-content">
+                <h3>Logs de execução</h3>
+                <div id="console" class="console">
+                    Iniciando sistema de logs...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCJoql30uCoRhc3UHCnyl57M1vFCT2-N1o",
+            authDomain: "dbsisweb.firebaseapp.com",
+            databaseURL: "https://dbsisweb-default-rtdb.firebaseio.com",
+            projectId: "dbsisweb",
+            storageBucket: "dbsisweb.appspot.com",
+            messagingSenderId: "711476232625",
+            appId: "1:711476232625:web:a00e3508487856b3613d90",
+            measurementId: "G-M0M8LFVGDC"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const firestore = firebase.firestore();
+        const auth = firebase.auth();
+
+        // Configuração de tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.target).classList.add('active');
+            });
+        });
+
+        // Funções de log
+        function log(message, type = 'info') {
+            const consoleDiv = document.getElementById('console');
+            const timestamp = new Date().toLocaleTimeString();
+            let classType = '';
+            
+            switch(type) {
+                case 'success': classType = 'text-success'; break;
+                case 'error': classType = 'text-error'; break;
+                case 'warning': classType = 'text-warning'; break;
+                default: classType = ''; break;
+            }
+            
+            consoleDiv.innerHTML += `<div><span class="timestamp">[${timestamp}]</span> <span class="${classType}">${message}</span></div>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            
+            // Log no console do navegador também
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+        }
+
+        // FIREBASE REALTIME DATABASE INITIALIZATION
+
+        // Dados padrão para o Realtime Database
+        const rtdbData = {
+            users: {
+                admin: {
+                    username: "admin",
+                    name: "Administrador",
+                    email: "admin@sisweb.com.br",
+                    role: "admin",
+                    created: Date.now(),
+                    emailVerified: true
+                }
+            },
+            clients: {
+                demo1: {
+                    name: "Madeireira Exemplo Ltda",
+                    email: "contato@madeireiraexemplo.com.br",
+                    phone: "(11) 98765-4321",
+                    address: "Rua das Madeiras, 123",
+                    city: "São Paulo",
+                    state: "SP",
+                    created: Date.now()
+                },
+                demo2: {
+                    name: "Construtora Modelo S.A.",
+                    email: "contato@construtoramodelo.com.br",
+                    phone: "(11) 91234-5678",
+                    address: "Av. das Construções, 456",
+                    city: "São Paulo",
+                    state: "SP",
+                    created: Date.now()
+                }
+            },
+            species: {
+                demo1: {
+                    name: "Cedro",
+                    scientificName: "Cedrela fissilis",
+                    density: 550,
+                    price: 250.00,
+                    description: "Madeira nobre de cor avermelhada",
+                    created: Date.now()
+                },
+                demo2: {
+                    name: "Pinus",
+                    scientificName: "Pinus elliottii",
+                    density: 480,
+                    price: 120.00,
+                    description: "Madeira de reflorestamento, clara e macia",
+                    created: Date.now()
+                }
+            },
+            settings: {
+                general: {
+                    systemName: "SisWeb - Sistema de Gestão de Madeiras",
+                    version: "1.0.0",
+                    defaultCurrency: "BRL",
+                    defaultVolumeUnit: "m³",
+                    lastUpdate: Date.now(),
+                    features: {
+                        enableBackup: true,
+                        enableNotifications: true,
+                        enableReports: true,
+                        enableOfflineMode: true
+                    },
+                    ui: {
+                        theme: "light",
+                        language: "pt_BR",
+                        dateFormat: "DD/MM/YYYY",
+                        decimalSeparator: ","
+                    }
+                }
+            }
+        };
+
+        // Inicializar Realtime Database
+        async function initializeRealtimeDB() {
+            log('Iniciando inicialização do Realtime Database...', 'info');
+            showStatus('Inicializando Realtime Database...', 'info');
+            
+            try {
+                // Adicionar cada nó raiz separadamente
+                const batch = [];
+                
+                for (const [key, value] of Object.entries(rtdbData)) {
+                    log(`Inicializando nó '${key}'...`);
+                    batch.push(database.ref(key).set(value));
+                }
+                
+                await Promise.all(batch);
+                
+                log('Realtime Database inicializado com sucesso!', 'success');
+                showStatus('Realtime Database inicializado com sucesso!', 'success');
+                
+                // Atualizar visualização
+                refreshRTDBStructure();
+            } catch (error) {
+                console.error('Erro ao inicializar Realtime Database:', error);
+                log(`Erro ao inicializar Realtime Database: ${error.message}`, 'error');
+                showStatus(`Erro: ${error.message}`, 'error');
+            }
+        }
+
+        // Limpar Realtime Database
+        async function clearRealtimeDB() {
+            if (!confirm('ATENÇÃO: Isso irá APAGAR TODOS OS DADOS do Realtime Database. Tem certeza?')) {
+                return;
+            }
+            
+            log('Iniciando limpeza do Realtime Database...', 'warning');
+            showStatus('Limpando Realtime Database...', 'warning');
+            
+            try {
+                await database.ref().remove();
+                log('Realtime Database limpo com sucesso!', 'success');
+                showStatus('Realtime Database limpo com sucesso!', 'success');
+                
+                // Atualizar visualização
+                refreshRTDBStructure();
+            } catch (error) {
+                console.error('Erro ao limpar Realtime Database:', error);
+                log(`Erro ao limpar Realtime Database: ${error.message}`, 'error');
+                showStatus(`Erro: ${error.message}`, 'error');
+            }
+        }
+
+        // Obter estrutura do Realtime Database
+        async function refreshRTDBStructure() {
+            try {
+                log('Atualizando visualização do Realtime Database...', 'info');
+                const snapshot = await database.ref().once('value');
+                const data = snapshot.val() || {};
+                
+                const structureEl = document.getElementById('rtdbStructure');
+                structureEl.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                
+                log('Visualização do Realtime Database atualizada', 'success');
+            } catch (error) {
+                console.error('Erro ao obter estrutura do Realtime Database:', error);
+                log(`Erro ao obter estrutura do Realtime Database: ${error.message}`, 'error');
+                
+                const structureEl = document.getElementById('rtdbStructure');
+                structureEl.innerHTML = `<div class="text-error">Erro ao carregar dados: ${error.message}</div>`;
+            }
+        }
+
+        // FIREBASE FIRESTORE INITIALIZATION
+
+        // Dados padrão para o Firestore
+        const firestoreData = {
+            users: [
+                {
+                    id: 'admin',
+                    username: "admin",
+                    name: "Administrador",
+                    email: "admin@sisweb.com.br",
+                    role: "admin",
+                    created: firebase.firestore.FieldValue.serverTimestamp(),
+                    emailVerified: true
+                }
+            ],
+            clients: [
+                {
+                    id: 'demo1',
+                    name: "Madeireira Exemplo Ltda",
+                    email: "contato@madeireiraexemplo.com.br",
+                    phone: "(11) 98765-4321",
+                    address: "Rua das Madeiras, 123",
+                    city: "São Paulo",
+                    state: "SP",
+                    created: firebase.firestore.FieldValue.serverTimestamp()
+                },
+                {
+                    id: 'demo2',
+                    name: "Construtora Modelo S.A.",
+                    email: "contato@construtoramodelo.com.br",
+                    phone: "(11) 91234-5678",
+                    address: "Av. das Construções, 456",
+                    city: "São Paulo",
+                    state: "SP",
+                    created: firebase.firestore.FieldValue.serverTimestamp()
+                }
+            ],
+            species: [
+                {
+                    id: 'demo1',
+                    name: "Cedro",
+                    scientificName: "Cedrela fissilis",
+                    density: 550,
+                    price: 250.00,
+                    description: "Madeira nobre de cor avermelhada",
+                    created: firebase.firestore.FieldValue.serverTimestamp()
+                },
+                {
+                    id: 'demo2',
+                    name: "Pinus",
+                    scientificName: "Pinus elliottii",
+                    density: 480,
+                    price: 120.00,
+                    description: "Madeira de reflorestamento, clara e macia",
+                    created: firebase.firestore.FieldValue.serverTimestamp()
+                }
+            ],
+            settings: [
+                {
+                    id: 'general',
+                    systemName: "SisWeb - Sistema de Gestão de Madeiras",
+                    version: "1.0.0",
+                    defaultCurrency: "BRL",
+                    defaultVolumeUnit: "m³",
+                    lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
+                    features: {
+                        enableBackup: true,
+                        enableNotifications: true,
+                        enableReports: true,
+                        enableOfflineMode: true
+                    },
+                    ui: {
+                        theme: "light",
+                        language: "pt_BR",
+                        dateFormat: "DD/MM/YYYY",
+                        decimalSeparator: ","
+                    }
+                }
+            ]
+        };
+
+        // Inicializar Firestore
+        async function initializeFirestore() {
+            log('Iniciando inicialização do Firestore...', 'info');
+            showStatus('Inicializando Firestore...', 'info');
+            
+            try {
+                // Adicionar dados em cada coleção em uma batch
+                const batch = firestore.batch();
+                
+                // Processar cada coleção
+                for (const [collection, documents] of Object.entries(firestoreData)) {
+                    log(`Inicializando coleção '${collection}'...`);
+                    
+                    for (const doc of documents) {
+                        const { id, ...data } = doc;
+                        const docRef = firestore.collection(collection).doc(id);
+                        batch.set(docRef, data);
+                    }
+                }
+                
+                // Commitar batch
+                await batch.commit();
+                
+                log('Firestore inicializado com sucesso!', 'success');
+                showStatus('Firestore inicializado com sucesso!', 'success');
+                
+                // Atualizar visualização
+                refreshFirestoreStructure();
+            } catch (error) {
+                console.error('Erro ao inicializar Firestore:', error);
+                log(`Erro ao inicializar Firestore: ${error.message}`, 'error');
+                showStatus(`Erro: ${error.message}`, 'error');
+            }
+        }
+
+        // Limpar Firestore
+        async function clearFirestore() {
+            if (!confirm('ATENÇÃO: Isso irá APAGAR TODOS OS DADOS do Firestore. Tem certeza?')) {
+                return;
+            }
+            
+            log('Iniciando limpeza do Firestore...', 'warning');
+            showStatus('Limpando Firestore...', 'warning');
+            
+            try {
+                // Obter todas as coleções
+                const collections = ['users', 'clients', 'species', 'settings', 'romaneios', 'inventory', 'orders', 'financial', 'logs', 'company', 'subscriptions'];
+                
+                // Limpar cada coleção
+                for (const collectionName of collections) {
+                    log(`Limpando coleção '${collectionName}'...`);
+                    
+                    const querySnapshot = await firestore.collection(collectionName).get();
+                    
+                    // Usar batch para excluir documentos
+                    const batch = firestore.batch();
+                    querySnapshot.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    
+                    if (querySnapshot.size > 0) {
+                        await batch.commit();
+                        log(`${querySnapshot.size} documento(s) excluído(s) da coleção '${collectionName}'`, 'success');
+                    } else {
+                        log(`Coleção '${collectionName}' já está vazia`, 'info');
+                    }
+                }
+                
+                log('Firestore limpo com sucesso!', 'success');
+                showStatus('Firestore limpo com sucesso!', 'success');
+                
+                // Atualizar visualização
+                refreshFirestoreStructure();
+            } catch (error) {
+                console.error('Erro ao limpar Firestore:', error);
+                log(`Erro ao limpar Firestore: ${error.message}`, 'error');
+                showStatus(`Erro: ${error.message}`, 'error');
+            }
+        }
+
+        // Obter estrutura do Firestore
+        async function refreshFirestoreStructure() {
+            try {
+                log('Atualizando visualização do Firestore...', 'info');
+                
+                // Obter todas as coleções
+                const collections = ['users', 'clients', 'species', 'settings', 'romaneios', 'inventory', 'orders', 'financial', 'logs', 'company', 'subscriptions'];
+                
+                // Estrutura para armazenar dados
+                const structure = {};
+                
+                // Obter dados de cada coleção
+                for (const collectionName of collections) {
+                    const querySnapshot = await firestore.collection(collectionName).get();
+                    
+                    structure[collectionName] = {
+                        count: querySnapshot.size,
+                        documents: {}
+                    };
+                    
+                    querySnapshot.forEach(doc => {
+                        structure[collectionName].documents[doc.id] = doc.data();
+                    });
+                }
+                
+                const structureEl = document.getElementById('firestoreStructure');
+                structureEl.innerHTML = '<pre>' + JSON.stringify(structure, null, 2) + '</pre>';
+                
+                log('Visualização do Firestore atualizada', 'success');
+            } catch (error) {
+                console.error('Erro ao obter estrutura do Firestore:', error);
+                log(`Erro ao obter estrutura do Firestore: ${error.message}`, 'error');
+                
+                const structureEl = document.getElementById('firestoreStructure');
+                structureEl.innerHTML = `<div class="text-error">Erro ao carregar dados: ${error.message}</div>`;
+            }
+        }
+
+        // Função para logout
+        function logout() {
+            log('Fazendo logout...', 'info');
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('adminSection').style.display = 'none';
+            document.getElementById('loginForm').reset();
+        }
+
+        // Login com Firebase Auth
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                log(`Tentando fazer login com: ${email}`, 'info');
+                
+                // Tentar fazer login usando Firebase Auth
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                // Verificar se é admin (podemos adaptar isto conforme necessário)
+                const isAdmin = email === "admin@sisweb.com.br";
+                
+                if (isAdmin) {
+                    log(`Login bem-sucedido: ${user.email} (Administrador)`, 'success');
+                    document.getElementById('loginSection').style.display = 'none';
+                    document.getElementById('adminSection').style.display = 'block';
+                    
+                    showStatus(`Conectado como administrador: ${user.email}`, 'success');
+                    
+                    // Atualizar estruturas
+                    refreshRTDBStructure();
+                    refreshFirestoreStructure();
+                } else {
+                    log('Acesso negado: É necessário privilégios de administrador', 'error');
+                    showStatus('Acesso negado: É necessário privilégios de administrador', 'error');
+                    auth.signOut();
+                }
+            } catch (error) {
+                console.error('Erro ao fazer login:', error);
+                log(`Erro ao fazer login: ${error.message}`, 'error');
+                
+                // Tratar alguns erros específicos
+                let errorMessage = 'Erro ao fazer login';
+                
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        errorMessage = 'Usuário não encontrado';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage = 'Senha incorreta';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'E-mail inválido';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = 'Erro de conexão';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                
+                alert(`Erro: ${errorMessage}`);
+            }
+        });
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            log('Sistema de inicialização de banco de dados carregado', 'success');
+            showStatus('Faça login para administrar o banco de dados', 'info');
+        });
+
+        // Adicionar listener para erros de conexão
+        database.ref().on('error', (error) => {
+            log(`Erro de conexão com o Realtime Database: ${error.message}`, 'error');
+            showStatus(`Erro de conexão com o Realtime Database: ${error.message}`, 'error');
+        });
+    </script>
+</body>
+</html> 
