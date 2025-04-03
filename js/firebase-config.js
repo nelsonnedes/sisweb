@@ -24,55 +24,84 @@ const firebaseConfig = {
 };
 
 // Inicializar Firebase
-console.log('Inicializando Firebase com a configuração:', JSON.stringify(firebaseConfig));
-const app = initializeApp(firebaseConfig);
-console.log('Firebase inicializado. App:', app);
+console.log('[Firebase Config] Inicializando Firebase...', firebaseConfig);
+let app;
+try {
+  app = initializeApp(firebaseConfig);
+  console.log('[Firebase Config] Firebase inicializado com sucesso. App name:', app.name);
+} catch (error) {
+  console.error('[Firebase Config] ERRO ao inicializar Firebase:', error);
+  throw error; // Propagar erro para ser capturado por quem está usando este módulo
+}
 
 // Inicializar serviços
-console.log('Inicializando Firebase Authentication...');
-const auth = getAuth(app);
-console.log('Inicializando Firestore...');
-const db = getFirestore(app);
-console.log('Inicializando Realtime Database...');
-const rtdb = getDatabase(app);
-console.log('Inicializando Firebase Storage...');
-const storage = getStorage(app);
-let analytics = null;
+console.log('[Firebase Config] Inicializando serviços Firebase...');
 
-// Tentar inicializar analytics (pode falhar em ambiente de desenvolvimento)
+// Auth
+let auth;
 try {
-  console.log('Tentando inicializar Firebase Analytics...');
-  analytics = getAnalytics(app);
-  console.log('Firebase Analytics inicializado com sucesso');
+  console.log('[Firebase Config] Inicializando Firebase Authentication...');
+  auth = getAuth(app);
+  console.log('[Firebase Config] Auth inicializado com sucesso. Auth name:', auth.name);
 } catch (error) {
-  console.warn('Não foi possível inicializar Firebase Analytics:', error.message);
+  console.error('[Firebase Config] ERRO ao inicializar Auth:', error);
 }
 
-// Verificar se a autenticação foi inicializada corretamente
+// Firestore
+let db;
+try {
+  console.log('[Firebase Config] Inicializando Firestore...');
+  db = getFirestore(app);
+  console.log('[Firebase Config] Firestore inicializado com sucesso');
+} catch (error) {
+  console.error('[Firebase Config] ERRO ao inicializar Firestore:', error);
+}
+
+// Realtime Database
+let rtdb;
+try {
+  console.log('[Firebase Config] Inicializando Realtime Database...');
+  rtdb = getDatabase(app);
+  console.log('[Firebase Config] Realtime Database inicializado com sucesso. URL:', rtdb.app.options.databaseURL);
+} catch (error) {
+  console.error('[Firebase Config] ERRO ao inicializar Realtime Database:', error);
+}
+
+// Storage
+let storage;
+try {
+  console.log('[Firebase Config] Inicializando Firebase Storage...');
+  storage = getStorage(app);
+  console.log('[Firebase Config] Storage inicializado com sucesso. Bucket:', storage.app.options.storageBucket);
+} catch (error) {
+  console.error('[Firebase Config] ERRO ao inicializar Storage:', error);
+}
+
+// Analytics (opcional)
+let analytics = null;
+try {
+  console.log('[Firebase Config] Tentando inicializar Firebase Analytics...');
+  analytics = getAnalytics(app);
+  console.log('[Firebase Config] Analytics inicializado com sucesso');
+} catch (error) {
+  console.warn('[Firebase Config] Não foi possível inicializar Analytics:', error.message);
+}
+
+// Verificar se estamos em ambiente de desenvolvimento (localhost)
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+  console.log('[Firebase Config] Ambiente de desenvolvimento detectado. Emuladores não configurados.');
+  // Aqui você poderia conectar aos emuladores se necessário
+}
+
+// Verificar estado de autenticação atual
 if (auth) {
-  console.log('Firebase Authentication inicializado com sucesso:', auth.name);
-  // Verificar se o usuário está logado
-  if (auth.currentUser) {
-    console.log('Usuário já está logado:', auth.currentUser.email);
-  } else {
-    console.log('Nenhum usuário logado no momento.');
-  }
-} else {
-  console.error('ERRO: Firebase Authentication não foi inicializado');
-}
-
-// Verificar se o Firestore foi inicializado corretamente
-if (db) {
-  console.log('Firestore inicializado com sucesso:', db.name);
-} else {
-  console.error('ERRO: Firestore não foi inicializado');
-}
-
-// Verificar se o Realtime Database foi inicializado corretamente
-if (rtdb) {
-  console.log('Realtime Database inicializado com sucesso:', rtdb.app.name);
-} else {
-  console.error('ERRO: Realtime Database não foi inicializado');
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      console.log('[Firebase Config] Usuário autenticado:', user.email);
+    } else {
+      console.log('[Firebase Config] Nenhum usuário autenticado');
+    }
+  });
 }
 
 // Exportar os serviços para uso em outros arquivos

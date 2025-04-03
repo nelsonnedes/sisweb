@@ -237,24 +237,67 @@
         function initializeFirebase() {
             try {
                 log("Inicializando Firebase...");
+                
+                // Limpar status anterior
+                updateStatus('firebase-status', 'pending', 'Verificando conexão...');
+                updateStatus('auth-status', 'pending', 'Aguardando...');
+                updateStatus('firestore-status', 'pending', 'Aguardando...');
+                updateStatus('rtdb-status', 'pending', 'Aguardando...');
+                
+                // Inicializar app Firebase com configs corretas
                 app = initializeApp(firebaseConfig);
                 updateStatus('firebase-status', 'success', 'Firebase inicializado com sucesso!');
                 log("Firebase App inicializado com sucesso", 'success');
                 
                 // Inicializar Auth
-                auth = getAuth(app);
-                updateStatus('auth-status', 'success', 'Firebase Auth inicializado com sucesso!');
-                log("Firebase Auth inicializado com sucesso", 'success');
+                try {
+                    auth = getAuth(app);
+                    updateStatus('auth-status', 'success', 'Firebase Auth inicializado com sucesso!');
+                    log("Firebase Auth inicializado com sucesso", 'success');
+                } catch (authError) {
+                    updateStatus('auth-status', 'error', 'Erro: ' + authError.message);
+                    log("Erro ao inicializar Firebase Auth: " + authError.message, 'error');
+                }
                 
                 // Inicializar Firestore
-                db = getFirestore(app);
-                updateStatus('firestore-status', 'success', 'Firestore inicializado com sucesso!');
-                log("Firestore inicializado com sucesso", 'success');
+                try {
+                    db = getFirestore(app);
+                    // Testar acesso ao Firestore
+                    setTimeout(async () => {
+                        try {
+                            const testDocRef = doc(db, "settings", "check");
+                            await getDoc(testDocRef);
+                            updateStatus('firestore-status', 'success', 'Firestore conectado com sucesso!');
+                            log("Acesso ao Firestore confirmado", 'success');
+                        } catch (firestoreTestError) {
+                            updateStatus('firestore-status', 'error', 'Erro ao conectar: ' + firestoreTestError.message);
+                            log("Erro ao acessar Firestore: " + firestoreTestError.message, 'error');
+                        }
+                    }, 1000);
+                } catch (firestoreError) {
+                    updateStatus('firestore-status', 'error', 'Erro: ' + firestoreError.message);
+                    log("Erro ao inicializar Firestore: " + firestoreError.message, 'error');
+                }
                 
                 // Inicializar Realtime Database
-                rtdb = getDatabase(app);
-                updateStatus('rtdb-status', 'success', 'Realtime Database inicializado com sucesso!');
-                log("Realtime Database inicializado com sucesso", 'success');
+                try {
+                    rtdb = getDatabase(app);
+                    // Testar acesso ao RTDB
+                    setTimeout(async () => {
+                        try {
+                            const dbRef = ref(rtdb);
+                            await get(child(dbRef, 'settings'));
+                            updateStatus('rtdb-status', 'success', 'Realtime Database conectado com sucesso!');
+                            log("Acesso ao Realtime Database confirmado", 'success');
+                        } catch (rtdbTestError) {
+                            updateStatus('rtdb-status', 'error', 'Erro ao conectar: ' + rtdbTestError.message);
+                            log("Erro ao acessar Realtime Database: " + rtdbTestError.message, 'error');
+                        }
+                    }, 1000);
+                } catch (rtdbError) {
+                    updateStatus('rtdb-status', 'error', 'Erro: ' + rtdbError.message);
+                    log("Erro ao inicializar Realtime Database: " + rtdbError.message, 'error');
+                }
                 
                 return true;
             } catch (error) {

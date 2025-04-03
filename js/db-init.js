@@ -3,7 +3,7 @@
  * Cria a estrutura inicial do banco de dados e adiciona dados iniciais
  */
 
-import { db, rtdb } from './firebase-config.js';
+import { db, rtdb, auth } from './firebase-config.js';
 import { 
     collection, 
     doc, 
@@ -24,77 +24,115 @@ import { initializeRealtimeDatabase } from './rtdb-init.js';
  */
 export async function initializeDatabase() {
     try {
-        console.log("Iniciando inicialização do banco de dados...");
+        console.log("[DB-INIT] Iniciando inicialização do banco de dados...");
         
         // Verificar se estamos usando Firestore ou Realtime Database
         let firestore = false;
         let realtimeDB = false;
+        let initResult = {
+            success: false,
+            message: "Falha ao inicializar o banco de dados.",
+            details: [],
+            databases: {
+                firestore: false,
+                realtimeDB: false
+            }
+        };
         
         // Tentar inicializar Realtime Database
         try {
-            console.log("Tentando inicializar Realtime Database...");
+            console.log("[DB-INIT] Tentando inicializar Realtime Database...");
             const rtdbResult = await initializeRealtimeDatabase();
             if (rtdbResult.success) {
-                console.log("Realtime Database inicializado com sucesso:", rtdbResult.message);
+                console.log("[DB-INIT] Realtime Database inicializado com sucesso:", rtdbResult.message);
                 realtimeDB = true;
+                initResult.databases.realtimeDB = true;
+                initResult.details.push("Realtime Database iniciado com sucesso");
             } else {
-                console.warn("Aviso ao inicializar Realtime Database:", rtdbResult.message);
+                console.warn("[DB-INIT] Aviso ao inicializar Realtime Database:", rtdbResult.message);
+                initResult.details.push("Aviso Realtime Database: " + rtdbResult.message);
             }
         } catch (rtdbError) {
-            console.error("Erro ao inicializar Realtime Database:", rtdbError);
+            console.error("[DB-INIT] Erro ao inicializar Realtime Database:", rtdbError);
+            initResult.details.push("Erro Realtime Database: " + rtdbError.message);
         }
         
-        // Tentar inicializar Firestore se necessário
-        if (!realtimeDB) {
+        // Tentar inicializar Firestore 
+        try {
+            console.log("[DB-INIT] Tentando inicializar Firestore...");
+            // Verificar se o banco está acessível
             try {
-                console.log("Tentando inicializar Firestore...");
-                // Verificar se o banco está acessível
-                try {
-                    console.log("Verificando acesso ao Firestore...");
-                    const settingsRef = doc(db, "settings", "check");
-                    await getDoc(settingsRef);
-                    console.log("Acesso ao Firestore confirmado!");
-                    firestore = true;
-                } catch (accessError) {
-                    console.error("Erro ao acessar Firestore:", accessError);
-                    return { 
-                        success: false, 
-                        message: "Erro ao acessar o Firestore. Verifique a conexão com a internet e as configurações do Firebase." 
-                    };
+                console.log("[DB-INIT] Verificando acesso ao Firestore...");
+                if (!db) {
+                    throw new Error("Instância do Firestore indisponível");
                 }
+                
+                const settingsRef = doc(db, "settings", "check");
+                await getDoc(settingsRef);
+                console.log("[DB-INIT] Acesso ao Firestore confirmado!");
+                firestore = true;
+                initResult.databases.firestore = true;
+                initResult.details.push("Firestore acessível");
                 
                 // Verificar se o usuário admin já existe
                 const adminExists = await checkAdminExists();
-                console.log(`Verificação de admin existente: ${adminExists}`);
+                console.log(`[DB-INIT] Verificação de admin existente: ${adminExists}`);
                 
                 if (!adminExists) {
                     // Criar usuário admin
                     await createAdminUser();
+                    initResult.details.push("Usuário admin criado");
+                } else {
+                    initResult.details.push("Usuário admin já existe");
                 }
                 
                 // Criar coleções iniciais se não existirem
                 await initializeCollections();
+                initResult.details.push("Coleções inicializadas");
                 
                 // Inicializar dados de demonstração
                 await initializeDemoData();
+                initResult.details.push("Dados de demonstração criados");
                 
-                console.log("Firestore inicializado com sucesso!");
-                firestore = true;
-            } catch (firestoreError) {
-                console.error("Erro ao inicializar Firestore:", firestoreError);
+                console.log("[DB-INIT] Firestore inicializado com sucesso!");
+            } catch (accessError) {
+                console.error("[DB-INIT] Erro ao acessar Firestore:", accessError);
+                initResult.details.push("Erro ao acessar Firestore: " + accessError.message);
             }
+        } catch (firestoreError) {
+            console.error("[DB-INIT] Erro ao inicializar Firestore:", firestoreError);
+            initResult.details.push("Erro ao inicializar Firestore: " + firestoreError.message);
         }
         
+        // Determinar resultado final
         if (realtimeDB || firestore) {
-            console.log("Banco de dados inicializado com sucesso!");
-            return { success: true, message: "Banco de dados inicializado com sucesso!" };
+            initResult.success = true;
+            initResult.message = "Banco de dados inicializado com sucesso.";
+            if (realtimeDB && firestore) {
+                initResult.message += " Ambos Firestore e Realtime Database estão disponíveis.";
+            } else if (realtimeDB) {
+                initResult.message += " Apenas Realtime Database está disponível.";
+            } else {
+                initResult.message += " Apenas Firestore está disponível.";
+            }
         } else {
-            console.error("Nenhum banco de dados foi inicializado!");
-            return { success: false, message: "Falha ao inicializar o banco de dados. Nenhum banco disponível." };
+            initResult.message = "Falha ao inicializar ambos os bancos de dados. Verifique a conexão e tente novamente.";
         }
+        
+        console.log("[DB-INIT] Resultado da inicialização:", initResult);
+        return initResult;
+        
     } catch (error) {
-        console.error("Erro ao inicializar banco de dados:", error);
-        return { success: false, message: "Erro ao inicializar banco de dados: " + error.message };
+        console.error("[DB-INIT] ERRO CRÍTICO na inicialização do banco de dados:", error);
+        return { 
+            success: false, 
+            message: "Erro crítico ao inicializar o banco de dados: " + error.message,
+            details: [error.message, error.stack],
+            databases: {
+                firestore: false,
+                realtimeDB: false
+            }
+        };
     }
 }
 
@@ -104,16 +142,13 @@ export async function initializeDatabase() {
  */
 async function checkAdminExists() {
     try {
-        const q = query(
-            collection(db, "users"),
-            where("role", "==", "admin"),
-            limit(1)
-        );
+        // Verificar no Firestore
+        const adminQuery = query(collection(db, "users"), where("username", "==", "admin"), limit(1));
+        const querySnapshot = await getDocs(adminQuery);
         
-        const querySnapshot = await getDocs(q);
         return !querySnapshot.empty;
     } catch (error) {
-        console.error("Erro ao verificar usuário admin:", error);
+        console.error("[DB-INIT] Erro ao verificar usuário admin:", error);
         return false;
     }
 }
