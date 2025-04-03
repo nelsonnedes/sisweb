@@ -174,6 +174,15 @@
                 </div>
                 <button type="submit">Entrar</button>
             </form>
+            <div style="margin-top: 20px; text-align: center;">
+                <p>Primeiro acesso? Crie o usuário admin:</p>
+                <div class="form-group">
+                    <label for="adminPassword">Defina uma senha para admin:</label>
+                    <input type="password" id="adminPassword" placeholder="Mínimo 6 caracteres">
+                </div>
+                <button onclick="createAdminUser()">Criar Usuário Admin</button>
+            </div>
+            <div id="loginStatus" class="status" style="display: none;"></div>
         </div>
 
         <div id="adminSection" style="display: none;">
@@ -705,6 +714,97 @@
             log(`Erro de conexão com o Realtime Database: ${error.message}`, 'error');
             showStatus(`Erro de conexão com o Realtime Database: ${error.message}`, 'error');
         });
+
+        // Criar usuário admin no Firebase Auth
+        async function createAdminUser() {
+            const password = document.getElementById('adminPassword').value;
+            
+            if (!password || password.length < 6) {
+                showLoginStatus('A senha deve ter pelo menos 6 caracteres', 'error');
+                return;
+            }
+            
+            const email = "admin@sisweb.com.br";
+            
+            try {
+                showLoginStatus('Criando usuário admin...', 'info');
+                log('Tentando criar usuário admin no Firebase Auth...', 'info');
+                
+                // Criar usuário no Firebase Authentication
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                // Definir displayName
+                await user.updateProfile({
+                    displayName: "Administrador"
+                });
+                
+                // Criar documento no Firestore e nó no RTDB
+                try {
+                    // Criar no Firestore
+                    await firestore.collection('users').doc('admin').set({
+                        username: "admin",
+                        name: "Administrador",
+                        email: email,
+                        role: "admin",
+                        created: firebase.firestore.FieldValue.serverTimestamp(),
+                        emailVerified: true
+                    });
+                    
+                    // Criar no RTDB
+                    await database.ref('users/admin').set({
+                        username: "admin",
+                        name: "Administrador",
+                        email: email,
+                        role: "admin",
+                        created: Date.now(),
+                        emailVerified: true
+                    });
+                    
+                    log('Usuário admin criado com sucesso!', 'success');
+                    showLoginStatus('Usuário admin criado com sucesso! Agora você pode fazer login.', 'success');
+                } catch (dbError) {
+                    log('Erro ao criar registros no banco de dados: ' + dbError.message, 'error');
+                    showLoginStatus('Usuário criado no Auth, mas houve erro ao criar no banco: ' + dbError.message, 'warning');
+                }
+            } catch (error) {
+                console.error('Erro ao criar usuário admin:', error);
+                log('Erro ao criar usuário admin: ' + error.message, 'error');
+                
+                let errorMessage = 'Erro ao criar usuário admin';
+                
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        errorMessage = 'Este e-mail já está em uso. Tente fazer login ou redefina a senha.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'E-mail inválido.';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage = 'Senha muito fraca. Use pelo menos 6 caracteres.';
+                        break;
+                    case 'auth/operation-not-allowed':
+                        errorMessage = 'Operação não permitida. Verifique se o provedor Email/Senha está ativado no Firebase Console.';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                
+                showLoginStatus(errorMessage, 'error');
+            }
+        }
+
+        function showLoginStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('loginStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+            statusDiv.style.display = 'block';
+            
+            // Esconder após um tempo
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 10000);
+        }
     </script>
 </body>
 </html> 
