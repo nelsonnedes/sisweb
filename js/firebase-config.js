@@ -93,6 +93,23 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
   // Aqui você poderia conectar aos emuladores se necessário
 }
 
+// Verificar se todos os serviços necessários foram inicializados corretamente
+if (!app) {
+  console.error('[Firebase Config] ERRO CRÍTICO: Firebase App não foi inicializado!');
+}
+
+if (!auth) {
+  console.error('[Firebase Config] ERRO CRÍTICO: Firebase Auth não foi inicializado!');
+}
+
+if (!db) {
+  console.error('[Firebase Config] ERRO CRÍTICO: Firestore não foi inicializado!');
+}
+
+if (!rtdb) {
+  console.error('[Firebase Config] ERRO CRÍTICO: Realtime Database não foi inicializado!');
+}
+
 // Verificar estado de autenticação atual
 if (auth) {
   auth.onAuthStateChanged((user) => {
@@ -105,4 +122,13 @@ if (auth) {
 }
 
 // Exportar os serviços para uso em outros arquivos
+console.log('[Firebase Config] Exportando serviços Firebase:', { 
+  app: app ? 'OK' : 'ERRO', 
+  auth: auth ? 'OK' : 'ERRO', 
+  db: db ? 'OK' : 'ERRO', 
+  rtdb: rtdb ? 'OK' : 'ERRO', 
+  storage: storage ? 'OK' : 'ERRO', 
+  analytics: analytics ? 'OK' : 'ERRO' 
+});
+
 export { app, auth, db, rtdb, storage, analytics }; 
