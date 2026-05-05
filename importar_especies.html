@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importação de Espécies - Sistema</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="layout-comum.css">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    
+    <!-- Menu Component -->
+    <script src="menu-component.js?v=20260326"></script>
+    
+    <style>
+        /* Page Specific Styles */
+        .instructions {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            margin-bottom: 25px;
+        }
+
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .instructions p {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        .preview-container {
+            margin-top: 30px;
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .table-responsive {
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+            border: 1px solid #eee;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .success { color: #27ae60; font-weight: 500; }
+        .warning { color: #e67e22; font-weight: 500; }
+        .error { color: #e74c3c; font-weight: 500; }
+
+        .import-stats {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f4f8;
+            border-radius: 8px;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <main-menu></main-menu>
+        
+        <div class="page-header" style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+            <h1 style="color: #2c3e50; margin: 0;"><i class="fas fa-file-import"></i> Importação de Espécies</h1>
+        </div>
+        
+        <div class="instructions">
+            <h3>Instruções</h3>
+            <p>Esta ferramenta permite importar espécies de madeira a partir de dados copiados do Excel e salvá-las diretamente no Firebase.</p>
+            <p>Formato esperado: "<strong>Nome Científico - Nome Comum</strong>"</p>
+            <p>Exemplo: "Aspidosperma album (Vahl) R.Benoist ex Pichon - Araracanga"</p>
+            <ul>
+                <li>Antes do "-": <strong>Descrição</strong> (nome científico)</li>
+                <li>Após o "-": <strong>Nome</strong> (nome comum)</li>
+            </ul>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label for="excelData" style="display: block; margin-bottom: 8px; font-weight: 500;">Cole aqui os dados do Excel:</label>
+            <textarea id="excelData" placeholder="Aspidosperma album (Vahl) R.Benoist ex Pichon - Araracanga
+Bagassa guianensis Aubl. - Tatajuba"></textarea>
+        </div>
+        
+        <div class="actions-bar" style="display: flex; gap: 10px;">
+            <button id="analyzeBtn" class="btn btn-primary">
+                <i class="fas fa-search"></i> Analisar Dados
+            </button>
+            <button onclick="window.location.href='species.html'" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </button>
+        </div>
+        
+        <div id="previewContainer" class="preview-container">
+            <h2>Prévia da Importação</h2>
+            <p style="color: #666; margin-bottom: 15px;">Verifique os dados abaixo antes de confirmar.</p>
+            
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="50">#</th>
+                            <th>Nome</th>
+                            <th>Descrição (Nome Científico)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewTable">
+                        <!-- Preview data -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="importStats" class="import-stats"></div>
+            
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="cancelBtn" class="btn btn-secondary">Cancelar</button>
+                <button id="importBtn" class="btn btn-success">
+                    <i class="fas fa-check"></i> Confirmar Importação
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p style="margin-top: 15px; color: #555;">Processando dados...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        import './modules/core/firebase-service.js';
+
+        const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+        if (!svc) throw new Error('FirebaseService não disponível');
+
+        const authService = svc.authService;
+        const loadFromFirebase = (path) => svc.loadFromFirebase(path);
+
+        async function ensureAuthAndTenant() {
+            if (!authService || typeof authService.getCurrentUser !== 'function') {
+                throw new Error('Serviço de autenticação não disponível');
+            }
+            const user = await authService.getCurrentUser();
+            if (!user) {
+                alert('Acesso negado! Você precisa estar logado.');
+                window.location.href = 'login.html';
+                throw new Error('Usuário não autenticado');
+            }
+
+            let tenant = (typeof svc.getTenantId === 'function') ? svc.getTenantId() : (window.appTenantId || null);
+            if (!tenant) {
+                try {
+                    if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+                        const token = await firebase.auth().currentUser.getIdTokenResult();
+                        const companyId = token && token.claims && (token.claims.companyId || token.claims.companyID || token.claims.tenantId);
+                        if (companyId && typeof svc.setTenantId === 'function') {
+                            svc.setTenantId(companyId);
+                            try {
+                                const raw = localStorage.getItem('company_info');
+                                const prev = raw ? JSON.parse(raw) : {};
+                                localStorage.setItem('company_info', JSON.stringify({ ...prev, companyId: String(companyId), id: prev.id || String(companyId) }));
+                            } catch (_) {}
+                        }
+                    }
+                } catch (_) {}
+                tenant = (typeof svc.getTenantId === 'function') ? svc.getTenantId() : (window.appTenantId || null);
+            }
+
+            if (!tenant) {
+                try {
+                    const userPath = `users/${user.uid}`;
+                    const profileRes = await loadFromFirebase(userPath);
+                    const profile = profileRes && profileRes.success ? profileRes.data : null;
+                    const companyId = profile && (profile.companyId || profile.companyID || profile.tenantId);
+                    if (companyId && typeof svc.setTenantId === 'function') {
+                        svc.setTenantId(companyId);
+                        try {
+                            const raw = localStorage.getItem('company_info');
+                            const prev = raw ? JSON.parse(raw) : {};
+                            localStorage.setItem('company_info', JSON.stringify({ ...prev, companyId: String(companyId), id: prev.id || String(companyId) }));
+                        } catch (_) {}
+                    }
+                } catch (_) {}
+                tenant = (typeof svc.getTenantId === 'function') ? svc.getTenantId() : (window.appTenantId || null);
+            }
+
+            if (!tenant) {
+                alert('Selecione/defina a empresa antes de importar espécies.');
+                window.location.href = 'company.html';
+                throw new Error('Tenant/company não definido');
+            }
+
+            return tenant;
+        }
+
+        async function saveToFirebase(collection, id, data) {
+            const base = String(collection || '').replace(/^\/+/, '').replace(/\/+$/, '');
+            if (!base) throw new Error('Path inválido');
+            if (typeof svc.saveData !== 'function') throw new Error('Serviço de salvamento não disponível');
+
+            let finalId = (id === undefined || id === null) ? null : String(id);
+            if (!finalId || finalId === 'auto') {
+                try {
+                    if (svc.database && typeof svc.getNamespacedPath === 'function') {
+                        const writeBase = svc.getNamespacedPath(base);
+                        finalId = svc.database.ref(writeBase).push().key;
+                    }
+                } catch (_) {}
+                if (!finalId || finalId === 'auto') finalId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            }
+
+            const key = `${base}/${finalId}`;
+            const payload = (data && typeof data === 'object') ? { ...data, id: data.id || finalId } : data;
+            const res = await svc.saveData(key, payload);
+            if (!res || res.success !== true) {
+                throw new Error((res && res.error) ? res.error : 'Falha ao salvar');
+            }
+            return { success: true, id: finalId };
+        }
+
+        // Check Auth
+        async function checkAuth() {
+            try {
+                await ensureAuthAndTenant();
+            } catch (e) {
+                console.error('Auth error:', e);
+            }
+        }
+        checkAuth();
+
+        // Elements
+        const elements = {
+            analyzeBtn: document.getElementById('analyzeBtn'),
+            importBtn: document.getElementById('importBtn'),
+            cancelBtn: document.getElementById('cancelBtn'),
+            excelData: document.getElementById('excelData'),
+            previewContainer: document.getElementById('previewContainer'),
+            previewTable: document.getElementById('previewTable'),
+            importStats: document.getElementById('importStats'),
+            loadingOverlay: document.getElementById('loadingOverlay')
+        };
+
+        // Process Logic
+        function processExcelData(text) {
+            const lines = text.trim().split('\n');
+            const validLines = [];
+            const invalidLines = [];
+            const processedNames = new Set();
+            
+            lines.forEach((line, index) => {
+                line = line.trim();
+                if (!line) return;
+                
+                const dashIndex = line.indexOf(' - ');
+                if (dashIndex === -1) {
+                    invalidLines.push({ line, index: index + 1, reason: 'Formato inválido (falta " - ")' });
+                    return;
+                }
+                
+                const description = line.substring(0, dashIndex).trim();
+                const name = line.substring(dashIndex + 3).trim();
+                
+                if (!name || !description) {
+                    invalidLines.push({ line, index: index + 1, reason: 'Dados incompletos' });
+                    return;
+                }
+                
+                const nameLower = name.toLowerCase();
+                if (processedNames.has(nameLower)) {
+                    invalidLines.push({ line, index: index + 1, reason: 'Duplicada no arquivo' });
+                    return;
+                }
+                
+                processedNames.add(nameLower);
+                validLines.push({ name, description, index: index + 1 });
+            });
+            
+            return { validLines, invalidLines };
+        }
+
+        function normalizeComparableText(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            const lower = raw.toLowerCase().replace(/\s+/g, ' ').trim();
+            if (lower === '-' || lower === '—') return '';
+            if (lower === 'nao informado' || lower === 'não informado') return '';
+            if (lower === 'nome nao informado' || lower === 'nome não informado') return '';
+            if (lower === 'undefined' || lower === 'null') return '';
+            return raw;
+        }
+
+        async function loadAllSpecies() {
+            const result = await loadFromFirebase('species');
+            if (result.success && result.data) {
+                return Object.keys(result.data).map(key => ({ id: key, ...result.data[key] }));
+            }
+            return [];
+        }
+
+        // Event Listeners
+        elements.analyzeBtn.addEventListener('click', async () => {
+            const text = elements.excelData.value;
+            if (!text) return alert('Cole os dados primeiro.');
+
+            elements.loadingOverlay.style.display = 'flex';
+
+            try {
+                await ensureAuthAndTenant();
+                const { validLines, invalidLines } = processExcelData(text);
+                const existingSpecies = await loadAllSpecies();
+                const getNome = (s) => String((s && (s.name || s.nome)) || '').trim();
+                const getDesc = (s) => String((s && (s.description || s.descricao || s.nomeCientifico || s.scientific)) || '').trim();
+                const speciesMap = new Map(existingSpecies
+                    .map(s => ({ raw: s, nome: getNome(s), desc: getDesc(s) }))
+                    .filter(s => s.nome)
+                    .map(s => [s.nome.toLowerCase(), { ...s.raw, __nomeNorm: s.nome, __descNorm: s.desc }]));
+
+                elements.previewTable.innerHTML = '';
+                let newCount = 0;
+                let updateCount = 0;
+
+                // Render Valid
+                validLines.forEach(item => {
+                    const existing = speciesMap.get(item.name.toLowerCase());
+                    const descImport = String(item.description || '').trim();
+                    const descExist = existing ? normalizeComparableText(existing.description || existing.descricao || existing.nomeCientifico || existing.scientific) : '';
+                    const canUpdateDesc = !!existing && !descExist && !!normalizeComparableText(descImport);
+                    const status = !existing
+                        ? `<span class="success">Novo</span>`
+                        : (canUpdateDesc ? `<span class="warning">Atualizar descrição</span>` : `<span class="success">Já completo</span>`);
+                    
+                    if (!existing) newCount++;
+                    else if (canUpdateDesc) updateCount++;
+
+                    elements.previewTable.innerHTML += `
+                        <tr>
+                            <td>${item.index}</td>
+                            <td>${item.name}</td>
+                            <td>${item.description}</td>
+                            <td>${status}</td>
+                        </tr>
+                    `;
+                });
+
+                // Render Invalid
+                invalidLines.forEach(item => {
+                    elements.previewTable.innerHTML += `
+                        <tr style="background: #fff5f5;">
+                            <td>${item.index}</td>
+                            <td colspan="2" class="error">${item.line}</td>
+                            <td class="error">${item.reason}</td>
+                        </tr>
+                    `;
+                });
+
+                elements.importStats.innerHTML = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <strong>Novos:</strong> ${newCount}<br>
+                            <strong>Atualizações:</strong> ${updateCount}
+                        </div>
+                        <div>
+                            <strong>Erros:</strong> ${invalidLines.length}<br>
+                            <strong>Total Válido:</strong> ${validLines.length}
+                        </div>
+                    </div>
+                `;
+
+                elements.previewContainer.style.display = 'block';
+                // Store valid lines for import
+                window.importData = validLines;
+                window.speciesMap = speciesMap;
+
+            } catch (e) {
+                console.error(e);
+                alert('Erro na análise: ' + e.message);
+            } finally {
+                elements.loadingOverlay.style.display = 'none';
+            }
+        });
+
+        elements.importBtn.addEventListener('click', async () => {
+            if (!window.importData || window.importData.length === 0) return;
+
+            elements.loadingOverlay.style.display = 'flex';
+            
+            try {
+                await ensureAuthAndTenant();
+                let successCount = 0;
+                
+                for (const item of window.importData) {
+                    const existing = window.speciesMap.get(item.name.toLowerCase());
+                    const id = existing ? existing.id : 'auto';
+                    
+                    const descImport = String(item.description || '').trim();
+                    const descExist = existing ? normalizeComparableText(existing.description || existing.descricao || existing.nomeCientifico || existing.scientific) : '';
+                    const canUpdateDesc = !!existing && !descExist && !!normalizeComparableText(descImport);
+
+                    if (existing && !canUpdateDesc) {
+                        continue;
+                    }
+
+                    const data = existing
+                        ? (() => {
+                            const base = { ...existing };
+                            try {
+                                Object.keys(base).forEach(k => { if (k.startsWith('__')) delete base[k]; });
+                            } catch (_) {}
+                            base.description = descImport;
+                            base.descricao = descImport;
+                            base.nomeCientifico = descImport;
+                            base.scientific = descImport;
+                            base.updatedAt = new Date().toISOString();
+                            return base;
+                        })()
+                        : {
+                            name: item.name,
+                            nome: item.name,
+                            description: descImport,
+                            descricao: descImport,
+                            nomeCientifico: descImport,
+                            scientific: descImport,
+                            updatedAt: new Date().toISOString(),
+                            createdAt: new Date().toISOString()
+                        };
+
+                    await saveToFirebase('species', id, data);
+                    successCount++;
+                }
+
+                alert(`Importação concluída! ${successCount} registros processados.`);
+                window.location.href = 'species.html';
+
+            } catch (e) {
+                console.error(e);
+                alert('Erro na importação: ' + e.message);
+            } finally {
+                elements.loadingOverlay.style.display = 'none';
+            }
+        });
+
+        elements.cancelBtn.addEventListener('click', () => {
+            elements.previewContainer.style.display = 'none';
+        });
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-05-28T20:53:03.438Z",
+  "diagnosticState": {
+    "totalTests": 12,
+    "passedTests": 5,
+    "speciesCount": 3,
+    "clientsCount": 3,
+    "crudFunctions": 6,
+    "firebaseHealth": "✓"
+  },
+  "tests": {
+    "firebase": "",
+    "species": "",
+    "clients": "",
+    "romaneios": "",
+    "crud": "",
+    "integration": ""
+  }
+}

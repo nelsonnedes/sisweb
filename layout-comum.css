@@ -1,0 +1,198 @@
+/* Layout Comum - Padronização de largura do sistema */
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --max-width-container: 1300px;
+    --container-padding: 20px;
+    --container-background: white;
+    --container-border-radius: 8px;
+    --container-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    --btn-height: 36px;
+    --btn-padding-x: 12px;
+    --btn-padding-y: 8px;
+    --btn-font-size: 14px;
+    --btn-radius: 6px;
+    --btn-gap: 10px;
+}
+
+/* Padronização do container principal */
+.container {
+    max-width: var(--max-width-container) !important;
+    margin: 0 auto;
+    background-color: var(--container-background);
+    padding: var(--container-padding);
+    border-radius: var(--container-border-radius);
+    box-shadow: var(--container-shadow);
+}
+
+/* Responsividade para dispositivos móveis */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+        margin: 0 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+        margin: 0 5px;
+    }
+}
+
+/* ✅ ESTILOS PARA BOTÕES DE AÇÃO PADRONIZADOS */
+.btn-action {
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #444;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    height: 32px;
+    margin: 0 2px;
+    padding: 0 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-action:hover {
+    background-color: #f5f5f5;
+    border-color: #ccc;
+}
+
+.btn-action.btn-select {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+.btn-action.btn-select:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.btn-action.btn-edit {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.btn-action.btn-edit:hover {
+    background-color: #0056b3;
+    border-color: #004085;
+}
+
+/* ✅ SISTEMA GLOBAL DE BOTÕES (uniformidade em toda a aplicação) */
+.btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: var(--btn-height) !important;
+    padding: var(--btn-padding-y) var(--btn-padding-x) !important;
+    font-size: var(--btn-font-size) !important;
+    border-radius: var(--btn-radius) !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s ease, transform 0.05s ease !important;
+    line-height: 1 !important;
+    gap: 8px !important;
+}
+
+.btn i { font-size: 16px !important; }
+.btn:active { transform: translateY(0.5px) !important; }
+
+.btn-primary { background-color: #3498db !important; color: #fff !important; }
+.btn-primary:hover { background-color: #2980b9 !important; }
+
+.btn-success { background-color: #27ae60 !important; color: #fff !important; }
+.btn-success:hover { background-color: #229954 !important; }
+
+.btn-danger { background-color: #e74c3c !important; color: #fff !important; }
+.btn-danger:hover { background-color: #c0392b !important; }
+
+.btn-secondary { background-color: #6c757d !important; color: #fff !important; }
+.btn-secondary:hover { background-color: #5a6268 !important; }
+
+.btn-small { height: 30px !important; padding: 4px 10px !important; font-size: 13px !important; }
+.btn-icon-only { width: 30px !important; padding: 0 !important; }
+
+/* Aplicar dimensões mesmo quando .btn não estiver presente */
+.btn-primary, .btn-success, .btn-danger, .btn-secondary {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: var(--btn-height) !important;
+    padding: var(--btn-padding-y) var(--btn-padding-x) !important;
+    font-size: var(--btn-font-size) !important;
+    border-radius: var(--btn-radius) !important;
+    gap: 8px !important;
+}
+
+/* Containers de botões padronizados */
+.action-buttons {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--btn-gap) !important;
+}
+
+.btn-group { display: inline-flex !important; align-items: center !important; gap: 6px !important; }
+
+/* Padronização para linhas de coluna/modais */
+.columns-item button { height: 28px !important; min-width: 28px !important; }
+.columns-item label { display: inline-flex !important; align-items: center !important; gap: 6px !important; }
+
+/* Loading Overlay Global */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999;
+    backdrop-filter: blur(2px);
+    transition: opacity 0.3s ease;
+}
+
+.loading-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+.loading-content {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    border: 1px solid #f0f0f0;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    color: #2c3e50;
+    font-size: 16px;
+    font-weight: 500;
+    margin-top: 10px;
+}

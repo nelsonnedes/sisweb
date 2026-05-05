@@ -1,0 +1,3822 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Romaneio PES - Sistema Sisweb</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="romaneio-comum.css?v=20260324_2">
+    <script src="menu-component.js?v=20260326"></script>
+    <link rel="stylesheet" href="print-styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        (function() {
+            function isExtErr(m){if(!m)return false;var s=typeof m==='string'?m:(m.message||String(m));s=s.toLowerCase();return s.includes('message channel closed')||s.includes('extension context invalidated')||s.includes('chrome-extension://')||s.includes('moz-extension://')||s.includes('safari-extension://');}
+            window.addEventListener('error',function(e){if(isExtErr(e.message||e.error)){e.preventDefault();e.stopPropagation();}});
+            window.addEventListener('unhandledrejection',function(e){if(isExtErr(e.reason)){e.preventDefault();e.stopPropagation();}});
+            var oc=console.error;console.error=function(){var msg=[].slice.call(arguments).join(' ');if(!isExtErr(msg)) oc.apply(console,arguments);};
+        })();
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin: 20px 0 10px 0;
+            font-size: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            height: 31px;
+            font-size: 14px;
+        }
+
+        .campos-grid {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .campos-grid .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .dimensoes-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .dimensao-input {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        button {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background-color: #34495e;
+        }
+
+        .btn-adicionar {
+            background-color: #27ae60;
+        }
+
+        .btn-adicionar:hover {
+            background-color: #219a52;
+        }
+
+        .btn-salvar {
+            background-color: #3498db;
+        }
+
+        .btn-salvar:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-listar {
+            background-color: #f39c12;
+        }
+
+        .btn-listar:hover {
+            background-color: #e67e22;
+        }
+
+        .buttons-row {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .buttons-col {
+            flex: 1;
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: nowrap;
+            align-items: center;
+            white-space: nowrap;
+        }
+
+        .pre-romaneio-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+            flex-wrap: nowrap;
+            white-space: nowrap;
+        }
+
+        .pre-romaneio-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .pre-romaneio-group select {
+            min-width: 240px;
+        }
+
+        .btn-carregar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            font-size: 14px;
+            min-width: 140px;
+        }
+
+        .btn-limpar-pre {
+            background-color: #95a5a6;
+            color: #fff;
+        }
+
+        .btn-limpar-pre:hover {
+            background-color: #7f8c8d;
+        }
+
+        .buttons-container .btn-adicionar {
+            flex: 0 0 auto;
+        }
+
+        .buttons-container .btn-salvar {
+            flex: 0 0 auto;
+        }
+
+        .buttons-container .btn-listar {
+            flex: 0 0 auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 4px 6px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            height: 24px;
+            vertical-align: middle;
+            font-size: 13px;
+        }
+
+        th {
+            background-color: #2c3e50;
+            color: white;
+            font-size: 13px;
+            height: 28px;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .btn-excluir {
+            padding: 4px 8px;
+            margin: 0 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #e74c3c;
+            color: white;
+            font-size: 12px;
+            height: 24px;
+            line-height: 1;
+        }
+
+        .btn-excluir:hover {
+            background-color: #c0392b;
+        }
+
+        .total-row {
+            font-weight: bold;
+            background-color: #f8f9fa;
+        }
+
+        .total-row td {
+            border-top: 2px solid #2c3e50;
+        }
+
+        .totais-container {
+            margin-top: 20px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+        }
+
+        .totais-titulo {
+            font-weight: bold;
+            font-size: 16px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .totais-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .totais-item:last-child {
+            border-bottom: none;
+        }
+
+        .totais-label {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .totais-valor {
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        /* Estilo para o campo de autocompletar */
+        .autocomplete-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .autocomplete-input {
+            width: 100%;
+            padding: 8px 40px 8px 10px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .autocomplete-input:focus {
+            border-color: #3498db; /* Destacar borda ao focar */
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1); /* Sombra sutil ao focar */
+        }
+
+        .form-group input#preco {
+            text-align: right;
+        }
+
+        /* Container de ícones - centralizado no campo */
+        .autocomplete-icons-container {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Estilo dos ícones individuais */
+        .autocomplete-icon {
+            cursor: pointer;
+            color: #555;
+            font-size: 1.2em;
+            transition: color 0.2s;
+        }
+
+        .autocomplete-icon:hover {
+            color: #3498db;
+        }
+
+        .autocomplete-icon i {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Estilos para os botões da tabela de clientes */
+        .action-button,
+        .client-action-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin: 0 1px;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+
+        .action-button:hover,
+        .client-action-button:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .action-button.print-button,
+        .client-action-button.print-btn {
+            background-color: #27ae60;
+        }
+
+        .action-button.print-button:hover,
+        .client-action-button.print-btn:hover {
+            background-color: #219a52;
+        }
+
+        .action-button.edit-button {
+            background-color: #3498db;
+        }
+
+        .action-button.edit-button:hover {
+            background-color: #2980b9;
+        }
+
+        .action-button.delete-button {
+            background-color: #e74c3c;
+        }
+
+        .action-button.delete-button:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .modal table th {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 6px 8px;
+            text-align: left;
+            font-weight: bold;
+            border: none;
+            font-size: 13px;
+            line-height: 1.1;
+        }
+
+        .modal table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+            height: 32px;
+            font-size: 13px;
+            line-height: 1.1;
+        }
+
+        .modal table tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .modal table tbody tr:hover {
+            background-color: #e3f2fd;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            align-items: center;
+            margin: 12px 0 4px;
+            flex-wrap: wrap;
+        }
+
+        .pagination-controls button {
+            border: 1px solid #d0d7de;
+            background: #fff;
+            color: #2c3e50;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .pagination-controls button.active {
+            background: #2c3e50;
+            color: #fff;
+            border-color: #2c3e50;
+        }
+
+        .pagination-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-controls span {
+            padding: 0 4px;
+            color: #6c757d;
+        }
+
+        #romaneioListModal .modal-body {
+            max-height: 420px;
+            overflow-y: auto;
+        }
+
+        #romaneioListModal .table-container,
+        #romaneioListModal .table-responsive {
+            max-height: 320px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        #romaneioListModal .table {
+            width: 100%;
+            margin: 0;
+        }
+
+        #romaneioListModal .pagination-controls {
+            width: 100%;
+            justify-content: center;
+            margin-top: 12px;
+        }
+
+        .autocomplete-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .autocomplete-suggestion {
+            padding: 8px 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .autocomplete-suggestion:hover, .autocomplete-suggestion.selected {
+            background-color: #f5f5f5;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 999990;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 1200px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .modal-title {
+            margin: 0;
+            color: white;
+        }
+
+        .close-modal {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: #bdc3c7;
+        }
+
+        .modal-body {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .btn-save {
+            background-color: #27ae60;
+        }
+
+        .btn-save:hover {
+            background-color: #219a52;
+        }
+
+        /* Ajustar o estilo para telas menores */
+        @media (max-width: 768px) {
+            .autocomplete-icons-container {
+                right: 8px;
+            }
+            
+            .autocomplete-icon {
+                width: 20px;
+                height: 20px;
+            }
+            
+            .autocomplete-icon i {
+                font-size: 12px;
+            }
+        }
+
+        tfoot tr.total {
+            display: none; /* Esconde o total por padrão */
+        }
+        tfoot tr.total:last-of-type {
+            display: table-row; /* Mostra apenas o último total */
+        }
+        tfoot tr.total td {
+            border-top: 2px solid #2c3e50;
+            background-color: #f8f9fa;
+        }
+
+        @media print {
+            body { margin: 0; }
+            button { display: none; }
+            
+            /* Controle de quebra de página */
+            .container, table { page-break-inside: avoid; }
+            tr { page-break-inside: avoid; }
+            .page-container { page-break-after: always; }
+            .page-container:last-of-type { page-break-after: auto; }
+            .page-total, .total-geral { page-break-inside: avoid; }
+            
+            /* Garantir cores na impressão */
+            tfoot tr.total td {
+                background-color: #f8f9fa !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+
+        /* Estilos para o menu de impressão */
+        .print-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .print-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background-color: #fff;
+            min-width: 160px;
+            width: 160px;
+            max-width: 160px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            z-index: 999999;
+            border-radius: 4px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .print-menu.show {
+            display: block;
+        }
+
+        .print-menu button {
+            width: 100%;
+            text-align: left;
+            padding: 8px 15px;
+            border: none;
+            background-color: transparent;
+            color: #333;
+            font-size: 14px;
+            cursor: pointer;
+            display: block;
+            transition: all 0.2s;
+        }
+
+        .print-menu button:hover {
+            background-color: #f1f1f1;
+            color: #3498db;
+        }
+
+        .print-menu button i {
+            margin-right: 8px;
+            width: 16px;
+            text-align: center;
+        }
+
+        #clientListModal .modal-header .modal-title,
+        #fornecedorListModal .modal-header .modal-title,
+        #speciesListModal .modal-header .modal-title,
+        #clientModal .modal-header .modal-title,
+        #fornecedorModal .modal-header .modal-title,
+        #speciesModal .modal-header .modal-title,
+        #clientModalTitle,
+        #fornecedorModalTitle,
+        #speciesModalTitle,
+        #modalTitle {
+            color: #fff !important;
+            -webkit-text-fill-color: #fff !important;
+            background: transparent !important;
+        }
+
+        #clientListModal .close-modal,
+        #fornecedorListModal .close-modal,
+        #speciesListModal .close-modal,
+        #clientModal .close-modal,
+        #fornecedorModal .close-modal,
+        #speciesModal .close-modal,
+        #clientModal .close,
+        #fornecedorModal .close,
+        #speciesModal .close {
+            color: #fff !important;
+        }
+
+        #clientListModal .table th:nth-child(1),
+        #clientListModal .table td:nth-child(1) { width: 30% !important; }
+        #clientListModal .table th:nth-child(2),
+        #clientListModal .table td:nth-child(2) { width: 18% !important; }
+        #clientListModal .table th:nth-child(3),
+        #clientListModal .table td:nth-child(3) { width: 8% !important; }
+        #clientListModal .table th:nth-child(4),
+        #clientListModal .table td:nth-child(4) { width: 16% !important; }
+        #clientListModal .table th:nth-child(5),
+        #clientListModal .table td:nth-child(5) { width: calc(28% - 40px) !important; }
+        #clientListModal .table th:last-child,
+        #clientListModal .table td:last-child { width: 40px !important; min-width: 40px !important; max-width: 40px !important; }
+
+        #speciesListModal .table th:nth-child(1),
+        #speciesListModal .table td:nth-child(1) { width: 30% !important; }
+        #speciesListModal .table th:nth-child(2),
+        #speciesListModal .table td:nth-child(2) { width: calc(70% - 40px) !important; }
+        #speciesListModal .table th:last-child,
+        #speciesListModal .table td:last-child { width: 40px !important; min-width: 40px !important; max-width: 40px !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <main-menu></main-menu>
+
+        <h1>Romaneio PES</h1>
+        <section id="romaneio-form-section">
+        <form id="romaneioForm" onsubmit="event.preventDefault(); return false;">
+            <div class="form-group">
+                <label for="clienteInput">Cliente:</label>
+                <div class="autocomplete-container">
+                    <input type="text" id="clienteInput" class="autocomplete-input" placeholder="clique para selecionar um cliente" autocomplete="off">
+                    <div class="autocomplete-icons-container">
+                        <span class="autocomplete-icon" data-action="open-client-list" title="Listar Clientes">
+                            <i class="fas fa-list"></i>
+                        </span>
+                        <span class="autocomplete-icon" data-action="open-new-client" title="Novo Cliente">
+                            <i class="fas fa-user-plus"></i>
+                        </span>
+                    </div>
+                    <div class="autocomplete-suggestions" id="clienteSuggestions"></div>
+                </div>
+            </div>
+
+            <div class="campos-grid">
+                <div class="form-group">
+                    <label for="especieInput">Espécie Padrão:</label>
+                    <div class="autocomplete-container">
+                        <input type="text" id="especieInput" class="autocomplete-input" placeholder="Selecionar uma espécie" autocomplete="off">
+                        <div class="autocomplete-icons-container">
+                            <span class="autocomplete-icon" data-action="open-species-list" title="Listar Espécies">
+                                <i class="fas fa-list"></i>
+                            </span>
+                            <span class="autocomplete-icon" data-action="open-new-species" title="Nova Espécie">
+                                <i class="fas fa-plus"></i>
+                            </span>
+                        </div>
+                        <div class="autocomplete-suggestions" id="especieSuggestions"></div>
+                    </div>
+                </div>
+                <div class="form-group dimensao-input">
+                    <label for="espessura">Espessura (mm):</label>
+                    <input type="text" id="espessura" required placeholder="0,00" inputmode="decimal">
+                </div>
+                <div class="form-group dimensao-input">
+                    <label for="largura">Largura (mm):</label>
+                    <input type="text" id="largura" required placeholder="0,00" inputmode="decimal">
+                </div>
+                <div class="form-group dimensao-input">
+                    <label for="preco">Preço:</label>
+                    <input type="text" id="preco" required>
+                </div>
+            </div>
+
+            <div class="dimensoes-container">
+                <div class="form-group dimensao-input">
+                    <label for="comprimento">Comprimento (mm):</label>
+                    <input type="text" id="comprimento" placeholder="Ex: 350,00" required>
+                </div>
+                <div class="form-group dimensao-input">
+                    <label for="quantidade">Quantidade:</label>
+                    <input type="number" id="quantidade" step="1" min="1" required>
+                </div>
+                <div class="form-group dimensao-input">
+                    <label for="pecasPorPacote">Peças por Pacote:</label>
+                    <input type="number" id="pecasPorPacote" min="0" step="1" value="1">
+                </div>
+            </div>
+            
+            <div class="form-buttons no-print">
+                <button type="button" id="btnAdicionar" class="btn-adicionar">
+                    <i class="fas fa-plus"></i> Adicionar
+                </button>
+                <button type="button" id="btnSalvar" class="btn-salvar">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+                <button type="button" id="btnListar" class="btn-listar">
+                    <i class="fas fa-list"></i> Listar
+                </button>
+                <div class="pre-romaneio-group">
+                    <div class="pre-romaneio-left">
+                        <label for="preRomaneioSelect">Pré-Romaneio (PES):</label>
+                        <select id="preRomaneioSelect">
+                            <option value="">Selecione</option>
+                        </select>
+                    </div>
+                    <button type="button" id="btnCarregarPreRomaneio" class="btn-salvar btn-carregar">
+                        <i class="fas fa-download"></i> Carregar Itens
+                    </button>
+                    <button type="button" id="btnLimparPreRomaneio" class="btn-listar btn-carregar btn-limpar-pre">
+                        <i class="fas fa-eraser"></i> Limpar Pré-Romaneio
+                    </button>
+                </div>
+            </div>
+        </form>
+        </section>
+
+        <section id="romaneio-items-section">
+            <h2>Itens do Romaneio</h2>
+            <div class="itens-container">
+                <div class="table-responsive" style="overflow-x: auto; max-width: 100%;">
+                    <table id="romaneioTable" class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Espécie</th>
+                                <th>Esp. (mm)</th>
+                                <th>Larg. (mm)</th>
+                                <th>Comp. (mm)</th>
+                                <th>Qtd.</th>
+                                <th>Pés</th>
+                                <th>m³</th>
+                                <th>m²</th>
+                                <th>ml</th>
+                                <th>Valor</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="romaneioTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="romaneioTablePagination" class="pagination-controls"></div>
+                <div class="totais-container">
+                    <div class="totais-titulo">Totais</div>
+                    <div class="totais-item">
+                        <div class="totais-label">Total Pés:</div>
+                        <span id="totalPes" class="totais-valor">0,00</span>
+                    </div>
+                    <div class="totais-item">
+                        <div class="totais-label">Total m³:</div>
+                        <span id="totalVolumeM3" class="totais-valor">0,000 m³</span>
+                    </div>
+                    <div class="totais-item">
+                        <div class="totais-label">Total m²:</div>
+                        <span id="totalAreaM2" class="totais-valor">0,000 m²</span>
+                    </div>
+                    <div class="totais-item">
+                        <div class="totais-label">Total ml:</div>
+                        <span id="totalMetrosLineares" class="totais-valor">0,000 ml</span>
+                    </div>
+                    <div class="totais-item">
+                        <div class="totais-label">Valor Total:</div>
+                        <span id="totalValor" class="totais-valor">R$ 0,00</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modais -->
+    <div id="helpModal" class="modal help-modal">
+        <div class="modal-content help-content">
+            <span class="close" onclick="closeHelpModal()">&times;</span>
+            <h2>Ajuda do Sistema</h2>
+            <!-- Conteúdo da ajuda -->
+        </div>
+    </div>
+
+    <!-- Modal de Cliente -->
+    <div id="clientModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="clientModalTitle">Novo Cliente</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <form id="clientForm">
+                <input type="hidden" id="clientId">
+                <div class="form-group">
+                    <label for="clientName">Nome:</label>
+                    <input type="text" id="clientName" required>
+                </div>
+                <div class="form-group">
+                    <label for="clientState">Estado:</label>
+                    <select id="clientState" required>
+                        <option value="">Selecione o estado</option>
+                        <option value="AC">Acre</option>
+                        <option value="AL">Alagoas</option>
+                        <option value="AP">Amapá</option>
+                        <option value="AM">Amazonas</option>
+                        <option value="BA">Bahia</option>
+                        <option value="CE">Ceará</option>
+                        <option value="DF">Distrito Federal</option>
+                        <option value="ES">Espírito Santo</option>
+                        <option value="GO">Goiás</option>
+                        <option value="MA">Maranhão</option>
+                        <option value="MT">Mato Grosso</option>
+                        <option value="MS">Mato Grosso do Sul</option>
+                        <option value="MG">Minas Gerais</option>
+                        <option value="PA">Pará</option>
+                        <option value="PB">Paraíba</option>
+                        <option value="PR">Paraná</option>
+                        <option value="PE">Pernambuco</option>
+                        <option value="PI">Piauí</option>
+                        <option value="RJ">Rio de Janeiro</option>
+                        <option value="RN">Rio Grande do Norte</option>
+                        <option value="RS">Rio Grande do Sul</option>
+                        <option value="RO">Rondônia</option>
+                        <option value="RR">Roraima</option>
+                        <option value="SC">Santa Catarina</option>
+                        <option value="SP">São Paulo</option>
+                        <option value="SE">Sergipe</option>
+                        <option value="TO">Tocantins</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="clientCity">Cidade:</label>
+                    <select id="clientCity" required>
+                        <option value="">Selecione primeiro o estado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="clientPhone">Telefone:</label>
+                    <input type="text" id="clientPhone">
+                </div>
+                <div class="form-group">
+                    <label for="clientEmail">Email:</label>
+                    <input type="email" id="clientEmail">
+                </div>
+                <div class="form-group">
+                    <label for="clientAddress">Endereço:</label>
+                    <input type="text" id="clientAddress">
+                </div>
+                <div class="form-group">
+                    <label for="clientObs">Observações:</label>
+                    <textarea id="clientObs" rows="3"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="back-button close-modal-btn">Cancelar</button>
+                    <button type="submit" class="btn-save" id="saveClientBtn">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Espécie -->
+    <div id="speciesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="speciesModalTitle">Nova Espécie</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <form id="speciesForm">
+                <input type="hidden" id="speciesId">
+                <div class="form-group">
+                    <label for="speciesName">Nome:</label>
+                    <input type="text" id="speciesName" required>
+                </div>
+                <div class="form-group">
+                    <label for="speciesDescription">Descrição:</label>
+                    <input type="text" id="speciesDescription">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="back-button close-modal-btn">Cancelar</button>
+                    <button type="submit" class="btn-save">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="auth.js"></script>
+    <script type="module">
+        import {
+            authService,
+            isFirebaseOperational,
+            loadFromFirebase,
+            saveToFirebase,
+            getFromFirebase,
+            updateFirebase,
+            removeFromFirebase,
+            getTenantId,
+            getCurrentTenantId,
+            setTenantId,
+            db,
+            auth,
+            app
+        } from './firebaseService.js';
+        const tenantFromContext = (() => {
+            try {
+                if (window.appTenantId) return String(window.appTenantId);
+                const raw = localStorage.getItem('company_info');
+                if (!raw) return null;
+                const info = JSON.parse(raw);
+                return info && (info.companyId || info.companyID || info.id || info.tenantId) ? String(info.companyId || info.companyID || info.id || info.tenantId) : null;
+            } catch (_) {
+                return null;
+            }
+        })();
+        if (tenantFromContext) {
+            try { setTenantId(tenantFromContext); } catch (_) {}
+            window.appTenantId = tenantFromContext;
+        }
+        window.firebaseService = {
+            ...(window.firebaseService || {}),
+            authService,
+            isFirebaseOperational,
+            loadFromFirebase,
+            saveToFirebase,
+            getFromFirebase,
+            updateFirebase,
+            removeFromFirebase,
+            getTenantId,
+            getCurrentTenantId,
+            setTenantId,
+            db,
+            auth,
+            app
+        };
+    </script>
+    <script src="client-utils.js"></script>
+    <script src="client-modal-handler.js"></script>
+    <script src="client-service.js"></script>
+    <script src="schema-migration-contatos.js"></script>
+    <script src="romaneios-client-save-fix.js"></script>
+    <script src="pre-romaneio-selector.js"></script>
+    <script>
+        let itens = [];
+        let preco = 0;
+        const legacyKey = ['b','i','t','o','l','a'].join('');
+        let clients = []; // Para armazenar a lista de clientes
+        let species = []; // Para armazenar a lista de espécies
+        let selectedClient = null; // Para armazenar o cliente selecionado
+        let selectedSpecies = null; // Para armazenar a espécie selecionada
+        let editingClientId = null; // Para controlar edição de clientes
+        let editingSpeciesId = null; // Para controlar edição de espécies
+        let romaneioEmEdicao = null; // Para controlar edição de romaneios
+        let clientListFilterTerm = '';
+        let speciesListFilterTerm = '';
+        let itensTablePage = 1;
+        let itensTablePerPage = 5;
+        const itensTablePerPageOptions = [10, 20, 25, 50, 100];
+        const itensTablePerPageStorageKey = 'romaneio_pes_items_per_page';
+        try {
+            const savedPes = parseInt(localStorage.getItem(itensTablePerPageStorageKey) || '', 10);
+            if (itensTablePerPageOptions.includes(savedPes)) itensTablePerPage = savedPes;
+        } catch (_) {}
+
+        function renderizarTabelaPes() {
+            const tbody = document.getElementById('romaneioTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            const totalItems = itens.length;
+            const totalPages = Math.max(1, Math.ceil(totalItems / itensTablePerPage));
+            if (itensTablePage > totalPages) itensTablePage = totalPages;
+            if (itensTablePage < 1) itensTablePage = 1;
+            const start = (itensTablePage - 1) * itensTablePerPage;
+            const end = start + itensTablePerPage;
+            const pageItems = itens.slice(start, end);
+            pageItems.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.especie || ''}</td>
+                    <td>${formatarMilimetros(toNumberValue(item.espessura || item[legacyKey] || 0))}</td>
+                    <td>${formatarMilimetros(toNumberValue(item.largura || 0))}</td>
+                    <td>${formatarMilimetros(toNumberValue(item.comprimento || 0))}</td>
+                    <td>${formatarNumero(toNumberValue(item.quantidadePecas || item.quantidade || 0), 0)}</td>
+                    <td>${formatarPes(toNumberValue(item.totalPes || 0))}</td>
+                    <td>${formatarVolume(toNumberValue(item.volume || 0))}</td>
+                    <td>${formatarArea(toNumberValue(item.areaM2 || 0))}</td>
+                    <td>${formatarMetrosLineares(toNumberValue(item.metrosLineares || 0))}</td>
+                    <td>${formatarMoeda(item.valor)}</td>
+                    <td>
+                        <button onclick="excluirItem(${item.id})" class="btn-excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            if (pageItems.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="11" style="text-align: center; padding: 20px; color: #666;">
+                            <i class="fas fa-folder-open" style="font-size: 28px; margin-bottom: 8px; display: block; color: #8d9aa8;"></i>
+                            Nenhum item adicionado ao romaneio
+                        </td>
+                    </tr>
+                `;
+            }
+            renderizarPaginacaoItensPes(totalItems);
+            atualizarTotais();
+        }
+
+        function atualizarTabela() {
+            renderizarTabelaPes();
+        }
+
+        function irParaPaginaItensPes(page) {
+            const totalPages = Math.max(1, Math.ceil((itens || []).length / itensTablePerPage));
+            if (page < 1 || page > totalPages || page === itensTablePage) return;
+            itensTablePage = page;
+            renderizarTabelaPes();
+        }
+
+        function renderizarPaginacaoItensPes(totalItems) {
+            let paginationContainer = document.getElementById('romaneioTablePagination');
+            const tableSection = document.getElementById('romaneio-items-section');
+            if (!paginationContainer && tableSection) {
+                paginationContainer = document.createElement('div');
+                paginationContainer.id = 'romaneioTablePagination';
+                paginationContainer.className = 'pagination-controls';
+                tableSection.appendChild(paginationContainer);
+            }
+            if (!paginationContainer) return;
+            const totalPages = Math.max(1, Math.ceil(totalItems / itensTablePerPage));
+            if (itensTablePage > totalPages) itensTablePage = totalPages;
+            if (itensTablePage < 1) itensTablePage = 1;
+            paginationContainer.innerHTML = '';
+            paginationContainer.style.display = 'flex';
+            paginationContainer.style.justifyContent = 'space-between';
+            paginationContainer.style.alignItems = 'center';
+            paginationContainer.style.gap = '10px';
+            paginationContainer.style.flexWrap = 'wrap';
+
+            const from = totalItems === 0 ? 0 : ((itensTablePage - 1) * itensTablePerPage) + 1;
+            const to = totalItems === 0 ? 0 : Math.min(itensTablePage * itensTablePerPage, totalItems);
+            const left = document.createElement('div');
+            left.style.fontSize = '12px';
+            left.style.color = '#475569';
+            left.style.flex = '1 1 320px';
+            left.style.maxWidth = '33.333%';
+            left.style.minWidth = '220px';
+            left.style.textAlign = 'left';
+            left.textContent = `Mostrando ${from} a ${to} de ${totalItems} itens`;
+            paginationContainer.appendChild(left);
+
+            const right = document.createElement('div');
+            right.style.display = 'flex';
+            right.style.alignItems = 'center';
+            right.style.gap = '10px';
+            right.style.justifyContent = 'flex-end';
+            right.style.flex = '1 1 320px';
+            right.style.maxWidth = '33.333%';
+            right.style.minWidth = '220px';
+            paginationContainer.appendChild(right);
+
+            const center = document.createElement('div');
+            center.style.display = 'flex';
+            center.style.justifyContent = 'center';
+            center.style.flex = '1 1 320px';
+            center.style.maxWidth = '33.333%';
+            center.style.minWidth = '220px';
+            paginationContainer.insertBefore(center, right);
+
+            const nav = document.createElement('div');
+            nav.style.display = 'flex';
+            nav.style.alignItems = 'center';
+            nav.style.gap = '6px';
+            center.appendChild(nav);
+
+            const addBtn = (label, page, disabled = false, active = false) => {
+                const btn = document.createElement('button');
+                btn.textContent = label;
+                if (active) btn.classList.add('active');
+                btn.disabled = disabled;
+                btn.onclick = () => irParaPaginaItensPes(page);
+                nav.appendChild(btn);
+            };
+
+            if (totalPages > 1) {
+                addBtn('<<<', 1, itensTablePage === 1);
+                addBtn('<', itensTablePage - 1, itensTablePage === 1);
+                const startPage = Math.max(1, itensTablePage - 2);
+                const endPage = Math.min(totalPages, itensTablePage + 2);
+                if (startPage > 1) {
+                    addBtn('1', 1, false, itensTablePage === 1);
+                    if (startPage > 2) {
+                        const span = document.createElement('span');
+                        span.textContent = '...';
+                        nav.appendChild(span);
+                    }
+                }
+                for (let i = startPage; i <= endPage; i++) {
+                    addBtn(String(i), i, false, i === itensTablePage);
+                }
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        const span = document.createElement('span');
+                        span.textContent = '...';
+                        nav.appendChild(span);
+                    }
+                    addBtn(String(totalPages), totalPages, false, itensTablePage === totalPages);
+                }
+                addBtn('>', itensTablePage + 1, itensTablePage === totalPages);
+                addBtn('>>>', totalPages, itensTablePage === totalPages);
+            }
+
+            const perPageWrap = document.createElement('div');
+            perPageWrap.style.display = 'flex';
+            perPageWrap.style.alignItems = 'center';
+            perPageWrap.style.gap = '6px';
+            perPageWrap.style.whiteSpace = 'nowrap';
+            const perPageLabel = document.createElement('span');
+            perPageLabel.style.fontSize = '12px';
+            perPageLabel.style.color = '#475569';
+            perPageLabel.style.whiteSpace = 'nowrap';
+            perPageLabel.textContent = 'Itens por página:';
+            const perPageSelect = document.createElement('select');
+            perPageSelect.style.padding = '4px 8px';
+            perPageSelect.style.border = '1px solid #d0d7de';
+            perPageSelect.style.borderRadius = '4px';
+            perPageSelect.style.fontSize = '12px';
+            if (itensTablePerPage === 5) {
+                const hiddenOption = document.createElement('option');
+                hiddenOption.value = '5';
+                hiddenOption.textContent = '5';
+                hiddenOption.hidden = true;
+                perPageSelect.appendChild(hiddenOption);
+            }
+            itensTablePerPageOptions.forEach((value) => {
+                const option = document.createElement('option');
+                option.value = String(value);
+                option.textContent = String(value);
+                perPageSelect.appendChild(option);
+            });
+            perPageSelect.value = String(itensTablePerPage);
+            perPageSelect.onchange = () => {
+                const parsed = parseInt(perPageSelect.value, 10);
+                if (!itensTablePerPageOptions.includes(parsed)) return;
+                itensTablePerPage = parsed;
+                itensTablePage = 1;
+                try { localStorage.setItem(itensTablePerPageStorageKey, String(parsed)); } catch (_) {}
+                renderizarTabelaPes();
+            };
+            perPageWrap.appendChild(perPageLabel);
+            perPageWrap.appendChild(perPageSelect);
+            right.appendChild(perPageWrap);
+        }
+
+        window.carregarItensPreRomaneioPes = function(itensNovos, pr) {
+            itens = (itensNovos || []).map((it, idx) => {
+                const espessura = toNumberValue(it.espessura || it[legacyKey] || 0);
+                const largura = toNumberValue(it.largura || 0);
+                const comprimento = toNumberValue(it.comprimento || 0);
+                const quantidade = parseInt(it.quantidade, 10) || 0;
+                const pecasPorPacote = parseInt(it.pecasPorPacote || it.pecas || 1, 10) || 1;
+                const precoItem = toNumberValue(it.preco || 0);
+                const especieNomeItem = typeof it.especie === 'object' ? (it.especie.nome || it.especie.name || '') : String(it.especie || '');
+                const metrics = calcularMetricasItem({ espessura, largura, comprimento, quantidade, pecasPorPacote, preco: precoItem });
+                return {
+                    ...it,
+                    id: it.id || Date.now() + idx,
+                    especie: especieNomeItem || (pr && (typeof pr.especie === 'object' ? (pr.especie.nome || pr.especie.name || '') : String(pr.especie || ''))) || '',
+                    espessura,
+                    largura,
+                    comprimento,
+                    quantidade,
+                    pecasPorPacote,
+                    quantidadePecas: metrics.quantidadePecas,
+                    totalPes: metrics.totalPes,
+                    volume: metrics.volumeM3,
+                    areaM2: metrics.areaM2,
+                    metrosLineares: metrics.metrosLineares,
+                    valor: metrics.valor,
+                    preco: precoItem
+                };
+            }).filter(item => item.espessura > 0 && item.largura > 0 && item.comprimento > 0 && item.quantidade > 0);
+            const clienteNome = pr?.clienteNome || pr?.cliente?.nome || '';
+            if (clienteNome) {
+                const input = document.getElementById('clienteInput');
+                if (input) input.value = clienteNome;
+                selectedClient = { nome: clienteNome, name: clienteNome };
+            }
+            const especieNome = (
+                (pr && (typeof pr.especie === 'object' ? (pr.especie.nome || pr.especie.name) : pr.especie)) ||
+                (itens[0] && (typeof itens[0].especie === 'object' ? (itens[0].especie.nome || itens[0].especie.name) : itens[0].especie)) ||
+                ''
+            );
+            if (especieNome) {
+                const especieInput = document.getElementById('especieInput');
+                if (especieInput) especieInput.value = String(especieNome);
+                selectedSpecies = { nome: String(especieNome), name: String(especieNome) };
+            }
+            if (itens[0] && itens[0].preco) {
+                preco = parseFloat(itens[0].preco) || 0;
+                const input = document.getElementById('preco');
+                if (input) input.value = formatarNumero(preco, 2).replace('.', ',');
+            }
+            renderizarTabelaPes();
+        };
+
+        // Função para carregar clientes
+        async function carregarClientes() {
+            let sourceList = [];
+            const rawClients = getData('clients') || [];
+            const clientsSource = (rawClients && typeof rawClients === 'object' && rawClients.success === true && rawClients.data)
+                ? rawClients.data
+                : (rawClients && typeof rawClients === 'object' && rawClients.data && !Array.isArray(rawClients) ? rawClients.data : rawClients);
+            sourceList = normalizeToArray(clientsSource);
+            try {
+                if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+                    const remoteResult = await window.firebaseService.loadFromFirebase('clients');
+                    if (remoteResult && remoteResult.success && remoteResult.data) {
+                        const remoteList = normalizeToArray(remoteResult.data);
+                        if (remoteList.length > 0) sourceList = remoteList;
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ Falha ao carregar clientes remotos em PES:', error && error.message ? error.message : error);
+            }
+            clients = normalizeToArray(sourceList)
+                .filter(client => client && typeof client === 'object')
+                .map((client, idx) => ({
+                    ...client,
+                    id: client.id || client.clientId || client.uid || String(Date.now() + idx),
+                    name: client.name || client.nome || client.razaoSocial || '',
+                    nome: client.nome || client.name || client.razaoSocial || '',
+                    phone: client.phone || client.telefone || client.celular || ''
+                }))
+                .filter(client => String(client.name || '').trim() !== '')
+                .sort(function(a,b){
+                    var ta = (typeof a.updatedAt==='number'?a.updatedAt:Date.parse(a.updatedAt||a.createdAt||a.timestamp||0))||0;
+                    var tb = (typeof b.updatedAt==='number'?b.updatedAt:Date.parse(b.updatedAt||b.createdAt||b.timestamp||0))||0;
+                    if (tb!==ta) return tb-ta;
+                    var ia = parseFloat(a.id); var ib = parseFloat(b.id);
+                    if (!isNaN(ia) && !isNaN(ib)) return ib-ia;
+                    return 0;
+                });
+            
+            // Se ainda estamos usando o campo select antigo, podemos remover este código depois
+            const selectCliente = document.getElementById('cliente');
+            if (selectCliente) {
+                selectCliente.innerHTML = '<option value="">Selecione um cliente</option>';
+                clients.forEach(client => {
+                    const option = document.createElement('option');
+                    option.value = client.name;
+                    option.textContent = client.name;
+                    selectCliente.appendChild(option);
+                });
+            }
+        }
+
+        // Função para carregar espécies
+        async function carregarEspecies() {
+            let sourceList = [];
+            const rawSpecies = getData('species') || getData('especies') || [];
+            const speciesSource = (rawSpecies && typeof rawSpecies === 'object' && rawSpecies.success === true && rawSpecies.data)
+                ? rawSpecies.data
+                : (rawSpecies && typeof rawSpecies === 'object' && rawSpecies.data && !Array.isArray(rawSpecies) ? rawSpecies.data : rawSpecies);
+            sourceList = normalizeToArray(speciesSource);
+            try {
+                if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+                    const remoteSpecies = await window.firebaseService.loadFromFirebase('species');
+                    if (remoteSpecies && remoteSpecies.success && remoteSpecies.data) {
+                        const remoteList = normalizeToArray(remoteSpecies.data);
+                        if (remoteList.length > 0) sourceList = remoteList;
+                    } else {
+                        const remoteLegacy = await window.firebaseService.loadFromFirebase('especies');
+                        if (remoteLegacy && remoteLegacy.success && remoteLegacy.data) {
+                            const remoteLegacyList = normalizeToArray(remoteLegacy.data);
+                            if (remoteLegacyList.length > 0) sourceList = remoteLegacyList;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ Falha ao carregar espécies remotas em PES:', error && error.message ? error.message : error);
+            }
+            species = normalizeToArray(sourceList)
+                .filter(specie => specie && typeof specie === 'object')
+                .map((specie, idx) => ({
+                    ...specie,
+                    id: specie.id || specie.specieId || String(Date.now() + idx),
+                    name: specie.name || specie.nome || '',
+                    description: specie.description || specie.descricao || ''
+                }))
+                .filter(specie => String(specie.name || '').trim() !== '');
+            
+            // Se ainda estamos usando o campo select antigo, podemos remover este código depois
+            const selectEspecie = document.getElementById('especie');
+            if (selectEspecie) {
+                selectEspecie.innerHTML = '<option value="">Selecione uma espécie</option>';
+                species.forEach(specie => {
+                    const option = document.createElement('option');
+                    option.value = specie.name;
+                    option.textContent = specie.name;
+                    selectEspecie.appendChild(option);
+                });
+            }
+        }
+
+        function resolveCompanyId() {
+            try {
+                const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                if (svc && typeof svc.getCurrentTenantId === 'function') {
+                    const t = svc.getCurrentTenantId();
+                    if (t) return String(t);
+                }
+                if (svc && typeof svc.getTenantId === 'function') {
+                    const t = svc.getTenantId();
+                    if (t) return String(t);
+                }
+            } catch (_) {}
+            try {
+                if (window.appTenantId) return String(window.appTenantId);
+                if (window.companyInfo) {
+                    const raw = window.companyInfo;
+                    const id = raw.id || raw.companyId || raw.companyID || raw.tenantId || raw.slug;
+                    if (id) return String(id);
+                }
+                const stored = localStorage.getItem('company_info');
+                if (stored) {
+                    const obj = JSON.parse(stored);
+                    const id = obj && (obj.id || obj.companyId || obj.companyID || obj.tenantId || obj.slug);
+                    if (id) return String(id);
+                }
+            } catch (_) {}
+            return null;
+        }
+
+        function getLocalStorageKeys(key) {
+            const keys = [];
+            try {
+                const base = String(key || '');
+                if (!base) return keys;
+                const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                if (svc && typeof svc.getNamespacedPath === 'function') {
+                    const ns = svc.getNamespacedPath(base);
+                    if (ns) {
+                        keys.push(ns);
+                        return [...new Set(keys)];
+                    }
+                } else {
+                    const companyId = resolveCompanyId();
+                    if (companyId && !/^companies\//.test(base) && !/^users\//.test(base)) {
+                        keys.push(`companies/${companyId}/${base}`);
+                        return [...new Set(keys)];
+                    }
+                }
+                keys.push(`companies/__no_tenant__/${base}`);
+            } catch (_) {}
+            return [...new Set(keys)];
+        }
+
+        function readLocalStorage(key) {
+            for (const k of getLocalStorageKeys(key)) {
+                const val = localStorage.getItem(k);
+                if (val) return val;
+            }
+            return null;
+        }
+
+        function writeLocalStorage(key, data) {
+            try {
+                if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {
+                    window.SiswebStorage.write(key, data);
+                    return;
+                }
+            } catch (_) {}
+            const payload = JSON.stringify(data);
+            const keys = getLocalStorageKeys(key);
+            const isQuotaExceededError = (error) => {
+                if (!error) return false;
+                const message = String(error && error.message ? error.message : error);
+                return error.name === 'QuotaExceededError'
+                    || error.code === 22
+                    || error.code === 1014
+                    || /quota/i.test(message);
+            };
+            const writeAll = (value) => {
+                for (const k of keys) {
+                    localStorage.setItem(k, value);
+                }
+            };
+            try {
+                writeAll(payload);
+                return;
+            } catch (error) {
+                if (!isQuotaExceededError(error)) throw error;
+            }
+            let compactData = data;
+            if (key === 'romaneios' && Array.isArray(data)) {
+                compactData = data.slice(-25).map((r) => {
+                    const romaneio = r && typeof r === 'object' ? r : {};
+                    const itens = Array.isArray(romaneio.itens) ? romaneio.itens : [];
+                    return {
+                        id: romaneio.id || '',
+                        numero: romaneio.numero || '',
+                        data: romaneio.data || '',
+                        companyId: romaneio.companyId || '',
+                        cliente: romaneio.cliente || '',
+                        especie: romaneio.especie || '',
+                        totalVolume: romaneio.totalVolume || 0,
+                        totalValor: romaneio.totalValor || 0,
+                        itens: itens.slice(0, 60),
+                        _metadata: romaneio._metadata || {}
+                    };
+                });
+            }
+            const compactPayload = JSON.stringify(compactData);
+            try {
+                writeAll(compactPayload);
+            } catch (error) {
+                if (!isQuotaExceededError(error)) throw error;
+                try {
+                    Object.keys(localStorage || {}).forEach((k) => {
+                        if (/^company_/.test(k) && /__(romaneiosPct|romaneiosPes|romaneios_tl|romaneiosTl|romaneios)$/.test(k) && !keys.includes(k)) {
+                            try { localStorage.removeItem(k); } catch (_) {}
+                        }
+                    });
+                } catch (_) {}
+                writeAll(compactPayload);
+            }
+        }
+
+        function getData(key) {
+            try {
+                const data = readLocalStorage(key);
+                return data ? JSON.parse(data) : [];
+            } catch (e) {
+                console.error('Erro ao recuperar dados:', e);
+                return [];
+            }
+        }
+
+        function normalizeToArray(data) {
+            if (Array.isArray(data)) return data;
+            if (data && typeof data === 'object') return Object.keys(data).map(k => ({ id: k, ...data[k] }));
+            return [];
+        }
+
+        function filterByTenant(list) {
+            const tenant = resolveCompanyId();
+            if (!tenant) return [];
+            return normalizeToArray(list).filter(item => {
+                if (!item || typeof item !== 'object') return false;
+                const itemTenant = item.companyId || item.tenantId || item.companyID || null;
+                if (!itemTenant) return false;
+                return String(itemTenant) === String(tenant);
+            });
+        }
+
+        function hasTenantOwnership(record) {
+            const tenant = resolveCompanyId();
+            if (!tenant || !record || typeof record !== 'object') return false;
+            const itemTenant = record.companyId || record.tenantId || record.companyID || null;
+            if (!itemTenant) return false;
+            return String(itemTenant) === String(tenant);
+        }
+
+        function toNumberValue(value) {
+            if (value == null) return 0;
+            if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+            const normalized = String(value).replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+            const parsed = parseFloat(normalized);
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        function calcularMetricasItem({ espessura, largura, comprimento, quantidade, pecasPorPacote = 1, preco: precoUnitario = 0 }) {
+            const esp = toNumberValue(espessura);
+            const larg = toNumberValue(largura);
+            const comp = toNumberValue(comprimento);
+            const qtd = Math.max(0, parseInt(quantidade, 10) || 0);
+            const ppp = Math.max(1, parseInt(pecasPorPacote, 10) || 1);
+            const precoNum = toNumberValue(precoUnitario);
+            const quantidadePecas = qtd * ppp;
+            const volumeM3 = (esp * larg * comp * quantidadePecas) / 1000000000;
+            const areaM2 = (larg * comp * quantidadePecas) / 1000000;
+            const metrosLineares = (comp * quantidadePecas) / 1000;
+            const totalPes = volumeM3 * 35.314667;
+            const valor = volumeM3 * precoNum;
+            return { quantidadePecas, volumeM3, areaM2, metrosLineares, totalPes, valor };
+        }
+
+        // Função para calcular valor
+        function calcularValor(volume) {
+            return volume * preco;
+        }
+
+        // Formatadores
+        function formatarNumero(numero, casasDecimais = 2) {
+            return numero.toLocaleString('pt-BR', {
+                minimumFractionDigits: casasDecimais,
+                maximumFractionDigits: casasDecimais
+            });
+        }
+
+        function formatarMoeda(valor) {
+            return valor.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            });
+        }
+
+        function formatarVolume(volume) {
+            return formatarNumero(volume, 3) + ' m³';
+        }
+
+        function formatarPes(valor) {
+            return formatarNumero(valor, 2);
+        }
+
+        function formatarMilimetros(mm) {
+            return formatarNumero(mm, 2) + 'mm';
+        }
+
+        function formatarArea(area) {
+            return formatarNumero(area, 3) + ' m²';
+        }
+
+        function formatarMetrosLineares(ml) {
+            return formatarNumero(ml, 3) + ' ml';
+        }
+
+        // Função para verificar se um item já existe
+        function encontrarItemExistente(espessura) {
+            return itens.find(item => (item.espessura || item[legacyKey]) === espessura);
+        }
+
+        // Função para atualizar totais
+        function atualizarTotais() {
+            const totalPes = itens.reduce((acc, item) => acc + (toNumberValue(item.totalPes)), 0);
+            const totalVolume = itens.reduce((acc, item) => acc + (toNumberValue(item.volume)), 0);
+            const totalArea = itens.reduce((acc, item) => acc + (toNumberValue(item.areaM2)), 0);
+            const totalMl = itens.reduce((acc, item) => acc + (toNumberValue(item.metrosLineares)), 0);
+            const totalValor = itens.reduce((acc, item) => acc + item.valor, 0);
+
+            document.getElementById('totalPes').textContent = formatarPes(totalPes) + ' pés';
+            document.getElementById('totalVolumeM3').textContent = formatarVolume(totalVolume);
+            document.getElementById('totalAreaM2').textContent = formatarArea(totalArea);
+            document.getElementById('totalMetrosLineares').textContent = formatarMetrosLineares(totalMl);
+            document.getElementById('totalValor').textContent = formatarMoeda(totalValor);
+        }
+
+        // Função para adicionar item
+        function adicionarItem() {
+            if (!selectedClient) {
+                alert('Selecione um cliente para adicionar itens');
+                return;
+            }
+            
+            if (!selectedSpecies) {
+                alert('Selecione uma espécie para adicionar itens');
+                return;
+            }
+
+            const espessura = toNumberValue(document.getElementById('espessura').value);
+            const largura = toNumberValue(document.getElementById('largura').value);
+            const comprimento = toNumberValue(document.getElementById('comprimento').value);
+            const quantidade = parseInt(document.getElementById('quantidade').value, 10);
+            const pecasPorPacote = parseInt(document.getElementById('pecasPorPacote').value || '1', 10) || 1;
+            
+            if (espessura <= 0 || largura <= 0 || comprimento <= 0 || isNaN(quantidade) || quantidade <= 0) {
+                alert('Preencha corretamente espessura, largura, comprimento e quantidade.');
+                return;
+            }
+            
+            const metrics = calcularMetricasItem({ espessura, largura, comprimento, quantidade, pecasPorPacote, preco });
+            
+            // Criar item
+            const item = {
+                id: Date.now(),
+                especie: selectedSpecies ? (selectedSpecies.name || selectedSpecies.nome || '') : '',
+                espessura,
+                largura,
+                comprimento,
+                quantidade,
+                pecasPorPacote,
+                quantidadePecas: metrics.quantidadePecas,
+                totalPes: metrics.totalPes,
+                volume: metrics.volumeM3,
+                areaM2: metrics.areaM2,
+                metrosLineares: metrics.metrosLineares,
+                valor: metrics.valor,
+                preco
+            };
+            
+            // Adicionar à lista de itens
+            itens.push(item);
+            
+            // Atualizar a tabela
+            atualizarTabela();
+            
+            // Limpar campos
+            document.getElementById('espessura').value = '';
+            document.getElementById('largura').value = '';
+            document.getElementById('comprimento').value = '';
+            document.getElementById('quantidade').value = '';
+            document.getElementById('espessura').focus();
+        }
+
+        // Função para excluir item
+        function excluirItem(id) {
+            itens = itens.filter(item => item.id !== id);
+            renderizarTabelaPes();
+        }
+
+        // Event Listeners
+        document.getElementById('preco').addEventListener('input', function() {
+            // Formatar o valor ao digitar (pegar apenas números e vírgula)
+            let value = this.value.replace(/[^\d,]/g, '');
+            
+            // Garantir que só existe no máximo uma vírgula
+            const commaCount = (value.match(/,/g) || []).length;
+            if (commaCount > 1) {
+                const parts = value.split(',');
+                value = parts[0] + ',' + parts.slice(1).join('');
+            }
+            
+            // Atualizar o valor do campo
+            this.value = value;
+        });
+
+        document.getElementById('preco').addEventListener('change', function() {
+            // Converter para número ao perder o foco (substituindo vírgula por ponto)
+            const valorString = this.value.replace(',', '.');
+            preco = parseFloat(valorString);
+            
+            // Formatar o valor para exibição
+            if (!isNaN(preco)) {
+                this.value = formatarNumero(preco, 2).replace('.', ',');
+            }
+        });
+
+        document.getElementById('btnAdicionar').addEventListener('click', function() {
+            if (document.getElementById('espessura').value && document.getElementById('largura').value && document.getElementById('comprimento').value && document.getElementById('quantidade').value) {
+                adicionarItem();
+            }
+        });
+
+        document.getElementById('quantidade').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (this.value) {
+                    adicionarItem();
+                }
+            }
+        });
+
+        // Novas funções para autocomplete de cliente
+        function setupClientAutocomplete() {
+            const input = document.getElementById('clienteInput');
+            const suggestions = document.getElementById('clienteSuggestions');
+            
+            // Event listener para exibir sugestões ao digitar
+            input.addEventListener('input', function() {
+                const query = this.value.toLowerCase();
+                
+                if (query.length < 1) {
+                    suggestions.style.display = 'none';
+                    return;
+                }
+                
+                // Filtrar clientes que correspondem à consulta
+                const matches = clients.filter(client => 
+                    client.name.toLowerCase().includes(query)
+                );
+                
+                // Exibir sugestões
+                if (matches.length > 0) {
+                    suggestions.innerHTML = '';
+                    matches.forEach(client => {
+                        const div = document.createElement('div');
+                        div.className = 'autocomplete-suggestion';
+                        div.textContent = client.name;
+                        div.addEventListener('click', function() {
+                            input.value = client.name;
+                            selectedClient = client;
+                            suggestions.style.display = 'none';
+                        });
+                        suggestions.appendChild(div);
+                    });
+                    suggestions.style.display = 'block';
+                } else {
+                    suggestions.style.display = 'none';
+                }
+            });
+            
+            // Esconder sugestões quando clicar fora
+            document.addEventListener('click', function(e) {
+                if (e.target !== input && !suggestions.contains(e.target)) {
+                    suggestions.style.display = 'none';
+                }
+            });
+            
+            // Navegação por teclado
+            input.addEventListener('keydown', function(e) {
+                if (suggestions.style.display === 'none') return;
+                
+                const items = suggestions.querySelectorAll('.autocomplete-suggestion');
+                let selectedIndex = Array.from(items).findIndex(item => item.classList.contains('selected'));
+                
+                switch(e.key) {
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        if (selectedIndex < items.length - 1) {
+                            if (selectedIndex >= 0) items[selectedIndex].classList.remove('selected');
+                            items[selectedIndex + 1].classList.add('selected');
+                        }
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        if (selectedIndex > 0) {
+                            items[selectedIndex].classList.remove('selected');
+                            items[selectedIndex - 1].classList.add('selected');
+                        }
+                        break;
+                    case 'Enter':
+                        e.preventDefault();
+                        if (selectedIndex >= 0) {
+                            items[selectedIndex].click();
+                        }
+                        break;
+                    case 'Escape':
+                        suggestions.style.display = 'none';
+                        break;
+                }
+            });
+            
+            const listBtn = document.querySelector('[data-action="open-client-list"]');
+            if (listBtn) listBtn.addEventListener('click', openClientListModal);
+
+            const newBtn = document.querySelector('[data-action="open-new-client"]');
+            if (newBtn) newBtn.addEventListener('click', function() {
+                openClientModal('new');
+            });
+        }
+        
+        // Função para abrir o modal de cliente
+        function openClientModal(mode, client = null) {
+            const modal = document.getElementById('clientModal');
+            const title = document.getElementById('clientModalTitle');
+            const form = document.getElementById('clientForm');
+            
+            // Limpar o formulário
+            form.reset();
+            
+            if (mode === 'edit' && client) {
+                title.textContent = 'Editar Cliente';
+                document.getElementById('clientId').value = client.id || '';
+                document.getElementById('clientName').value = client.name || '';
+                document.getElementById('clientPhone').value = client.phone || '';
+                document.getElementById('clientEmail').value = client.email || '';
+                document.getElementById('clientAddress').value = client.address || '';
+                editingClientId = client.id;
+            } else {
+                title.textContent = 'Novo Cliente';
+                editingClientId = null;
+            }
+            
+            modal.style.display = 'block';
+        }
+        
+        // Função saveClient removida para usar a implementação global corrigida em romaneios-client-save-fix.js
+        /* 
+        async function saveClient(clientData) {
+            // ... (removido para evitar conflito)
+        } 
+        */
+        
+        // Setup do formulário de cliente
+        function setupClientForm() {
+            const form = document.getElementById('clientForm');
+            const modal = document.getElementById('clientModal');
+            
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const clientData = {
+                    id: editingClientId, // Incluir ID para edição
+                    name: document.getElementById('clientName').value,
+                    phone: document.getElementById('clientPhone').value,
+                    email: document.getElementById('clientEmail').value,
+                    address: document.getElementById('clientAddress').value
+                };
+                
+                try {
+                    const ok = await saveClient(clientData);
+                    if (ok) {
+                        modal.style.display = 'none';
+                        
+                        // Se estiver editando o cliente selecionado, atualizar o campo de entrada
+                        if (selectedClient && selectedClient.id === editingClientId) {
+                            document.getElementById('clienteInput').value = clientData.name;
+                            selectedClient = { ...selectedClient, ...clientData };
+                        }
+                        
+                        // Atualizar lista de clientes se necessário
+                        carregarClientes();
+                    }
+                } catch (error) {
+                    console.error('Erro ao salvar cliente:', error);
+                    alert('Erro ao salvar cliente: ' + (error.message || error));
+                }
+            });
+            
+            // Fechar modal
+            const closeHeaderBtn = modal.querySelector('.close-modal');
+            if (closeHeaderBtn) {
+                closeHeaderBtn.addEventListener('click', function() {
+                    modal.style.display = 'none';
+                });
+            }
+            
+            const closeFooterBtn = modal.querySelector('.close-modal-btn');
+            if (closeFooterBtn) {
+                closeFooterBtn.addEventListener('click', function() {
+                    modal.style.display = 'none';
+                });
+            }
+            
+            // Fechar modal quando clicar fora
+            window.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        function resetForm() {
+            itens = [];
+            selectedSpecies = null;
+            romaneioEmEdicao = null;
+            preco = 0;
+            const romaneioNumeroInput = document.getElementById('romaneioNumero');
+            if (romaneioNumeroInput) romaneioNumeroInput.value = '';
+            const romaneioDataInput = document.getElementById('romaneioData');
+            if (romaneioDataInput) romaneioDataInput.value = '';
+            const espessuraInput = document.getElementById('espessura');
+            if (espessuraInput) espessuraInput.value = '';
+            const larguraInput = document.getElementById('largura');
+            if (larguraInput) larguraInput.value = '';
+            const comprimentoInput = document.getElementById('comprimento');
+            if (comprimentoInput) comprimentoInput.value = '';
+            const quantidadeInput = document.getElementById('quantidade');
+            if (quantidadeInput) quantidadeInput.value = '';
+            const pecasPorPacoteInput = document.getElementById('pecasPorPacote');
+            if (pecasPorPacoteInput) pecasPorPacoteInput.value = '1';
+            const btnSalvar = document.getElementById('btnSalvar');
+            if (btnSalvar) btnSalvar.innerHTML = '<i class="fas fa-save"></i> Salvar';
+            renderizarTabelaPes();
+            if (espessuraInput) espessuraInput.focus();
+        }
+
+        function salvarRomaneio() {
+            if (!selectedClient) {
+                alert('Selecione um cliente para salvar o romaneio');
+                return;
+            }
+            
+            if (itens.length === 0) {
+                alert('Adicione pelo menos um item ao romaneio');
+                return;
+            }
+            
+            // Calcular totais
+            const totalQuantidade = itens.reduce((total, item) => total + (parseInt(item.quantidadePecas || item.quantidade, 10) || 0), 0);
+            const totalPes = itens.reduce((total, item) => total + toNumberValue(item.totalPes || 0), 0);
+            const totalVolume = itens.reduce((total, item) => total + item.volume, 0);
+            const totalAreaM2 = itens.reduce((total, item) => total + toNumberValue(item.areaM2 || 0), 0);
+            const totalMetrosLineares = itens.reduce((total, item) => total + toNumberValue(item.metrosLineares || 0), 0);
+            const totalValor = itens.reduce((total, item) => total + item.valor, 0);
+            
+            // Criar romaneio
+            const companyId = resolveCompanyId();
+            if (!companyId) {
+                alert('Sessão expirada ou empresa não selecionada. Recarregue a página e tente novamente.');
+                return;
+            }
+
+            const numeroInput = document.getElementById('romaneioNumero');
+            const dataInput = document.getElementById('romaneioData');
+            const generatedNumero = `PES_${Date.now()}`;
+            const numeroRomaneio = (numeroInput && String(numeroInput.value || '').trim()) || generatedNumero;
+            const dataRomaneio = (dataInput && String(dataInput.value || '').trim()) || new Date().toISOString().slice(0, 10);
+            const romaneiosEdicaoBase = filterByTenant(getData('romaneios'));
+            const registroEmEdicao = (romaneioEmEdicao !== null && romaneiosEdicaoBase[romaneioEmEdicao])
+                ? romaneiosEdicaoBase[romaneioEmEdicao]
+                : null;
+            const especiePrincipal = (selectedSpecies && (selectedSpecies.name || selectedSpecies.nome))
+                || (itens[0] && (typeof itens[0].especie === 'object'
+                    ? (itens[0].especie.nome || itens[0].especie.name || '')
+                    : String(itens[0].especie || '')))
+                || '';
+            const clienteNome = selectedClient.nome || selectedClient.name || 'Cliente sem nome';
+            const clienteId = selectedClient.id || selectedClient.cpfCnpj || selectedClient.nome || selectedClient.name || '';
+            const dataObj = {
+                id: (registroEmEdicao && registroEmEdicao.id) ? String(registroEmEdicao.id) : numeroRomaneio,
+                numero: (registroEmEdicao && registroEmEdicao.numero) ? String(registroEmEdicao.numero) : numeroRomaneio,
+                data: (registroEmEdicao && registroEmEdicao.data) ? String(registroEmEdicao.data) : dataRomaneio,
+                clienteId: String(clienteId || ''),
+                cliente: clienteNome,
+                especie: especiePrincipal,
+                itens: itens,
+                totalQuantidade: totalQuantidade,
+                totalPes: totalPes,
+                totalVolume: totalVolume,
+                totalAreaM2: totalAreaM2,
+                totalMetrosLineares: totalMetrosLineares,
+                totalValor: totalValor,
+                timestamp: Date.now(),
+                companyId: companyId
+            };
+            const persistRomaneioLocal = function(record) {
+                const base = getData('romaneios');
+                const lista = normalizeToArray(base);
+                const sameTenant = filterByTenant(lista);
+                const idx = sameTenant.findIndex(r => String(r.id) === String(record.id));
+                if (idx >= 0) {
+                    sameTenant[idx] = record;
+                } else {
+                    sameTenant.push(record);
+                }
+                saveData('romaneios', sameTenant);
+            };
+
+            // Salvar romaneio (PRIORIZANDO FIREBASE SERVICE MODULAR)
+            console.log('💾 Salvando Romaneio PES...', dataObj);
+            
+            if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+                window.firebaseService.saveToFirebase('romaneios/pes', dataObj.id, dataObj)
+                .then(result => {
+                    if (result && result.success) {
+                        persistRomaneioLocal(dataObj);
+                        console.log('✅ Romaneio PES salvo no Firebase com sucesso!');
+                        alert('Romaneio salvo com sucesso!');
+                        resetForm();
+                    } else {
+                        throw new Error(result?.error || 'Falha ao salvar no Firebase');
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Erro ao salvar romaneio no Firebase:', error);
+                    alert('Erro ao salvar romaneio. Verifique a conexão e tente novamente.');
+                });
+            } else {
+                console.warn('⚠️ FirebaseService não encontrado. Salvando localmente...');
+                persistRomaneioLocal(dataObj);
+                alert('Romaneio salvo localmente (Offline)!');
+                resetForm();
+            }
+        }
+
+        document.getElementById('btnSalvar').addEventListener('click', function() {
+            salvarRomaneio();
+        });
+
+        // Carregar dados iniciais
+        document.addEventListener('DOMContentLoaded', async () => {
+            await carregarClientes();
+            await carregarEspecies();
+            document.getElementById('espessura').focus();
+            
+            // Inicializar o autocomplete e formulário de clientes
+            setupClientAutocomplete();
+            setupClientForm();
+            
+            // Inicializar o autocomplete e formulário de espécies
+            setupSpeciesAutocomplete();
+            setupSpeciesForm();
+            
+            // Adicionar evento ao botão Listar Romaneios
+            document.getElementById('btnListar').addEventListener('click', async function() {
+                try {
+                    await showRomaneiosList();
+                } catch (error) {
+                    console.error('❌ Erro ao abrir modal de listagem PES:', error);
+                    alert('Não foi possível abrir a lista de romaneios PES. Recarregue a página e tente novamente.');
+                }
+            });
+
+            if (window.initPreRomaneioSelector) {
+                window.initPreRomaneioSelector({
+                    tipo: 'PES',
+                    selectId: 'preRomaneioSelect',
+                    buttonId: 'btnCarregarPreRomaneio',
+                    loadOnChange: false,
+                    onLoadItems: function(itensNovos, pr) {
+                        if (window.carregarItensPreRomaneioPes) {
+                            window.carregarItensPreRomaneioPes(itensNovos, pr);
+                        }
+                    }
+                });
+            }
+
+            const btnLimparPre = document.getElementById('btnLimparPreRomaneio');
+            if (btnLimparPre) {
+                btnLimparPre.addEventListener('click', function() {
+                    const select = document.getElementById('preRomaneioSelect');
+                    if (select) select.value = '';
+                    itens = [];
+                    selectedClient = null;
+                    selectedSpecies = null;
+                    preco = 0;
+                    const clienteInput = document.getElementById('clienteInput');
+                    if (clienteInput) clienteInput.value = '';
+                    const especieInput = document.getElementById('especieInput');
+                    if (especieInput) especieInput.value = '';
+                    const precoInput = document.getElementById('preco');
+                    if (precoInput) precoInput.value = '';
+                    const espessuraInput = document.getElementById('espessura');
+                    if (espessuraInput) espessuraInput.value = '';
+                    const quantidadeInput = document.getElementById('quantidade');
+                    if (quantidadeInput) quantidadeInput.value = '';
+                    renderizarTabelaPes();
+                });
+            }
+        });
+
+        // Função de logout
+        function logout() {
+            window.location.href = 'login.html';
+        }
+
+        // Funções para os modais
+        function showHelp() {
+            document.getElementById('helpModal').style.display = 'block';
+        }
+
+        function closeHelpModal() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+
+        // Fechar modais ao clicar fora
+        window.onclick = function(event) {
+            const helpModal = document.getElementById('helpModal');
+            
+            if (event.target == helpModal) {
+                helpModal.style.display = 'none';
+            }
+        }
+
+        let clientListPage = 1;
+        let speciesListPage = 1;
+        let romaneioListPage = 1;
+        let romaneiosPesModalList = [];
+        const listItemsPerPage = 5;
+
+        function renderPaginationControls(totalItems, currentPage, container, onPageChange) {
+            if (!container) return;
+            const totalPages = Math.ceil(totalItems / listItemsPerPage);
+            container.innerHTML = '';
+            if (totalPages <= 1) {
+                container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'flex';
+            const addBtn = (label, page, disabled = false, active = false) => {
+                const btn = document.createElement('button');
+                btn.textContent = label;
+                if (active) btn.classList.add('active');
+                btn.disabled = disabled;
+                btn.onclick = () => onPageChange(page);
+                container.appendChild(btn);
+            };
+            addBtn('<<<', 1, currentPage === 1);
+            addBtn('<', currentPage - 1, currentPage === 1);
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+            if (startPage > 1) {
+                addBtn('1', 1, false, currentPage === 1);
+                if (startPage > 2) {
+                    const span = document.createElement('span');
+                    span.textContent = '...';
+                    container.appendChild(span);
+                }
+            }
+            for (let i = startPage; i <= endPage; i++) {
+                addBtn(String(i), i, false, i === currentPage);
+            }
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const span = document.createElement('span');
+                    span.textContent = '...';
+                    container.appendChild(span);
+                }
+                addBtn(String(totalPages), totalPages, false, currentPage === totalPages);
+            }
+            addBtn('>', currentPage + 1, currentPage === totalPages);
+            addBtn('>>>', totalPages, currentPage === totalPages);
+        }
+
+        function renderClientListModal() {
+            const clientListBody = document.getElementById('clientListBody');
+            if (!clientListBody) return;
+            const filtered = clientListFilterTerm
+                ? clients.filter(client => {
+                    const name = (client.name || '').toLowerCase();
+                    const phone = (client.phone || '').toLowerCase();
+                    return name.includes(clientListFilterTerm) || phone.includes(clientListFilterTerm);
+                })
+                : clients;
+            const totalItems = filtered.length;
+            const totalPages = Math.max(1, Math.ceil(totalItems / listItemsPerPage));
+            if (clientListPage > totalPages) clientListPage = totalPages;
+            if (clientListPage < 1) clientListPage = 1;
+            const start = (clientListPage - 1) * listItemsPerPage;
+            const end = start + listItemsPerPage;
+            const pageItems = filtered.slice(start, end);
+            clientListBody.innerHTML = '';
+            pageItems.forEach(client => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${client.name || client.nome || 'N/A'}</td>
+                    <td>${client.phone || client.telefone || client.celular || 'N/A'}</td>
+                    <td style="text-align: center;">
+                        <button class="client-action-button" onclick="selectClientFromList('${client.id}')">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="client-action-button" onclick="editClientFromList('${client.id}')">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                    </td>
+                `;
+                clientListBody.appendChild(row);
+            });
+            const pagination = document.getElementById('clientListPagination');
+            renderPaginationControls(totalItems, clientListPage, pagination, (page) => {
+                clientListPage = page;
+                renderClientListModal();
+            });
+            const info = document.getElementById('clientModalInfo');
+            if (info) {
+                const from = totalItems === 0 ? 0 : start + 1;
+                const to = Math.min(end, totalItems);
+                info.textContent = `Exibindo ${from}-${to} de ${totalItems} clientes`;
+            }
+        }
+
+        function renderSpeciesListModal() {
+            const speciesListBody = document.getElementById('speciesListBody');
+            if (!speciesListBody) return;
+            const filtered = speciesListFilterTerm
+                ? species.filter(specie => {
+                    const name = (specie.name || specie.nome || '').toLowerCase();
+                    const desc = (specie.description || '').toLowerCase();
+                    return name.includes(speciesListFilterTerm) || desc.includes(speciesListFilterTerm);
+                })
+                : species;
+            const totalItems = filtered.length;
+            const totalPages = Math.max(1, Math.ceil(totalItems / listItemsPerPage));
+            if (speciesListPage > totalPages) speciesListPage = totalPages;
+            if (speciesListPage < 1) speciesListPage = 1;
+            const start = (speciesListPage - 1) * listItemsPerPage;
+            const end = start + listItemsPerPage;
+            const pageItems = filtered.slice(start, end);
+            speciesListBody.innerHTML = '';
+            pageItems.forEach(specie => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${specie.name || specie.nome || 'N/A'}</td>
+                    <td>${specie.description || 'N/A'}</td>
+                    <td style="text-align: center;">
+                        <button class="client-action-button" onclick="selectSpeciesFromList('${specie.id}')">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="client-action-button" onclick="editSpeciesFromList('${specie.id}')">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                    </td>
+                `;
+                speciesListBody.appendChild(row);
+            });
+            const pagination = document.getElementById('speciesListPagination');
+            renderPaginationControls(totalItems, speciesListPage, pagination, (page) => {
+                speciesListPage = page;
+                renderSpeciesListModal();
+            });
+            const info = document.getElementById('speciesModalInfo');
+            if (info) {
+                const from = totalItems === 0 ? 0 : start + 1;
+                const to = Math.min(end, totalItems);
+                info.textContent = `Exibindo ${from}-${to} de ${totalItems} espécies`;
+            }
+        }
+
+        // Nova função para abrir modal com lista de clientes
+        function openClientListModal() {
+            // Verificar se o modal já existe, senão criar
+            let clientListModal = document.getElementById('clientListModal');
+            
+            if (!clientListModal) {
+                // Criar o modal
+                clientListModal = document.createElement('div');
+                clientListModal.id = 'clientListModal';
+                clientListModal.className = 'modal';
+                
+                const modalContent = document.createElement('div');
+                modalContent.className = 'modal-content';
+                
+                // Cabeçalho do modal
+                const modalHeader = document.createElement('div');
+                modalHeader.className = 'modal-header';
+                modalHeader.innerHTML = `
+                    <h3 class="modal-title">📋 Lista de Clientes</h3>
+                    <span class="close-modal">&times;</span>
+                `;
+                
+                // Corpo do modal
+                const modalBody = document.createElement('div');
+                modalBody.className = 'modal-body';
+                modalBody.innerHTML = `
+                    <div style="margin-bottom: 15px;">
+                        <input type="text" id="clientListFilter" placeholder="🔍 Filtrar por nome ou telefone..." 
+                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    </div>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Telefone</th>
+                                    <th style="width: 120px; text-align: center;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clientListBody"></tbody>
+                        </table>
+                    </div>
+                    <div id="clientListPagination" class="pagination-controls" style="display: none;"></div>
+                `;
+
+                const modalFooter = document.createElement('div');
+                modalFooter.className = 'modal-footer';
+                modalFooter.innerHTML = `
+                    <div style="color: #666; font-size: 14px;">
+                        <i class="fas fa-info-circle"></i> <span id="clientModalInfo">Carregando...</span>
+                    </div>
+                    <div>
+                        <button type="button" class="back-button close-modal-btn">Fechar</button>
+                        <button type="button" class="btn-adicionar" onclick="openClientModal('new')">Novo Cliente</button>
+                    </div>
+                `;
+                
+                // Adicionar elementos ao modal
+                modalContent.appendChild(modalHeader);
+                modalContent.appendChild(modalBody);
+                modalContent.appendChild(modalFooter);
+                clientListModal.appendChild(modalContent);
+                document.body.appendChild(clientListModal);
+                
+                // Adicionar evento para fechar o modal
+                const closeBtn = modalHeader.querySelector('.close-modal');
+                closeBtn.addEventListener('click', function() {
+                    clientListModal.style.display = 'none';
+                });
+
+                const closeFooterBtn = modalFooter.querySelector('.close-modal-btn');
+                closeFooterBtn.addEventListener('click', function() {
+                    clientListModal.style.display = 'none';
+                });
+
+                const filterInput = modalBody.querySelector('#clientListFilter');
+                if (filterInput) {
+                    filterInput.addEventListener('input', function() {
+                        clientListFilterTerm = this.value.toLowerCase();
+                        clientListPage = 1;
+                        renderClientListModal();
+                    });
+                }
+                
+                // Fechar quando clicar fora do modal
+                window.addEventListener('click', function(event) {
+                    if (event.target === clientListModal) {
+                        clientListModal.style.display = 'none';
+                    }
+                });
+            }
+            
+            clientListFilterTerm = '';
+            const filterInput = clientListModal.querySelector('#clientListFilter');
+            if (filterInput) filterInput.value = '';
+            clientListPage = 1;
+            renderClientListModal();
+            
+            // Exibir o modal
+            clientListModal.style.display = 'block';
+        }
+        
+        // Função para selecionar cliente da lista
+        function selectClientFromList(clientId) {
+            const client = clients.find(c => c.id == clientId);
+            if (client) {
+                document.getElementById('clienteInput').value = client.name;
+                selectedClient = client;
+                document.getElementById('clientListModal').style.display = 'none';
+            }
+        }
+        
+        // Função para editar cliente da lista
+        function editClientFromList(clientId) {
+            const client = clients.find(c => c.id == clientId);
+            if (client) {
+                openClientModal('edit', client);
+                document.getElementById('clientListModal').style.display = 'none';
+            }
+        }
+
+        // Novas funções para autocomplete de espécie
+        function setupSpeciesAutocomplete() {
+            const input = document.getElementById('especieInput');
+            const suggestions = document.getElementById('especieSuggestions');
+            
+            // Event listener para exibir sugestões ao digitar
+            input.addEventListener('input', function() {
+                const query = this.value.toLowerCase();
+                
+                if (query.length < 1) {
+                    suggestions.style.display = 'none';
+                    return;
+                }
+                
+                // Filtrar espécies que correspondem à consulta
+                const matches = species.filter(specie => 
+                    (specie.name || '').toLowerCase().includes(query)
+                );
+                
+                // Exibir sugestões
+                if (matches.length > 0) {
+                    suggestions.innerHTML = '';
+                    matches.forEach(specie => {
+                        const div = document.createElement('div');
+                        div.className = 'autocomplete-suggestion';
+                        div.textContent = specie.name || specie.nome;
+                        div.addEventListener('click', function() {
+                            input.value = specie.name || specie.nome;
+                            selectedSpecies = specie;
+                            suggestions.style.display = 'none';
+                        });
+                        suggestions.appendChild(div);
+                    });
+                    suggestions.style.display = 'block';
+                } else {
+                    suggestions.style.display = 'none';
+                }
+            });
+            
+            // Esconder sugestões quando clicar fora
+            document.addEventListener('click', function(e) {
+                if (e.target !== input && !suggestions.contains(e.target)) {
+                    suggestions.style.display = 'none';
+                }
+            });
+            
+            // Navegação por teclado
+            input.addEventListener('keydown', function(e) {
+                if (suggestions.style.display === 'none') return;
+                
+                const items = suggestions.querySelectorAll('.autocomplete-suggestion');
+                let selectedIndex = Array.from(items).findIndex(item => item.classList.contains('selected'));
+                
+                switch(e.key) {
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        if (selectedIndex < items.length - 1) {
+                            if (selectedIndex >= 0) items[selectedIndex].classList.remove('selected');
+                            items[selectedIndex + 1].classList.add('selected');
+                        }
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        if (selectedIndex > 0) {
+                            items[selectedIndex].classList.remove('selected');
+                            items[selectedIndex - 1].classList.add('selected');
+                        }
+                        break;
+                    case 'Enter':
+                        e.preventDefault();
+                        if (selectedIndex >= 0) {
+                            items[selectedIndex].click();
+                        }
+                        break;
+                    case 'Escape':
+                        suggestions.style.display = 'none';
+                        break;
+                }
+            });
+            
+            const listBtn = document.querySelector('[data-action="open-species-list"]');
+            if (listBtn) listBtn.addEventListener('click', openSpeciesListModal);
+
+            const newBtn = document.querySelector('[data-action="open-new-species"]');
+            if (newBtn) newBtn.addEventListener('click', function() {
+                openSpeciesModal('new');
+            });
+        }
+        
+        // Função para abrir o modal de espécie
+        function openSpeciesModal(mode, specie = null) {
+            const modal = document.getElementById('speciesModal');
+            const title = document.getElementById('speciesModalTitle');
+            const form = document.getElementById('speciesForm');
+            
+            // Limpar o formulário
+            form.reset();
+            
+            if (mode === 'edit' && specie) {
+                title.textContent = 'Editar Espécie';
+                document.getElementById('speciesId').value = specie.id || '';
+                document.getElementById('speciesName').value = specie.name || specie.nome || '';
+                document.getElementById('speciesDescription').value = specie.description || '';
+                editingSpeciesId = specie.id;
+            } else {
+                title.textContent = 'Nova Espécie';
+                editingSpeciesId = null;
+            }
+            
+            modal.style.display = 'block';
+        }
+        
+        // Função para salvar espécie
+        function saveSpecies(speciesData) {
+            const species = getData('species') || [];
+            const companyId = resolveCompanyId();
+            const dataWithCompany = companyId ? { ...speciesData, companyId } : { ...speciesData };
+            
+            if (editingSpeciesId) {
+                // Atualizar espécie existente
+                const index = species.findIndex(s => s.id === editingSpeciesId);
+                if (index !== -1) {
+                    species[index] = { ...species[index], ...dataWithCompany, id: editingSpeciesId };
+                }
+            } else {
+                // Adicionar nova espécie
+                const newId = Date.now();
+                species.push({ ...dataWithCompany, id: newId });
+                editingSpeciesId = newId;
+            }
+            
+            if (saveData('species', species)) {
+                alert(editingSpeciesId ? 'Espécie atualizada com sucesso!' : 'Espécie cadastrada com sucesso!');
+                carregarEspecies(); // Recarregar a lista de espécies
+                
+                // 💾 Persistir espécie por registro no Firebase quando disponível
+                try {
+                    if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+                        const idToSave = String(editingSpeciesId || (species[species.length - 1]?.id));
+                        const payload = { id: idToSave, ...dataWithCompany };
+                        window.firebaseService.saveToFirebase('species', idToSave, payload)
+                            .then(res => {
+                                if (res && res.success) {
+                                    console.log('✅ Espécie salva por registro no Firebase');
+                                } else {
+                                    console.warn('⚠️ Falha ao salvar espécie no Firebase:', res);
+                                }
+                            })
+                            .catch(err => console.warn('⚠️ Erro ao salvar espécie no Firebase:', err));
+                    }
+                } catch (_) {}
+                return true;
+            } else {
+                alert('Erro ao salvar espécie. Por favor, tente novamente.');
+                return false;
+            }
+        }
+        
+        // Setup do formulário de espécie
+        function setupSpeciesForm() {
+            const form = document.getElementById('speciesForm');
+            const modal = document.getElementById('speciesModal');
+            
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const speciesData = {
+                    name: document.getElementById('speciesName').value,
+                    description: document.getElementById('speciesDescription').value
+                };
+                
+                if (saveSpecies(speciesData)) {
+                    modal.style.display = 'none';
+                    
+                    // Se estiver editando a espécie selecionada, atualizar o campo de entrada
+                    if (selectedSpecies && selectedSpecies.id === editingSpeciesId) {
+                        document.getElementById('especieInput').value = speciesData.name;
+                        selectedSpecies = { ...selectedSpecies, ...speciesData };
+                    }
+                }
+            });
+            
+            // Fechar modal
+            const closeButtons = modal.querySelectorAll('.close-modal, .close-modal-btn');
+            closeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    modal.style.display = 'none';
+                });
+            });
+            
+            // Fechar modal quando clicar fora
+            window.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // Função para abrir modal com lista de espécies
+        function openSpeciesListModal() {
+            // Verificar se o modal já existe, senão criar
+            let speciesListModal = document.getElementById('speciesListModal');
+            
+            if (!speciesListModal) {
+                // Criar o modal
+                speciesListModal = document.createElement('div');
+                speciesListModal.id = 'speciesListModal';
+                speciesListModal.className = 'modal';
+                
+                const modalContent = document.createElement('div');
+                modalContent.className = 'modal-content';
+                
+                // Cabeçalho do modal
+                const modalHeader = document.createElement('div');
+                modalHeader.className = 'modal-header';
+                modalHeader.innerHTML = `
+                    <h3 class="modal-title">🌳 Lista de Espécies</h3>
+                    <span class="close-modal">&times;</span>
+                `;
+                
+                // Corpo do modal
+                const modalBody = document.createElement('div');
+                modalBody.className = 'modal-body';
+                modalBody.innerHTML = `
+                    <div style="margin-bottom: 15px;">
+                        <input type="text" id="speciesListFilter" placeholder="🔍 Filtrar por nome ou descrição..." 
+                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    </div>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Descrição</th>
+                                    <th style="width: 120px; text-align: center;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="speciesListBody"></tbody>
+                        </table>
+                    </div>
+                    <div id="speciesListPagination" class="pagination-controls" style="display: none;"></div>
+                `;
+
+                const modalFooter = document.createElement('div');
+                modalFooter.className = 'modal-footer';
+                modalFooter.innerHTML = `
+                    <div style="color: #666; font-size: 14px;">
+                        <i class="fas fa-info-circle"></i> <span id="speciesModalInfo">Carregando...</span>
+                    </div>
+                    <div>
+                        <button type="button" class="back-button close-modal-btn">Fechar</button>
+                        <button type="button" class="btn-adicionar" onclick="openSpeciesModal('new')">Nova Espécie</button>
+                    </div>
+                `;
+                
+                // Adicionar elementos ao modal
+                modalContent.appendChild(modalHeader);
+                modalContent.appendChild(modalBody);
+                modalContent.appendChild(modalFooter);
+                speciesListModal.appendChild(modalContent);
+                document.body.appendChild(speciesListModal);
+                
+                // Adicionar evento para fechar o modal
+                const closeBtn = modalHeader.querySelector('.close-modal');
+                closeBtn.addEventListener('click', function() {
+                    speciesListModal.style.display = 'none';
+                });
+
+                const closeFooterBtn = modalFooter.querySelector('.close-modal-btn');
+                closeFooterBtn.addEventListener('click', function() {
+                    speciesListModal.style.display = 'none';
+                });
+
+                const filterInput = modalBody.querySelector('#speciesListFilter');
+                if (filterInput) {
+                    filterInput.addEventListener('input', function() {
+                        speciesListFilterTerm = this.value.toLowerCase();
+                        speciesListPage = 1;
+                        renderSpeciesListModal();
+                    });
+                }
+                
+                // Fechar quando clicar fora do modal
+                window.addEventListener('click', function(event) {
+                    if (event.target === speciesListModal) {
+                        speciesListModal.style.display = 'none';
+                    }
+                });
+            }
+            
+            speciesListFilterTerm = '';
+            const filterInput = speciesListModal.querySelector('#speciesListFilter');
+            if (filterInput) filterInput.value = '';
+            speciesListPage = 1;
+            renderSpeciesListModal();
+            
+            // Exibir o modal
+            speciesListModal.style.display = 'block';
+        }
+        
+        // Função para selecionar espécie da lista
+        function selectSpeciesFromList(speciesId) {
+            const specie = species.find(s => s.id == speciesId);
+            if (specie) {
+                document.getElementById('especieInput').value = specie.name || specie.nome;
+                selectedSpecies = specie;
+                document.getElementById('speciesListModal').style.display = 'none';
+            }
+        }
+        
+        // Função para editar espécie da lista
+        function editSpeciesFromList(speciesId) {
+            const specie = species.find(s => s.id == speciesId);
+            if (specie) {
+                openSpeciesModal('edit', specie);
+                document.getElementById('speciesListModal').style.display = 'none';
+            }
+        }
+
+        function saveData(key, data) {
+            try {
+                writeLocalStorage(key, data);
+                return true;
+            } catch (e) {
+                console.error('Erro ao salvar dados:', e);
+                return false;
+            }
+        }
+
+        // Função para listar romaneios
+        async function showRomaneiosList() {
+            // Verificar se o modal já existe, senão criar
+            let romaneioListModal = document.getElementById('romaneioListModal');
+            
+            if (!romaneioListModal) {
+                // Criar o modal
+                romaneioListModal = document.createElement('div');
+                romaneioListModal.id = 'romaneioListModal';
+                romaneioListModal.className = 'modal';
+                
+                const modalContent = document.createElement('div');
+                modalContent.className = 'modal-content';
+                
+                // Cabeçalho do modal
+                const modalHeader = document.createElement('div');
+                modalHeader.className = 'modal-header';
+                modalHeader.innerHTML = `
+                    <h3 class="modal-title">📋 Lista de Romaneios PES</h3>
+                    <span class="close-modal">&times;</span>
+                `;
+                
+                // Corpo do modal
+                const modalBody = document.createElement('div');
+                modalBody.className = 'modal-body';
+                modalBody.innerHTML = `
+                    <div style="margin-bottom: 15px;">
+                        <input type="text" id="romaneioListFilter" placeholder="🔍 Filtrar por cliente, espécie ou data..." 
+                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    </div>
+                `;
+                
+                // Tabela de romaneios
+                const table = document.createElement('table');
+                table.className = 'table';
+                
+                const thead = document.createElement('thead');
+                thead.innerHTML = `
+                    <tr>
+                        <th style="text-align: left;">Data</th>
+                        <th style="text-align: left;">Cliente</th>
+                        <th style="text-align: left;">Espécie</th>
+                        <th style="text-align: right;">Volume Total</th>
+                        <th style="text-align: right;">Valor Total</th>
+                        <th style="text-align: center; width: 120px;">Ações</th>
+                    </tr>
+                `;
+                
+                const tbody = document.createElement('tbody');
+                tbody.id = 'romaneioListBody';
+                
+                table.appendChild(thead);
+                table.appendChild(tbody);
+                const tableContainer = document.createElement('div');
+                tableContainer.className = 'table-responsive';
+                tableContainer.appendChild(table);
+                modalBody.appendChild(tableContainer);
+                const pagDiv = document.createElement('div');
+                pagDiv.id = 'romaneioListPagination';
+                pagDiv.className = 'pagination-controls';
+                pagDiv.style.display = 'none';
+                modalBody.appendChild(pagDiv);
+                
+                // Rodapé do modal com botão fechar
+                const modalFooter = document.createElement('div');
+                modalFooter.className = 'modal-footer';
+                const modalInfo = document.createElement('div');
+                modalInfo.style.color = '#666';
+                modalInfo.style.fontSize = '14px';
+                modalInfo.innerHTML = '<i class="fas fa-info-circle"></i> <span id="romaneioModalInfo">Carregando...</span>';
+                
+                const closeModalBtn = document.createElement('button');
+                closeModalBtn.className = 'close-modal-btn';
+                closeModalBtn.textContent = 'Fechar';
+                closeModalBtn.onclick = function() {
+                    romaneioListModal.style.display = 'none';
+                };
+                
+                modalFooter.appendChild(modalInfo);
+                modalFooter.appendChild(closeModalBtn);
+                
+                // Adicionar elementos ao modal
+                modalContent.appendChild(modalHeader);
+                modalContent.appendChild(modalBody);
+                modalContent.appendChild(modalFooter);
+                romaneioListModal.appendChild(modalContent);
+                document.body.appendChild(romaneioListModal);
+                
+                // Adicionar evento para fechar o modal
+                const closeBtn = modalHeader.querySelector('.close-modal');
+                closeBtn.addEventListener('click', function() {
+                    romaneioListModal.style.display = 'none';
+                });
+                const filterInput = modalBody.querySelector('#romaneioListFilter');
+                if (filterInput) {
+                    filterInput.addEventListener('input', function() {
+                        romaneioListPage = 1;
+                        showRomaneiosList();
+                    });
+                }
+                
+                // Fechar quando clicar fora do modal
+                window.addEventListener('click', function(event) {
+                    if (event.target === romaneioListModal) {
+                        romaneioListModal.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Popular a tabela com romaneios
+            const romaneioListBody = document.getElementById('romaneioListBody');
+            romaneioListBody.innerHTML = '';
+            const romaneioListFilter = document.getElementById('romaneioListFilter');
+            const filtroTermo = String((romaneioListFilter && romaneioListFilter.value) || '').trim().toLowerCase();
+            
+            const romaneiosLocal = filterByTenant(getData('romaneios'));
+            let romaneios = Array.isArray(romaneiosLocal) ? romaneiosLocal : [];
+            try {
+                if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+                    const result = await window.firebaseService.loadFromFirebase('romaneios/pes');
+                    if (result && result.success && result.data) {
+                        const remoteList = filterByTenant(result.data);
+                        const byId = new Map((Array.isArray(romaneiosLocal) ? romaneiosLocal : []).map(r => [String(r.id), r]));
+                        remoteList.forEach(r => {
+                            const key = String(r.id);
+                            if (!byId.has(key)) byId.set(key, r);
+                        });
+                        romaneios = Array.from(byId.values());
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ Falha ao carregar romaneios do Firebase:', e);
+            }
+            romaneios = filterByTenant(romaneios);
+            
+            let romaneiosFiltrados = romaneios.filter(romaneio => {
+                const tipo = String(romaneio && romaneio.tipo || '').toLowerCase();
+                return !tipo || tipo === 'pes';
+            });
+            if (filtroTermo) {
+                romaneiosFiltrados = romaneiosFiltrados.filter(romaneio => {
+                    const clienteNome = romaneio.cliente
+                        ? (typeof romaneio.cliente === 'object' ? (romaneio.cliente.nome || romaneio.cliente.name || '') : String(romaneio.cliente))
+                        : '';
+                    const especieNome = romaneio.especie
+                        ? (typeof romaneio.especie === 'object' ? (romaneio.especie.nome || romaneio.especie.name || '') : String(romaneio.especie))
+                        : '';
+                    const dataTxt = String(romaneio.data || '');
+                    return clienteNome.toLowerCase().includes(filtroTermo)
+                        || especieNome.toLowerCase().includes(filtroTermo)
+                        || dataTxt.toLowerCase().includes(filtroTermo);
+                });
+            }
+            romaneiosPesModalList = romaneiosFiltrados;
+            const totalItems = romaneiosFiltrados.length;
+            const totalPages = Math.max(1, Math.ceil(totalItems / listItemsPerPage));
+            if (romaneioListPage > totalPages) romaneioListPage = totalPages;
+            if (romaneioListPage < 1) romaneioListPage = 1;
+            const start = (romaneioListPage - 1) * listItemsPerPage;
+            const end = start + listItemsPerPage;
+            const pageItems = romaneiosFiltrados.slice(start, end);
+            const romaneioModalInfo = document.getElementById('romaneioModalInfo');
+            if (romaneioModalInfo) {
+                romaneioModalInfo.textContent = `Mostrando ${romaneiosFiltrados.length} de ${romaneios.length} romaneios`;
+            }
+
+            pageItems.forEach((romaneio, pageIndex) => {
+                const index = start + pageIndex;
+                
+                const volumeTotal = romaneio.itens && romaneio.itens.length > 0 
+                    ? romaneio.itens.reduce((acc, item) => acc + (parseFloat(item.volume) || 0), 0) 
+                    : (romaneio.totalVolume || 0);
+                    
+                const valorTotal = romaneio.itens && romaneio.itens.length > 0 
+                    ? romaneio.itens.reduce((acc, item) => acc + (parseFloat(item.valor) || 0), 0) 
+                    : (romaneio.totalValor || 0);
+                
+                const row = document.createElement('tr');
+                
+                // Determinar o cliente e espécie, que podem estar em diferentes formatos
+                const clienteNome = romaneio.cliente 
+                    ? (typeof romaneio.cliente === 'object' ? (romaneio.cliente.nome || romaneio.cliente.name) : romaneio.cliente) 
+                    : 'N/A';
+                    
+                const especieNome = romaneio.especie 
+                    ? (typeof romaneio.especie === 'object' ? (romaneio.especie.nome || romaneio.especie.name) : romaneio.especie) 
+                    : 'N/A';
+                
+                row.innerHTML = `
+                    <td>${romaneio.data || 'N/A'}</td>
+                    <td>${clienteNome}</td>
+                    <td>${especieNome}</td>
+                    <td style="text-align: right;">${formatarVolume(volumeTotal)}</td>
+                    <td style="text-align: right;">${formatarMoeda(valorTotal)}</td>
+                    <td style="text-align: center;">
+                        <div class="btn-group">
+                        <div class="print-dropdown">
+                            <button class="action-button print-button" onclick="togglePrintMenu(this, event)" title="Imprimir">
+                                <i class="fas fa-print"></i>
+                            </button>
+                            <div class="print-menu">
+                                <button onclick="printRomaneio(${index}, 'completo')"><i class="fas fa-file-alt"></i> Completo</button>
+                                <button onclick="printRomaneio(${index}, 'sem-preco-unitario')"><i class="fas fa-file-minus"></i> Sem Preço Unitário</button>
+                                <button onclick="printRomaneio(${index}, 'sem-preco')"><i class="fas fa-file-times"></i> Sem Preço</button>
+                            </div>
+                        </div>
+                        <button class="action-button edit-button" onclick="editRomaneio(${index})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button delete-button" onclick="deleteRomaneio(${index})" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        </div>
+                    </td>
+                `;
+                romaneioListBody.appendChild(row);
+            });
+            const pagEl = document.getElementById('romaneioListPagination');
+            renderPaginationControls(totalItems, romaneioListPage, pagEl, (page) => {
+                romaneioListPage = page;
+                showRomaneiosList();
+            });
+            
+            // Exibir o modal
+            romaneioListModal.style.display = 'block';
+        }
+
+        function editRomaneio(index) {
+            const romaneios = filterByTenant(getData('romaneios'));
+            const alvo = romaneiosPesModalList[index] || romaneios[index];
+            if (!alvo) {
+                alert('Romaneio não encontrado para edição.');
+                return;
+            }
+            if (!hasTenantOwnership(alvo)) {
+                alert('Operação bloqueada: romaneio não pertence à empresa ativa.');
+                return;
+            }
+            const idxLocal = romaneios.findIndex(r => String(r.id) === String(alvo.id));
+            if (idxLocal < 0) {
+                alert('Romaneio não encontrado no armazenamento da empresa ativa.');
+                return;
+            }
+            romaneioEmEdicao = idxLocal;
+            document.getElementById('clienteInput').value = typeof alvo.cliente === 'object'
+                ? (alvo.cliente.nome || alvo.cliente.name || '')
+                : (alvo.cliente || '');
+            document.getElementById('especieInput').value = typeof alvo.especie === 'object'
+                ? (alvo.especie.nome || alvo.especie.name || '')
+                : (alvo.especie || '');
+            document.getElementById('preco').value = String(alvo.preco || 0);
+            selectedClient = typeof alvo.cliente === 'object'
+                ? { ...alvo.cliente, name: alvo.cliente.name || alvo.cliente.nome || '' }
+                : { id: null, name: String(alvo.cliente || '') };
+            selectedSpecies = typeof alvo.especie === 'object'
+                ? { ...alvo.especie, name: alvo.especie.name || alvo.especie.nome || '' }
+                : { id: null, name: String(alvo.especie || '') };
+            preco = parseFloat(alvo.preco) || 0;
+            itens = Array.isArray(alvo.itens) ? alvo.itens.map(item => ({ ...item })) : [];
+            atualizarTabela();
+            const btnSalvar = document.getElementById('btnSalvar');
+            if (btnSalvar) btnSalvar.innerHTML = '<i class="fas fa-save"></i> Atualizar';
+            const modal = document.getElementById('romaneioListModal');
+            if (modal) modal.style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // Função para excluir romaneio
+        async function deleteRomaneio(index) {
+            if (confirm("Tem certeza que deseja excluir este romaneio?")) {
+                const romaneios = filterByTenant(getData('romaneios'));
+                const alvo = romaneiosPesModalList[index] || romaneios[index];
+                if (!alvo) {
+                    alert('Romaneio não encontrado para exclusão.');
+                    return;
+                }
+                if (!hasTenantOwnership(alvo)) {
+                    alert('Operação bloqueada: romaneio não pertence à empresa ativa.');
+                    return;
+                }
+                const idxLocal = romaneios.findIndex(r => String(r.id) === String(alvo.id));
+                if (idxLocal >= 0) romaneios.splice(idxLocal, 1);
+                saveData('romaneios', romaneios);
+                // Remover do Firebase por registro, quando disponível
+                try {
+                    if (alvo && window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+                        await window.firebaseService.saveToFirebase('romaneios/pes', String(alvo.id), null);
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Erro ao remover romaneio no Firebase:', e);
+                }
+                showRomaneiosList(); // Atualizar a lista
+            }
+        }
+
+        // Função para mostrar/esconder menu de impressão
+        function togglePrintMenu(button, evt) {
+            if (evt && typeof evt.stopPropagation === 'function') {
+                evt.stopPropagation();
+            }
+            const menu = button && button.nextElementSibling;
+            if (!menu) return;
+            const allMenus = document.querySelectorAll('.print-menu');
+            const wasOpen = menu.classList.contains('show');
+            allMenus.forEach(m => {
+                m.classList.remove('show');
+                m.style.position = '';
+                m.style.left = '';
+                m.style.top = '';
+                m.style.right = '';
+                m.style.bottom = '';
+                m.style.zIndex = '';
+                m.style.transform = '';
+            });
+            if (wasOpen) return;
+            menu.classList.add('show');
+            menu.style.position = 'fixed';
+            menu.style.zIndex = '1000001';
+            const rect = button.getBoundingClientRect();
+            const vw = window.innerWidth || document.documentElement.clientWidth || 0;
+            const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+            const menuWidth = menu.offsetWidth || 180;
+            const menuHeight = menu.offsetHeight || 120;
+            let left = rect.right - menuWidth;
+            if (left < 8) left = 8;
+            if (left + menuWidth > vw - 8) left = Math.max(8, vw - menuWidth - 8);
+            let top = rect.bottom + 6;
+            if (top + menuHeight > vh - 8) top = Math.max(8, rect.top - menuHeight - 6);
+            menu.style.left = `${left}px`;
+            menu.style.top = `${top}px`;
+            document.addEventListener('click', function closeMenu(e) {
+                if (!button.contains(e.target) && !menu.contains(e.target)) {
+                    menu.classList.remove('show');
+                    menu.style.position = '';
+                    menu.style.left = '';
+                    menu.style.top = '';
+                    menu.style.right = '';
+                    menu.style.bottom = '';
+                    menu.style.zIndex = '';
+                    menu.style.transform = '';
+                    document.removeEventListener('click', closeMenu);
+                }
+            }, { once: true });
+        }
+
+        function classificarConamaPorDimensoesMm(espessuraMm, larguraMm) {
+            const espessuraCm = toNumberValue(espessuraMm) / 10;
+            const larguraCm = toNumberValue(larguraMm) / 10;
+            if (espessuraCm > 12 && larguraCm > 12) return 'Bloco, quadrado ou filé';
+            if (espessuraCm > 7.0 && larguraCm > 20.0) return 'Pranchões';
+            if (espessuraCm >= 4.0 && espessuraCm <= 7.0 && larguraCm > 20.0) return 'Prancha';
+            if (espessuraCm > 4.0 && larguraCm >= 11.0 && larguraCm <= 20.0) return 'Viga';
+            if (espessuraCm >= 4.0 && espessuraCm <= 8.0 && larguraCm >= 8.0 && larguraCm <= 11.0) return 'Vigota';
+            if (espessuraCm >= 4.0 && espessuraCm <= 8.0 && larguraCm >= 5.0 && larguraCm <= 8.0) return 'Caibro';
+            if (espessuraCm >= 1.0 && espessuraCm < 4.0 && larguraCm > 10.0) return 'Tábua';
+            if (espessuraCm >= 2.0 && espessuraCm < 4.0 && larguraCm >= 2.0 && larguraCm <= 10.0) return 'Sarrafo';
+            if (espessuraCm < 2.0 && larguraCm < 10.0) return 'Ripa';
+            const categoriasAproximacao = [
+                { nome: 'Bloco, quadrado ou filé', esp: 13.0, larg: 13.0 },
+                { nome: 'Pranchões', esp: 8.0, larg: 21.0 },
+                { nome: 'Prancha', esp: 5.5, larg: 21.0 },
+                { nome: 'Viga', esp: 6.0, larg: 15.5 },
+                { nome: 'Vigota', esp: 6.0, larg: 9.5 },
+                { nome: 'Caibro', esp: 6.0, larg: 6.5 },
+                { nome: 'Tábua', esp: 2.5, larg: 11.0 },
+                { nome: 'Sarrafo', esp: 3.0, larg: 6.0 },
+                { nome: 'Ripa', esp: 1.0, larg: 5.0 }
+            ];
+            if (espessuraCm <= 0 || larguraCm <= 0) return 'Ripa';
+            let melhor = categoriasAproximacao[0];
+            let menorDistancia = Number.POSITIVE_INFINITY;
+            categoriasAproximacao.forEach((cat) => {
+                const dEsp = espessuraCm - cat.esp;
+                const dLarg = larguraCm - cat.larg;
+                const distancia = Math.sqrt((dEsp * dEsp) + (dLarg * dLarg));
+                if (distancia < menorDistancia) {
+                    menorDistancia = distancia;
+                    melhor = cat;
+                }
+            });
+            return melhor.nome;
+        }
+
+        async function obterDadosEmpresaRelatorioPes() {
+            const normalizeCompany = (company) => {
+                const src = (company && typeof company === 'object') ? company : {};
+                return {
+                    id: src.id || src.companyId || src.companyID || src.tenantId || src.slug || '',
+                    name: src.name || src.nome || src.razaoSocial || src.fantasia || src.companyName || '',
+                    cnpj: src.cnpj || src.document || src.cpfCnpj || src.cnpjCpf || '',
+                    address: src.address || src.endereco || '',
+                    city: src.city || src.cidade || src.municipio || '',
+                    state: src.state || src.estado || src.uf || '',
+                    phone: src.phone || src.telefone || src.celular || src.fone || '',
+                    logo: src.logo || src.logoUrl || src.image || src.imagem || ''
+                };
+            };
+            const normalizeCollection = (raw) => {
+                if (Array.isArray(raw)) return raw;
+                if (raw && typeof raw === 'object') return Object.values(raw);
+                return [];
+            };
+            let companies = [];
+            let profileData = null;
+            try {
+                if (window.FirebaseService && typeof window.FirebaseService.getData === 'function') {
+                    companies = await window.FirebaseService.getData('companies') || [];
+                } else if (window.firebaseServiceTL && typeof window.firebaseServiceTL.getData === 'function') {
+                    companies = await window.firebaseServiceTL.getData('companies') || [];
+                } else if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+                    const result = await window.firebaseService.loadFromFirebase('companies');
+                    const data = result && result.success ? result.data : result;
+                    companies = normalizeCollection(data);
+                }
+            } catch (_) {}
+            let companyInfo = null;
+            try {
+                const raw = localStorage.getItem('company_info');
+                if (raw) companyInfo = JSON.parse(raw);
+            } catch (_) {}
+            const tenant = window.appTenantId || (companyInfo && (companyInfo.id || companyInfo.companyId || companyInfo.companyID || companyInfo.tenantId || companyInfo.slug));
+            const companiesArray = normalizeCollection(companies).map(normalizeCompany);
+            try {
+                if (tenant && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+                    const profileResult = await window.firebaseService.loadFromFirebase(`companies/${tenant}/profile`);
+                    const profileRaw = profileResult && profileResult.success ? profileResult.data : profileResult;
+                    if (profileRaw && typeof profileRaw === 'object') {
+                        profileData = normalizeCompany(profileRaw);
+                    }
+                }
+            } catch (_) {}
+            if ((!profileData || !profileData.id) && tenant) {
+                const companyFromMap = (companies && typeof companies === 'object' && !Array.isArray(companies)) ? companies[tenant] : null;
+                if (companyFromMap && typeof companyFromMap === 'object') {
+                    const nestedProfile = companyFromMap.profile && typeof companyFromMap.profile === 'object' ? companyFromMap.profile : {};
+                    profileData = normalizeCompany({ ...companyFromMap, ...nestedProfile, id: tenant, companyId: tenant });
+                }
+            }
+            let selected = {};
+            if (tenant) {
+                selected = profileData
+                    || companiesArray.find((c) => String(c.id || '') === String(tenant))
+                    || normalizeCompany(companyInfo || {});
+                if (selected.id && String(selected.id) !== String(tenant)) {
+                    selected = profileData || normalizeCompany(companyInfo || {});
+                }
+            } else if (companiesArray.length === 1) {
+                selected = companiesArray[0];
+            } else {
+                selected = normalizeCompany(companyInfo || {});
+            }
+            const logo = selected.logo && String(selected.logo).trim() ? selected.logo : '';
+            return {
+                name: selected.name || 'Empresa não informada',
+                cnpj: selected.cnpj || '-',
+                address: selected.address || '-',
+                city: selected.city || '-',
+                state: selected.state || '-',
+                phone: selected.phone || '-',
+                logo
+            };
+        }
+
+        async function printRomaneio(index, tipo = 'completo') {
+            const romaneios = filterByTenant(getData('romaneios'));
+            const romaneio = romaneiosPesModalList[index] || romaneios[index];
+            if (!romaneio) {
+                alert('Romaneio não encontrado');
+                return;
+            }
+            if (!hasTenantOwnership(romaneio)) {
+                alert('Operação bloqueada: romaneio não pertence à empresa ativa.');
+                return;
+            }
+            const hideUnitPrice = tipo === 'sem-preco-unitario' || tipo === 'sem-preco';
+            const hidePrice = tipo === 'sem-preco';
+            const itensNorm = (Array.isArray(romaneio.itens) ? romaneio.itens : []).map((item) => {
+                const espessura = toNumberValue(item.espessura || item[legacyKey] || 0);
+                const largura = toNumberValue(item.largura || 0);
+                const comprimento = toNumberValue(item.comprimento || 0);
+                const quantidade = parseInt(item.quantidade, 10) || 0;
+                const pecasPorPacote = parseInt(item.pecasPorPacote || item.pecas || 1, 10) || 1;
+                const precoItem = toNumberValue(item.preco || romaneio.preco || 0);
+                const especieNome = typeof item.especie === 'object' ? (item.especie.nome || item.especie.name || '') : String(item.especie || romaneio.especie || '');
+                const m = calcularMetricasItem({ espessura, largura, comprimento, quantidade, pecasPorPacote, preco: precoItem });
+                return {
+                    ...item,
+                    especieNome,
+                    espessura,
+                    largura,
+                    comprimento,
+                    quantidadePecas: m.quantidadePecas,
+                    totalPes: m.totalPes,
+                    volumeM3: m.volumeM3,
+                    areaM2: m.areaM2,
+                    metrosLineares: m.metrosLineares,
+                    valor: m.valor,
+                    preco: precoItem
+                };
+            }).filter((item) => item.espessura > 0 && item.largura > 0 && item.comprimento > 0 && item.quantidadePecas > 0);
+            if (!itensNorm.length) {
+                alert('Romaneio sem itens válidos para impressão.');
+                return;
+            }
+            const totais = itensNorm.reduce((acc, item) => {
+                acc.qtd += item.quantidadePecas;
+                acc.pes += item.totalPes;
+                acc.m3 += item.volumeM3;
+                acc.m2 += item.areaM2;
+                acc.ml += item.metrosLineares;
+                acc.valor += item.valor;
+                return acc;
+            }, { qtd: 0, pes: 0, m3: 0, m2: 0, ml: 0, valor: 0 });
+            const resumoDimMap = new Map();
+            itensNorm.forEach((item) => {
+                const chave = `${item.especieNome}||${item.espessura}||${item.largura}||${item.comprimento}`;
+                if (!resumoDimMap.has(chave)) {
+                    resumoDimMap.set(chave, {
+                        especie: item.especieNome || 'Não informada',
+                        espessura: item.espessura,
+                        largura: item.largura,
+                        comprimento: item.comprimento,
+                        qtd: 0,
+                        pes: 0,
+                        m3: 0,
+                        m2: 0,
+                        ml: 0,
+                        valor: 0
+                    });
+                }
+                const grp = resumoDimMap.get(chave);
+                grp.qtd += item.quantidadePecas;
+                grp.pes += item.totalPes;
+                grp.m3 += item.volumeM3;
+                grp.m2 += item.areaM2;
+                grp.ml += item.metrosLineares;
+                grp.valor += item.valor;
+            });
+            const resumoConamaMap = new Map();
+            itensNorm.forEach((item) => {
+                const categoria = classificarConamaPorDimensoesMm(item.espessura, item.largura);
+                if (!resumoConamaMap.has(categoria)) {
+                    resumoConamaMap.set(categoria, { m3: 0, pes: 0, especies: new Set() });
+                }
+                const c = resumoConamaMap.get(categoria);
+                c.m3 += item.volumeM3;
+                c.pes += item.totalPes;
+                c.especies.add(item.especieNome || 'Não informada');
+            });
+            const clienteNome = typeof romaneio.cliente === 'object' ? (romaneio.cliente.nome || romaneio.cliente.name || 'N/A') : String(romaneio.cliente || 'N/A');
+            const comprimentosUnicos = Array.from(new Set(itensNorm.map((item) => Number(toNumberValue(item.comprimento || 0)).toFixed(2))))
+                .map((value) => Number(value))
+                .filter((value) => value > 0)
+                .sort((a, b) => a - b);
+            const totaisPorComprimento = {};
+            comprimentosUnicos.forEach((comp) => { totaisPorComprimento[comp] = 0; });
+            const gruposTabelaMap = {};
+            itensNorm.forEach((item) => {
+                const esp = toNumberValue(item.espessura || 0);
+                const larg = toNumberValue(item.largura || 0);
+                const comp = Number(toNumberValue(item.comprimento || 0).toFixed(2));
+                const especie = item.especieNome || 'Não informada';
+                const chave = `${esp}|${larg}|${especie}`;
+                if (!gruposTabelaMap[chave]) {
+                    gruposTabelaMap[chave] = {
+                        espessura: esp,
+                        largura: larg,
+                        especie,
+                        comprimentosArray: {},
+                        quantidadePecas: 0,
+                        totalPes: 0,
+                        volumeM3: 0,
+                        areaM2: 0,
+                        metrosLineares: 0,
+                        valor: 0,
+                        preco: toNumberValue(item.preco || 0)
+                    };
+                    comprimentosUnicos.forEach((c) => { gruposTabelaMap[chave].comprimentosArray[c] = 0; });
+                }
+                const grupo = gruposTabelaMap[chave];
+                const qtd = parseInt(item.quantidadePecas, 10) || 0;
+                grupo.comprimentosArray[comp] = (grupo.comprimentosArray[comp] || 0) + qtd;
+                grupo.quantidadePecas += qtd;
+                grupo.totalPes += toNumberValue(item.totalPes || 0);
+                grupo.volumeM3 += toNumberValue(item.volumeM3 || 0);
+                grupo.areaM2 += toNumberValue(item.areaM2 || 0);
+                grupo.metrosLineares += toNumberValue(item.metrosLineares || 0);
+                grupo.valor += toNumberValue(item.valor || 0);
+                totaisPorComprimento[comp] = (totaisPorComprimento[comp] || 0) + qtd;
+            });
+            const gruposTabela = Object.values(gruposTabelaMap).sort((a, b) =>
+                String(a.especie).localeCompare(String(b.especie), 'pt-BR') ||
+                (a.espessura - b.espessura) ||
+                (a.largura - b.largura)
+            );
+            const itensRows = gruposTabela.map((item) => `
+                <tr>
+                    <td class="num col-espessura">${formatarMilimetros(item.espessura)}</td>
+                    <td class="num col-largura">${formatarMilimetros(item.largura)}</td>
+                    <td class="col-especie">${item.especie || '-'}</td>
+                    ${comprimentosUnicos.map((comp) => `<td class="center col-comp-dyn ${(item.comprimentosArray[comp] || 0) > 0 ? 'has-value' : ''}">${item.comprimentosArray[comp] || 0}</td>`).join('')}
+                    <td class="num col-quantidade">${formatarNumero(item.quantidadePecas, 0)}</td>
+                    <td class="num col-pes">${formatarPes(item.totalPes)}</td>
+                    <td class="num col-m3">${formatarNumero(item.volumeM3, 3)}</td>
+                    <td class="num col-m2">${formatarNumero(item.areaM2, 3)}</td>
+                    <td class="num col-ml">${formatarNumero(item.metrosLineares, 3)}</td>
+                    ${hideUnitPrice ? '' : `<td class="num col-unit-price">${formatarMoeda(item.preco)}</td>`}
+                    ${hidePrice ? '' : `<td class="num col-total-price">${formatarMoeda(item.valor)}</td>`}
+                </tr>
+            `).join('');
+            const resumoPorEspecieDim = {};
+            itensNorm.forEach((item) => {
+                const especie = item.especieNome || 'Não informada';
+                const dimKey = `${formatarMilimetros(item.espessura)} x ${formatarMilimetros(item.largura)}`;
+                const itemKey = `${item.comprimento}|${item.quantidadePecas}|${item.volumeM3.toFixed(6)}`;
+                if (!resumoPorEspecieDim[especie]) resumoPorEspecieDim[especie] = {};
+                if (!resumoPorEspecieDim[especie][dimKey]) {
+                    resumoPorEspecieDim[especie][dimKey] = { itens: {}, qtd: 0, pes: 0, m3: 0, m2: 0, ml: 0, valor: 0 };
+                }
+                const group = resumoPorEspecieDim[especie][dimKey];
+                if (!group.itens[itemKey]) {
+                    group.itens[itemKey] = { comp: item.comprimento, qtd: 0, pes: 0, m3: 0, m2: 0, ml: 0, valor: 0 };
+                }
+                const line = group.itens[itemKey];
+                line.qtd += item.quantidadePecas;
+                line.pes += item.totalPes;
+                line.m3 += item.volumeM3;
+                line.m2 += item.areaM2;
+                line.ml += item.metrosLineares;
+                line.valor += item.valor;
+                group.qtd += item.quantidadePecas;
+                group.pes += item.totalPes;
+                group.m3 += item.volumeM3;
+                group.m2 += item.areaM2;
+                group.ml += item.metrosLineares;
+                group.valor += item.valor;
+            });
+            let resumoDimCards = '';
+            Object.keys(resumoPorEspecieDim).sort().forEach((especie) => {
+                const dims = resumoPorEspecieDim[especie];
+                Object.keys(dims).sort((a, b) => (dims[b].m3 - dims[a].m3)).forEach((dimKey) => {
+                    const grp = dims[dimKey];
+                    const linhas = Object.values(grp.itens)
+                        .sort((a, b) => b.comp - a.comp)
+                        .map((line) => `<div class="dimensao-item"><span>${formatarMilimetros(line.comp)} • ${formatarNumero(line.qtd, 0)} pç</span><span>${formatarNumero(line.m3, 3)} m³</span></div>`)
+                        .join('');
+                    resumoDimCards += `
+                        <div class="especie-card">
+                            <div class="especie-header">${especie} - ${dimKey}</div>
+                            <div class="especie-body">${linhas}</div>
+                            <div class="especie-footer">TOTAL: ${formatarNumero(grp.m3, 3)} m³ | ${formatarPes(grp.pes)} pés | ${formatarNumero(grp.qtd, 0)} peças${hidePrice ? '' : ` | ${formatarMoeda(grp.valor)}`}</div>
+                        </div>
+                    `;
+                });
+            });
+            const resumoConamaRows = Array.from(resumoConamaMap.entries()).sort((a, b) => b[1].m3 - a[1].m3).map(([categoria, info]) => {
+                const percentual = totais.m3 > 0 ? ((info.m3 / totais.m3) * 100) : 0;
+                return `
+                    <tr>
+                        <td>${categoria}</td>
+                        <td class="num">${formatarNumero(info.m3, 3)}</td>
+                        <td class="num">${formatarPes(info.pes)}</td>
+                        <td class="num">${formatarNumero(percentual, 2)}%</td>
+                        <td>${Array.from(info.especies).sort().join(', ')}</td>
+                    </tr>
+                `;
+            }).join('');
+            const companyRaw = (() => {
+                try {
+                    return localStorage.getItem('company_info') || localStorage.getItem('companyInfo');
+                } catch (_) {
+                    return null;
+                }
+            })();
+            const companyInfo = (() => {
+                if (!companyRaw) return {};
+                try {
+                    return JSON.parse(companyRaw) || {};
+                } catch (_) {
+                    return {};
+                }
+            })();
+            const company = await obterDadosEmpresaRelatorioPes();
+            const companyName = company.name || companyInfo.name || companyInfo.companyName || 'Empresa não informada';
+            const companyCnpj = company.cnpj || companyInfo.cnpj || companyInfo.document || companyInfo.cpfCnpj || '-';
+            const companyAddress = company.address || companyInfo.address || companyInfo.endereco || '-';
+            const companyCity = company.city || companyInfo.city || companyInfo.cidade || '-';
+            const companyState = company.state || companyInfo.state || companyInfo.estado || '-';
+            const companyPhone = company.phone || companyInfo.phone || companyInfo.telefone || '-';
+            const companyLogo = company.logo || companyInfo.logo || '';
+            const ua = navigator.userAgent || '';
+            const isEdge = /Edg\//i.test(ua);
+            const isChrome = !isEdge && /Chrome\//i.test(ua);
+            const printProfileClass = isEdge ? 'pes-print-edge' : (isChrome ? 'pes-print-chrome' : 'pes-print-default');
+            const visibleCols = 3 + comprimentosUnicos.length + 5 + (hideUnitPrice ? 0 : 1) + (hidePrice ? 0 : 1);
+            const profileTranslateMm = isEdge ? 193 : (isChrome ? 195 : 194);
+            const profileLastColPx = comprimentosUnicos.length >= 14 ? 54 : 58;
+            const profileUnitColPx = comprimentosUnicos.length >= 14 ? 44 : 48;
+            let profileCompColPx = comprimentosUnicos.length >= 18 ? 12 : (comprimentosUnicos.length >= 14 ? 14 : (comprimentosUnicos.length >= 10 ? 16 : 18));
+            let profileScale = comprimentosUnicos.length >= 18 ? 0.88 : (comprimentosUnicos.length >= 14 ? 0.91 : (comprimentosUnicos.length >= 10 ? 0.94 : 0.97));
+            const printWindow = window.open('', '_blank');
+            const printContent = `
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>ROMANEIO DE PÉS - ${clienteNome}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 0; padding: 16px; color: #222; }
+                        .header { display: flex; gap: 14px; align-items: center; border-bottom: 2px solid #0d2339; padding-bottom: 10px; margin-bottom: 10px; }
+                        .logo { width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; border: 1px solid #d4d4d4; border-radius: 8px; overflow: hidden; }
+                        .logo img { width: 100%; height: 100%; object-fit: contain; }
+                        .logo-fallback { width: 100%; height: 100%; background: #0d2339; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; }
+                        .company-info { flex: 1; }
+                        .company-name { font-size: 20px; font-weight: 700; color: #0d2339; margin-bottom: 4px; }
+                        .company-details { font-size: 12px; margin-bottom: 2px; color: #333; }
+                        .title { text-align: center; font-size: 20px; font-weight: 700; margin: 10px 0; padding: 6px; background: #0d2339; color: #fff; border-radius: 6px; letter-spacing: 0.4px; }
+                        .meta { border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px; margin-bottom: 14px; font-size: 13px; }
+                        .meta-row { display: grid; grid-template-columns: 90px 1fr 70px 1fr; gap: 8px; margin-bottom: 6px; }
+                        .meta-row:last-child { margin-bottom: 0; }
+                        .meta-label { font-weight: 700; color: #0d2339; }
+                        .print-actions { text-align: center; margin-bottom: 14px; }
+                        .print-actions button { margin: 0 6px; padding: 6px 14px; }
+                        :root {
+                            --pes-translate-x: 194mm;
+                            --pes-last-col-width: 60px;
+                            --pes-unit-col-width: 50px;
+                            --pes-comp-col: 16px;
+                        }
+                        body.pes-print-edge {
+                            --pes-translate-x: 193mm;
+                            --pes-last-col-width: 58px;
+                            --pes-unit-col-width: 48px;
+                        }
+                        body.pes-print-chrome {
+                            --pes-translate-x: 195mm;
+                            --pes-last-col-width: 60px;
+                            --pes-unit-col-width: 50px;
+                        }
+                        .header-romaneio-container { page-break-inside: avoid; break-inside: avoid; }
+                        .romaneio-principal { page-break-inside: avoid; break-inside: avoid; }
+                        .table-container { width: 100%; }
+                        .items-table, .conama-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+                        th, td { border: 1px solid #dcdcdc; padding: 6px 7px; font-size: 12px; }
+                        th { background: #0d2339; color: #fff; text-align: center; }
+                        .center { text-align: center; }
+                        .items-table thead tr:nth-child(2) th {
+                            background: #1b4670;
+                            color: #fff;
+                            font-size: 10px;
+                            padding: 2px 1px;
+                        }
+                        td.num { text-align: right; font-variant-numeric: tabular-nums; }
+                        tfoot td { background: #f6f6f6; font-weight: bold; }
+                        .section-title { font-weight: bold; font-size: 16px; margin: 16px 0 8px 0; }
+                        .page-break { page-break-before: always; break-before: page; }
+                        .resumo-container { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
+                        .especie-card { border: 1px solid #ddd; border-radius: 6px; overflow: hidden; flex: 1 1 calc(33.33% - 12px); min-width: 280px; max-width: calc(33.33% - 12px); display: flex; flex-direction: column; }
+                        .especie-header { background: #0d2339; color: #fff; text-align: center; font-size: 13px; font-weight: 700; padding: 8px; text-transform: uppercase; }
+                        .especie-body { padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+                        .dimensao-item { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; border-bottom: 1px solid #efefef; padding-bottom: 3px; align-items: center; }
+                        .dimensao-item span:first-child { font-weight: 700; color: #0d2339; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                        .dimensao-item span:last-child { flex-shrink: 0; white-space: nowrap; }
+                        .especie-footer { margin-top: auto; padding: 8px 10px; background: #f8f9fa; font-weight: 700; text-align: right; }
+                        @media screen and (max-width: 1200px) {
+                            .especie-card { flex: 1 1 calc(50% - 12px); max-width: calc(50% - 12px); }
+                        }
+                        @media screen and (max-width: 760px) {
+                            .especie-card { flex: 1 1 100%; max-width: 100%; min-width: 100%; }
+                        }
+                        @media print {
+                            @page { margin: 8mm; }
+                            .print-actions { display: none; }
+                            th { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                            .especie-header { background: #0d2339 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                            .especie-card { break-inside: avoid; page-break-inside: avoid; flex: 1 1 calc(50% - 12px) !important; max-width: calc(50% - 12px) !important; min-width: calc(50% - 12px) !important; }
+                            .page-break { margin: 0 !important; height: 0 !important; }
+                            .section-title { page-break-after: avoid !important; break-after: avoid !important; }
+                            table, .resumo-container { page-break-inside: avoid; break-inside: avoid; }
+                            .header-romaneio-container,
+                            .resumo-dimensoes,
+                            .resumo-conama {
+                                margin: 0 !important;
+                                padding-top: 0 !important;
+                                padding-bottom: 0 !important;
+                            }
+                            .items-table th,
+                            .items-table td {
+                                line-height: 1.1 !important;
+                            }
+                            .signature { margin-top: 10px; width: 100%; }
+                            .signature-rows { display: flex; justify-content: space-between; margin-top: 26px; }
+                            .signature-item { width: 160px; text-align: center; font-size: 10px; }
+                            .signature-line { border-top: 1px solid #000; margin-bottom: 4px; }
+                        }
+                        @media print and (orientation: portrait) {
+                            .header-romaneio-container {
+                                width: 276mm !important;
+                                min-height: 188mm !important;
+                                transform-origin: top left !important;
+                                transform: translateX(var(--pes-translate-x)) rotate(90deg) scale(var(--pes-scale, 1)) !important;
+                                page-break-after: always !important;
+                                break-after: page !important;
+                                overflow: visible !important;
+                            }
+                            .table-container { overflow: visible !important; }
+                            .items-table {
+                                table-layout: auto !important;
+                                width: 100% !important;
+                            }
+                            .items-table th,
+                            .items-table td {
+                                font-size: 7px !important;
+                                padding: 1px !important;
+                                white-space: nowrap !important;
+                            }
+                            .items-table thead tr:nth-child(2) th {
+                                font-size: 6px !important;
+                                padding: 1px 0 !important;
+                            }
+                            .items-table .col-especie { width: 52px !important; min-width: 52px !important; max-width: 52px !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+                            .items-table .col-espessura,
+                            .items-table .col-largura { width: 32px !important; min-width: 32px !important; max-width: 32px !important; }
+                            .items-table .col-comp-dyn { width: var(--pes-comp-col) !important; min-width: var(--pes-comp-col) !important; max-width: var(--pes-comp-col) !important; text-align: center !important; padding-left: 0 !important; padding-right: 0 !important; }
+                            .items-table .col-quantidade { width: 24px !important; min-width: 24px !important; max-width: 24px !important; }
+                            .items-table .col-pes,
+                            .items-table .col-m3,
+                            .items-table .col-m2,
+                            .items-table .col-ml {
+                                width: 34px !important;
+                                min-width: 34px !important;
+                                max-width: 34px !important;
+                                text-align: right !important;
+                            }
+                            .items-table .col-unit-price {
+                                width: var(--pes-unit-col-width) !important;
+                                min-width: var(--pes-unit-col-width) !important;
+                                max-width: var(--pes-unit-col-width) !important;
+                                text-align: right !important;
+                            }
+                            .items-table .col-total-price {
+                                width: var(--pes-last-col-width) !important;
+                                min-width: var(--pes-last-col-width) !important;
+                                max-width: var(--pes-last-col-width) !important;
+                                text-align: right !important;
+                                white-space: nowrap !important;
+                                overflow: visible !important;
+                            }
+                            .items-table .col-unit-price,
+                            .items-table .col-total-price,
+                            .items-table .col-pes,
+                            .items-table .col-m3,
+                            .items-table .col-m2,
+                            .items-table .col-ml {
+                                font-size: 6.6px !important;
+                            }
+                            .resumo-break {
+                                page-break-before: auto !important;
+                                break-before: auto !important;
+                                margin: 0 !important;
+                                height: 0 !important;
+                            }
+                            .conama-break {
+                                page-break-before: always !important;
+                                break-before: page !important;
+                            }
+                        }
+                        @media print and (orientation: landscape) {
+                            .header-romaneio-container {
+                                transform: none !important;
+                                width: auto !important;
+                                min-height: auto !important;
+                                overflow: visible !important;
+                            }
+                            .resumo-break {
+                                page-break-before: always !important;
+                                break-before: page !important;
+                            }
+                            .conama-break {
+                                page-break-before: always !important;
+                                break-before: page !important;
+                            }
+                        }
+                        @media print and (orientation: landscape) {
+                            .especie-card { flex: 1 1 calc(33.33% - 12px) !important; max-width: calc(33.33% - 12px) !important; min-width: calc(33.33% - 12px) !important; }
+                        }
+                    </style>
+                </head>
+                <body class="${printProfileClass}" data-print-mode="${tipo}" data-cols="${visibleCols}" data-comp-count="${comprimentosUnicos.length}" style="--pes-translate-x:${profileTranslateMm}mm; --pes-last-col-width:${profileLastColPx}px; --pes-unit-col-width:${profileUnitColPx}px; --pes-comp-col:${profileCompColPx}px; --pes-scale:${profileScale};">
+                    <div class="print-actions">
+                        <button onclick="window.print()">Imprimir</button>
+                        <button onclick="window.close()">Fechar</button>
+                    </div>
+                    <div class="header-romaneio-container">
+                        <div class="romaneio-principal">
+                            <div class="header">
+                                <div class="logo">
+                                    ${companyLogo ? `<img src="${companyLogo}" alt="Logo da Empresa" onerror="this.parentElement.innerHTML='<div class=&quot;logo-fallback&quot;>SW</div>';">` : '<div class="logo-fallback">SW</div>'}
+                                </div>
+                                <div class="company-info">
+                                    <div class="company-name">${companyName}</div>
+                                    <div class="company-details">CNPJ: ${companyCnpj}</div>
+                                    <div class="company-details">Endereço: ${companyAddress}</div>
+                                    <div class="company-details">Cidade: ${companyCity} - Estado: ${companyState}</div>
+                                    <div class="company-details">Telefone: ${companyPhone}</div>
+                                </div>
+                            </div>
+                            <div class="title">ROMANEIO DE PÉS</div>
+                            <div class="meta">
+                                <div class="meta-row">
+                                    <span class="meta-label">Cliente:</span>
+                                    <span>${clienteNome}</span>
+                                    <span class="meta-label">Data:</span>
+                                    <span>${formatarData(romaneio.data)}</span>
+                                </div>
+                                <div class="meta-row">
+                                    <span class="meta-label">Espécies:</span>
+                                    <span style="grid-column: span 3;">${Array.from(new Set(itensNorm.map((item) => item.especieNome || 'Não informada'))).join(', ')}</span>
+                                </div>
+                            </div>
+                            <div class="table-container">
+                                <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th class="col-espessura">Esp. (mm)</th>
+                                <th class="col-largura">Larg. (mm)</th>
+                                <th class="col-especie">Espécie</th>
+                                <th colspan="${comprimentosUnicos.length}">Comprimentos em Milímetros</th>
+                                <th class="col-quantidade">Qtd.</th>
+                                <th class="col-pes">Pés</th>
+                                <th class="col-m3">m³</th>
+                                <th class="col-m2">m²</th>
+                                <th class="col-ml">ml</th>
+                                ${hideUnitPrice ? '' : '<th class="col-unit-price">Preço/m³</th>'}
+                                ${hidePrice ? '' : '<th class="col-total-price">Valor</th>'}
+                            </tr>
+                            <tr>
+                                <th colspan="3"></th>
+                                ${comprimentosUnicos.map((comp) => `<th class="col-comp-dyn">${formatarNumero(comp, 2)}</th>`).join('')}
+                                <th colspan="${5 + (hideUnitPrice ? 0 : 1) + (hidePrice ? 0 : 1)}"></th>
+                            </tr>
+                        </thead>
+                        <tbody>${itensRows}</tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="col-especie">TOTAL</td>
+                                ${comprimentosUnicos.map((comp) => `<td class="center col-comp-dyn">${formatarNumero(totaisPorComprimento[comp] || 0, 0)}</td>`).join('')}
+                                <td class="num col-quantidade">${formatarNumero(totais.qtd, 0)}</td>
+                                <td class="num col-pes">${formatarPes(totais.pes)}</td>
+                                <td class="num col-m3">${formatarNumero(totais.m3, 3)}</td>
+                                <td class="num col-m2">${formatarNumero(totais.m2, 3)}</td>
+                                <td class="num col-ml">${formatarNumero(totais.ml, 3)}</td>
+                                ${hideUnitPrice ? '' : '<td class="col-unit-price"></td>'}
+                                ${hidePrice ? '' : `<td class="num col-total-price">${formatarMoeda(totais.valor)}</td>`}
+                            </tr>
+                        </tfoot>
+                                </table>
+                            </div>
+                            <div class="signature">
+                                <div class="signature-rows">
+                                    <div class="signature-item">
+                                        <div class="signature-line"></div>
+                                        <div>Responsável</div>
+                                    </div>
+                                    <div class="signature-item">
+                                        <div class="signature-line"></div>
+                                        <div>Cliente</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="page-break resumo-break"></div>
+                    <div class="resumo-dimensoes">
+                        <div class="section-title">Resumo por Dimensões e Espécies</div>
+                        <div class="resumo-container">${resumoDimCards}</div>
+                    </div>
+                    <div class="page-break conama-break"></div>
+                    <div class="resumo-conama">
+                    <div class="section-title">Resumo por Classificação CONAMA</div>
+                    <table class="conama-table">
+                        <thead>
+                            <tr>
+                                <th>Categoria CONAMA</th>
+                                <th>Volume (m³)</th>
+                                <th>Pés</th>
+                                <th>Participação</th>
+                                <th>Espécies</th>
+                            </tr>
+                        </thead>
+                        <tbody>${resumoConamaRows}</tbody>
+                    </table>
+                    </div>
+                </body>
+                </html>
+            `;
+            printWindow.document.open();
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.onload = function() {
+                try {
+                    const body = printWindow.document.body;
+                    const header = printWindow.document.querySelector('.header-romaneio-container');
+                    if (body && header) {
+                        const isPortrait = printWindow.matchMedia && printWindow.matchMedia('(orientation: portrait)').matches;
+                        if (isPortrait) {
+                            const compCount = parseInt(body.getAttribute('data-comp-count') || '0', 10) || 0;
+                            const compSize = compCount >= 18 ? 12 : (compCount >= 14 ? 14 : (compCount >= 10 ? 16 : 18));
+                            const unitWidth = compCount >= 14 ? 44 : 48;
+                            const totalWidth = compCount >= 14 ? 54 : 58;
+                            body.style.setProperty('--pes-comp-col', `${compSize}px`);
+                            body.style.setProperty('--pes-unit-col-width', `${unitWidth}px`);
+                            body.style.setProperty('--pes-last-col-width', `${totalWidth}px`);
+                            const vw = Math.max(printWindow.document.documentElement.clientWidth || 0, printWindow.innerWidth || 0);
+                            const rect = header.getBoundingClientRect();
+                            if (vw && rect.width) {
+                                let s = Math.min(1, (vw - 8) / rect.width);
+                                if (s < 0.85) s = 0.85;
+                                body.style.setProperty('--pes-scale', s.toFixed(3));
+                            }
+                        } else {
+                            body.style.setProperty('--pes-scale', '1');
+                        }
+                    }
+                } catch (_) {}
+                setTimeout(function() { printWindow.print(); }, 120);
+            };
+        }
+        
+        // Função para formatar data
+        function formatarData(data) {
+            if (!data) return 'N/A';
+            
+            try {
+                const date = new Date(data);
+                return date.toLocaleDateString('pt-BR');
+            } catch (e) {
+                return data;
+            }
+        }
+        window.showRomaneiosList = showRomaneiosList;
+        window.editRomaneio = editRomaneio;
+        window.deleteRomaneio = deleteRomaneio;
+        window.togglePrintMenu = togglePrintMenu;
+        window.printRomaneio = printRomaneio;
+        window.excluirItem = excluirItem;
+        window.salvarRomaneio = salvarRomaneio;
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });
+    try {
+        var nodes = document.querySelectorAll('input[type="text"], textarea');
+        nodes.forEach(function(el){
+            el.addEventListener('blur', function(){
+                var v = String(this.value || '').trim();
+                if (!v) return;
+                if (window.isAllCaps && window.toTitleCasePt && window.isAllCaps(v)) {
+                    this.value = window.toTitleCasePt(v);
+                }
+            });
+        });
+    } catch(_) {}
+});
+</script>
+</body>
+</html>

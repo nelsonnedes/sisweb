@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <title>Meu Perfil - Sistema</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="menu.css">
+    <script src="menu-component.js?v=20260326"></script>
+    <!-- Adicionar fontes do Google para melhorar a tipografia -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        /* Profile Header com gradiente */
+        .profile-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 2px,
+                rgba(255,255,255,0.05) 2px,
+                rgba(255,255,255,0.05) 4px
+            );
+            animation: shimmer 20s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: white;
+            border: 4px solid rgba(255,255,255,0.3);
+            position: relative;
+            z-index: 2;
+            cursor: pointer;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .profile-avatar:hover {
+            transform: scale(1.05);
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .avatar-upload-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: 50%;
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .profile-avatar:hover .avatar-upload-overlay {
+            opacity: 1;
+        }
+
+        .avatar-upload-input {
+            display: none;
+        }
+
+        .photo-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #667eea;
+            margin-bottom: 15px;
+        }
+
+        .profile-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .profile-header .user-email {
+            font-size: 16px;
+            opacity: 0.9;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Section Title */
+        .section-title {
+            color: #2c3e50;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f2f5;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: #667eea;
+        }
+
+        /* Profile Grid */
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .profile-card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #f0f2f5;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .profile-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i {
+            color: #667eea;
+        }
+
+        .edit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .edit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #374151;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            background: #fafafa;
+        }
+
+        .form-input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: white;
+        }
+
+        .form-input:disabled {
+            background-color: #f9f9f9;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* Info Display */
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f2f5;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .info-value {
+            color: #1f2937;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .status-badge {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.trial {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .status-badge.expired {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s ease;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Messages */
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .message.success {
+            background-color: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .message.error {
+            background-color: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        /* Full Width Card for Password */
+        .full-width-card {
+            grid-column: 1 / -1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .profile-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .profile-header {
+                padding: 30px 20px;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 4px;
+            width: auto;
+        }
+
+        .modal-close:hover {
+            color: #374151;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Menu inserido com Web Component -->
+        <main-menu></main-menu>
+
+        <!-- Profile Header -->
+            <div class="profile-header">
+            <div class="profile-avatar" onclick="triggerPhotoUpload()">
+                <i class="fas fa-user" id="defaultAvatar"></i>
+                <img id="userPhoto" style="display: none;" alt="Foto do usuário">
+                <div class="avatar-upload-overlay">
+                    <i class="fas fa-camera"></i>
+                    Alterar foto
+                </div>
+            </div>
+            <input type="file" id="photoUpload" class="avatar-upload-input" accept="image/*" onchange="handlePhotoUpload(this)">
+            <h1 id="profileName">Carregando...</h1>
+            <div class="user-email" id="profileEmail">Carregando...</div>
+        </div>
+
+        <!-- Personal Information Section -->
+        <div class="section-title">
+            <i class="fas fa-user-circle"></i>
+            Informações Pessoais
+        </div>
+
+        <div class="profile-grid">
+            <!-- Account Information Card -->
+            <div class="profile-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-id-card"></i>
+                        Dados da Conta
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="edit-btn" type="button" onclick="loadUserProfile(true)">
+                            <i class="fas fa-rotate-right"></i>
+                            Recarregar
+                        </button>
+                        <button class="edit-btn" type="button" onclick="openEditPersonalInfo()">
+                            <i class="fas fa-edit"></i>
+                            Editar
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">Nome Completo</span>
+                    <span class="info-value" id="displayName">Carregando...</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Nome de Usuário</span>
+                    <span class="info-value" id="username">Carregando...</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Email</span>
+                    <span class="info-value" id="userEmail">Carregando...</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Telefone</span>
+                    <span class="info-value" id="userPhone">Não informado</span>
+                </div>
+            </div>
+
+            <!-- Account Status Card -->
+            <div class="profile-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-shield-alt"></i>
+                        Status da Conta
+                    </div>
+                </div>
+                
+                        <div class="info-item">
+                    <span class="info-label">Status</span>
+                    <span class="info-value">
+                        <span class="status-badge" id="accountStatus">Carregando...</span>
+                    </span>
+                        </div>
+                        <div class="info-item">
+                    <span class="info-label">Membro desde</span>
+                    <span class="info-value" id="memberSince">Carregando...</span>
+                        </div>
+                        <div class="info-item">
+                    <span class="info-label">Último acesso</span>
+                    <span class="info-value" id="lastAccess">Carregando...</span>
+                        </div>
+                        <div class="info-item">
+                    <span class="info-label">Conexão</span>
+                    <span class="info-value" id="connectionInfo">
+                        <i class="fas fa-circle" style="color: #10b981; margin-right: 6px;"></i>
+                        Online
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Section -->
+        <div class="section-title">
+            <i class="fas fa-lock"></i>
+            Segurança
+                        </div>
+
+        <div class="profile-grid">
+            <!-- Password Card -->
+            <div class="profile-card full-width-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-key"></i>
+                        Alterar Senha
+                    </div>
+                </div>
+
+                    <form id="changePasswordForm">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label for="currentPassword">Senha Atual</label>
+                            <input type="password" id="currentPassword" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword">Nova Senha</label>
+                            <input type="password" id="newPassword" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirmar Nova Senha</label>
+                            <input type="password" id="confirmPassword" class="form-input" required>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-key"></i>
+                            Atualizar Senha
+                            <div id="password-loading-spinner" class="loading-spinner"></div>
+                        </button>
+                    </div>
+                    
+                    <div id="passwordMessage" class="message"></div>
+                    </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for editing personal info -->
+    <div id="editPersonalModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Editar Informações Pessoais</h3>
+                <button class="modal-close" onclick="closeEditPersonalInfo()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="editPersonalForm">
+                <div class="form-group" style="text-align: center;">
+                    <label>Foto do Perfil</label>
+                    <div>
+                        <img id="photoPreview" class="photo-preview" style="display: none;" alt="Preview da foto">
+                        <div id="photoPlaceholder" class="photo-preview" style="background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #6b7280;">
+                            <i class="fas fa-user" style="font-size: 24px;"></i>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-secondary" style="margin-top: 10px; padding: 8px 16px;" onclick="triggerPhotoUpload()">
+                        <i class="fas fa-camera"></i>
+                        Alterar Foto
+                    </button>
+                    <button type="button" class="btn-secondary" style="margin-top: 5px; padding: 8px 16px; background: #fef2f2; color: #991b1b;" onclick="removeUserPhoto()">
+                        <i class="fas fa-trash"></i>
+                        Remover Foto
+                    </button>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editDisplayName">Nome Completo</label>
+                    <input type="text" id="editDisplayName" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="editUsername">Nome de Usuário</label>
+                    <input type="text" id="editUsername" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="editPhone">Telefone</label>
+                    <input type="tel" id="editPhone" class="form-input" placeholder="(00) 00000-0000">
+                </div>
+                
+                <div class="action-buttons">
+                    <button type="button" class="btn-secondary" onclick="closeEditPersonalInfo()">
+                        <i class="fas fa-times"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i>
+                        Salvar Alterações
+                        <div id="personal-loading-spinner" class="loading-spinner"></div>
+                    </button>
+                </div>
+                
+                <div id="personalMessage" class="message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="auth.js"></script>
+    <script type="module">
+        import * as svc from './firebaseService.js';
+        if (!window.firebaseService) {
+            window.firebaseService = svc;
+        } else {
+            window.firebaseService = { ...svc, ...window.firebaseService };
+        }
+        window.authService = svc.authService;
+        console.log("✅ firebaseService carregado no user-profile.html");
+    </script>
+
+    <script>
+        let currentUserData = null;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadUserProfile(true);
+            setupEventListeners();
+            loadUserPhoto();
+        });
+
+        async function loadUserProfile(showFeedback = false) {
+            try {
+                // Obter informações do usuário atual
+                currentUserData = await getCurrentUserDetails();
+                
+                if (!currentUserData) {
+                    console.error("Não foi possível obter dados do usuário");
+                    showMessage('error', 'Erro ao carregar perfil do usuário');
+                    return;
+                }
+                
+                // Preencher informações no cabeçalho
+                document.getElementById('profileName').textContent = 
+                    currentUserData.displayName || currentUserData.username || currentUserData.email.split('@')[0];
+                document.getElementById('profileEmail').textContent = currentUserData.email || 'Email não disponível';
+                
+                // Preencher informações da conta
+                document.getElementById('displayName').textContent = 
+                    currentUserData.displayName || currentUserData.username || currentUserData.email.split('@')[0];
+                document.getElementById('username').textContent = 
+                    currentUserData.username || currentUserData.email.split('@')[0];
+                document.getElementById('userEmail').textContent = currentUserData.email || 'Email não disponível';
+                document.getElementById('userPhone').textContent = currentUserData.phone || 'Não informado';
+                
+                // Status da conta
+                updateAccountStatus();
+                
+                // Data de criação da conta
+                const memberSince = currentUserData.createdAt ? new Date(currentUserData.createdAt) : 
+                                    currentUserData.trialStart ? new Date(currentUserData.trialStart) : 
+                                    new Date();
+                document.getElementById('memberSince').textContent = memberSince.toLocaleDateString('pt-BR');
+                
+                // Último acesso
+                document.getElementById('lastAccess').textContent = new Date().toLocaleDateString('pt-BR');
+                
+                console.log("✅ Perfil do usuário carregado com sucesso");
+                if (showFeedback) {
+                    showGlobalMessage('success', 'Perfil recarregado com sucesso.');
+                }
+                
+            } catch (error) {
+                console.error("Erro ao carregar perfil:", error);
+                showMessage('error', 'Erro ao carregar informações do perfil');
+            }
+        }
+
+        function loadUserPhoto() {
+            let savedPhoto = localStorage.getItem('userPhoto');
+            if (!savedPhoto && currentUserData && currentUserData.photoURL) {
+                savedPhoto = currentUserData.photoURL;
+            }
+            const userPhotoImg = document.getElementById('userPhoto');
+            const defaultAvatar = document.getElementById('defaultAvatar');
+            
+            if (savedPhoto) {
+                userPhotoImg.src = savedPhoto;
+                userPhotoImg.style.display = 'block';
+                defaultAvatar.style.display = 'none';
+                console.log("✅ Foto do usuário carregada");
+            } else {
+                userPhotoImg.style.display = 'none';
+                defaultAvatar.style.display = 'block';
+            }
+        }
+
+        function triggerPhotoUpload() {
+            document.getElementById('photoUpload').click();
+        }
+
+        function handlePhotoUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            console.log("📸 Iniciando upload de foto...");
+            
+            // Verificar tipo do arquivo
+            if (!file.type.startsWith('image/')) {
+                showGlobalMessage('error', 'Por favor, selecione apenas arquivos de imagem');
+                return;
+            }
+            
+            // Verificar tamanho (máximo 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showGlobalMessage('error', 'A imagem deve ter no máximo 5MB');
+                return;
+            }
+            
+            // ✅ ENVIAR PARA FIREBASE STORAGE
+            (async () => {
+                try {
+                    const uid = window.firebaseService && typeof window.firebaseService.getCurrentUid === 'function' 
+                        ? window.firebaseService.getCurrentUid() : null;
+                    if (uid && window.firebaseService && typeof window.firebaseService.uploadSubscriptionProof === 'function') {
+                        showGlobalMessage('info', '📤 Fazendo upload da foto para Storage...');
+                        // Reutilizar rota de upload de arquivos com folder personalizado
+                        const uploadRes = await window.firebaseService.uploadSubscriptionProof(file, { folder: 'profile-photos' });
+                        if (uploadRes.success) {
+                            const downloadURL = uploadRes.data.downloadURL;
+                            
+                            // 1. Atualizar no Rtdb
+                            if (typeof window.firebaseService.updateFirebase === 'function') {
+                                await window.firebaseService.updateFirebase(`users/${uid}`, { photoURL: downloadURL });
+                            }
+                            // 2. Cachear no localStorage
+                            localStorage.setItem('userPhoto', downloadURL);
+                            if (currentUserData) currentUserData.photoURL = downloadURL;
+                            
+                            loadUserPhoto();
+                            updatePhotoPreview(downloadURL);
+                            showGlobalMessage('success', '📸 Foto salva no Storage com sucesso!');
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    console.warn("⚠️ Upload p/ Storage falhou:", err);
+                }
+                
+                // Fallback para Base64 local caso Storage falhe
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageData = e.target.result;
+                    localStorage.setItem('userPhoto', imageData);
+                    loadUserPhoto();
+                    updatePhotoPreview(imageData);
+                    showGlobalMessage('success', '📸 Foto atualizada (modo local).');
+                };
+                reader.readAsDataURL(file);
+            })();
+        }
+
+        function updatePhotoPreview(imageData) {
+            const photoPreview = document.getElementById('photoPreview');
+            const photoPlaceholder = document.getElementById('photoPlaceholder');
+            
+            if (imageData) {
+                photoPreview.src = imageData;
+                photoPreview.style.display = 'block';
+                photoPlaceholder.style.display = 'none';
+            } else {
+                photoPreview.style.display = 'none';
+                photoPlaceholder.style.display = 'flex';
+            }
+        }
+
+        function updateAccountStatus() {
+            const statusElement = document.getElementById('accountStatus');
+                let statusText = 'Usuário Ativo';
+            let statusClass = '';
+            
+            if (currentUserData.subscription && currentUserData.subscription.active) {
+                statusText = `Assinatura ${currentUserData.subscription.type === 'annual' ? 'Anual' : 'Mensal'} Ativa`;
+                statusClass = '';
+            } else if (currentUserData.trialStart) {
+                const trialStartDate = new Date(currentUserData.trialStart);
+                    const currentDate = new Date();
+                    const diffTime = currentDate - trialStartDate;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    const daysLeft = Math.max(0, 30 - diffDays);
+                    
+                    if (daysLeft > 0) {
+                        statusText = `Período de Teste (${daysLeft} dias restantes)`;
+                    statusClass = 'trial';
+                    } else {
+                        statusText = 'Período de Teste Expirado';
+                    statusClass = 'expired';
+                }
+            }
+            
+            statusElement.textContent = statusText;
+            statusElement.className = `status-badge ${statusClass}`;
+        }
+
+        function setupEventListeners() {
+            // Formulário de alteração de senha
+            const changePasswordForm = document.getElementById('changePasswordForm');
+            changePasswordForm.addEventListener('submit', handlePasswordChange);
+
+            // Formulário de edição de informações pessoais
+            const editPersonalForm = document.getElementById('editPersonalForm');
+            editPersonalForm.addEventListener('submit', handlePersonalInfoUpdate);
+
+            // Fechar modal ao clicar fora
+            const modal = document.getElementById('editPersonalModal');
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeEditPersonalInfo();
+                }
+            });
+        }
+
+        async function handlePasswordChange(event) {
+                event.preventDefault();
+            
+            const spinner = document.getElementById('password-loading-spinner');
+            const messageEl = document.getElementById('passwordMessage');
+                
+                // Limpar mensagens anteriores
+            hideMessage(messageEl);
+                spinner.style.display = 'block';
+                
+                const currentPassword = document.getElementById('currentPassword').value;
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+            // Validações
+                if (!currentPassword || !newPassword || !confirmPassword) {
+                showMessage('error', 'Todos os campos são obrigatórios', messageEl);
+                    spinner.style.display = 'none';
+                    return;
+                }
+                
+                if (newPassword !== confirmPassword) {
+                showMessage('error', 'A nova senha e a confirmação não coincidem', messageEl);
+                    spinner.style.display = 'none';
+                    return;
+                }
+                
+                if (newPassword.length < 6) {
+                showMessage('error', 'A nova senha deve ter pelo menos 6 caracteres', messageEl);
+                    spinner.style.display = 'none';
+                    return;
+                }
+                
+                try {
+                // Verificar Firebase
+                    if (window._FIREBASE_CONNECTED === false) {
+                    showMessage('error', 'Sistema offline. Não é possível alterar a senha neste momento.', messageEl);
+                        spinner.style.display = 'none';
+                        return;
+                    }
+                    
+                // Verificar autenticação
+                    const currentUser = await authService.getCurrentUser();
+                    
+                    if (!currentUser) {
+                    showMessage('error', 'Você precisa estar autenticado para alterar sua senha', messageEl);
+                        spinner.style.display = 'none';
+                        return;
+                    }
+                    
+                // Reautenticar e atualizar senha
+                    const credential = await authService.getCredential(currentUser.email, currentPassword);
+                    await authService.reauthenticate(credential);
+                    await authService.updatePassword(newPassword);
+                    
+                // Sucesso
+                showMessage('success', 'Senha atualizada com sucesso!', messageEl);
+                    
+                    // Limpar campos
+                    document.getElementById('currentPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                    
+                } catch (error) {
+                    console.error("Erro ao alterar senha:", error);
+                    
+                    let mensagemErro = 'Erro ao alterar senha.';
+                    
+                    if (error.code === 'auth/wrong-password') {
+                        mensagemErro = 'Senha atual incorreta.';
+                    } else if (error.code === 'auth/weak-password') {
+                        mensagemErro = 'A nova senha é muito fraca.';
+                    } else if (error.code === 'auth/requires-recent-login') {
+                        mensagemErro = 'Para sua segurança, faça login novamente antes de alterar a senha.';
+                    } else if (error.code === 'auth/network-request-failed') {
+                        mensagemErro = 'Erro de conexão. Verifique sua internet e tente novamente.';
+                    }
+                    
+                showMessage('error', mensagemErro, messageEl);
+                } finally {
+                    spinner.style.display = 'none';
+                }
+        }
+
+        function openEditPersonalInfo() {
+            // Preencher campos do modal com dados atuais
+            document.getElementById('editDisplayName').value = currentUserData.displayName || currentUserData.username || '';
+            document.getElementById('editUsername').value = currentUserData.username || '';
+            document.getElementById('editPhone').value = currentUserData.phone || '';
+            
+            // Atualizar preview da foto
+            const savedPhoto = localStorage.getItem('userPhoto');
+            updatePhotoPreview(savedPhoto);
+            
+            // Mostrar modal
+            document.getElementById('editPersonalModal').style.display = 'block';
+            
+            console.log("📝 Modal de edição aberto");
+        }
+
+        function closeEditPersonalInfo() {
+            document.getElementById('editPersonalModal').style.display = 'none';
+            hideMessage(document.getElementById('personalMessage'));
+            console.log("❌ Modal de edição fechado");
+        }
+
+        async function handlePersonalInfoUpdate(event) {
+            event.preventDefault();
+            
+            const spinner = document.getElementById('personal-loading-spinner');
+            const messageEl = document.getElementById('personalMessage');
+            
+            hideMessage(messageEl);
+            spinner.style.display = 'block';
+            
+            const displayName = document.getElementById('editDisplayName').value.trim();
+            const username = document.getElementById('editUsername').value.trim();
+            const phone = document.getElementById('editPhone').value.trim();
+            
+            // Validações
+            if (!displayName) {
+                showMessage('error', 'Nome completo é obrigatório', messageEl);
+                spinner.style.display = 'none';
+                return;
+            }
+            
+            if (!username) {
+                showMessage('error', 'Nome de usuário é obrigatório', messageEl);
+                spinner.style.display = 'none';
+                return;
+            }
+            
+            try {
+                console.log("💾 Salvando informações pessoais...");
+                
+                // Obter dados atuais do usuário
+                const currentData = await getCurrentUserDetails() || {};
+                
+                // Atualizar dados localmente com merge dos dados existentes
+                const updatedData = {
+                    ...currentData,
+                    displayName: displayName,
+                    username: username,
+                    phone: phone,
+                    lastUpdated: new Date().toISOString()
+                };
+                
+                // Salvar nos diferentes locais de armazenamento
+                localStorage.setItem('currentUser', JSON.stringify(updatedData));
+                localStorage.setItem('persistentUser', JSON.stringify(updatedData));
+                await persistUserProfileData(updatedData);
+
+                // Sincronizar com o Firebase Realtime Database
+                try {
+                    if (window.firebaseService && typeof window.firebaseService.getCurrentUid === 'function' && typeof window.firebaseService.updateFirebase === 'function') {
+                        const uid = window.firebaseService.getCurrentUid();
+                        if (uid) {
+                            console.log("🔄 Sincronizando perfil com Firebase...");
+                            await window.firebaseService.updateFirebase(`users/${uid}`, {
+                                displayName: displayName,
+                                username: username,
+                                phone: phone,
+                                lastUpdated: updatedData.lastUpdated
+                            });
+                        }
+                    }
+                } catch (fbErr) {
+                    console.warn("⚠️ Erro ao sincronizar com Firebase, dados salvos localmente:", fbErr);
+                }
+                
+                // Atualizar dados globais
+                currentUserData = updatedData;
+                
+                console.log("✅ Dados salvos:", updatedData);
+                
+                // Atualizar exibição da página
+                await loadUserProfile();
+                
+                showMessage('success', 'Informações atualizadas com sucesso!', messageEl);
+                showGlobalMessage('success', 'Dados do perfil salvos e sincronizados com sucesso.');
+                
+                // Fechar modal após 1.5 segundos
+                setTimeout(() => {
+                    closeEditPersonalInfo();
+                }, 1500);
+                
+                console.log("✅ Perfil atualizado com sucesso");
+                
+            } catch (error) {
+                console.error("❌ Erro ao atualizar informações:", error);
+                showMessage('error', 'Erro ao atualizar informações. Tente novamente.', messageEl);
+            } finally {
+                spinner.style.display = 'none';
+            }
+        }
+
+        function showMessage(type, text, element = null) {
+            if (element) {
+                // Usar elemento específico se fornecido
+                element.textContent = text;
+                element.className = `message ${type}`;
+                element.style.display = 'block';
+            } else {
+                // Usar mensagem global para melhor visibilidade
+                showGlobalMessage(type, text);
+            }
+        }
+
+        function hideMessage(element) {
+            if (element) {
+                element.style.display = 'none';
+            }
+        }
+
+        // Função auxiliar para obter detalhes do usuário
+        async function getCurrentUserDetails() {
+            try {
+                console.log("🔍 Obtendo detalhes do usuário...");
+                
+                // Verificar authService global ou via window.firebaseService
+                const authSvc = (typeof authService !== 'undefined') ? authService : 
+                               (window.firebaseService && window.firebaseService.authService) ? window.firebaseService.authService : null;
+
+                // Tenta obter do Firebase Auth via authService
+                if (authSvc && authSvc.getCurrentUser) {
+                    const user = await authSvc.getCurrentUser();
+                    if (user) {
+                        const localData = getUserFromLocalStorage(user.email);
+                        const merged = {
+                            ...user,
+                            ...localData,
+                            email: user.email || localData.email || '',
+                            displayName: localData.displayName || user.displayName || '',
+                            username: localData.username || user.username || user.displayName || (user.email ? user.email.split('@')[0] : ''),
+                            phone: localData.phone || user.phone || user.phoneNumber || ''
+                        };
+                        console.log("✅ Usuário obtido do Firebase Auth");
+                        return merged;
+                    }
+                }
+                
+                // Fallback para localStorage - prioriza persistentUser
+                const persistentUser = JSON.parse(localStorage.getItem('persistentUser') || '{}');
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                
+                // Combinar dados, priorizando persistentUser
+                const combinedData = { ...currentUser, ...persistentUser };
+                
+                if (combinedData.email || combinedData.username) {
+                    console.log("✅ Usuário obtido do localStorage");
+                    return combinedData;
+                }
+                
+                console.log("⚠️ Nenhum usuário encontrado");
+                return null;
+                
+            } catch (error) {
+                console.error("❌ Erro ao obter detalhes do usuário:", error);
+                return null;
+            }
+        }
+
+        function getUserFromLocalStorage(email) {
+            try {
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                if (!Array.isArray(users) || !email) return {};
+                const found = users.find(u => String(u.email || '').toLowerCase() === String(email || '').toLowerCase());
+                return found || {};
+            } catch (_) {
+                return {};
+            }
+        }
+
+        async function persistUserProfileData(updatedData) {
+            try {
+                const email = String(updatedData.email || '').toLowerCase();
+                if (!email) return;
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                if (Array.isArray(users)) {
+                    const index = users.findIndex(u => String(u.email || '').toLowerCase() === email);
+                    if (index >= 0) users[index] = { ...users[index], ...updatedData, updatedAt: new Date().toISOString() };
+                    else users.push({ ...updatedData, updatedAt: new Date().toISOString() });
+                    localStorage.setItem('users', JSON.stringify(users));
+                }
+                if (window.firebaseService && typeof window.firebaseService.getCurrentUid === 'function' && typeof window.firebaseService.updateFirebase === 'function') {
+                    const uid = window.firebaseService.getCurrentUid();
+                    if (uid) {
+                        await window.firebaseService.updateFirebase(`users/${uid}`, {
+                            displayName: updatedData.displayName || '',
+                            username: updatedData.username || '',
+                            phone: updatedData.phone || '',
+                            updatedAt: new Date().toISOString()
+                        });
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ Falha ao sincronizar perfil:', e);
+            }
+        }
+
+        function removeUserPhoto() {
+            // Remover do localStorage
+            localStorage.removeItem('userPhoto');
+            
+            // Atualizar exibição
+            loadUserPhoto();
+            updatePhotoPreview(null);
+            
+            showGlobalMessage('success', '🗑️ Foto removida com sucesso!');
+            console.log("🗑️ Foto do usuário removida");
+        }
+
+        // Função global para mostrar mensagens
+        function showGlobalMessage(type, text) {
+            // Criar elemento de mensagem global se não existir
+            let globalMessage = document.getElementById('globalMessage');
+            if (!globalMessage) {
+                globalMessage = document.createElement('div');
+                globalMessage.id = 'globalMessage';
+                globalMessage.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 9999;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    font-weight: 500;
+                    min-width: 300px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                `;
+                document.body.appendChild(globalMessage);
+            }
+            
+            // Definir cores baseadas no tipo
+            if (type === 'success') {
+                globalMessage.style.backgroundColor = '#ecfdf5';
+                globalMessage.style.color = '#065f46';
+                globalMessage.style.border = '1px solid #a7f3d0';
+            } else if (type === 'error') {
+                globalMessage.style.backgroundColor = '#fef2f2';
+                globalMessage.style.color = '#991b1b';
+                globalMessage.style.border = '1px solid #fecaca';
+            }
+            
+            globalMessage.textContent = text;
+            globalMessage.style.display = 'block';
+            
+            // Auto-ocultar após 4 segundos
+            setTimeout(() => {
+                globalMessage.style.display = 'none';
+            }, 4000);
+        }
+    </script>
+</body>
+</html> 

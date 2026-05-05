@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseio.com https://*.firebasedatabase.app https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://apis.google.com https://www.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com; script-src-elem 'self' 'unsafe-inline' https://*.firebaseio.com https://*.firebasedatabase.app https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://apis.google.com https://www.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebaseio.com wss://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://cdn.jsdelivr.net https://www.googleapis.com https://firebasestorage.googleapis.com https://www.google-analytics.com;">
+    <title>Dashboard - Sistema Sisweb</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="modules/dashboard/dashboard-styles.css">
+    <link rel="stylesheet" href="modules/dashboard/dashboard-layout-fix.css">
+    <link rel="stylesheet" href="modules/dashboard/dashboard-responsive-styles.css">
+    <link rel="stylesheet" href="modules/dashboard/dashboard-professional-styles.css">
+    
+    <!-- ✅ CORREÇÃO: Script para suprimir erros de extensões do navegador -->
+    <script>
+        // Suprimir erros de message channel causados por extensões do navegador
+        (function() {
+            // Capturar erros globais relacionados a extensões
+            window.addEventListener('error', function(event) {
+                const message = event.message || '';
+                if (message.includes('message channel closed') || 
+                    message.includes('Extension context invalidated') ||
+                    message.includes('listener indicated an asynchronous response')) {
+                    event.preventDefault();
+                    return true; // Suprimir o erro
+                }
+            });
+            
+            // Capturar promises rejeitadas de extensões
+            window.addEventListener('unhandledrejection', function(event) {
+                const reason = event.reason || {};
+                const message = reason.message || reason.toString() || '';
+                if (message.includes('message channel closed') || 
+                    message.includes('Extension context invalidated') ||
+                    message.includes('listener indicated an asynchronous response')) {
+                    event.preventDefault();
+                    return true; // Suprimir o erro
+                }
+            });
+            
+            console.debug('✅ Sistema de supressão de erros de extensões ativado no dashboard');
+        })();
+    </script>
+    
+    <script src="menu-component.js?v=20260326"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-performance-compat.js"></script>
+    
+    <!-- Image Compression SDK (Otimização Storage Blaze) -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.1/dist/browser-image-compression.js"></script>
+    
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Módulos do Dashboard -->
+    <script src="modules/core/firebase-service.js"></script>
+    <script src="modules/core/hybrid-sync-service.js"></script>
+    <script src="modules/core/responsive-manager.js"></script>
+    <script src="modules/dashboard/dashboard-core.js"></script>
+    <script src="modules/dashboard/dashboard-widgets.js"></script>
+    <script src="modules/dashboard/performance-tester.js"></script>
+    <script src="modules/dashboard/sample-data-generator.js"></script>
+    <!-- Adicionar fontes do Google para melhorar a tipografia -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Note: Main menu styles are now in menu.css */
+
+        /* Estilos gerais para títulos de seção */
+        section-title {
+            color: #2c3e50;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f2f5;
+            display: block;
+        }
+
+        /* Dashboard cards superiores */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .dashboard-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-top: 4px solid #3498db;
+        }
+
+        .dashboard-card:nth-child(2) {
+            border-top: 4px solid #e74c3c;
+        }
+
+        .dashboard-card:nth-child(3) {
+            border-top: 4px solid #2ecc71;
+        }
+
+        .dashboard-card:nth-child(4) {
+            border-top: 4px solid #f39c12;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        .card-title {
+            color: #7f8c8d;
+            margin-bottom: 10px;
+            font-size: 15px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-value {
+            color: #2c3e50;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .dashboard-card i {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #3498db;
+        }
+
+        .dashboard-card:nth-child(2) i {
+            color: #e74c3c;
+        }
+
+        .dashboard-card:nth-child(3) i {
+            color: #2ecc71;
+        }
+
+        .dashboard-card:nth-child(4) i {
+            color: #f39c12;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: #95a5a6;
+            margin-top: 5px;
+        }
+
+        /* Estilos para os cards de estatísticas */
+        .dashboard-stats {
+            margin-bottom: 40px;
+        }
+        
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+        
+        .stat-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+        
+        .client-icon {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+        
+        .budget-icon {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+        }
+        
+        .species-icon {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: #2ecc71;
+        }
+        
+        .volume-icon {
+            background-color: rgba(243, 156, 18, 0.1);
+            color: #f39c12;
+        }
+        
+        .card-icon i {
+            font-size: 20px;
+        }
+        
+        .stat-info {
+            flex: 1;
+        }
+        
+        .stat-title {
+            font-size: 13px;
+            color: #7f8c8d;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        /* Estilos para a seção de desempenho */
+        .performance-section {
+            margin-bottom: 40px;
+        }
+        
+        .performance-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .performance-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        
+        .performance-header {
+            margin-bottom: 15px;
+        }
+        
+        .performance-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .performance-subtitle {
+            font-size: 13px;
+            color: #95a5a6;
+        }
+        
+        .performance-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        /* Estilos para a seção de cotações */
+        .forex-section {
+            margin-bottom: 40px;
+        }
+        
+        .forex-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+        
+        .forex-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        
+        .forex-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        
+        .forex-header i {
+            font-size: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+        }
+        
+        .forex-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #7f8c8d;
+        }
+        
+        .forex-value {
+            font-size: 26px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .forex-change {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .forex-change.positive {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: #2ecc71;
+        }
+        
+        .forex-change.negative {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+        }
+        
+        .forex-footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #95a5a6;
+        }
+
+        /* Estilos para tabelas e atividades recentes */
+        .recent-section {
+            margin-bottom: 40px;
+        }
+        
+        .recent-items-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .recent-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .recent-card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f2f5;
+        }
+
+        .recent-list {
+            list-style: none;
+        }
+
+        .recent-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 10px;
+            border-bottom: 1px solid #f0f2f5;
+            transition: background-color 0.2s ease;
+        }
+
+        .recent-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .recent-item:last-child {
+            border-bottom: none;
+        }
+
+        .recent-item .date {
+            color: #95a5a6;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .recent-item .value {
+            color: #27ae60;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        /* Novo conjunto de indicadores de desempenho */
+        .performance-indicators {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .indicator-card {
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .indicator-card::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            top: 0;
+            left: 0;
+            background-color: #3498db;
+        }
+
+        .indicator-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #7f8c8d;
+            margin-bottom: 12px;
+        }
+
+        .indicator-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .indicator-info {
+            font-size: 13px;
+            color: #95a5a6;
+            display: flex;
+            align-items: center;
+        }
+
+        .indicator-trend {
+            margin-left: 8px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .trend-up {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: #27ae60;
+        }
+
+        .trend-down {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+        }
+
+        /* Cotações em tempo real */
+        .currency-section {
+            background: white;
+            padding: 28px;
+            border-radius: 12px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .currency-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            gap: 20px;
+        }
+
+        .currency-cards {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .currency-card {
+            flex: 1;
+            min-width: 220px;
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 4px solid #3498db;
+        }
+
+        .currency-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+        }
+
+        .currency-name {
+            color: #7f8c8d;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .currency-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 12px;
+        }
+
+        .currency-change {
+            font-size: 15px;
+            margin-top: 8px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            display: inline-flex;
+            font-weight: 600;
+            align-items: center;
+        }
+
+        .currency-change.positive {
+            color: #27ae60;
+            background-color: rgba(39, 174, 96, 0.1);
+        }
+
+        .currency-change.positive::before {
+            content: "↑";
+            margin-right: 5px;
+        }
+
+        .currency-change.negative {
+            color: #e74c3c;
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+
+        .currency-change.negative::before {
+            content: "↓";
+            margin-right: 5px;
+        }
+
+        .currency-timestamp {
+            color: #95a5a6;
+            font-size: 13px;
+            margin-top: 20px;
+            background-color: #f0f2f5;
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: inline-block;
+            font-weight: 500;
+        }
+
+        .currency-loading {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+
+        .currency-error {
+            color: #e74c3c;
+            background-color: rgba(231, 76, 60, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 16px;
+            margin-top: 0;
+        }
+
+        /* Gráficos */
+        .charts-section {
+            margin-top: 30px;
+            position: relative;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-top: 5px;
+            width: 100%;
+        }
+
+        .content-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .chart-card {
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .chart-card h3 {
+            color: #2c3e50;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 340px;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        /* Estilos para o período dos gráficos */
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .chart-title-container {
+            flex: 1;
+            min-width: 200px;
+            margin-bottom: 10px;
+        }
+
+        .chart-period {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .period-option {
+            padding: 8px 14px;
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #7f8c8d;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .period-option:hover {
+            background-color: #f5f7f9;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .period-option.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+            font-weight: 600;
+        }
+
+        /* Estilos para indicador de carregamento dos gráficos */
+        .chart-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+            color: #3498db;
+        }
+
+        .chart-loading-icon {
+            font-size: 2rem;
+        }
+
+        .chart-notification {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(46, 204, 113, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .dashboard, .performance-indicators {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            .currency-card, .chart-card {
+                min-width: 100%;
+            }
+        }
+
+        /* Estilos para o botão de exportar relatório */
+        .export-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 16px;
+                font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            position: relative;
+            right: auto;
+            top: auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .export-button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .export-button i {
+            margin-right: 8px;
+        }
+
+        /* Melhorias para responsividade */
+        @media (max-width: 768px) {
+            /* Ajustes para o dashboard */
+            .cards-container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+            
+            /* Ajustes para os gráficos */
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-wrapper {
+                height: 300px;
+            }
+            
+            /* Ajustes para listas recentes */
+            .recent-items-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            /* Ajustes para o dashboard em telas muito pequenas */
+            .cards-container {
+                grid-template-columns: 1fr;
+            }
+            
+            /* Ajustes para o botão de exportar */
+            .export-button {
+                width: 100%;
+                justify-content: center;
+                margin-bottom: 15px;
+            }
+            
+            /* Ajustes para o cabeçalho dos gráficos */
+            .chart-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .chart-period {
+                width: 100%;
+                margin-top: 10px;
+                justify-content: space-between;
+            }
+            
+            .period-option {
+                flex: 1;
+                text-align: center;
+            }
+        }
+        
+        /* Estilo para o copyright no rodapé */
+        .footer-copyright {
+            text-align: center;
+            padding: 15px 0;
+            color: #95a5a6;
+            font-size: 14px;
+            margin-top: 10px;
+            border-top: 1px solid #ecf0f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <main-menu></main-menu>
+        
+        <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <div class="header-info">
+                <h1 style="margin-bottom: 5px; font-size: 24px; color: #2c3e50;"><i class="fas fa-tachometer-alt"></i> Dashboard Sistema</h1>
+                <div class="last-update" style="color: #7f8c8d; font-size: 14px;">
+                    Última atualização: <span id="lastUpdate">Aguardando dados...</span>
+                    <span id="sampleDataBadge" class="sample-badge" style="display:none; background:#ffc107; color:#000; padding:2px 8px; border-radius:10px; font-size:12px; margin-left:10px; font-weight:bold;">Amostras desativadas</span>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <button class="export-button" onclick="if(typeof forceDashboardRefresh === 'function') forceDashboardRefresh(); else location.reload();" id="btnRefreshDashboard" title="Atualizar dados do dashboard" style="margin-bottom: 0;">
+                    <i class="fas fa-sync-alt"></i> Atualizar
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard será inserido aqui pelos módulos -->
+        
+        <!-- O conteúdo do dashboard será inserido aqui pelos módulos -->
+
+        <!-- ========================================= -->
+        <!-- 🌿 SISTEMA UNIFICADO DE ESPÉCIES (PRIORIDADE 1) -->
+        <!-- ========================================= -->
+        <script src="species-manager.js"></script>
+        
+        <!-- ========================================= -->
+        <!-- 📋 SCRIPTS PRINCIPAIS -->
+        <!-- ========================================= -->
+    <script src="js/deep-clean.js"></script>
+    <script src="correcao-funcoes-ausentes.js"></script>
+        <!-- <script src="firebase-config.js"></script> - ARQUIVO NÃO EXISTE -->
+        <!-- <script src="sistema-romaneios.js"></script> - ARQUIVO NÃO EXISTE -->
+        <!-- <script src="romaneio-backup.js"></script> - ARQUIVO NÃO EXISTE -->
+
+        <!-- Sistema do Dashboard Modular -->
+        <script>
+            // Aguardar carregamento completo da página
+            document.addEventListener('DOMContentLoaded', async function() {
+                console.log('📊 Inicializando Dashboard Sistema...');
+                async function enforceTenantContext() {
+                    try {
+                        const svc = window.firebaseServiceTL || window.firebaseService || window.FirebaseService;
+                        const auth = (window.firebase && typeof window.firebase.auth === 'function') ? window.firebase.auth() : null;
+                        const user = auth && auth.currentUser ? auth.currentUser : null;
+                        if (!user) {
+                            let fallbackTenant = null;
+                            try {
+                                if (window.appTenantId) fallbackTenant = String(window.appTenantId);
+                                if (!fallbackTenant) {
+                                    const raw = localStorage.getItem('company_info');
+                                    if (raw) {
+                                        const info = JSON.parse(raw);
+                                        const id = info && (info.companyId || info.id);
+                                        if (id) fallbackTenant = String(id);
+                                    }
+                                }
+                            } catch (_) {}
+                            if (fallbackTenant) {
+                                if (svc && typeof svc.setTenantId === 'function') svc.setTenantId(fallbackTenant);
+                                window.appTenantId = fallbackTenant;
+                                try { window.dispatchEvent(new CustomEvent('tenantContextReady', { detail: { tenantId: fallbackTenant } })); } catch (_) {}
+                            }
+                            return;
+                        }
+                        let companyId = null;
+                        if (svc && typeof svc.loadData === 'function') {
+                            try {
+                                const profileRes = await svc.loadData(`users/${user.uid}`);
+                                const profile = profileRes && profileRes.success ? profileRes.data : profileRes;
+                                companyId = profile && (profile.companyId || profile.companyID || profile.tenantId) || null;
+                            } catch (_) {}
+                        }
+                        if (!companyId) {
+                            try {
+                                if (typeof user.getIdTokenResult === 'function') {
+                                    const token = await user.getIdTokenResult(true);
+                                    companyId = token && token.claims && (token.claims.companyId || token.claims.companyID || token.claims.tenantId) || null;
+                                }
+                            } catch (_) {}
+                        }
+                        if (companyId) {
+                            if (svc && typeof svc.setTenantId === 'function') svc.setTenantId(companyId);
+                            window.appTenantId = String(companyId);
+                            try {
+                                const raw = localStorage.getItem('company_info');
+                                const prev = raw ? JSON.parse(raw) : {};
+                                const next = { ...prev, companyId: String(companyId), id: prev.id || String(companyId) };
+                                localStorage.setItem('company_info', JSON.stringify(next));
+                                window.companyInfo = next;
+                            } catch (_) {}
+                            try { window.dispatchEvent(new CustomEvent('tenantContextReady', { detail: { tenantId: String(companyId) } })); } catch (_) {}
+                        } else {
+                            if (svc && typeof svc.setTenantId === 'function') svc.setTenantId(null);
+                            window.appTenantId = null;
+                            try {
+                                localStorage.removeItem('company_info');
+                                window.companyInfo = null;
+                            } catch (_) {}
+                            try { window.dispatchEvent(new CustomEvent('tenantContextReady', { detail: { tenantId: null } })); } catch (_) {}
+                        }
+                    } catch (_) {}
+                }
+                await enforceTenantContext();
+                
+                // ⚡ INICIALIZAÇÃO ULTRA RÁPIDA COM HYBRID SYNC
+                setTimeout(async () => {
+                    try {
+                        // Verificar se o Hybrid Sync está disponível
+                        if (window.hybridSync) {
+                            console.log('⚡ Hybrid Sync detectado - carregamento instantâneo ativado!');
+                        }
+                        
+                        // Verificar se os módulos estão disponíveis
+                        if (!window.DashboardCore || !window.DashboardWidgets) {
+                            console.warn('⚠️ Módulos modulares não carregados, usando fallback');
+                            showFallbackDashboard();
+                            return;
+                        }
+                        
+                        console.log('✅ Módulos detectados, inicializando...');
+                        
+                        // ⚡ INICIALIZAÇÃO PARALELA PARA MÁXIMA VELOCIDADE
+                        const [coreInitialized, widgetsInitialized] = await Promise.all([
+                            window.DashboardCore.init(),
+                            Promise.resolve(window.DashboardWidgets.init())
+                        ]);
+                        
+                        if (coreInitialized && widgetsInitialized) {
+                            console.log('✅ Dashboard Sistema inicializado com sucesso!');
+                            
+                            // ⚡ ANIMAÇÃO INSTANTÂNEA
+                            const kpiCards = document.querySelectorAll('.kpi-card');
+                            kpiCards.forEach((card, index) => {
+                                setTimeout(() => {
+                                    card.classList.add('fade-in');
+                                }, index * 50); // 50ms entre animações (mais rápido)
+                            });
+                            
+                            // 👥 GERAR DADOS DE EXEMPLO SE NÃO EXISTIREM
+                            setTimeout(async () => {
+                                // Amostras desativadas - manter somente dados reais
+                                // Ferramentas de limpeza acionáveis via parâmetros de URL
+                                setTimeout(async () => {
+                                    try {
+                                        const params = new URLSearchParams(window.location.search || '');
+                                        if (window.sampleDataGenerator) {
+                                            if (params.get('purgeFinance') === 'true') {
+                                                console.log('🧹 Purge Finance Samples acionado via URL');
+                                                await window.sampleDataGenerator.purgeFinanceSamples();
+                                            }
+                                            if (params.get('purgeFolhas') === 'true') {
+                                                console.log('🧹 Purge Folhas de amostra acionado via URL');
+                                                await window.sampleDataGenerator.purgeSampleFolhas();
+                                            }
+                                            if (params.get('previewEmployees') === 'true') {
+                                                console.log('🔎 Preview de funcionários de amostra acionado via URL');
+                                                const list = await window.sampleDataGenerator.previewSampleEmployees();
+                                                try { console.table(list.map(e => ({ id: e.id, nome: e.nome }))); } catch(_) { console.log('Funcionários previstos:', list); }
+                                            }
+                                            const purgeEmp = params.get('purgeEmployees');
+                                            if (purgeEmp) {
+                                                const ids = purgeEmp.split(',').map(s => s.trim()).filter(Boolean);
+                                                if (ids.length > 0) {
+                                                    console.log('🧹 Removendo funcionários de amostra (via URL):', ids);
+                                                    await window.sampleDataGenerator.purgeSampleEmployeesConfirmed(ids);
+                                                }
+                                            }
+                                        }
+                                    } catch (e) { console.warn('⚠️ Falha ao processar parâmetros de purge:', e); }
+                                }, 1000);
+                            }, 1000);
+                            
+                            // Mostrar métricas de performance se disponíveis
+                            if (window.hybridSync && window.DashboardCore.getHybridMetrics) {
+                                setTimeout(() => {
+                                    const metrics = window.DashboardCore.getHybridMetrics();
+                                    if (metrics) {
+                                        console.log('📊 Métricas de Performance:', {
+                                            'Tempo Médio de Carregamento': metrics.avgLoadTime + 'ms',
+                                            'Taxa de Cache Hit': metrics.cacheHitRate + '%',
+                                            'Itens em Cache': metrics.memoryCache,
+                                            'Fila de Sync': metrics.queueSize
+                                        });
+                                    }
+                                }, 3000);
+                            }
+                        } else {
+                            console.error('❌ Falha ao inicializar dashboard');
+                            showFallbackDashboard();
+                        }
+                    
+                    } catch (error) {
+                        console.error('❌ Erro crítico ao inicializar dashboard:', error);
+                        showFallbackDashboard();
+                    }
+                    
+                    // Configurar PWA e outros recursos avançados
+                    if ('serviceWorker' in navigator) {
+                        console.log('🔧 Service Worker disponível para PWA futuro');
+                    }
+                }, 300); // Reduzido para 300ms - mais rápido
+            });
+            
+            // Função de fallback caso o dashboard modular falhe
+            function showFallbackDashboard() {
+                console.log('🚨 Exibindo dashboard fallback...');
+                
+                const container = document.querySelector('.container');
+                if (!container) return;
+                
+                // Adicionar dashboard básico
+                container.innerHTML += `
+                    <div style="background: white; padding: 30px; border-radius: 12px; margin: 20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                            <h1 style="color: #2c3e50; margin: 0;"><i class="fas fa-tachometer-alt"></i> Dashboard Sistema</h1>
+                            <button onclick="location.reload()" style="background: #3498db; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer;">
+                                <i class="fas fa-sync-alt"></i> Recarregar
+                            </button>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                            <div style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                                <i class="fas fa-file-alt" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                                <div style="font-size: 1.5rem; font-weight: bold;" id="fallback-romaneios">0</div>
+                                <div>Total Romaneios</div>
+                            </div>
+                            
+                            <div style="background: linear-gradient(135deg, #27ae60, #229954); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                                <i class="fas fa-users" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                                <div style="font-size: 1.5rem; font-weight: bold;" id="fallback-clients">0</div>
+                                <div>Clientes</div>
+                            </div>
+                            
+                            <div style="background: linear-gradient(135deg, #f39c12, #e67e22); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                                <i class="fas fa-tree" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                                <div style="font-size: 1.5rem; font-weight: bold;" id="fallback-species">0</div>
+                                <div>Espécies</div>
+                            </div>
+                            
+                            <div style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                                <i class="fas fa-dollar-sign" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                                <div style="font-size: 1.5rem; font-weight: bold;" id="fallback-dollar">R$ 5,50</div>
+                                <div>USD/BRL (aprox.)</div>
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; color: #7f8c8d; font-size: 0.9rem;">
+                            <p>Dashboard em modo simplificado. Para versão completa, verifique a conectividade e recarregue.</p>
+                        </div>
+                    </div>
+                `;
+                
+                // Carregar dados básicos para o fallback
+                loadFallbackData();
+            }
+            
+            function resolveCompanyId() {
+                try {
+                    const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                    if (svc && typeof svc.getTenantId === 'function') {
+                        const t = svc.getTenantId();
+                        if (t) return String(t);
+                    }
+                } catch (_) {}
+                try {
+                    if (window.appTenantId) return String(window.appTenantId);
+                    if (window.companyInfo) {
+                        const raw = window.companyInfo;
+                        const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                        if (id) return String(id);
+                    }
+                    const stored = localStorage.getItem('company_info');
+                    if (stored) {
+                        const obj = JSON.parse(stored);
+                        const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                        if (id) return String(id);
+                    }
+                } catch (_) {}
+                return null;
+            }
+
+            function getLocalStorageKeys(key) {
+                const keys = [];
+                try {
+                    const base = String(key || '');
+                    if (!base) return keys;
+                    const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                    if (svc && typeof svc.getNamespacedPath === 'function') {
+                        const ns = svc.getNamespacedPath(base);
+                        if (ns && ns !== base) {
+                            keys.push(ns);
+                            return [...new Set(keys)];
+                        }
+                    } else {
+                        const companyId = resolveCompanyId();
+                        if (companyId && !/^companies\//.test(base) && !/^users\//.test(base)) {
+                            keys.push(`companies/${companyId}/${base}`);
+                            return [...new Set(keys)];
+                        }
+                    }
+                } catch (_) {}
+                return [...new Set(keys)];
+            }
+
+            function readLocalStorageValue(key) {
+                for (const k of getLocalStorageKeys(key)) {
+                    const val = localStorage.getItem(k);
+                    if (val) return val;
+                }
+                return null;
+            }
+
+            // Carregar dados básicos para fallback
+            function loadFallbackData() {
+                try {
+                    // Carregar dados básicos do localStorage
+                    const romaneiosTL = JSON.parse(readLocalStorageValue('romaneiosTL') || '[]');
+                    const romaneiosPCT = JSON.parse(readLocalStorageValue('romaneiosPct') || '[]'); 
+                    const romaneiosTora = JSON.parse(readLocalStorageValue('romaneiosTora') || '[]');
+                    const clients = JSON.parse(readLocalStorageValue('clients') || '[]');
+                    const species = JSON.parse(readLocalStorageValue('species') || '[]');
+                    
+                    const totalRomaneios = romaneiosTL.length + romaneiosPCT.length + romaneiosTora.length;
+                    
+                    // Atualizar interface fallback
+                    document.getElementById('fallback-romaneios').textContent = totalRomaneios;
+                    document.getElementById('fallback-clients').textContent = clients.length;
+                    document.getElementById('fallback-species').textContent = species.length;
+                    
+                    console.log('✅ Dados fallback carregados:', {
+                        romaneios: totalRomaneios,
+                        clientes: clients.length,
+                        especies: species.length
+                    });
+                    
+                } catch (error) {
+                    console.error('❌ Erro ao carregar dados fallback:', error);
+                }
+            }
+            
+            // Função global para teste do dashboard
+            window.testarDashboard = function() {
+                console.log('🧪 === TESTE DO DASHBOARD SISTEMA ===');
+                console.log('');
+                
+                console.log('✅ MÓDULOS DISPONÍVEIS:');
+                console.log('   📊 DashboardCore:', typeof window.DashboardCore === 'object' ? '✅' : '❌');
+                console.log('   📊 DashboardWidgets:', typeof window.DashboardWidgets === 'object' ? '✅' : '❌');
+                console.log('   🔥 FirebaseService:', typeof window.FirebaseService === 'object' ? '✅' : '❌');
+                console.log('');
+                
+                console.log('📈 FUNCIONALIDADES:');
+                console.log('   💵 Cotação USD/BRL em tempo real');
+                console.log('   📊 KPIs dos Romaneios (TL, PCT, Tora)');
+                console.log('   👥 Estatísticas de Clientes');
+                console.log('   🌲 Controle de Espécies');
+                console.log('   👷 Dados da Folha de Pagamento');
+                console.log('   📈 Gráficos interativos');
+                console.log('   📋 Tabelas com dados recentes');
+                console.log('');
+                
+                console.log('🎯 COMO USAR:');
+                console.log('   1. O dashboard carrega automaticamente');
+                console.log('   2. Dados são atualizados a cada 30 segundos');
+                console.log('   3. Use o botão "Atualizar" para refresh manual');
+                console.log('   4. Layout totalmente responsivo');
+                console.log('');
+                
+                if (window.DashboardCore) {
+                    const stats = window.DashboardCore.getStatistics();
+                    console.log('📊 ESTATÍSTICAS ATUAIS:', stats);
+                }
+                
+                return true;
+            };
+    </script>
+    <script>
+        // Verificação de segurança de acesso à empresa
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Aguardar um momento para o Firebase inicializar
+            setTimeout(async () => {
+                try {
+                    const isSuperAdmin = window.isSuperAdminSession && await window.isSuperAdminSession();
+                    const hasAdminPanelAccess = window.hasAnyAdminPanelAccess && await window.hasAnyAdminPanelAccess();
+                    if (isSuperAdmin || hasAdminPanelAccess) {
+                        if (!window.location.pathname.toLowerCase().includes('admin.html')) {
+                            window.location.href = 'admin.html?tab=dashboard';
+                            return;
+                        }
+                    }
+                } catch (_) {}
+                const path = window.location.pathname;
+                const isCompanyPage = path.includes('company.html') || path.includes('login.html') || path.includes('reset-system.html');
+                
+                if (!isCompanyPage) {
+                    try {
+                        // Tentar obter informações da empresa do localStorage primeiro (mais rápido)
+                        const localCompany = localStorage.getItem('company_info');
+                        if (!localCompany) {
+                            console.warn('⚠️ Nenhuma empresa detectada no cache local. Verificando Firebase...');
+                            
+                            // Se não tiver no local, tentar serviço
+                            if (window.firebaseService && typeof window.firebaseService.getAll === 'function') {
+                                try {
+                                    const companies = await window.firebaseService.getAll('companies');
+                                    if (!companies || companies.length === 0) {
+                                        console.warn('⚠️ Nenhuma empresa cadastrada no sistema. Redirecionando para cadastro...');
+                                        // Adicionar flag para evitar loop se o usuário estiver intencionalmente saindo
+                                        if (!sessionStorage.getItem('ignore_company_redirect')) {
+                                            window.location.href = 'company.html?reason=setup_required';
+                                        }
+                                    }
+                                } catch (compErr) {
+                                    console.warn('⚠️ Falha ao verificar companies na raiz (permissão negada esperado para usuários normais):', compErr.message);
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Erro na verificação de empresa:', e);
+                    }
+                }
+            }, 2000); // Aguardar 2 segundos para garantir carregamento dos serviços
+        });
+    </script>
+    </div>
+</body>
+</html> 

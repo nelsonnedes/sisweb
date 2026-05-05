@@ -1,0 +1,24 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "test_connection": {
+      ".read": true,
+      ".write": true
+    },
+    "romaneios": {
+      ".read": true,
+      ".write": true,
+      "tora": {
+        ".indexOn": ["numero", "data", "cliente", "status", "timestamp"],
+        "$romaneioId": {}
+      }
+    },
+    "romaneiosTora": {
+      ".read": true,
+      ".write": true,
+      ".indexOn": ["numero", "data", "cliente", "status", "timestamp"],
+      "$romaneioId": {}
+    }
+  }
+}

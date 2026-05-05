@@ -1,0 +1,1544 @@
+/* Estilos para o menu dropdown de impressão */
+.print-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.print-btn {
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.print-btn:hover {
+    background-color: #219a52;
+}
+
+/* Regras para controle de visibilidade de preços na impressão */
+body[data-print-mode="sem-preco"] .no-print-price,
+body[data-print-mode="sem-preco-unitario"] .no-print-unit-price,
+body[data-print-mode="sem-preco"] .no-print-unit-price {
+    display: none !important;
+}
+
+@media print {
+    body[data-print-mode="sem-preco"] .no-print-price,
+    body[data-print-mode="sem-preco-unitario"] .no-print-unit-price,
+    body[data-print-mode="sem-preco"] .no-print-unit-price {
+        display: none !important;
+    }
+    
+    /* Ocultar botões de ação sempre na impressão */
+    .btn-editar, .btn-excluir, .client-action-button {
+        display: none !important;
+    }
+    
+    /* Ajustes para melhor impressão */
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    
+    th, td {
+        border: 1px solid #ddd;
+        padding: 5px;
+    }
+    
+    /* Ocultar rodapé na impressão */
+    .footer {
+        display: none !important;
+    }
+    
+    /* Ajuste para evitar página em branco extras */
+    @page {
+        margin: 0.5cm;
+    }
+    
+    /* Garantir que após cada tabela não haja quebra de página desnecessária */
+    table {
+        page-break-after: avoid;
+    }
+}
+
+.print-menu {
+    position: absolute;
+    z-index: 1050;
+    background: white;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 0.25rem;
+    min-width: 220px;
+    margin: 0;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+    display: none;
+    right: 0;
+    top: 100%;
+    transform: none;
+    padding: 0;
+    overflow: visible;
+}
+
+.print-menu::before {
+    content: 'Opções de Impressão';
+    display: block;
+    padding: 8px 10px;
+    background-color: #f8f9fa;
+    color: #333;
+    font-size: 12px;
+    font-weight: bold;
+    border-bottom: 1px solid #eee;
+    text-align: center;
+}
+
+.print-menu.show {
+    display: block;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Estilo para quando o menu está em um modal */
+.modal .print-dropdown {
+    position: relative;
+}
+
+.modal .print-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 9999; /* Valor muito alto para garantir sobreposição */
+}
+
+/* Estilos para botões dentro do menu */
+.print-menu button {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #333;
+}
+
+.print-menu button:last-child {
+    border-bottom: none;
+}
+
+.print-menu button:hover {
+    background-color: #f0f8ff;
+    color: #2980b9;
+}
+
+.print-menu button i {
+    margin-right: 0.5rem;
+    width: 16px;
+    text-align: center;
+    color: #3498db;
+}
+
+/* Estilos para dispositivos móveis */
+@media (max-width: 768px) {
+    .print-dropdown.overlay::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1049;
+    }
+    
+    .print-menu {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        margin: 0;
+        border-radius: 0.5rem 0.5rem 0 0;
+        z-index: 1050;
+        max-height: 70vh;
+        box-shadow: 0 -3px 12px rgba(0,0,0,0.2);
+    }
+    
+    .print-menu.show {
+        animation: slideUp 0.3s ease;
+    }
+    
+    @keyframes slideUp {
+        from {
+            transform: translateY(100%);
+        }
+        to {
+            transform: translateY(0);
+        }
+    }
+    
+    .print-menu button {
+        padding: 1rem;
+        font-size: 1rem;
+    }
+}
+
+/* Loader para feedback durante impressão */
+.print-loader {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255,255,255,0.7);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.print-loader.show {
+    display: flex;
+}
+
+.print-loader .spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+.print-loader .message {
+    font-size: 1.2rem;
+    color: #333;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Melhorias no alinhamento dos botões de ação */
+.d-flex {
+    display: flex !important;
+}
+
+.justify-content-center {
+    justify-content: center !important;
+}
+
+.align-items-center {
+    align-items: center !important;
+}
+
+/* Ajustes para os botões de ação na lista de romaneios */
+.client-action-button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 3px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    color: #333;
+    transition: all 0.2s ease;
+}
+
+.client-action-button:hover {
+    background-color: #f5f5f5;
+    border-color: #bbb;
+    transform: translateY(-1px);
+}
+
+.client-action-button i {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+/* Container para alinhamento horizontal dos ícones de ação */
+.action-buttons-container {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 5px !important;
+    flex-wrap: nowrap !important;
+    min-width: 80px !important;
+    width: 80px !important;
+}
+
+/* Garantir alinhamento horizontal dos botões */
+.action-buttons-container .client-action-button {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+/* ✅ CORREÇÕES ESPECÍFICAS PARA TABELA DE ESPÉCIES */
+#speciesListTable {
+    table-layout: fixed !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+}
+
+/* ✅ ALINHAMENTO PERFEITO - TODAS AS CÉLULAS DA TABELA */
+#speciesListTable th,
+#speciesListTable td {
+    vertical-align: middle !important;
+    padding: 12px 15px !important;
+    border: 1px solid #ddd !important;
+    line-height: 1.4 !important;
+    font-size: 14px !important;
+    height: 50px !important; /* Altura fixa para consistência */
+}
+
+#speciesListTable th:nth-child(1), /* Nome */
+#speciesListTable td:nth-child(1) {
+    width: 40% !important;
+    max-width: 200px !important;
+    font-weight: 500 !important;
+    padding-left: 15px !important;
+    vertical-align: middle !important;
+}
+
+#speciesListTable th:nth-child(2), /* Descrição */
+#speciesListTable td:nth-child(2) {
+    width: 45% !important;
+    max-width: 250px !important;
+    font-style: italic !important;
+    color: #666 !important;
+    padding-left: 15px !important;
+    vertical-align: middle !important;
+}
+
+#speciesListTable th:nth-child(3), /* Ações */
+#speciesListTable td:nth-child(3) {
+    width: 15% !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    padding: 12px 5px !important;
+    height: 50px !important;
+}
+
+/* ✅ CONTAINER DE BOTÕES PERFEITAMENTE ALINHADO */
+#speciesListTable .action-buttons-container {
+    display: inline-flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-wrap: nowrap !important;
+    min-width: 70px !important;
+    width: 70px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    vertical-align: middle !important;
+    height: 26px !important; /* Altura fixa do container */
+}
+
+/* ✅ BOTÕES PERFEITAMENTE CENTRALIZADOS */
+#speciesListTable .client-action-button {
+    display: inline-flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0 2px !important;
+    width: 26px !important;
+    height: 26px !important;
+    padding: 0 !important;
+    border-radius: 3px !important;
+    border: 1px solid #ccc !important;
+    background-color: #fff !important;
+    color: #666 !important;
+    transition: all 0.2s ease !important;
+    flex-shrink: 0 !important;
+    vertical-align: middle !important;
+    position: relative !important;
+    top: 0 !important; /* Removendo o ajuste de -1px */
+}
+
+#speciesListTable .client-action-button:hover {
+    background-color: #f8f9fa !important;
+    border-color: #aaa !important;
+    color: #333 !important;
+    transform: none !important;
+}
+
+#speciesListTable .client-action-button i {
+    font-size: 12px !important;
+    width: 12px !important;
+    height: 12px !important;
+    line-height: 12px !important;
+    vertical-align: middle !important;
+}
+
+/* ✅ CABEÇALHO DA TABELA COM ALTURA CONSISTENTE */
+#speciesListTable thead th {
+    background-color: #495057 !important;
+    font-weight: bold !important;
+    color: #fff !important;
+    text-align: left !important;
+    border-bottom: 2px solid #343a40 !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    font-size: 14px !important;
+    padding: 15px !important;
+    height: 50px !important;
+    vertical-align: middle !important;
+}
+
+#speciesListTable thead th:nth-child(3) {
+    text-align: center !important;
+}
+
+/* ✅ HOVER EFFECT SUAVE PARA LINHAS */
+#speciesListTable tbody tr {
+    transition: background-color 0.15s ease !important;
+    height: 50px !important;
+}
+
+#speciesListTable tbody tr:hover {
+    background-color: #f1f3f5 !important;
+}
+
+/* ✅ ALTERNÂNCIA DE CORES PARA MELHOR LEITURA */
+#speciesListTable tbody tr:nth-child(even) {
+    background-color: #f8f9fa !important;
+}
+
+#speciesListTable tbody tr:nth-child(even):hover {
+    background-color: #e9ecef !important;
+}
+
+/* ✅ CONTROLE DE TEXTO */
+#speciesListTable td:nth-child(1) {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+#speciesListTable td:nth-child(2) {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    line-height: 1.3 !important;
+}
+
+/* ✅ CORREÇÕES ESPECÍFICAS PARA TABELA DE FORNECEDORES */
+#clientListTable {
+    table-layout: fixed !important;
+    width: 100% !important;
+}
+
+#clientListTable th,
+#clientListTable td {
+    vertical-align: middle !important;
+    padding: 12px !important;
+    height: 50px !important; /* Altura fixa consistente */
+}
+
+#clientListTable th:nth-child(7), /* Ações */
+#clientListTable td:nth-child(7) {
+    width: 10% !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+    text-align: center !important;
+    padding: 12px !important;
+    vertical-align: middle !important;
+    height: 50px !important;
+}
+
+/* ✅ APLICAR MESMOS ESTILOS PARA TABELA DE FORNECEDORES */
+#clientListTable .action-buttons-container {
+    display: inline-flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-wrap: nowrap !important;
+    min-width: 70px !important;
+    width: 70px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    vertical-align: middle !important;
+    height: 26px !important;
+}
+
+#clientListTable .client-action-button {
+    display: inline-flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0 2px !important;
+    width: 26px !important;
+    height: 26px !important;
+    padding: 0 !important;
+    border-radius: 3px !important;
+    border: 1px solid #ccc !important;
+    background-color: #fff !important;
+    color: #666 !important;
+    transition: all 0.2s ease !important;
+    flex-shrink: 0 !important;
+    vertical-align: middle !important;
+    position: relative !important;
+    top: 0 !important;
+}
+
+#clientListTable .client-action-button:hover {
+    background-color: #f8f9fa !important;
+    border-color: #aaa !important;
+    color: #333 !important;
+    transform: none !important;
+}
+
+#clientListTable .client-action-button i {
+    font-size: 12px !important;
+    width: 12px !important;
+    height: 12px !important;
+    line-height: 12px !important;
+    vertical-align: middle !important;
+}
+
+/* ✅ PADRONIZAÇÃO GERAL PARA TODAS AS TABELAS EM MODAIS */
+.modal table {
+    table-layout: fixed !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+}
+
+.modal table th,
+.modal table td {
+    vertical-align: middle !important;
+    height: 50px !important;
+    line-height: 1.4 !important;
+}
+
+.modal table tbody tr {
+    height: 50px !important;
+}
+
+/* Evitar quebra de linha nas células da tabela */
+.modal table td {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    vertical-align: middle !important;
+}
+
+/* Estilos para o Resumo por Dimensões e Espécies */
+.resumo-dimensoes {
+    margin: 20px 0;
+}
+.resumo-titulo {
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+.resumo-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+}
+.especie-card {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    overflow: hidden;
+    width: calc(33.33% - 15px);
+    margin-bottom: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    break-inside: avoid;
+}
+.especie-header {
+    background-color: #2c3e50;
+    color: white;
+    padding: 10px;
+    font-weight: bold;
+    text-align: center;
+}
+.especie-body {
+    padding: 10px;
+}
+.dimensao-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+.especie-footer {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    text-align: right;
+    font-weight: bold;
+}
+.total-geral {
+    margin-top: 20px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 16px;
+    color: #d9534f;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+/* Estilos para o Resumo CONAMA */
+.resumo-conama {
+    margin: 20px 0;
+}
+.conama-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+}
+.conama-card {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    overflow: hidden;
+    width: calc(33.33% - 15px);
+    margin-bottom: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.conama-header {
+    background-color: #337ab7;
+    color: white;
+    padding: 10px;
+    font-weight: bold;
+    text-align: center;
+}
+.conama-body {
+    padding: 10px;
+}
+.categoria-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.conama-footer {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    text-align: right;
+    font-weight: bold;
+}
+
+@media print {
+    .especie-card, .conama-card, .total-geral {
+        page-break-inside: avoid;
+    }
+    
+    .resumo-dimensoes, .resumo-conama {
+        page-break-before: always;
+    }
+}
+
+/* ✅ PERMITIR QUEBRA DE LINHA APENAS NAS DESCRIÇÕES DE ESPÉCIES */
+#speciesListTable td:nth-child(2) {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+}
+
+/* ✅ AJUSTAR LARGURA ESPECÍFICA PARA COLUNAS DA TABELA DE FORNECEDORES */
+#clientListTable td:nth-child(1) { /* Nome */
+    max-width: 150px !important;
+    min-width: 120px !important;
+}
+
+#clientListTable td:nth-child(2) { /* CNPJ */
+    max-width: 140px !important;
+    min-width: 120px !important;
+}
+
+#clientListTable td:nth-child(3) { /* Cidade */
+    max-width: 120px !important;
+    min-width: 100px !important;
+}
+
+#clientListTable td:nth-child(4) { /* Estado */
+    max-width: 60px !important;
+    min-width: 50px !important;
+}
+
+#clientListTable td:nth-child(5) { /* Telefone */
+    max-width: 120px !important;
+    min-width: 100px !important;
+}
+
+#clientListTable td:nth-child(6) { /* Email */
+    max-width: 180px !important;
+    min-width: 150px !important;
+}
+
+/* ✅ HOVER EFFECTS PARA MELHOR UX EM TODAS AS TABELAS */
+.modal table tbody tr:hover {
+    background-color: #f8f9fa !important;
+    transition: background-color 0.2s ease !important;
+}
+
+/* ✅ RESPONSIVIDADE PARA TELAS MENORES */
+@media (max-width: 768px) {
+    .modal table {
+        font-size: 12px !important;
+    }
+    
+    .modal table th,
+    .modal table td {
+        height: 45px !important;
+        padding: 8px !important;
+    }
+    
+    .client-action-button {
+        width: 24px !important;
+        height: 24px !important;
+    }
+    
+    .client-action-button i {
+        font-size: 11px !important;
+    }
+    
+    .action-buttons-container {
+        min-width: 55px !important;
+        width: 55px !important;
+        height: 24px !important;
+    }
+    
+    #speciesListTable .action-buttons-container,
+    #clientListTable .action-buttons-container {
+        height: 24px !important;
+    }
+}
+
+/* ✅ CORREÇÕES ESPECÍFICAS PARA LISTA DE ROMANEIOS TORA */
+#listaModal .print-dropdown {
+    position: relative;
+    z-index: 1;
+}
+
+/* ✅ ESTILOS PARA DROPDOWN-MENU (CLASSE USADA NO JAVASCRIPT) */
+#listaModal .dropdown-menu {
+    position: fixed !important;
+    z-index: 99999 !important;
+    background: white !important;
+    border: 1px solid rgba(0,0,0,0.15) !important;
+    border-radius: 6px !important;
+    min-width: 220px !important;
+    box-shadow: 0px 8px 24px 0px rgba(0,0,0,0.3) !important;
+    padding: 8px 0 !important;
+    margin: 0 !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    display: none;
+}
+
+#listaModal .dropdown-menu.show,
+#listaModal .dropdown-menu[style*="display: block"] {
+    display: block !important;
+}
+
+/* ✅ BOTÕES DO DROPDOWN */
+#listaModal .dropdown-menu button {
+    display: block !important;
+    width: 100% !important;
+    padding: 8px 16px !important;
+    background: none !important;
+    border: none !important;
+    text-align: left !important;
+    cursor: pointer !important;
+    font-size: 13px !important;
+    transition: background-color 0.2s ease !important;
+    color: #333 !important;
+    white-space: nowrap !important;
+}
+
+#listaModal .dropdown-menu button:hover {
+    background-color: #f1f3f4 !important;
+    color: #333 !important;
+}
+
+#listaModal .dropdown-menu h6 {
+    display: block !important;
+    padding: 8px 16px !important;
+    margin: 0 !important;
+    font-size: 12px !important;
+    color: #6c757d !important;
+    font-weight: 600 !important;
+    border-bottom: 1px solid #e9ecef !important;
+    background-color: #f8f9fa !important;
+}
+
+/* ✅ MANTER COMPATIBILIDADE COM PRINT-MENU (CASO AINDA SEJA USADO) */
+#listaModal .print-menu {
+    position: absolute !important;
+    right: 0 !important;
+    top: 100% !important;
+    z-index: 99999 !important; /* Máxima prioridade */
+    background: white !important;
+    border: 1px solid rgba(0,0,0,0.15) !important;
+    border-radius: 0.25rem !important;
+    min-width: 200px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.25) !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+}
+
+/* ✅ GARANTIR QUE AS LINHAS DA TABELA NÃO CUBRAM O DROPDOWN */
+#listaModal .modal-body {
+    overflow: visible !important; /* Permitir que o dropdown apareça fora da área */
+}
+
+#listaModal .modal-body table {
+    overflow: visible !important;
+}
+
+#listaModal .modal-body tbody tr {
+    position: relative;
+    z-index: 1;
+}
+
+#listaModal .modal-body tbody tr:hover {
+    z-index: 2; /* Aumentar z-index da linha em hover, mas ainda menor que o dropdown */
+}
+
+/* ✅ CORREÇÕES CRÍTICAS PARA O CONTAINER DE MODAL */
+#listaModal {
+    overflow: visible !important;
+}
+
+#listaModal .modal-content {
+    overflow: visible !important;
+}
+
+#listaModal .modal-dialog {
+    overflow: visible !important;
+}
+
+/* ✅ FORÇAR POSICIONAMENTO ABSOLUTO DENTRO DO MODAL */
+#listaModal .table-container {
+    position: relative !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+}
+
+/* ✅ GARANTIR QUE O DROPDOWN APAREÇA ACIMA DE TUDO */
+#listaModal .print-dropdown {
+    position: relative !important;
+    z-index: 1000 !important;
+}
+
+#listaModal .print-dropdown .print-menu {
+    position: fixed !important; /* Mudando para fixed para garantir sobreposição */
+    z-index: 999999 !important;
+    transform: none !important;
+}
+
+/* ✅ MELHOR ALINHAMENTO DOS ÍCONES DE AÇÃO NA LISTA DE ROMANEIOS */
+#listaModal .d-flex {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 5px !important;
+    flex-wrap: nowrap !important;
+    padding: 5px !important;
+    min-height: 40px !important;
+}
+
+#listaModal .client-action-button {
+    display: inline-flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    margin: 0 2px !important;
+    border-radius: 4px !important;
+    border: 1px solid #ddd !important;
+    background-color: #fff !important;
+    color: #666 !important;
+    transition: all 0.2s ease !important;
+    flex-shrink: 0 !important;
+    cursor: pointer !important;
+}
+
+#listaModal .client-action-button:hover {
+    background-color: #f8f9fa !important;
+    border-color: #aaa !important;
+    color: #333 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+#listaModal .client-action-button i {
+    font-size: 14px !important;
+    width: 14px !important;
+    height: 14px !important;
+    line-height: 14px !important;
+}
+
+/* ✅ ESTILO ESPECÍFICO PARA BOTÃO DE IMPRESSÃO */
+#listaModal .print-btn {
+    border-color: #28a745 !important;
+    color: #28a745 !important;
+}
+
+#listaModal .print-btn:hover {
+    background-color: #28a745 !important;
+    color: white !important;
+    border-color: #28a745 !important;
+}
+
+/* ✅ ESTILO ESPECÍFICO PARA BOTÃO DE EDIÇÃO */
+#listaModal .client-action-button[title="Editar"] {
+    border-color: #007bff !important;
+    color: #007bff !important;
+}
+
+#listaModal .client-action-button[title="Editar"]:hover {
+    background-color: #007bff !important;
+    color: white !important;
+    border-color: #007bff !important;
+}
+
+/* ✅ ESTILO ESPECÍFICO PARA BOTÃO DE EXCLUSÃO */
+#listaModal .delete-button {
+    border-color: #dc3545 !important;
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+#listaModal .delete-button:hover {
+    background-color: #c82333 !important;
+    border-color: #c82333 !important;
+    color: white !important;
+}
+
+/* ✅ CORREÇÃO PARA COLUNA DE AÇÕES */
+#listaModal table td:last-child {
+    width: 140px !important;
+    min-width: 140px !important;
+    max-width: 140px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    padding: 8px 4px !important;
+}
+
+#listaModal table th:last-child {
+    width: 140px !important;
+    min-width: 140px !important;
+    max-width: 140px !important;
+    text-align: center !important;
+}
+
+/* ✅ ANIMAÇÕES PARA O DROPDOWN */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#listaModal .print-menu {
+    animation: fadeInUp 0.2s ease !important;
+}
+
+#listaModal .print-menu.show-above {
+    animation: fadeIn 0.2s ease !important;
+}
+
+/* ✅ RESPONSIVIDADE PARA A LISTA DE ROMANEIOS */
+@media (max-width: 768px) {
+    #listaModal .d-flex {
+        gap: 3px !important;
+        padding: 3px !important;
+    }
+    
+    #listaModal .client-action-button {
+        width: 28px !important;
+        height: 28px !important;
+        margin: 0 1px !important;
+    }
+    
+    #listaModal .client-action-button i {
+        font-size: 12px !important;
+    }
+    
+    #listaModal table td:last-child {
+        width: 100px !important;
+        min-width: 100px !important;
+        max-width: 100px !important;
+        padding: 5px 2px !important;
+    }
+    
+    /* ✅ DROPDOWN EM TELA CHEIA NO MOBILE */
+    #listaModal .print-dropdown.overlay::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 99998;
+    }
+    
+    #listaModal .print-menu {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+        margin: 0 !important;
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        z-index: 99999 !important;
+        max-height: 70vh !important;
+        box-shadow: 0 -3px 12px rgba(0,0,0,0.2) !important;
+        animation: slideUp 0.3s ease !important;
+    }
+    
+    @keyframes slideUp {
+        from {
+            transform: translateY(100%);
+        }
+        to {
+            transform: translateY(0);
+        }
+    }
+    
+    #listaModal .print-menu button {
+        padding: 1rem !important;
+        font-size: 1rem !important;
+    }
+}
+
+/* ✅ ESTILOS PARA DROPDOWN EXTERNO DE IMPRESSÃO */
+.external-print-menu {
+    position: fixed !important;
+    z-index: 999999 !important;
+    background: white !important;
+    border: 1px solid rgba(0,0,0,0.15) !important;
+    border-radius: 0.25rem !important;
+    min-width: 220px !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+}
+
+.external-print-menu button {
+    display: block !important;
+    width: 100% !important;
+    padding: 0.7rem 1.2rem !important;
+    background: none !important;
+    border: none !important;
+    text-align: left !important;
+    cursor: pointer !important;
+    font-size: 0.9rem !important;
+    transition: all 0.2s ease !important;
+    color: #333 !important;
+    white-space: nowrap !important;
+    border-bottom: 1px solid rgba(0,0,0,0.08) !important;
+}
+
+.external-print-menu button:last-child {
+    border-bottom: none !important;
+}
+
+.external-print-menu button:hover {
+    background-color: #f0f8ff !important;
+    color: #2980b9 !important;
+}
+
+.external-print-menu button i {
+    margin-right: 0.7rem !important;
+    width: 16px !important;
+    text-align: center !important;
+    color: #3498db !important;
+}
+
+/* ✅ OVERLAY PARA MOBILE */
+.mobile-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(0,0,0,0.5) !important;
+    z-index: 999998 !important;
+    animation: fadeInOverlay 0.2s ease !important;
+}
+
+/* ✅ ANIMAÇÕES PARA DROPDOWN EXTERNO */
+@keyframes fadeInDropdown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes fadeInOverlay {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* ✅ RESPONSIVIDADE PARA DROPDOWN EXTERNO */
+@media (max-width: 768px) {
+    .external-print-menu {
+        position: fixed !important;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        max-width: 90vw !important;
+        border-radius: 0.5rem !important;
+        animation: fadeInDropdown 0.3s ease !important;
+    }
+    
+    .external-print-menu button {
+        padding: 1rem 1.5rem !important;
+        font-size: 1rem !important;
+    }
+}
+
+/* ✅ CORREÇÕES ESPECÍFICAS PARA ALINHAMENTO DOS ÍCONES NA LISTA DE ROMANEIOS - 4 BOTÕES */
+#listaModal .action-buttons-container,
+#listaModal .btn-group {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 2px !important;
+    flex-wrap: nowrap !important;
+    min-width: 140px !important;
+    width: 140px !important;
+    margin: 0 !important;
+    padding: 5px 2px !important;
+    vertical-align: middle !important;
+    height: 40px !important;
+    box-sizing: border-box !important;
+}
+
+/* ✅ BOTÕES PERFEITAMENTE CENTRALIZADOS E ALINHADOS - OTIMIZADO PARA 4 BOTÕES */
+#listaModal .client-action-button,
+#listaModal .action-button {
+    display: inline-flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0 1px !important;
+    width: 26px !important;
+    height: 26px !important;
+    padding: 0 !important;
+    border-radius: 4px !important;
+    border: 1px solid #ddd !important;
+    background-color: #fff !important;
+    color: #666 !important;
+    transition: all 0.2s ease !important;
+    flex-shrink: 0 !important;
+    cursor: pointer !important;
+    vertical-align: middle !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+}
+
+#listaModal .client-action-button:hover {
+    background-color: #f8f9fa !important;
+    border-color: #aaa !important;
+    color: #333 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+#listaModal .client-action-button i {
+    font-size: 12px !important;
+    width: 12px !important;
+    height: 12px !important;
+    line-height: 12px !important;
+}
+
+/* ✅ ESTILOS ESPECÍFICOS PARA BOTÃO DE CONTAS A RECEBER */
+#listaModal .financeiro-button {
+    border-color: #28a745 !important;
+    color: #28a745 !important;
+}
+
+#listaModal .financeiro-button.disabled {
+    border-color: #6c757d !important;
+    color: #6c757d !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+}
+
+#listaModal .financeiro-button.disabled:hover {
+    background-color: transparent !important;
+    border-color: #6c757d !important;
+    color: #6c757d !important;
+}
+
+#listaModal .financeiro-button:hover {
+    background-color: #28a745 !important;
+    color: white !important;
+    border-color: #28a745 !important;
+}
+
+/* ✅ RESPONSIVIDADE PARA 4 BOTÕES EM MOBILE */
+@media (max-width: 768px) {
+    #listaModal .action-buttons-container,
+    #listaModal .btn-group {
+        min-width: 120px !important;
+        width: 120px !important;
+        gap: 1px !important;
+    }
+    
+    #listaModal .client-action-button,
+    #listaModal .action-button {
+        width: 24px !important;
+        height: 24px !important;
+        margin: 0 !important;
+    }
+    
+    #listaModal .client-action-button i {
+        font-size: 10px !important;
+        width: 10px !important;
+        height: 10px !important;
+    }
+}
+    width: 13px !important;
+    height: 13px !important;
+    line-height: 13px !important;
+    vertical-align: middle !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* ✅ CORES ESPECÍFICAS PARA CADA TIPO DE BOTÃO */
+#listaModal .print-btn {
+    border-color: #28a745 !important;
+    color: #28a745 !important;
+}
+
+#listaModal .print-btn:hover {
+    background-color: #28a745 !important;
+    color: white !important;
+    border-color: #28a745 !important;
+}
+
+#listaModal .client-action-button[title="Editar"] {
+    border-color: #007bff !important;
+    color: #007bff !important;
+}
+
+#listaModal .client-action-button[title="Editar"]:hover {
+    background-color: #007bff !important;
+    color: white !important;
+    border-color: #007bff !important;
+}
+
+#listaModal .delete-button {
+    border-color: #dc3545 !important;
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+#listaModal .delete-button:hover {
+    background-color: #c82333 !important;
+    border-color: #c82333 !important;
+    color: white !important;
+}
+
+/* ✅ AJUSTES PARA A COLUNA DE AÇÕES */
+#listaModal table td:last-child {
+    width: 130px !important;
+    min-width: 130px !important;
+    max-width: 130px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    padding: 8px 4px !important;
+    height: 50px !important;
+    box-sizing: border-box !important;
+}
+
+#listaModal table th:last-child {
+    width: 130px !important;
+    min-width: 130px !important;
+    max-width: 130px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    padding: 15px 4px !important;
+    height: 50px !important;
+    box-sizing: border-box !important;
+}
+
+/* ✅ GARANTIR QUE AS LINHAS TENHAM ALTURA CONSISTENTE */
+#listaModal table tbody tr {
+    height: 50px !important;
+    min-height: 50px !important;
+    max-height: 50px !important;
+    vertical-align: middle !important;
+}
+
+#listaModal table tbody td {
+    vertical-align: middle !important;
+    height: 50px !important;
+    line-height: 1.2 !important;
+    padding: 8px !important;
+    box-sizing: border-box !important;
+}
+
+/* ✅ AJUSTES ESPECÍFICOS PARA O DROPDOWN DE IMPRESSÃO */
+#listaModal .print-dropdown {
+    position: relative !important;
+    display: inline-block !important;
+    margin: 0 !important;
+}
+
+/* ✅ RESPONSIVIDADE MELHORADA */
+@media (max-width: 768px) {
+    #listaModal .action-buttons-container {
+        gap: 2px !important;
+        min-width: 90px !important;
+        width: 90px !important;
+        height: 35px !important;
+    }
+    
+    #listaModal .client-action-button {
+        width: 26px !important;
+        height: 26px !important;
+    }
+    
+    #listaModal .client-action-button i {
+        font-size: 11px !important;
+        width: 11px !important;
+        height: 11px !important;
+    }
+    
+    #listaModal table td:last-child,
+    #listaModal table th:last-child {
+        width: 100px !important;
+        min-width: 100px !important;
+        max-width: 100px !important;
+        padding: 5px 2px !important;
+    }
+    
+    #listaModal table tbody tr {
+        height: 45px !important;
+        min-height: 45px !important;
+        max-height: 45px !important;
+    }
+    
+    #listaModal table tbody td {
+        height: 45px !important;
+        padding: 5px !important;
+    }
+}
+
+/* ✅ PADRONIZAÇÃO GLOBAL: Modais TL e PCT com aparência idêntica */
+/* ===================================================================== */
+
+/* Botões de ação dos modais - tamanho padrão */
+.modal .action-button,
+#listaModal .action-button,
+.list-modal .action-button {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: none !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    font-size: 13px !important;
+    margin: 0 1px !important;
+}
+
+/* Cores padronizadas dos botões */
+.modal .edit-button,
+#listaModal .edit-button,
+.list-modal .edit-button {
+    background-color: #3498db !important;
+    color: white !important;
+}
+
+.modal .edit-button:hover,
+#listaModal .edit-button:hover,
+.list-modal .edit-button:hover {
+    background-color: #2980b9 !important;
+}
+
+.modal .financeiro-button,
+#listaModal .financeiro-button,
+.list-modal .financeiro-button {
+    background-color: #27ae60 !important;
+    color: white !important;
+}
+
+.modal .financeiro-button:hover,
+#listaModal .financeiro-button:hover,
+.list-modal .financeiro-button:hover {
+    background-color: #229954 !important;
+}
+
+/* ✅ BOTÃO FINANCEIRO INATIVO (CINZA) - GLOBAL */
+.modal .financeiro-button.disabled,
+#listaModal .financeiro-button.disabled,
+.list-modal .financeiro-button.disabled {
+    background-color: #95a5a6 !important;
+    color: #7f8c8d !important;
+    cursor: not-allowed !important;
+    opacity: 0.8 !important;
+}
+
+.modal .financeiro-button.disabled:hover,
+#listaModal .financeiro-button.disabled:hover,
+.list-modal .financeiro-button.disabled:hover {
+    background-color: #95a5a6 !important;
+    color: #7f8c8d !important;
+}
+
+.modal .print-button,
+#listaModal .print-button,
+.list-modal .print-button {
+    background-color: #f39c12 !important;
+    color: white !important;
+}
+
+.modal .print-button:hover,
+#listaModal .print-button:hover,
+.list-modal .print-button:hover {
+    background-color: #e67e22 !important;
+}
+
+.modal .delete-button,
+#listaModal .delete-button,
+.list-modal .delete-button {
+    background-color: #e74c3c !important;
+    color: white !important;
+}
+
+.modal .delete-button:hover,
+#listaModal .delete-button:hover,
+.list-modal .delete-button:hover {
+    background-color: #c0392b !important;
+}
+
+/* Container dos botões */
+.modal .btn-group,
+#listaModal .btn-group,
+.list-modal .btn-group {
+    display: flex !important;
+    gap: 2px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+}
+
+/* ✅ PADRONIZAÇÃO: Larguras das colunas dos modais */
+.modal table,
+#listaModal table,
+.list-modal table {
+    width: 100% !important;
+    table-layout: fixed !important;
+}
+
+/* Larguras específicas para modal de romaneios */
+.modal th:nth-child(1),
+#listaModal th:nth-child(1),
+.list-modal th:nth-child(1) { width: 10% !important; } /* Data */
+
+.modal th:nth-child(2),
+#listaModal th:nth-child(2),
+.list-modal th:nth-child(2) { width: 15% !important; } /* Cliente */
+
+.modal th:nth-child(3),
+#listaModal th:nth-child(3),
+.list-modal th:nth-child(3) { width: 22% !important; } /* Espécies */
+
+.modal th:nth-child(4),
+#listaModal th:nth-child(4),
+.list-modal th:nth-child(4) { width: 8% !important; } /* Itens */
+
+.modal th:nth-child(5),
+#listaModal th:nth-child(5),
+.list-modal th:nth-child(5) { width: 12% !important; } /* Volume */
+
+.modal th:nth-child(6),
+#listaModal th:nth-child(6),
+.list-modal th:nth-child(6) { width: 15% !important; } /* Valor Total */
+
+.modal th:nth-child(7),
+#listaModal th:nth-child(7),
+.list-modal th:nth-child(7) { width: 18% !important; } /* Ações */
+
+/* Centralização da coluna Ações */
+.modal td:nth-child(7),
+#listaModal td:nth-child(7),
+.list-modal td:nth-child(7) {
+    text-align: center !important;
+    vertical-align: middle !important;
+    display: table-cell !important;
+}
+
+/* Centralização específica do tbody */
+.modal tbody td:nth-child(7),
+#listaModal tbody td:nth-child(7),
+.list-modal tbody td:nth-child(7) {
+    text-align: center !important;
+    vertical-align: middle !important;
+    display: table-cell !important;
+}
+
+/* Container dos botões - garantir centralização */
+.modal tbody td:nth-child(7) .btn-group,
+#listaModal tbody td:nth-child(7) .btn-group,
+.list-modal tbody td:nth-child(7) .btn-group {
+    margin: 0 auto !important;
+    width: fit-content !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+} 

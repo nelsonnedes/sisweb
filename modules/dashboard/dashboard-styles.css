@@ -1,0 +1,627 @@
+/**
+ * 📊 ESTILOS DO DASHBOARD - SISTEMA MODULAR
+ * 
+ * Layout responsivo e moderno
+ * Seguindo padrões de design do RomaneioTL
+ * 
+ * ✅ MOBILE FIRST: Design responsivo
+ * ✅ MODERN UI: Componentes modernos
+ * ✅ ACCESSIBILITY: Acessibilidade garantida
+ */
+
+/* ========================================================================
+   VARIÁVEIS CSS E CONFIGURAÇÕES GLOBAIS
+   ======================================================================== */
+
+:root {
+    --dashboard-primary: #3498db;
+    --dashboard-success: #27ae60;
+    --dashboard-warning: #f39c12;
+    --dashboard-danger: #e74c3c;
+    --dashboard-info: #17a2b8;
+    --dashboard-secondary: #6c757d;
+    --dashboard-light: #f8f9fa;
+    --dashboard-dark: #2c3e50;
+    
+    --dashboard-border-radius: 12px;
+    --dashboard-box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    --dashboard-transition: all 0.3s ease;
+    
+    --dashboard-spacing-xs: 8px;
+    --dashboard-spacing-sm: 12px;
+    --dashboard-spacing-md: 20px;
+    --dashboard-spacing-lg: 32px;
+    --dashboard-spacing-xl: 48px;
+}
+
+/* ========================================================================
+   LOADING INDICATOR
+   ======================================================================== */
+
+.dashboard-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    text-align: center;
+    color: var(--dashboard-primary);
+}
+
+.loading-spinner i {
+    font-size: 2rem;
+    margin-bottom: var(--dashboard-spacing-sm);
+}
+
+.loading-spinner span {
+    display: block;
+    font-weight: 500;
+}
+
+/* ========================================================================
+   HEADER DO DASHBOARD
+   ======================================================================== */
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: var(--dashboard-spacing-md) 0 var(--dashboard-spacing-lg) 0;
+    padding: var(--dashboard-spacing-md);
+    background: white;
+    border-radius: var(--dashboard-border-radius);
+    box-shadow: var(--dashboard-box-shadow);
+}
+
+.header-info h1 {
+    margin: 0;
+    color: var(--dashboard-dark);
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.header-info h1 i {
+    margin-right: var(--dashboard-spacing-sm);
+    color: var(--dashboard-primary);
+}
+
+.last-update {
+    margin: var(--dashboard-spacing-xs) 0 0 0;
+    font-size: 0.875rem;
+    color: var(--dashboard-secondary);
+}
+
+.btn-refresh {
+    background: var(--dashboard-primary);
+    color: white;
+    border: none;
+    padding: var(--dashboard-spacing-sm) var(--dashboard-spacing-md);
+    border-radius: var(--dashboard-border-radius);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--dashboard-transition);
+    display: flex;
+    align-items: center;
+    gap: var(--dashboard-spacing-xs);
+}
+
+.btn-refresh:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+}
+
+.btn-refresh i {
+    font-size: 0.875rem;
+}
+
+/* ========================================================================
+   KPI CARDS GRID
+   ======================================================================== */
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--dashboard-spacing-md);
+    margin-bottom: var(--dashboard-spacing-lg);
+    padding: 0;
+}
+
+.kpi-card {
+    background: white;
+    border-radius: var(--dashboard-border-radius);
+    padding: var(--dashboard-spacing-md);
+    box-shadow: var(--dashboard-box-shadow);
+    display: flex;
+    align-items: center;
+    transition: var(--dashboard-transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--card-color, var(--dashboard-primary));
+}
+
+.kpi-card.primary { --card-color: var(--dashboard-primary); }
+.kpi-card.success { --card-color: var(--dashboard-success); }
+.kpi-card.warning { --card-color: var(--dashboard-warning); }
+.kpi-card.danger { --card-color: var(--dashboard-danger); }
+.kpi-card.info { --card-color: var(--dashboard-info); }
+.kpi-card.secondary { --card-color: var(--dashboard-secondary); }
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.kpi-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--card-color, var(--dashboard-primary));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: var(--dashboard-spacing-md);
+    font-size: 1.5rem;
+}
+
+.kpi-content {
+    flex: 1;
+}
+
+.kpi-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--dashboard-dark);
+    line-height: 1;
+}
+
+.kpi-label {
+    font-weight: 600;
+    color: var(--dashboard-dark);
+    margin: var(--dashboard-spacing-xs) 0;
+}
+
+.kpi-detail {
+    font-size: 0.875rem;
+    color: var(--dashboard-secondary);
+}
+
+/* ========================================================================
+   WIDGET DO DÓLAR
+   ======================================================================== */
+
+.dollar-widget {
+    margin-bottom: var(--dashboard-spacing-lg);
+}
+
+.dollar-card {
+    background: white;
+    border-radius: var(--dashboard-border-radius);
+    padding: var(--dashboard-spacing-md);
+    box-shadow: var(--dashboard-box-shadow);
+    transition: var(--dashboard-transition);
+}
+
+.dollar-card.positive {
+    border-left: 4px solid var(--dashboard-success);
+}
+
+.dollar-card.negative {
+    border-left: 4px solid var(--dashboard-danger);
+}
+
+.dollar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--dashboard-spacing-md);
+}
+
+.dollar-header h3 {
+    margin: 0;
+    color: var(--dashboard-dark);
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: var(--dashboard-spacing-xs);
+}
+
+.live-badge {
+    background: var(--dashboard-success);
+    color: white;
+    padding: 4px var(--dashboard-spacing-xs);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.live-badge i {
+    font-size: 0.5rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.dollar-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--dashboard-spacing-md);
+}
+
+.dollar-rate {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--dashboard-dark);
+}
+
+.dollar-variation {
+    font-size: 1.25rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: var(--dashboard-spacing-xs);
+}
+
+.dollar-variation.positive {
+    color: var(--dashboard-success);
+}
+
+.dollar-variation.negative {
+    color: var(--dashboard-danger);
+}
+
+.dollar-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.rate-info {
+    display: flex;
+    gap: var(--dashboard-spacing-md);
+}
+
+.rate-info span {
+    font-size: 0.875rem;
+    color: var(--dashboard-secondary);
+}
+
+.update-time {
+    font-size: 0.75rem;
+    color: var(--dashboard-secondary);
+}
+
+/* ========================================================================
+   SEÇÃO DE GRÁFICOS
+   ======================================================================== */
+
+.charts-section {
+    margin-bottom: var(--dashboard-spacing-lg);
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--dashboard-spacing-md);
+}
+
+.chart-container {
+    background: white;
+    border-radius: var(--dashboard-border-radius);
+    padding: var(--dashboard-spacing-md);
+    box-shadow: var(--dashboard-box-shadow);
+}
+
+.chart-container h3 {
+    margin: 0 0 var(--dashboard-spacing-md) 0;
+    color: var(--dashboard-dark);
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.chart-container canvas {
+    max-height: 300px;
+}
+
+/* ========================================================================
+   TABELAS DE DADOS
+   ======================================================================== */
+
+.data-tables {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: var(--dashboard-spacing-md);
+}
+
+.table-container {
+    background: white;
+    border-radius: var(--dashboard-border-radius);
+    padding: var(--dashboard-spacing-md);
+    box-shadow: var(--dashboard-box-shadow);
+}
+
+.table-container h3 {
+    margin: 0 0 var(--dashboard-spacing-md) 0;
+    color: var(--dashboard-dark);
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: var(--dashboard-spacing-sm);
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.data-table th {
+    background: var(--dashboard-light);
+    font-weight: 600;
+    color: var(--dashboard-dark);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.data-table td {
+    color: var(--dashboard-secondary);
+}
+
+.data-table tr:hover {
+    background: var(--dashboard-light);
+}
+
+.type-badge {
+    padding: 4px var(--dashboard-spacing-xs);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+}
+
+.type-badge.tl {
+    background: var(--dashboard-primary);
+}
+
+.type-badge.pct {
+    background: var(--dashboard-success);
+}
+
+.type-badge.tora {
+    background: var(--dashboard-warning);
+}
+
+.no-data {
+    text-align: center;
+    color: var(--dashboard-secondary);
+    font-style: italic;
+}
+
+/* ========================================================================
+   RESPONSIVIDADE
+   ======================================================================== */
+
+/* ✅ RESPONSIVIDADE MELHORADA */
+@media (max-width: 992px) {
+    .kpi-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    
+    .charts-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        gap: var(--dashboard-spacing-md);
+        text-align: center;
+        padding: var(--dashboard-spacing-sm);
+    }
+    
+    .kpi-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--dashboard-spacing-sm);
+    }
+    
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .data-tables {
+        grid-template-columns: 1fr;
+    }
+    
+    .dollar-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--dashboard-spacing-sm);
+    }
+    
+    .dollar-details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--dashboard-spacing-xs);
+    }
+    
+    .rate-info {
+        flex-direction: column;
+        gap: var(--dashboard-spacing-xs);
+    }
+    
+    .header-info h1 {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .kpi-grid {
+        grid-template-columns: 1fr;
+        gap: var(--dashboard-spacing-sm);
+    }
+    
+    .kpi-card {
+        flex-direction: column;
+        text-align: center;
+        padding: var(--dashboard-spacing-sm);
+    }
+    
+    .kpi-icon {
+        margin-right: 0;
+        margin-bottom: var(--dashboard-spacing-sm);
+    }
+}
+
+@media (max-width: 480px) {
+    .chart-container,
+    .table-container {
+        padding: var(--dashboard-spacing-sm);
+    }
+    
+    .kpi-card {
+        padding: var(--dashboard-spacing-sm);
+    }
+    
+    .kpi-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+    
+    .kpi-value {
+        font-size: 1.75rem;
+    }
+    
+    .dollar-rate {
+        font-size: 2rem;
+    }
+    
+    .data-table {
+        font-size: 0.875rem;
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: var(--dashboard-spacing-xs);
+        min-width: 100px;
+    }
+    
+    .header-info h1 {
+        font-size: 1.25rem;
+    }
+    
+    .dollar-header h3 {
+        font-size: 1rem;
+    }
+    
+    .dollar-rate {
+        font-size: 1.75rem;
+    }
+}
+
+/* ========================================================================
+   UTILITÁRIOS
+   ======================================================================== */
+
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: var(--dashboard-spacing-xs); }
+.mb-2 { margin-bottom: var(--dashboard-spacing-sm); }
+.mb-3 { margin-bottom: var(--dashboard-spacing-md); }
+.mb-4 { margin-bottom: var(--dashboard-spacing-lg); }
+
+.text-primary { color: var(--dashboard-primary); }
+.text-success { color: var(--dashboard-success); }
+.text-warning { color: var(--dashboard-warning); }
+.text-danger { color: var(--dashboard-danger); }
+.text-info { color: var(--dashboard-info); }
+.text-secondary { color: var(--dashboard-secondary); }
+
+/* ========================================================================
+   ANIMAÇÕES
+   ======================================================================== */
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+.slide-in {
+    animation: slideIn 0.4s ease-out;
+}
+
+/* ========================================================================
+   DARK MODE (PREPARAÇÃO FUTURA)
+   ======================================================================== */
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --dashboard-light: #2c3e50;
+        --dashboard-dark: #ecf0f1;
+    }
+    
+    .kpi-card,
+    .dollar-card,
+    .chart-container,
+    .table-container,
+    .dashboard-header {
+        background: #34495e;
+    }
+    
+    .data-table th {
+        background: #2c3e50;
+    }
+    
+    .data-table tr:hover {
+        background: #2c3e50;
+    }
+}

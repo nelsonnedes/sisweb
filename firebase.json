@@ -1,0 +1,95 @@
+{
+  "hosting": {
+    "site": "sisweb-7ce82",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "**/*.md",
+      "**/backup/**",
+      "**/temp_**",
+      "**/*_old.*",
+      "**/*_backup.*",
+      "**/*.bat",
+      "**/*.exe",
+      "**/*.sh",
+      "**/*.com",
+      "**/*.cmd",
+      "**/*.log",
+      "**/*.tmp",
+      "**/.DS_Store",
+      "**/Thumbs.db",
+      "**/package-lock.json",
+      "**/yarn.lock",
+      "deploy-forcado.ps1",
+      "firebase-rules-valid.json",
+      "firebase-rules-production.json",
+      "firebase-rules-development.json",
+      "**/*rtdb-export*.json",
+      "firebase-backup.json",
+      "COLE_ESTAS_REGras_NO_FIREBASE.md",
+      "RELATORIO_PERDA_DADOS_CLIENTES.md",
+      "CORRECOES_CLIENTES_SUMARIO.md",
+      "FIREBASE_SECURITY_GUIDE.md",
+      "DIAGRAMA_E_ESQUEMA_SISWEB.dm"
+    ],
+    "headers": [
+      {
+        "source": "**/*.html",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+          { "key": "Pragma", "value": "no-cache" },
+          { "key": "Expires", "value": "0" }
+        ]
+      },
+      {
+        "source": "folha_pagamento/**/*.@(js|css)",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+          { "key": "Pragma", "value": "no-cache" },
+          { "key": "Expires", "value": "0" }
+        ]
+      },
+      {
+        "source": "folha_pagamento/**/*.html",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+          { "key": "Pragma", "value": "no-cache" },
+          { "key": "Expires", "value": "0" }
+        ]
+      },
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=300"
+          }
+        ]
+      },
+      {
+        "source": "**/*.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=60"
+          }
+        ]
+      }
+    ]
+  },
+  "database": {
+    "rules": "database.rules.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": {
+    "source": "functions"
+  }
+}

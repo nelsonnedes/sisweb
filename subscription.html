@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assinatura - Sistema</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+        }
+
+        .global-system-footer {
+            width: min(100%, 1200px);
+            margin: 22px auto 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .campaign-strip {
+            margin-top: 14px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+            text-align: left;
+        }
+
+        .campaign-item {
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.26);
+            border-radius: 10px;
+            padding: 12px;
+            color: #e2e8f0;
+            font-size: 13px;
+        }
+
+        .subscription-plans {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .plan-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            text-align: left;
+        }
+
+        .plan-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .plan-title {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .plan-price {
+            color: #27ae60;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .plan-price small {
+            font-size: 16px;
+            color: #7f8c8d;
+        }
+
+        .plan-features {
+            list-style: none;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .plan-features li {
+            margin: 10px 0;
+            color: #34495e;
+        }
+
+        .plan-features li i {
+            color: #27ae60;
+            margin-right: 10px;
+        }
+
+        .method-badges {
+            margin-top: 14px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+
+        .method-badge {
+            font-size: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+        }
+
+        .select-plan {
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+
+        .select-plan:hover {
+            background-color: #34495e;
+        }
+
+        .trial-info {
+            color: white;
+            margin-bottom: 40px;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .trial-info h2 {
+            margin-bottom: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+            padding: 20px 12px;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 0 auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            max-height: calc(100dvh - 40px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            position: relative;
+            text-align: center;
+        }
+
+        .modal-content.payment-modal-modern {
+            background: linear-gradient(165deg, #ffffff 0%, #f8fbff 55%, #eef5ff 100%);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
+            border-radius: 18px;
+            max-height: none;
+            overflow: visible;
+            scrollbar-gutter: stable;
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+
+        .payment-heading {
+            text-align: left;
+            margin-bottom: 12px;
+        }
+
+        .payment-heading h2 {
+            color: #0f172a;
+            font-size: 1.5rem;
+            margin-bottom: 6px;
+        }
+
+        .payment-subtitle {
+            color: #475569;
+            font-size: 0.95rem;
+        }
+
+        .payment-mode-switch {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            background: #e2e8f0;
+            border-radius: 12px;
+            padding: 6px;
+            margin: 14px 0 18px;
+        }
+
+        .payment-mode-btn {
+            border: none;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-weight: 700;
+            color: #0f172a;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-size: 13px;
+        }
+
+        .payment-mode-btn.active {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #fff;
+            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.3);
+        }
+
+        .flow-panel {
+            text-align: left;
+        }
+
+        .pix-auto-panel {
+            border: 1px solid #bfdbfe;
+            border-radius: 14px;
+            background: linear-gradient(140deg, #eff6ff 0%, #f8fafc 100%);
+            padding: 14px;
+        }
+
+        .pix-status-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .pix-status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        .pix-status-chip.pending {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .pix-status-chip.approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .pix-status-chip.rejected,
+        .pix-status-chip.expired {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .pix-expiration {
+            font-size: 12px;
+            color: #334155;
+            font-weight: 600;
+        }
+
+        .pix-qr-shell {
+            background: #fff;
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 240px;
+            margin: 12px 0;
+            overflow: hidden;
+        }
+
+        .pix-qr-shell img {
+            display: block;
+            width: min(100%, 280px);
+            max-width: 280px;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            object-fit: contain;
+            border-radius: 8px;
+            image-rendering: pixelated;
+        }
+
+        .pix-code-block {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background: #fff;
+            padding: 10px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .pix-code-value {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            font-size: 12px;
+            color: #1e293b;
+            word-break: break-all;
+            flex: 1;
+            line-height: 1.4;
+        }
+
+        .pix-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .pix-action-primary,
+        .pix-action-secondary {
+            border: none;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            font-size: 13px;
+        }
+
+        .pix-action-primary {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #fff;
+            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.25);
+        }
+
+        .pix-action-secondary {
+            background: #fff;
+            color: #0f172a;
+            border: 1px solid #cbd5e1;
+        }
+
+        .pix-action-primary:hover,
+        .pix-action-secondary:hover {
+            transform: translateY(-1px);
+        }
+
+        .pix-helper {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 13px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #334155;
+        }
+
+        .qr-code {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .qr-code img {
+            max-width: 200px;
+            margin: 20px 0;
+        }
+
+        .pix-info {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .pix-info p {
+            margin: 10px 0;
+            color: #34495e;
+        }
+
+        .copy-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .copy-button:hover {
+            background-color: #2980b9;
+        }
+
+        .payment-instructions {
+            margin-top: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .payment-steps {
+            margin-top: 20px;
+        }
+
+        .step {
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+
+        @media (max-width: 768px) {
+            .modal {
+                padding: 10px;
+            }
+            .modal-content.payment-modal-modern {
+                width: 100%;
+                border-radius: 16px;
+                padding: 20px 16px;
+            }
+            .pix-qr-shell {
+                min-height: 210px;
+                padding: 10px;
+            }
+            .pix-qr-shell img {
+                width: min(100%, 240px);
+                max-width: 240px;
+            }
+        }
+
+        .step h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .upload-area {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #bdc3c7;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .upload-button, .next-button, .submit-button, .validate-button {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: background-color 0.3s;
+        }
+
+        .upload-button:hover, .next-button:hover, .submit-button:hover, .validate-button:hover {
+            background-color: #34495e;
+        }
+
+        .upload-button:disabled, .submit-button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .registration-input {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .registration-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+        }
+
+        #validationMessage {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        #validationMessage.success {
+            color: #27ae60;
+        }
+
+        #validationMessage.error {
+            color: #e74c3c;
+        }
+
+        .promo-box {
+            margin-top: 14px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            color: #d1fae5;
+            font-size: 14px;
+        }
+
+        .plan-disclaimer {
+            margin-top: 10px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: #ecfeff;
+            border: 1px solid #a5f3fc;
+            color: #0f766e;
+            font-size: 12px;
+        }
+
+        .referral-box {
+            margin-top: 10px;
+            text-align: left;
+        }
+
+        .referral-box input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            margin-top: 6px;
+        }
+
+        .payment-methods-select {
+            margin: 14px 0;
+            text-align: left;
+        }
+
+        .payment-methods-select label {
+            font-weight: 600;
+            color: #2c3e50;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .payment-methods-select select,
+        .payment-methods-select textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 18px;
+            }
+            .plan-card {
+                padding: 18px;
+            }
+            .plan-price {
+                font-size: 30px;
+            }
+            .modal {
+                padding: 8px;
+            }
+            .modal-content {
+                width: 100%;
+                max-height: calc(100dvh - 16px);
+                padding: 18px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="trial-info">
+            <h2 id="subscriptionTitle">Regularize sua assinatura</h2>
+            <p id="subscriptionSubtitle">Escolha um plano para continuar usando o sistema com segurança.</p>
+            <div id="promotionBox" class="promo-box" style="display:none;"></div>
+            <div class="campaign-strip" id="campaignStrip">
+                <div class="campaign-item">Carregando vantagens comerciais...</div>
+            </div>
+        </div>
+
+        <div class="subscription-plans" id="plansContainer"></div>
+    </div>
+
+    <!-- Modal de Pagamento -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content payment-modal-modern">
+            <span class="close" onclick="closePaymentModal()">&times;</span>
+            <div class="payment-heading">
+                <h2 id="paymentTitle">Pagamento da Assinatura</h2>
+                <div class="payment-subtitle">Escolha como deseja concluir sua renovação: PIX automático recomendado ou envio manual de comprovante.</div>
+            </div>
+            <div class="payment-mode-switch">
+                <button type="button" id="modePixAutoBtn" class="payment-mode-btn active" onclick="setPaymentFlowMode('pix_auto')">🔵 PIX Automático</button>
+                <button type="button" id="modeManualBtn" class="payment-mode-btn" onclick="setPaymentFlowMode('manual')">⚪ Enviar Comprovante</button>
+            </div>
+            <div id="pixAutoPanel" class="flow-panel pix-auto-panel">
+                <div class="pix-status-row">
+                    <span id="pixStatusChip" class="pix-status-chip">Pronto para gerar cobrança PIX</span>
+                    <span id="pixCountdown" class="pix-expiration">Sem cobrança ativa</span>
+                </div>
+                <div class="pix-qr-shell">
+                    <img id="pixQrImage" alt="QR Code PIX" style="display:none;">
+                    <div id="pixQrPlaceholder" class="payment-subtitle">Clique em "Gerar PIX automático" para exibir o QR Code.</div>
+                </div>
+                <div class="pix-code-block">
+                    <div id="pixCodeValue" class="pix-code-value">Código PIX ainda não gerado.</div>
+                    <button type="button" class="copy-button" onclick="copyPixAutoCode()">Copiar</button>
+                </div>
+                <div class="pix-actions">
+                    <button type="button" id="btnGeneratePix" class="pix-action-primary" onclick="startPixAutomaticPayment()">Gerar PIX automático</button>
+                    <button type="button" id="btnAlreadyPaidPix" class="pix-action-secondary" onclick="revalidatePixPaymentNow()">Já paguei</button>
+                    <button type="button" class="pix-action-secondary" onclick="setPaymentFlowMode('manual')">Usar comprovante manual</button>
+                </div>
+                <div id="pixAutoHelper" class="pix-helper">Após pagar, a confirmação pode ocorrer automaticamente em poucos instantes.</div>
+            </div>
+            <div id="manualFlowPanel" class="flow-panel" style="display:none;">
+            <div class="pix-info">
+                <p>
+                    <strong>Chave PIX:</strong>
+                    <span id="pixKey">-</span>
+                    <button class="copy-button" onclick="copyPixKey()">Copiar</button>
+                </p>
+                <p><strong>Valor:</strong> <span id="paymentAmount">R$ 0,00</span></p>
+                <p><strong>Beneficiário:</strong> <span id="paymentBeneficiary">-</span></p>
+                <p><strong>Email de suporte:</strong> <span id="paymentSupportEmail">-</span></p>
+            </div>
+            <div class="payment-steps">
+                <div class="step" id="step1">
+                    <h3>1. Realize o Pagamento</h3>
+                    <p>1. Escolha o método de pagamento válido no momento</p>
+                    <p>2. Utilize os dados oficiais exibidos nesta tela</p>
+                    <p>3. Efetue o pagamento no valor exato</p>
+                    <p>4. Salve ou tire print do comprovante</p>
+                    <div class="payment-methods-select">
+                        <label for="paymentMethodSelect">Método de pagamento</label>
+                        <select id="paymentMethodSelect"></select>
+                        <div id="transactionFields" style="margin-top:10px;">
+                            <div data-method-fields="pix" style="display:none;gap:8px;flex-wrap:wrap;">
+                                <input id="pixTxid" type="text" placeholder="TXID (opcional)" style="width:100%;margin-top:6px;">
+                                <input id="pixPayerDocument" type="text" placeholder="CPF/CNPJ do pagador (opcional)" style="width:100%;margin-top:6px;">
+                            </div>
+                            <div data-method-fields="boleto" style="display:none;gap:8px;flex-wrap:wrap;">
+                                <input id="boletoDueDate" type="date" style="width:100%;margin-top:6px;">
+                                <input id="boletoLine" type="text" placeholder="Linha digitável (opcional)" style="width:100%;margin-top:6px;">
+                                <input id="boletoOurNumber" type="text" placeholder="Nosso número (opcional)" style="width:100%;margin-top:6px;">
+                            </div>
+                            <div data-method-fields="card" style="display:none;gap:8px;flex-wrap:wrap;">
+                                <input id="cardHolderName" type="text" placeholder="Nome no cartão (opcional)" style="width:100%;margin-top:6px;">
+                                <input id="cardLast4" type="text" maxlength="4" placeholder="Últimos 4 dígitos (opcional)" style="width:100%;margin-top:6px;">
+                                <input id="cardBrand" type="text" placeholder="Bandeira (opcional)" style="width:100%;margin-top:6px;">
+                            </div>
+                            <div data-method-fields="transfer" style="display:none;gap:8px;flex-wrap:wrap;">
+                                <input id="transferBank" type="text" placeholder="Banco origem (opcional)" style="width:100%;margin-top:6px;">
+                                <input id="transferReference" type="text" placeholder="Referência da transferência (opcional)" style="width:100%;margin-top:6px;">
+                            </div>
+                        </div>
+                        <div class="referral-box">
+                            <label for="referralEmail">Campanha de Indicação (opcional)</label>
+                            <input type="email" id="referralEmail" placeholder="Email de quem indicou você">
+                        </div>
+                        <label for="paymentNotes">Observações do pagamento (opcional)</label>
+                        <textarea id="paymentNotes" rows="3" placeholder="Ex.: pagamento realizado às 13:50, banco XYZ."></textarea>
+                    </div>
+                    <button class="next-button" onclick="showStep(2)">Já fiz o pagamento</button>
+                </div>
+                <div class="step" id="step2" style="display: none;">
+                    <h3>2. Envie o Comprovante para análise administrativa</h3>
+                    <div class="upload-area">
+                        <input type="file" id="comprovante" accept="image/*,.pdf" style="display: none;">
+                        <button class="upload-button" onclick="document.getElementById('comprovante').click()">
+                            Selecionar Comprovante
+                        </button>
+                        <p id="fileName"></p>
+                    </div>
+                    <button class="submit-button" onclick="enviarComprovante()" id="btnEnviar" disabled>
+                        Enviar Comprovante
+                    </button>
+                </div>
+                <div class="step" id="step3" style="display: none;">
+                    <h3>3. Aguardando Validação Administrativa</h3>
+                    <p>Seu comprovante foi enviado e está em análise pelo administrador do sistema.</p>
+                    <div class="registration-input">
+                        <button class="validate-button" onclick="goToSubscriptionStatus()">Ver Status da Assinatura</button>
+                    </div>
+                    <p id="validationMessage">Você será redirecionado para acompanhar o status da aprovação.</p>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="auth.js"></script>
+    <script type="module">
+        import {
+            authService,
+            isFirebaseOperational,
+            getSubscriptionSettings,
+            submitSubscriptionRequest,
+            createPixPayment,
+            revalidatePixPayment,
+            uploadSubscriptionProof,
+            activateFreeTrial,
+            loadFromFirebase,
+            subscribe,
+            getTenantId,
+            getCurrentUid
+        } from './firebaseService.js';
+        window.firebaseService = {
+            ...(window.firebaseService || {}),
+            authService,
+            isFirebaseOperational,
+            getSubscriptionSettings,
+            submitSubscriptionRequest,
+            createPixPayment,
+            revalidatePixPayment,
+            uploadSubscriptionProof,
+            activateFreeTrial,
+            loadFromFirebase,
+            subscribe,
+            getTenantId,
+            getCurrentUid
+        };
+        console.log("✅ firebaseService carregado e disponibilizado globalmente no subscription.html");
+    </script>
+    <script>
+        // Verificar estado de autenticação ao carregar a página
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                const reason = String(params.get('reason') || '').toLowerCase();
+                const intent = String(params.get('intent') || '').toLowerCase();
+                if (reason === 'readonly_expired') {
+                    alert('Seu período de modo leitura expirou. Para continuar no sistema, renove sua assinatura.');
+                }
+            } catch (_) {}
+            const details = window.getCurrentUserDetails ? await window.getCurrentUserDetails() : null;
+            if (!details || !details.email) {
+                console.warn('Usuário não autenticado. Redirecionando para página de login...');
+                window.location.href = 'login.html?redirect=subscription.html';
+                return;
+            }
+            const isAdmin = window.isSuperAdminSession ? await window.isSuperAdminSession() : false;
+            let statusKey = window.resolveSubscriptionStatus ? window.resolveSubscriptionStatus(details) : 'expired';
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                const intent = String(params.get('intent') || '').toLowerCase();
+                if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+                    const snap = await loadMyUserSnapshot(details);
+                    if (snap && typeof snap === 'object') {
+                        currentUserDetails = snap;
+                        statusKey = window.resolveSubscriptionStatus ? window.resolveSubscriptionStatus(snap) : statusKey;
+                    }
+                }
+            } catch (_) {}
+            if (!currentUserDetails) currentUserDetails = details;
+            currentStatusKey = statusKey;
+            const params2 = new URLSearchParams(window.location.search || '');
+            const intent2 = String(params2.get('intent') || '').toLowerCase();
+            if (!isAdmin && (statusKey === 'active' || statusKey === 'trial_active') && intent2 !== 'renew') {
+                window.location.href = 'index.html';
+                return;
+            }
+            console.log('Usuário autenticado:', details.email);
+        });
+
+        // Função para obter dados do localStorage
+        function getData(key) {
+            try {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : null;
+            } catch (e) {
+                console.error('Erro ao recuperar dados:', e);
+                return null;
+            }
+        }
+
+        // Função para salvar dados no localStorage
+        function saveData(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+                return true;
+            } catch (e) {
+                console.error('Erro ao salvar dados:', e);
+                return false;
+            }
+        }
+
+        function scrubPaymentDataFromLocalUsers() {
+            try {
+                const raw = localStorage.getItem('users');
+                if (!raw) return;
+                const parsed = JSON.parse(raw);
+                const list = Array.isArray(parsed) ? parsed : (parsed && typeof parsed === 'object' ? Object.values(parsed) : []);
+                const sanitized = list.map((u) => {
+                    const out = { ...(u || {}) };
+                    delete out.pendingPayment;
+                    if (Array.isArray(out.payments)) {
+                        out.payments = out.payments.map((p) => ({
+                            status: p && p.status ? p.status : '',
+                            date: p && p.date ? p.date : '',
+                            reference: p && p.reference ? p.reference : ''
+                        }));
+                    }
+                    return out;
+                });
+                localStorage.setItem('users', JSON.stringify(sanitized));
+            } catch (_) {}
+        }
+
+        let currentPlan = null;
+        let validationCode = null;
+        let subscriptionSettings = null;
+        let currentUserDetails = null;
+        let currentStatusKey = 'expired';
+        let paymentFlowMode = 'pix_auto';
+        let currentPixPayment = null;
+        let pixCountdownTimer = null;
+        let pixSubscriptions = [];
+
+        function currency(value) {
+            return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function getPlanAmountFromSettings(planKey) {
+            const plans = (subscriptionSettings && subscriptionSettings.plans) || {};
+            const selectedPlan = plans[planKey];
+            if (!selectedPlan || selectedPlan.enabled === false) return 0;
+            let amount = Number(selectedPlan.amount || 0);
+            const promo = subscriptionSettings && subscriptionSettings.promotion ? subscriptionSettings.promotion : {};
+            if (promo.enabled && promo.discountPercent > 0) {
+                amount = amount * (1 - (promo.discountPercent / 100));
+            }
+            if (planKey === 'premium') amount = amount * 0.95;
+            return Number(amount || 0);
+        }
+
+        function isPixMethodEnabled() {
+            const methods = (subscriptionSettings && subscriptionSettings.paymentMethods) || {};
+            return methods.pix === true;
+        }
+
+        function clearPixSubscriptions() {
+            if (!Array.isArray(pixSubscriptions)) {
+                pixSubscriptions = [];
+                return;
+            }
+            pixSubscriptions.forEach((s) => {
+                try {
+                    if (s && typeof s.unsubscribe === 'function') s.unsubscribe();
+                } catch (_) {}
+            });
+            pixSubscriptions = [];
+        }
+
+        function clearPixCountdown() {
+            if (pixCountdownTimer) {
+                clearInterval(pixCountdownTimer);
+                pixCountdownTimer = null;
+            }
+        }
+
+        function setPixStatus(status, label) {
+            const chip = document.getElementById('pixStatusChip');
+            if (!chip) return;
+            const normalized = String(status || 'idle').toLowerCase();
+            chip.className = `pix-status-chip ${normalized}`;
+            chip.textContent = label || 'Status indisponível';
+        }
+
+        function updatePixCountdown(expirationIso) {
+            const el = document.getElementById('pixCountdown');
+            if (!el) return;
+            clearPixCountdown();
+            const target = expirationIso ? new Date(expirationIso) : null;
+            if (!target || Number.isNaN(target.getTime())) {
+                el.textContent = 'Sem prazo definido';
+                return;
+            }
+            const tick = () => {
+                const diff = target.getTime() - Date.now();
+                if (diff <= 0) {
+                    el.textContent = 'Cobrança expirada';
+                    setPixStatus('expired', 'PIX expirado');
+                    clearPixCountdown();
+                    return;
+                }
+                const h = Math.floor(diff / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+                const hh = String(h).padStart(2, '0');
+                const mm = String(m).padStart(2, '0');
+                const ss = String(s).padStart(2, '0');
+                el.textContent = `Expira em ${hh}:${mm}:${ss}`;
+            };
+            tick();
+            pixCountdownTimer = setInterval(tick, 1000);
+        }
+
+        function renderPixData(payment) {
+            const qrImg = document.getElementById('pixQrImage');
+            const qrPlaceholder = document.getElementById('pixQrPlaceholder');
+            const codeValue = document.getElementById('pixCodeValue');
+            const helper = document.getElementById('pixAutoHelper');
+            const btnGenerate = document.getElementById('btnGeneratePix');
+            if (btnGenerate) btnGenerate.disabled = false;
+            if (!payment) {
+                if (qrImg) {
+                    qrImg.style.display = 'none';
+                    qrImg.src = '';
+                }
+                if (qrPlaceholder) qrPlaceholder.style.display = 'block';
+                if (codeValue) codeValue.textContent = 'Código PIX ainda não gerado.';
+                if (helper) helper.textContent = 'Após pagar, a confirmação pode ocorrer automaticamente em poucos instantes.';
+                setPixStatus('idle', 'Pronto para gerar cobrança PIX');
+                updatePixCountdown('');
+                return;
+            }
+            const qrBase64 = String(payment.qr_code_base64 || payment.qrCodeBase64 || '').trim();
+            const qrCode = String(payment.qr_code || payment.qrCode || '').trim();
+            const status = String(payment.status || 'pending').toLowerCase();
+            const expiration = String(payment.expiration || '').trim();
+            if (qrImg && qrBase64) {
+                qrImg.onerror = () => {
+                    qrImg.style.display = 'none';
+                    if (qrPlaceholder) {
+                        qrPlaceholder.style.display = 'block';
+                        qrPlaceholder.textContent = 'Não foi possível renderizar o QR desta cobrança. Gere um novo PIX automático.';
+                    }
+                };
+                qrImg.src = qrBase64.startsWith('data:image') ? qrBase64 : `data:image/png;base64,${qrBase64}`;
+                qrImg.style.display = 'block';
+                if (qrPlaceholder) qrPlaceholder.style.display = 'none';
+            } else if (qrImg) {
+                qrImg.style.display = 'none';
+                if (qrPlaceholder) qrPlaceholder.style.display = 'block';
+            }
+            if (codeValue) codeValue.textContent = qrCode || 'Código PIX indisponível';
+            if (status === 'approved') {
+                setPixStatus('approved', 'Pagamento confirmado');
+                if (helper) helper.textContent = 'Pagamento confirmado automaticamente. Finalizando ativação...';
+            } else if (status === 'rejected') {
+                setPixStatus('rejected', 'Pagamento rejeitado');
+                if (helper) helper.textContent = 'Pagamento não aprovado. Você pode tentar novamente ou usar envio manual.';
+            } else if (status === 'expired') {
+                setPixStatus('expired', 'PIX expirado');
+                if (helper) helper.textContent = 'A cobrança expirou. Gere um novo PIX ou use envio manual.';
+            } else {
+                setPixStatus('pending', 'Aguardando pagamento...');
+                if (helper) helper.textContent = 'Assim que o PIX for aprovado, a ativação ocorre automaticamente.';
+            }
+            updatePixCountdown(expiration);
+        }
+
+        function applyLocalSubscriptionActivationFromPix(planKey, paymentRecord) {
+            try {
+                const current = JSON.parse(localStorage.getItem('currentUser') || 'null') || {};
+                const now = new Date();
+                const end = new Date(now);
+                const plan = String(planKey || currentPlan || 'monthly').toLowerCase();
+                if (plan === 'premium') end.setFullYear(end.getFullYear() + 1);
+                else if (plan === 'quarterly' || plan === 'annual') end.setMonth(end.getMonth() + 3);
+                else end.setMonth(end.getMonth() + 1);
+                const patch = {
+                    ...current,
+                    hasActiveSubscription: true,
+                    trialStart: null,
+                    subscriptionStart: now.toISOString(),
+                    subscriptionEnd: end.toISOString(),
+                    subscriptionStatus: 'active',
+                    accountStatus: 'active',
+                    statusReason: '',
+                    pendingPayment: null
+                };
+                const payments = Array.isArray(patch.payments) ? patch.payments.slice(0) : [];
+                payments.push({
+                    date: now.toISOString(),
+                    amount: Number(paymentRecord && (paymentRecord.amount || paymentRecord.paidAmount) || getPlanAmountFromSettings(plan)),
+                    method: 'PIX',
+                    status: 'approved',
+                    reference: String(paymentRecord && (paymentRecord.paymentId || paymentRecord.providerPaymentId) || '')
+                });
+                patch.payments = payments;
+                localStorage.setItem('currentUser', JSON.stringify(patch));
+            } catch (_) {}
+        }
+
+        function handlePixStatusTransition(paymentRecord) {
+            const status = String(paymentRecord && paymentRecord.status || '').toLowerCase();
+            renderPixData(paymentRecord || null);
+            if (status !== 'approved') return;
+            applyLocalSubscriptionActivationFromPix(paymentRecord.plan, paymentRecord);
+            setTimeout(() => {
+                alert('Pagamento PIX confirmado. Sua assinatura foi ativada.');
+                closePaymentModal();
+                window.location.href = 'index.html';
+            }, 500);
+        }
+
+        function subscribePixRealtime(paymentId) {
+            clearPixSubscriptions();
+            const service = window.firebaseService || {};
+            if (!service || typeof service.subscribe !== 'function') return;
+            const uid = String((currentUserDetails && (currentUserDetails.uid || currentUserDetails.id || currentUserDetails.userId)) || '').trim();
+            let tenantId = '';
+            try { tenantId = String(service.getTenantId ? service.getTenantId() : '').trim(); } catch (_) {}
+            const paths = [];
+            if (tenantId) paths.push(`companies/${tenantId}/subscriptionPayments/${paymentId}`);
+            paths.push(`subscriptionPayments/${paymentId}`);
+            const uniquePaths = Array.from(new Set(paths.filter(Boolean)));
+            uniquePaths.forEach((path) => {
+                const sub = service.subscribe(path, ({ data }) => {
+                    if (data && typeof data === 'object') {
+                        currentPixPayment = { ...(currentPixPayment || {}), ...data };
+                        handlePixStatusTransition(currentPixPayment);
+                    }
+                });
+                if (sub && typeof sub.unsubscribe === 'function') pixSubscriptions.push(sub);
+            });
+        }
+
+        async function startPixAutomaticPayment() {
+            if (!currentPlan) return;
+            if (!window.firebaseService || typeof window.firebaseService.createPixPayment !== 'function') {
+                alert('Serviço PIX automático indisponível no momento.');
+                return;
+            }
+            if (!isPixMethodEnabled()) {
+                alert('PIX não está habilitado no momento. Use o envio manual de comprovante.');
+                setPaymentFlowMode('manual');
+                return;
+            }
+            const button = document.getElementById('btnGeneratePix');
+            if (button) {
+                button.disabled = true;
+                button.textContent = 'Gerando PIX...';
+            }
+            try {
+                const response = await window.firebaseService.createPixPayment({ plan: currentPlan });
+                if (!response || response.success === false) {
+                    throw new Error((response && response.error) || 'Falha ao gerar cobrança PIX.');
+                }
+                const payment = response.data && response.data.payment ? response.data.payment : null;
+                if (!payment || !payment.paymentId) {
+                    throw new Error('Resposta inválida ao gerar cobrança PIX.');
+                }
+                currentPixPayment = {
+                    ...payment,
+                    paymentId: String(payment.paymentId || ''),
+                    providerPaymentId: String(payment.providerPaymentId || ''),
+                    status: String(payment.status || 'pending').toLowerCase(),
+                    plan: currentPlan,
+                    amount: Number(payment.amount || getPlanAmountFromSettings(currentPlan))
+                };
+                renderPixData(currentPixPayment);
+                subscribePixRealtime(currentPixPayment.paymentId);
+            } catch (error) {
+                setPixStatus('rejected', 'Falha ao gerar PIX');
+                const helper = document.getElementById('pixAutoHelper');
+                if (helper) helper.textContent = error && error.message ? error.message : 'Não foi possível gerar o PIX agora.';
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = 'Gerar PIX automático';
+                }
+            }
+        }
+
+        async function revalidatePixPaymentNow() {
+            if (!currentPixPayment || !currentPixPayment.paymentId) {
+                alert('Nenhum PIX ativo para revalidar.');
+                return;
+            }
+            if (!window.firebaseService || typeof window.firebaseService.revalidatePixPayment !== 'function') {
+                alert('Serviço de revalidação indisponível no momento.');
+                return;
+            }
+            const helper = document.getElementById('pixAutoHelper');
+            if (helper) helper.textContent = 'Validando status do pagamento com o provedor...';
+            try {
+                const response = await window.firebaseService.revalidatePixPayment({
+                    paymentId: String(currentPixPayment.paymentId || ''),
+                    providerPaymentId: String(currentPixPayment.providerPaymentId || '')
+                });
+                if (!response || response.success === false) {
+                    throw new Error((response && response.error) || 'Falha ao revalidar pagamento.');
+                }
+                const payment = response.data && response.data.payment ? response.data.payment : {};
+                currentPixPayment = { ...(currentPixPayment || {}), ...payment };
+                handlePixStatusTransition(currentPixPayment);
+            } catch (error) {
+                if (helper) helper.textContent = error && error.message ? error.message : 'Falha ao revalidar o pagamento.';
+            }
+        }
+
+        function copyPixAutoCode() {
+            const code = String(document.getElementById('pixCodeValue')?.textContent || '').trim();
+            if (!code || code === 'Código PIX ainda não gerado.' || code === 'Código PIX indisponível') {
+                alert('Gere uma cobrança PIX antes de copiar o código.');
+                return;
+            }
+            navigator.clipboard.writeText(code).then(() => {
+                const helper = document.getElementById('pixAutoHelper');
+                if (helper) helper.textContent = 'Código PIX copiado. Finalize o pagamento no seu banco.';
+            });
+        }
+
+        function setPaymentFlowMode(mode) {
+            const normalized = String(mode || '').toLowerCase() === 'manual' ? 'manual' : 'pix_auto';
+            if (normalized === 'pix_auto' && !isPixMethodEnabled()) {
+                paymentFlowMode = 'manual';
+            } else {
+                paymentFlowMode = normalized;
+            }
+            const pixBtn = document.getElementById('modePixAutoBtn');
+            const manualBtn = document.getElementById('modeManualBtn');
+            const pixPanel = document.getElementById('pixAutoPanel');
+            const manualPanel = document.getElementById('manualFlowPanel');
+            if (paymentFlowMode === 'pix_auto') {
+                if (pixBtn) pixBtn.classList.add('active');
+                if (manualBtn) manualBtn.classList.remove('active');
+                if (pixPanel) pixPanel.style.display = 'block';
+                if (manualPanel) manualPanel.style.display = 'none';
+            } else {
+                if (manualBtn) manualBtn.classList.add('active');
+                if (pixBtn) pixBtn.classList.remove('active');
+                if (manualPanel) manualPanel.style.display = 'block';
+                if (pixPanel) pixPanel.style.display = 'none';
+                showStep(1);
+            }
+        }
+
+        function resetPaymentModalState() {
+            clearPixSubscriptions();
+            clearPixCountdown();
+            currentPixPayment = null;
+            renderPixData(null);
+            document.getElementById('fileName').textContent = '';
+            document.getElementById('btnEnviar').disabled = true;
+            document.getElementById('validationMessage').textContent = '';
+            const btnGenerate = document.getElementById('btnGeneratePix');
+            if (btnGenerate) {
+                btnGenerate.disabled = false;
+                btnGenerate.textContent = 'Gerar PIX automático';
+            }
+        }
+
+        function friendlySubscriptionErrorMessage(rawMessage) {
+            const message = String(rawMessage || '').trim();
+            const lower = message.toLowerCase();
+            if (lower.includes('deadline-exceeded') || lower.includes('timeout')) {
+                return 'A solicitação demorou mais do que o esperado. Verifique sua conexão e tente novamente em alguns instantes.';
+            }
+            if (lower.includes('failed-precondition') && lower.includes('período gratuito já foi utilizado')) {
+                return 'Este usuário já utilizou o plano grátis anteriormente. Para continuar, selecione um plano pago.';
+            }
+            if (lower.includes('período gratuito já utilizado') || lower.includes('plano grátis') || lower.includes('plano gratuito')) {
+                return 'Este usuário já utilizou o plano grátis anteriormente. Para continuar, selecione um plano pago.';
+            }
+            if (lower.includes('unauthenticated') || lower.includes('permission-denied')) {
+                return 'Sua sessão expirou ou você não possui permissão para esta ação. Faça login novamente.';
+            }
+            return message || 'Não foi possível concluir sua solicitação no momento.';
+        }
+
+        async function fileToSha256(file) {
+            const buffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function getDefaultSettings() {
+            return null;
+        }
+
+        async function loadSubscriptionSettingsSafe() {
+            try {
+                if (window.firebaseService && typeof window.firebaseService.getSubscriptionSettings === 'function') {
+                    const result = await window.firebaseService.getSubscriptionSettings();
+                    if (result.success && result.data && result.data.settings) {
+                        subscriptionSettings = result.data.settings;
+                        localStorage.setItem('subscriptionSettingsCache', JSON.stringify(subscriptionSettings));
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.warn('Falha ao carregar configurações da assinatura via backend:', error);
+            }
+            const cached = JSON.parse(localStorage.getItem('subscriptionSettingsCache') || 'null');
+            subscriptionSettings = cached || null;
+        }
+
+        function renderPromoAndTrial() {
+            const trialText = document.getElementById('subscriptionSubtitle');
+            const promoBox = document.getElementById('promotionBox');
+            const trialDays = parseInt(subscriptionSettings && subscriptionSettings.freeTrialDays, 10) || 0;
+            if (!subscriptionSettings) {
+                trialText.textContent = 'Configurações comerciais indisponíveis. O painel administrativo precisa definir planos e valores.';
+            } else if (trialDays > 0) {
+                trialText.textContent = `Seu período de teste expirou. Novos registros recebem ${trialDays} dia(s) grátis na primeira ativação.`;
+            } else {
+                trialText.textContent = 'Seu período de teste expirou. Escolha um plano para continuar usando o sistema.';
+            }
+            const promo = subscriptionSettings && subscriptionSettings.promotion ? subscriptionSettings.promotion : {};
+            if (promo.enabled && promo.discountPercent > 0) {
+                promoBox.style.display = 'block';
+                promoBox.textContent = `${promo.title || 'Promoção ativa'}: ${promo.discountPercent}% de desconto aplicado automaticamente no valor final.`;
+            } else {
+                promoBox.style.display = 'none';
+            }
+            const campaignStrip = document.getElementById('campaignStrip');
+            if (!campaignStrip) return;
+            const campaign = subscriptionSettings && subscriptionSettings.campaign ? subscriptionSettings.campaign : {};
+            const referral = campaign.referral || {};
+            const specie = campaign.specieBalance || {};
+            const ladder = Array.isArray(campaign.discountLadder) ? campaign.discountLadder : [];
+            campaignStrip.innerHTML = `
+                <div class="campaign-item"><strong>${campaign.title || 'Campanha Comercial'}</strong><br>Plano Premium anual com 5% de desconto automático.</div>
+                <div class="campaign-item">Escada ativa: ${ladder.length ? ladder.map((l) => `${l.minNewClients}+ novos = ${l.discountPercent}%`).join(' • ') : 'Sem escada configurada'}</div>
+                <div class="campaign-item">Indicação: ${referral.enabled ? `novo cliente ganha ${referral.discountPercentForNewClient || 0}% e indicador recebe ${referral.commissionPercentForReferrer || 0}%` : 'não habilitada no momento'}</div>
+                <div class="campaign-item">Saldo espécie: ${specie.enabled ? `acúmulo ${specie.conversionPercent || 0}% até limite de saque` : 'não habilitado'}</div>
+            `;
+        }
+
+        function parseAnyDate(raw) {
+            try {
+                if (!raw) return null;
+                if (raw instanceof Date) return Number.isNaN(raw.getTime()) ? null : raw;
+                if (typeof raw === 'number') {
+                    const d = new Date(raw);
+                    return Number.isNaN(d.getTime()) ? null : d;
+                }
+                if (typeof raw === 'string') {
+                    const d = new Date(raw);
+                    return Number.isNaN(d.getTime()) ? null : d;
+                }
+                if (typeof raw === 'object' && (raw.seconds || raw._seconds)) {
+                    const seconds = Number(raw.seconds || raw._seconds);
+                    if (!Number.isFinite(seconds)) return null;
+                    const d = new Date(seconds * 1000);
+                    return Number.isNaN(d.getTime()) ? null : d;
+                }
+            } catch (_) {}
+            return null;
+        }
+
+        async function loadMyUserSnapshot(details) {
+            const uid = String(details && (details.uid || details.id || details.userId) || '').trim();
+            if (!uid) return details || null;
+            try {
+                if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+                    let tenantId = '';
+                    try { tenantId = window.firebaseService.getTenantId ? String(window.firebaseService.getTenantId() || '').trim() : ''; } catch (_) {}
+                    const candidates = [];
+                    if (tenantId) candidates.push(`companies/${tenantId}/users/${uid}`);
+                    candidates.push(`users/${uid}`);
+                    for (const p of candidates) {
+                        try {
+                            const res = await window.firebaseService.loadFromFirebase(p);
+                            if (res && res.success && res.data && typeof res.data === 'object') {
+                                return { ...res.data, uid: uid, email: res.data.email || details.email };
+                            }
+                        } catch (_) {}
+                    }
+                }
+            } catch (_) {}
+            return details || null;
+        }
+
+        function hasConsumedFreeTrial(user) {
+            const u = user || {};
+            if (u.trialUsed === true || u.trialConsumed === true || u.freeTrialUsed === true) return true;
+            if (u.subscription && (u.subscription.trialUsed === true || u.subscription.freeTrialUsed === true)) return true;
+            const trialStart = parseAnyDate(u.trialStart);
+            return !!trialStart;
+        }
+
+        function renderPaymentMethodsSelect() {
+            const select = document.getElementById('paymentMethodSelect');
+            const methods = (subscriptionSettings && subscriptionSettings.paymentMethods) || {};
+            const options = [
+                { key: 'pix', label: 'PIX' },
+                { key: 'boleto', label: 'Boleto' },
+                { key: 'card', label: 'Cartão' },
+                { key: 'transfer', label: 'Transferência' }
+            ].filter((m) => methods[m.key] === true);
+            select.innerHTML = options.map((m) => `<option value="${m.key}">${m.label}</option>`).join('');
+            if (!options.length) {
+                select.innerHTML = `<option value="">Nenhum método disponível</option>`;
+            }
+            renderMethodSpecificFields();
+        }
+
+        function renderMethodSpecificFields() {
+            const select = document.getElementById('paymentMethodSelect');
+            const method = String(select && select.value ? select.value : '').toLowerCase();
+            document.querySelectorAll('[data-method-fields]').forEach((el) => {
+                const key = String(el.getAttribute('data-method-fields') || '').toLowerCase();
+                el.style.display = key === method ? 'flex' : 'none';
+            });
+        }
+
+        function collectTransactionMeta(methodKey) {
+            const key = String(methodKey || '').toLowerCase();
+            const meta = {};
+            if (key === 'pix') {
+                meta.pix = {
+                    txid: (document.getElementById('pixTxid').value || '').trim(),
+                    payerDocument: (document.getElementById('pixPayerDocument').value || '').trim()
+                };
+            } else if (key === 'boleto') {
+                meta.boleto = {
+                    dueDate: (document.getElementById('boletoDueDate').value || '').trim(),
+                    line: (document.getElementById('boletoLine').value || '').trim(),
+                    ourNumber: (document.getElementById('boletoOurNumber').value || '').trim()
+                };
+            } else if (key === 'card') {
+                meta.card = {
+                    holderName: (document.getElementById('cardHolderName').value || '').trim(),
+                    last4: (document.getElementById('cardLast4').value || '').replace(/\D+/g, '').slice(-4),
+                    brand: (document.getElementById('cardBrand').value || '').trim(),
+                    installments: 1
+                };
+            } else if (key === 'transfer') {
+                meta.transfer = {
+                    bank: (document.getElementById('transferBank').value || '').trim(),
+                    reference: (document.getElementById('transferReference').value || '').trim()
+                };
+            }
+            return meta;
+        }
+
+        function renderPlans() {
+            const container = document.getElementById('plansContainer');
+            if (!subscriptionSettings) {
+                container.innerHTML = `
+                    <div class="plan-card">
+                        <h3 class="plan-title">Planos indisponíveis</h3>
+                        <p>As configurações comerciais ainda não foram publicadas pelo painel administrativo.</p>
+                    </div>
+                `;
+                return;
+            }
+            const plans = (subscriptionSettings && subscriptionSettings.plans) || {};
+            const trialDays = parseInt(subscriptionSettings && subscriptionSettings.freeTrialDays, 10) || 0;
+            const orderedKeys = ['monthly', 'quarterly', 'premium'];
+            const enabledPlans = orderedKeys.filter((k) => plans[k] && plans[k].enabled !== false);
+            if (!enabledPlans.length && plans.annual && plans.annual.enabled !== false) enabledPlans.push('annual');
+            const trialConsumed = hasConsumedFreeTrial(currentUserDetails);
+            const canActivateFreePlan = trialDays > 0 && !trialConsumed;
+            const freePlanNote = trialConsumed
+                ? 'Plano grátis já utilizado nesta conta. Apenas o administrador pode conceder dias extras.'
+                : 'Disponível apenas na primeira ativação.';
+            if (!enabledPlans.length) {
+                container.innerHTML = `
+                    <div class="plan-card">
+                        <h3 class="plan-title">Planos temporariamente indisponíveis</h3>
+                        <p>Entre em contato com o administrador para regularização.</p>
+                    </div>
+                `;
+                if (trialDays > 0) {
+                    container.innerHTML += `
+                        <div class="plan-card${canActivateFreePlan ? '' : ' disabled'}">
+                            <h3 class="plan-title">Plano Grátis</h3>
+                            <div class="plan-price">
+                                R$ 0,00<br>
+                                <small>${trialDays} dia(s)</small>
+                            </div>
+                            <ul class="plan-features">
+                                <li><i class="fas fa-check"></i>Acesso completo sem aprovação</li>
+                                <li><i class="fas fa-check"></i>Todas as permissões durante o período</li>
+                                <li><i class="fas fa-check"></i>Após o prazo, acesso em modo leitura</li>
+                            </ul>
+                            <div class="plan-disclaimer">${freePlanNote}</div>
+                            <button class="select-plan" onclick="activateFreePlan()" ${canActivateFreePlan ? '' : 'disabled'}>Ativar Plano Grátis</button>
+                        </div>
+                    `;
+                }
+                return;
+            }
+            const methods = (subscriptionSettings && subscriptionSettings.paymentMethods) || {};
+            const badges = Object.keys(methods)
+                .filter((key) => methods[key] === true)
+                .map((key) => `<span class="method-badge">${key.toUpperCase()}</span>`)
+                .join('');
+            const paidPlansHtml = enabledPlans.map((planKey) => {
+                const plan = planKey === 'annual' ? { ...(plans.annual || {}), label: 'Plano Trimestral', periodLabel: '/trimestre' } : plans[planKey];
+                let amount = Number(plan.amount || 0);
+                const promo = subscriptionSettings && subscriptionSettings.promotion ? subscriptionSettings.promotion : {};
+                if (promo.enabled && promo.discountPercent > 0) {
+                    amount = amount * (1 - (promo.discountPercent / 100));
+                }
+                if (planKey === 'premium') amount = amount * 0.95;
+                const defaultFeatures = planKey === 'quarterly' || planKey === 'annual'
+                    ? ['Cobrança previsível a cada 3 meses', 'Melhor custo em relação ao mensal', 'Suporte prioritário']
+                    : planKey === 'premium'
+                        ? ['Contrato anual com estabilidade', 'Desconto adicional de 5% automático', 'Canal prioritário com suporte']
+                        : ['Acesso completo ao sistema', 'Suporte técnico', 'Atualizações contínuas'];
+                return `
+                    <div class="plan-card">
+                        <h3 class="plan-title">${plan.label || 'Plano'}</h3>
+                        <div class="plan-price">
+                            ${currency(amount)}<br>
+                            <small>${plan.periodLabel || '/mês'}</small>
+                        </div>
+                        <ul class="plan-features">
+                            ${defaultFeatures.map((f) => `<li><i class="fas fa-check"></i>${f}</li>`).join('')}
+                        </ul>
+                        ${planKey === 'premium' ? '<div class="plan-disclaimer">Premium anual: desconto extra de 5% aplicado automaticamente no checkout.</div>' : ''}
+                        <div class="method-badges">${badges}</div>
+                        <button class="select-plan" onclick="showPaymentModal('${planKey}')">Renovar Assinatura</button>
+                    </div>
+                `;
+            }).join('');
+            const freePlanHtml = trialDays > 0 ? `
+                <div class="plan-card${canActivateFreePlan ? '' : ' disabled'}">
+                    <h3 class="plan-title">Plano Grátis</h3>
+                    <div class="plan-price">
+                        R$ 0,00<br>
+                        <small>${trialDays} dia(s)</small>
+                    </div>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check"></i>Acesso completo sem aprovação</li>
+                        <li><i class="fas fa-check"></i>Todas as permissões durante o período</li>
+                        <li><i class="fas fa-check"></i>Após o prazo, acesso em modo leitura</li>
+                    </ul>
+                    <div class="plan-disclaimer">${freePlanNote}</div>
+                    <button class="select-plan" onclick="activateFreePlan()" ${canActivateFreePlan ? '' : 'disabled'}>Ativar Plano Grátis</button>
+                </div>
+            ` : '';
+            container.innerHTML = freePlanHtml + paidPlansHtml;
+        }
+
+        async function activateFreePlan() {
+            try {
+                const trialDays = parseInt(subscriptionSettings && subscriptionSettings.freeTrialDays, 10) || 0;
+                if (!trialDays) {
+                    alert('Plano grátis está desativado nas configurações comerciais.');
+                    return;
+                }
+                if (hasConsumedFreeTrial(currentUserDetails)) {
+                    alert('Este usuário já utilizou o plano grátis. Apenas o administrador pode conceder dias extras.');
+                    return;
+                }
+                if (!window.firebaseService || typeof window.firebaseService.activateFreeTrial !== 'function') {
+                    throw new Error('Serviço de ativação do plano grátis indisponível.');
+                }
+                const result = await window.firebaseService.activateFreeTrial();
+                if (!result || result.success === false) {
+                    throw new Error(friendlySubscriptionErrorMessage((result && result.error) || 'Não foi possível ativar o plano grátis.'));
+                }
+                const status = String((result && result.data && result.data.status) || '').toLowerCase();
+                if (status === 'active') {
+                    alert('Sua assinatura já está ativa. Redirecionando para o sistema...');
+                } else if (status === 'trial_active') {
+                    alert('Plano grátis ativado com sucesso. Redirecionando para o sistema...');
+                } else {
+                    alert('Status de assinatura atualizado com sucesso. Redirecionando para o sistema...');
+                }
+                window.location.href = 'index.html';
+            } catch (error) {
+                alert(friendlySubscriptionErrorMessage(error && error.message ? error.message : 'Erro ao ativar plano grátis.'));
+            }
+        }
+
+        function showPaymentModal(plan) {
+            currentPlan = plan;
+            const modal = document.getElementById('paymentModal');
+            const amountElement = document.getElementById('paymentAmount');
+            const selectedPlan = subscriptionSettings && subscriptionSettings.plans ? subscriptionSettings.plans[plan] : null;
+            if (!selectedPlan || selectedPlan.enabled === false) {
+                alert('Plano indisponível no momento.');
+                return;
+            }
+            const amount = getPlanAmountFromSettings(plan);
+            amountElement.textContent = currency(amount);
+            document.getElementById('paymentTitle').textContent = `Pagamento - ${selectedPlan.label || 'Assinatura'}`;
+            document.getElementById('pixKey').textContent = (subscriptionSettings && subscriptionSettings.paymentMeta && subscriptionSettings.paymentMeta.pixKey) || '-';
+            document.getElementById('paymentBeneficiary').textContent = (subscriptionSettings && subscriptionSettings.paymentMeta && subscriptionSettings.paymentMeta.beneficiary) || '-';
+            document.getElementById('paymentSupportEmail').textContent = (subscriptionSettings && subscriptionSettings.paymentMeta && subscriptionSettings.paymentMeta.supportEmail) || '-';
+            
+            showStep(1);
+            renderPaymentMethodsSelect();
+            resetPaymentModalState();
+            setPaymentFlowMode(isPixMethodEnabled() ? 'pix_auto' : 'manual');
+            
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+        }
+
+        function showStep(step) {
+            document.querySelectorAll('.step').forEach(el => el.style.display = 'none');
+            document.getElementById('step' + step).style.display = 'block';
+        }
+
+        function copyPixKey() {
+            const pixKey = document.getElementById('pixKey').textContent;
+            if (!pixKey || pixKey === '-') {
+                alert('Chave PIX indisponível.');
+                return;
+            }
+            navigator.clipboard.writeText(pixKey).then(() => {
+                alert('Chave PIX copiada!');
+            });
+        }
+
+        // Função para validar o tamanho do arquivo
+        function validateFileSize(file) {
+            const MAX_SIZE = 2 * 1024 * 1024; // 2MB em bytes
+            if (file.size > MAX_SIZE) {
+                throw new Error(`O arquivo é muito grande. O tamanho máximo permitido é 2MB. Seu arquivo tem ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+            }
+            return true;
+        }
+
+        // Função para comprimir imagens
+        async function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                // Se for PDF, retorna o arquivo original
+                if (file.type === 'application/pdf') {
+                    // Verificar tamanho do PDF
+                    const MAX_PDF_SIZE = 1 * 1024 * 1024; // 1MB
+                    if (file.size > MAX_PDF_SIZE) {
+                        reject(new Error('O PDF é muito grande. Por favor, reduza-o para menos de 1MB.'));
+                        return;
+                    }
+                    resolve(file);
+                    return;
+                }
+
+                // Se não for uma imagem, retorna erro
+                if (!file.type.startsWith('image/')) {
+                    reject(new Error('Tipo de arquivo não suportado. Por favor, envie apenas imagens ou PDF.'));
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        // Redimensionar se a imagem for muito grande
+                        const MAX_WIDTH = 600;
+                        const MAX_HEIGHT = 450;
+                        
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#FFFFFF'; // Fundo branco
+                        ctx.fillRect(0, 0, width, height);
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Comprimir como JPEG com qualidade reduzida para arquivos menores
+                        canvas.toBlob(
+                            (blob) => {
+                                const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+                                    type: 'image/jpeg',
+                                });
+                                
+                                // Verificar se a compressão foi eficaz
+                                if (compressedFile.size > 500 * 1024) {
+                                    // Se ainda for maior que 500KB, tentar comprimir mais
+                                    canvas.toBlob(
+                                        (blob2) => {
+                                            resolve(new File([blob2], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+                                                type: 'image/jpeg',
+                                            }));
+                                        },
+                                        'image/jpeg',
+                                        0.3 // Qualidade ainda menor
+                                    );
+                                } else {
+                                    resolve(compressedFile);
+                                }
+                            },
+                            'image/jpeg',
+                            0.5
+                        );
+                    };
+                };
+                reader.onerror = reject;
+            });
+        }
+
+        async function enviarComprovante() {
+            const file = document.getElementById('comprovante').files[0];
+            if (!file) {
+                alert('Por favor, selecione um comprovante primeiro.');
+                return;
+            }
+
+            try {
+                validateFileSize(file);
+                const btnEnviar = document.getElementById('btnEnviar');
+                btnEnviar.disabled = true;
+                btnEnviar.textContent = 'Processando...';
+                validationCode = generateValidationCode();
+                const proofHash = await fileToSha256(file);
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                if (!currentUser) {
+                    throw new Error('Usuário não está autenticado');
+                }
+
+                const methodSelect = document.getElementById('paymentMethodSelect');
+                const selectedMethod = String(methodSelect.value || '').toLowerCase();
+                if (!selectedMethod) {
+                    throw new Error('Nenhum método de pagamento habilitado pelo administrador.');
+                }
+                const paymentNotes = document.getElementById('paymentNotes').value.trim();
+                const userData = {
+                    username: currentUser.displayName || currentUser.email.split('@')[0],
+                    email: currentUser.email
+                };
+
+                const processedFile = await compressImage(file);
+                btnEnviar.textContent = 'Enviando comprovante...';
+                if (!window.firebaseService || typeof window.firebaseService.uploadSubscriptionProof !== 'function') {
+                    throw new Error('Serviço de upload de comprovante indisponível.');
+                }
+                const uploadResult = await window.firebaseService.uploadSubscriptionProof(processedFile, {
+                    folder: 'subscription-proofs',
+                    reference: validationCode
+                });
+                if (!uploadResult.success) {
+                    throw new Error(uploadResult.error || 'Falha ao enviar comprovante para o banco de dados.');
+                }
+                alert('Comprovante enviado com sucesso para análise administrativa.');
+                const transactionMeta = collectTransactionMeta(selectedMethod);
+                await finalizePendingSubmission(userData, validationCode, selectedMethod, paymentNotes, 'storage_upload', proofHash, uploadResult.data || null, transactionMeta);
+            } catch (error) {
+                console.error('Erro geral:', error);
+                alert('Erro ao enviar o comprovante: ' + error.message);
+            } finally {
+                document.getElementById('btnEnviar').disabled = false;
+                document.getElementById('btnEnviar').textContent = 'Enviar Comprovante';
+            }
+        }
+
+        // Atualizar o listener do input de arquivo para mostrar alertas de tamanho
+        document.getElementById('comprovante').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                try {
+                    validateFileSize(file);
+                    document.getElementById('fileName').textContent = file.name;
+                    document.getElementById('btnEnviar').disabled = false;
+                } catch (error) {
+                    alert(error.message);
+                    this.value = ''; // Limpar o input
+                    document.getElementById('fileName').textContent = '';
+                    document.getElementById('btnEnviar').disabled = true;
+                }
+            } else {
+                document.getElementById('fileName').textContent = '';
+                document.getElementById('btnEnviar').disabled = true;
+            }
+        });
+
+        function generateValidationCode() {
+            const timestamp = Date.now().toString(36);
+            const random = Math.random().toString(36).substr(2, 5);
+            const prefix = currentPlan === 'monthly' ? 'M' : currentPlan === 'quarterly' ? 'T' : currentPlan === 'premium' ? 'P' : 'S';
+            return prefix + timestamp + random.toUpperCase();
+        }
+
+        function getPlanAmount(plan) {
+            if (plan === 'monthly') return 19.90;
+            if (plan === 'quarterly' || plan === 'annual') return 59.90;
+            if (plan === 'premium') return 228.00;
+            return 19.90;
+        }
+
+        async function finalizePendingSubmission(userData, validationRef, paymentMethod, paymentNotes, proofChannel, proofHash, proofUpload, transactionMeta) {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            if (!currentUser || !currentUser.email) {
+                throw new Error('Usuário não autenticado para registrar pagamento.');
+            }
+            const referralEmailInput = (document.getElementById('referralEmail').value || '').trim().toLowerCase();
+            if (referralEmailInput && referralEmailInput === String(currentUser.email || '').toLowerCase()) {
+                throw new Error('O email de indicação não pode ser o mesmo email do assinante.');
+            }
+            if (!window.firebaseService || typeof window.firebaseService.submitSubscriptionRequest !== 'function') {
+                throw new Error('Serviço de assinatura indisponível no backend.');
+            }
+            const backendResult = await window.firebaseService.submitSubscriptionRequest({
+                plan: currentPlan,
+                paymentMethod: paymentMethod || 'pix',
+                proofReference: validationRef || generateValidationCode(),
+                notes: paymentNotes || '',
+                proofChannel: proofChannel || 'upload',
+                proofHash: proofHash || '',
+                proofStoragePath: proofUpload && proofUpload.path ? proofUpload.path : '',
+                proofUrl: proofUpload && proofUpload.downloadURL ? proofUpload.downloadURL : '',
+                proofFileName: proofUpload && proofUpload.name ? proofUpload.name : '',
+                proofMimeType: proofUpload && proofUpload.contentType ? proofUpload.contentType : '',
+                referralEmail: referralEmailInput,
+                transactionMeta: transactionMeta && typeof transactionMeta === 'object' ? transactionMeta : {}
+            });
+            if (!backendResult.success) {
+                throw new Error(backendResult.error || 'Não foi possível registrar sua solicitação com segurança.');
+            }
+            const request = backendResult.data && backendResult.data.request ? backendResult.data.request : {};
+            const sessionPending = {
+                status: 'pending',
+                plan: request.plan || currentPlan,
+                amount: Number(request.amount || 0),
+                method: (request.method || paymentMethod || 'pix').toUpperCase(),
+                requestId: request.requestId || '',
+                reference: validationRef || generateValidationCode()
+            };
+            window.__subscriptionPendingSession = sessionPending;
+            localStorage.setItem('currentUser', JSON.stringify({
+                ...(currentUser || {}),
+                uid: currentUser.uid || '',
+                email: currentUser.email,
+                displayName: currentUser.displayName || userData.username || currentUser.email.split('@')[0],
+                subscriptionStatus: 'pending',
+                statusReason: 'Aguardando validação administrativa do comprovante.'
+            }));
+            showStep(3);
+            const validationMessage = document.getElementById('validationMessage');
+            validationMessage.textContent = 'Pagamento enviado para análise. Acesse o status para acompanhar a aprovação.';
+            validationMessage.className = 'success';
+            setTimeout(() => {
+                window.location.href = 'subscription-status.html';
+            }, 1200);
+        }
+
+        function goToSubscriptionStatus() {
+            window.location.href = 'subscription-status.html';
+        }
+
+        function validateRegistration() {
+            const validationMessage = document.getElementById('validationMessage');
+            validationMessage.textContent = 'Sua solicitação está pendente de aprovação administrativa.';
+            validationMessage.className = 'success';
+            setTimeout(() => {
+                window.location.href = 'subscription-status.html';
+            }, 800);
+        }
+
+        function closePaymentModal() {
+            resetPaymentModalState();
+            document.getElementById('paymentModal').style.display = 'none';
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+        }
+
+        // Fechar modal ao clicar fora
+        window.onclick = function(event) {
+            const modal = document.getElementById('paymentModal');
+            if (event.target == modal) {
+                closePaymentModal();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            scrubPaymentDataFromLocalUsers();
+            await loadSubscriptionSettingsSafe();
+            renderPromoAndTrial();
+            renderPaymentMethodsSelect();
+            renderPlans();
+            const methodSelect = document.getElementById('paymentMethodSelect');
+            if (methodSelect) methodSelect.addEventListener('change', renderMethodSpecificFields);
+        });
+    </script>
+</body>
+</html> 

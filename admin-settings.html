@@ -1,0 +1,2318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações Administrativas - Sistema</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="admin-modern.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+            padding: 20px;
+            color: #0f172a;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: 0 16px 48px rgba(15, 23, 42, 0.12);
+            border: 1px solid #e2e8f0;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .page-header h1 {
+            color: #2c3e50;
+        }
+
+        .settings-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 18px;
+        }
+
+        .settings-card {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+            border: 1px solid #e2e8f0;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .settings-card--commercial {
+            grid-column: 1 / -1;
+        }
+
+        .settings-card h2 {
+            color: #2c3e50;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .accordion-toggle {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            text-align: left;
+            font: inherit;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        .accordion-chevron {
+            color: #64748b;
+            transition: transform 0.2s ease;
+        }
+
+        .settings-card.is-collapsed .accordion-chevron {
+            transform: rotate(-90deg);
+        }
+
+        .settings-card.is-collapsed .settings-card-body {
+            display: none;
+        }
+
+        .settings-card h2 i {
+            color: #3498db;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #7f8c8d;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            resize: vertical;
+            background: #fff;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            outline: none;
+        }
+
+        .form-group .hint {
+            font-size: 12px;
+            color: #95a5a6;
+            margin-top: 5px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 8px 20px rgba(37,99,235,0.25);
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+        }
+
+        button.danger {
+            background-color: #e74c3c;
+        }
+
+        button.danger:hover {
+            background-color: #c0392b;
+        }
+
+        .success-message {
+            background-color: #e8f8f5;
+            color: #27ae60;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message {
+            background-color: #fdedec;
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+            margin-right: 10px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #27ae60;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .toggle-label {
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
+        .action-list {
+            list-style: none;
+        }
+
+        .action-list li {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .action-list li:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .action-description {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        .subusers-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+        }
+
+        .permissions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .permission-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 13px;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8fafc;
+        }
+
+        .subusers-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .subusers-table th,
+        .subusers-table td {
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+            padding: 10px 8px;
+            font-size: 13px;
+        }
+
+        .subusers-table th {
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        .audit-table-wrap {
+            margin-top: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            overflow: auto;
+            max-height: 560px;
+            background: #fff;
+        }
+
+        .audit-table-wrap .subusers-table {
+            margin-top: 0;
+            min-width: 720px;
+            table-layout: fixed;
+        }
+
+        .audit-table-wrap .subusers-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background: #f8fafc;
+        }
+
+        .audit-table-wrap .subusers-table th:nth-child(1),
+        .audit-table-wrap .subusers-table td:nth-child(1) {
+            width: 160px;
+        }
+
+        .audit-table-wrap .subusers-table th:nth-child(2),
+        .audit-table-wrap .subusers-table td:nth-child(2) {
+            width: 180px;
+        }
+
+        .audit-table-wrap .subusers-table th:nth-child(3),
+        .audit-table-wrap .subusers-table td:nth-child(3) {
+            width: auto;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        .audit-diff {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .audit-diff-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px;
+            background: #f8fafc;
+        }
+
+        .audit-entry-details summary {
+            cursor: pointer;
+            list-style: none;
+            font-size: 12px;
+            color: #1f2937;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .audit-entry-details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .audit-entry-details summary::before {
+            content: "▸ ";
+            color: #64748b;
+        }
+
+        .audit-entry-details[open] summary::before {
+            content: "▾ ";
+        }
+
+        #subscriptionPricingForm {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 10px 12px;
+            align-items: start;
+        }
+
+        #subscriptionPricingForm > .toggle-container,
+        #subscriptionPricingForm > .toggle-label,
+        #subscriptionPricingForm > button {
+            grid-column: 1 / -1;
+        }
+
+        .permission-matrix {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        .permission-matrix th,
+        .permission-matrix td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 8px 6px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .permission-matrix th {
+            color: #475569;
+            font-weight: 700;
+            background: #f8fafc;
+        }
+
+        .audit-diff-field {
+            font-size: 12px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 5px;
+            word-break: break-word;
+        }
+
+        .audit-diff-values {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 6px;
+            align-items: start;
+            font-size: 12px;
+        }
+
+        .audit-before {
+            color: #9f1239;
+            background: #fff1f2;
+            border-radius: 6px;
+            padding: 6px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .audit-after {
+            color: #166534;
+            background: #ecfdf5;
+            border-radius: 6px;
+            padding: 6px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .audit-arrow {
+            color: #64748b;
+            font-weight: 700;
+            padding-top: 6px;
+        }
+
+        .subuser-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .subuser-actions button {
+            padding: 8px 10px;
+            font-size: 13px;
+        }
+
+        .admin-profile-card {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #e2e8f0;
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .admin-profile-card strong {
+            color: #fff;
+            font-size: 16px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .admin-profile-card span {
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 12px; border-radius: 12px; }
+            .settings-container { grid-template-columns: 1fr; }
+            .settings-card { padding: 14px; }
+            button { width: 100%; justify-content: center; }
+            .subuser-actions { flex-direction: column; }
+            .subuser-actions button { width: 100%; }
+            .audit-table-wrap .subusers-table {
+                min-width: 600px;
+            }
+            .audit-diff-values {
+                grid-template-columns: 1fr;
+            }
+            .audit-arrow {
+                display: none;
+            }
+            .subusers-table.responsive-stack thead { display: none; }
+            .subusers-table.responsive-stack tbody { display: block; width: 100%; }
+            .subusers-table.responsive-stack tbody tr {
+                display: block;
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                background: #fff;
+                margin: 0 0 10px;
+                padding: 6px 8px;
+            }
+            .subusers-table.responsive-stack tbody td {
+                display: grid;
+                grid-template-columns: minmax(98px, 38%) 1fr;
+                gap: 8px;
+                border-bottom: 1px dashed #e2e8f0;
+                border-left: 0;
+                border-right: 0;
+                border-top: 0;
+                padding: 7px 0;
+                white-space: normal;
+            }
+            .subusers-table.responsive-stack tbody td::before {
+                content: attr(data-label);
+                font-size: 11px;
+                text-transform: uppercase;
+                color: #64748b;
+                letter-spacing: 0.03em;
+                font-weight: 700;
+            }
+            .subusers-table.responsive-stack tbody td:last-child { border-bottom: 0; }
+            .subusers-table.responsive-stack tbody td[colspan] {
+                display: block;
+                border-bottom: 0;
+                text-align: center;
+            }
+            .subusers-table.responsive-stack tbody td[colspan]::before { content: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <main-menu></main-menu>
+
+        <div class="page-header">
+            <h1>Configurações Administrativas</h1>
+        </div>
+
+        <div class="settings-container">
+            <div class="settings-card">
+                <h2><i class="fas fa-key"></i> Alterar Senha de Administrador</h2>
+                
+                <div id="passwordSuccess" class="success-message">
+                    <i class="fas fa-check-circle"></i> Senha alterada com sucesso!
+                </div>
+                
+                <div id="passwordError" class="error-message">
+                    Erro ao alterar a senha.
+                </div>
+                
+                <form id="changePasswordForm">
+                    <input type="email" id="passwordUsername" autocomplete="username" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" tabindex="-1" aria-hidden="true">
+                    <div class="form-group">
+                        <label for="currentPassword">Senha Atual</label>
+                        <input type="password" id="currentPassword" autocomplete="current-password" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="newPassword">Nova Senha</label>
+                        <input type="password" id="newPassword" autocomplete="new-password" required>
+                        <div class="hint">A senha deve ter pelo menos 8 caracteres e incluir letras e números</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirmar Nova Senha</label>
+                        <input type="password" id="confirmPassword" autocomplete="new-password" required>
+                    </div>
+                    
+                    <button type="submit">
+                        <i class="fas fa-save"></i> Alterar Senha
+                        <div class="loading-spinner" id="password-spinner"></div>
+                    </button>
+                </form>
+            </div>
+
+            <div class="settings-card">
+                <h2><i class="fas fa-cog"></i> Configurações do Sistema</h2>
+                
+                <div id="systemSuccess" class="success-message">
+                    <i class="fas fa-check-circle"></i> Configurações salvas com sucesso!
+                </div>
+                
+                <div id="systemError" class="error-message">
+                    Erro ao salvar configurações.
+                </div>
+                
+                <form id="systemSettingsForm">
+                    <div class="toggle-container">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="allowRegistrations" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="toggle-label">Permitir novos registros</span>
+                    </div>
+                    
+                    <div class="toggle-container">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="allowPasswordReset" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="toggle-label">Permitir recuperação de senha</span>
+                    </div>
+                    
+                    <div class="toggle-container">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoApproveTrials" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="toggle-label">Aprovar períodos de teste automaticamente</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="trialDays">Dias de teste gratuito</label>
+                        <input type="number" id="trialDays" min="0" max="90" value="30">
+                    </div>
+                    
+                    <button type="submit">
+                        <i class="fas fa-save"></i> Salvar Configurações
+                        <div class="loading-spinner" id="system-spinner"></div>
+                    </button>
+                </form>
+            </div>
+
+            <div class="settings-card">
+                <h2><i class="fas fa-shield-alt"></i> Ações Administrativas</h2>
+                
+                <ul class="action-list">
+                    <li>
+                        <div class="action-description">Gerar backup completo do sistema</div>
+                        <button id="backupBtn" onclick="generateBackup()">
+                            <i class="fas fa-download"></i> Gerar Backup
+                            <div class="loading-spinner" id="backup-spinner"></div>
+                        </button>
+                    </li>
+                    
+                    <li>
+                        <div class="action-description">Importar backup do sistema</div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="file" id="backupFileInput" accept=".json" style="display: none;" onchange="handleBackupFileSelect(this)">
+                            <button id="importBtn" onclick="triggerBackupImport()">
+                                <i class="fas fa-upload"></i> Importar Backup
+                                <div class="loading-spinner" id="import-spinner"></div>
+                            </button>
+                            <span id="selectedFileName" style="font-size: 12px; color: #666;"></span>
+                        </div>
+                    </li>
+                    
+                    <li>
+                        <div class="action-description">Limpar dados expirados do sistema</div>
+                        <button id="cleanupBtn" onclick="cleanupSystem()">
+                            <i class="fas fa-broom"></i> Limpar Dados
+                            <div class="loading-spinner" id="cleanup-spinner"></div>
+                        </button>
+                    </li>
+                    
+                    <li>
+                        <div class="action-description">Redefinir sistema (apenas em casos extremos)</div>
+                        <button class="danger" id="resetBtn" onclick="resetSystem()">
+                            <i class="fas fa-exclamation-triangle"></i> Redefinir Sistema
+                            <div class="loading-spinner" id="reset-spinner"></div>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="settings-card settings-card--commercial">
+                <h2><i class="fas fa-money-check-alt"></i> Comercial de Assinaturas</h2>
+                <div id="pricingSuccess" class="success-message">
+                    <i class="fas fa-check-circle"></i> Configurações comerciais salvas com sucesso!
+                </div>
+                <div id="pricingError" class="error-message">Erro ao salvar configuração comercial.</div>
+                <form id="subscriptionPricingForm">
+                    <div class="form-group">
+                        <label for="priceMonthly">Plano Mensal (R$)</label>
+                        <input type="number" id="priceMonthly" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="priceQuarterly">Plano Trimestral (R$)</label>
+                        <input type="number" id="priceQuarterly" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pricePremium">Plano Premium (R$)</label>
+                        <input type="number" id="pricePremium" step="0.01" min="0">
+                        <div class="hint">Plano Premium é anual e recebe 5% de desconto automático na contratação.</div>
+                    </div>
+                    <div class="toggle-container">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="enablePremiumPlan">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="toggle-label">Habilitar plano premium</span>
+                    </div>
+                    <label class="toggle-label">Métodos de pagamento</label>
+                    <div class="permissions-grid">
+                        <label class="permission-item"><input type="checkbox" id="methodPix" checked> PIX</label>
+                        <label class="permission-item"><input type="checkbox" id="methodBoleto"> Boleto</label>
+                        <label class="permission-item"><input type="checkbox" id="methodCard"> Cartão</label>
+                        <label class="permission-item"><input type="checkbox" id="methodTransfer"> Transferência</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="pixKeyConfig">Chave PIX</label>
+                        <input type="text" id="pixKeyConfig">
+                    </div>
+                    <div class="form-group">
+                        <label for="beneficiaryConfig">Beneficiário</label>
+                        <input type="text" id="beneficiaryConfig">
+                    </div>
+                    <div class="form-group">
+                        <label for="supportEmailConfig">Email de suporte/comprovante</label>
+                        <input type="email" id="supportEmailConfig">
+                    </div>
+                    <div class="toggle-container">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="promoEnabled">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="toggle-label">Habilitar promoção</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="promoTitle">Título da promoção</label>
+                        <input type="text" id="promoTitle" maxlength="260">
+                    </div>
+                    <div class="form-group">
+                        <label for="promoDiscountPercent">Desconto da promoção (%)</label>
+                        <input type="number" id="promoDiscountPercent" min="0" max="80" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="freeTrialDaysConfig">Dias grátis para primeiro registro</label>
+                        <input type="number" id="freeTrialDaysConfig" min="0" max="90" value="30">
+                    </div>
+                    <div class="form-group">
+                        <label for="lateGraceDaysConfig">Dias de prorrogação padrão por atraso</label>
+                        <input type="number" id="lateGraceDaysConfig" min="0" max="90" value="0">
+                    </div>
+                    <label class="toggle-label">Campanha Comercial Avançada</label>
+                    <div class="toggle-container">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="campaignEnabled">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="toggle-label">Habilitar campanha avançada</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="campaignTitle">Nome da campanha</label>
+                        <input type="text" id="campaignTitle" maxlength="220">
+                    </div>
+                    <div class="toggle-container">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="campaignReferralEnabled">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="toggle-label">Habilitar campanha de indicação</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="campaignReferralDiscountPercent">Desconto para novo cliente indicado (%)</label>
+                        <input type="number" id="campaignReferralDiscountPercent" min="0" max="40" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="campaignReferralCommissionPercent">Comissão para quem indicou (%)</label>
+                        <input type="number" id="campaignReferralCommissionPercent" min="0" max="40" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="campaignGoalMonthlyTarget">Meta mensal de clientes novos</label>
+                        <input type="number" id="campaignGoalMonthlyTarget" min="0" max="10000" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="campaignGoalBonusPercent">Desconto extra para cliente novo (%)</label>
+                        <input type="number" id="campaignGoalBonusPercent" min="0" max="30" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="campaignLadderJson">Escada de desconto (JSON)</label>
+                        <textarea id="campaignLadderJson" rows="3" placeholder='[{"minNewClients":5,"discountPercent":10}]'></textarea>
+                    </div>
+                    <div class="toggle-container">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="campaignSpecieEnabled">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="toggle-label">Acumular saldo para pagamento em espécie</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="campaignSpecieConversionPercent">Percentual convertido para saldo espécie (%)</label>
+                        <input type="number" id="campaignSpecieConversionPercent" min="1" max="100" value="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="campaignSpecieCashoutThreshold">Limite para liberar saque em espécie (R$)</label>
+                        <input type="number" id="campaignSpecieCashoutThreshold" min="0" step="0.01" value="300">
+                    </div>
+                    <div class="form-group">
+                        <label for="campaignSpecieMinCashout">Saque mínimo (R$)</label>
+                        <input type="number" id="campaignSpecieMinCashout" min="0" step="0.01" value="50">
+                    </div>
+                    <button type="submit">
+                        <i class="fas fa-save"></i> Salvar Comercial de Assinaturas
+                        <div class="loading-spinner" id="pricing-spinner"></div>
+                    </button>
+                </form>
+                <div style="margin-top:14px;">
+                    <label class="toggle-label">Matriz de permissões por status</label>
+                    <table class="permission-matrix">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Leitura</th>
+                                <th>Gravação/Edição/Exclusão</th>
+                                <th>Ação recomendada</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>active</td><td>Permitida</td><td>Permitida</td><td>Operação normal</td></tr>
+                            <tr><td>trial_active</td><td>Permitida</td><td>Permitida</td><td>Operação normal (período de teste)</td></tr>
+                            <tr><td>pending</td><td>Permitida</td><td>Bloqueada</td><td>Aguardar aprovação administrativa</td></tr>
+                            <tr><td>pending_grace</td><td>Permitida</td><td>Bloqueada</td><td>Regularizar antes do bloqueio</td></tr>
+                            <tr><td>blocked</td><td>Permitida</td><td>Bloqueada</td><td>Contato com suporte/admin</td></tr>
+                            <tr><td>expired</td><td>Permitida</td><td>Bloqueada</td><td>Renovar assinatura</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top:16px;">
+                    <label class="toggle-label">Auditoria de alterações da campanha</label>
+                    <div class="permissions-grid" style="margin-top:8px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="campaignAuditActorFilter">Filtrar por ator (UID)</label>
+                            <select id="campaignAuditActorFilter"><option value="">Todos</option></select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="campaignAuditStartDate">Período inicial</label>
+                            <input type="date" id="campaignAuditStartDate">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="campaignAuditEndDate">Período final</label>
+                            <input type="date" id="campaignAuditEndDate">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="campaignAuditFieldFilter">Buscar campo alterado</label>
+                            <input type="text" id="campaignAuditFieldFilter" placeholder="Ex.: campaign.referral">
+                        </div>
+                    </div>
+                    <div class="audit-table-wrap">
+                        <table class="subusers-table">
+                            <thead>
+                                <tr>
+                                    <th>Quando</th>
+                                    <th>Quem</th>
+                                    <th>Alterações (campo a campo)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="campaignAuditTableBody">
+                                <tr><td colspan="3">Carregando auditoria...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;">
+                <form id="extendAccessForm">
+                    <div class="form-group">
+                        <label for="extendTargetUid">UID do usuário para prorrogar acesso</label>
+                        <input type="text" id="extendTargetUid" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="extendDays">Quantidade de dias de prorrogação</label>
+                        <input type="number" id="extendDays" min="1" max="365" value="3" required>
+                    </div>
+                    <button type="submit">
+                        <i class="fas fa-hourglass-half"></i> Prorrogar Assinatura
+                        <div class="loading-spinner" id="extend-spinner"></div>
+                    </button>
+                </form>
+            </div>
+
+            <div class="settings-card">
+                <h2><i class="fas fa-user-shield"></i> Perfil e Sub-usuários Admin</h2>
+                <div class="subusers-grid">
+                    <div class="admin-profile-card">
+                        <strong id="superAdminDisplay">Carregando perfil...</strong>
+                        <span id="superAdminMeta">Aguardando dados do administrador</span>
+                    </div>
+                    <form id="subUserForm">
+                        <div class="form-group">
+                            <label for="subDisplayName">Nome do sub-usuário</label>
+                            <input type="text" id="subDisplayName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="subEmail">Email</label>
+                            <input type="email" id="subEmail" autocomplete="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="subPassword">Senha inicial</label>
+                            <input type="password" id="subPassword" autocomplete="new-password" required minlength="6">
+                            <div class="hint">O sub-usuário deve trocar a senha no primeiro acesso.</div>
+                        </div>
+                        <label class="toggle-label">Permissões iniciais</label>
+                        <div class="permissions-grid">
+                            <label class="permission-item"><input type="checkbox" id="permDashboard" checked> Dashboard</label>
+                            <label class="permission-item"><input type="checkbox" id="permSubscriptions" checked> Assinaturas</label>
+                            <label class="permission-item"><input type="checkbox" id="permSettings"> Configurações</label>
+                        </div>
+                        <button type="submit" style="margin-top: 14px;">
+                            <i class="fas fa-user-plus"></i> Criar Sub-usuário
+                            <div class="loading-spinner" id="subuser-spinner"></div>
+                        </button>
+                    </form>
+                    <div>
+                        <label class="toggle-label">Sub-usuários cadastrados</label>
+                        <table class="subusers-table">
+                            <thead>
+                                <tr>
+                                    <th>Usuário</th>
+                                    <th>Email</th>
+                                    <th>Permissões</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subUsersTableBody">
+                                <tr><td colspan="4">Carregando sub-usuários...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script type="module">
+        import * as firebaseSvc from './firebaseService.js';
+        window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
+    </script>
+    <script src="menu-component.js?v=20260326"></script>
+    <script src="menu.js"></script>
+    <script>
+        function getAnyUid(user) {
+            return user && (user.uid || user.id || user.userId) ? String(user.uid || user.id || user.userId) : '';
+        }
+
+        function parseCurrentUserSafe() {
+            try {
+                const raw = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                return raw && typeof raw === 'object' ? raw : null;
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function parseUsersCacheSafe() {
+            try {
+                const raw = JSON.parse(localStorage.getItem('users') || '[]');
+                if (Array.isArray(raw)) return raw;
+                if (raw && typeof raw === 'object') return Object.values(raw);
+                return [];
+            } catch (_) {
+                return [];
+            }
+        }
+
+        async function hasSuperAdminAccess() {
+            if (window.isSuperAdminSession && typeof window.isSuperAdminSession === 'function') {
+                return !!(await window.isSuperAdminSession());
+            }
+            const currentUser = parseCurrentUserSafe();
+            return window.isSuperAdminUid ? window.isSuperAdminUid(getAnyUid(currentUser)) : false;
+        }
+
+        async function hasSettingsAdminAccess() {
+            if (await hasSuperAdminAccess()) return true;
+            if (window.hasAdminPageAccess && typeof window.hasAdminPageAccess === 'function') {
+                return !!(await window.hasAdminPageAccess('settings'));
+            }
+            return false;
+        }
+
+        function readPermissionsFromForm() {
+            return {
+                dashboard: document.getElementById('permDashboard').checked,
+                subscriptions: document.getElementById('permSubscriptions').checked,
+                settings: document.getElementById('permSettings').checked
+            };
+        }
+
+        function formatPermissions(permissions) {
+            const p = permissions || {};
+            const labels = [];
+            if (p.dashboard) labels.push('Dashboard');
+            if (p.subscriptions) labels.push('Assinaturas');
+            if (p.settings) labels.push('Configurações');
+            return labels.length ? labels.join(', ') : 'Sem permissões';
+        }
+
+        async function renderAdminProfile() {
+            const details = await getCurrentUserDetailsSafe();
+            const display = document.getElementById('superAdminDisplay');
+            const meta = document.getElementById('superAdminMeta');
+            if (!display || !meta) return;
+            if (!details) {
+                display.textContent = 'Perfil indisponível';
+                meta.textContent = 'Não foi possível carregar os dados do usuário.';
+                return;
+            }
+            const uid = getAnyUid(details);
+            const role = (await hasSuperAdminAccess()) ? 'Super Admin' : 'Sub-admin';
+            display.textContent = details.displayName || details.username || details.email || 'Administrador';
+            meta.textContent = `${role} • UID: ${uid || 'N/D'} • Company: ${details.companyId || 'sisweb_admin_core'}`;
+        }
+
+        function getSubUsersFromLocal() {
+            const users = parseUsersCacheSafe();
+            return users.filter((u) => {
+                const perms = u.adminPermissions || {};
+                const hasPerms = !!(perms.dashboard || perms.subscriptions || perms.settings);
+                return u.role === 'sub_admin' || hasPerms || u.adminOwnerUid;
+            });
+        }
+
+        let responsiveTableHydrationScheduled = false;
+
+        function hydrateResponsiveTable(tableEl) {
+            if (!tableEl) return;
+            const headers = Array.from(tableEl.querySelectorAll('thead th')).map((th) => String(th.textContent || '').trim());
+            if (!headers.length) return;
+            tableEl.querySelectorAll('tbody tr').forEach((tr) => {
+                tr.querySelectorAll('td').forEach((td, index) => {
+                    if (td.hasAttribute('colspan')) {
+                        td.removeAttribute('data-label');
+                        return;
+                    }
+                    const label = headers[index] || '';
+                    if (label) td.setAttribute('data-label', label);
+                });
+            });
+            tableEl.classList.add('responsive-stack');
+        }
+
+        function scheduleResponsiveTablesHydration() {
+            if (responsiveTableHydrationScheduled) return;
+            responsiveTableHydrationScheduled = true;
+            requestAnimationFrame(() => {
+                responsiveTableHydrationScheduled = false;
+                document.querySelectorAll('.subusers-table').forEach((tableEl) => hydrateResponsiveTable(tableEl));
+            });
+        }
+
+        function renderSubUsersTable() {
+            const tbody = document.getElementById('subUsersTableBody');
+            if (!tbody) return;
+            const rows = getSubUsersFromLocal();
+            if (!rows.length) {
+                tbody.innerHTML = '<tr><td colspan="4">Nenhum sub-usuário cadastrado.</td></tr>';
+                scheduleResponsiveTablesHydration();
+                return;
+            }
+            tbody.innerHTML = rows.map((u) => {
+                const uid = getAnyUid(u);
+                const active = u.adminActive !== false;
+                return `
+                    <tr>
+                        <td>${u.displayName || u.username || 'Sub-admin'}</td>
+                        <td>${u.email || '-'}</td>
+                        <td>${formatPermissions(u.adminPermissions || {})}</td>
+                        <td>
+                            <div class="subuser-actions">
+                                <button type="button" onclick="toggleSubUserActive('${uid}', ${active ? 'false' : 'true'})">${active ? 'Desativar' : 'Ativar'}</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            scheduleResponsiveTablesHydration();
+        }
+
+        function persistLocalValue(storageKey, data) {
+            try {
+                if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {
+                    return window.SiswebStorage.write(storageKey, data) !== false;
+                }
+            } catch (_) {}
+            const payload = typeof data === 'string' ? data : JSON.stringify(data);
+            localStorage.setItem(storageKey, payload);
+            return true;
+        }
+
+        async function createSubUser(event) {
+            event.preventDefault();
+            if (!(await hasSuperAdminAccess())) {
+                alert('Apenas o super admin pode criar sub-usuários.');
+                return;
+            }
+            const spinner = document.getElementById('subuser-spinner');
+            spinner.style.display = 'block';
+            try {
+                const payload = {
+                    displayName: document.getElementById('subDisplayName').value.trim(),
+                    email: document.getElementById('subEmail').value.trim(),
+                    password: document.getElementById('subPassword').value,
+                    permissions: readPermissionsFromForm()
+                };
+                if (!payload.displayName || !payload.email || !payload.password) {
+                    throw new Error('Preencha todos os campos obrigatórios do sub-usuário.');
+                }
+                let createdUid = '';
+                if (window.firebaseService && typeof window.firebaseService.createAdminSubUser === 'function') {
+                    const result = await window.firebaseService.createAdminSubUser(payload);
+                    if (!result.success) throw new Error(result.error || 'Falha ao criar sub-usuário.');
+                    createdUid = result.data && result.data.user ? result.data.user.uid : '';
+                }
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const exists = users.find((u) => u.email === payload.email);
+                if (!exists) {
+                    users.push({
+                        uid: createdUid || `local-${Date.now()}`,
+                        email: payload.email,
+                        displayName: payload.displayName,
+                        username: payload.displayName,
+                        role: 'sub_admin',
+                        companyId: 'sisweb_admin_core',
+                        adminOwnerUid: getAnyUid(await getCurrentUserDetailsSafe()),
+                        adminPermissions: payload.permissions,
+                        adminActive: true,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    });
+                }
+                persistLocalValue('users', users);
+                const roles = JSON.parse(localStorage.getItem('roles') || '{}');
+                const roleUid = createdUid || (users.find((u) => u.email === payload.email)?.uid);
+                if (roleUid) {
+                    roles[String(roleUid)] = {
+                        role: 'sub_admin',
+                        active: true,
+                        ownerUid: getAnyUid(await getCurrentUserDetailsSafe()),
+                        permissions: payload.permissions,
+                        updatedAt: new Date().toISOString()
+                    };
+                    persistLocalValue('roles', roles);
+                }
+                document.getElementById('subUserForm').reset();
+                document.getElementById('permDashboard').checked = true;
+                document.getElementById('permSubscriptions').checked = true;
+                document.getElementById('permSettings').checked = false;
+                renderSubUsersTable();
+                alert('Sub-usuário criado com sucesso.');
+            } catch (error) {
+                alert(error.message || 'Erro ao criar sub-usuário.');
+            } finally {
+                spinner.style.display = 'none';
+            }
+        }
+
+        window.toggleSubUserActive = async function(uid, activeFlag) {
+            try {
+                if (!(await hasSuperAdminAccess())) {
+                    alert('Apenas o super admin pode alterar status de sub-usuário.');
+                    return;
+                }
+                const users = parseUsersCacheSafe();
+                const index = users.findIndex((u) => String(getAnyUid(u)) === String(uid));
+                if (index < 0) {
+                    alert('Sub-usuário não encontrado.');
+                    return;
+                }
+                const nextActive = activeFlag === true || activeFlag === 'true';
+                users[index].adminActive = nextActive;
+                users[index].updatedAt = new Date().toISOString();
+                persistLocalValue('users', users);
+                const roles = JSON.parse(localStorage.getItem('roles') || '{}');
+                const role = roles[String(uid)] || {};
+                roles[String(uid)] = {
+                    ...role,
+                    active: nextActive,
+                    permissions: users[index].adminPermissions || role.permissions || {},
+                    updatedAt: new Date().toISOString()
+                };
+                persistLocalValue('roles', roles);
+                if (window.firebaseService && typeof window.firebaseService.updateAdminSubUserPermissions === 'function') {
+                    await window.firebaseService.updateAdminSubUserPermissions(uid, users[index].adminPermissions || {}, nextActive);
+                }
+                renderSubUsersTable();
+            } catch (error) {
+                alert(error.message || 'Erro ao atualizar sub-usuário.');
+            }
+        };
+
+        // Verificar se o usuário é administrador
+        async function checkAdminAccess() {
+            try {
+                const isAdmin = await hasSettingsAdminAccess();
+                if (isAdmin) return true;
+                alert('Acesso restrito. Você não tem permissões de administrador.');
+                window.location.href = 'index.html';
+                return false;
+            } catch (error) {
+                console.error('Erro ao verificar permissões de admin:', error);
+                alert('Erro ao verificar permissões. Por favor, faça login novamente.');
+                window.location.href = 'login.html';
+                return false;
+            }
+        }
+        
+        // Função para alterar a senha do administrador
+        async function changeAdminPassword(currentPassword, newPassword) {
+            try {
+                // Mostrar spinner
+                document.getElementById('password-spinner').style.display = 'block';
+                
+                // Esconder mensagens
+                document.getElementById('passwordSuccess').style.display = 'none';
+                document.getElementById('passwordError').style.display = 'none';
+                
+                // Verificar se o Firebase está disponível
+                if (window._FIREBASE_CONNECTED === false) {
+                    throw new Error('O sistema está offline. Tente novamente mais tarde.');
+                }
+                
+                // Verificar se o firebaseService está disponível
+                if (!window.firebaseService) {
+                    console.error("firebaseService não está definido no objeto window");
+                    throw new Error('Serviço de autenticação não disponível. Tente recarregar a página.');
+                }
+                
+                console.log("🔒 Iniciando processo de alteração de senha para administrador");
+                
+                // Tentar obter usuário atual - primeiro usando o método direto
+                let currentUser;
+                
+                try {
+                    if (typeof window.firebaseService.getCurrentUser === 'function') {
+                        currentUser = await window.firebaseService.getCurrentUser();
+                    } else if (window.firebaseService.authService && 
+                               typeof window.firebaseService.authService.getCurrentUser === 'function') {
+                        currentUser = await window.firebaseService.authService.getCurrentUser();
+                    } else {
+                        throw new Error('Método getCurrentUser não está disponível');
+                    }
+                } catch (getUserError) {
+                    console.error("❌ Erro ao obter usuário:", getUserError);
+                    throw new Error('Não foi possível obter informações do usuário atual. Tente fazer login novamente.');
+                }
+                
+                console.log("👤 Usuário atual:", currentUser ? currentUser.email : "Nenhum");
+                
+                if (!currentUser || !(window.isSuperAdminUid && window.isSuperAdminUid(getAnyUid(currentUser)))) {
+                    throw new Error('Você não tem permissões para alterar a senha de administrador.');
+                }
+                
+                // Reautenticar o usuário (necessário para operações sensíveis)
+                console.log("🔑 Reautenticando usuário...");
+                
+                let credential;
+                try {
+                    // Tentar o método direto primeiro
+                    if (typeof window.firebaseService.getCredential === 'function') {
+                        credential = await window.firebaseService.getCredential(currentUser.email, currentPassword);
+                    } 
+                    // Caso contrário, tentar via authService
+                    else if (window.firebaseService.authService && 
+                            typeof window.firebaseService.authService.getCredential === 'function') {
+                        credential = await window.firebaseService.authService.getCredential(currentUser.email, currentPassword);
+                    } else {
+                        throw new Error('Método getCredential não está disponível');
+                    }
+                } catch (credentialError) {
+                    console.error("❌ Erro ao obter credencial:", credentialError);
+                    throw new Error('Não foi possível criar credenciais. Verifique sua senha atual.');
+                }
+                
+                try {
+                    // Tentar reautenticar usando o método direto
+                    if (typeof window.firebaseService.reauthenticate === 'function') {
+                        await window.firebaseService.reauthenticate(credential);
+                    } 
+                    // Caso contrário, tentar via authService
+                    else if (window.firebaseService.authService && 
+                            typeof window.firebaseService.authService.reauthenticate === 'function') {
+                        await window.firebaseService.authService.reauthenticate(credential);
+                    } else {
+                        throw new Error('Método reauthenticate não está disponível');
+                    }
+                } catch (reauthError) {
+                    console.error("❌ Erro ao reautenticar:", reauthError);
+                    throw new Error('Falha na reautenticação. Verifique sua senha atual.');
+                }
+                
+                console.log("✅ Reautenticação bem-sucedida");
+                
+                // Alterar a senha
+                console.log("🔄 Atualizando senha...");
+                
+                try {
+                    // Tentar atualizar usando o método direto
+                    if (typeof window.firebaseService.updatePassword === 'function') {
+                        await window.firebaseService.updatePassword(newPassword);
+                    } 
+                    // Caso contrário, tentar via authService
+                    else if (window.firebaseService.authService && 
+                            typeof window.firebaseService.authService.updatePassword === 'function') {
+                        await window.firebaseService.authService.updatePassword(newPassword);
+                    } else {
+                        throw new Error('Método updatePassword não está disponível');
+                    }
+                } catch (updateError) {
+                    console.error("❌ Erro ao atualizar senha:", updateError);
+                    throw updateError;
+                }
+                
+                console.log("✅ Senha atualizada com sucesso");
+                
+                // Mostrar mensagem de sucesso
+                document.getElementById('passwordSuccess').style.display = 'block';
+                
+                // Limpar campos
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+                
+                // Salvar data da última alteração de senha
+                persistLocalValue('lastPasswordChange', Date.now().toString());
+                
+                return true;
+            } catch (error) {
+                console.error('❌ Erro ao alterar senha:', error);
+                
+                // Mostrar mensagem de erro com detalhes mais específicos
+                const errorElement = document.getElementById('passwordError');
+                
+                if (error.code) {
+                    // Erros específicos do Firebase
+                    switch (error.code) {
+                        case 'auth/wrong-password':
+                            errorElement.textContent = 'Senha atual incorreta. Por favor, tente novamente.';
+                            break;
+                        case 'auth/requires-recent-login':
+                            errorElement.textContent = 'Para esta operação sensível, é necessário fazer login novamente.';
+                            break;
+                        case 'auth/user-not-found':
+                            errorElement.textContent = 'Usuário não encontrado.';
+                            break;
+                        default:
+                            errorElement.textContent = error.message || 'Erro ao alterar a senha.';
+                    }
+                } else {
+                    errorElement.textContent = error.message || 'Erro ao alterar a senha.';
+                }
+                
+                errorElement.style.display = 'block';
+                return false;
+            } finally {
+                // Esconder spinner
+                document.getElementById('password-spinner').style.display = 'none';
+            }
+        }
+        
+        // Função para salvar configurações do sistema
+        async function saveSystemSettings(settings) {
+            try {
+                // Mostrar spinner
+                document.getElementById('system-spinner').style.display = 'block';
+                
+                // Esconder mensagens
+                document.getElementById('systemSuccess').style.display = 'none';
+                document.getElementById('systemError').style.display = 'none';
+                
+                // Obter configurações atuais
+                const systemConfig = JSON.parse(localStorage.getItem('systemConfig') || '{}');
+                
+                // Atualizar configurações
+                const updatedConfig = {
+                    ...systemConfig,
+                    ...settings,
+                    updatedAt: Date.now()
+                };
+                
+                // Salvar no localStorage
+                persistLocalValue('systemConfig', updatedConfig);
+                
+                // Na implementação real, salvar no Firebase também
+                
+                // Mostrar mensagem de sucesso
+                document.getElementById('systemSuccess').style.display = 'block';
+                
+                return true;
+            } catch (error) {
+                console.error('Erro ao salvar configurações:', error);
+                
+                // Mostrar mensagem de erro
+                const errorElement = document.getElementById('systemError');
+                errorElement.textContent = error.message || 'Erro ao salvar configurações.';
+                errorElement.style.display = 'block';
+                
+                return false;
+            } finally {
+                // Esconder spinner
+                document.getElementById('system-spinner').style.display = 'none';
+            }
+        }
+
+        function getDefaultSubscriptionSettings() {
+            return {
+                plans: {
+                    monthly: { amount: 19.9, enabled: true },
+                    quarterly: { amount: 59.9, enabled: true },
+                    premium: { amount: 228.0, enabled: false }
+                },
+                paymentMethods: {
+                    pix: true,
+                    boleto: false,
+                    card: false,
+                    transfer: false
+                },
+                paymentMeta: {
+                    pixKey: '',
+                    beneficiary: '',
+                    supportEmail: ''
+                },
+                promotion: {
+                    enabled: false,
+                    title: '',
+                    discountPercent: 0
+                },
+                campaign: {
+                    enabled: false,
+                    title: 'Campanha Comercial',
+                    discountLadder: [],
+                    newClientGoal: {
+                        monthlyTarget: 0,
+                        bonusPercent: 0
+                    },
+                    specieBalance: {
+                        enabled: false,
+                        conversionPercent: 10,
+                        cashoutThreshold: 300,
+                        minCashout: 50
+                    },
+                    referral: {
+                        enabled: false,
+                        discountPercentForNewClient: 0,
+                        commissionPercentForReferrer: 0
+                    }
+                },
+                freeTrialDays: 30,
+                lateGraceDays: 0
+            };
+        }
+
+        function parseDiscountLadderJson(rawText) {
+            const text = String(rawText || '').trim();
+            if (!text) return [];
+            const parsed = JSON.parse(text);
+            if (!Array.isArray(parsed)) throw new Error('Escada de desconto precisa ser uma lista JSON.');
+            return parsed.map((item) => ({
+                minNewClients: parseInt(item && item.minNewClients, 10) || 0,
+                discountPercent: parseInt(item && item.discountPercent, 10) || 0
+            }));
+        }
+
+        function readSubscriptionSettingsFromForm() {
+            return {
+                plans: {
+                    monthly: {
+                        amount: parseFloat(document.getElementById('priceMonthly').value),
+                        enabled: true
+                    },
+                    quarterly: {
+                        amount: parseFloat(document.getElementById('priceQuarterly').value),
+                        enabled: true
+                    },
+                    premium: {
+                        amount: parseFloat(document.getElementById('pricePremium').value || '0'),
+                        enabled: document.getElementById('enablePremiumPlan').checked
+                    }
+                },
+                paymentMethods: {
+                    pix: document.getElementById('methodPix').checked,
+                    boleto: document.getElementById('methodBoleto').checked,
+                    card: document.getElementById('methodCard').checked,
+                    transfer: document.getElementById('methodTransfer').checked
+                },
+                paymentMeta: {
+                    pixKey: document.getElementById('pixKeyConfig').value.trim(),
+                    beneficiary: document.getElementById('beneficiaryConfig').value.trim(),
+                    supportEmail: document.getElementById('supportEmailConfig').value.trim()
+                },
+                promotion: {
+                    enabled: document.getElementById('promoEnabled').checked,
+                    title: document.getElementById('promoTitle').value.trim(),
+                    discountPercent: parseInt(document.getElementById('promoDiscountPercent').value || '0', 10)
+                },
+                campaign: {
+                    enabled: document.getElementById('campaignEnabled').checked,
+                    title: document.getElementById('campaignTitle').value.trim(),
+                    discountLadder: parseDiscountLadderJson(document.getElementById('campaignLadderJson').value),
+                    newClientGoal: {
+                        monthlyTarget: parseInt(document.getElementById('campaignGoalMonthlyTarget').value || '0', 10),
+                        bonusPercent: parseInt(document.getElementById('campaignGoalBonusPercent').value || '0', 10)
+                    },
+                    specieBalance: {
+                        enabled: document.getElementById('campaignSpecieEnabled').checked,
+                        conversionPercent: parseInt(document.getElementById('campaignSpecieConversionPercent').value || '10', 10),
+                        cashoutThreshold: parseFloat(document.getElementById('campaignSpecieCashoutThreshold').value || '300'),
+                        minCashout: parseFloat(document.getElementById('campaignSpecieMinCashout').value || '50')
+                    },
+                    referral: {
+                        enabled: document.getElementById('campaignReferralEnabled').checked,
+                        discountPercentForNewClient: parseInt(document.getElementById('campaignReferralDiscountPercent').value || '0', 10),
+                        commissionPercentForReferrer: parseInt(document.getElementById('campaignReferralCommissionPercent').value || '0', 10)
+                    }
+                },
+                freeTrialDays: parseInt(document.getElementById('freeTrialDaysConfig').value || '0', 10),
+                lateGraceDays: parseInt(document.getElementById('lateGraceDaysConfig').value || '0', 10)
+            };
+        }
+
+        function applySubscriptionSettingsToForm(settings) {
+            const d = getDefaultSubscriptionSettings();
+            const source = settings || {};
+            const s = {
+                ...d,
+                ...source,
+                plans: { ...d.plans, ...(source.plans || {}) },
+                paymentMethods: { ...d.paymentMethods, ...(source.paymentMethods || {}) },
+                paymentMeta: { ...d.paymentMeta, ...(source.paymentMeta || {}) },
+                promotion: { ...d.promotion, ...(source.promotion || {}) },
+                campaign: {
+                    ...d.campaign,
+                    ...(source.campaign || {}),
+                    newClientGoal: { ...d.campaign.newClientGoal, ...((source.campaign || {}).newClientGoal || {}) },
+                    specieBalance: { ...d.campaign.specieBalance, ...((source.campaign || {}).specieBalance || {}) },
+                    referral: { ...d.campaign.referral, ...((source.campaign || {}).referral || {}) }
+                }
+            };
+            const plans = s.plans || {};
+            const methods = s.paymentMethods || {};
+            const paymentMeta = s.paymentMeta || {};
+            const promo = s.promotion || {};
+            const campaign = s.campaign || {};
+            const campaignGoal = campaign.newClientGoal || {};
+            const specie = campaign.specieBalance || {};
+            const referral = campaign.referral || {};
+            document.getElementById('priceMonthly').value = Number((plans.monthly && plans.monthly.amount) || 19.9);
+            document.getElementById('priceQuarterly').value = Number((plans.quarterly && plans.quarterly.amount) || (plans.annual && plans.annual.amount) || 59.9);
+            document.getElementById('pricePremium').value = Number((plans.premium && plans.premium.amount) || 228.0);
+            document.getElementById('enablePremiumPlan').checked = !!(plans.premium && plans.premium.enabled);
+            document.getElementById('methodPix').checked = methods.pix !== false;
+            document.getElementById('methodBoleto').checked = !!methods.boleto;
+            document.getElementById('methodCard').checked = !!methods.card;
+            document.getElementById('methodTransfer').checked = !!methods.transfer;
+            document.getElementById('pixKeyConfig').value = paymentMeta.pixKey || '';
+            document.getElementById('beneficiaryConfig').value = paymentMeta.beneficiary || '';
+            document.getElementById('supportEmailConfig').value = paymentMeta.supportEmail || '';
+            document.getElementById('promoEnabled').checked = !!promo.enabled;
+            document.getElementById('promoTitle').value = promo.title || '';
+            document.getElementById('promoDiscountPercent').value = Number(promo.discountPercent || 0);
+            document.getElementById('freeTrialDaysConfig').value = parseInt(s.freeTrialDays || 0, 10);
+            document.getElementById('lateGraceDaysConfig').value = parseInt(s.lateGraceDays || 0, 10);
+            document.getElementById('campaignEnabled').checked = !!campaign.enabled;
+            document.getElementById('campaignTitle').value = campaign.title || '';
+            document.getElementById('campaignGoalMonthlyTarget').value = parseInt(campaignGoal.monthlyTarget || 0, 10);
+            document.getElementById('campaignGoalBonusPercent').value = parseInt(campaignGoal.bonusPercent || 0, 10);
+            document.getElementById('campaignLadderJson').value = JSON.stringify(Array.isArray(campaign.discountLadder) ? campaign.discountLadder : [], null, 2);
+            document.getElementById('campaignSpecieEnabled').checked = !!specie.enabled;
+            document.getElementById('campaignSpecieConversionPercent').value = parseInt(specie.conversionPercent || 10, 10);
+            document.getElementById('campaignSpecieCashoutThreshold').value = Number(specie.cashoutThreshold || 300);
+            document.getElementById('campaignSpecieMinCashout').value = Number(specie.minCashout || 50);
+            document.getElementById('campaignReferralEnabled').checked = !!referral.enabled;
+            document.getElementById('campaignReferralDiscountPercent').value = parseInt(referral.discountPercentForNewClient || 0, 10);
+            document.getElementById('campaignReferralCommissionPercent').value = parseInt(referral.commissionPercentForReferrer || 0, 10);
+        }
+
+        let campaignAuditItems = [];
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function flattenAuditObject(input, prefix = '') {
+            const source = input && typeof input === 'object' ? input : {};
+            const entries = {};
+            Object.keys(source).forEach((key) => {
+                const value = source[key];
+                const path = prefix ? `${prefix}.${key}` : key;
+                if (Array.isArray(value)) {
+                    entries[path] = JSON.stringify(value);
+                    return;
+                }
+                if (value && typeof value === 'object') {
+                    const nested = flattenAuditObject(value, path);
+                    Object.keys(nested).forEach((nestedKey) => {
+                        entries[nestedKey] = nested[nestedKey];
+                    });
+                    return;
+                }
+                entries[path] = value;
+            });
+            return entries;
+        }
+
+        function formatAuditValue(value) {
+            if (value === undefined) return '(vazio)';
+            if (value === null) return '(nulo)';
+            if (value === '') return '(vazio)';
+            if (typeof value === 'boolean') return value ? 'true' : 'false';
+            return String(value);
+        }
+
+        function buildFieldDiffLines(beforeObj, afterObj) {
+            const beforeFlat = flattenAuditObject(beforeObj || {});
+            const afterFlat = flattenAuditObject(afterObj || {});
+            const keys = Array.from(new Set([...Object.keys(beforeFlat), ...Object.keys(afterFlat)])).sort();
+            return keys
+                .filter((path) => formatAuditValue(beforeFlat[path]) !== formatAuditValue(afterFlat[path]))
+                .map((path) => ({
+                    path,
+                    before: formatAuditValue(beforeFlat[path]),
+                    after: formatAuditValue(afterFlat[path])
+                }));
+        }
+
+        function itemMatchesAuditFilter(item, actorFilter, startDate, endDate) {
+            if (actorFilter && String(item.actorUid || '') !== actorFilter) return false;
+            const atDate = item.at ? new Date(item.at) : null;
+            if (!atDate || Number.isNaN(atDate.getTime())) return false;
+            if (startDate) {
+                const start = new Date(`${startDate}T00:00:00`);
+                if (atDate < start) return false;
+            }
+            if (endDate) {
+                const end = new Date(`${endDate}T23:59:59`);
+                if (atDate > end) return false;
+            }
+            return true;
+        }
+
+        function renderCampaignAuditTable() {
+            const tbody = document.getElementById('campaignAuditTableBody');
+            if (!tbody) return;
+            const actorFilter = (document.getElementById('campaignAuditActorFilter') || {}).value || '';
+            const startDate = (document.getElementById('campaignAuditStartDate') || {}).value || '';
+            const endDate = (document.getElementById('campaignAuditEndDate') || {}).value || '';
+            const fieldFilter = String((document.getElementById('campaignAuditFieldFilter') || {}).value || '').trim().toLowerCase();
+            const filteredByDateActor = campaignAuditItems.filter((item) => itemMatchesAuditFilter(item, actorFilter, startDate, endDate));
+            const renderedRows = filteredByDateActor.map((item) => {
+                const at = item.at ? new Date(item.at).toLocaleString('pt-BR') : '-';
+                const actor = item.actorUid || '-';
+                const allDiffLines = buildFieldDiffLines(item.before, item.after);
+                const diffLines = fieldFilter
+                    ? allDiffLines.filter((line) => String(line.path || '').toLowerCase().includes(fieldFilter))
+                    : allDiffLines;
+                if (!diffLines.length) return '';
+                const previewText = diffLines.slice(0, 2).map((line) => escapeHtml(line.path)).join(' • ');
+                const diffHtml = `<details class="audit-entry-details"><summary>${diffLines.length} alteração(ões) ${previewText ? `• ${previewText}` : ''}</summary><div class="audit-diff">${diffLines.map((line) => `
+                    <div class="audit-diff-item">
+                        <div class="audit-diff-field">${escapeHtml(line.path)}</div>
+                        <div class="audit-diff-values">
+                            <div class="audit-before">${escapeHtml(line.before)}</div>
+                            <div class="audit-arrow">→</div>
+                            <div class="audit-after">${escapeHtml(line.after)}</div>
+                        </div>
+                    </div>
+                `).join('')}</div></details>`;
+                return `<tr><td>${at}</td><td>${escapeHtml(actor)}</td><td>${diffHtml}</td></tr>`;
+            }).filter(Boolean);
+            if (!renderedRows.length) {
+                tbody.innerHTML = '<tr><td colspan="3">Nenhuma alteração encontrada para os filtros aplicados.</td></tr>';
+                scheduleResponsiveTablesHydration();
+                return;
+            }
+            tbody.innerHTML = renderedRows.slice(0, 50).join('');
+            scheduleResponsiveTablesHydration();
+        }
+
+        function setupAdminSettingsAccordion() {
+            const cards = Array.from(document.querySelectorAll('.settings-container .settings-card'));
+            cards.forEach((card, index) => {
+                if (card.dataset.accordionReady === 'true') return;
+                const header = card.querySelector('h2');
+                if (!header) return;
+                const body = document.createElement('div');
+                body.className = 'settings-card-body';
+                let cursor = header.nextSibling;
+                while (cursor) {
+                    const next = cursor.nextSibling;
+                    body.appendChild(cursor);
+                    cursor = next;
+                }
+                card.appendChild(body);
+                const toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.className = 'accordion-toggle';
+                toggle.innerHTML = `<span>${header.innerHTML}</span><i class="fas fa-chevron-down accordion-chevron"></i>`;
+                header.innerHTML = '';
+                header.appendChild(toggle);
+                if (index > 0) card.classList.add('is-collapsed');
+                toggle.addEventListener('click', () => {
+                    card.classList.toggle('is-collapsed');
+                });
+                card.dataset.accordionReady = 'true';
+            });
+        }
+
+        function populateCampaignAuditActorFilter(items) {
+            const select = document.getElementById('campaignAuditActorFilter');
+            if (!select) return;
+            const current = select.value || '';
+            const actors = Array.from(new Set((items || []).map((item) => String(item.actorUid || '').trim()).filter(Boolean))).sort();
+            select.innerHTML = `<option value="">Todos</option>${actors.map((uid) => `<option value="${escapeHtml(uid)}">${escapeHtml(uid)}</option>`).join('')}`;
+            if (current && actors.includes(current)) select.value = current;
+        }
+
+        async function loadCampaignAudit() {
+            const tbody = document.getElementById('campaignAuditTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="3">Carregando auditoria...</td></tr>';
+            try {
+                if (!window.firebaseService || typeof window.firebaseService.getCampaignConfigAudit !== 'function') {
+                    throw new Error('Serviço de auditoria indisponível.');
+                }
+                const result = await window.firebaseService.getCampaignConfigAudit();
+                const items = result.success && result.data && Array.isArray(result.data.items) ? result.data.items : [];
+                if (!items.length) {
+                    campaignAuditItems = [];
+                    populateCampaignAuditActorFilter([]);
+                    tbody.innerHTML = '<tr><td colspan="3">Nenhuma alteração auditada ainda.</td></tr>';
+                    scheduleResponsiveTablesHydration();
+                    return;
+                }
+                campaignAuditItems = items;
+                populateCampaignAuditActorFilter(items);
+                renderCampaignAuditTable();
+            } catch (error) {
+                campaignAuditItems = [];
+                tbody.innerHTML = `<tr><td colspan="3">Falha ao carregar auditoria: ${(error && error.message) || error}</td></tr>`;
+                scheduleResponsiveTablesHydration();
+            }
+        }
+
+        async function loadSubscriptionSettings() {
+            try {
+                let config = getDefaultSubscriptionSettings();
+                if (window.firebaseService && typeof window.firebaseService.getSubscriptionSettings === 'function') {
+                    const result = await window.firebaseService.getSubscriptionSettings();
+                    if (result.success && result.data && result.data.settings) {
+                        config = result.data.settings;
+                        persistLocalValue('subscriptionSettingsCache', config);
+                    } else {
+                        const cached = JSON.parse(localStorage.getItem('subscriptionSettingsCache') || 'null');
+                        if (cached) config = cached;
+                    }
+                }
+                applySubscriptionSettingsToForm(config);
+            } catch (error) {
+                console.error('Erro ao carregar configuração comercial:', error);
+                const cached = JSON.parse(localStorage.getItem('subscriptionSettingsCache') || 'null');
+                applySubscriptionSettingsToForm(cached || getDefaultSubscriptionSettings());
+            }
+        }
+
+        async function saveSubscriptionSettings() {
+            const spinner = document.getElementById('pricing-spinner');
+            const successEl = document.getElementById('pricingSuccess');
+            const errorEl = document.getElementById('pricingError');
+            spinner.style.display = 'block';
+            successEl.style.display = 'none';
+            errorEl.style.display = 'none';
+            try {
+                const payload = readSubscriptionSettingsFromForm();
+                if (!payload.paymentMethods.pix && !payload.paymentMethods.boleto && !payload.paymentMethods.card && !payload.paymentMethods.transfer) {
+                    throw new Error('Ative pelo menos um método de pagamento.');
+                }
+                if (!window.firebaseService || typeof window.firebaseService.upsertSubscriptionSettings !== 'function') {
+                    throw new Error('Serviço de configuração comercial indisponível.');
+                }
+                const result = await window.firebaseService.upsertSubscriptionSettings(payload);
+                if (!result.success) throw new Error(result.error || 'Erro ao salvar configuração comercial.');
+                const savedSettings = result.data && result.data.settings ? result.data.settings : payload;
+                persistLocalValue('subscriptionSettingsCache', savedSettings);
+                applySubscriptionSettingsToForm(savedSettings);
+                await loadCampaignAudit();
+                successEl.style.display = 'block';
+            } catch (error) {
+                errorEl.textContent = error.message || 'Erro ao salvar configuração comercial.';
+                errorEl.style.display = 'block';
+            } finally {
+                spinner.style.display = 'none';
+            }
+        }
+
+        async function extendSubscriptionFromAdmin(event) {
+            event.preventDefault();
+            const spinner = document.getElementById('extend-spinner');
+            spinner.style.display = 'block';
+            try {
+                if (!(await hasSuperAdminAccess())) {
+                    throw new Error('Apenas super admin pode prorrogar assinaturas.');
+                }
+                const uid = document.getElementById('extendTargetUid').value.trim();
+                const days = parseInt(document.getElementById('extendDays').value || '0', 10);
+                if (!uid || !days || days < 1 || days > 365) {
+                    throw new Error('Informe UID válido e dias entre 1 e 365.');
+                }
+                if (!window.firebaseService || typeof window.firebaseService.extendSubscriptionAccess !== 'function') {
+                    throw new Error('Função de prorrogação indisponível no backend.');
+                }
+                const result = await window.firebaseService.extendSubscriptionAccess(uid, days);
+                if (!result.success) throw new Error(result.error || 'Falha ao prorrogar assinatura.');
+                alert(`Prorrogação aplicada com sucesso: +${days} dia(s).`);
+                document.getElementById('extendTargetUid').value = '';
+            } catch (error) {
+                alert(error.message || 'Erro ao prorrogar assinatura.');
+            } finally {
+                spinner.style.display = 'none';
+            }
+        }
+        
+        // Função para gerar backup do sistema
+        async function generateBackup() {
+            try {
+                const isAdmin = await checkAdminAccess();
+                if (!isAdmin) return;
+                if (!confirm('Tem certeza que deseja gerar um backup completo do sistema?')) return;
+                if (!confirm('ÚLTIMA CONFIRMAÇÃO: Este backup incluirá todos os dados. Continuar?')) return;
+                // Mostrar spinner
+                document.getElementById('backup-spinner').style.display = 'block';
+                
+                // Obter todos os dados do localStorage
+                const backup = {};
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    backup[key] = localStorage.getItem(key);
+                }
+                
+                // Converter para JSON
+                const backupJson = JSON.stringify(backup, null, 2);
+                
+                // Criar blob e link de download
+                const blob = new Blob([backupJson], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `sistema-backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Limpar
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 0);
+                
+                alert('Backup gerado com sucesso!');
+                
+            } catch (error) {
+                console.error('Erro ao gerar backup:', error);
+                alert('Erro ao gerar backup. Tente novamente.');
+            } finally {
+                // Esconder spinner
+                document.getElementById('backup-spinner').style.display = 'none';
+            }
+        }
+
+        // Função para triggar a seleção de arquivo de backup
+        async function triggerBackupImport() {
+            const isAdmin = await checkAdminAccess();
+            if (!isAdmin) return;
+            document.getElementById('backupFileInput').click();
+        }
+
+        // Função para lidar com a seleção do arquivo de backup
+        async function handleBackupFileSelect(input) {
+            const isAdmin = await checkAdminAccess();
+            if (!isAdmin) return;
+            const file = input.files[0];
+            if (!file) return;
+            
+            // Verificar se é um arquivo JSON
+            if (!file.name.toLowerCase().endsWith('.json')) {
+                alert('Por favor, selecione um arquivo de backup válido (formato .json)');
+                return;
+            }
+            
+            // Mostrar nome do arquivo selecionado
+            document.getElementById('selectedFileName').textContent = file.name;
+            
+            // Confirmar importação
+            if (confirm(`Deseja importar o backup "${file.name}"? ATENÇÃO: Esta ação irá SUBSTITUIR todos os dados atuais do sistema!`)) {
+                importBackup(file);
+            }
+        }
+
+        // Função para importar backup
+        async function importBackup(file) {
+            try {
+                // Mostrar spinner
+                document.getElementById('import-spinner').style.display = 'block';
+                
+                console.log('📥 Iniciando importação de backup:', file.name);
+                
+                // Ler o arquivo
+                const reader = new FileReader();
+                
+                reader.onload = async function(e) {
+                    try {
+                        // Parse do JSON
+                        const backupData = JSON.parse(e.target.result);
+                        
+                        console.log('📋 Dados do backup carregados:', Object.keys(backupData));
+                        
+                        // Validar estrutura do backup
+                        if (typeof backupData !== 'object' || backupData === null) {
+                            throw new Error('Formato de backup inválido');
+                        }
+                        
+                        // Confirmar novamente antes de aplicar
+                        if (!confirm('ÚLTIMA CONFIRMAÇÃO: Esta ação irá SUBSTITUIR TODOS os dados atuais. Continuar?')) {
+                            return;
+                        }
+                        
+                        // Preservar configurações críticas antes da importação
+                        const currentFirebaseConfig = localStorage.getItem('firebaseConfig');
+                        const currentAdminInfo = localStorage.getItem('currentUser');
+                        
+                        // Limpar localStorage atual
+                        localStorage.clear();
+                        
+                        // Aplicar dados do backup
+                        let importedKeys = 0;
+                        for (const [key, value] of Object.entries(backupData)) {
+                            try {
+                                persistLocalValue(key, value);
+                                importedKeys++;
+                            } catch (setError) {
+                                console.warn(`⚠️ Erro ao importar chave "${key}":`, setError);
+                            }
+                        }
+                        
+                        // Restaurar configurações críticas se não estavam no backup
+                        if (currentFirebaseConfig && !backupData.firebaseConfig) {
+                            persistLocalValue('firebaseConfig', currentFirebaseConfig);
+                            console.log('🔧 Configuração Firebase restaurada');
+                        }
+                        
+                        // Verificar se o admin está no backup, se não, restaurar
+                        const importedUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                        const hasAdmin = importedUsers.some((u) => window.isSuperAdminUid && window.isSuperAdminUid(getAnyUid(u)));
+                        
+                        if (!hasAdmin && currentAdminInfo) {
+                            try {
+                                const adminUser = JSON.parse(currentAdminInfo);
+                                if (window.isSuperAdminUid && window.isSuperAdminUid(getAnyUid(adminUser))) {
+                                    importedUsers.push(adminUser);
+                                    persistLocalValue('users', importedUsers);
+                                    console.log('👤 Usuário admin restaurado');
+                                }
+                            } catch (adminError) {
+                                console.warn('⚠️ Erro ao restaurar admin:', adminError);
+                            }
+                        }
+                        
+                        console.log(`✅ Backup importado com sucesso! ${importedKeys} itens restaurados`);
+                        
+                        // Mostrar resultado
+                        alert(`✅ Backup importado com sucesso!\n\n📊 Estatísticas:\n• ${importedKeys} itens restaurados\n• ${importedUsers.length} usuários importados\n\nA página será recarregada para aplicar as mudanças.`);
+                        
+                        // Recarregar página para aplicar mudanças
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                        
+                    } catch (parseError) {
+                        console.error('❌ Erro ao processar backup:', parseError);
+                        alert('Erro ao processar arquivo de backup. Verifique se o arquivo está correto e não foi corrompido.');
+                    } finally {
+                        document.getElementById('import-spinner').style.display = 'none';
+                    }
+                };
+                
+                reader.onerror = function() {
+                    console.error('❌ Erro ao ler arquivo');
+                    alert('Erro ao ler o arquivo de backup.');
+                    document.getElementById('import-spinner').style.display = 'none';
+                };
+                
+                // Iniciar leitura do arquivo
+                reader.readAsText(file);
+                
+            } catch (error) {
+                console.error('❌ Erro geral na importação:', error);
+                alert('Erro ao importar backup: ' + error.message);
+                document.getElementById('import-spinner').style.display = 'none';
+            }
+        }
+        
+        // Função para limpar dados expirados
+        async function cleanupSystem() {
+            try {
+                // Confirmar ação
+                if (!confirm('Tem certeza que deseja limpar dados expirados? Esta ação não pode ser desfeita.')) {
+                    return;
+                }
+                
+                // Mostrar spinner
+                document.getElementById('cleanup-spinner').style.display = 'block';
+                
+                // Obter usuários
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                // Remover assinaturas expiradas há mais de 90 dias
+                const ninetyDaysAgo = new Date();
+                ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+                
+                let cleaned = 0;
+                
+                users.forEach(user => {
+                    if (user.subscription && user.subscription.endDate) {
+                        const endDate = new Date(user.subscription.endDate);
+                        if (endDate < ninetyDaysAgo) {
+                            delete user.subscription;
+                            cleaned++;
+                        }
+                    }
+                });
+                
+                // Salvar usuários atualizados
+                persistLocalValue('users', users);
+                
+                alert(`Limpeza concluída! ${cleaned} assinaturas expiradas foram removidas.`);
+                
+            } catch (error) {
+                console.error('Erro ao limpar dados:', error);
+                alert('Erro ao limpar dados. Tente novamente.');
+            } finally {
+                // Esconder spinner
+                document.getElementById('cleanup-spinner').style.display = 'none';
+            }
+        }
+        
+        // Função para redefinir o sistema
+        async function resetSystem() {
+            try {
+                // Confirmar ação múltiplas vezes para evitar ações acidentais
+                if (!confirm('ATENÇÃO: Esta ação irá redefinir TODO o sistema e TODOS os dados serão perdidos. Esta ação NÃO PODE ser desfeita. Deseja continuar?')) {
+                    return;
+                }
+                
+                if (!confirm('ÚLTIMA CHANCE: Tem certeza ABSOLUTA que deseja redefinir o sistema? TODOS os dados serão PERMANENTEMENTE PERDIDOS.')) {
+                    return;
+                }
+                
+                // Solicitar senha do administrador
+                const adminPassword = prompt('Digite sua senha de administrador para confirmar a redefinição do sistema:');
+                if (!adminPassword) {
+                    return;
+                }
+                
+                // Mostrar spinner
+                document.getElementById('reset-spinner').style.display = 'block';
+                
+                // Verificar senha (na implementação real, autenticar com Firebase)
+                const currentUser = await authService.getCurrentUser();
+                
+                if (!currentUser || !(window.isSuperAdminUid && window.isSuperAdminUid(getAnyUid(currentUser)))) {
+                    throw new Error('Você não tem permissões para redefinir o sistema.');
+                }
+                
+                // Tentar reautenticar
+                try {
+                    const credential = await authService.getCredential(currentUser.email, adminPassword);
+                    await authService.reauthenticate(credential);
+                } catch (authError) {
+                    throw new Error('Senha incorreta. Operação cancelada.');
+                }
+                
+                // Preservar o usuário admin
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const adminUser = users.find((u) => window.isSuperAdminUid && window.isSuperAdminUid(getAnyUid(u)));
+                
+                // Limpar localStorage, mas preservar configuração Firebase
+                const firebaseConfig = localStorage.getItem('firebaseConfig');
+                
+                localStorage.clear();
+                
+                // Restaurar configuração Firebase
+                if (firebaseConfig) {
+                    persistLocalValue('firebaseConfig', firebaseConfig);
+                }
+                
+                // Restaurar apenas o usuário admin
+                if (adminUser) {
+                    persistLocalValue('users', [adminUser]);
+                }
+                
+                alert('Sistema redefinido com sucesso! A página será recarregada.');
+                
+                // Recarregar a página
+                window.location.reload();
+                
+            } catch (error) {
+                console.error('Erro ao redefinir sistema:', error);
+                alert('Erro ao redefinir sistema: ' + error.message);
+            } finally {
+                // Esconder spinner
+                document.getElementById('reset-spinner').style.display = 'none';
+            }
+        }
+        
+        // Carregar configurações atuais
+        function loadSystemSettings() {
+            try {
+                const systemConfig = JSON.parse(localStorage.getItem('systemConfig') || '{}');
+                
+                // Definir valores padrão se não existirem
+                const defaultConfig = {
+                    allowRegistrations: true,
+                    allowPasswordReset: true,
+                    autoApproveTrials: true,
+                    trialDays: 30
+                };
+                
+                const config = { ...defaultConfig, ...systemConfig };
+                
+                // Preencher formulário
+                document.getElementById('allowRegistrations').checked = config.allowRegistrations;
+                document.getElementById('allowPasswordReset').checked = config.allowPasswordReset;
+                document.getElementById('autoApproveTrials').checked = config.autoApproveTrials;
+                document.getElementById('trialDays').value = config.trialDays;
+                
+            } catch (error) {
+                console.error('Erro ao carregar configurações:', error);
+            }
+        }
+        
+        // Verificar se é hora de mudar a senha
+        function checkPasswordAge() {
+            try {
+                const lastPasswordChange = parseInt(localStorage.getItem('lastPasswordChange') || '0');
+                const now = Date.now();
+                const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000; // 90 dias em ms
+                
+                if (lastPasswordChange === 0 || (now - lastPasswordChange) > ninetyDaysMs) {
+                    // Mostrar alerta se a senha não foi alterada nos últimos 90 dias
+                    const passwordForm = document.getElementById('changePasswordForm');
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'error-message';
+                    alertDiv.style.display = 'block';
+                    alertDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Sua senha de administrador não foi alterada nos últimos 90 dias. Recomendamos alterá-la por segurança.';
+                    
+                    passwordForm.insertBefore(alertDiv, passwordForm.firstChild);
+                }
+                
+            } catch (error) {
+                console.error('Erro ao verificar idade da senha:', error);
+            }
+        }
+        
+        // Função auxiliar para obter detalhes do usuário atual
+        async function getCurrentUserDetailsSafe() {
+            // Verificar se a função está disponível no auth.js
+            if (typeof window.getCurrentUserDetails === 'function') {
+                return window.getCurrentUserDetails();
+            }
+            
+            // Fallback: buscar do localStorage
+            try {
+                const currentUser = parseCurrentUserSafe();
+                if (!currentUser) return null;
+                
+                const users = parseUsersCacheSafe();
+                const userDetails = users.find(u => u.email === currentUser.email);
+                
+                return {
+                    ...currentUser,
+                    ...(userDetails || {})
+                };
+            } catch (error) {
+                console.error('Erro ao obter detalhes do usuário:', error);
+                return null;
+            }
+        }
+        
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Verificar permissões de admin
+            const isAdmin = await checkAdminAccess();
+            
+            if (isAdmin) {
+                // Carregar configurações
+                loadSystemSettings();
+                await loadSubscriptionSettings();
+                await loadCampaignAudit();
+                renderAdminProfile();
+                renderSubUsersTable();
+                setupAdminSettingsAccordion();
+                scheduleResponsiveTablesHydration();
+                const profile = await getCurrentUserDetailsSafe();
+                const usernameField = document.getElementById('passwordUsername');
+                if (usernameField) {
+                    usernameField.value = (profile && profile.email) ? String(profile.email) : '';
+                }
+                
+                // Verificar idade da senha
+                checkPasswordAge();
+                
+                // Configurar formulário de alteração de senha
+                const passwordForm = document.getElementById('changePasswordForm');
+                passwordForm.addEventListener('submit', async function(event) {
+                    event.preventDefault();
+                    
+                    const currentPassword = document.getElementById('currentPassword').value;
+                    const newPassword = document.getElementById('newPassword').value;
+                    const confirmPassword = document.getElementById('confirmPassword').value;
+                    
+                    // Validações básicas
+                    if (!currentPassword || !newPassword || !confirmPassword) {
+                        document.getElementById('passwordError').textContent = 'Todos os campos são obrigatórios.';
+                        document.getElementById('passwordError').style.display = 'block';
+                        return;
+                    }
+                    
+                    if (newPassword !== confirmPassword) {
+                        document.getElementById('passwordError').textContent = 'As senhas não coincidem.';
+                        document.getElementById('passwordError').style.display = 'block';
+                        return;
+                    }
+                    
+                    if (newPassword.length < 8) {
+                        document.getElementById('passwordError').textContent = 'A nova senha deve ter pelo menos 8 caracteres.';
+                        document.getElementById('passwordError').style.display = 'block';
+                        return;
+                    }
+                    
+                    // Tentar alterar a senha
+                    await changeAdminPassword(currentPassword, newPassword);
+                });
+                
+                // Configurar formulário de configurações do sistema
+                const systemForm = document.getElementById('systemSettingsForm');
+                systemForm.addEventListener('submit', async function(event) {
+                    event.preventDefault();
+                    
+                    const allowRegistrations = document.getElementById('allowRegistrations').checked;
+                    const allowPasswordReset = document.getElementById('allowPasswordReset').checked;
+                    const autoApproveTrials = document.getElementById('autoApproveTrials').checked;
+                    const trialDays = parseInt(document.getElementById('trialDays').value);
+                    
+                    // Validações básicas
+                    if (isNaN(trialDays) || trialDays < 0 || trialDays > 90) {
+                        document.getElementById('systemError').textContent = 'O número de dias de teste deve ser entre 0 e 90.';
+                        document.getElementById('systemError').style.display = 'block';
+                        return;
+                    }
+                    
+                    // Salvar configurações
+                    await saveSystemSettings({
+                        allowRegistrations,
+                        allowPasswordReset,
+                        autoApproveTrials,
+                        trialDays
+                    });
+                });
+                const subUserForm = document.getElementById('subUserForm');
+                if (subUserForm) {
+                    subUserForm.addEventListener('submit', createSubUser);
+                }
+                const pricingForm = document.getElementById('subscriptionPricingForm');
+                if (pricingForm) {
+                    pricingForm.addEventListener('submit', async function(event) {
+                        event.preventDefault();
+                        await saveSubscriptionSettings();
+                    });
+                }
+                const auditActorFilter = document.getElementById('campaignAuditActorFilter');
+                if (auditActorFilter) auditActorFilter.addEventListener('change', renderCampaignAuditTable);
+                const auditStart = document.getElementById('campaignAuditStartDate');
+                if (auditStart) auditStart.addEventListener('change', renderCampaignAuditTable);
+                const auditEnd = document.getElementById('campaignAuditEndDate');
+                if (auditEnd) auditEnd.addEventListener('change', renderCampaignAuditTable);
+                const auditField = document.getElementById('campaignAuditFieldFilter');
+                if (auditField) auditField.addEventListener('input', renderCampaignAuditTable);
+                const extendForm = document.getElementById('extendAccessForm');
+                if (extendForm) {
+                    extendForm.addEventListener('submit', extendSubscriptionFromAdmin);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

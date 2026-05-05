@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Compras</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="ui-components.css">
+    <link rel="stylesheet" href="layout-comum.css">
+    <script src="menu-component.js?v=20260326"></script>
+    <script>
+        (function(){
+            try {
+                const raw = localStorage.getItem('company_info');
+                if (raw) {
+                    const obj = JSON.parse(raw);
+                    window.appTenantId = String(obj.id || obj.companyId || obj.slug || obj.nome || obj.name || 'default').replace(/\s+/g,'_').toLowerCase();
+                    if (window.firebaseService && typeof window.firebaseService.setTenantId === 'function') {
+                        window.firebaseService.setTenantId(window.appTenantId);
+                    }
+                }
+            } catch(_) {}
+        })();
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        /* Note: Container styles are now in layout-comum.css */
+
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .modal-header h2,
+        .modal-header h3 {
+            color: #fff !important; /* Força cor branca para os títulos dos modais */
+            text-align: left;
+            margin-bottom: 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            color: #7f8c8d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #2c3e50;
+            border-bottom-color: #3498db;
+            font-weight: bold;
+        }
+
+        .tab:hover {
+            background-color: #ecf0f1;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+            margin-bottom: 15px;
+        }
+
+        .form-group-small {
+            flex: 0 0 150px;
+        }
+
+        .form-group-large {
+            flex: 2;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #34495e;
+            font-weight: bold;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        /* Buttons - Mantendo compatibilidade global */
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary { 
+            background: #0d6efd; 
+            color: #fff; 
+        }
+        .btn-primary:hover { background: #0b5ed7; }
+        
+        .btn-secondary { 
+            background: #6c757d; 
+            color: #fff; 
+        }
+        .btn-secondary:hover { background: #5c636a; }
+        
+        .btn-success { 
+            background: #28a745; 
+            color: #fff; 
+        }
+        .btn-success:hover { background: #218838; }
+        
+        .btn-danger { 
+            background: #dc3545; 
+            color: #fff; 
+        }
+        .btn-danger:hover { background: #c82333; }
+        
+        .btn-warning { 
+            background: #ffc107; 
+            color: #212529; 
+        }
+        .btn-warning:hover { background: #e0a800; }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        #carrinhoItensTable th,
+        #carrinhoItensTable td {
+            padding: 2px 6px;
+            line-height: 1.1;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        #carrinhoItensTable tr {
+            height: 28px;
+        }
+
+        #carrinhoItensTable td:last-child {
+            white-space: nowrap;
+        }
+
+        #carrinhoItensTable td:last-child .btn-small {
+            padding: 2px 5px;
+            min-height: 22px;
+            height: 22px;
+            line-height: 1;
+            font-size: 11px;
+        }
+
+        #carrinhoItensTable td:last-child .btn-small i {
+            margin: 0;
+        }
+
+        #listaPedidosModal .modal-body {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #listaPedidosModal .search-box,
+        #listaPedidosModal .form-row {
+            flex-shrink: 0;
+        }
+
+        #listaPedidosModal .table-responsive {
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: 55vh;
+            overflow: auto;
+        }
+
+        #listaPedidosTable th,
+        #listaPedidosTable td {
+            padding: 2px 6px;
+            line-height: 1.1;
+            font-size: 13px;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        #listaPedidosTable tr {
+            height: 28px;
+        }
+
+        #listaPedidosTable td:nth-child(3) {
+            max-width: 280px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #listaPedidosTable thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #2c3e50;
+            color: #fff;
+        }
+
+        #listaPedidosModal #pedidosPagination {
+            flex-shrink: 0;
+            margin-top: 10px;
+        }
+
+        #listaPedidosModal #pedidosTable td:last-child {
+            white-space: nowrap;
+        }
+        #listaPedidosModal .pedido-numero-cell,
+        #listaPedidosModal .pedido-numero-head {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        #listaPedidosModal .pedido-select-item,
+        #listaPedidosModal #pedidosSelectAll {
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+        #listaPedidosModal .date-filter-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        #listaPedidosModal .date-filter-row .form-group {
+            margin-bottom: 0;
+        }
+        #listaPedidosModal .btn-print-selected {
+            white-space: nowrap;
+        }
+
+        #listaPedidosModal #pedidosTable .btn-small {
+            padding: 2px 5px;
+            min-height: 22px;
+            height: 22px;
+            line-height: 1;
+            font-size: 11px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .summary-box {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .summary-row:last-child {
+            margin-bottom: 0;
+            font-weight: bold;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+
+        /* Modal de Lista de Pedidos com Flexbox para Rolagem */
+        #listaPedidosModal .modal-content {
+            max-width: 1200px;
+            padding: 0;
+            margin: 2% auto;
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+        }
+
+        #listaPedidosModal .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1 1 auto;
+        }
+
+        #listaPedidosModal .table-container {
+            margin-top: 10px;
+            flex: 1 1 auto;
+            overflow: auto;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .payment-section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            background-color: #f9f9f9;
+        }
+
+        .payment-method {
+            margin-bottom: 15px;
+        }
+
+        .installment-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .installment-number {
+            flex: 0 0 50px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .installment-value {
+            flex: 1;
+        }
+
+        .installment-date {
+            flex: 1;
+        }
+
+        .alert {
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-pendente {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-aprovado {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-cancelado {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-entregue {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .search-box {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .search-box input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            flex: 1 1 280px;
+            max-width: none;
+        }
+
+        .search-box .inline-field {
+            flex: 0 0 220px;
+        }
+
+        .search-box .inline-field label {
+            display: block;
+            margin-bottom: 4px;
+            color: #34495e;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+            }
+
+            .form-group {
+                min-width: auto;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab {
+                flex: 1;
+                min-width: 120px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 5% auto;
+            }
+        }
+
+        /* Sistema de Toasts/Notificações */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            min-width: 300px;
+            max-width: 400px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.3s ease-out;
+            position: relative;
+        }
+
+        .toast.success {
+            border-left: 4px solid #28a745;
+        }
+
+        .toast.error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .toast.warning {
+            border-left: 4px solid #ffc107;
+        }
+
+        .toast.info {
+            border-left: 4px solid #17a2b8;
+        }
+
+        .toast-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .toast.success .toast-icon {
+            color: #28a745;
+        }
+
+        .toast.error .toast-icon {
+            color: #dc3545;
+        }
+
+        .toast.warning .toast-icon {
+            color: #ffc107;
+        }
+
+        .toast.info .toast-icon {
+            color: #17a2b8;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .toast-message {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .toast-close {
+            font-size: 20px;
+            color: #999;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            margin-left: 10px;
+            flex-shrink: 0;
+        }
+
+        .toast-close:hover {
+            color: #333;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        .toast.removing {
+            animation: slideOut 0.3s ease-out forwards;
+        }
+
+        /* Loading Overlay Global removido */
+
+        @media (max-width: 768px) {
+            .toast-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+            }
+            
+            .toast {
+                min-width: auto;
+                width: 100%;
+            }
+        }
+    </style>
+    <style>
+        .modal .columns-list { max-height: 320px; overflow: auto; border: 1px solid #ddd; border-radius: 4px; padding: 8px; background: #fff; }
+        .columns-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px; border-bottom: 1px solid #eee; }
+        .columns-item:last-child { border-bottom: none; }
+        .columns-item > span:first-child { flex: 1; color: #2c3e50; }
+        .columns-item > span:last-child { display: flex; align-items: center; gap: 8px; }
+        .columns-item button { padding: 2px 6px; }
+        #carrinhoItensTable { table-layout: fixed; }
+        tbody#itensTable td:nth-child(5) { display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
+        #listaPedidosTable { table-layout: fixed; }
+        #listaPedidosTable th:last-child { text-align: center; }
+        /* tbody#pedidosTable td:nth-child(6) { display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; } */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <main-menu></main-menu>
+
+        <h1>Sistema de Compras</h1>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('pedidos')">
+                <i class="fas fa-shopping-cart"></i> Pedidos de Compras
+            </button>
+            <button class="tab" onclick="showTab('clientes')">
+                <i class="fas fa-truck"></i> Fornecedores
+            </button>
+            <button class="tab" onclick="showTab('produtos')">
+                <i class="fas fa-box"></i> Produtos
+            </button>
+            <button class="tab" onclick="showTab('relatorios')">
+                <i class="fas fa-chart-bar"></i> Relatórios
+            </button>
+        </div>
+
+        <!-- Tab Pedidos de Venda -->
+        <div id="pedidos" class="tab-content active">
+            <div class="action-buttons">
+                <button onclick="novoPedido()" class="btn-primary">
+                    <i class="fas fa-plus"></i> Novo Pedido
+                </button>
+                <button onclick="listarPedidos()" class="btn-primary">
+                    <i class="fas fa-list"></i> Listar Pedidos
+                </button>
+            </div>
+
+            <form id="pedidoForm" style="display: none;">
+                <h2>Novo Pedido de Compra</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pedidoData">Data:</label>
+                        <input type="date" id="pedidoData" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="pedidoNumero">Número:</label>
+                        <input type="text" id="pedidoNumero" readonly>
+                    </div>
+                    <div class="form-group">
+                            <label for="pedidoStatus">Status:</label>
+                            <select id="pedidoStatus">
+                                <option value="pendente">Pendente</option>
+                                <option value="aprovado">Aprovado</option>
+                                <option value="entregue">Entregue</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group form-group-large">
+                        <label for="fornecedorSelect">Fornecedor:</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="text" id="fornecedorBusca" placeholder="Buscar fornecedor..." style="flex: 1;" oninput="filtrarFornecedoresSelect()">
+                            <select id="fornecedorSelect" style="flex: 1;">
+                                <option value="">Selecione um fornecedor</option>
+                            </select>
+                            <button type="button" onclick="abrirModalFornecedor()" class="btn-primary btn-small" title="Novo Fornecedor">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Itens da Compra</h3>
+                
+                <!-- Seleção do Tipo de Produto -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo de Produto:</label>
+                        <div class="product-type-selector" style="display: flex; gap: 20px; align-items: center; margin-top: 8px;">
+                            <label style="display: flex; align-items: center; gap: 5px; margin-bottom: 0; font-weight: normal;">
+                                <input type="radio" name="tipoProduto" value="manual" checked onchange="alterarTipoProduto('manual')">
+                                <span>Produto Manual</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; margin-bottom: 0; font-weight: normal;">
+                                <input type="radio" name="tipoProduto" value="romaneio" onchange="alterarTipoProduto('romaneio')">
+                                <span>Produto Romaneio</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; margin-bottom: 0; font-weight: normal;">
+                                <input type="radio" name="tipoProduto" value="cadastrado" onchange="alterarTipoProduto('cadastrado')">
+                                <span>Produto Cadastrado</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção para Produto Manual -->
+                <div id="secaoProdutoManual" class="tipo-produto-section">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="produtoManual">Nome do Produto:</label>
+                            <input type="text" id="produtoManual" placeholder="Digite o nome do produto">
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label for="quantidadeManual">Quantidade:</label>
+                            <input type="number" id="quantidadeManual" min="1" step="0.001">
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label for="unidadeManual">Unidade:</label>
+                            <select id="unidadeManual">
+                                <option value="UN">UN</option>
+                                <option value="DZ">DZ</option>
+                                <option value="PC">PC</option>
+                                <option value="m³">m³</option>
+                                <option value="m²">m²</option>
+                                <option value="LN">LN</option>
+                            </select>
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label for="precoManual">Preço Unit.:</label>
+                            <input type="text" id="precoManual" placeholder="R$ 0,00">
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label>&nbsp;</label>
+                            <button type="button" onclick="adicionarItemManual()" class="btn btn-success" style="width: 100%;">
+                                <i class="fas fa-plus"></i> Adicionar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção para Produto Romaneio -->
+                <div id="secaoProdutoRomaneio" class="tipo-produto-section" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tipoRomaneio">Tipo de Romaneio:</label>
+                            <select id="tipoRomaneio" onchange="carregarRomaneiosPorTipo()">
+                                <option value="">Selecione o tipo</option>
+                                <option value="romaneiosTL">Romaneio TL</option>
+                                <option value="romaneiosPct">Romaneio PCT</option>
+                                <option value="romaneiosPes">Romaneio PES</option>
+                                <option value="romaneiosTora">Romaneio TORA</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="romaneioSelect">Romaneio:</label>
+                            <select id="romaneioSelect" onchange="carregarDadosRomaneio()">
+                                <option value="">Selecione um romaneio</option>
+                            </select>
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label>&nbsp;</label>
+                            <button type="button" onclick="adicionarItensRomaneio()" class="btn-success">
+                                <i class="fas fa-plus"></i> Carregar Items
+                            </button>
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: center; padding-top: 25px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
+                                <input type="checkbox" id="agruparItensRomaneio" style="width: auto;">
+                                <span>Carregar apenas o Resumo (Agrupar por Espécie)</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview dos dados CONAMA -->
+                    <div id="previewConama" style="display: none; margin-top: 15px;">
+                        <h4 style="color: #2c3e50; margin-bottom: 10px;">Preview - Resumo CONAMA:</h4>
+                        <div id="listaConama" style="background: #f8f9fa; padding: 15px; border-radius: 4px; border: 1px solid #dee2e6;">
+                            <!-- Dados serão inseridos aqui -->
+                        </div>
+                    </div>
+                    
+                    <!-- Preview dos dados TORA -->
+                    <div id="previewTora" style="display: none; margin-top: 15px;">
+                        <h4 style="color: #2c3e50; margin-bottom: 10px;">Preview - Resumo TORA por Espécie:</h4>
+                        <div id="listaTora" style="background: #f8f9fa; padding: 15px; border-radius: 4px; border: 1px solid #dee2e6;">
+                            <!-- Dados serão inseridos aqui -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção para Produto Cadastrado (Original) -->
+                <div id="secaoProdutoCadastrado" class="tipo-produto-section" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="produtoSelect">Produto:</label>
+                            <select id="produtoSelect">
+                                <option value="">Selecione um produto</option>
+                            </select>
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label for="quantidade">Quantidade:</label>
+                            <input type="number" id="quantidade" min="1" step="0.001">
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label for="precoUnitario">Preço Unit.:</label>
+                            <input type="text" id="precoUnitario" placeholder="R$ 0,00">
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label>&nbsp;</label>
+                            <button type="button" onclick="adicionarItem()" class="btn-success">
+                                <i class="fas fa-plus"></i> Adicionar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Carrinho de Itens</h3>
+                
+                <div class="table-responsive">
+                    <table class="table" id="carrinhoItensTable">
+                        <colgroup>
+                            <col>
+                            <col style="width: 120px;">
+                            <col style="width: 140px;">
+                            <col style="width: 140px;">
+                            <col style="width: 130px;">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>Quantidade</th>
+                                <th>Preço Unit.</th>
+                                <th>Total</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itensTable">
+                            <tr>
+                                <td colspan="5" style="text-align: center;">Nenhum item adicionado</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="summary-box">
+                    <div class="summary-row">
+                        <span>Subtotal:</span>
+                        <span id="subtotal">R$ 0,00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Total Geral (Qtd.):</span>
+                        <span id="totalGeralQtd">0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Desconto:</span>
+                        <input type="text" id="desconto" value="R$ 0,00" style="width: 120px; text-align: right;">
+                    </div>
+                    <div class="summary-row">
+                        <span>Total Geral:</span>
+                        <span id="totalGeral">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <!-- Nova seção de Forma de Pagamento -->
+                <div class="contas-pagar-section" style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-top: 15px; background-color: #f9f9f9;">
+                    <h4 style="margin-bottom: 15px; color: #2c3e50;">Forma de Pagamento (Contas a Pagar)</h4>
+                    
+                    <!-- Formulário para adicionar conta -->
+                    <div class="form-row">
+                        <div class="form-group form-group-small">
+                            <label for="contaValor">Valor:</label>
+                            <input type="text" id="contaValor" placeholder="R$ 0,00" onInput="formatCurrencyInput(this)">
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label for="contaVencimento">Vencimento:</label>
+                            <input type="date" id="contaVencimento" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="contaTipo">Tipo:</label>
+                            <select id="contaTipo">
+                                <option value="pagar">Pagar</option>
+                                <option value="a_vista">À Vista</option>
+                                <option value="entrada">Entrada</option>
+                                <option value="parcela">Parcela</option>
+                                <option value="cheque_pre">Cheque-pré</option>
+                                <option value="boleto">Boleto</option>
+                                <option value="pix">Pix</option>
+                                <option value="cartao">Cartão</option>
+                                <option value="permuta">Permuta</option>
+                            </select>
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label for="numeroParcelas">Nº Parcelas:</label>
+                            <input type="text" id="numeroParcelas" placeholder="Ex.: 2x ou 30 60 90 120">
+                        </div>
+                        <div class="form-group">
+                            <label for="contaObservacao">Observação:</label>
+                            <input type="text" id="contaObservacao" placeholder="Ex: 1ª parcela, entrada, etc.">
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label>&nbsp;</label>
+                            <button type="button" onclick="adicionarContaPagar()" class="btn-primary">
+                                <i class="fas fa-plus"></i> Adicionar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Contas a Pagar -->
+                    <div id="contasPagarContainer" class="table-responsive">
+                        <table class="table" style="margin-top: 15px;">
+                            <thead>
+                                <tr>
+                                    <th>Valor</th>
+                                    <th>Dias</th>
+                                    <th>Vencimento</th>
+                                    <th>Tipo</th>
+                                    <th>Observação</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contasPagarTable">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; color: #666;">Nenhuma conta adicionada</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="summary-row" style="margin-top: 10px; justify-content: flex-end;">
+                            <span><strong>Total Contas: <span id="totalContasPagar">R$ 0,00</span></strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button type="button" onclick="salvarPedido(event)" class="btn-success">
+                        <i class="fas fa-save"></i> Salvar Pedido
+                    </button>
+                    <button type="button" onclick="cancelarPedido()" class="btn-danger">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tab Fornecedores -->
+        <div id="clientes" class="tab-content">
+            <div class="action-buttons">
+                <button onclick="window.location.href='fornecedor.html'" class="btn-primary">
+                    <i class="fas fa-external-link-alt"></i> Gerenciar Fornecedores
+                </button>
+            </div>
+            <p>Use o cadastro de fornecedores para manter sua base atualizada.</p>
+        </div>
+
+        <!-- Tab Produtos -->
+        <div id="produtos" class="tab-content">
+            <div class="action-buttons">
+                <button onclick="novoProduto()" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Novo Produto
+                </button>
+                <button onclick="listarProdutos()" class="btn btn-primary">
+                    <i class="fas fa-list"></i> Listar Produtos
+                </button>
+            </div>
+
+            <div id="produtosList" style="display: none;">
+                <div class="search-box">
+                    <input type="text" id="searchProdutos" placeholder="Pesquisar produtos..." onkeyup="filtrarProdutos()">
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nome</th>
+                                <th>Preço</th>
+                                <th>Estoque</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="produtosTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Relatórios -->
+        <div id="relatorios" class="tab-content">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="periodoInicio">Período - Início:</label>
+                    <input type="date" id="periodoInicio" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="periodoFim">Período - Fim:</label>
+                    <input type="date" id="periodoFim" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="relFornecedor">Fornecedor:</label>
+                    <select id="relFornecedor">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="relAgrupamento">Agrupar por:</label>
+                    <select id="relAgrupamento">
+                        <option value="nenhum">Nenhum</option>
+                        <option value="fornecedor">Fornecedor</option>
+                        <option value="especie">Espécie</option>
+                        <option value="fornecedor_especie">Fornecedor + Espécie</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="relStatus">Status:</label>
+                    <select id="relStatus">
+                        <option value="">Todos</option>
+                        <option value="pendente">Pendente</option>
+                        <option value="aprovado">Aprovado</option>
+                        <option value="entregue">Entregue</option>
+                        <option value="cancelado">Cancelado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button onclick="gerarRelatorioCompras()" class="btn-primary">
+                        <i class="fas fa-chart-bar"></i> Gerar Relatório de Compras
+                    </button>
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button onclick="exportarRelatorioComprasCSV()" class="btn-secondary">
+                        <i class="fas fa-file-export"></i> Exportar CSV
+                    </button>
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button onclick="exportarRelatorioComprasPDF()" class="btn-secondary">
+                        <i class="fas fa-file-pdf"></i> Exportar PDF
+                    </button>
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button onclick="abrirCustomizarColunasCompras()" class="btn-secondary" title="Configurar colunas">
+                        <i class="fas fa-list"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="relatorioResult" style="display: none;">
+                <h3>Relatório de Compras</h3>
+                <div class="summary-box">
+                    <div class="summary-row">
+                        <span>Total de Pedidos:</span>
+                        <span id="relTotalPedidos">0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Valor Total Compras:</span>
+                        <span id="relValorTotal">R$ 0,00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Preço Médio por m³ (se aplicável):</span>
+                        <span id="relPrecoMedioM3">R$ 0,00</span>
+                    </div>
+                </div>
+                <div class="table-responsive" id="relComprasTabela" style="margin-top: 12px; display: none;"></div>
+                <div id="relComprasPedidos" class="table-responsive" style="margin-top: 12px; display: none;">
+                    <table class="table" id="relComprasPedidosTable">
+                        <thead>
+                            <tr>
+                                <th data-col="numero">Número</th>
+                                <th data-col="data">Data</th>
+                                <th data-col="fornecedor">Fornecedor</th>
+                                <th data-col="total">Total</th>
+                                <th data-col="status">Status</th>
+                                <th data-col="acoes">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="relComprasPedidosTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="summary-box" id="relComprasResumoFooter" style="margin-top: 15px;">
+                    <div class="summary-row">
+                        <span>Total de Pedidos:</span>
+                        <span id="relComprasFooterTotalPedidos">0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Total Carrego (m³):</span>
+                        <span id="relComprasFooterTotalCarrego">0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Valor Total de Pedidos:</span>
+                        <span id="relComprasFooterValorTotal">R$ 0,00</span>
+                    </div>
+                </div>
+            </div>
+
+        <!-- Modal Customizar Colunas (Relatórios de Compras) -->
+        <div id="customizarColunasComprasModal" class="modal">
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h3 id="printColumnsComprasTitle">Configurar colunas</h3>
+                    <span class="close" onclick="fecharModal('customizarColunasComprasModal')">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div id="comprasPrintColumnsList" class="columns-list"></div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-success" onclick="aplicarCustomizacaoColunasCompras()"><i class="fas fa-save"></i> Salvar</button>
+                    <button class="btn-danger" onclick="fecharModal('customizarColunasComprasModal')"><i class="fas fa-times"></i> Fechar</button>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Modal Lista de Pedidos -->
+    <div id="listaPedidosModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Lista de Pedidos</h2>
+                <span class="close" onclick="fecharModal('listaPedidosModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <input type="text" id="searchPedidos" placeholder="Pesquisar pedidos..." onkeyup="filtrarPedidos()">
+                    <div class="inline-field">
+                        <label for="filtroEspecie">Espécie</label>
+                        <select id="filtroEspecie" onchange="filtrarPedidos()">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row" style="margin-bottom: 10px;">
+                    <div class="form-group">
+                        <label for="filtroFornecedor">Fornecedor:</label>
+                        <select id="filtroFornecedor">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filtroStatus">Status:</label>
+                        <select id="filtroStatus">
+                            <option value="">Todos</option>
+                            <option value="pendente">Pendente</option>
+                            <option value="aprovado">Aprovado</option>
+                            <option value="entregue">Entregue</option>
+                            <option value="cancelado">Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row date-filter-row">
+                    <div class="form-group">
+                        <label for="filtroInicio">Início:</label>
+                        <input type="date" id="filtroInicio" onchange="filtrarPedidos()">
+                    </div>
+                    <div class="form-group">
+                        <label for="filtroFim">Fim:</label>
+                        <input type="date" id="filtroFim" onchange="filtrarPedidos()">
+                    </div>
+                    <button type="button" class="btn-primary btn-print-selected" onclick="imprimirPedidosSelecionados()">
+                        <i class="fas fa-print"></i> Imprimir <span id="pedidosPrintSelectedCount">(0)</span>
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table" id="listaPedidosTable">
+                        <colgroup>
+                            <col style="width: 120px;">
+                            <col style="width: 120px;">
+                            <col>
+                            <col style="width: 120px;">
+                            <col style="width: 120px;">
+                            <col style="width: 140px;">
+                            <col style="width: 160px;">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>
+                                    <label class="pedido-numero-head" for="pedidosSelectAll">
+                                        <input type="checkbox" id="pedidosSelectAll" onchange="toggleSelecionarTodosPedidos(this.checked)">
+                                        <span>Número</span>
+                                    </label>
+                                </th>
+                                <th>Data</th>
+                                <th>Fornecedor</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Atualizado</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pedidosTable"></tbody>
+                    </table>
+                </div>
+                <div id="pedidosPagination" class="pagination-controls" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Produto -->
+    <div id="produtoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="produtoModalTitle">Novo Produto</h2>
+                <span class="close" onclick="fecharModal('produtoModal')">&times;</span>
+            </div>
+            <form id="produtoForm">
+                <input type="hidden" id="produtoId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="produtoCodigo">Código:</label>
+                        <input type="text" id="produtoCodigo" required>
+                    </div>
+                    <div class="form-group form-group-large">
+                        <label for="produtoNome">Nome:</label>
+                        <input type="text" id="produtoNome" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="produtoPreco">Preço:</label>
+                        <input type="text" id="produtoPreco" placeholder="R$ 0,00">
+                    </div>
+                    <div class="form-group">
+                        <label for="produtoEstoque">Estoque:</label>
+                        <input type="number" id="produtoEstoque" min="0" step="0.001">
+                    </div>
+                    <div class="form-group">
+                        <label for="produtoUnidade">Unidade:</label>
+                        <select id="produtoUnidade">
+                            <option value="UN">UN - Unidade</option>
+                            <option value="DZ">DZ - Dúzia</option>
+                            <option value="PC">PC - Peça</option>
+                            <option value="m³">m³ - Metro Cúbico</option>
+                            <option value="m²">m² - Metro Quadrado</option>
+                            <option value="LN">LN - Metro Linear</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="produtoDescricao">Descrição:</label>
+                    <textarea id="produtoDescricao" rows="3"></textarea>
+                </div>
+                <div class="action-buttons">
+                    <button type="submit" class="btn-success">
+                        <i class="fas fa-save"></i> Salvar
+                    </button>
+                    <button type="button" onclick="fecharModal('produtoModal')" class="btn-danger">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Visualização de Pedido -->
+    <div id="visualizarPedidoModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-invoice"></i> Detalhes do Pedido</h2>
+                <span class="close" onclick="fecharModal('visualizarPedidoModal')">&times;</span>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Cabeçalho do Pedido -->
+                <div class="pedido-header" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div>
+                            <label style="font-weight: bold; color: #6c757d;">Número:</label>
+                            <div id="viewPedidoNumero" style="font-size: 1.2em; color: #2c3e50;"></div>
+                        </div>
+                        <div>
+                            <label style="font-weight: bold; color: #6c757d;">Data:</label>
+                            <div id="viewPedidoData" style="font-size: 1.2em; color: #2c3e50;"></div>
+                        </div>
+                        <div>
+                            <label style="font-weight: bold; color: #6c757d;">Status:</label>
+                            <div id="viewPedidoStatus"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                        <label style="font-weight: bold; color: #6c757d;">Fornecedor:</label>
+                        <div id="viewPedidoFornecedor" style="font-size: 1.1em; color: #2c3e50;"></div>
+                        <div id="viewPedidoFornecedorDetalhes" style="font-size: 0.9em; color: #6c757d; margin-top: 5px;"></div>
+                    </div>
+                </div>
+                
+                <!-- Itens do Pedido -->
+                <div class="pedido-itens" style="margin-bottom: 20px;">
+                    <h3 style="color: #2c3e50; margin-bottom: 15px;">
+                        <i class="fas fa-boxes"></i> Itens do Pedido
+                    </h3>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th style="text-align: center;">Quantidade</th>
+                                    <th style="text-align: right;">Preço Unit.</th>
+                                    <th style="text-align: right;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="viewPedidoItensTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Totais -->
+                <div class="pedido-totais" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span>Subtotal:</span>
+                        <span id="viewPedidoSubtotal" style="font-weight: bold;"></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span>Total Geral (Qtd.):</span>
+                        <span id="viewPedidoTotalQtd"></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span>Desconto:</span>
+                        <span id="viewPedidoDesconto" style="color: #e74c3c;"></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 2px solid #dee2e6;">
+                        <span style="font-size: 1.2em; font-weight: bold;">Total Geral:</span>
+                        <span id="viewPedidoTotal" style="font-size: 1.2em; font-weight: bold; color: #28a745;"></span>
+                    </div>
+                </div>
+                
+                <!-- Forma de Pagamento -->
+                <div class="pedido-pagamento" style="margin-bottom: 20px;">
+                    <h3 style="color: #2c3e50; margin-bottom: 15px;">
+                        <i class="fas fa-credit-card"></i> Forma de Pagamento
+                    </h3>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Valor</th>
+                                    <th>Vencimento</th>
+                                    <th>Tipo</th>
+                                    <th>Observação</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="viewPedidoPagamentoTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Metadados -->
+                <div class="pedido-meta" style="font-size: 0.9em; color: #6c757d; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                    <div>Criado em: <span id="viewPedidoCreated"></span></div>
+                    <div id="viewPedidoUpdatedContainer" style="margin-top: 5px; display: none;">
+                        Última atualização: <span id="viewPedidoUpdated"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end; padding: 15px; border-top: 1px solid #dee2e6;">
+                <button onclick="imprimirPedido(window.pedidoVisualizando)" class="btn-primary">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+                <button onclick="editarPedido(window.pedidoVisualizando); fecharModal('visualizarPedidoModal');" class="btn-warning">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button onclick="fecharModal('visualizarPedidoModal')" class="btn-danger">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Novo Fornecedor -->
+    <div id="modalFornecedor" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: #fff; padding: 15px 20px; min-height: 56px; border-radius: 8px 8px 0 0;">
+                <h2 style="color:#fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.4);"><i class="fas fa-truck"></i> Novo Fornecedor</h2>
+                <span class="close" onclick="fecharModalFornecedor()">&times;</span>
+            </div>
+            <form onsubmit="salvarFornecedorInline(event)">
+                <div class="form-row">
+                    <div class="form-group form-group-large">
+                        <label for="fornNome">Nome</label>
+                        <input type="text" id="fornNome" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fornDocumento">Documento (CNPJ/CPF)</label>
+                        <input type="text" id="fornDocumento" placeholder="Ex: 12.345.678/0001-90">
+                    </div>
+                    <div class="form-group">
+                        <label for="fornTelefone">Telefone</label>
+                        <input type="text" id="fornTelefone" placeholder="(xx) xxxxx-xxxx">
+                    </div>
+                    <div class="form-group">
+                        <label for="fornEmail">Email</label>
+                        <input type="email" id="fornEmail" placeholder="email@exemplo.com">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group form-group-large">
+                        <label for="fornEndereco">Endereço</label>
+                        <input type="text" id="fornEndereco" placeholder="Rua, nº, bairro">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fornEstado">Estado</label>
+                        <select id="fornEstado" onchange="loadCities(this.value, 'fornCidade')">
+                            <option value="">Selecione o estado</option>
+                            <option value="AC">Acre</option>
+                            <option value="AL">Alagoas</option>
+                            <option value="AP">Amapá</option>
+                            <option value="AM">Amazonas</option>
+                            <option value="BA">Bahia</option>
+                            <option value="CE">Ceará</option>
+                            <option value="DF">Distrito Federal</option>
+                            <option value="ES">Espírito Santo</option>
+                            <option value="GO">Goiás</option>
+                            <option value="MA">Maranhão</option>
+                            <option value="MT">Mato Grosso</option>
+                            <option value="MS">Mato Grosso do Sul</option>
+                            <option value="MG">Minas Gerais</option>
+                            <option value="PA">Pará</option>
+                            <option value="PB">Paraíba</option>
+                            <option value="PR">Paraná</option>
+                            <option value="PE">Pernambuco</option>
+                            <option value="PI">Piauí</option>
+                            <option value="RJ">Rio de Janeiro</option>
+                            <option value="RN">Rio Grande do Norte</option>
+                            <option value="RS">Rio Grande do Sul</option>
+                            <option value="RO">Rondônia</option>
+                            <option value="RR">Roraima</option>
+                            <option value="SC">Santa Catarina</option>
+                            <option value="SP">São Paulo</option>
+                            <option value="SE">Sergipe</option>
+                            <option value="TO">Tocantins</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fornCidade">Cidade</label>
+                        <select id="fornCidade">
+                            <option value="">Selecione primeiro o estado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
+                    <button type="button" onclick="fecharModalFornecedor()" class="btn btn-danger"><i class="fas fa-times"></i> Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Cadastro/Edição de Fornecedor (romaneiotora) -->
+    <div id="clientModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: #fff; padding: 15px 20px; min-height: 56px; border-radius: 8px 8px 0 0;">
+                <h3 class="modal-title" id="clientModalTitle" style="color:#fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.4);">Novo Fornecedor</h3>
+                <span class="close-modal" style="color:#fff;" onclick="document.getElementById('clientModal').style.display='none'">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="clientForm" onsubmit="saveClient(event); return false;">
+                    <input type="hidden" id="clientId">
+                    <div class="form-group">
+                        <label for="clientName">Nome:</label>
+                        <input type="text" id="clientName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientCnpj">CNPJ:</label>
+                        <input type="text" id="clientCnpj" placeholder="00.000.000/0000-00">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientStateRegistration">Inscrição Estadual:</label>
+                        <input type="text" id="clientStateRegistration" placeholder="000.000.000.000">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientAddress">Endereço:</label>
+                        <input type="text" id="clientAddress" placeholder="Rua, Avenida, etc.">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientNumber">Número:</label>
+                        <input type="text" id="clientNumber" placeholder="Número da residência/empresa">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientNeighborhood">Bairro:</label>
+                        <input type="text" id="clientNeighborhood" placeholder="Nome do bairro">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientState">Estado:</label>
+                        <select id="clientState" required onchange="carregarCidadesPorEstado(this.value)">
+                            <option value="">Selecione o estado</option>
+                            <option value="AC">Acre</option>
+                            <option value="AL">Alagoas</option>
+                            <option value="AP">Amapá</option>
+                            <option value="AM">Amazonas</option>
+                            <option value="BA">Bahia</option>
+                            <option value="CE">Ceará</option>
+                            <option value="DF">Distrito Federal</option>
+                            <option value="ES">Espírito Santo</option>
+                            <option value="GO">Goiás</option>
+                            <option value="MA">Maranhão</option>
+                            <option value="MT">Mato Grosso</option>
+                            <option value="MS">Mato Grosso do Sul</option>
+                            <option value="MG">Minas Gerais</option>
+                            <option value="PA">Pará</option>
+                            <option value="PB">Paraíba</option>
+                            <option value="PR">Paraná</option>
+                            <option value="PE">Pernambuco</option>
+                            <option value="PI">Piauí</option>
+                            <option value="RJ">Rio de Janeiro</option>
+                            <option value="RN">Rio Grande do Norte</option>
+                            <option value="RS">Rio Grande do Sul</option>
+                            <option value="RO">Rondônia</option>
+                            <option value="RR">Roraima</option>
+                            <option value="SC">Santa Catarina</option>
+                            <option value="SP">São Paulo</option>
+                            <option value="SE">Sergipe</option>
+                            <option value="TO">Tocantins</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientCity">Cidade:</label>
+                        <select id="clientCity" required>
+                            <option value="">Selecione primeiro o estado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientPhone">Telefone:</label>
+                        <input type="text" id="clientPhone" oninput="formatarTelefone(this)">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientEmail">Email:</label>
+                        <input type="email" id="clientEmail">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientObs">Observações:</label>
+                        <textarea id="clientObs" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('clientModal').style.display='none';">Cancelar</button>
+                <button type="button" class="btn-save" id="saveClientBtn" onclick="saveClient()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container de Toasts -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Loading Overlay Global -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text" id="loadingText">Carregando...</div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script type="module">
+        import * as firebaseSvc from './firebaseService.js';
+        window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
+        console.log("✅ firebaseService carregado e unificado no compras.html");
+    </script>
+    <!-- Carregar gerenciador unificado de espécies para popular o select -->
+    <script src="species-manager.js"></script>
+    <!-- Carregar gerenciador de cidades -->
+    <script src="cities.js"></script>
+    <script src="client-modal-handler.js"></script>
+    <script src="romaneios-client-save-fix.js"></script>
+    <script src="ui-config.js"></script>
+    <!-- Carregar módulo de Compras -->
+    <script src="compras.js"></script>
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });
+});
+</script>
+</body>
+</html>

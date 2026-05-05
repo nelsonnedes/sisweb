@@ -1,0 +1,52 @@
+[
+  { "id": "inicio/dashboard", "path": "index.html" },
+  { "id": "empresa/company", "path": "company.html" },
+  { "id": "cadastros/clientes", "path": "client.html" },
+  { "id": "cadastros/fornecedores", "path": "fornecedor.html" },
+  { "id": "cadastros/especies", "path": "species.html" },
+  { "id": "romaneios/preromaneio", "path": "preromaneio.html" },
+  { "id": "romaneios/preromaneio-lista", "path": "preromaneio.html", "actions": [
+    { "type": "eval", "script": "try{abrirLista&&abrirLista()}catch(e){}" },
+    { "type": "wait", "ms": 700 }
+  ] },
+  { "id": "romaneios/tl", "path": "romaneiotl.html" },
+  { "id": "romaneios/tl-lista", "path": "romaneiotl.html", "actions": [
+    { "type": "eval", "script": "try{abrirListaRomaneios&&abrirListaRomaneios()}catch(e){}" },
+    { "type": "wait", "ms": 700 }
+  ] },
+  { "id": "romaneios/pct", "path": "romaneiopct.html" },
+  { "id": "romaneios/pct-lista", "path": "romaneiopct.html", "actions": [
+    { "type": "eval", "script": "try{abrirListaRomaneios&&abrirListaRomaneios()}catch(e){}" },
+    { "type": "wait", "ms": 700 }
+  ] },
+  { "id": "romaneios/pes", "path": "romaneiopes.html" },
+  { "id": "romaneios/pes-lista", "path": "romaneiopes.html", "actions": [
+    { "type": "eval", "script": "try{abrirListaRomaneios&&abrirListaRomaneios()}catch(e){}" },
+    { "type": "wait", "ms": 700 }
+  ] },
+  { "id": "romaneios/tora", "path": "romaneiotora.html" },
+  { "id": "romaneios/tora-lista", "path": "romaneiotora.html", "actions": [
+    { "type": "eval", "script": "try{abrirListaRomaneios&&abrirListaRomaneios()}catch(e){}" },
+    { "type": "wait", "ms": 700 }
+  ] },
+  { "id": "financeiro/financas", "path": "financas.html" },
+  { "id": "financeiro/receber", "path": "financas.html#receber" },
+  { "id": "financeiro/pagar", "path": "financas.html#pagar" },
+  { "id": "estoque/estoque", "path": "estoque.html" },
+  { "id": "folha/folha", "path": "folha_pagamento/folha.html" },
+  { "id": "vendas/vendas", "path": "vendas.html" },
+  { "id": "vendas/novo-pedido", "path": "vendas.html", "actions": [
+    { "type": "eval", "script": "try{novoPedido&&novoPedido()}catch(e){}" },
+    { "type": "wait", "ms": 700 }
+  ] },
+  { "id": "vendas/lista-pedidos", "path": "vendas.html", "actions": [
+    { "type": "eval", "script": "try{listarPedidos&&listarPedidos()}catch(e){}" },
+    { "type": "waitFor", "selector": "#listaPedidosModal", "timeoutMs": 3000 },
+    { "type": "wait", "ms": 400 }
+  ] },
+  { "id": "fiscal/notas-fiscais", "path": "notas-fiscais.html" },
+  { "id": "fiscal/mdf-e", "path": "mdf-e.html" },
+  { "id": "assinatura/subscription-status", "path": "subscription-status.html" },
+  { "id": "assinatura/subscription", "path": "subscription.html" },
+  { "id": "perfil/user-profile", "path": "user-profile.html" }
+]

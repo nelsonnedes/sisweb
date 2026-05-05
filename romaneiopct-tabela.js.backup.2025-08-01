@@ -1,0 +1,751 @@
+/**
+ * 📊 SISTEMA DE TABELA ROMANEIOPCT - UNIFICADO
+ * 
+ * Consolidado de: romaneiopct_tabela.js + correções integradas
+ * Funcionalidades específicas PCT:
+ * - Campo pecasPorPacote integrado
+ * - Navegação Enter específica
+ * - Cálculos com pacotes
+ * - Validações específicas
+ * 
+ * Versão: 1.0 Unificada
+ * Data: Dezembro 2024
+ */
+
+console.log('📊 Sistema de Tabela Romaneiopct carregado');
+
+// ========================================
+// VARIÁVEIS GLOBAIS E INICIALIZAÇÃO
+// ========================================
+
+// Garantir que as variáveis globais estão inicializadas
+if (!window.romaneioItems) {
+    window.romaneioItems = [];
+}
+
+if (!window.selectedClient) {
+    window.selectedClient = null;
+}
+
+if (!window.selectedSpecies) {
+    window.selectedSpecies = null;
+}
+
+// Controle de edição
+window.itemEmEdicao = false;
+window.isAddingItem = false;
+window.isSavingRomaneio = false;
+
+// Paginação
+window.currentPage = 1;
+window.itemsPerPage = 10;
+
+// ========================================
+// FUNÇÕES DE DEBUG E VALIDAÇÃO
+// ========================================
+
+function debugRomaneioItems(message) {
+    console.log(`[DEBUG TABELA] ${message}:`, {
+        'window.romaneioItems.length': window.romaneioItems?.length || 0,
+        'romaneioItems.length': typeof romaneioItems !== 'undefined' ? romaneioItems?.length : 'undefined',
+        'selectedClient': window.selectedClient?.nome || 'N/A',
+        'selectedSpecies': window.selectedSpecies?.nome || 'N/A'
+    });
+}
+
+function validarCamposPCT() {
+    const campos = {
+        comprimento: document.getElementById('comprimento'),
+        largura: document.getElementById('largura'),
+        espessura: document.getElementById('espessura'),
+        quantidade: document.getElementById('quantidade'),
+        pecasPorPacote: document.getElementById('pecasPorPacote'), // ⚠️ ESPECÍFICO PCT
+        price: document.getElementById('price'),
+        especieInput: document.getElementById('especieInput')
+    };
+    
+    console.log('🔍 Validação de campos PCT:', Object.keys(campos).map(key => ({
+        campo: key,
+        existe: campos[key] ? '✅' : '❌',
+        valor: campos[key]?.value || 'N/A'
+    })));
+    
+    return campos;
+}
+
+// ========================================
+// FUNÇÕES DE CÁLCULO ESPECÍFICAS PCT
+// ========================================
+
+/**
+ * Calcular volume incluindo pecasPorPacote (ESPECÍFICO PCT)
+ */
+function calcularVolumePCT(comprimento, largura, espessura, quantidade, pecasPorPacote) {
+    const comp = parseFloat(comprimento) || 0;
+    const larg = parseFloat(largura) || 0;
+    const esp = parseFloat(espessura) || 0;
+    const qtd = parseInt(quantidade) || 0;
+    const ppp = parseInt(pecasPorPacote) || 1;
+    
+    // Volume unitário em m³
+    const volumeUnitario = (comp * larg * esp) / 1000000;
+    
+    // ⚠️ ESPECÍFICO PCT: Incluir pecasPorPacote nos cálculos  
+    return volumeUnitario * qtd * ppp;
+}
+
+/**
+ * Validar e corrigir valor de pecasPorPacote
+ */
+function validarPecasPorPacote(valor) {
+    const num = parseInt(valor);
+    return !isNaN(num) && num > 0 ? num : 1;
+}
+
+// ========================================
+// FUNÇÃO ADICIONAR ITEM UNIFICADA
+// ========================================
+
+function adicionarItem() {
+    try {
+        console.log("🔄 Iniciando adicionarItem PCT");
+        debugRomaneioItems("Início da função adicionarItem");
+        
+        // Controle de processo
+        if (window.isAddingItem) {
+            console.warn("⚠️ Processo de adição já em andamento");
+            return;
+        }
+        window.isAddingItem = true;
+        
+        // ✅ GARANTIR INICIALIZAÇÃO DOS ARRAYS
+        if (!Array.isArray(window.romaneioItems)) {
+            console.log("🔧 Inicializando window.romaneioItems");
+            window.romaneioItems = [];
+        }
+        
+        // ✅ VALIDAR CAMPOS
+        const campos = validarCamposPCT();
+        
+        // Obter valores com validação
+        const comprimentoStr = campos.comprimento?.value || '';
+        const larguraStr = campos.largura?.value || '';
+        const espessuraStr = campos.espessura?.value || '';
+        const quantidadeStr = campos.quantidade?.value || '';
+        const pecasPorPacoteStr = campos.pecasPorPacote?.value || '1'; // ⚠️ ESPECÍFICO PCT
+        const precoStr = campos.price?.value || '';
+        
+        console.log('📝 Valores obtidos:', {
+            comprimentoStr, larguraStr, espessuraStr, 
+            quantidadeStr, pecasPorPacoteStr, precoStr
+        });
+        
+        // ✅ OBTER ESPÉCIE
+        let especieNome = '';
+        if (window.selectedSpecies) {
+            especieNome = window.selectedSpecies.nome || window.selectedSpecies.name || '';
+        } else if (campos.especieInput?.value) {
+            especieNome = campos.especieInput.value;
+        }
+        
+        // ✅ VALIDAÇÕES OBRIGATÓRIAS
+        if (!comprimentoStr) {
+            alert('Por favor, preencha o campo Comprimento.');
+            campos.comprimento?.focus();
+            window.isAddingItem = false;
+            return;
+        }
+        
+        if (!larguraStr) {
+            alert('Por favor, preencha o campo Largura.');
+            campos.largura?.focus();
+            window.isAddingItem = false;
+            return;
+        }
+        
+        if (!espessuraStr) {
+            alert('Por favor, preencha o campo Espessura.');
+            campos.espessura?.focus();
+            window.isAddingItem = false;
+            return;
+        }
+        
+        if (!quantidadeStr) {
+            alert('Por favor, preencha o campo Quantidade.');
+            campos.quantidade?.focus();
+            window.isAddingItem = false;
+            return;
+        }
+        
+        if (!especieNome) {
+            alert('Por favor, selecione uma espécie.');
+            campos.especieInput?.focus();
+            window.isAddingItem = false;
+            return;
+        }
+        
+        // ✅ CONVERSÕES NUMÉRICAS COM VALIDAÇÃO
+        const comprimento = parseFloat(comprimentoStr);
+        const largura = parseFloat(larguraStr);
+        const espessura = parseFloat(espessuraStr);
+        const quantidade = parseInt(quantidadeStr);
+        const pecasPorPacote = validarPecasPorPacote(pecasPorPacoteStr); // ⚠️ ESPECÍFICO PCT
+        const valorUnitario = precoStr ? parseFloat(precoStr.replace(/[\\.]/g, '').replace(',', '.')) : 0;
+        
+        if (isNaN(comprimento) || comprimento <= 0) {
+            alert('Por favor, insira um comprimento válido.');
+            campos.comprimento?.focus();
+            window.isAddingItem = false;
+            return;
+        }
+        
+        if (isNaN(largura) || largura <= 0) {
+            alert('Por favor, insira uma largura válida.');
+            campos.largura?.focus();
+            window.isAddingItem = false;
+            return;
+        }
+        
+        if (isNaN(espessura) || espessura <= 0) {
+            alert('Por favor, insira uma espessura válida.');
+            campos.espessura?.focus();
+            window.isAddingItem = false;
+            return;
+        }
+        
+        if (isNaN(quantidade) || quantidade <= 0) {
+            alert('Por favor, insira uma quantidade válida.');
+            campos.quantidade?.focus();
+            window.isAddingItem = false;
+            return;
+        }
+        
+        // ✅ CÁLCULOS ESPECÍFICOS PCT
+        const volumeTotal = calcularVolumePCT(comprimento, largura, espessura, quantidade, pecasPorPacote);
+        const totalPecas = quantidade * pecasPorPacote; // ⚠️ ESPECÍFICO PCT
+        const valorTotal = volumeTotal * valorUnitario;
+        
+        console.log('🧮 Cálculos PCT:', {
+            volumeTotal: volumeTotal.toFixed(4),
+            totalPecas,
+            pecasPorPacote,
+            valorTotal: valorTotal.toFixed(2)
+        });
+        
+        // ✅ CRIAR ITEM COM DADOS ESPECÍFICOS PCT
+        const item = {
+            comprimento: comprimento,
+            largura: largura,
+            espessura: espessura,
+            quantidade: quantidade,
+            pecasPorPacote: pecasPorPacote, // ⚠️ ESPECÍFICO PCT
+            especie: especieNome,
+            valorUnitario: valorUnitario,
+            volume: volumeTotal,
+            valorTotal: valorTotal,
+            totalPecas: totalPecas, // ⚠️ ESPECÍFICO PCT
+            id: Date.now() + Math.random() // ID único
+        };
+        
+        // ✅ VERIFICAR SE É EDIÇÃO OU NOVA ADIÇÃO
+        if (window.itemEmEdicao !== false && window.itemEmEdicao !== undefined) {
+            console.log(`🔄 Atualizando item no índice ${window.itemEmEdicao}`);
+            window.romaneioItems[window.itemEmEdicao] = item;
+            window.itemEmEdicao = false;
+        } else {
+            console.log('➕ Adicionando novo item');
+            window.romaneioItems.push(item);
+        }
+        
+        // ✅ LIMPAR FORMULÁRIO
+        limparCamposItem();
+        
+        // ✅ ATUALIZAR TABELA E TOTAIS
+        reconstruirTabela();
+        atualizarTotais();
+        
+        // ✅ SALVAR ESTADO AUTOMATICAMENTE
+        salvarEstadoRomaneioEmEdicao();
+        
+        console.log(`✅ Item adicionado com sucesso. Total de itens: ${window.romaneioItems.length}`);
+        debugRomaneioItems("Fim da função adicionarItem");
+        
+        // Focar no primeiro campo para próxima entrada
+        if (campos.espessura) {
+            campos.espessura.focus();
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro na função adicionarItem:', error);
+        alert('Erro ao adicionar item: ' + error.message);
+    } finally {
+        window.isAddingItem = false;
+    }
+}
+
+// ========================================
+// FUNÇÃO EDITAR ITEM UNIFICADA
+// ========================================
+
+async function editarItem(index) {
+    try {
+        console.log(`🔄 Editando item no índice ${index}`);
+        
+        if (!window.romaneioItems || index >= window.romaneioItems.length) {
+            throw new Error('Item não encontrado para edição');
+        }
+        
+        const item = window.romaneioItems[index];
+        console.log('📝 Item para edição:', item);
+        
+        // ✅ PREENCHER CAMPOS COM DADOS DO ITEM (INCLUINDO PECASPORPACOTE)
+        const campos = validarCamposPCT();
+        
+        if (campos.comprimento) campos.comprimento.value = item.comprimento || '';
+        if (campos.largura) campos.largura.value = item.largura || '';
+        if (campos.espessura) campos.espessura.value = item.espessura || '';
+        if (campos.quantidade) campos.quantidade.value = item.quantidade || '';
+        if (campos.pecasPorPacote) campos.pecasPorPacote.value = item.pecasPorPacote || 1; // ⚠️ ESPECÍFICO PCT
+        if (campos.price) {
+            const valorFormatado = item.valorUnitario ? item.valorUnitario.toFixed(2).replace('.', ',') : '';
+            campos.price.value = valorFormatado;
+        }
+        
+        // ✅ CONFIGURAR ESPÉCIE
+        if (item.especie) {
+            if (campos.especieInput) campos.especieInput.value = item.especie;
+            window.selectedSpecies = { nome: item.especie };
+        }
+        
+        // ✅ MARCAR COMO EM EDIÇÃO
+        window.itemEmEdicao = index;
+        
+        // ✅ SALVAR ESTADO
+        if (typeof salvarEstadoRomaneioEmEdicao === 'function') {
+            salvarEstadoRomaneioEmEdicao();
+        }
+        
+        console.log(`✅ Item ${index} carregado para edição`);
+        
+        // Focar no primeiro campo
+        if (campos.espessura) {
+            campos.espessura.focus();
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro ao editar item:', error);
+        alert('Erro ao editar item: ' + error.message);
+    }
+}
+
+// ========================================
+// FUNÇÃO REMOVER ITEM
+// ========================================
+
+function removerItem(index) {
+    try {
+        console.log(`🗑️ Removendo item no índice ${index}`);
+        
+        if (!window.romaneioItems || index >= window.romaneioItems.length) {
+            throw new Error('Item não encontrado para remoção');
+        }
+        
+        if (confirm('Tem certeza que deseja remover este item?')) {
+            window.romaneioItems.splice(index, 1);
+            reconstruirTabela();
+            atualizarTotais();
+            salvarEstadoRomaneioEmEdicao();
+            
+            console.log(`✅ Item removido. Total de itens: ${window.romaneioItems.length}`);
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro ao remover item:', error);
+        alert('Erro ao remover item: ' + error.message);
+    }
+}
+
+// ========================================
+// FUNÇÕES DE TABELA E INTERFACE
+// ========================================
+
+function limparCamposItem() {
+    console.log('🧹 Limpando campos do formulário');
+    
+    const campos = [
+        'comprimento', 'largura', 'espessura', 
+        'quantidade', 'pecasPorPacote', 'price', 'especieInput'
+    ];
+    
+    campos.forEach(campoId => {
+        const campo = document.getElementById(campoId);
+        if (campo) {
+            campo.value = campoId === 'pecasPorPacote' ? '1' : ''; // ⚠️ ESPECÍFICO PCT: default 1
+        }
+    });
+    
+    // Limpar seleções
+    window.selectedSpecies = null;
+    window.itemEmEdicao = false;
+}
+
+function reconstruirTabela() {
+    console.log('🔄 Reconstruindo tabela PCT');
+    
+    const tbody = document.getElementById('romaneioTableBody');
+    if (!tbody) {
+        console.warn('⚠️ Elemento romaneioTableBody não encontrado');
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    if (!window.romaneioItems || window.romaneioItems.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center;">Nenhum item adicionado</td></tr>';
+        return;
+    }
+    
+    // ✅ CALCULAR PAGINAÇÃO
+    const startIndex = (window.currentPage - 1) * window.itemsPerPage;
+    const endIndex = Math.min(startIndex + window.itemsPerPage, window.romaneioItems.length);
+    
+    // ✅ GERAR LINHAS DA TABELA COM COLUNA PECASPORPACOTE
+    for (let i = startIndex; i < endIndex; i++) {
+        const item = window.romaneioItems[i];
+        const row = document.createElement('tr');
+        
+        row.innerHTML = `
+            <td>${item.comprimento || 0}</td>
+            <td>${item.largura || 0}</td>
+            <td>${item.espessura || 0}</td>
+            <td>${item.especie || 'N/A'}</td>
+            <td>${item.quantidade || 0}</td>
+            <td>${item.pecasPorPacote || 1}</td>
+            <td>${item.totalPecas || (item.quantidade * item.pecasPorPacote) || 0}</td>
+            <td>${(item.volume || 0).toFixed(4)}</td>
+            <td>R$ ${(item.valorUnitario || 0).toFixed(2)}</td>
+            <td>R$ ${(item.valorTotal || 0).toFixed(2)}</td>
+            <td>
+                <button onclick="editarItem(${i})" class="btn-editar">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="removerItem(${i})" class="btn-remover">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        
+        tbody.appendChild(row);
+    }
+    
+    // ✅ ATUALIZAR PAGINAÇÃO
+    atualizarPaginacao();
+    aplicarEstilosTabela();
+}
+
+function atualizarTotais() {
+    console.log('🧮 Atualizando totais PCT');
+    
+    if (!window.romaneioItems || window.romaneioItems.length === 0) {
+        document.getElementById('totalPacotes')?.textContent || (document.getElementById('totalPacotes').textContent = '0');
+        document.getElementById('totalPecas')?.textContent || (document.getElementById('totalPecas').textContent = '0');
+        document.getElementById('totalVolume')?.textContent || (document.getElementById('totalVolume').textContent = '0.0000 m³');
+        document.getElementById('totalValor')?.textContent || (document.getElementById('totalValor').textContent = 'R$ 0,00');
+        return;
+    }
+    
+    // ✅ CÁLCULOS ESPECÍFICOS PCT
+    let totalPacotes = 0;
+    let totalPecas = 0;
+    let totalVolume = 0;
+    let totalValor = 0;
+    
+    window.romaneioItems.forEach(item => {
+        const qtd = parseInt(item.quantidade) || 0;
+        const ppp = parseInt(item.pecasPorPacote) || 1;
+        
+        totalPacotes += qtd; // Quantidade de pacotes
+        totalPecas += qtd * ppp; // ⚠️ ESPECÍFICO PCT: Total de peças
+        totalVolume += parseFloat(item.volume) || 0;
+        totalValor += parseFloat(item.valorTotal) || 0;
+    });
+    
+    // ✅ ATUALIZAR ELEMENTOS NA TELA
+    const elementos = {
+        totalPacotes: totalPacotes.toString(),
+        totalPecas: totalPecas.toString(),
+        totalVolume: `${totalVolume.toFixed(4)} m³`,
+        totalValor: `R$ ${totalValor.toFixed(2).replace('.', ',')}`
+    };
+    
+    Object.entries(elementos).forEach(([id, valor]) => {
+        const elemento = document.getElementById(id);
+        if (elemento) {
+            elemento.textContent = valor;
+        }
+    });
+    
+    console.log('📊 Totais calculados:', elementos);
+}
+
+function atualizarPaginacao() {
+    const totalItems = window.romaneioItems?.length || 0;
+    const totalPages = Math.ceil(totalItems / window.itemsPerPage);
+    
+    const paginationElement = document.querySelector('.pagination-controls');
+    if (!paginationElement) return;
+    
+    paginationElement.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    // Botão anterior
+    const prevButton = document.createElement('button');
+    prevButton.textContent = 'Anterior';
+    prevButton.disabled = window.currentPage === 1;
+    prevButton.onclick = function() {
+        if (window.currentPage > 1) {
+            window.currentPage--;
+            reconstruirTabela();
+        }
+    };
+    paginationElement.appendChild(prevButton);
+    
+    // Números das páginas
+    for (let page = 1; page <= totalPages; page++) {
+        const pageButton = document.createElement('button');
+        pageButton.textContent = page;
+        pageButton.className = page === window.currentPage ? 'active' : '';
+        pageButton.onclick = function() {
+            window.currentPage = page;
+            reconstruirTabela();
+        };
+        paginationElement.appendChild(pageButton);
+    }
+    
+    // Botão próximo
+    const nextButton = document.createElement('button');
+    nextButton.textContent = 'Próximo';
+    nextButton.disabled = window.currentPage === totalPages;
+    nextButton.onclick = function() {
+        if (window.currentPage < totalPages) {
+            window.currentPage++;
+            reconstruirTabela();
+        }
+    };
+    paginationElement.appendChild(nextButton);
+}
+
+function aplicarEstilosTabela() {
+    // Aplicar estilos específicos da tabela PCT se necessário
+    console.log('🎨 Aplicando estilos da tabela PCT');
+}
+
+// ========================================
+// FUNÇÕES DE SALVAMENTO
+// ========================================
+
+function salvarEstadoRomaneioEmEdicao() {
+    try {
+        const estado = {
+            itens: window.romaneioItems || [],
+            cliente: window.selectedClient,
+            itemEmEdicao: window.itemEmEdicao,
+            timestamp: Date.now()
+        };
+        
+        localStorage.setItem('romaneioEmEdicaoPct', JSON.stringify(estado));
+        console.log("✅ Estado do romaneio salvo");
+        return true;
+    } catch (error) {
+        console.error("❌ Erro ao salvar estado:", error);
+        return false;
+    }
+}
+
+function limparEstadoRomaneioEmEdicao() {
+    localStorage.removeItem('romaneioEmEdicaoPct');
+    console.log("🧹 Estado do romaneio limpo");
+}
+
+async function salvarRomaneio() {
+    try {
+        if (window.isSavingRomaneio) {
+            console.log("⚠️ Salvamento já em andamento");
+            return;
+        }
+        
+        window.isSavingRomaneio = true;
+        
+        console.log("💾 Iniciando salvamento do romaneio PCT");
+        
+        // ✅ VALIDAÇÕES
+        const clienteAtual = window.selectedClient;
+        if (!clienteAtual || (!clienteAtual.nome && !clienteAtual.name)) {
+            alert('Por favor, selecione um cliente.');
+            window.isSavingRomaneio = false;
+            return;
+        }
+        
+        if (!window.romaneioItems || window.romaneioItems.length === 0) {
+            alert('Por favor, adicione pelo menos um item ao romaneio.');
+            window.isSavingRomaneio = false;
+            return;
+        }
+        
+        // ✅ CRIAR ROMANEIO COM DADOS ESPECÍFICOS PCT
+        const romaneio = {
+            id: window.romaneioEmEdicao?.id || Date.now().toString(),
+            numero: window.romaneioEmEdicao?.numero || Date.now().toString(),
+            data: new Date().toISOString().split('T')[0],
+            cliente: {
+                id: clienteAtual.id,
+                nome: clienteAtual.nome || clienteAtual.name
+            },
+            itens: window.romaneioItems.map(item => ({
+                ...item,
+                pecasPorPacote: item.pecasPorPacote || 1 // ⚠️ GARANTIR CAMPO ESPECÍFICO PCT
+            })),
+            totais: {
+                pacotes: window.romaneioItems.reduce((sum, item) => sum + (parseInt(item.quantidade) || 0), 0),
+                pecas: window.romaneioItems.reduce((sum, item) => sum + ((parseInt(item.quantidade) || 0) * (parseInt(item.pecasPorPacote) || 1)), 0),
+                volume: window.romaneioItems.reduce((sum, item) => sum + (parseFloat(item.volume) || 0), 0),
+                valor: window.romaneioItems.reduce((sum, item) => sum + (parseFloat(item.valorTotal) || 0), 0)
+            }
+        };
+        
+        // ✅ SALVAR NO LOCALSTORAGE E FIREBASE
+        let romaneios = JSON.parse(localStorage.getItem('romaneiosPct') || '[]');
+        
+        if (window.romaneioEmEdicao) {
+            const index = romaneios.findIndex(r => r.id === romaneio.id);
+            if (index !== -1) {
+                romaneios[index] = romaneio;
+                console.log(`✅ Romaneio ${romaneio.id} atualizado`);
+            }
+        } else {
+            romaneios.push(romaneio);
+            console.log(`✅ Novo romaneio ${romaneio.id} criado`);
+        }
+        
+        localStorage.setItem('romaneiosPct', JSON.stringify(romaneios));
+        
+        // ✅ TENTAR SALVAR NO FIREBASE
+        if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+            try {
+                await window.firebaseService.saveToFirebase('romaneiosPct', romaneios);
+                console.log('✅ Romaneio salvo no Firebase');
+            } catch (error) {
+                console.warn('⚠️ Erro ao salvar no Firebase:', error);
+            }
+        }
+        
+        // ✅ LIMPAR FORMULÁRIO E ESTADO
+        window.romaneioItems = [];
+        window.selectedClient = null;
+        window.romaneioEmEdicao = null;
+        limparEstadoRomaneioEmEdicao();
+        
+        reconstruirTabela();
+        atualizarTotais();
+        limparCamposItem();
+        
+        alert('Romaneio salvo com sucesso!');
+        
+    } catch (error) {
+        console.error('❌ Erro ao salvar romaneio:', error);
+        alert('Erro ao salvar romaneio: ' + error.message);
+    } finally {
+        window.isSavingRomaneio = false;
+    }
+}
+
+function limparFormulario() {
+    console.log('🧹 Limpando formulário completo');
+    
+    // Limpar arrays
+    window.romaneioItems = [];
+    window.selectedClient = null;
+    window.selectedSpecies = null;
+    window.itemEmEdicao = false;
+    window.romaneioEmEdicao = null;
+    
+    // Limpar campos
+    limparCamposItem();
+    
+    // Atualizar interface
+    reconstruirTabela();
+    atualizarTotais();
+    
+    // Limpar estado salvo
+    limparEstadoRomaneioEmEdicao();
+}
+
+// ========================================
+// FUNÇÕES AUXILIARES E FALLBACKS
+// ========================================
+
+// ✅ FALLBACKS PARA FUNÇÕES CRÍTICAS
+if (typeof window.calcularVolume !== 'function') {
+    window.calcularVolume = function(comprimento, largura, espessura) {
+        const comp = parseFloat(comprimento) || 0;
+        const larg = parseFloat(largura) || 0;
+        const esp = parseFloat(espessura) || 0;
+        return (comp * larg * esp) / 1000000;
+    };
+    console.log('✅ Fallback calcularVolume implementado');
+}
+
+// ✅ FORMATAÇÃO AGORA É GERENCIADA POR romaneiopct-formatacao.js
+// Fallback apenas se o sistema de formatação não estiver carregado
+if (!window.FORMATACAO_PCT_CARREGADA && typeof window.formatCurrency !== 'function') {
+    window.formatCurrency = function(value) {
+        const numValue = parseFloat(value || 0);
+        return numValue.toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    };
+    console.log('⚠️ Fallback formatCurrency implementado (sistema de formatação não carregado)');
+}
+
+if (typeof window.parseCurrencyValue !== 'function') {
+    window.parseCurrencyValue = function(value) {
+        if (!value) return 0;
+        return parseFloat(value.toString().replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
+    };
+    console.log('✅ Fallback parseCurrencyValue implementado');
+}
+
+if (typeof window.formatarVolume !== 'function') {
+    window.formatarVolume = function(volume) {
+        return `${parseFloat(volume || 0).toFixed(4)} m³`;
+    };
+    console.log('✅ Fallback formatarVolume implementado');
+}
+
+// ========================================
+// EXPOSIÇÃO GLOBAL DAS FUNÇÕES
+// ========================================
+
+// ✅ EXPOR FUNÇÕES PRINCIPAIS
+window.adicionarItem = adicionarItem;
+window.editarItem = editarItem;
+window.removerItem = removerItem;
+window.salvarRomaneio = salvarRomaneio;
+window.limparFormulario = limparFormulario;
+
+// ✅ EXPOR FUNÇÕES AUXILIARES  
+window.reconstruirTabela = reconstruirTabela;
+window.atualizarTotais = atualizarTotais;
+window.limparCamposItem = limparCamposItem;
+window.salvarEstadoRomaneioEmEdicao = salvarEstadoRomaneioEmEdicao;
+window.limparEstadoRomaneioEmEdicao = limparEstadoRomaneioEmEdicao;
+
+// ✅ EXPOR FUNÇÕES ESPECÍFICAS PCT
+window.calcularVolumePCT = calcularVolumePCT;
+window.validarPecasPorPacote = validarPecasPorPacote;
+
+console.log('✅ Sistema de Tabela Romaneiopct carregado e funções expostas globalmente');

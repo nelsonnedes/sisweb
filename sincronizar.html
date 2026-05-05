@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔄 Sincronização Multi-Navegador</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .btn {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        .btn-danger {
+            background: #f44336;
+        }
+        .btn-danger:hover {
+            background: #da190b;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .success { background: rgba(76, 175, 80, 0.3); }
+        .error { background: rgba(244, 67, 54, 0.3); }
+        .warning { background: rgba(255, 193, 7, 0.3); }
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: left;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Sincronização Multi-Navegador</h1>
+        <p>Sincronize seus dados entre Edge e Chrome automaticamente!</p>
+        
+        <div id="status" class="status">
+            <h3>📊 Status do Sistema</h3>
+            <p>🔍 Verificando...</p>
+        </div>
+        
+        <div>
+            <button class="btn" onclick="ativarSincronizacao()">🚀 Ativar Sincronização</button>
+            <button class="btn" onclick="sincronizarTudo()">🔄 Sincronizar Agora</button>
+            <button class="btn" onclick="verificarStatus()">📊 Verificar Status</button>
+            <button class="btn btn-danger" onclick="restaurarOriginais()">🔧 Restaurar Original</button>
+        </div>
+        
+        <div id="log" class="log">
+            <div id="logContent">📝 Log do sistema aparecerá aqui...</div>
+        </div>
+        
+        <div id="dados" class="status">
+            <h3>📁 Dados Encontrados</h3>
+            <div id="dadosContent">Verificando...</div>
+        </div>
+    </div>
+
+    <script src="database-utils.js"></script>
+    <script>
+        let logMessages = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logLine = `[${timestamp}] ${message}`;
+            logMessages.push(logLine);
+            
+            // Manter apenas últimas 50 mensagens
+            if (logMessages.length > 50) {
+                logMessages = logMessages.slice(-50);
+            }
+            
+            updateLogDisplay();
+            console.log(message);
+        }
+        
+        function updateLogDisplay() {
+            const logContent = document.getElementById('logContent');
+            logContent.innerHTML = logMessages.join('<br>');
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.innerHTML = `<h3>📊 Status do Sistema</h3><p>${message}</p>`;
+        }
+
+        function resolveCompanyId() {
+            try {
+                const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                if (svc && typeof svc.getTenantId === 'function') {
+                    const t = svc.getTenantId();
+                    if (t) return String(t);
+                }
+            } catch (_) {}
+            try {
+                if (window.appTenantId) return String(window.appTenantId);
+                if (window.companyInfo) {
+                    const raw = window.companyInfo;
+                    const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                    if (id) return String(id);
+                }
+                const stored = localStorage.getItem('company_info');
+                if (stored) {
+                    const obj = JSON.parse(stored);
+                    const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                    if (id) return String(id);
+                }
+            } catch (_) {}
+            return null;
+        }
+
+        function getLocalStorageKeys(key) {
+            const keys = [];
+            try {
+                const base = String(key || '');
+                if (!base) return keys;
+                const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                if (svc && typeof svc.getNamespacedPath === 'function') {
+                    const ns = svc.getNamespacedPath(base);
+                    if (ns && ns !== base) keys.push(ns);
+                } else {
+                    const companyId = resolveCompanyId();
+                    if (companyId && !/^companies\//.test(base) && !/^users\//.test(base)) {
+                        keys.push(`companies/${companyId}/${base}`);
+                    }
+                }
+                keys.push(base);
+            } catch (_) {}
+            return [...new Set(keys)];
+        }
+
+        function readLocalStorageValue(key) {
+            for (const k of getLocalStorageKeys(key)) {
+                const val = localStorage.getItem(k);
+                if (val) return val;
+            }
+            return null;
+        }
+        
+        function updateDados() {
+            const dadosContent = document.getElementById('dadosContent');
+            
+            try {
+                const clientes = readLocalStorageValue('clientes');
+                const especies = readLocalStorageValue('especies');
+                const romaneiosPct = readLocalStorageValue('romaneiosPct');
+                
+                const clientesCount = clientes ? JSON.parse(clientes).length : 0;
+                const especiesCount = especies ? JSON.parse(especies).length : 0;
+                const romaneiosCount = romaneiosPct ? JSON.parse(romaneiosPct).length : 0;
+                
+                dadosContent.innerHTML = `
+                    <strong>📊 Dados Locais:</strong><br>
+                    👥 Clientes: ${clientesCount}<br>
+                    🌳 Espécies: ${especiesCount}<br>
+                    📋 Romaneios PCT: ${romaneiosCount}<br><br>
+                    
+                    <strong>🔗 Conectividade:</strong><br>
+                    🌐 Online: ${navigator.onLine ? 'Sim' : 'Não'}<br>
+                    🔥 Firebase: ${window.firebaseService?.authService ? 'Disponível' : 'Indisponível'}<br>
+                    🔧 Sincronização: ${window.sincronizacaoAtiva ? 'Ativa' : 'Inativa'}
+                `;
+            } catch (error) {
+                dadosContent.innerHTML = `❌ Erro ao verificar dados: ${error.message}`;
+            }
+        }
+        
+        function ativarSincronizacao() {
+            log('🚀 Ativando sincronização multi-navegador...');
+            updateStatus('🔄 Ativando sincronização...', 'warning');
+            
+            try {
+                // Detectar navegador
+                const navegadorId = navigator.userAgent.includes('Chrome') ? 'Chrome' : 
+                                   navigator.userAgent.includes('Edge') ? 'Edge' : 'Browser';
+                const machineId = `${navegadorId}_${Date.now() % 10000}`;
+                
+                log(`🔧 Identificador: ${machineId}`);
+                
+                // Não é mais necessário fazer backup ou sobrescrever window.getData/saveData
+                // pois usaremos as funções assíncronas globais de database-utils.js
+                // window.originalGetData = window.getData;
+                // window.originalSaveData = window.saveData;
+                // log('💾 Backup das funções originais criado');
+                
+                // As funções getData e saveData agora são as versões assíncronas globais
+                // definidas em database-utils.js, que já lidam com Firebase e localStorage.
+                // Não precisamos redefini-las aqui.
+                
+                // Marcar como ativo
+                window.sincronizacaoAtiva = true;
+                window.machineId = machineId;
+                
+                log('✅ Sincronização ativada com sucesso!');
+                updateStatus('✅ Sincronização ativa!', 'success');
+                updateDados();
+                
+                // Auto-sincronizar após 2 segundos
+                setTimeout(() => {
+                    if (navigator.onLine) {
+                        sincronizarTudo();
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                log(`❌ Erro ao ativar sincronização: ${error.message}`);
+                updateStatus('❌ Erro na ativação', 'error');
+            }
+        }
+        
+        async function sincronizarTudo() {
+            log('🔄 Iniciando sincronização completa...');
+            updateStatus('🔄 Sincronizando...', 'warning');
+            
+            try {
+                const keys = ['clientes', 'especies', 'romaneiosPct'];
+                const results = {};
+                
+                for (const key of keys) {
+                    try {
+                        const data = localStorage.getItem(key);
+                        if (data) {
+                            const parsed = JSON.parse(data);
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                                const result = await saveDataAsync(key, parsed);
+                                results[key] = { count: parsed.length, success: result.success };
+                                log(`✅ ${key}: ${parsed.length} itens sincronizados`);
+                            } else {
+                                log(`ℹ️ ${key}: sem dados para sincronizar`);
+                            }
+                        } else {
+                            // Tentar baixar do Firebase
+                            const firebaseData = await getDataAsync(key);
+                            if (firebaseData) {
+                                results[key] = { count: Array.isArray(firebaseData) ? firebaseData.length : 1, success: true };
+                                log(`📥 ${key}: ${Array.isArray(firebaseData) ? firebaseData.length : 1} itens baixados`);
+                            }
+                        }
+                    } catch (error) {
+                        log(`❌ Erro em ${key}: ${error.message}`);
+                        results[key] = { error: error.message };
+                    }
+                }
+                
+                log('🎉 Sincronização completa finalizada!');
+                updateStatus('✅ Sincronização concluída!', 'success');
+                updateDados();
+                
+                return results;
+                
+            } catch (error) {
+                log(`❌ Erro na sincronização: ${error.message}`);
+                updateStatus('❌ Erro na sincronização', 'error');
+            }
+        }
+        
+        function verificarStatus() {
+            log('🔍 Verificando status do sistema...');
+            
+            try {
+                log(`🌐 Online: ${navigator.onLine}`);
+                log(`🔥 Firebase: ${window.firebaseService?.authService ? 'Disponível' : 'Indisponível'}`);
+                log(`🔧 Sincronização: ${window.sincronizacaoAtiva ? 'Ativa' : 'Inativa'}`);
+                log(`🆔 Machine ID: ${window.machineId || 'Não definido'}`);
+                
+                const clientes = readLocalStorageValue('clientes');
+                const especies = readLocalStorageValue('especies');
+                const romaneiosPct = readLocalStorageValue('romaneiosPct');
+                
+                log(`👥 Clientes: ${clientes ? JSON.parse(clientes).length : 0}`);
+                log(`🌳 Espécies: ${especies ? JSON.parse(especies).length : 0}`);
+                log(`📋 Romaneios: ${romaneiosPct ? JSON.parse(romaneiosPct).length : 0}`);
+                
+                updateStatus('📊 Status verificado - veja o log', 'info');
+                updateDados();
+                
+            } catch (error) {
+                log(`❌ Erro ao verificar status: ${error.message}`);
+                updateStatus('❌ Erro na verificação', 'error');
+            }
+        }
+        
+        function restaurarOriginais() {
+            log('🔧 Restaurando funções originais...');
+            
+            try {
+                // Não é mais necessário restaurar window.getData e window.saveData,
+                // pois agora usamos as funções assíncronas globais de database-utils.js.
+                // if (window.originalGetData) {
+                //     window.getData = window.originalGetData;
+                //     log('✅ getData original restaurado');
+                // }
+                
+                // if (window.originalSaveData) {
+                //     window.saveData = window.originalSaveData;
+                //     log('✅ saveData original restaurado');
+                // }
+                
+                window.sincronizacaoAtiva = false;
+                
+                log('✅ Funções originais restauradas com sucesso!');
+                updateStatus('✅ Sistema restaurado', 'success');
+                updateDados();
+                
+            } catch (error) {
+                log(`❌ Erro ao restaurar: ${error.message}`);
+                updateStatus('❌ Erro na restauração', 'error');
+            }
+        }
+        
+        // Inicialização
+        window.addEventListener('load', () => {
+            log('🚀 Sistema de sincronização carregado');
+            verificarStatus();
+            
+            // Verificar se já está rodando em uma página do sistema
+            if (window.location.hostname === 'localhost' && window.location.port === '3000') {
+                log('✅ Executando na página do sistema');
+            } else {
+                log('⚠️ Para melhor funcionamento, abra este arquivo a partir do sistema (localhost:3000)');
+            }
+        });
+        
+        // Atualizar dados a cada 10 segundos
+        setInterval(updateDados, 10000);
+    </script>
+    <script src="global-footer.js"></script>
+</body>
+</html> 

@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MDF-e - Manifesto de Documentos Fiscais</title>
+    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="layout-comum.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="romaneio-comum.css">
+    <link rel="stylesheet" href="status-styles.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        /* Note: Container styles are now in layout-comum.css */
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            display: inline-block;
+            font-size: 24px;
+        }
+
+        h2, h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+            background-color: #f8f9fa;
+            border-radius: 4px 4px 0 0;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6c757d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            background-color: white;
+        }
+
+        .tab:hover {
+            background-color: #e9ecef;
+            color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-section {
+            margin-bottom: 25px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 20px;
+            background-color: #fafafa;
+        }
+
+        .form-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 16px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.25);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-start;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1a252f;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-small {
+            padding: 5px 8px;
+            font-size: 12px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 13px;
+        }
+
+        .data-table th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .data-table tr:nth-of-type(odd) {
+            background-color: #f9f9f9;
+        }
+
+        .data-table tr:nth-of-type(even) {
+            background-color: white;
+        }
+
+        .status-badge {
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-autorizado {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-cancelado {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-encerrado {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+
+        .status-rascunho {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .search-box {
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 15px;
+        }
+
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary-color), #1a252f);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.8rem;
+            color: white;
+        }
+
+        .stat-card p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .nf-section {
+            margin-top: 20px;
+        }
+
+        .nf-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 8px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .nf-row:first-child {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        .percurso-section {
+            background-color: #f1f3f4;
+        }
+
+        .condutor-section {
+            background-color: #e8f4f8;
+        }
+
+        .veiculo-section {
+            background-color: #fff3e0;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .number-cell {
+            text-align: right !important;
+            font-family: monospace;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+            }
+            
+            .tab {
+                flex: 1;
+                min-width: 120px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+
+            .nf-row {
+                grid-template-columns: 1fr;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <main-menu></main-menu>
+        
+        <h1>
+            <i class="fas fa-truck"></i> MDF-e - Manifesto de Documentos Fiscais
+        </h1>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('emissao')">
+                <i class="fas fa-plus"></i> Emissão
+            </button>
+            <button class="tab" onclick="showTab('consulta')">
+                <i class="fas fa-search"></i> Consulta
+            </button>
+            <button class="tab" onclick="showTab('encerramento')">
+                <i class="fas fa-check-circle"></i> Encerramento
+            </button>
+            <button class="tab" onclick="showTab('dashboard')">
+                <i class="fas fa-chart-bar"></i> Dashboard
+            </button>
+        </div>
+
+        <!-- Aba Emissão -->
+        <div id="emissao" class="tab-content active">
+            <form id="mdfeForm">
+                <div class="form-section">
+                    <h3><i class="fas fa-info-circle"></i> Dados do MDF-e</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="mdfeNumero">Número do MDF-e:</label>
+                            <input type="text" id="mdfeNumero" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="mdfeSerie">Série:</label>
+                            <input type="text" id="mdfeSerie" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="mdfeDataEmissao">Data/Hora de Emissão:</label>
+                            <input type="datetime-local" id="mdfeDataEmissao" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mdfeUfInicio">UF de Início:</label>
+                            <select id="mdfeUfInicio" required>
+                                <option value="">Selecione...</option>
+                                <option value="AC">Acre</option>
+                                <option value="AL">Alagoas</option>
+                                <option value="AP">Amapá</option>
+                                <option value="AM">Amazonas</option>
+                                <option value="BA">Bahia</option>
+                                <option value="CE">Ceará</option>
+                                <option value="DF">Distrito Federal</option>
+                                <option value="ES">Espírito Santo</option>
+                                <option value="GO">Goiás</option>
+                                <option value="MA">Maranhão</option>
+                                <option value="MT">Mato Grosso</option>
+                                <option value="MS">Mato Grosso do Sul</option>
+                                <option value="MG">Minas Gerais</option>
+                                <option value="PA">Pará</option>
+                                <option value="PB">Paraíba</option>
+                                <option value="PR">Paraná</option>
+                                <option value="PE">Pernambuco</option>
+                                <option value="PI">Piauí</option>
+                                <option value="RJ">Rio de Janeiro</option>
+                                <option value="RN">Rio Grande do Norte</option>
+                                <option value="RS">Rio Grande do Sul</option>
+                                <option value="RO">Rondônia</option>
+                                <option value="RR">Roraima</option>
+                                <option value="SC">Santa Catarina</option>
+                                <option value="SP">São Paulo</option>
+                                <option value="SE">Sergipe</option>
+                                <option value="TO">Tocantins</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section percurso-section">
+                    <h3><i class="fas fa-route"></i> Percurso</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="percursoUfFim">UF de Fim:</label>
+                            <select id="percursoUfFim" required>
+                                <option value="">Selecione...</option>
+                                <option value="AC">Acre</option>
+                                <option value="AL">Alagoas</option>
+                                <option value="AP">Amapá</option>
+                                <option value="AM">Amazonas</option>
+                                <option value="BA">Bahia</option>
+                                <option value="CE">Ceará</option>
+                                <option value="DF">Distrito Federal</option>
+                                <option value="ES">Espírito Santo</option>
+                                <option value="GO">Goiás</option>
+                                <option value="MA">Maranhão</option>
+                                <option value="MT">Mato Grosso</option>
+                                <option value="MS">Mato Grosso do Sul</option>
+                                <option value="MG">Minas Gerais</option>
+                                <option value="PA">Pará</option>
+                                <option value="PB">Paraíba</option>
+                                <option value="PR">Paraná</option>
+                                <option value="PE">Pernambuco</option>
+                                <option value="PI">Piauí</option>
+                                <option value="RJ">Rio de Janeiro</option>
+                                <option value="RN">Rio Grande do Norte</option>
+                                <option value="RS">Rio Grande do Sul</option>
+                                <option value="RO">Rondônia</option>
+                                <option value="RR">Roraima</option>
+                                <option value="SC">Santa Catarina</option>
+                                <option value="SP">São Paulo</option>
+                                <option value="SE">Sergipe</option>
+                                <option value="TO">Tocantins</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="percursoMunicipioCarregamento">Município de Carregamento:</label>
+                            <input type="text" id="percursoMunicipioCarregamento" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="percursoMunicipioDescarregamento">Município de Descarregamento:</label>
+                            <input type="text" id="percursoMunicipioDescarregamento" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section veiculo-section">
+                    <h3><i class="fas fa-truck"></i> Veículo Trator</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="veiculoPlaca">Placa:</label>
+                            <input type="text" id="veiculoPlaca" required placeholder="ABC-1234">
+                        </div>
+                        <div class="form-group">
+                            <label for="veiculoRenavam">RENAVAM:</label>
+                            <input type="text" id="veiculoRenavam" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="veiculoTara">Tara (kg):</label>
+                            <input type="number" id="veiculoTara" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="veiculoCapacidade">Capacidade (kg):</label>
+                            <input type="number" id="veiculoCapacidade" required min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section condutor-section">
+                    <h3><i class="fas fa-user"></i> Condutor</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="condutorNome">Nome:</label>
+                            <input type="text" id="condutorNome" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="condutorCpf">CPF:</label>
+                            <input type="text" id="condutorCpf" required placeholder="000.000.000-00">
+                        </div>
+                        <div class="form-group">
+                            <label for="condutorCnh">CNH:</label>
+                            <input type="text" id="condutorCnh" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section nf-section">
+                    <h3><i class="fas fa-receipt"></i> Documentos Fiscais</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nfChave">Chave da NF-e:</label>
+                            <input type="text" id="nfChave" placeholder="44 dígitos da chave da NF-e">
+                        </div>
+                        <div class="form-group">
+                            <label for="nfValor">Valor:</label>
+                            <input type="text" id="nfValor" placeholder="R$ 0,00">
+                        </div>
+                        <div class="form-group">
+                            <label for="nfPeso">Peso (kg):</label>
+                            <input type="number" id="nfPeso" step="0.001" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <button type="button" onclick="adicionarDocumento()" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Adicionar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <div class="nf-row">
+                            <div>Chave NF-e</div>
+                            <div>Valor</div>
+                            <div>Peso</div>
+                            <div>Status</div>
+                            <div>Ações</div>
+                        </div>
+                        <div id="documentosContainer"></div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3><i class="fas fa-info-circle"></i> Informações Adicionais</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="mdfeObservacoes">Observações:</label>
+                            <textarea id="mdfeObservacoes" rows="3" placeholder="Informações complementares..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" onclick="salvarRascunhoMdfe()" class="btn btn-warning">
+                        <i class="fas fa-save"></i> Salvar Rascunho
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check"></i> Emitir MDF-e
+                    </button>
+                    <button type="button" onclick="limparFormularioMdfe()" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Limpar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Aba Consulta -->
+        <div id="consulta" class="tab-content">
+            <div class="form-row">
+                <div class="form-group">
+                    <input type="text" id="searchMdfe" class="search-box" placeholder="Buscar por número, placa ou condutor...">
+                </div>
+                <div class="form-group">
+                    <select id="filterStatusMdfe">
+                        <option value="">Todos os status</option>
+                        <option value="rascunho">Rascunho</option>
+                        <option value="autorizado">Autorizado</option>
+                        <option value="encerrado">Encerrado</option>
+                        <option value="cancelado">Cancelado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button onclick="consultarMdfes()" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Série</th>
+                            <th>Data</th>
+                            <th>Placa</th>
+                            <th>Condutor</th>
+                            <th>UF Origem/Destino</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mdfesTable">
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: #666; font-style: italic;">Nenhum MDF-e encontrado</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Aba Encerramento -->
+        <div id="encerramento" class="tab-content">
+            <div class="form-section">
+                <h3><i class="fas fa-check-circle"></i> Encerrar MDF-e</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="mdfeEncerramento">Selecionar MDF-e:</label>
+                        <select id="mdfeEncerramento">
+                            <option value="">Selecione um MDF-e autorizado...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="dataEncerramento">Data/Hora de Encerramento:</label>
+                        <input type="datetime-local" id="dataEncerramento">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="municipioEncerramento">Município de Encerramento:</label>
+                        <input type="text" id="municipioEncerramento" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="protocoloEncerramento">Protocolo de Encerramento:</label>
+                        <input type="text" id="protocoloEncerramento" placeholder="Será gerado automaticamente" readonly>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button onclick="encerrarMdfe()" class="btn btn-success">
+                        <i class="fas fa-check"></i> Encerrar MDF-e
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba Dashboard -->
+        <div id="dashboard" class="tab-content">
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <h3 id="totalMdfesEmitidos">0</h3>
+                    <p>MDF-es Emitidos</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalMdfesAutorizados">0</h3>
+                    <p>Autorizados</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalMdfesEncerrados">0</h3>
+                    <p>Encerrados</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalViagensAtivas">0</h3>
+                    <p>Viagens Ativas</p>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3><i class="fas fa-chart-line"></i> Relatórios</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="relMdfePeriodoInicio">Data Início:</label>
+                        <input type="date" id="relMdfePeriodoInicio">
+                    </div>
+                    <div class="form-group">
+                        <label for="relMdfePeriodoFim">Data Fim:</label>
+                        <input type="date" id="relMdfePeriodoFim">
+                    </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button onclick="gerarRelatorioMdfe()" class="btn btn-primary">
+                            <i class="fas fa-chart-bar"></i> Gerar Relatório
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="menu-component.js?v=20260326"></script>
+    <script src="cities-loader.js"></script>
+    <script>
+        // Dados dos MDF-e
+        let manifestos = [];
+        let editandoManifesto = null;
+
+        // Inicialização da página
+        document.addEventListener('DOMContentLoaded', function() {
+            carregarManifestos();
+            configurarEventos();
+            
+            // Configurar selects de estados/cidades com ids existentes
+            const ufOrigemId = document.getElementById('uf-origem') ? 'uf-origem' : (document.getElementById('mdfeUfInicio') ? 'mdfeUfInicio' : null);
+            const cidadeOrigemId = document.getElementById('cidade-origem') ? 'cidade-origem' : (document.getElementById('percursoMunicipioCarregamento') ? 'percursoMunicipioCarregamento' : null);
+            if (ufOrigemId && cidadeOrigemId) {
+                criarSelectEstados(ufOrigemId, '', function(uf) {
+                    popularCidades(cidadeOrigemId, uf);
+                });
+            }
+            
+            const ufDestinoId = document.getElementById('uf-destino') ? 'uf-destino' : (document.getElementById('percursoUfFim') ? 'percursoUfFim' : null);
+            const cidadeDestinoId = document.getElementById('cidade-destino') ? 'cidade-destino' : (document.getElementById('percursoMunicipioDescarregamento') ? 'percursoMunicipioDescarregamento' : null);
+            if (ufDestinoId && cidadeDestinoId) {
+                criarSelectEstados(ufDestinoId, '', function(uf) {
+                    popularCidades(cidadeDestinoId, uf);
+                });
+            }
+            
+            // Condutor pode não ter UF/cidade configuráveis nesta versão; ignorar se não existirem
+            const ufCondutorId = document.getElementById('uf-condutor') ? 'uf-condutor' : null;
+            const cidadeCondutorId = document.getElementById('cidade-condutor') ? 'cidade-condutor' : null;
+            if (ufCondutorId && cidadeCondutorId) {
+                criarSelectEstados(ufCondutorId, '', function(uf) { popularCidades(cidadeCondutorId, uf); });
+            }
+        });
+
+        function configurarEventos() {
+            // Eventos dos botões
+            const btnNovo = document.getElementById('btn-novo-manifesto');
+            if (btnNovo) btnNovo.addEventListener('click', novoManifesto);
+            const btnSalvar = document.getElementById('btn-salvar-manifesto');
+            if (btnSalvar) btnSalvar.addEventListener('click', salvarManifesto);
+            const btnCancelar = document.getElementById('btn-cancelar-manifesto');
+            if (btnCancelar) btnCancelar.addEventListener('click', cancelarEdicao);
+            const btnAddNfe = document.getElementById('btn-adicionar-nfe');
+            if (btnAddNfe) btnAddNfe.addEventListener('click', adicionarNFe);
+            
+            // Eventos de busca CEP
+            const cepOrigem = document.getElementById('cep-origem');
+            if (cepOrigem) cepOrigem.addEventListener('blur', function() { buscarCEPOrigem(this.value); });
+            const cepDestino = document.getElementById('cep-destino');
+            if (cepDestino) cepDestino.addEventListener('blur', function() { buscarCEPDestino(this.value); });
+            const cepCondutor = document.getElementById('cep-condutor');
+            if (cepCondutor) cepCondutor.addEventListener('blur', function() { buscarCEPCondutor(this.value); });
+            
+            // Formatação de CEP
+            if (cepOrigem) cepOrigem.addEventListener('input', function() { this.value = formatarCEP(this.value); });
+            if (cepDestino) cepDestino.addEventListener('input', function() { this.value = formatarCEP(this.value); });
+            if (cepCondutor) cepCondutor.addEventListener('input', function() { this.value = formatarCEP(this.value); });
+        }
+
+        async function buscarCEPOrigem(cep) {
+            const dados = await buscarCEP(cep);
+            if (dados) {
+                const munEl = document.getElementById('percursoMunicipioCarregamento');
+                if (munEl) munEl.value = dados.cidade || '';
+                
+                // Selecionar UF e cidade
+                const ufSelect = document.getElementById('mdfeUfInicio') || document.getElementById('uf-origem');
+                if (ufSelect) ufSelect.value = dados.uf;
+                
+                // Carregar cidades e selecionar
+                const cidadeId = document.getElementById('percursoMunicipioCarregamento') ? 'percursoMunicipioCarregamento' : 'cidade-origem';
+                await popularCidades(cidadeId, dados.uf, dados.cidade);
+            }
+        }
+
+        async function buscarCEPDestino(cep) {
+            const dados = await buscarCEP(cep);
+            if (dados) {
+                const munEl = document.getElementById('percursoMunicipioDescarregamento');
+                if (munEl) munEl.value = dados.cidade || '';
+                
+                // Selecionar UF e cidade
+                const ufSelect = document.getElementById('percursoUfFim') || document.getElementById('uf-destino');
+                if (ufSelect) ufSelect.value = dados.uf;
+                
+                // Carregar cidades e selecionar
+                const cidadeId = document.getElementById('percursoMunicipioDescarregamento') ? 'percursoMunicipioDescarregamento' : 'cidade-destino';
+                await popularCidades(cidadeId, dados.uf, dados.cidade);
+            }
+        }
+
+        async function buscarCEPCondutor(cep) {
+            const dados = await buscarCEP(cep);
+            if (dados) {
+                // Esta versão não possui campos de UF/cidade para condutor; ignorar silenciosamente
+            }
+        }
+
+        function carregarManifestos() {
+            // Simular carregamento de dados
+            manifestos = [
+                {
+                    id: 1,
+                    numero: 'MDF000001',
+                    serie: '1',
+                    dataEmissao: '2024-01-15',
+                    origem: 'São Paulo - SP',
+                    destino: 'Rio de Janeiro - RJ',
+                    condutor: 'João Silva',
+                    veiculo: 'ABC-1234',
+                    status: 'Autorizado'
+                },
+                {
+                    id: 2,
+                    numero: 'MDF000002',
+                    serie: '1',
+                    dataEmissao: '2024-01-16',
+                    origem: 'Belo Horizonte - MG',
+                    destino: 'Salvador - BA',
+                    condutor: 'Maria Santos',
+                    veiculo: 'DEF-5678',
+                    status: 'Pendente'
+                }
+            ];
+            
+            atualizarTabelaManifestos();
+        }
+
+        function atualizarTabelaManifestos() {
+            const tbody = document.getElementById('mdfesTable');
+            if (!tbody) {
+                console.warn('⚠️ Tabela de manifestos não encontrada (#mdfesTable)');
+                return;
+            }
+            tbody.innerHTML = '';
+            
+            manifestos.forEach(manifesto => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${manifesto.numero}</td>
+                    <td>${manifesto.serie}</td>
+                    <td>${formatarData(manifesto.dataEmissao)}</td>
+                    <td>${manifesto.origem}</td>
+                    <td>${manifesto.destino}</td>
+                    <td>${manifesto.condutor}</td>
+                    <td>${manifesto.veiculo}</td>
+                    <td><span class="status ${manifesto.status.toLowerCase()}">${manifesto.status}</span></td>
+                    <td>
+                        <button onclick="editarManifesto(${manifesto.id})" class="btn-editar">Editar</button>
+                        <button onclick="excluirManifesto(${manifesto.id})" class="btn-excluir">Excluir</button>
+                        <button onclick="visualizarManifesto(${manifesto.id})" class="btn-visualizar">Ver</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function novoManifesto() {
+            editandoManifesto = null;
+            limparFormulario();
+            document.getElementById('form-manifesto').style.display = 'block';
+            document.getElementById('lista-manifestos').style.display = 'none';
+        }
+
+        function editarManifesto(id) {
+            const manifesto = manifestos.find(m => m.id === id);
+            if (manifesto) {
+                editandoManifesto = manifesto;
+                preencherFormulario(manifesto);
+                document.getElementById('form-manifesto').style.display = 'block';
+                document.getElementById('lista-manifestos').style.display = 'none';
+            }
+        }
+
+        function excluirManifesto(id) {
+            if (confirm('Tem certeza que deseja excluir este manifesto?')) {
+                manifestos = manifestos.filter(m => m.id !== id);
+                atualizarTabelaManifestos();
+            }
+        }
+
+        function visualizarManifesto(id) {
+            const manifesto = manifestos.find(m => m.id === id);
+            if (manifesto) {
+                alert(`MDF-e ${manifesto.numero}\nOrigem: ${manifesto.origem}\nDestino: ${manifesto.destino}\nCondutor: ${manifesto.condutor}`);
+            }
+        }
+
+        function salvarManifesto() {
+            const formData = coletarDadosFormulario();
+            
+            if (!validarFormulario(formData)) {
+                return;
+            }
+            
+            if (editandoManifesto) {
+                // Atualizar manifesto existente
+                const index = manifestos.findIndex(m => m.id === editandoManifesto.id);
+                manifestos[index] = { ...editandoManifesto, ...formData };
+            } else {
+                // Criar novo manifesto
+                const novoId = Math.max(...manifestos.map(m => m.id), 0) + 1;
+                manifestos.push({ id: novoId, ...formData });
+            }
+            
+            atualizarTabelaManifestos();
+            cancelarEdicao();
+            alert('MDF-e salvo com sucesso!');
+        }
+
+        function cancelarEdicao() {
+            editandoManifesto = null;
+            document.getElementById('form-manifesto').style.display = 'none';
+            document.getElementById('lista-manifestos').style.display = 'block';
+        }
+
+        function coletarDadosFormulario() {
+            const origemCidade = document.getElementById('cidade-origem').value;
+            const origemUF = document.getElementById('uf-origem').value;
+            const destinoCidade = document.getElementById('cidade-destino').value;
+            const destinoUF = document.getElementById('uf-destino').value;
+            
+            return {
+                numero: document.getElementById('numero-manifesto').value,
+                serie: document.getElementById('serie-manifesto').value,
+                dataEmissao: document.getElementById('data-emissao').value,
+                origem: `${origemCidade} - ${origemUF}`,
+                destino: `${destinoCidade} - ${destinoUF}`,
+                condutor: document.getElementById('nome-condutor').value,
+                veiculo: document.getElementById('placa-veiculo').value,
+                status: 'Pendente'
+            };
+        }
+
+        function validarFormulario(data) {
+            if (!data.numero || !data.serie || !data.dataEmissao || !data.condutor || !data.veiculo) {
+                alert('Por favor, preencha todos os campos obrigatórios.');
+                return false;
+            }
+            return true;
+        }
+
+        function preencherFormulario(manifesto) {
+            document.getElementById('numero-manifesto').value = manifesto.numero;
+            document.getElementById('serie-manifesto').value = manifesto.serie;
+            document.getElementById('data-emissao').value = manifesto.dataEmissao;
+            document.getElementById('nome-condutor').value = manifesto.condutor;
+            document.getElementById('placa-veiculo').value = manifesto.veiculo;
+        }
+
+        function limparFormulario() {
+            document.getElementById('form-manifesto').reset();
+        }
+
+        function adicionarNFe() {
+            const tbody = document.querySelector('#tabela-nfes tbody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="text" placeholder="Chave da NF-e" maxlength="44"></td>
+                <td><input type="text" placeholder="Número da NF-e"></td>
+                <td><input type="text" placeholder="Emitente"></td>
+                <td><input type="number" placeholder="Valor" step="0.01"></td>
+                <td><button onclick="removerNFe(this)" class="btn-excluir">Remover</button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function removerNFe(button) {
+            button.closest('tr').remove();
+        }
+
+        function formatarData(data) {
+            return new Date(data).toLocaleDateString('pt-BR');
+        }
+
+        // ✅ Navegação entre abas
+        function showTab(tabName) {
+            // Ocultar todas as tabs
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => tab.classList.remove('active'));
+
+            // Remover classe active de todas as tabs
+            const tabs = document.querySelectorAll('.tabs .tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Mostrar tab selecionada
+            const content = document.getElementById(tabName);
+            if (content) content.classList.add('active');
+
+            // Marcar o botão da tab como ativo
+            const tabButton = document.querySelector(`.tabs .tab[onclick*="showTab('${tabName}')"]`);
+            if (tabButton) tabButton.classList.add('active');
+        }
+    </script>
+    <script type="module">
+        // Importar firebaseService e disponibilizar globalmente
+        import { authService, isFirebaseOperational } from './firebaseService.js';
+        
+        // Disponibilizar firebaseService globalmente
+        window.firebaseService = { authService, isFirebaseOperational };
+        
+        console.log("✅ firebaseService carregado no mdf-e.html");
+    </script>
+    <script src="mdf-e.js"></script>
+</body>
+</html>

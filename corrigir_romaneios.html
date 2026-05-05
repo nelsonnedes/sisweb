@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Correção de Romaneios PCT</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .section h2 {
+            color: #34495e;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+        button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        button.success {
+            background: #27ae60;
+        }
+        button.success:hover {
+            background: #229954;
+        }
+        button.warning {
+            background: #f39c12;
+        }
+        button.warning:hover {
+            background: #e67e22;
+        }
+        button.danger {
+            background: #e74c3c;
+        }
+        button.danger:hover {
+            background: #c0392b;
+        }
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 5px;
+        }
+        .status.success {
+            background: #d5f4e6;
+            color: #27ae60;
+            border: 1px solid #27ae60;
+        }
+        .status.error {
+            background: #fadbd8;
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+        .status.warning {
+            background: #fef9e7;
+            color: #f39c12;
+            border: 1px solid #f39c12;
+        }
+        .status.info {
+            background: #ebf3fd;
+            color: #3498db;
+            border: 1px solid #3498db;
+        }
+        .console-output {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+            white-space: pre-wrap;
+            border: 2px solid #34495e;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .info-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .info-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            transition: width 0.3s ease;
+        }
+        .icon {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid;
+        }
+        .alert.info {
+            background: #ebf3fd;
+            border-color: #3498db;
+            color: #2c3e50;
+        }
+        .alert.success {
+            background: #d5f4e6;
+            border-color: #27ae60;
+            color: #2c3e50;
+        }
+        .alert.warning {
+            background: #fef9e7;
+            border-color: #f39c12;
+            color: #2c3e50;
+        }
+        .alert.error {
+            background: #fadbd8;
+            border-color: #e74c3c;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Correção de Romaneios PCT</h1>
+        
+        <div class="alert info">
+            <strong>ℹ️ Informação:</strong> Esta ferramenta diagnostica e corrige problemas com os romaneios PCT que não aparecem na lista de vendas.
+        </div>
+        
+        <div class="section">
+            <h2><span class="icon">📊</span>Status Atual</h2>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>Romaneios PCT</h3>
+                    <div class="value" id="countPct">-</div>
+                    <div id="statusPct" class="status info">Verificando...</div>
+                </div>
+                <div class="info-card">
+                    <h3>Romaneios TL</h3>
+                    <div class="value" id="countTl">-</div>
+                    <div id="statusTl" class="status info">Verificando...</div>
+                </div>
+                <div class="info-card">
+                    <h3>Firebase</h3>
+                    <div class="value" id="firebaseStatus">-</div>
+                    <div id="firebaseInfo" class="status info">Verificando...</div>
+                </div>
+                <div class="info-card">
+                    <h3>LocalStorage</h3>
+                    <div class="value" id="storageUsage">-</div>
+                    <div id="storageInfo" class="status info">Verificando...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2><span class="icon">🔍</span>Diagnóstico</h2>
+            <div class="button-group">
+                <button onclick="verificarStatus()">
+                    <span class="icon">🔍</span>Verificar Status
+                </button>
+                <button onclick="executarDiagnosticoCompleto()" class="warning">
+                    <span class="icon">🧪</span>Diagnóstico Completo
+                </button>
+                <button onclick="testarCarregamento()">
+                    <span class="icon">⚡</span>Testar Carregamento
+                </button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2><span class="icon">🔧</span>Correções</h2>
+            <div class="button-group">
+                <button onclick="corrigirDados()" class="success">
+                    <span class="icon">🔧</span>Corrigir Dados
+                </button>
+                <button onclick="criarDadosExemplo()" class="warning">
+                    <span class="icon">📝</span>Criar Dados Exemplo
+                </button>
+                <button onclick="sincronizarFirebase()">
+                    <span class="icon">🔥</span>Sincronizar Firebase
+                </button>
+                <button onclick="executarCorrecaoCompleta()" class="success">
+                    <span class="icon">✨</span>Correção Completa
+                </button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2><span class="icon">⚠️</span>Ações Avançadas</h2>
+            <div class="button-group">
+                <button onclick="exportarDados()">
+                    <span class="icon">💾</span>Exportar Dados
+                </button>
+                <button onclick="importarDados()">
+                    <span class="icon">📁</span>Importar Dados
+                </button>
+                <button onclick="limparDados()" class="danger">
+                    <span class="icon">🗑️</span>Limpar Dados
+                </button>
+                <button onclick="resetarCompleto()" class="danger">
+                    <span class="icon">🔄</span>Reset Completo
+                </button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2><span class="icon">📋</span>Console de Saída</h2>
+            <div class="console-output" id="consoleOutput">
+                Aguardando comandos...
+            </div>
+            <button onclick="limparConsole()">Limpar Console</button>
+        </div>
+    </div>
+
+    <!-- Incluir scripts necessários -->
+    <script src="firebase-config.js"></script>
+    <script src="data-functions.js"></script>
+    <script src="diagnostico_romaneios.js"></script>
+    <script src="corrigir_romaneios_pct.js"></script>
+    
+    <script>
+        // Interceptar console.log para mostrar na interface
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+        
+        function addToConsole(message, type = 'log') {
+            const consoleOutput = document.getElementById('consoleOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'warn' ? '⚠️' : '📝';
+            consoleOutput.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalConsoleWarn.apply(console, args);
+            addToConsole(args.join(' '), 'warn');
+        };
+        
+        // Funções da interface
+        function resolveCompanyId() {
+            try {
+                const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                if (svc && typeof svc.getTenantId === 'function') {
+                    const t = svc.getTenantId();
+                    if (t) return String(t);
+                }
+            } catch (_) {}
+            try {
+                if (window.appTenantId) return String(window.appTenantId);
+                if (window.companyInfo) {
+                    const raw = window.companyInfo;
+                    const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                    if (id) return String(id);
+                }
+                const stored = localStorage.getItem('company_info');
+                if (stored) {
+                    const obj = JSON.parse(stored);
+                    const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                    if (id) return String(id);
+                }
+            } catch (_) {}
+            return null;
+        }
+
+        function getLocalStorageKeys(key) {
+            const keys = [];
+            try {
+                const base = String(key || '');
+                if (!base) return keys;
+                const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                if (svc && typeof svc.getNamespacedPath === 'function') {
+                    const ns = svc.getNamespacedPath(base);
+                    if (ns && ns !== base) keys.push(ns);
+                } else {
+                    const companyId = resolveCompanyId();
+                    if (companyId && !/^companies\//.test(base) && !/^users\//.test(base)) {
+                        keys.push(`companies/${companyId}/${base}`);
+                    }
+                }
+                keys.push(base);
+            } catch (_) {}
+            return [...new Set(keys)];
+        }
+
+        function readLocalStorageValue(key) {
+            for (const k of getLocalStorageKeys(key)) {
+                const val = localStorage.getItem(k);
+                if (val) return val;
+            }
+            return null;
+        }
+
+        function persistLocalValue(key, data) {
+            try {
+                if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {
+                    window.SiswebStorage.write(key, data);
+                    return;
+                }
+            } catch (_) {}
+            const payload = JSON.stringify(data);
+            for (const k of getLocalStorageKeys(key)) {
+                localStorage.setItem(k, payload);
+            }
+        }
+
+        function removeLocalStorageValue(key) {
+            for (const k of getLocalStorageKeys(key)) {
+                localStorage.removeItem(k);
+            }
+        }
+        async function verificarStatus() {
+            console.log('🔍 Verificando status atual...');
+            
+            // Verificar romaneios PCT
+            const pctData = readLocalStorageValue('romaneiosPct');
+            const pctCount = pctData ? JSON.parse(pctData).length : 0;
+            document.getElementById('countPct').textContent = pctCount;
+            document.getElementById('statusPct').textContent = pctCount > 0 ? 'OK' : 'Vazio';
+            document.getElementById('statusPct').className = `status ${pctCount > 0 ? 'success' : 'error'}`;
+            
+            // Verificar romaneios TL
+            const tlData = readLocalStorageValue('romaneiosTL');
+            const tlCount = tlData ? JSON.parse(tlData).length : 0;
+            document.getElementById('countTl').textContent = tlCount;
+            document.getElementById('statusTl').textContent = tlCount > 0 ? 'OK' : 'Vazio';
+            document.getElementById('statusTl').className = `status ${tlCount > 0 ? 'success' : 'error'}`;
+            
+            // Verificar Firebase
+            const firebaseAvailable = window.firebaseService && window.firebaseService.authService;
+            document.getElementById('firebaseStatus').textContent = firebaseAvailable ? 'Disponível' : 'Indisponível';
+            document.getElementById('firebaseInfo').textContent = firebaseAvailable ? 'Conectado' : 'Offline';
+            document.getElementById('firebaseInfo').className = `status ${firebaseAvailable ? 'success' : 'warning'}`;
+            
+            // Verificar localStorage
+            const storageUsed = JSON.stringify(localStorage).length;
+            const storageUsedMB = (storageUsed / (1024 * 1024)).toFixed(2);
+            document.getElementById('storageUsage').textContent = `${storageUsedMB} MB`;
+            document.getElementById('storageInfo').textContent = storageUsed > 5000000 ? 'Alto uso' : 'Normal';
+            document.getElementById('storageInfo').className = `status ${storageUsed > 5000000 ? 'warning' : 'success'}`;
+            
+            console.log('✅ Status verificado!');
+        }
+        
+        async function executarDiagnosticoCompleto() {
+            if (typeof executarDiagnostico === 'function') {
+                await executarDiagnostico();
+            } else {
+                console.error('❌ Função de diagnóstico não encontrada');
+            }
+        }
+        
+        async function testarCarregamento() {
+            if (typeof testarGetData === 'function') {
+                await testarGetData('romaneiosPct');
+            } else {
+                console.error('❌ Função de teste não encontrada');
+            }
+        }
+        
+        async function corrigirDados() {
+            if (typeof corrigirRomaneiosPct === 'function') {
+                const resultado = corrigirRomaneiosPct();
+                console.log('✅ Correção concluída:', resultado.length, 'romaneios');
+                await verificarStatus();
+            } else {
+                console.error('❌ Função de correção não encontrada');
+            }
+        }
+        
+        async function criarDadosExemplo() {
+            if (typeof criarDadosTeste === 'function') {
+                const dados = criarDadosTeste();
+                console.log('✅ Dados de exemplo criados:', dados.length, 'romaneios');
+                await verificarStatus();
+            } else {
+                console.error('❌ Função de criação de dados não encontrada');
+            }
+        }
+        
+        async function sincronizarFirebase() {
+            if (typeof sincronizarComFirebase === 'function') {
+                const resultado = await sincronizarComFirebase();
+                console.log(resultado ? '✅ Sincronização concluída' : '❌ Erro na sincronização');
+                await verificarStatus();
+            } else {
+                console.error('❌ Função de sincronização não encontrada');
+            }
+        }
+        
+        async function executarCorrecaoCompleta() {
+            if (typeof executarCorrecaoCompleta === 'function') {
+                const resultado = await executarCorrecaoCompleta();
+                console.log('✅ Correção completa finalizada!');
+                await verificarStatus();
+            } else {
+                console.error('❌ Função de correção completa não encontrada');
+            }
+        }
+        
+        function exportarDados() {
+            const dados = {
+                romaneiosPct: JSON.parse(readLocalStorageValue('romaneiosPct') || '[]'),
+                romaneiosTL: JSON.parse(readLocalStorageValue('romaneiosTL') || '[]'),
+                romaneiosPes: JSON.parse(readLocalStorageValue('romaneiosPes') || '[]'),
+                romaneiosTora: JSON.parse(readLocalStorageValue('romaneiosTora') || '[]')
+            };
+            
+            const blob = new Blob([JSON.stringify(dados, null, 2)], {
+                type: 'application/json'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_romaneios_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log('✅ Dados exportados com sucesso!');
+        }
+        
+        function importarDados() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const dados = JSON.parse(e.target.result);
+                        
+                        if (dados.romaneiosPct) {
+                            persistLocalValue('romaneiosPct', dados.romaneiosPct);
+                        }
+                        if (dados.romaneiosTL) {
+                            persistLocalValue('romaneiosTL', dados.romaneiosTL);
+                        }
+                        if (dados.romaneiosPes) {
+                            persistLocalValue('romaneiosPes', dados.romaneiosPes);
+                        }
+                        if (dados.romaneiosTora) {
+                            persistLocalValue('romaneiosTora', dados.romaneiosTora);
+                        }
+                        
+                        console.log('✅ Dados importados com sucesso!');
+                        verificarStatus();
+                    } catch (error) {
+                        console.error('❌ Erro ao importar dados:', error.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        function limparDados() {
+            if (confirm('⚠️ Tem certeza que deseja limpar todos os dados de romaneios? Esta ação não pode ser desfeita!')) {
+                removeLocalStorageValue('romaneiosPct');
+                removeLocalStorageValue('romaneiosTL');
+                removeLocalStorageValue('romaneiosPes');
+                removeLocalStorageValue('romaneiosTora');
+                console.log('🗑️ Dados limpos!');
+                verificarStatus();
+            }
+        }
+        
+        function resetarCompleto() {
+            if (confirm('⚠️ ATENÇÃO! Isso vai limpar TODOS os dados do localStorage. Deseja continuar?')) {
+                localStorage.clear();
+                console.log('🔄 Reset completo realizado!');
+                verificarStatus();
+            }
+        }
+        
+        function limparConsole() {
+            document.getElementById('consoleOutput').textContent = 'Console limpo...\n';
+        }
+        
+        // Verificar status ao carregar a página
+        window.addEventListener('load', verificarStatus);
+    </script>
+    <script src="global-footer.js"></script>
+</body>
+</html> 

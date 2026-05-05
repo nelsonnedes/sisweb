@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migração Financeiro (Mensal)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 900px;
+            width: 100%;
+            padding: 30px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-bottom: 14px;
+            border-radius: 4px;
+        }
+
+        .info-box.warning {
+            border-left-color: #f39c12;
+            background: #fff3cd;
+        }
+
+        .info-box.success {
+            border-left-color: #27ae60;
+            background: #d4edda;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 16px 0;
+        }
+
+        .toggles {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .toggle {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
+        .button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            margin: 4px;
+            transition: background 0.3s;
+        }
+
+        .button:hover { background: #2980b9; }
+
+        .button.success { background: #27ae60; }
+        .button.success:hover { background: #1f8a4c; }
+
+        .button.danger { background: #e74c3c; }
+        .button.danger:hover { background: #c0392b; }
+
+        .button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .status.waiting { background: #fff3cd; color: #856404; }
+        .status.running { background: #cfe2ff; color: #084298; }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+
+        .console {
+            background: #2c3e50;
+            color: #27ae60;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 420px;
+            overflow-y: auto;
+            margin-top: 16px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Migração Financeiro (Mensal)</h1>
+
+        <div class="info-box">
+            <strong>ℹ️ O que esta ferramenta faz</strong><br>
+            Migra registros legados em <code>contasReceber</code> e <code>contasPagar</code> para os caminhos canônicos mensais:
+            <code>financas/receber/&lt;YYYY-MM&gt;/&lt;id&gt;</code> e <code>financas/pagar/&lt;YYYY-MM&gt;/&lt;id&gt;</code>.
+        </div>
+
+        <div class="info-box warning">
+            <strong>⚠️ Atenção</strong><br>
+            1) Rode primeiro o <em>Dry-run</em> (não grava nada).<br>
+            2) Depois rode a migração (sem apagar legado).<br>
+            3) Só então faça a limpeza do legado.<br>
+            A migração não sobrescreve itens que já existem no destino (contabiliza como conflito).
+        </div>
+
+        <div id="status" class="status waiting">⏳ Aguardando execução...</div>
+
+        <div class="row">
+            <div class="toggles">
+                <label class="toggle"><input type="checkbox" id="toggleReceber" checked> Migrar Receber</label>
+                <label class="toggle"><input type="checkbox" id="togglePagar" checked> Migrar Pagar</label>
+            </div>
+            <div>
+                <button class="button" onclick="executarDryRun()" id="btnDryRun">🔍 Dry-run</button>
+                <button class="button success" onclick="executarMigracao()" id="btnMigrar" disabled>✅ Migrar</button>
+                <button class="button danger" onclick="executarLimpezaLegado()" id="btnLimpar" disabled>🗑️ Limpar legado</button>
+            </div>
+        </div>
+
+        <div class="console" id="console">Console de migração...\n</div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script type="module">
+        import './firebaseService.js';
+        console.log('✅ firebaseService carregado');
+    </script>
+
+    <script src="scripts/migrar-financas-mensal.js"></script>
+</body>
+</html>
+

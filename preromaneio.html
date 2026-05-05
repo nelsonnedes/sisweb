@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Pré-Romaneio - Sistema</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="menu.css?v=3">
+    <link rel="stylesheet" href="romaneio-comum.css">
+    <link rel="stylesheet" href="print-styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="menu-component.js?v=20260505_2"></script>
+    
+    <style>
+        /* ==========================================================================
+           🎨 PRÉ-ROMANEIO - ESTILOS PADRONIZADOS (BASEADO EM ROMANEIO TL/PCT)
+           ========================================================================== */
+
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e67e22;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --light-bg: #f8f9fa;
+            --border-color: #ddd;
+            --text-color: #2c3e50;
+            --text-muted: #7f8c8d;
+            --radius-md: 8px;
+            --radius-sm: 4px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* === TABS === */
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            font-weight: bold;
+            color: #7f8c8d;
+            transition: all 0.2s;
+        }
+
+        .tab-button:hover {
+            background-color: #e9ecef;
+            color: #2c3e50;
+        }
+
+        .tab-button.active {
+            background-color: white;
+            color: #2c3e50;
+            border-bottom: 2px solid white;
+            margin-bottom: -2px;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px 0;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* === FORMS & GRIDS === */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            height: 38px; /* Altura padronizada */
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+
+        .campos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: flex-end; /* Alinhar pela base */
+        }
+
+        .campos-grid .form-group {
+            margin-bottom: 0;
+            width: 100%;
+        }
+        
+        .grid-col-2 {
+            grid-column: span 2;
+        }
+
+        /* === BOTÕES === */
+        .buttons-container {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: flex-start;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-adicionar { background-color: #27ae60; }
+        .btn-adicionar:hover { background-color: #219a52; }
+
+        .btn-salvar { background-color: #3498db; }
+        .btn-salvar:hover { background-color: #2980b9; }
+
+        .btn-listar { background-color: #f39c12; }
+        .btn-listar:hover { background-color: #e67e22; }
+
+        .btn-limpar { background-color: #95a5a6; }
+        .btn-limpar:hover { background-color: #7f8c8d; }
+
+        /* Botões de Ação na Tabela */
+        .btn-editar, .btn-excluir {
+            padding: 6px 10px;
+            font-size: 12px;
+            margin: 0 2px;
+        }
+
+        .btn-editar { background-color: #f39c12; }
+        .btn-editar:hover { background-color: #d35400; }
+
+        .btn-excluir { background-color: #e74c3c; }
+        .btn-excluir:hover { background-color: #c0392b; }
+
+        /* === TABELA === */
+        .table-responsive {
+            margin-top: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            overflow: hidden;
+            overflow-x: auto;
+            background: white; /* Ensure white background */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            /* min-width removido para modais se adaptarem */
+        }
+        
+        /* Apenas a tabela principal de itens precisa de min-width para não quebrar layout complexo */
+        #tabela-serrados, #tabela-toras {
+            min-width: 900px;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+            height: 40px;
+            white-space: nowrap; /* Prevent header breaking */
+        }
+        
+        /* Modal Table Specifics */
+        .modal .table-responsive {
+            margin: 0;
+            border: 1px solid #d9e1ea;
+            border-radius: 8px;
+            max-height: 60vh;
+            overflow: hidden;
+            background: #fff;
+        }
+        
+        .modal table {
+            width: 100%;
+            table-layout: auto; /* Allow auto layout */
+        }
+        
+        /* Coluna de Ações Fixa à Direita */
+        .modal th:last-child, 
+        .modal td:last-child {
+            width: 1%; /* Shrink to fit content */
+            white-space: nowrap;
+            text-align: center;
+            padding-right: 15px;
+        }
+        
+        /* Centralizar ícones */
+        .modal td:last-child {
+            vertical-align: middle;
+        }
+        
+        .modal .btn-group-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+        }
+
+        tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        /* Melhor visibilidade das linhas no modal "Meus Pré-Romaneios" */
+        #listaModal .table-responsive {
+            background: #fff;
+            border-radius: 6px;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+        }
+
+        #listaModal table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        #listaModal thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.12);
+        }
+
+        #listaModal tbody td {
+            border-bottom: 1px solid #e1e5ea;
+        }
+
+        #listaModal tbody tr:nth-child(odd) td {
+            background-color: #fbfcfd;
+        }
+
+        #listaModal tbody tr:nth-child(even) td {
+            background-color: #ffffff;
+        }
+
+        #listaModal tbody tr:hover td {
+            background-color: #eef6ff;
+        }
+
+        #listaModal tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+
+        /* === PAGINAÇÃO === */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            margin-top: 15px;
+            padding: 10px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            align-items: center;
+            margin: 12px 0 4px;
+            flex-wrap: wrap;
+        }
+
+        .pagination-controls button {
+            border: 1px solid #d0d7de;
+            background: #fff;
+            color: #2c3e50;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .pagination-controls button.active {
+            background: #2c3e50;
+            color: #fff;
+            border-color: #2c3e50;
+        }
+
+        .pagination-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-controls span {
+            padding: 0 4px;
+            color: #6c757d;
+        }
+
+        .pagination-btn {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            color: #2c3e50;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background-color: #e9ecef;
+        }
+
+        .pagination-btn.active {
+            background-color: #2c3e50;
+            color: white;
+            border-color: #2c3e50;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* === TOTAIS === */
+        .totais-container {
+            margin-top: 20px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .totais-item {
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .totais-label {
+            font-weight: bold;
+            color: #7f8c8d;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .totais-valor {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* === AUTOCOMPLETE === */
+        .autocomplete-container { position: relative; width: 100%; }
+        
+        .input-with-icon { padding-right: 75px !important; }
+
+        .autocomplete-icons-container { 
+            position: absolute; 
+            right: 5px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            display: flex; 
+            gap: 5px; 
+        }
+
+        .autocomplete-icon { 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            cursor: pointer; 
+            color: #95a5a6; 
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .autocomplete-icon:hover { 
+            color: #3498db; 
+            background-color: rgba(0,0,0,0.05);
+        }
+        
+        .autocomplete-suggestions {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 0 0 4px 4px;
+        }
+
+        .autocomplete-suggestions div {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        .autocomplete-suggestions div:hover {
+            background-color: #f8f9fa;
+            color: #3498db;
+        }
+
+        /* === MODAIS PADRONIZADOS === */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 2000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.5); 
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-header {
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%; 
+            box-sizing: border-box;
+            flex-shrink: 0; 
+            border-radius: 8px 8px 0 0; /* Arredondamento explícito */
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: white;
+            text-align: left;
+            flex: 1;
+            line-height: 1.2;
+            padding-left: 0; /* Garante que não há padding extra */
+        }
+
+        .close-modal {
+            color: rgba(255,255,255,0.8);
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+            margin-left: 15px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+        }
+
+        /* Ajuste específico para o modal de Espécies */
+        #speciesListModal .modal-content {
+            width: 95%;
+            max-width: 1000px;
+        }
+        
+        /* Neutraliza regras externas (romaneio-comum.css) que usam margens negativas */
+        #speciesListModal .modal-header {
+            margin: 0 !important;
+        }
+        
+        #speciesListModal .modal-footer .btn-adicionar {
+            padding: 10px 20px;
+            min-width: 170px;
+        }
+
+        #clientListModal .modal-content {
+            width: 95%;
+            max-width: 1000px;
+        }
+
+        #clientModal .modal-content {
+            width: 95%;
+            max-width: 650px;
+        }
+
+        #fornecedorListModal .modal-content {
+            width: 95%;
+            max-width: 1200px;
+        }
+
+        #fornecedorListModal .modal-footer .btn-adicionar {
+            padding: 10px 20px;
+            min-width: 190px;
+        }
+
+        #speciesModal .modal-content {
+            width: 95%;
+            max-width: 650px;
+        }
+
+        #listaModal .modal-content {
+            width: 95%;
+            max-width: 1100px;
+        }
+
+        /* Ajuste robusto para o botão Nova Espécie */
+        .modal .btn-adicionar {
+            background-color: #2ecc71;
+            color: white;
+            padding: 10px 20px; /* Padding generoso */
+            width: auto; 
+            min-width: 160px; /* Aumentado de 150px para 160px */
+            height: auto; /* Altura automática baseada no padding */
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px; 
+            white-space: nowrap; 
+            font-weight: 600;
+            font-size: 14px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .modal .btn-adicionar:hover {
+            background-color: #27ae60;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px; /* Padding restaurado */
+            background-color: #f8f9fa;
+            border-top: 1px solid #ddd;
+            border-radius: 0 0 8px 8px; /* Arredondamento explícito */
+            display: flex;
+            justify-content: space-between; 
+            align-items: center;
+            flex-shrink: 0; 
+            height: auto; /* Altura automática */
+            min-height: 70px;
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 2% auto; 
+            padding: 0 !important; /* Forçar padding zero para evitar bordas brancas */
+            border: none; 
+            width: 95%; 
+            max-width: 1200px; 
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh; 
+            height: auto; 
+        }
+        
+        .pagination-container {
+            margin-top: 0; /* Remove margem superior extra */
+            padding: 5px 10px; /* Padding reduzido */
+            height: 40px; /* Altura fixa compacta */
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0; /* Não encolher */
+            background-color: white; /* Garante fundo branco */
+            border-top: 1px solid #f1f1f1; /* Separação sutil da tabela */
+        }
+        
+        .search-box {
+            margin-bottom: 15px;
+            flex-shrink: 0; /* Não encolher */
+        }
+        
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto; /* Rolagem APENAS no corpo */
+            flex: 1; /* Ocupa o espaço restante */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-table-scroll {
+            max-height: none; /* Remove altura fixa */
+            overflow-y: auto; /* Rolagem na tabela se necessário */
+            border: 1px solid #eee;
+            border-radius: 4px;
+            flex: 1; /* Tabela cresce para ocupar espaço */
+        }
+        
+        /* === MODAL TABLE & ACTIONS (REFINED) === */
+        .modal .table th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #2c3e50 !important; /* Voltar para fundo escuro */
+            color: white !important; /* Texto branco */
+            border-bottom: 2px solid #1a252f !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.78rem;
+            letter-spacing: 0.5px;
+            padding: 6px 8px;
+            line-height: 1.1;
+        }
+        
+        .modal .table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #f1f1f1;
+            color: #34495e;
+            font-size: 0.85rem;
+            vertical-align: middle;
+            line-height: 1.1;
+        }
+
+        /* Zebra striping suave para legibilidade */
+        .modal .table tbody tr:nth-child(even) {
+            background-color: #fafbfc;
+        }
+        
+        .modal .table tbody tr:hover {
+            background-color: #f0f4f8;
+        }
+
+        /* Remove default gradients or backgrounds from external scripts */
+        .modal .table thead {
+            background: none !important;
+        }
+
+        /* Botões de Ação - Estilo "Flat & Clean" */
+        .modal .btn-editar, .modal .btn-excluir, .modal .btn-selecionar {
+            padding: 0;
+            margin: 0 4px;
+            font-size: 13px;
+            border-radius: 6px; /* Cantos mais suaves */
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efeito bounce suave */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+        
+        /* Ensure icons are visible */
+        .modal .btn-editar i, .modal .btn-excluir i, .modal .btn-selecionar i {
+            color: white;
+            font-size: 13px;
+        }
+
+        .modal .btn-selecionar {
+            background-color: #2ecc71; /* Verde mais vibrante */
+        }
+        
+        .modal .btn-selecionar:hover {
+            background-color: #27ae60;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(46, 204, 113, 0.3);
+        }
+
+        .modal .btn-editar {
+            background-color: #f1c40f; /* Amarelo/Laranja vibrante */
+        }
+        
+        .modal .btn-editar:hover {
+            background-color: #f39c12;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(241, 196, 15, 0.3);
+        }
+
+        .modal .btn-excluir {
+            background-color: #e74c3c; /* Vermelho padrão */
+        }
+        
+        .modal .btn-excluir:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+        }
+
+        .modal td.text-center {
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        /* Coluna de Ações Fixa e Alinhada */
+        .modal th:last-child, 
+        .modal td:last-child {
+            width: 1%;
+            white-space: nowrap;
+            text-align: center;
+            padding-right: 10px;
+            padding-left: 10px;
+        }
+        
+        /* Container for action buttons to ensure alignment */
+        .actions-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            min-height: 30px;
+            gap: 2px;
+        }
+
+        .modal .actions-cell {
+            text-align: center;
+        }
+
+        .modal .actions-cell .actions-container {
+            margin: 0 auto;
+        }
+
+        #clientListModal table,
+        #speciesListModal table {
+            table-layout: fixed;
+        }
+
+        #clientListModal thead th:first-child,
+        #clientListModal td:first-child {
+            width: 55%;
+        }
+
+        #clientListModal thead th:nth-child(2),
+        #clientListModal td:nth-child(2) {
+            width: 35%;
+        }
+
+        #clientListModal thead th:last-child {
+            text-align: center;
+            width: 40px;
+            padding-left: 4px;
+            padding-right: 4px;
+        }
+
+        #clientListModal td.actions-cell {
+            text-align: center;
+            padding-left: 0;
+            padding-right: 0;
+            vertical-align: middle;
+            width: 40px;
+        }
+
+        #clientListModal td.actions-cell .actions-container {
+            width: auto;
+            margin: 0;
+            display: inline-flex;
+        }
+
+        #clientListModal .table th {
+            padding: 6px 8px;
+            height: 30px;
+            font-size: 12px;
+            line-height: 1.1;
+        }
+
+        #clientListModal .table td {
+            padding: 6px 8px;
+            height: 28px;
+            font-size: 12.5px;
+            line-height: 1.1;
+        }
+
+        .actions-container .btn-editar,
+        .actions-container .btn-excluir {
+            justify-content: center;
+            gap: 0;
+            width: 34px;
+            padding-left: 0;
+            padding-right: 0;
+        }
+        
+        .modal td:last-child .actions-container {
+            justify-content: center !important;
+        }
+
+        /* Responsividade e Layout da Tabela no Modal */
+        .modal table {
+            width: 100%;
+            table-layout: auto;
+            border-collapse: collapse;
+        }
+
+        .modal table th {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: #fff;
+            font-size: 12px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            padding: 8px 10px;
+            border-bottom: 1px solid #1f2c38;
+        }
+
+        .modal table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e6e6e6;
+            font-size: 12.5px;
+            line-height: 1.2;
+            color: #2c3e50;
+        }
+
+        .modal table tbody tr:nth-child(even) {
+            background-color: #f8f9fb;
+        }
+
+        .modal table tbody tr:hover {
+            background-color: #eef5ff;
+        }
+
+        #speciesListModal thead th:first-child,
+        #speciesListModal td:first-child {
+            width: 30%;
+        }
+
+        #speciesListModal thead th:nth-child(2),
+        #speciesListModal td:nth-child(2) {
+            width: 60%;
+        }
+
+        #speciesListModal thead th:last-child,
+        #speciesListModal td:last-child {
+            width: 40px;
+            text-align: center;
+            padding-left: 4px;
+            padding-right: 4px;
+        }
+
+        #speciesListModal td:nth-child(2) {
+            white-space: normal;
+            word-break: break-word;
+        }
+        
+        /* Ajuste inteligente de colunas */
+        .modal table th:first-child, 
+        .modal table td:first-child {
+            /* A primeira coluna (Nome/Data) geralmente precisa de mais espaço */
+            min-width: 120px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        /* Pagination Info */
+        .pagination-info {
+            font-size: 14px;
+            color: #7f8c8d;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+        
+        /* Lista Romaneios specific */
+        #listaModal .modal-content {
+            width: 95%;
+            max-width: 1000px;
+        }
+
+        /* Unidades Visuais */
+        .unit-display, .price-unit-display, .unit-len-display {
+            font-size: 0.85em;
+            color: #e67e22;
+            font-weight: normal;
+            margin-left: 4px;
+        }
+
+        /* Responsividade */
+        @media (max-width: 1024px) {
+            .campos-grid {
+                grid-template-columns: 1fr 1fr; /* Forçar exatas 2 colunas no tablet */
+            }
+            .grid-col-2 {
+                grid-column: span 1; /* Forçar 1 coluna para alinhar 2 por linha perfeitos */
+            }
+
+            /* --- Opção B: Tabela Deslizante com Colunas Fixas --- */
+            .table-responsive {
+                position: relative;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            /* Fixar a PRIMEIRA coluna (Espécie/Plaqueta) à esquerda */
+            #tabela-serrados th:first-child, #tabela-toras th:first-child,
+            #tabela-serrados td:first-child, #tabela-toras td:first-child {
+                position: -webkit-sticky !important;
+                position: sticky !important;
+                left: 0;
+                z-index: 2;
+                background-color: white;
+                box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            }
+            
+            /* Fixar a ÚLTIMA coluna (Ações) à direita */
+            #tabela-serrados th:last-child, #tabela-toras th:last-child,
+            #tabela-serrados td:last-child, #tabela-toras td:last-child {
+                position: -webkit-sticky !important;
+                position: sticky !important;
+                right: 0;
+                z-index: 2;
+                background-color: white;
+                box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+            }
+            
+            /* Restaurar cores originais do cabeçalho nas colunas fixadas */
+            #tabela-serrados th:first-child, #tabela-toras th:first-child,
+            #tabela-serrados th:last-child, #tabela-toras th:last-child {
+                background-color: #2c3e50;
+                color: white;
+                z-index: 3;
+            }
+            
+            /* Sincronizar fundo no efeito hover */
+            #tabela-serrados tbody tr:hover td:first-child,
+            #tabela-serrados tbody tr:hover td:last-child,
+            #tabela-toras tbody tr:hover td:first-child,
+            #tabela-toras tbody tr:hover td:last-child {
+                background-color: #f1f1f1;
+            }
+        }
+        @media (max-width: 500px) {
+            .campos-grid {
+                grid-template-columns: 1fr; /* Forçar 1 coluna no mobile */
+            }
+            .grid-col-2 {
+                grid-column: span 1;
+            }
+            
+            .buttons-container {
+                flex-direction: column;
+            }
+            
+            .buttons-container button {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .totais-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .totais-item {
+                border-bottom: 1px solid #eee;
+                padding-bottom: 10px;
+            }
+            
+            .totais-item:last-child {
+                border-bottom: none;
+            }
+            
+            #install-pwa-btn {
+                position: static !important;
+                margin-top: 10px;
+                width: 100%;
+                justify-content: center;
+            }
+            .header-title-container {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <main-menu></main-menu>
+        <div class="header-title-container" style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; position: relative;">
+            <h1 style="margin-bottom: 0;">Pré-Romaneio</h1>
+            <button id="install-pwa-btn" style="display: none; position: absolute; right: 0; background-color: #3498db; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; gap: 6px; align-items: center;">
+                <i class="fas fa-download"></i> Instalar
+            </button>
+        </div>
+        
+        <!-- Navegação de Abas -->
+        <div class="tabs">
+            <button class="tab-button active" onclick="mudarAba('PCT')">Pacote</button>
+            <button class="tab-button" onclick="mudarAba('TL')">Toda Largura</button>
+            <button class="tab-button" onclick="mudarAba('PES')">Pés</button>
+            <button class="tab-button" onclick="mudarAba('TORA')">Toras</button>
+        </div>
+
+        <!-- Formulário Comum (Cliente/Data) -->
+        <div class="form-group" id="common-form-container">
+            <div class="campos-grid">
+                <div class="form-group">
+                    <label for="dataRomaneio">Data:</label>
+                    <input type="date" id="dataRomaneio">
+                </div>
+                <div class="form-group grid-col-2" id="cliente-container">
+                    <label for="clienteInput">Cliente:</label>
+                    <div class="autocomplete-container">
+                        <input type="text" id="clienteInput" class="input-with-icon" placeholder="Selecione um cliente..." oninput="showClientSuggestions(this)">
+                        <div class="autocomplete-icons-container">
+                            <span class="autocomplete-icon" onclick="openClientListModal()"><i class="fas fa-list"></i></span>
+                            <span class="autocomplete-icon" onclick="openNewClientModal()"><i class="fas fa-user-plus"></i></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTEÚDO: SERRADOS (PCT, TL, PES) -->
+        <div id="content-serrados" class="tab-content active">
+            <div class="campos-grid">
+                <div class="form-group grid-col-2">
+                    <label for="especieInput">Espécie:</label>
+                    <div class="autocomplete-container">
+                        <input type="text" id="especieInput" class="input-with-icon" placeholder="Selecione a espécie..." oninput="showSpeciesSuggestions(this)">
+                        <div class="autocomplete-icons-container">
+                            <span class="autocomplete-icon" onclick="openSpeciesListModal()"><i class="fas fa-list"></i></span>
+                            <span class="autocomplete-icon" onclick="openNewSpeciesModal()"><i class="fas fa-plus"></i></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="espessura">Espessura <span class="unit-display">(cm)</span>:</label>
+                    <input type="number" id="espessura" step="0.01" min="0" placeholder="0,00">
+                </div>
+                <div class="form-group">
+                    <label for="largura">Largura <span class="unit-display">(cm)</span>:</label>
+                    <input type="number" id="largura" step="0.1" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="price">Preço Unit. <span class="price-unit-display">(R$/m³)</span>:</label>
+                    <input type="text" id="price" placeholder="R$ 0,00" oninput="formatarMoeda(this)">
+                </div>
+            </div>
+
+            <div class="campos-grid">
+                <div class="form-group">
+                    <label for="comprimento">Comprimento <span class="unit-len-display">(m)</span>:</label>
+                    <input type="number" id="comprimento" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="quantidade">Quantidade (peças):</label>
+                    <input type="number" id="quantidade" min="1" value="1">
+                </div>
+                <!-- Campo exclusivo para Pacote/Pés -->
+                <div class="form-group" id="group-pecas-pacote">
+                    <label for="pecasPorPacote">Peças/Pacote:</label>
+                    <input type="number" id="pecasPorPacote" min="1" value="1">
+                </div>
+            </div>
+
+            <div class="buttons-container">
+                <button type="button" class="btn-adicionar" onclick="adicionarItemSerrado()"><i class="fas fa-plus"></i> Adicionar Item</button>
+                <button type="button" class="btn-limpar" onclick="limparFormularioSerrado()"><i class="fas fa-eraser"></i> Limpar</button>
+            </div>
+
+            <div class="table-responsive">
+                <table id="tabela-serrados">
+                    <thead>
+                        <tr>
+                            <th>Espécie</th>
+                            <th class="text-center">Comp. <span class="th-unit-len">(m)</span></th>
+                            <th class="text-center">Espessura</th>
+                            <th class="text-center">Larg. <span class="th-unit-dim">(cm)</span></th>
+                            <th class="text-center">Qtd.</th>
+                            <th class="text-center col-pecas">Pçs/Pct</th> <!-- Coluna dinâmica -->
+                            <th class="text-right">Vol. <span class="th-unit-vol">(m³)</span></th>
+                            <th class="text-right">Preço</th>
+                            <th class="text-right">Total</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-serrados">
+                        <!-- Itens via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CONTEÚDO: TORAS -->
+        <div id="content-toras" class="tab-content">
+            <div class="campos-grid">
+                <div class="form-group">
+                    <label for="dataRomaneioTora">Data:</label>
+                    <input type="date" id="dataRomaneioTora">
+                </div>
+                <div class="form-group grid-col-2">
+                    <label for="fornecedorInput">Fornecedor:</label>
+                    <div class="autocomplete-container">
+                        <input type="text" id="fornecedorInput" class="input-with-icon" placeholder="Nome do fornecedor" oninput="showFornecedorSuggestions(this)">
+                        <div class="autocomplete-icons-container">
+                            <span class="autocomplete-icon" onclick="openFornecedorListModal()"><i class="fas fa-list"></i></span>
+                            <span class="autocomplete-icon" onclick="openNewFornecedorModal()"><i class="fas fa-user-plus"></i></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="campos-grid">
+                <div class="form-group grid-col-2">
+                    <label for="especieToraInput">Espécie:</label>
+                    <div class="autocomplete-container">
+                        <input type="text" id="especieToraInput" class="input-with-icon" placeholder="Espécie da tora" oninput="showSpeciesSuggestions(this)">
+                        <div class="autocomplete-icons-container">
+                            <span class="autocomplete-icon" onclick="openSpeciesListModal()"><i class="fas fa-list"></i></span>
+                            <span class="autocomplete-icon" onclick="openNewSpeciesModal()"><i class="fas fa-plus"></i></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="placaTora">Plaqueta:</label>
+                    <input type="text" id="placaTora">
+                </div>
+            </div>
+
+            <div class="campos-grid">
+                <div class="form-group">
+                    <label for="rodoTora">Rodo (cm):</label>
+                    <input type="number" id="rodoTora" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="compTora">Comprimento (cm):</label>
+                    <input type="number" id="compTora" step="0.1" min="1" placeholder="Comprimento em cm">
+                </div>
+                <div class="form-group">
+                    <label for="oco1Tora">Oco 1 (cm):</label>
+                    <input type="number" id="oco1Tora" step="0.1" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="oco2Tora">Oco 2 (cm):</label>
+                    <input type="number" id="oco2Tora" step="0.1" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="descTora">Desconto (m³):</label>
+                    <input type="number" id="descTora" step="0.001" value="0.000" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="precoTora">Preço (R$/m³):</label>
+                    <input type="text" id="precoTora" oninput="formatarMoeda(this)">
+                </div>
+            </div>
+
+            <div class="buttons-container">
+                <button type="button" class="btn-adicionar" onclick="adicionarItemTora()"><i class="fas fa-plus"></i> Adicionar Tora</button>
+                <button type="button" class="btn-limpar" onclick="limparFormularioTora()"><i class="fas fa-eraser"></i> Limpar</button>
+            </div>
+
+            <div class="table-responsive">
+                <table id="tabela-toras">
+                    <thead>
+                        <tr>
+                            <th>Plaqueta</th>
+                            <th>Espécie</th>
+                            <th class="text-center">Rodo</th>
+                            <th class="text-center">Comp.</th>
+                            <th class="text-center">Ocos</th>
+                            <th class="text-center">Desc. (m³)</th>
+                            <th class="text-right">Vol. Líq (m³)</th>
+                            <th class="text-right">Preço</th>
+                            <th class="text-right">Total</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-toras">
+                        <!-- Itens via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Totais Gerais -->
+        <div class="totais-container">
+            <div class="totais-item">
+                <div class="totais-label">Itens</div>
+                <div class="totais-valor" id="totalItens">0</div>
+            </div>
+            <div class="totais-item pes-summary-item">
+                <div class="totais-label">Total Pés</div>
+                <div class="totais-valor" id="totalPes">0,00 pés</div>
+            </div>
+            <div class="totais-item">
+                <div class="totais-label">Total m³</div>
+                <div class="totais-valor" id="totalVolume">0,000 m³</div>
+            </div>
+            <div class="totais-item pes-summary-item">
+                <div class="totais-label">Total m²</div>
+                <div class="totais-valor" id="totalAreaM2">0,000 m²</div>
+            </div>
+            <div class="totais-item pes-summary-item">
+                <div class="totais-label">Total ml</div>
+                <div class="totais-valor" id="totalMetrosLineares">0,000 ml</div>
+            </div>
+            <div class="totais-item">
+                <div class="totais-label">Valor Total</div>
+                <div class="totais-valor" id="totalValor">R$ 0,00</div>
+            </div>
+        </div>
+
+        <div class="buttons-container" style="justify-content: center;">
+            <button type="button" class="btn-salvar" onclick="salvarPreRomaneio()" style="min-width: 200px;"><i class="fas fa-save"></i> Salvar Pré-Romaneio</button>
+            <button type="button" class="btn-listar" onclick="abrirLista()" style="min-width: 200px;"><i class="fas fa-list"></i> Meus Romaneios</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <!-- Configuração Firebase e Serviços (Unificados) -->
+    <script src="firebaseService.unified.js"></script>
+    <script src="auth.js"></script>
+    <script src="client-service.js"></script> <!-- Para autocompletes -->
+    
+    <!-- Modais (Lista de Clientes, Novo Cliente, Espécies, Meus Romaneios) -->
+    
+    <!-- Modal Lista de Clientes -->
+    <div id="clientListModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Selecionar Cliente</h2>
+                <span class="close-modal" onclick="closeClientListModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <input type="text" id="clientListFilter" placeholder="Filtrar clientes..." oninput="filterClientList()">
+                </div>
+                <div class="table-responsive modal-table-scroll">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Cidade</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientListTable"></tbody>
+                    </table>
+                </div>
+                <div id="clientListPagination" class="pagination-controls pagination-container"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-limpar" onclick="closeClientListModal()">Voltar</button>
+                <button class="btn-adicionar" onclick="openNewClientModal()">
+                    <i class="fas fa-plus"></i> Novo Cliente
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Novo Cliente -->
+    <div id="clientModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="clientModalTitle">Novo Cliente</h2>
+                <span class="close-modal" onclick="closeNewClientModal()">&times;</span>
+            </div>
+            <form id="clientForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="clientName">Nome *</label>
+                        <input type="text" id="clientName" required>
+                    </div>
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="clientCnpj">CPF / CNPJ</label>
+                            <input type="text" id="clientCnpj" placeholder="000.000.000-00">
+                        </div>
+                        <div class="form-group">
+                            <label for="clientPhone">Telefone</label>
+                            <input type="text" id="clientPhone" oninput="formatarTelefone(this)" placeholder="(00) 00000-0000">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="clientAddress">Endereço</label>
+                        <input type="text" id="clientAddress" placeholder="Rua, Avenida, etc">
+                    </div>
+
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="clientNumber">Número</label>
+                            <input type="text" id="clientNumber" placeholder="Nº">
+                        </div>
+                        <div class="form-group">
+                            <label for="clientNeighborhood">Bairro</label>
+                            <input type="text" id="clientNeighborhood" placeholder="Bairro">
+                        </div>
+                    </div>
+
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="clientState">Estado *</label>
+                            <select id="clientState" required>
+                                <option value="">Selecione...</option>
+                                <option value="AC">Acre</option>
+                                <option value="AL">Alagoas</option>
+                                <option value="AP">Amapá</option>
+                                <option value="AM">Amazonas</option>
+                                <option value="BA">Bahia</option>
+                                <option value="CE">Ceará</option>
+                                <option value="DF">Distrito Federal</option>
+                                <option value="ES">Espírito Santo</option>
+                                <option value="GO">Goiás</option>
+                                <option value="MA">Maranhão</option>
+                                <option value="MT">Mato Grosso</option>
+                                <option value="MS">Mato Grosso do Sul</option>
+                                <option value="MG">Minas Gerais</option>
+                                <option value="PA">Pará</option>
+                                <option value="PB">Paraíba</option>
+                                <option value="PR">Paraná</option>
+                                <option value="PE">Pernambuco</option>
+                                <option value="PI">Piauí</option>
+                                <option value="RJ">Rio de Janeiro</option>
+                                <option value="RN">Rio Grande do Norte</option>
+                                <option value="RS">Rio Grande do Sul</option>
+                                <option value="RO">Rondônia</option>
+                                <option value="RR">Roraima</option>
+                                <option value="SC">Santa Catarina</option>
+                                <option value="SP">São Paulo</option>
+                                <option value="SE">Sergipe</option>
+                                <option value="TO">Tocantins</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="clientCity">Cidade *</label>
+                            <select id="clientCity" required>
+                                <option value="">Selecione primeiro o estado</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="clientObs">Observações</label>
+                        <input type="text" id="clientObs" placeholder="Observações adicionais">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-limpar" onclick="closeNewClientModal()">Cancelar</button>
+                    <button type="submit" class="btn-salvar">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Lista de Fornecedores -->
+    <div id="fornecedorListModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Selecionar Fornecedor</h2>
+                <span class="close-modal" onclick="closeFornecedorListModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <input type="text" id="fornecedorListFilter" placeholder="Filtrar fornecedores..." oninput="filterFornecedorList()">
+                </div>
+                <div class="table-responsive modal-table-scroll">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>CNPJ</th>
+                                <th>Cidade</th>
+                                <th>Estado</th>
+                                <th>Telefone</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fornecedorListTable"></tbody>
+                    </table>
+                </div>
+                <div id="fornecedorPagination" class="pagination-controls pagination-container"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-limpar" onclick="closeFornecedorListModal()">Fechar</button>
+                <button class="btn-adicionar" onclick="openNewFornecedorModal()">
+                    <i class="fas fa-plus"></i> Novo Fornecedor
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Novo Fornecedor -->
+    <div id="fornecedorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="fornecedorModalTitle">Novo Fornecedor</h2>
+                <span class="close-modal" onclick="closeNewFornecedorModal()">&times;</span>
+            </div>
+            <form id="fornecedorForm" onsubmit="saveClient(event)">
+                <input type="hidden" id="fornecedorId">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="fornecedorName">Nome *</label>
+                        <input type="text" id="fornecedorName" required placeholder="Nome completo ou Razão Social">
+                    </div>
+                    
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="fornecedorCnpj">CPF / CNPJ</label>
+                            <input type="text" id="fornecedorCnpj" placeholder="000.000.000-00">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornecedorStateRegistration">Inscrição Estadual</label>
+                            <input type="text" id="fornecedorStateRegistration" placeholder="Isento ou número">
+                        </div>
+                    </div>
+
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="fornecedorState">Estado *</label>
+                            <select id="fornecedorState" required onchange="updateCities()">
+                                <option value="">Selecione...</option>
+                                <option value="AC">Acre</option>
+                                <option value="AL">Alagoas</option>
+                                <option value="AP">Amapá</option>
+                                <option value="AM">Amazonas</option>
+                                <option value="BA">Bahia</option>
+                                <option value="CE">Ceará</option>
+                                <option value="DF">Distrito Federal</option>
+                                <option value="ES">Espírito Santo</option>
+                                <option value="GO">Goiás</option>
+                                <option value="MA">Maranhão</option>
+                                <option value="MT">Mato Grosso</option>
+                                <option value="MS">Mato Grosso do Sul</option>
+                                <option value="MG">Minas Gerais</option>
+                                <option value="PA">Pará</option>
+                                <option value="PB">Paraíba</option>
+                                <option value="PR">Paraná</option>
+                                <option value="PE">Pernambuco</option>
+                                <option value="PI">Piauí</option>
+                                <option value="RJ">Rio de Janeiro</option>
+                                <option value="RN">Rio Grande do Norte</option>
+                                <option value="RS">Rio Grande do Sul</option>
+                                <option value="RO">Rondônia</option>
+                                <option value="RR">Roraima</option>
+                                <option value="SC">Santa Catarina</option>
+                                <option value="SP">São Paulo</option>
+                                <option value="SE">Sergipe</option>
+                                <option value="TO">Tocantins</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="fornecedorCity">Cidade *</label>
+                            <select id="fornecedorCity" required>
+                                <option value="">Selecione o estado primeiro</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="fornecedorPhone">Telefone</label>
+                            <input type="text" id="fornecedorPhone" oninput="formatarTelefone(this)" placeholder="(00) 00000-0000">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornecedorEmail">Email</label>
+                            <input type="email" id="fornecedorEmail" placeholder="email@exemplo.com">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fornecedorAddress">Endereço</label>
+                        <input type="text" id="fornecedorAddress" placeholder="Rua, Avenida, etc">
+                    </div>
+
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="fornecedorNumber">Número</label>
+                            <input type="text" id="fornecedorNumber" placeholder="Nº">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornecedorNeighborhood">Bairro</label>
+                            <input type="text" id="fornecedorNeighborhood" placeholder="Bairro">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fornecedorObs">Observações</label>
+                        <input type="text" id="fornecedorObs" placeholder="Observações adicionais">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-limpar" onclick="closeNewFornecedorModal()">Cancelar</button>
+                    <button type="submit" class="btn-salvar"><i class="fas fa-save"></i> Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Lista de Espécies -->
+    <div id="speciesListModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Selecionar Espécie</h2>
+                <span class="close-modal" onclick="closeSpeciesListModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <input type="text" id="speciesListFilter" placeholder="Filtrar espécies..." oninput="filterSpeciesList()">
+                </div>
+                <div class="table-responsive modal-table-scroll">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Descrição</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="speciesListTable"></tbody>
+                    </table>
+                </div>
+                <div id="speciesListPagination" class="pagination-controls pagination-container"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-limpar" onclick="closeSpeciesListModal()">Voltar</button>
+                <button class="btn-adicionar" onclick="openNewSpeciesModal()">
+                    <i class="fas fa-plus"></i> Nova Espécie
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nova Espécie -->
+    <div id="speciesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nova Espécie</h2>
+                <span class="close-modal" onclick="closeNewSpeciesModal()">&times;</span>
+            </div>
+            <form id="speciesForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="speciesName">Nome *</label>
+                        <input type="text" id="speciesName" required placeholder="Ex: Eucalipto">
+                    </div>
+                    <div class="form-group">
+                        <label for="speciesDesc">Descrição / Nome Científico</label>
+                        <input type="text" id="speciesDesc" placeholder="Ex: Eucalyptus grandis">
+                    </div>
+                    <div class="form-group">
+                        <label for="speciesPrice">Preço Padrão (R$)</label>
+                        <input type="text" id="speciesPrice" oninput="formatarMoeda(this)" placeholder="R$ 0,00">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-limpar" onclick="closeNewSpeciesModal()">Cancelar</button>
+                    <button type="submit" class="btn-salvar"><i class="fas fa-save"></i> Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Meus Romaneios -->
+    <div id="listaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Meus Pré-Romaneios</h2>
+                <span class="close-modal" onclick="closeListaModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive modal-table-scroll">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Cliente</th>
+                                <th>Tipo</th>
+                                <th>Volume</th>
+                                <th>Valor</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaRomaneiosTable"></tbody>
+                    </table>
+                </div>
+                <div id="listaRomaneiosPagination" class="pagination-container"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-limpar" onclick="closeListaModal()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts de Modais e Lógica -->
+    <script src="fornecedor-modals.js"></script>
+    <script src="preromaneio-modals.js"></script>
+    <script src="preromaneio.js"></script>
+
+    <!-- PWA Install & Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+                    console.log('ServiceWorker registrado:', reg);
+                }).catch(err => {
+                    console.log('Falha no ServiceWorker:', err);
+                });
+            });
+        }
+
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-pwa-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if(installBtn) {
+                installBtn.style.display = 'flex';
+            }
+        });
+
+        if(installBtn) {
+            installBtn.addEventListener('click', async () => {
+                installBtn.style.display = 'none';
+                if(deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log('Instalação ' + outcome);
+                    deferredPrompt = null;
+                }
+            });
+        }
+    </script>
+</body>
+</html>

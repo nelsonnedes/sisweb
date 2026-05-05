@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpar e Corrigir Clientes - SisWeb</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .danger {
+            background-color: #f44336;
+        }
+        .danger:hover {
+            background-color: #d32f2f;
+        }
+        .warning {
+            background-color: #ff9800;
+        }
+        .warning:hover {
+            background-color: #ef6c00;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+        .status.error {
+            border-color: #f44336;
+            background-color: #ffebee;
+        }
+        .status.success {
+            border-color: #4CAF50;
+            background-color: #e8f5e9;
+        }
+        pre {
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .client-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .actions {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Limpar e Corrigir Clientes</h1>
+        <button onclick="window.location.href='romaneiopct.html'">Voltar</button>
+    </div>
+    
+    <p>Esta ferramenta ajuda a corrigir problemas com os dados de clientes no sistema.</p>
+    
+    <div id="status" class="status">
+        Selecione uma opção abaixo.
+    </div>
+    
+    <div class="actions">
+        <h2>Ações de Manutenção</h2>
+        
+        <button onclick="limparDuplicatasPorNome()">Limpar Duplicatas por Nome</button>
+        <p>Esta ação remove clientes duplicados com base em seus nomes.</p>
+        
+        <button class="warning" onclick="corrigirConflitosDeChaves()">Corrigir Conflitos de Chaves</button>
+        <p>Esta ação resolve conflitos entre diferentes áreas de armazenamento de clientes ('clients' e 'clientesPct').</p>
+        
+        <button class="danger" onclick="limparTodosClientes()">Limpar Todos os Clientes</button>
+        <p>Esta ação remove TODOS os clientes do sistema. Cuidado! Esta operação não pode ser desfeita.</p>
+    </div>
+    
+    <div>
+        <h2>Clientes Atuais</h2>
+        <button onclick="mostrarClientes()">Mostrar/Atualizar Lista de Clientes</button>
+        <div id="clientList" class="client-list"></div>
+    </div>
+    
+    <script>
+        function resolveCompanyId() {
+            try {
+                const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                if (svc && typeof svc.getTenantId === 'function') {
+                    const t = svc.getTenantId();
+                    if (t) return String(t);
+                }
+            } catch (_) {}
+            try {
+                if (window.appTenantId) return String(window.appTenantId);
+                if (window.companyInfo) {
+                    const raw = window.companyInfo;
+                    const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                    if (id) return String(id);
+                }
+                const stored = localStorage.getItem('company_info');
+                if (stored) {
+                    const obj = JSON.parse(stored);
+                    const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                    if (id) return String(id);
+                }
+            } catch (_) {}
+            return null;
+        }
+
+        function getLocalStorageKeys(key) {
+            const keys = [];
+            try {
+                const base = String(key || '');
+                if (!base) return keys;
+                const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                if (svc && typeof svc.getNamespacedPath === 'function') {
+                    const ns = svc.getNamespacedPath(base);
+                    if (ns && ns !== base) keys.push(ns);
+                } else {
+                    const companyId = resolveCompanyId();
+                    if (companyId && !/^companies\//.test(base) && !/^users\//.test(base)) {
+                        keys.push(`companies/${companyId}/${base}`);
+                    }
+                }
+                keys.push(base);
+            } catch (_) {}
+            return [...new Set(keys)];
+        }
+
+        function readLocalStorageValue(key) {
+            for (const k of getLocalStorageKeys(key)) {
+                const val = localStorage.getItem(k);
+                if (val) return val;
+            }
+            return null;
+        }
+
+        function persistLocalValue(key, data) {
+            try {
+                if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {
+                    window.SiswebStorage.write(key, data);
+                    return;
+                }
+            } catch (_) {}
+            const payload = JSON.stringify(data);
+            for (const k of getLocalStorageKeys(key)) {
+                localStorage.setItem(k, payload);
+            }
+        }
+
+        function removeLocalStorageValue(key) {
+            for (const k of getLocalStorageKeys(key)) {
+                localStorage.removeItem(k);
+            }
+        }
+
+        // Função para remover duplicatas por nome
+        function limparDuplicatasPorNome() {
+            try {
+                // Obter clientes de todas as fontes
+                const clientesPct = JSON.parse(readLocalStorageValue('clientesPct') || '[]');
+                const clients = JSON.parse(readLocalStorageValue('clients') || '[]');
+                
+                // Combinar todos os clientes
+                const todosClientes = [...clientesPct, ...clients];
+                
+                // Deduplica clientes por nome
+                const clientesPorNome = new Map();
+                let duplicatasRemovidas = 0;
+                
+                todosClientes.forEach(cliente => {
+                    if (!cliente) return;
+                    
+                    const nome = (cliente.nome || cliente.name || '').toLowerCase().trim();
+                    if (!nome) return;
+                    
+                    if (!clientesPorNome.has(nome)) {
+                        // Normalizar o cliente
+                        const companyId = resolveCompanyId();
+                        const clienteNormalizado = {
+                            ...cliente,
+                            id: cliente.id || Date.now() + Math.floor(Math.random() * 1000),
+                            nome: cliente.nome || cliente.name || '',
+                            name: cliente.nome || cliente.name || '',
+                            companyId: cliente.companyId || companyId || undefined
+                        };
+                        
+                        clientesPorNome.set(nome, clienteNormalizado);
+                    } else {
+                        duplicatasRemovidas++;
+                    }
+                });
+                
+                // Converter mapa em array
+                const clientesUnicos = Array.from(clientesPorNome.values());
+                
+                // Salvar em ambas as chaves
+                persistLocalValue('clientesPct', clientesUnicos);
+                persistLocalValue('clients', clientesUnicos);
+                
+                // Atualizar status
+                atualizarStatus(
+                    `Limpeza concluída! ${duplicatasRemovidas} duplicatas removidas. ${clientesUnicos.length} clientes únicos restantes.`, 
+                    'success'
+                );
+                
+                // Atualizar lista de clientes
+                mostrarClientes();
+                
+            } catch (error) {
+                atualizarStatus(`Erro ao limpar duplicatas: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        // Função para corrigir conflitos entre chaves
+        function corrigirConflitosDeChaves() {
+            try {
+                // Remover completamente os dados armazenados
+                removeLocalStorageValue('clientesPct');
+                removeLocalStorageValue('clients');
+                
+                // Reconstruir com dados limpos
+                persistLocalValue('clientesPct', []);
+                persistLocalValue('clients', []);
+                
+                atualizarStatus('Conflitos de chaves corrigidos! Todas as áreas de armazenamento de clientes foram limpas.', 'success');
+                mostrarClientes();
+                
+            } catch (error) {
+                atualizarStatus(`Erro ao corrigir conflitos: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        // Função para limpar todos os clientes
+        function limparTodosClientes() {
+            if (confirm('ATENÇÃO: Esta ação removerá TODOS os clientes do sistema. Esta operação não pode ser desfeita. Continuar?')) {
+                try {
+                    // Remover clientes
+                    removeLocalStorageValue('clientesPct');
+                    removeLocalStorageValue('clients');
+                    
+                    // Inicializar com arrays vazios
+                    persistLocalValue('clientesPct', []);
+                    persistLocalValue('clients', []);
+                    
+                    atualizarStatus('Todos os clientes foram removidos!', 'success');
+                    mostrarClientes();
+                    
+                } catch (error) {
+                    atualizarStatus(`Erro ao limpar clientes: ${error.message}`, 'error');
+                    console.error(error);
+                }
+            }
+        }
+        
+        // Função para mostrar clientes atuais
+        function mostrarClientes() {
+            try {
+                const clientesPct = JSON.parse(readLocalStorageValue('clientesPct') || '[]');
+                const clients = JSON.parse(readLocalStorageValue('clients') || '[]');
+                
+                const clientList = document.getElementById('clientList');
+                
+                // Formatar para exibição
+                let html = `<p>Total de clientes (clientesPct): ${clientesPct.length}</p>`;
+                html += `<p>Total de clientes (clients): ${clients.length}</p>`;
+                
+                // Verificar se as listas são iguais
+                const clientesPctStr = JSON.stringify(clientesPct.sort((a, b) => (a.id || 0) - (b.id || 0)));
+                const clientsStr = JSON.stringify(clients.sort((a, b) => (a.id || 0) - (b.id || 0)));
+                
+                if (clientesPctStr === clientsStr) {
+                    html += `<p style="color: green">As listas são idênticas ✓</p>`;
+                } else {
+                    html += `<p style="color: red">As listas são diferentes! Há um problema de sincronização ✗</p>`;
+                }
+                
+                // Mostrar detalhes dos clientes
+                if (clientesPct.length > 0) {
+                    html += `<h3>Lista de clientes:</h3>`;
+                    html += `<pre>${JSON.stringify(clientesPct, null, 2)}</pre>`;
+                } else {
+                    html += `<p>Não há clientes cadastrados.</p>`;
+                }
+                
+                clientList.innerHTML = html;
+                
+            } catch (error) {
+                atualizarStatus(`Erro ao mostrar clientes: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        // Função para atualizar status
+        function atualizarStatus(message, type = '') {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = message;
+            statusElement.className = 'status';
+            
+            if (type) {
+                statusElement.classList.add(type);
+            }
+        }
+        
+        // Mostrar clientes ao carregar a página
+        window.onload = mostrarClientes;
+    </script>
+    <script src="global-footer.js"></script>
+</body>
+</html> 

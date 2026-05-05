@@ -1,0 +1,12 @@
+{
+  "name": "sisweb-help-screenshots",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "install:browsers": "playwright install --with-deps chromium",
+    "capture": "node capture.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.55.0"
+  }
+}

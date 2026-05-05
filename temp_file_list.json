@@ -1,0 +1,2057 @@
+[
+  {
+    "path": "C:\\Sisweb\\.firebaserc",
+    "size": 85,
+    "mtime": "2025-06-04T20:37:57.420Z"
+  },
+  {
+    "path": "C:\\Sisweb\\admin-access-governance.html",
+    "size": 29542,
+    "mtime": "2026-03-26T14:44:44.818Z"
+  },
+  {
+    "path": "C:\\Sisweb\\admin-modern.css",
+    "size": 1538,
+    "mtime": "2026-03-16T03:54:50.246Z"
+  },
+  {
+    "path": "C:\\Sisweb\\.vercelignore",
+    "size": 46,
+    "mtime": "2026-02-23T02:51:04.866Z"
+  },
+  {
+    "path": "C:\\Sisweb\\admin-settings.html",
+    "size": 103599,
+    "mtime": "2026-03-26T14:44:37.463Z"
+  },
+  {
+    "path": "C:\\Sisweb\\admin-subscriptions.html",
+    "size": 83467,
+    "mtime": "2026-03-26T14:44:42.311Z"
+  },
+  {
+    "path": "C:\\Sisweb\\admin.html",
+    "size": 203812,
+    "mtime": "2026-03-26T17:10:39.561Z"
+  },
+  {
+    "path": "C:\\Sisweb\\admin-wipe-db.js",
+    "size": 1575,
+    "mtime": "2026-02-22T16:16:45.908Z"
+  },
+  {
+    "path": "C:\\Sisweb\\ajuda.html",
+    "size": 9115,
+    "mtime": "2026-03-26T20:40:01.854Z"
+  },
+  {
+    "path": "C:\\Sisweb\\ajuda.js",
+    "size": 30785,
+    "mtime": "2026-03-27T10:33:37.833Z"
+  },
+  {
+    "path": "C:\\Sisweb\\ajudabitolas.html",
+    "size": 24140,
+    "mtime": "2026-03-26T14:45:01.736Z"
+  },
+  {
+    "path": "C:\\Sisweb\\ANALISE_PLANO_MODULO_VENDAS.md",
+    "size": 31487,
+    "mtime": "2025-10-09T17:47:52.606Z"
+  },
+  {
+    "path": "C:\\Sisweb\\ANALISE_TABELAS_DUPLICADAS.md",
+    "size": 7172,
+    "mtime": "2025-10-31T17:31:03.129Z"
+  },
+  {
+    "path": "C:\\Sisweb\\analyze_export.cjs",
+    "size": 1042,
+    "mtime": "2026-02-23T02:52:58.673Z"
+  },
+  {
+    "path": "C:\\Sisweb\\aplicar_correcao_direta.js",
+    "size": 13622,
+    "mtime": "2026-03-20T20:49:19.100Z"
+  },
+  {
+    "path": "C:\\Sisweb\\aplicar_correcao_vendas.html",
+    "size": 11943,
+    "mtime": "2026-03-16T03:54:50.324Z"
+  },
+  {
+    "path": "C:\\Sisweb\\APLICAR_ESTAS_REGRA_NOW.md",
+    "size": 2067,
+    "mtime": "2025-10-31T18:10:28.773Z"
+  },
+  {
+    "path": "C:\\Sisweb\\aplicar_estrategia_hibrida.html",
+    "size": 19906,
+    "mtime": "2026-03-20T21:23:20.587Z"
+  },
+  {
+    "path": "C:\\Sisweb\\aplicar_estrategia_hibrida_v2.html",
+    "size": 27760,
+    "mtime": "2026-03-21T23:00:04.872Z"
+  },
+  {
+    "path": "C:\\Sisweb\\APLICAR_REGRAS_CORRETAS_ROMANEIOS.md",
+    "size": 1479,
+    "mtime": "2025-10-30T19:05:33.293Z"
+  },
+  {
+    "path": "C:\\Sisweb\\APLICAR_REGRAS_ROMANEIOS_TL.md",
+    "size": 2538,
+    "mtime": "2025-10-30T18:13:43.048Z"
+  },
+  {
+    "path": "C:\\Sisweb\\APRESENTACAO_FINAL_VENDAS.md",
+    "size": 20087,
+    "mtime": "2025-10-10T13:43:38.483Z"
+  },
+  {
+    "path": "C:\\Sisweb\\auth.js",
+    "size": 82533,
+    "mtime": "2026-03-26T17:52:28.100Z"
+  },
+  {
+    "path": "C:\\Sisweb\\apply-firebase-rules.js",
+    "size": 8305,
+    "mtime": "2025-11-07T19:04:20.052Z"
+  },
+  {
+    "path": "C:\\Sisweb\\auto_sync_firebase.html",
+    "size": 26220,
+    "mtime": "2026-03-16T03:54:50.339Z"
+  },
+  {
+    "path": "C:\\Sisweb\\bookmarklet_hibrido.js",
+    "size": 8470,
+    "mtime": "2025-05-27T23:03:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\cache-system.js",
+    "size": 18912,
+    "mtime": "2025-05-28T16:27:16.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CHANGELOG_VENDAS.md",
+    "size": 10291,
+    "mtime": "2025-10-10T13:43:38.468Z"
+  },
+  {
+    "path": "C:\\Sisweb\\cities-loader.js",
+    "size": 9136,
+    "mtime": "2025-05-27T23:03:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\client-html-fixes.js",
+    "size": 10220,
+    "mtime": "2025-07-14T17:07:05.382Z"
+  },
+  {
+    "path": "C:\\Sisweb\\cities.js",
+    "size": 9941,
+    "mtime": "2026-02-22T18:18:34.222Z"
+  },
+  {
+    "path": "C:\\Sisweb\\client-modal-handler.js",
+    "size": 11528,
+    "mtime": "2026-02-22T16:16:46.090Z"
+  },
+  {
+    "path": "C:\\Sisweb\\client-utils.js",
+    "size": 6721,
+    "mtime": "2026-03-14T13:19:16.799Z"
+  },
+  {
+    "path": "C:\\Sisweb\\client-service.js",
+    "size": 31922,
+    "mtime": "2026-03-21T23:00:04.867Z"
+  },
+  {
+    "path": "C:\\Sisweb\\client.html",
+    "size": 13018,
+    "mtime": "2026-03-26T14:44:25.126Z"
+  },
+  {
+    "path": "C:\\Sisweb\\Clients.json",
+    "size": 275,
+    "mtime": "2025-12-12T13:22:59.624Z"
+  },
+  {
+    "path": "C:\\Sisweb\\COLE_ESTAS_REGras_NO_FIREBASE.md",
+    "size": 1714,
+    "mtime": "2025-10-31T17:50:03.756Z"
+  },
+  {
+    "path": "C:\\Sisweb\\company.html",
+    "size": 106154,
+    "mtime": "2026-03-26T14:43:12.855Z"
+  },
+  {
+    "path": "C:\\Sisweb\\compras.js",
+    "size": 104761,
+    "mtime": "2026-03-26T14:29:49.686Z"
+  },
+  {
+    "path": "C:\\Sisweb\\compras.html",
+    "size": 66766,
+    "mtime": "2026-03-26T14:44:22.768Z"
+  },
+  {
+    "path": "C:\\Sisweb\\compras_legacy.html",
+    "size": 21576,
+    "mtime": "2026-03-26T14:44:56.936Z"
+  },
+  {
+    "path": "C:\\Sisweb\\compras_legacy.js",
+    "size": 47930,
+    "mtime": "2026-03-22T20:30:34.883Z"
+  },
+  {
+    "path": "C:\\Sisweb\\config.example.js",
+    "size": 13374,
+    "mtime": "2025-11-19T22:07:26.527Z"
+  },
+  {
+    "path": "C:\\Sisweb\\configurar-firebase-real.js",
+    "size": 7185,
+    "mtime": "2025-06-04T19:02:54.562Z"
+  },
+  {
+    "path": "C:\\Sisweb\\contasReceber.json",
+    "size": 14214,
+    "mtime": "2025-12-11T18:44:48.666Z"
+  },
+  {
+    "path": "C:\\Sisweb\\coordenador-inicializacao.js",
+    "size": 5193,
+    "mtime": "2025-06-04T13:46:21.518Z"
+  },
+  {
+    "path": "C:\\Sisweb\\correcao-arrays-validacao.js",
+    "size": 7575,
+    "mtime": "2025-06-04T13:52:50.190Z"
+  },
+  {
+    "path": "C:\\Sisweb\\correcao-carregamento-listas.js",
+    "size": 14181,
+    "mtime": "2025-06-04T19:10:40.856Z"
+  },
+  {
+    "path": "C:\\Sisweb\\correcao-dados-firebase.js",
+    "size": 12869,
+    "mtime": "2026-03-22T20:10:24.273Z"
+  },
+  {
+    "path": "C:\\Sisweb\\correcao-lista-romaneios.js",
+    "size": 104040,
+    "mtime": "2026-03-22T20:30:34.890Z"
+  },
+  {
+    "path": "C:\\Sisweb\\correcao-funcoes-ausentes.js",
+    "size": 505,
+    "mtime": "2025-08-30T16:24:22.301Z"
+  },
+  {
+    "path": "C:\\Sisweb\\correcao.js",
+    "size": 3373,
+    "mtime": "2025-05-27T23:03:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\correcao-interface-database.js",
+    "size": 19848,
+    "mtime": "2025-06-06T19:10:52.166Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CORRECAO_DADOS_DESAPARECENDO.md",
+    "size": 8473,
+    "mtime": "2025-10-31T16:42:24.798Z"
+  },
+  {
+    "path": "C:\\Sisweb\\correcao_bookmarklet.js",
+    "size": 5724,
+    "mtime": "2026-03-21T23:00:04.867Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CORRECAO_DUPLA_ROLAGEM_ESPECIES.md",
+    "size": 1373,
+    "mtime": "2025-10-30T19:42:22.632Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CORRECAO_FINAL_COMPLETA.md",
+    "size": 4661,
+    "mtime": "2025-10-31T18:02:24.364Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CORRECAO_FINAL_ROMANEIOS_TL.md",
+    "size": 1772,
+    "mtime": "2025-10-30T19:05:33.293Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CORRECAO_MODAL_CLIENTES.md",
+    "size": 5883,
+    "mtime": "2025-10-30T12:44:51.089Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CORRECAO_MODAL_CLIENTES_SUMARIO.md",
+    "size": 879,
+    "mtime": "2025-10-30T12:44:51.089Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CORRECAO_MODAL_ROMANEIOS_TL_SUMARIO.md",
+    "size": 2556,
+    "mtime": "2025-10-30T17:05:06.702Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CORRECAO_PADRAO_SISTEMA.md",
+    "size": 10425,
+    "mtime": "2025-11-19T21:34:17.411Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CORRECAO_PERDA_CLIENTES_SUMARIO.md",
+    "size": 1262,
+    "mtime": "2025-10-30T12:58:44.606Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CORRECAO_REGRA_FIREBASE_PERMISSION_DENIED.md",
+    "size": 4755,
+    "mtime": "2025-10-31T17:50:03.756Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CORRECAO_VENDAS_ROMANEIOS_SUMARIO.md",
+    "size": 2926,
+    "mtime": "2025-10-30T19:56:26.812Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CORRECOES_CLIENTES_SUMARIO.md",
+    "size": 4531,
+    "mtime": "2025-10-30T11:59:01.702Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CORRECOES_FINAIS_FINANCAS.md",
+    "size": 5426,
+    "mtime": "2025-10-31T18:43:27.970Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CORRECOES_FINANCAS_COMPLETAS.md",
+    "size": 7067,
+    "mtime": "2025-10-31T18:30:06.045Z"
+  },
+  {
+    "path": "C:\\Sisweb\\CORRECOES_VENDAS_COMPLETAS.md",
+    "size": 12773,
+    "mtime": "2025-10-31T16:52:22.879Z"
+  },
+  {
+    "path": "C:\\Sisweb\\corrigir-deploy-firebase.bat",
+    "size": 2645,
+    "mtime": "2025-08-02T20:01:52.326Z"
+  },
+  {
+    "path": "C:\\Sisweb\\corrigir-deploy.ps1",
+    "size": 2512,
+    "mtime": "2025-10-30T12:34:07.419Z"
+  },
+  {
+    "path": "C:\\Sisweb\\corrigir_estrategia_hibrida_v2.js",
+    "size": 19554,
+    "mtime": "2026-03-21T23:00:04.841Z"
+  },
+  {
+    "path": "C:\\Sisweb\\corrigir_estrategia_hibrida.js",
+    "size": 16051,
+    "mtime": "2026-03-20T21:22:41.069Z"
+  },
+  {
+    "path": "C:\\Sisweb\\corrigir_romaneios.html",
+    "size": 21653,
+    "mtime": "2026-03-20T21:25:52.940Z"
+  },
+  {
+    "path": "C:\\Sisweb\\corrigir_fornecedores.html",
+    "size": 21059,
+    "mtime": "2026-03-20T21:26:23.776Z"
+  },
+  {
+    "path": "C:\\Sisweb\\corrigir_vendas_romaneios.js",
+    "size": 14909,
+    "mtime": "2026-03-21T23:00:04.878Z"
+  },
+  {
+    "path": "C:\\Sisweb\\cors.json",
+    "size": 126,
+    "mtime": "2026-02-22T16:16:56.478Z"
+  },
+  {
+    "path": "C:\\Sisweb\\database-adapter.js",
+    "size": 17171,
+    "mtime": "2026-02-22T16:16:56.635Z"
+  },
+  {
+    "path": "C:\\Sisweb\\data-functions.js",
+    "size": 4398,
+    "mtime": "2025-05-28T18:05:18.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\database-utils.js",
+    "size": 24214,
+    "mtime": "2026-03-23T09:48:27.627Z"
+  },
+  {
+    "path": "C:\\Sisweb\\database.rules.json",
+    "size": 24219,
+    "mtime": "2026-03-26T19:19:04.573Z"
+  },
+  {
+    "path": "C:\\Sisweb\\deploy-forcado.ps1",
+    "size": 3203,
+    "mtime": "2025-08-03T01:43:29.085Z"
+  },
+  {
+    "path": "C:\\Sisweb\\deploy.bat",
+    "size": 1801,
+    "mtime": "2025-06-04T20:38:20.880Z"
+  },
+  {
+    "path": "C:\\Sisweb\\deploy-storage.bat",
+    "size": 1199,
+    "mtime": "2026-02-22T16:16:56.699Z"
+  },
+  {
+    "path": "C:\\Sisweb\\DIAGNOSTICO_VENDAS_ROMANEIOS.md",
+    "size": 2946,
+    "mtime": "2025-10-30T19:56:26.813Z"
+  },
+  {
+    "path": "C:\\Sisweb\\DIAGNOSTICO_PERDA_CLIENTES_CRITICO.md",
+    "size": 5382,
+    "mtime": "2025-10-30T12:58:44.605Z"
+  },
+  {
+    "path": "C:\\Sisweb\\DIAGRAMA_E_ESQUEMA_SISWEB.dm",
+    "size": 17763,
+    "mtime": "2025-08-13T12:12:42.695Z"
+  },
+  {
+    "path": "C:\\Sisweb\\dimensoes.js",
+    "size": 1555,
+    "mtime": "2025-05-27T23:03:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\DOCUMENTACAO_UNIFICACAO_CONTAS.md",
+    "size": 9015,
+    "mtime": "2025-10-31T17:31:03.142Z"
+  },
+  {
+    "path": "C:\\Sisweb\\eslint.config.js",
+    "size": 181,
+    "mtime": "2025-12-01T20:37:32.640Z"
+  },
+  {
+    "path": "C:\\Sisweb\\estados-cidades.js",
+    "size": 10384,
+    "mtime": "2025-05-29T17:38:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\estados-cidades.json",
+    "size": 15917,
+    "mtime": "2025-05-29T17:36:40.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\estoque.html",
+    "size": 67630,
+    "mtime": "2026-03-26T14:44:02.397Z"
+  },
+  {
+    "path": "C:\\Sisweb\\estrategia_hibrida_otimizada.js",
+    "size": 23982,
+    "mtime": "2025-05-27T23:03:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\estoque_produtos.js",
+    "size": 40834,
+    "mtime": "2026-03-26T14:29:49.757Z"
+  },
+  {
+    "path": "C:\\Sisweb\\estoque.js",
+    "size": 161535,
+    "mtime": "2026-03-26T14:29:49.755Z"
+  },
+  {
+    "path": "C:\\Sisweb\\extrator_dados_dashboard.html",
+    "size": 30208,
+    "mtime": "2026-03-22T20:20:20.423Z"
+  },
+  {
+    "path": "C:\\Sisweb\\favicon.ico",
+    "size": 222,
+    "mtime": "2025-05-20T19:50:52.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\financas.html",
+    "size": 74230,
+    "mtime": "2026-03-27T10:45:02.105Z"
+  },
+  {
+    "path": "C:\\Sisweb\\financas.js",
+    "size": 387920,
+    "mtime": "2026-03-27T10:52:22.323Z"
+  },
+  {
+    "path": "C:\\Sisweb\\find_modified.ps1",
+    "size": 230,
+    "mtime": "2026-03-22T23:46:45.917Z"
+  },
+  {
+    "path": "C:\\Sisweb\\find_romaneios.js",
+    "size": 643,
+    "mtime": "2026-02-23T10:26:04.500Z"
+  },
+  {
+    "path": "C:\\Sisweb\\find_romaneios.cjs",
+    "size": 725,
+    "mtime": "2026-02-23T10:26:04.497Z"
+  },
+  {
+    "path": "C:\\Sisweb\\firebase-no-cache.json",
+    "size": 967,
+    "mtime": "2025-08-03T01:43:29.099Z"
+  },
+  {
+    "path": "C:\\Sisweb\\firebase-connection-manager-compat.js",
+    "size": 7070,
+    "mtime": "2025-08-08T14:05:06.461Z"
+  },
+  {
+    "path": "C:\\Sisweb\\firebase-rules-development.json",
+    "size": 495,
+    "mtime": "2025-11-21T13:58:00.632Z"
+  },
+  {
+    "path": "C:\\Sisweb\\firebase-rules-production.json",
+    "size": 9910,
+    "mtime": "2026-03-23T14:51:49.807Z"
+  },
+  {
+    "path": "C:\\Sisweb\\firebase-rules-update.html",
+    "size": 7877,
+    "mtime": "2025-05-27T23:39:46.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\firebase-rules-valid.json",
+    "size": 7881,
+    "mtime": "2025-11-19T22:02:41.642Z"
+  },
+  {
+    "path": "C:\\Sisweb\\firebase-rules.json",
+    "size": 1910,
+    "mtime": "2025-12-01T13:54:19.269Z"
+  },
+  {
+    "path": "C:\\Sisweb\\firebase.json",
+    "size": 2328,
+    "mtime": "2026-03-26T19:28:38.935Z"
+  },
+  {
+    "path": "C:\\Sisweb\\firebaseRulesHelper.js",
+    "size": 6993,
+    "mtime": "2025-05-27T23:03:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\firebaseService.unified.js",
+    "size": 60270,
+    "mtime": "2026-03-03T03:44:40.429Z"
+  },
+  {
+    "path": "C:\\Sisweb\\firebaseService.js",
+    "size": 108026,
+    "mtime": "2026-03-26T19:24:11.685Z"
+  },
+  {
+    "path": "C:\\Sisweb\\FIREBASE_SECURITY_GUIDE.md",
+    "size": 10224,
+    "mtime": "2025-10-30T11:39:00.640Z"
+  },
+  {
+    "path": "C:\\Sisweb\\firestore.indexes.json",
+    "size": 44,
+    "mtime": "2026-02-22T16:16:57.478Z"
+  },
+  {
+    "path": "C:\\Sisweb\\firestore.rules",
+    "size": 163,
+    "mtime": "2026-02-22T16:16:57.536Z"
+  },
+  {
+    "path": "C:\\Sisweb\\fix-firebase-rules.html",
+    "size": 15428,
+    "mtime": "2025-05-27T23:38:34.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\fix-firebaseservice-import.js",
+    "size": 2937,
+    "mtime": "2026-03-17T17:10:37.872Z"
+  },
+  {
+    "path": "C:\\Sisweb\\fix-import-errors.js",
+    "size": 8682,
+    "mtime": "2026-03-20T20:57:51.442Z"
+  },
+  {
+    "path": "C:\\Sisweb\\fornecedor-manager.js",
+    "size": 43409,
+    "mtime": "2026-03-20T20:24:07.682Z"
+  },
+  {
+    "path": "C:\\Sisweb\\fornecedor-modals.js",
+    "size": 81814,
+    "mtime": "2026-03-18T11:56:24.975Z"
+  },
+  {
+    "path": "C:\\Sisweb\\fornecedor.html",
+    "size": 13887,
+    "mtime": "2026-03-26T14:45:06.695Z"
+  },
+  {
+    "path": "C:\\Sisweb\\fornecedores.json",
+    "size": 23424,
+    "mtime": "2025-12-17T12:27:38.122Z"
+  },
+  {
+    "path": "C:\\Sisweb\\garantia-fluxo-fornecedor.js",
+    "size": 30538,
+    "mtime": "2026-03-14T13:19:18.290Z"
+  },
+  {
+    "path": "C:\\Sisweb\\global-footer.js",
+    "size": 4715,
+    "mtime": "2026-03-15T16:47:10.601Z"
+  },
+  {
+    "path": "C:\\Sisweb\\global-functions-fix.js",
+    "size": 13474,
+    "mtime": "2025-08-03T22:29:52.743Z"
+  },
+  {
+    "path": "C:\\Sisweb\\GUIA_ESTILO_MODAIS_ESPECIES.md",
+    "size": 3510,
+    "mtime": "2025-11-19T20:51:04.712Z"
+  },
+  {
+    "path": "C:\\Sisweb\\GUIA_RAPIDO_VENDAS.md",
+    "size": 14134,
+    "mtime": "2025-10-10T19:44:28.253Z"
+  },
+  {
+    "path": "C:\\Sisweb\\IMPLEMENTACAO_CONCLUIDA_SUMARIO.md",
+    "size": 12275,
+    "mtime": "2025-10-10T19:44:28.304Z"
+  },
+  {
+    "path": "C:\\Sisweb\\implementacao_rapida.js",
+    "size": 13223,
+    "mtime": "2025-05-30T19:53:42.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\IMPLEMENTACOES_PRATICAS_VENDAS.md",
+    "size": 69652,
+    "mtime": "2025-10-09T17:47:52.608Z"
+  },
+  {
+    "path": "C:\\Sisweb\\IMPLEMENTACOES_REALIZADAS_VENDAS.md",
+    "size": 17398,
+    "mtime": "2025-10-10T13:43:38.453Z"
+  },
+  {
+    "path": "C:\\Sisweb\\importar_especies.html",
+    "size": 21378,
+    "mtime": "2026-03-26T14:45:04.265Z"
+  },
+  {
+    "path": "C:\\Sisweb\\importar_especies_direto.js",
+    "size": 13897,
+    "mtime": "2025-05-27T23:03:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\index.html",
+    "size": 49578,
+    "mtime": "2026-03-26T14:44:32.585Z"
+  },
+  {
+    "path": "C:\\Sisweb\\index_bak.html",
+    "size": 26821,
+    "mtime": "2026-03-26T14:44:54.540Z"
+  },
+  {
+    "path": "C:\\Sisweb\\INDICE_GERAL_VENDAS.md",
+    "size": 18687,
+    "mtime": "2025-10-10T13:43:38.483Z"
+  },
+  {
+    "path": "C:\\Sisweb\\inicializacaoCorrigida.js",
+    "size": 2402,
+    "mtime": "2025-05-27T23:03:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\INSTRUCOES_APLICAR_REGRAS.md",
+    "size": 1060,
+    "mtime": "2025-10-30T19:05:33.295Z"
+  },
+  {
+    "path": "C:\\Sisweb\\INTEGRACAO_COMPANY_VENDAS.md",
+    "size": 16341,
+    "mtime": "2025-10-10T19:44:28.308Z"
+  },
+  {
+    "path": "C:\\Sisweb\\layout-comum.css",
+    "size": 5253,
+    "mtime": "2026-03-25T10:12:09.627Z"
+  },
+  {
+    "path": "C:\\Sisweb\\LEIA-ME_URGENTE.md",
+    "size": 1593,
+    "mtime": "2025-10-31T17:50:03.756Z"
+  },
+  {
+    "path": "C:\\Sisweb\\limpar_clientes.html",
+    "size": 12980,
+    "mtime": "2026-03-20T21:25:15.747Z"
+  },
+  {
+    "path": "C:\\Sisweb\\limpar_direto.js",
+    "size": 2733,
+    "mtime": "2026-03-21T23:00:04.866Z"
+  },
+  {
+    "path": "C:\\Sisweb\\limpar_especies.html",
+    "size": 9819,
+    "mtime": "2026-03-20T21:24:42.242Z"
+  },
+  {
+    "path": "C:\\Sisweb\\limpar_especies_direto.js",
+    "size": 2958,
+    "mtime": "2026-03-21T23:00:04.871Z"
+  },
+  {
+    "path": "C:\\Sisweb\\limpar_storage.js",
+    "size": 6713,
+    "mtime": "2026-03-20T20:52:15.259Z"
+  },
+  {
+    "path": "C:\\Sisweb\\login.html",
+    "size": 94549,
+    "mtime": "2026-03-18T14:15:54.677Z"
+  },
+  {
+    "path": "C:\\Sisweb\\Logo JN.png",
+    "size": 141907,
+    "mtime": "2023-02-13T18:48:06.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\Logs do console.md",
+    "size": 65728,
+    "mtime": "2025-11-28T19:14:05.171Z"
+  },
+  {
+    "path": "C:\\Sisweb\\Logs do console.txt",
+    "size": 49174,
+    "mtime": "2025-11-13T14:41:55.088Z"
+  },
+  {
+    "path": "C:\\Sisweb\\logs.md",
+    "size": 1621,
+    "mtime": "2026-03-24T17:56:10.899Z"
+  },
+  {
+    "path": "C:\\Sisweb\\mdf-e.html",
+    "size": 42096,
+    "mtime": "2026-03-26T14:45:11.666Z"
+  },
+  {
+    "path": "C:\\Sisweb\\mdf-e.js",
+    "size": 26655,
+    "mtime": "2025-05-27T23:03:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\menu.css",
+    "size": 3997,
+    "mtime": "2026-03-27T10:51:03.557Z"
+  },
+  {
+    "path": "C:\\Sisweb\\menu-component.js",
+    "size": 99878,
+    "mtime": "2026-03-27T12:13:00.485Z"
+  },
+  {
+    "path": "C:\\Sisweb\\menu.js",
+    "size": 2309,
+    "mtime": "2026-03-26T19:52:37.918Z"
+  },
+  {
+    "path": "C:\\Sisweb\\migrar-contas.html",
+    "size": 11963,
+    "mtime": "2025-10-31T17:31:03.142Z"
+  },
+  {
+    "path": "C:\\Sisweb\\migrar-financas-mensal.html",
+    "size": 5332,
+    "mtime": "2026-03-25T10:12:09.733Z"
+  },
+  {
+    "path": "C:\\Sisweb\\migrate-to-firebase.html",
+    "size": 21998,
+    "mtime": "2026-03-16T03:54:50.324Z"
+  },
+  {
+    "path": "C:\\Sisweb\\migration-tool.html",
+    "size": 21293,
+    "mtime": "2026-03-20T21:24:20.623Z"
+  },
+  {
+    "path": "C:\\Sisweb\\migrateToFirebase.js",
+    "size": 10076,
+    "mtime": "2025-05-27T23:03:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modificar_romaneio.js",
+    "size": 2223,
+    "mtime": "2025-05-27T23:03:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\MOVER_ARQUIVOS_ANTIGOS.js",
+    "size": 14252,
+    "mtime": "2025-08-02T20:01:52.003Z"
+  },
+  {
+    "path": "C:\\Sisweb\\MOVER_ARQUIVOS_ANTIGOS_UNIFICACAO.js",
+    "size": 10126,
+    "mtime": "2025-08-01T18:17:19.486Z"
+  },
+  {
+    "path": "C:\\Sisweb\\MUDANCAS_APLICADAS_V2.1.md",
+    "size": 10243,
+    "mtime": "2025-10-10T19:44:28.319Z"
+  },
+  {
+    "path": "C:\\Sisweb\\normalize-contacts-export.mjs",
+    "size": 6687,
+    "mtime": "2026-03-13T16:44:02.533Z"
+  },
+  {
+    "path": "C:\\Sisweb\\notas-fiscais.html",
+    "size": 41989,
+    "mtime": "2026-03-26T14:44:27.577Z"
+  },
+  {
+    "path": "C:\\Sisweb\\notas-fiscais.js",
+    "size": 23122,
+    "mtime": "2025-05-27T23:03:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\package.json",
+    "size": 543,
+    "mtime": "2026-03-22T18:52:22.801Z"
+  },
+  {
+    "path": "C:\\Sisweb\\pglite-debug.log",
+    "size": 0,
+    "mtime": "2025-07-17T13:44:06.985Z"
+  },
+  {
+    "path": "C:\\Sisweb\\package-lock.json",
+    "size": 135907,
+    "mtime": "2026-03-22T18:52:22.906Z"
+  },
+  {
+    "path": "C:\\Sisweb\\openNewClientModal.js",
+    "size": 11154,
+    "mtime": "2026-02-22T16:17:04.715Z"
+  },
+  {
+    "path": "C:\\Sisweb\\preromaneio.html",
+    "size": 58592,
+    "mtime": "2026-03-26T14:44:49.759Z"
+  },
+  {
+    "path": "C:\\Sisweb\\Plano de desenvolvimento de um sistema completo.md",
+    "size": 49361,
+    "mtime": "2026-03-03T12:45:03.069Z"
+  },
+  {
+    "path": "C:\\Sisweb\\preromaneio-modals.js",
+    "size": 29465,
+    "mtime": "2026-03-23T09:48:30.275Z"
+  },
+  {
+    "path": "C:\\Sisweb\\preromaneio.js",
+    "size": 46573,
+    "mtime": "2026-03-23T09:48:30.394Z"
+  },
+  {
+    "path": "C:\\Sisweb\\print-styles.css",
+    "size": 38951,
+    "mtime": "2025-09-01T04:14:10.006Z"
+  },
+  {
+    "path": "C:\\Sisweb\\Prompt de susgestões de melhorias, para atualizar o prompt principa.md",
+    "size": 6935,
+    "mtime": "2026-03-03T03:46:00.129Z"
+  },
+  {
+    "path": "C:\\Sisweb\\pre-romaneio-selector.js",
+    "size": 19063,
+    "mtime": "2026-03-14T14:03:27.633Z"
+  },
+  {
+    "path": "C:\\Sisweb\\README_APLICAR_NOW.md",
+    "size": 1972,
+    "mtime": "2025-10-31T18:10:28.773Z"
+  },
+  {
+    "path": "C:\\Sisweb\\README_MODULO_VENDAS.md",
+    "size": 16959,
+    "mtime": "2025-10-10T19:44:28.302Z"
+  },
+  {
+    "path": "C:\\Sisweb\\README_VENDAS_FINAL.md",
+    "size": 8678,
+    "mtime": "2025-10-10T19:44:28.310Z"
+  },
+  {
+    "path": "C:\\Sisweb\\relatorio_correcao_2025-08-01.json",
+    "size": 518,
+    "mtime": "2025-08-01T19:46:53.123Z"
+  },
+  {
+    "path": "C:\\Sisweb\\relatorio_correcao_erros_2025-08-01.json",
+    "size": 1000,
+    "mtime": "2025-08-01T20:04:17.799Z"
+  },
+  {
+    "path": "C:\\Sisweb\\relatorio_correcao_formatacao_2025-08-01.json",
+    "size": 1095,
+    "mtime": "2025-08-01T19:55:42.988Z"
+  },
+  {
+    "path": "C:\\Sisweb\\RELATORIO_MATRIZ_PATHS_TENANCY.md",
+    "size": 3380,
+    "mtime": "2026-03-18T11:56:24.979Z"
+  },
+  {
+    "path": "C:\\Sisweb\\RELATORIO_PERDA_DADOS_CLIENTES.md",
+    "size": 9971,
+    "mtime": "2025-10-30T11:59:01.702Z"
+  },
+  {
+    "path": "C:\\Sisweb\\reset-client.html",
+    "size": 5881,
+    "mtime": "2026-03-16T03:54:50.325Z"
+  },
+  {
+    "path": "C:\\Sisweb\\resolucao_conflitos_ids.js",
+    "size": 17533,
+    "mtime": "2025-05-27T23:03:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\reset-system.html",
+    "size": 6005,
+    "mtime": "2026-03-16T03:54:50.324Z"
+  },
+  {
+    "path": "C:\\Sisweb\\RESUMO_CORRECOES_FIREBASE_RULES.md",
+    "size": 4471,
+    "mtime": "2025-10-31T17:50:03.756Z"
+  },
+  {
+    "path": "C:\\Sisweb\\RESUMO_EXECUTIVO_VENDAS.md",
+    "size": 12065,
+    "mtime": "2025-10-09T17:47:52.608Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneio-comum.css",
+    "size": 50414,
+    "mtime": "2026-03-25T10:12:11.124Z"
+  },
+  {
+    "path": "C:\\Sisweb\\RESUMO_UNIFICACAO_CONTAS.md",
+    "size": 5450,
+    "mtime": "2025-10-31T17:31:03.142Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneio-firebase-service.js",
+    "size": 14562,
+    "mtime": "2025-06-20T13:37:50.726Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneio-manager.js",
+    "size": 47076,
+    "mtime": "2026-03-25T11:05:51.472Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneio-missing-functions.js",
+    "size": 4060,
+    "mtime": "2025-06-03T20:18:36.789Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneio-utils.js",
+    "size": 7837,
+    "mtime": "2026-02-26T10:20:37.248Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneioItem.js",
+    "size": 8051,
+    "mtime": "2025-05-27T23:03:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiopct-formatacao.js",
+    "size": 11778,
+    "mtime": "2025-08-03T17:37:32.099Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiopct-calculos.js",
+    "size": 14746,
+    "mtime": "2025-08-01T18:17:18.283Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiopct-main.js",
+    "size": 30585,
+    "mtime": "2026-03-13T18:50:13.412Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiopct-tabela.js",
+    "size": 84976,
+    "mtime": "2026-03-23T16:37:01.107Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiopct-tabela.js.backup.2025-08-01",
+    "size": 27178,
+    "mtime": "2025-08-01T19:55:42.974Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiopct.html",
+    "size": 163064,
+    "mtime": "2026-03-26T14:44:17.890Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiopct.html.backup.2025-08-01",
+    "size": 96323,
+    "mtime": "2025-08-01T20:04:17.775Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiopct_back.html",
+    "size": 62905,
+    "mtime": "2026-03-26T14:44:47.344Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiopct_funcoes.js",
+    "size": 59295,
+    "mtime": "2026-03-22T20:10:24.457Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiopes.html",
+    "size": 178230,
+    "mtime": "2026-03-26T14:44:12.674Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneios-client-save-fix.js",
+    "size": 34702,
+    "mtime": "2026-03-21T23:32:58.919Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiosTora.json",
+    "size": 694779,
+    "mtime": "2025-11-19T21:58:05.161Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotl.html",
+    "size": 87678,
+    "mtime": "2026-03-26T14:44:15.332Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotl-estruturaçãomodular.txt",
+    "size": 969,
+    "mtime": "2025-07-23T18:48:38.175Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora-client-modal-fix.js",
+    "size": 26296,
+    "mtime": "2025-07-17T19:56:21.923Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora-import-v3.js",
+    "size": 12921,
+    "mtime": "2026-02-23T00:26:30.241Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora-import-v4.js",
+    "size": 14177,
+    "mtime": "2026-02-26T10:20:38.191Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora-import.js",
+    "size": 13462,
+    "mtime": "2026-02-23T00:13:41.609Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora.html",
+    "size": 103630,
+    "mtime": "2026-03-26T14:44:10.096Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora.js",
+    "size": 96195,
+    "mtime": "2026-03-23T09:48:31.835Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora_backup.html",
+    "size": 52244,
+    "mtime": "2026-03-26T14:45:19.075Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora_modais.js",
+    "size": 227403,
+    "mtime": "2026-03-22T20:30:35.030Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora_modais_backup.js",
+    "size": 246399,
+    "mtime": "2026-03-22T20:30:35.036Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora_modais_old.js",
+    "size": 249620,
+    "mtime": "2026-03-22T20:30:35.042Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora_modais_problematico.js",
+    "size": 196149,
+    "mtime": "2026-03-23T09:48:34.008Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora_modal_fix.js",
+    "size": 428,
+    "mtime": "2025-07-16T19:27:47.597Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora_modal_fix_final.js",
+    "size": 19459,
+    "mtime": "2026-02-03T17:47:37.060Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora_modal_fix_final_cleaned.js",
+    "size": 22376,
+    "mtime": "2026-02-06T12:40:42.568Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora_otimizado.html",
+    "size": 47521,
+    "mtime": "2026-03-26T14:45:09.243Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora_tabela.js",
+    "size": 61103,
+    "mtime": "2026-03-22T20:10:24.531Z"
+  },
+  {
+    "path": "C:\\Sisweb\\romaneiotora_versao_dev.html",
+    "size": 34666,
+    "mtime": "2026-03-26T14:45:16.671Z"
+  },
+  {
+    "path": "C:\\Sisweb\\schema-migration-contatos.js",
+    "size": 9297,
+    "mtime": "2026-03-13T16:43:09.095Z"
+  },
+  {
+    "path": "C:\\Sisweb\\server.js",
+    "size": 800,
+    "mtime": "2025-11-18T17:05:08.322Z"
+  },
+  {
+    "path": "C:\\Sisweb\\service-account.json",
+    "size": 2376,
+    "mtime": "2026-03-22T18:46:38.228Z"
+  },
+  {
+    "path": "C:\\Sisweb\\sincronizacao_simples.js",
+    "size": 6946,
+    "mtime": "2025-05-27T23:03:22.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\sincronizar.html",
+    "size": 15223,
+    "mtime": "2026-03-16T03:54:50.681Z"
+  },
+  {
+    "path": "C:\\Sisweb\\sisweb-7ce82-default-rtdb-export (5).json",
+    "size": 3944666,
+    "mtime": "2026-03-22T18:06:10.004Z"
+  },
+  {
+    "path": "C:\\Sisweb\\sisweb-diagnostic-2025-05-28.json",
+    "size": 350,
+    "mtime": "2025-05-28T20:53:04.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\sisweb.ico",
+    "size": 11452,
+    "mtime": "2025-03-14T12:21:10.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\sisweb.svg",
+    "size": 331,
+    "mtime": "2025-03-14T12:14:22.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\SISWEB_SYSTEM_DIAGRAM.md",
+    "size": 10938,
+    "mtime": "2026-03-16T04:47:14.385Z"
+  },
+  {
+    "path": "C:\\Sisweb\\SOLUCAO_FINAL.md",
+    "size": 2960,
+    "mtime": "2025-10-31T18:10:28.773Z"
+  },
+  {
+    "path": "C:\\Sisweb\\species-manager.js",
+    "size": 63106,
+    "mtime": "2026-03-21T23:00:04.841Z"
+  },
+  {
+    "path": "C:\\Sisweb\\species.html",
+    "size": 10203,
+    "mtime": "2026-03-26T14:44:59.356Z"
+  },
+  {
+    "path": "C:\\Sisweb\\standardized-client-modal.js",
+    "size": 135404,
+    "mtime": "2026-02-06T12:40:44.688Z"
+  },
+  {
+    "path": "C:\\Sisweb\\STATUS_FINAL_CORRECOES.md",
+    "size": 4308,
+    "mtime": "2025-10-31T17:55:30.572Z"
+  },
+  {
+    "path": "C:\\Sisweb\\status-styles.css",
+    "size": 4140,
+    "mtime": "2025-05-24T21:01:18.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\storage.rules",
+    "size": 3092,
+    "mtime": "2026-03-25T10:12:12.422Z"
+  },
+  {
+    "path": "C:\\Sisweb\\storageService.js",
+    "size": 3454,
+    "mtime": "2026-03-25T10:12:12.484Z"
+  },
+  {
+    "path": "C:\\Sisweb\\subscription-status.html",
+    "size": 45702,
+    "mtime": "2026-03-26T17:41:31.288Z"
+  },
+  {
+    "path": "C:\\Sisweb\\subscription.html",
+    "size": 54689,
+    "mtime": "2026-03-26T17:29:54.381Z"
+  },
+  {
+    "path": "C:\\Sisweb\\template.html",
+    "size": 3643,
+    "mtime": "2026-03-26T14:44:52.129Z"
+  },
+  {
+    "path": "C:\\Sisweb\\SUMARIO_COMPLETO_VENDAS.md",
+    "size": 9733,
+    "mtime": "2025-10-10T19:47:43.810Z"
+  },
+  {
+    "path": "C:\\Sisweb\\temp_romaneio.js",
+    "size": 9948,
+    "mtime": "2025-06-09T14:22:29.740Z"
+  },
+  {
+    "path": "C:\\Sisweb\\ui-components.css",
+    "size": 11112,
+    "mtime": "2026-03-25T10:12:12.622Z"
+  },
+  {
+    "path": "C:\\Sisweb\\URGENTE_LER_PRIMEIRO.md",
+    "size": 4492,
+    "mtime": "2025-10-31T17:55:30.572Z"
+  },
+  {
+    "path": "C:\\Sisweb\\user-profile.html",
+    "size": 48663,
+    "mtime": "2026-03-26T14:44:35.002Z"
+  },
+  {
+    "path": "C:\\Sisweb\\vendas.html",
+    "size": 56647,
+    "mtime": "2026-03-26T14:44:04.828Z"
+  },
+  {
+    "path": "C:\\Sisweb\\utils.js",
+    "size": 6648,
+    "mtime": "2025-12-01T18:05:51.009Z"
+  },
+  {
+    "path": "C:\\Sisweb\\validation-system.js",
+    "size": 15150,
+    "mtime": "2025-05-28T16:26:00.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\vendas.js",
+    "size": 275692,
+    "mtime": "2026-03-26T14:29:49.686Z"
+  },
+  {
+    "path": "C:\\Sisweb\\verificar-deploy.ps1",
+    "size": 4452,
+    "mtime": "2025-08-03T01:43:29.085Z"
+  },
+  {
+    "path": "C:\\Sisweb\\vercel.json",
+    "size": 224,
+    "mtime": "2026-03-25T10:12:15.449Z"
+  },
+  {
+    "path": "C:\\Sisweb\\verificacao-final-sistema.js",
+    "size": 4509,
+    "mtime": "2025-06-03T20:56:09.698Z"
+  },
+  {
+    "path": "C:\\Sisweb\\verificar_romaneios.html",
+    "size": 11185,
+    "mtime": "2026-03-16T03:54:50.678Z"
+  },
+  {
+    "path": "C:\\Sisweb\\.vscode\\launch.json",
+    "size": 281,
+    "mtime": "2025-12-01T20:49:28.430Z"
+  },
+  {
+    "path": "C:\\Sisweb\\.vercel\\project.json",
+    "size": 145,
+    "mtime": "2026-03-24T17:09:21.550Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\banco-horas-config.js",
+    "size": 4485,
+    "mtime": "2026-03-03T18:52:58.257Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\banco-horas-firebase.js",
+    "size": 8259,
+    "mtime": "2026-03-03T19:47:10.503Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\banco-horas-ui.js",
+    "size": 95940,
+    "mtime": "2026-03-23T09:48:28.748Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\banco-horas-relatorios.js",
+    "size": 23331,
+    "mtime": "2026-03-03T19:50:30.357Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\banco-horas-service.js",
+    "size": 7558,
+    "mtime": "2026-03-03T14:23:23.282Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha-calculos.js",
+    "size": 28263,
+    "mtime": "2026-02-26T10:20:31.760Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\debug-folha-utils.js",
+    "size": 7249,
+    "mtime": "2026-02-18T12:35:20.578Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha-cargos.js",
+    "size": 39701,
+    "mtime": "2026-02-19T12:02:46.637Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha-filtros.js",
+    "size": 80569,
+    "mtime": "2026-03-20T20:35:31.659Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha-config.js",
+    "size": 5402,
+    "mtime": "2025-12-01T17:29:51.876Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha-firebase-manager.js",
+    "size": 30750,
+    "mtime": "2026-03-20T20:38:24.643Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha-firebase-optimized.js",
+    "size": 22465,
+    "mtime": "2026-03-20T20:38:50.775Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha-funcionarios.js",
+    "size": 94711,
+    "mtime": "2026-03-21T23:00:04.875Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha-lancamentos.js",
+    "size": 186380,
+    "mtime": "2026-03-22T20:10:24.324Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha-loading-styles.css",
+    "size": 9234,
+    "mtime": "2025-08-09T17:20:57.245Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha-main.js",
+    "size": 99745,
+    "mtime": "2026-03-23T09:48:28.988Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha-menu-original-completo.css",
+    "size": 559,
+    "mtime": "2025-08-07T04:11:02.483Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha-paginacao.js",
+    "size": 14657,
+    "mtime": "2026-03-13T12:13:16.568Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha-relatorios.js",
+    "size": 297515,
+    "mtime": "2026-03-26T14:29:49.755Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha-utils.js",
+    "size": 172869,
+    "mtime": "2026-03-21T23:00:04.864Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha.css",
+    "size": 65142,
+    "mtime": "2026-03-26T14:29:49.751Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\folha.html",
+    "size": 69914,
+    "mtime": "2026-03-26T14:44:30.147Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\normalizar-quinzena.html",
+    "size": 7954,
+    "mtime": "2026-03-16T03:54:50.325Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\teste-firebase-simples.html",
+    "size": 9217,
+    "mtime": "2026-03-15T14:42:20.965Z"
+  },
+  {
+    "path": "C:\\Sisweb\\folha_pagamento\\teste-modal-integrado.html",
+    "size": 9875,
+    "mtime": "2026-03-26T14:45:14.256Z"
+  },
+  {
+    "path": "C:\\Sisweb\\functions\\index.js",
+    "size": 106698,
+    "mtime": "2026-03-26T17:45:26.737Z"
+  },
+  {
+    "path": "C:\\Sisweb\\functions\\package.json",
+    "size": 638,
+    "mtime": "2026-03-26T19:39:30.475Z"
+  },
+  {
+    "path": "C:\\Sisweb\\functions\\package-lock.json",
+    "size": 281923,
+    "mtime": "2026-03-26T19:39:31.010Z"
+  },
+  {
+    "path": "C:\\Sisweb\\js\\client.js",
+    "size": 20005,
+    "mtime": "2026-03-21T23:32:43.194Z"
+  },
+  {
+    "path": "C:\\Sisweb\\js\\deep-clean.js",
+    "size": 4728,
+    "mtime": "2026-02-22T16:17:03.597Z"
+  },
+  {
+    "path": "C:\\Sisweb\\js\\fornecedor.js",
+    "size": 20225,
+    "mtime": "2026-03-14T13:19:18.488Z"
+  },
+  {
+    "path": "C:\\Sisweb\\js\\species.js",
+    "size": 15839,
+    "mtime": "2026-03-03T03:44:39.926Z"
+  },
+  {
+    "path": "C:\\Sisweb\\scripts\\inspect_company_nodes.cjs",
+    "size": 967,
+    "mtime": "2026-03-22T20:54:22.176Z"
+  },
+  {
+    "path": "C:\\Sisweb\\scripts\\migracao_sisweb_v3.cjs",
+    "size": 8225,
+    "mtime": "2026-03-22T18:51:51.936Z"
+  },
+  {
+    "path": "C:\\Sisweb\\scripts\\migracao_v4_romaneiosPes.cjs",
+    "size": 1598,
+    "mtime": "2026-03-22T20:17:58.415Z"
+  },
+  {
+    "path": "C:\\Sisweb\\scripts\\migracao_v4_vendas.cjs",
+    "size": 2133,
+    "mtime": "2026-03-22T20:04:59.895Z"
+  },
+  {
+    "path": "C:\\Sisweb\\scripts\\migrar-financas-mensal.js",
+    "size": 5366,
+    "mtime": "2026-03-25T10:12:12.421Z"
+  },
+  {
+    "path": "C:\\Sisweb\\scripts\\migrar-tabelas-contas.js",
+    "size": 18020,
+    "mtime": "2026-03-22T20:10:24.534Z"
+  },
+  {
+    "path": "C:\\Sisweb\\scripts\\patch_js_paths.cjs",
+    "size": 7555,
+    "mtime": "2026-03-22T20:30:27.860Z"
+  },
+  {
+    "path": "C:\\Sisweb\\.firebase\\hosting..cache",
+    "size": 35090,
+    "mtime": "2026-03-27T12:25:16.363Z"
+  },
+  {
+    "path": "C:\\Sisweb\\.firebase\\logs\\vsce-debug.log",
+    "size": 48951261,
+    "mtime": "2025-11-24T12:48:04.142Z"
+  },
+  {
+    "path": "C:\\Sisweb\\assets\\help\\company.png",
+    "size": 276177,
+    "mtime": "2026-03-23T03:45:30.896Z"
+  },
+  {
+    "path": "C:\\Sisweb\\assets\\help\\dashboard.png",
+    "size": 159067,
+    "mtime": "2026-03-23T03:45:46.252Z"
+  },
+  {
+    "path": "C:\\Sisweb\\assets\\help\\estoque.png",
+    "size": 234027,
+    "mtime": "2026-03-23T03:45:59.483Z"
+  },
+  {
+    "path": "C:\\Sisweb\\assets\\help\\financas.png",
+    "size": 233087,
+    "mtime": "2026-03-23T03:46:14.332Z"
+  },
+  {
+    "path": "C:\\Sisweb\\assets\\help\\romaneio-pes.png",
+    "size": 111448,
+    "mtime": "2026-03-23T03:46:37.372Z"
+  },
+  {
+    "path": "C:\\Sisweb\\assets\\icons\\icon-144x144.png",
+    "size": 2444,
+    "mtime": "2025-06-03T13:31:04.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\assets\\icons\\icon-192x192.png",
+    "size": 2444,
+    "mtime": "2025-06-03T13:31:04.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\assets\\icons\\icon-512x512.png",
+    "size": 2444,
+    "mtime": "2025-06-03T13:31:04.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\assets\\icons\\icon.svg",
+    "size": 2444,
+    "mtime": "2025-06-03T13:43:46.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\README.md",
+    "size": 752,
+    "mtime": "2026-03-26T21:02:35.367Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\empresa\\company.png",
+    "size": 205992,
+    "mtime": "2026-03-27T10:16:52.508Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\assinatura\\subscription-status.png",
+    "size": 127151,
+    "mtime": "2026-03-27T10:17:38.729Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\assinatura\\subscription.png",
+    "size": 628116,
+    "mtime": "2026-03-27T10:17:42.395Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\cadastros\\especies.png",
+    "size": 628116,
+    "mtime": "2026-03-27T10:17:01.205Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\cadastros\\clientes.png",
+    "size": 628116,
+    "mtime": "2026-03-27T10:16:56.204Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\cadastros\\fornecedores.png",
+    "size": 30561,
+    "mtime": "2026-03-27T10:16:57.548Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\fiscal\\mdf-e.png",
+    "size": 75690,
+    "mtime": "2026-03-27T10:17:37.354Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\fiscal\\notas-fiscais.png",
+    "size": 62614,
+    "mtime": "2026-03-27T10:17:33.715Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\estoque\\estoque.png",
+    "size": 68886,
+    "mtime": "2026-03-27T10:17:21.991Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\folha\\folha.png",
+    "size": 205992,
+    "mtime": "2026-03-27T10:17:26.535Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\inicio\\dashboard.png",
+    "size": 205992,
+    "mtime": "2026-03-27T10:16:48.233Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\financeiro\\pagar.png",
+    "size": 144160,
+    "mtime": "2026-03-27T10:17:20.554Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\financeiro\\financas.png",
+    "size": 77496,
+    "mtime": "2026-03-27T10:17:18.787Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\financeiro\\receber.png",
+    "size": 144280,
+    "mtime": "2026-03-27T10:17:19.672Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\perfil\\user-profile.png",
+    "size": 272316,
+    "mtime": "2026-03-27T10:17:43.835Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\romaneios\\pes.png",
+    "size": 52823,
+    "mtime": "2026-03-27T10:17:12.544Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\romaneios\\pct.png",
+    "size": 65356,
+    "mtime": "2026-03-27T10:17:11.178Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\romaneios\\emissao.png",
+    "size": 57952,
+    "mtime": "2026-03-27T10:14:07.467Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\romaneios\\preromaneio.png",
+    "size": 51985,
+    "mtime": "2026-03-27T10:17:03.391Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\romaneios\\preromaneio-lista.png",
+    "size": 90391,
+    "mtime": "2026-03-27T10:17:07.101Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\romaneios\\tl.png",
+    "size": 57998,
+    "mtime": "2026-03-27T10:17:08.789Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\romaneios\\tora.png",
+    "size": 52931,
+    "mtime": "2026-03-27T10:17:16.816Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\vendas\\vendas.png",
+    "size": 29722,
+    "mtime": "2026-03-27T10:17:28.261Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\vendas\\lista-pedidos.png",
+    "size": 55999,
+    "mtime": "2026-03-27T10:17:32.104Z"
+  },
+  {
+    "path": "C:\\Sisweb\\help-assets\\vendas\\novo-pedido.png",
+    "size": 90825,
+    "mtime": "2026-03-27T10:17:30.310Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\core\\firebase-service.js",
+    "size": 32523,
+    "mtime": "2026-03-14T13:19:18.799Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\core\\hybrid-sync-service.js",
+    "size": 19633,
+    "mtime": "2026-03-14T13:19:18.967Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\core\\formatacao-campos.js",
+    "size": 16311,
+    "mtime": "2026-02-27T13:40:40.763Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\core\\navegacao-enter.js",
+    "size": 13152,
+    "mtime": "2026-03-23T01:12:04.992Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\core\\responsive-manager.js",
+    "size": 19900,
+    "mtime": "2026-02-26T10:20:35.094Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\core\\utils.js",
+    "size": 13780,
+    "mtime": "2026-02-27T14:19:37.054Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\crud\\gerenciar-clientes.js",
+    "size": 32106,
+    "mtime": "2026-02-22T16:17:04.125Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\crud\\gerenciar-especies.js",
+    "size": 23711,
+    "mtime": "2026-02-22T16:17:04.221Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\dashboard\\dashboard-core.js",
+    "size": 66071,
+    "mtime": "2026-03-23T01:12:04.999Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\dashboard\\dashboard-professional-styles.css",
+    "size": 19129,
+    "mtime": "2026-02-26T14:32:41.956Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\dashboard\\dashboard-widgets.js",
+    "size": 49999,
+    "mtime": "2026-02-26T14:32:41.962Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\dashboard\\dashboard-styles.css",
+    "size": 14157,
+    "mtime": "2025-08-31T19:43:13.404Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\dashboard\\performance-tester.js",
+    "size": 14574,
+    "mtime": "2025-08-30T16:45:14.052Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\dashboard\\README.md",
+    "size": 7176,
+    "mtime": "2025-08-30T15:08:49.877Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\dashboard\\sample-data-generator.js",
+    "size": 27287,
+    "mtime": "2026-03-22T20:10:24.397Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\dashboard\\dashboard-layout-fix.css",
+    "size": 7558,
+    "mtime": "2025-08-30T21:10:37.709Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\dashboard\\dashboard-responsive-styles.css",
+    "size": 12048,
+    "mtime": "2025-08-30T16:45:14.052Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\items\\adicionar-item.js",
+    "size": 42458,
+    "mtime": "2026-02-27T14:12:54.318Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\items\\editar-item.js",
+    "size": 14692,
+    "mtime": "2026-02-27T14:09:46.569Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\items\\renderizar-tabela.js",
+    "size": 18437,
+    "mtime": "2026-03-19T21:10:41.681Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\items\\excluir-item.js",
+    "size": 12163,
+    "mtime": "2026-02-27T14:21:12.474Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\romaneio\\salvar-romaneio.js",
+    "size": 38503,
+    "mtime": "2026-03-23T13:35:27.789Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\reports\\imprimir-romaneio.js",
+    "size": 160988,
+    "mtime": "2026-03-25T10:12:10.268Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\modals\\modal-especies.js",
+    "size": 29930,
+    "mtime": "2026-03-13T12:28:55.255Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\modals\\modal-lista-romaneios.js",
+    "size": 63322,
+    "mtime": "2026-03-25T11:11:22.106Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\modals\\modal-clientes.js",
+    "size": 26000,
+    "mtime": "2026-03-13T12:28:43.395Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\romaneiopct\\carregar-romaneio-pct.js",
+    "size": 24715,
+    "mtime": "2026-03-22T20:10:24.415Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\romaneiopct\\calculos-pct.js",
+    "size": 4863,
+    "mtime": "2025-08-27T18:35:55.669Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\romaneiopct\\diagnostico-conflitos-pct.js",
+    "size": 16798,
+    "mtime": "2026-03-25T10:12:10.345Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\romaneiopct\\formatacao-campos-pct.js",
+    "size": 8993,
+    "mtime": "2025-12-01T13:54:19.322Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\romaneiopct\\inicializar-modais-pct.js",
+    "size": 11301,
+    "mtime": "2026-03-25T10:12:10.458Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\romaneiopct\\imprimir-romaneio-pct.js",
+    "size": 137991,
+    "mtime": "2026-03-22T23:17:10.390Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\romaneiopct\\inicializar-sistema-pct.js",
+    "size": 4877,
+    "mtime": "2025-08-27T17:47:43.005Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\romaneiopct\\modal-especies-pct.js",
+    "size": 33557,
+    "mtime": "2026-03-25T10:12:11.050Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\romaneiopct\\modal-clientes-pct.js",
+    "size": 56521,
+    "mtime": "2026-03-25T10:12:10.527Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\romaneiopct\\modal-lista-romaneios-pct.js",
+    "size": 103003,
+    "mtime": "2026-03-25T10:12:11.118Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\romaneiopct\\navegacao-pct.js",
+    "size": 7952,
+    "mtime": "2025-08-28T18:44:27.695Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\romaneiopct\\preservar-propriedades-financeiras.js",
+    "size": 13524,
+    "mtime": "2026-03-23T09:48:29.953Z"
+  },
+  {
+    "path": "C:\\Sisweb\\modules\\romaneiopct\\validacoes-pct.js",
+    "size": 3327,
+    "mtime": "2025-08-27T17:38:32.758Z"
+  },
+  {
+    "path": "C:\\Sisweb\\tools\\help-screenshots\\package.json",
+    "size": 253,
+    "mtime": "2026-03-26T21:02:49.803Z"
+  },
+  {
+    "path": "C:\\Sisweb\\tools\\help-screenshots\\capture.mjs",
+    "size": 5151,
+    "mtime": "2026-03-27T10:38:47.348Z"
+  },
+  {
+    "path": "C:\\Sisweb\\tools\\help-screenshots\\README.md",
+    "size": 706,
+    "mtime": "2026-03-26T21:03:19.577Z"
+  },
+  {
+    "path": "C:\\Sisweb\\tools\\help-screenshots\\routes.json",
+    "size": 2777,
+    "mtime": "2026-03-27T10:38:11.862Z"
+  },
+  {
+    "path": "C:\\Sisweb\\tools\\help-screenshots\\package-lock.json",
+    "size": 1648,
+    "mtime": "2026-03-27T09:59:35.583Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\app.js",
+    "size": 23926,
+    "mtime": "2025-06-02T21:59:38.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\scripts\\exposeParsersGlobal.js",
+    "size": 613,
+    "mtime": "2025-11-21T12:00:21.429Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\scripts\\migrationScript.js",
+    "size": 27506,
+    "mtime": "2026-03-21T23:00:04.838Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\constants\\app-constants.js",
+    "size": 8219,
+    "mtime": "2025-06-02T21:49:02.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\services\\authService.js",
+    "size": 23394,
+    "mtime": "2025-11-14T12:12:10.303Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\services\\printService.js",
+    "size": 26708,
+    "mtime": "2025-06-02T22:09:58.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\services\\firebaseService.unified.js",
+    "size": 31538,
+    "mtime": "2025-12-05T13:56:10.021Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\services\\pushService.js",
+    "size": 21092,
+    "mtime": "2025-06-03T11:23:20.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\services\\databaseAdapter.js",
+    "size": 41106,
+    "mtime": "2026-02-22T16:17:10.364Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\services\\firebaseService.js",
+    "size": 8463,
+    "mtime": "2026-01-22T19:47:01.200Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\services\\stateManager.js",
+    "size": 21639,
+    "mtime": "2025-06-02T21:54:50.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\utils\\calculations.js",
+    "size": 21295,
+    "mtime": "2025-06-02T21:48:30.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\utils\\formatters.js",
+    "size": 20145,
+    "mtime": "2025-11-21T11:47:45.633Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\utils\\validators.js",
+    "size": 17332,
+    "mtime": "2025-06-02T21:45:58.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\utils\\logger.js",
+    "size": 11834,
+    "mtime": "2025-06-02T21:44:48.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\components\\forms\\especie-form.js",
+    "size": 42126,
+    "mtime": "2025-11-04T13:53:41.746Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\components\\forms\\fornecedor-form.js",
+    "size": 17907,
+    "mtime": "2025-06-02T22:08:34.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\components\\forms\\romaneio-form.js",
+    "size": 34526,
+    "mtime": "2025-06-02T22:07:32.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\components\\dashboard\\dashboard.js",
+    "size": 42319,
+    "mtime": "2025-06-02T22:14:02.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\components\\auth\\login-form.js",
+    "size": 46012,
+    "mtime": "2025-06-03T11:23:18.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\components\\navigation\\nav-manager.js",
+    "size": 45391,
+    "mtime": "2025-06-02T22:16:32.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\components\\ui\\notifications.js",
+    "size": 15617,
+    "mtime": "2025-06-02T21:55:52.000Z"
+  },
+  {
+    "path": "C:\\Sisweb\\src\\components\\ui\\romaneio-table.js",
+    "size": 37624,
+    "mtime": "2025-06-02T21:58:04.000Z"
+  }
+]

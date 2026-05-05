@@ -1,0 +1,56 @@
+{
+  "prod": 318,
+  "dev": 84,
+  "test": 0,
+  "temp": 6,
+  "trash": 3,
+  "trash_files": [
+    {
+      "path": "C:\\Sisweb\\DIAGRAMA_E_ESQUEMA_SISWEB.dm",
+      "size": 17763,
+      "mtime": "2025-08-13T12:12:42.695Z"
+    },
+    {
+      "path": "C:\\Sisweb\\romaneiotora_backup.html",
+      "size": 52244,
+      "mtime": "2026-03-26T14:45:19.075Z"
+    },
+    {
+      "path": "C:\\Sisweb\\romaneiotora_modais_backup.js",
+      "size": 246399,
+      "mtime": "2026-03-22T20:30:35.036Z"
+    }
+  ],
+  "temp_files": [
+    {
+      "path": "C:\\Sisweb\\pglite-debug.log",
+      "size": 0,
+      "mtime": "2025-07-17T13:44:06.985Z"
+    },
+    {
+      "path": "C:\\Sisweb\\romaneiopct-tabela.js.backup.2025-08-01",
+      "size": 27178,
+      "mtime": "2025-08-01T19:55:42.974Z"
+    },
+    {
+      "path": "C:\\Sisweb\\romaneiopct.html.backup.2025-08-01",
+      "size": 96323,
+      "mtime": "2025-08-01T20:04:17.775Z"
+    },
+    {
+      "path": "C:\\Sisweb\\temp_romaneio.js",
+      "size": 9948,
+      "mtime": "2025-06-09T14:22:29.740Z"
+    },
+    {
+      "path": "C:\\Sisweb\\.firebase\\hosting..cache",
+      "size": 35090,
+      "mtime": "2026-03-27T12:25:16.363Z"
+    },
+    {
+      "path": "C:\\Sisweb\\.firebase\\logs\\vsce-debug.log",
+      "size": 48951261,
+      "mtime": "2025-11-24T12:48:04.142Z"
+    }
+  ]
+}

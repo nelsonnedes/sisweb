@@ -1,0 +1,96 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // ANEXOS FINANCEIROS: Comprovantes, Cheques (ISOLADOS POR TENANT)
+    match /companies/{companyId}/financas/{allPaths=**} {
+      // Somente membros ativos da empresa e superadmins podem ler os recibos financeiros
+      allow read: if request.auth != null &&
+        (request.auth.token.superadmin == true || 
+        (request.auth.token.companyId == companyId && (request.auth.token.subscriptionStatus == 'active' || request.auth.token.subscriptionStatus == 'trial_active')));
+        
+      // Somente membros (ou superadmins) podem escrever/remover anexos (máx 10MB em uploads)
+      allow write: if request.auth != null &&
+        (request.auth.token.superadmin == true || request.auth.token.companyId == companyId) &&
+        (request.auth.token.superadmin == true || request.auth.token.subscriptionStatus == 'active' || request.auth.token.subscriptionStatus == 'trial_active') &&
+        (
+          // Delete não tem request.resource
+          request.resource == null ||
+          (
+            request.resource.size < 10 * 1024 * 1024 &&
+            request.resource.contentType.matches(
+              'image/.*|application/pdf|text/plain|application/msword|application/vnd\\.openxmlformats-officedocument\\.wordprocessingml\\.document|application/vnd\\.ms-excel|application/vnd\\.openxmlformats-officedocument\\.spreadsheetml\\.sheet'
+            )
+          )
+        );
+    }
+
+    // LOGOS DAS EMPRESAS (LEITURA PÚBLICA, GRAVAÇÃO ISOLADA)
+    match /companies/{companyId}/profile/logo/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null &&
+        (request.auth.token.superadmin == true || 
+        (request.auth.token.companyId == companyId && (request.auth.token.subscriptionStatus == 'active' || request.auth.token.subscriptionStatus == 'trial_active'))) &&
+        request.resource.size < 2 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+    }
+
+    // COMPROVANTES DE ASSINATURA/MENSALIDADES DO SISTEMA (ISOLADOS POR USER)
+    match /subscription-proofs/{uid}/{allPaths=**} {
+      allow read: if request.auth != null &&
+        (request.auth.uid == uid || request.auth.token.superadmin == true);
+      allow write: if request.auth != null &&
+        (request.auth.uid == uid || request.auth.token.superadmin == true) &&
+        (
+          request.resource == null ||
+          (
+            request.resource.size < 5 * 1024 * 1024 &&
+            request.resource.contentType.matches('image/.*|application/pdf')
+          )
+        );
+    }
+
+    // COMPROVANTES DE ASSINATURA NO ESCOPO DA EMPRESA (MODO HÍBRIDO/ADMIN)
+    match /companies/{companyId}/subscription-proofs/{uid}/{allPaths=**} {
+      allow read: if request.auth != null &&
+        (
+          request.auth.token.superadmin == true ||
+          request.auth.uid == uid ||
+          request.auth.token.companyId == companyId ||
+          request.auth.token.companyID == companyId ||
+          request.auth.token.tenantId == companyId
+        );
+      allow write: if request.auth != null &&
+        (
+          request.auth.token.superadmin == true ||
+          (
+            request.auth.uid == uid &&
+            (request.auth.token.companyId == companyId || request.auth.token.companyID == companyId || request.auth.token.tenantId == companyId)
+          )
+        ) &&
+        (
+          request.resource == null ||
+          (
+            request.resource.size < 5 * 1024 * 1024 &&
+            request.resource.contentType.matches('image/.*|application/pdf')
+          )
+        );
+    }
+
+    // ARQUIVOS TEMPORÁRIOS / LOGS EXPORTADOS
+    match /companies/{companyId}/logs/{fileName} {
+      allow read: if request.auth != null &&
+        (request.auth.token.superadmin == true || 
+        (request.auth.token.companyId == companyId));
+      allow write: if request.auth != null &&
+        (request.auth.token.superadmin == true || 
+        (request.auth.token.companyId == companyId)) &&
+        request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // REGRA DE BLOQUEIO GLOBAL
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.token.superadmin == true;
+    }
+  }
+}

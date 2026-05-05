@@ -1,0 +1,20 @@
+{
+  "name": "Pré-Romaneio Mobile",
+  "short_name": "Pré-Romaneio",
+  "start_url": "./preromaneio.html",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#2c3e50",
+  "icons": [
+    {
+      "src": "./sisweb.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "./Logo JN.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

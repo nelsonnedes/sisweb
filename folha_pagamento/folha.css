@@ -1,0 +1,3063 @@
+/**
+ * 🎨 FOLHA DE PAGAMENTO - ESTILOS ESPECÍFICOS
+ * Baseado rigorosamente nos padrões do romaneiopct
+ * Mantém 100% da identidade visual do sistema
+ */
+
+/* ✅ VARIÁVEIS CSS EXATAS DO ROMANEIOPCT */
+:root {
+    --primary-color: #2c3e50;      /* Azul escuro principal */
+    --secondary-color: #3498db;    /* Azul claro secundário */
+    --accent-color: #e74c3c;       /* Vermelho de alerta */
+    --success-color: #27ae60;      /* Verde de sucesso */
+    --warning-color: #f39c12;      /* Laranja de aviso */
+    --danger-color: #e74c3c;       /* Vermelho de perigo */
+    --info-color: #3498db;         /* Azul informativo */
+    --light-color: #ecf0f1;        /* Cinza claro */
+    --dark-color: #2c3e50;         /* Escuro padrão */
+    --gray-color: #6c757d;         /* Cinza médio */
+    
+    /* Cores específicas dos botões */
+    --btn-adicionar: #27ae60;      /* Verde para adicionar */
+    --btn-salvar: #3498db;         /* Azul para salvar */
+    --btn-listar: #f39c12;         /* Laranja para listar */
+    --btn-editar: #28a745;         /* Verde escuro para editar */
+    --btn-excluir: #e74c3c;        /* Vermelho para excluir */
+    --btn-cancelar: #6c757d;       /* Cinza para cancelar */
+}
+
+/* ✅ CONTAINER PRINCIPAL - IDÊNTICO AO ROMANEIOPCT */
+.container {
+    max-width: 1200px;             /* ✅ Largura exata do romaneiopct */
+    margin: 0 auto;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-family: Arial, sans-serif; /* ✅ Fonte padrão do sistema */
+}
+
+/* ✅ TÍTULOS PADRONIZADOS */
+h1 {
+    font-size: 24px;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+h1 i {
+    color: var(--secondary-color);
+}
+
+h2 {
+    font-size: 18px;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    border-bottom: 2px solid var(--light-color);
+    padding-bottom: 5px;
+}
+
+.section-title-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-title-actions h2 {
+    margin-bottom: 0;
+    flex: 1;
+}
+
+.section-title-actions .action-btn {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    background: #6c757d;
+    color: #fff;
+    border-radius: 6px;
+}
+
+h3 {
+    font-size: 16px;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+/* ✅ SEÇÕES PADRONIZADAS */
+section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+/* ✅ GRID DE CAMPOS - PADRÃO ROMANEIOPCT */
+.campos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+/* ✅ GRUPOS DE FORMULÁRIO */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group label i {
+    color: var(--secondary-color);
+    width: 16px;
+}
+
+/* ✅ CAMPOS DE ENTRADA - DIMENSÕES EXATAS */
+input, select, textarea {
+    height: 31px;                  /* ✅ Altura padrão do romaneiopct */
+    padding: 6px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    transition: border-color 0.3s;
+    box-sizing: border-box;        /* ✅ Inclui padding e border na altura total */
+    background-color: white;       /* ✅ CORREÇÃO: Fundo branco sempre */
+}
+
+/* ✅ CORREÇÃO ESPECÍFICA: Campos de data e mês */
+input[type="date"],
+input[type="month"],
+input[type="datetime-local"] {
+    background-color: white !important;
+    color: #2c3e50 !important;
+}
+
+/* ✅ Corrigir possível conflito com calendário webkit */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+    background-color: transparent;
+    cursor: pointer;
+    filter: invert(0.5);
+}
+
+/* ✅ ALTURA UNIFORME PARA CAMPOS DE FILTRO */
+#filtros-section input,
+#filtros-section select {
+    height: 31px !important;       /* ✅ Força altura uniforme nos filtros */
+    box-sizing: border-box !important;
+}
+
+/* ✅ LARGURA LIMITADA PARA CAMPOS DOS MODAIS */
+.modal-body input,
+.modal-body select,
+.modal-body textarea {
+    width: 100%;                    /* ✅ Largura total do container pai */
+    max-width: 100%;                /* ✅ Não exceder o container */
+    box-sizing: border-box;         /* ✅ Inclui padding e border */
+}
+
+/* ✅ ESPAÇAMENTO VISUAL NOS MODAIS */
+.modal-body .form-group {
+    margin-bottom: 20px;            /* ✅ AUMENTADO: de 15px para 20px */
+}
+
+/* ✅ GRID DE CAMPOS NOS MODAIS COM ESPAÇAMENTO */
+.modal-body .campos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;                      /* ✅ AUMENTADO: de 15px para 20px */
+    margin-bottom: 25px;            /* ✅ AUMENTADO: de 20px para 25px */
+}
+
+/* ✅ TÍTULOS NOS MODAIS */
+.modal-body h3 {
+    margin: 25px 0 15px 0;          /* ✅ Espaçamento adequado para seções */
+    color: var(--primary-color);
+    font-size: 16px;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 8px;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: var(--secondary-color);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+textarea {
+    height: auto;
+    min-height: 60px;
+    resize: vertical;
+}
+
+/* ✅ BOTÕES PADRONIZADOS - CORES EXATAS */
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+button:focus-visible {
+    outline: 2px solid #1976d2;
+    outline-offset: 2px;
+}
+
+/* Botões específicos por função */
+.btn-adicionar {
+    background-color: var(--btn-adicionar);
+    color: white;
+}
+
+.btn-salvar, .btn-save {
+    background-color: var(--btn-salvar);
+    color: white;
+}
+
+.btn-listar {
+    background-color: var(--btn-listar);
+    color: white;
+}
+
+.btn-editar {
+    background-color: var(--btn-editar);
+    color: white;
+}
+
+.btn-excluir {
+    background-color: var(--btn-excluir);
+    color: white;
+}
+
+.back-button, .btn-cancelar {
+    background-color: var(--btn-cancelar);
+    color: white;
+}
+
+/* ✅ CONTAINER DE BOTÕES */
+.form-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-bottom: 20px;
+}
+
+#acoes-principais .form-buttons {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    align-items: stretch;
+}
+
+#acoes-principais .form-buttons button {
+    width: 100%;
+    min-height: 44px;
+    height: 100%;
+    padding: 10px 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+    line-height: 1.2;
+}
+
+#acoes-principais .form-buttons button i {
+    width: 16px;
+    text-align: center;
+}
+
+/* ✅ TABELAS PADRONIZADAS */
+.table-container {
+    overflow-x: auto;
+    margin-top: 15px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+thead {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+thead th {
+    padding: 12px;
+    text-align: left;
+    font-weight: bold;
+    font-size: 14px;
+    white-space: nowrap; /* evitar quebra de linha no cabeçalho */
+}
+
+thead th i {
+    margin-right: 8px;
+    color: var(--light-color);
+}
+
+tbody td {
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+    font-size: 14px;
+}
+
+/* 🎯 Ajuste de responsividade para a tabela principal (folhasTable) */
+#folhasTable thead th {
+    font-size: 12px;   /* reduzir para caber mais conteúdo no cabeçalho */
+    padding: 8px 10px; /* diminuir padding horizontal */
+}
+
+#tabela-folhas-section .table-container {
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+#folhasTable {
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
+}
+
+#folhasTable thead th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+#folhasTable thead th.sortable::after {
+    content: '⇅';
+    font-size: 10px;
+    margin-left: 6px;
+    opacity: 0.45;
+}
+
+#folhasTable thead th.sort-active::after {
+    opacity: 1;
+}
+
+#folhasTable thead th.sort-asc::after {
+    content: '▲';
+}
+
+#folhasTable thead th.sort-desc::after {
+    content: '▼';
+}
+
+#folhasTable tbody td {
+    font-size: 12px;   /* reduzir fonte nas células */
+    padding: 8px 10px; /* diminuir padding horizontal */
+}
+
+/* 🎯 Reduzir fonte especificamente na coluna "Tipo" (4ª coluna) */
+#folhasTable thead th:nth-child(4),
+#folhasTable tbody td:nth-child(4) {
+    font-size: 11px; /* menor que o restante da tabela */
+}
+
+/* Ajustar também os badges dentro da coluna "Tipo" sem afetar outros locais */
+#folhasTable tbody td:nth-child(4) .badge-status {
+    font-size: 10px;
+    padding: 3px 6px;
+}
+
+tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ✅ BOTÕES DE AÇÃO NA TABELA */
+#folhasTable .actions-cell {
+    text-align: center;
+    white-space: nowrap;
+    width: 176px;
+    min-width: 176px;
+    max-width: 176px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ✅ CABEÇALHO DA COLUNA AÇÕES */
+#folhasTable th[data-sort-key="acoes"] {
+    width: 176px;
+    min-width: 176px;
+    max-width: 176px;
+}
+
+#folhasTable .actions-cell .action-button {
+    margin: 0;
+    flex: 0 0 30px;
+}
+
+/* ✅ CONTROLES DE PAGINAÇÃO PARA FOLHAS FECHADAS */
+.paginacao-controles {
+    margin-top: 20px;
+    text-align: center;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.paginacao-info {
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.paginacao-texto {
+    font-weight: 500;
+}
+
+.paginacao-botoes {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-paginacao {
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    background-color: white;
+    color: #495057;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.btn-paginacao:hover:not(:disabled) {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.btn-paginacao:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.paginacao-numeros {
+    margin: 0 10px;
+    font-weight: 500;
+    color: #495057;
+}
+
+.paginacao-atual {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+/* ✅ VALOR DESTAQUE PARA FOLHAS FECHADAS */
+.valor-destaque {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+/* ✅ BADGE DE STATUS PARA FOLHAS FECHADAS */
+.badge-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.action-button {
+    padding: 6px 8px;             /* ✅ CORRIGIDO: Padding otimizado */
+    margin: 0 1px;                /* ✅ CORRIGIDO: Margem reduzida para economizar espaço */
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    height: 28px;
+    width: 30px;                  /* ✅ CORRIGIDO: Largura reduzida de 32px para 30px */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-button.select-button {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.action-button.edit-button {
+    background-color: var(--info-color);
+    color: white;
+}
+
+.action-button.delete-button {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.action-button.print-button {
+    background-color: var(--warning-color);
+    color: white;
+}
+
+/* ✅ MODAIS PADRONIZADOS */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    overflow-y: auto;
+}
+
+/* Z-index específicos para hierarquia de modais */
+#funcionariosListModal {
+    z-index: 1500; /* Deve ficar acima de outros modais quando aberto sobre eles */
+    overflow: hidden !important;
+    overscroll-behavior: contain;
+}
+
+#cargosListModal {
+    z-index: 1500; /* Deve ficar acima de #funcionarioModal quando acionado a partir dele */
+}
+
+#funcionarioModal {
+    z-index: 1300; /* Sempre acima dos modais de lista */
+}
+
+#cargoModal {
+    z-index: 1300; /* Sempre acima dos modais de lista */
+}
+
+#folhaModal {
+    z-index: 1050; /* Intermediário */
+}
+
+#relatorioModal {
+    z-index: 1050; /* Intermediário */
+}
+
+#reportColumnsConfigModal {
+    z-index: 1700;
+}
+
+#relatorioModal .report-columns-btn {
+    background-color: #6b7280;
+}
+
+#relatorioModal .report-columns-hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    margin-left: 6px;
+}
+
+#reportColumnsConfigModal .modal-content {
+    max-width: 720px !important;
+}
+
+#reportColumnsConfigModal .modal-body {
+    max-height: min(70vh, 560px);
+    overflow: auto;
+}
+
+#reportColumnsConfigModal .report-col-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#reportColumnsConfigModal .report-col-item {
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    align-items: start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+}
+
+#reportColumnsConfigModal .report-col-label {
+    color: #111827;
+    font-size: 14px;
+    line-height: 1.25;
+    text-align: left;
+    word-break: break-word;
+}
+
+@media (max-width: 680px) {
+    #reportColumnsConfigModal .report-col-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.modal-content {
+    background-color: white;
+    margin: 50px auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 800px;               /* ✅ AUMENTADO: de 600px para 800px */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+#funcionariosListModal .modal-content {
+    max-width: 1220px;
+    width: 96%;
+    margin: 12px auto;
+    max-height: calc(100vh - 24px);
+    display: flex;
+    flex-direction: column;
+}
+
+#funcionariosListModal .modal-body {
+    padding: 14px 16px;
+    max-height: none;
+    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+}
+
+#funcionariosListFilter {
+    width: 100%;
+    border: 1px solid #d8dee6;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+}
+
+#funcionariosListModal .table-container {
+    border: 1px solid #e4e9ef;
+    border-radius: 8px;
+    overflow: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+}
+
+#funcionariosListModal table {
+    width: 100% !important;
+    table-layout: auto !important;
+}
+
+#funcionariosListModal .funcionarios-list-table {
+    width: 100%;
+    min-width: 920px;
+    table-layout: auto !important;
+}
+
+#funcionariosListModal thead th {
+    padding: 9px 8px;
+    line-height: 1.2;
+    font-size: 12px;
+}
+
+#funcionariosListModal tbody td {
+    padding: 8px 8px;
+    font-size: 12px;
+    vertical-align: middle;
+}
+
+#funcionariosListModal th:nth-child(1),
+#funcionariosListModal td:nth-child(1) {
+    width: 42% !important;
+    min-width: 300px !important;
+}
+
+#funcionariosListModal .func-col-nome {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+#funcionariosListModal .func-nome {
+    display: block;
+    font-size: 13px;
+    line-height: 1.2;
+    font-weight: 700;
+}
+
+#funcionariosListModal .func-contrato {
+    margin-top: 2px;
+    font-size: 11px;
+    color: #667085;
+}
+
+#funcionariosListModal th:nth-child(2),
+#funcionariosListModal td:nth-child(2) {
+    width: 11ch !important;
+    min-width: 108px !important;
+    white-space: nowrap;
+}
+
+#funcionariosListModal th:nth-child(3),
+#funcionariosListModal td:nth-child(3) {
+    width: 17% !important;
+    min-width: 130px !important;
+    white-space: nowrap;
+}
+
+#funcionariosListModal th:nth-child(4),
+#funcionariosListModal td:nth-child(4) {
+    width: 16% !important;
+    min-width: 120px !important;
+}
+
+#funcionariosListModal td:nth-child(4) {
+    font-size: 11px;
+}
+
+#funcionariosListModal th.sortable,
+#folhasFechadasModal th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+#funcionariosListModal th.sortable::after,
+#folhasFechadasModal th.sortable::after {
+    content: '⇅';
+    font-size: 10px;
+    margin-left: 6px;
+    opacity: 0.45;
+}
+
+#funcionariosListModal th.sort-active::after,
+#folhasFechadasModal th.sort-active::after {
+    opacity: 1;
+}
+
+#funcionariosListModal th.sort-asc::after,
+#folhasFechadasModal th.sort-asc::after {
+    content: '▲';
+}
+
+#funcionariosListModal th.sort-desc::after,
+#folhasFechadasModal th.sort-desc::after {
+    content: '▼';
+}
+
+#funcionariosListModal th:nth-child(5),
+#funcionariosListModal td:nth-child(5) {
+    width: 12ch !important;
+    min-width: 100px !important;
+    text-align: right;
+    white-space: nowrap;
+}
+
+#funcionariosListModal th:nth-child(6),
+#funcionariosListModal td:nth-child(6) {
+    width: 10ch !important;
+    min-width: 90px !important;
+    text-align: center;
+    white-space: nowrap;
+}
+
+#funcionariosListModal .badge-status {
+    font-size: 10px;
+    padding: 2px 6px;
+}
+
+#funcionariosListModal th:nth-child(7),
+#funcionariosListModal td:nth-child(7) {
+    width: 124px !important;
+    min-width: 124px !important;
+    text-align: center;
+    white-space: nowrap;
+}
+
+#funcionariosListModal .actions-cell,
+#folhasFechadasModal .actions-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+#funcionariosListModal .actions-cell .action-button {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#funcionariosListModal td.actions-cell {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: 124px !important;
+    min-width: 124px !important;
+    white-space: nowrap !important;
+}
+
+#funcionariosListModal td.actions-cell .action-button {
+    display: inline-flex !important;
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    flex: 0 0 30px !important;
+}
+
+@media (max-width: 1200px) {
+    #acoes-principais .form-buttons {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    #funcionariosListModal .modal-content {
+        width: 98%;
+    }
+    #funcionariosListModal .funcionarios-list-table {
+        min-width: 860px;
+    }
+}
+
+@media (max-width: 900px) {
+    #acoes-principais .form-buttons {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    #funcionariosListModal .modal-body {
+        padding: 10px 10px;
+    }
+    #funcionariosListModal .funcionarios-list-table {
+        min-width: 760px;
+    }
+    #funcionariosListModal thead th,
+    #funcionariosListModal tbody td {
+        padding: 7px 6px;
+        font-size: 11px;
+    }
+    #funcionariosListModal .func-nome {
+        font-size: 12px;
+    }
+}
+
+/* 📁 Modal de Folhas Fechadas - Largura aumentada para melhor usabilidade */
+#folhasFechadasModal .modal-content {
+    max-width: 1200px;              /* ✅ AUMENTADO: de 800px para 1200px */
+    width: 95%;                     /* ✅ Usa mais espaço da tela */
+}
+
+/* 📁 Tabela dentro do Modal de Folhas Fechadas - Melhor visualização */
+#folhasFechadasModal .table-container {
+    overflow-x: auto;               /* ✅ Scroll horizontal se necessário */
+    margin: 10px 0;
+    border: 1px solid #e0e0e0;     /* ✅ Borda para delimitar área */
+    border-radius: 4px;
+}
+
+#folhasFechadasModal table {
+    width: 100%;
+    min-width: 1100px;              /* ✅ AUMENTADO: de 800px para 1100px */
+    table-layout: fixed;            /* ✅ Layout fixo para controle de colunas */
+}
+
+#folhasFechadasModal th,
+#folhasFechadasModal td {
+    white-space: nowrap;            /* ✅ Evita quebra de linha nas células */
+    padding: 8px 10px;              /* ✅ Espaçamento otimizado */
+    text-overflow: ellipsis;        /* ✅ Reticências para texto longo */
+    overflow: hidden;               /* ✅ Oculta overflow */
+}
+
+/* 📁 Larguras específicas das colunas para melhor distribuição */
+#folhasFechadasModal th:nth-child(1), /* Funcionário */
+#folhasFechadasModal td:nth-child(1) {
+    width: 140px;
+    min-width: 140px;
+}
+
+#folhasFechadasModal th:nth-child(2), /* Mês/Ano */
+#folhasFechadasModal td:nth-child(2) {
+    width: 80px;
+    min-width: 80px;
+    text-align: center;
+}
+
+#folhasFechadasModal th:nth-child(3), /* Tipo */
+#folhasFechadasModal td:nth-child(3) {
+    width: 90px;                    /* ✅ AUMENTADO: espaço adequado para "QUINZENA" */
+    min-width: 90px;
+    text-align: center;
+}
+
+#folhasFechadasModal th:nth-child(4), /* Percentual */
+#folhasFechadasModal td:nth-child(4) {
+    width: 80px;
+    min-width: 80px;
+    text-align: center;
+}
+
+#folhasFechadasModal th:nth-child(5), /* Salário Base */
+#folhasFechadasModal td:nth-child(5),
+#folhasFechadasModal th:nth-child(6), /* Quinzena */
+#folhasFechadasModal td:nth-child(6),
+#folhasFechadasModal th:nth-child(8), /* Líquido */
+#folhasFechadasModal td:nth-child(8) {
+    width: 100px;
+    min-width: 100px;
+    text-align: right;
+}
+
+#folhasFechadasModal th:nth-child(7), /* Detalhes */
+#folhasFechadasModal td:nth-child(7) {
+    width: 220px;
+    min-width: 220px;
+}
+
+#folhasFechadasModal th:nth-child(9), /* Ações */
+#folhasFechadasModal td:nth-child(9) {
+    width: 120px;
+    min-width: 120px;
+    text-align: center;
+}
+
+/* 📁 Paginação centralizada e estilizada */
+#folhasFechadasModal .paginacao-controles {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+#folhasFechadasModal .paginacao-botoes {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#folhasFechadasModal .btn-paginacao {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    background-color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 40px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#folhasFechadasModal .btn-paginacao:hover:not(:disabled) {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+#folhasFechadasModal .btn-paginacao:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f8f9fa;
+}
+
+#folhasFechadasModal .paginacao-atual {
+    background-color: #007bff;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    min-width: 40px;
+    text-align: center;
+}
+
+#folhasFechadasModal .paginacao-texto {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 18px;
+    color: white !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.close-modal {
+    color: white !important;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    background: none;
+    border: none;
+    height: auto;
+}
+
+.close-modal:hover {
+    opacity: 0.7;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+}
+
+.modal-body {
+    padding: 30px;                  /* ✅ AUMENTADO: de 20px para 30px */
+    overflow-y: auto;
+    flex: 1 1 auto;
+}
+
+.modal-footer {
+    padding: 20px 30px;             /* ✅ AUMENTADO: de 15px 20px para 20px 30px */
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0;
+}
+
+.modal-footer .footer-info {
+    flex: 1 1 auto;
+    min-width: 200px;
+}
+
+.modal-footer.footer-with-info .footer-info {
+    flex: 0 1 auto;
+}
+
+.modal-footer .footer-secondary,
+.modal-footer .footer-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-footer .footer-primary {
+    margin-left: auto;
+}
+
+.modal-footer .footer-secondary button,
+.modal-footer .footer-primary button {
+    min-height: 36px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.modal-footer .footer-secondary button {
+    min-width: 132px;
+}
+
+.modal-footer .footer-primary button {
+    min-width: 152px;
+}
+
+.modal-footer .footer-secondary button i,
+.modal-footer .footer-primary button i {
+    width: 14px;
+    text-align: center;
+}
+
+/* ✅ AUTOCOMPLETE CONTAINER */
+.autocomplete-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 31px;                      /* ✅ Altura fixa igual aos outros campos */
+}
+
+.autocomplete-input {
+    flex: 1;
+    padding-right: 60px;
+    height: 31px;                      /* ✅ Altura exata igual aos outros campos */
+    box-sizing: border-box;            /* ✅ Inclui padding e border na altura */
+}
+
+/* ✅ AUTOCOMPLETE NOS MODAIS */
+.modal-body .autocomplete-container {
+    width: 100%;                       /* ✅ Largura total do form-group */
+    max-width: 100%;                   /* ✅ Não exceder o container */
+}
+
+.modal-body .autocomplete-input {
+    width: 100%;                       /* ✅ Largura total do container */
+    max-width: 100%;                   /* ✅ Não exceder o container */
+}
+
+#bh-modalLancamento .modal-content,
+#bh-modalCompensar .modal-content,
+#bh-modalConfig .modal-content,
+#bh-modalAssinatura .modal-content {
+    max-width: 860px;
+    width: 92%;
+}
+
+#bh-modalGerenciar .modal-content {
+    max-width: 1100px;
+    width: 95%;
+}
+
+#bh-modalGerenciar .table-container {
+    overflow-x: auto;
+}
+
+#bh-modalGerenciar thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+#bh-modalGerenciar .actions-cell {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+#bh-modalGerenciar .actions-cell .action-button {
+    margin: 0;
+}
+
+#bh-modalLancamento .btn-save,
+#bh-modalCompensar .btn-save,
+#bh-modalConfig .btn-save,
+#bh-modalAssinatura .btn-save,
+#bh-modalGerenciar .btn-save,
+#bh-modalLancamento .back-button,
+#bh-modalCompensar .back-button,
+#bh-modalConfig .back-button,
+#bh-modalAssinatura .back-button,
+#bh-modalGerenciar .back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    min-height: 32px;
+}
+
+#bh-modalGerenciar .actions-cell .action-button i {
+    font-size: 13px;
+    line-height: 1;
+}
+
+#bh-modalLancamento .modal-body,
+#bh-modalCompensar .modal-body,
+#bh-modalConfig .modal-body,
+#bh-modalGerenciar .modal-body {
+    max-height: 68vh;
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        margin: 20px auto;
+        width: 96%;
+    }
+    .modal-body {
+        padding: 20px;
+        max-height: 70vh;
+    }
+    .modal-footer {
+        padding: 16px 20px;
+        justify-content: flex-start;
+        align-items: stretch;
+    }
+    .modal-footer .footer-info {
+        width: 100%;
+        min-width: 0;
+    }
+    .modal-footer .footer-secondary,
+    .modal-footer .footer-primary {
+        margin-left: 0;
+    }
+    .modal-footer .footer-secondary button {
+        min-width: 0;
+    }
+    .modal-footer .footer-primary button {
+        min-width: 0;
+    }
+    .modal-body .campos-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+}
+
+.autocomplete-icons-container {
+    position: absolute;
+    right: 5px;
+    display: flex;
+    gap: 2px;
+    height: 100%;                      /* ✅ Ocupa toda altura do container */
+    align-items: center;               /* ✅ Centraliza verticalmente os ícones */
+}
+
+.autocomplete-icon {
+    padding: 5px;
+    cursor: pointer;
+    color: var(--secondary-color);
+    border-radius: 3px;
+    transition: background-color 0.3s;
+    display: flex;                     /* ✅ Flex para centralizar o ícone */
+    align-items: center;               /* ✅ Centraliza verticalmente */
+    justify-content: center;           /* ✅ Centraliza horizontalmente */
+    height: 21px;                      /* ✅ Altura do ícone para ficar proporcional */
+    width: 21px;                       /* ✅ Largura igual à altura */
+}
+
+.autocomplete-icon:hover {
+    background-color: var(--light-color);
+}
+
+/* ✅ RESUMO DE TOTAIS */
+.resumo-note {
+    margin-top: 20px;
+    margin-bottom: -8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #eef6ff;
+    border: 1px solid #d6e8ff;
+    color: #1f4f82;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.resumo-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 6px;
+    border: 2px solid var(--light-color);
+    margin-top: 20px;
+}
+
+.resumo-item {
+    text-align: center;
+    padding: 15px;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+}
+
+.resumo-item h3, .resumo-item h4 {
+    margin: 0 0 10px 0;
+    color: var(--primary-color);
+    font-size: 14px;
+}
+
+.resumo-item span {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--success-color);
+}
+
+.resumo-item-pagos {
+    background-color: #eef9f1;
+    border: 1px solid #cfead7;
+}
+
+.resumo-item-pagos span {
+    color: #1f7a3f;
+}
+
+.resumo-item-restantes {
+    background-color: #fff6ec;
+    border: 1px solid #ffe0bf;
+}
+
+.resumo-item-restantes span {
+    color: #b86600;
+}
+
+/* ✅ NOTIFICAÇÕES */
+.notifications-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    max-width: 400px;
+}
+
+.notification {
+    margin-bottom: 10px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.notification-content {
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: white;
+}
+
+.notification-success .notification-content {
+    background-color: var(--success-color);
+}
+
+.notification-error .notification-content {
+    background-color: var(--danger-color);
+}
+
+.notification-warning .notification-content {
+    background-color: var(--warning-color);
+}
+
+.notification-info .notification-content {
+    background-color: var(--info-color);
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0;
+    margin-left: auto;
+    height: auto;
+    opacity: 0.8;
+}
+
+.notification-close:hover {
+    opacity: 1;
+}
+
+/* ✅ LOADING OVERLAY */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+}
+
+.loading-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.loading-content i {
+    font-size: 32px;
+    color: var(--secondary-color);
+    margin-bottom: 15px;
+}
+
+.loading-content p {
+    margin: 0;
+    color: var(--primary-color);
+    font-size: 16px;
+}
+
+/* REMOVIDO: Estilos conflitantes de #firebase-status migrados para folha-loading-styles.css */
+/*
+#firebase-status {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 1000;
+}
+
+.firebase-online {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.firebase-offline {
+    background-color: var(--danger-color);
+    color: white;
+}
+*/
+
+/* ✅ RESPONSIVIDADE */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+        margin: 10px;
+        max-width: none;
+    }
+    
+    .campos-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .form-buttons {
+        justify-content: center;
+    }
+    
+    button {
+        font-size: 14px;
+        padding: 8px 16px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 20px auto;
+        max-width: 700px;           /* ✅ Largura reduzida para tablets */
+    }
+    
+    /* 📁 Modal de Folhas Fechadas - Responsivo para tablets */
+    #folhasFechadasModal .modal-content {
+        max-width: 900px;           /* ✅ Mantém largura maior em tablets */
+        width: 98%;
+    }
+    
+    .resumo-container {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .table-container {
+        font-size: 12px;
+    }
+    
+    thead th, tbody td {
+        padding: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 20px;
+    }
+    
+    .modal-content {
+        width: 98%;                 /* ✅ Largura máxima para mobile */
+        margin: 10px auto;          /* ✅ Margem reduzida */
+    }
+    
+    /* 📁 Modal de Folhas Fechadas - Responsivo para mobile */
+    #folhasFechadasModal .modal-content {
+        width: 99%;                 /* ✅ Usa quase toda a tela em mobile */
+        margin: 5px auto;           /* ✅ Margem mínima */
+    }
+    
+    .modal-header {
+        padding: 15px 20px;         /* ✅ AUMENTADO: de 10px 15px para 15px 20px */
+    }
+    
+    .modal-body {
+        padding: 20px;              /* ✅ AJUSTADO: para mobile */
+    }
+    
+    .modal-footer {
+        padding: 15px 20px;         /* ✅ AJUSTADO: para mobile */
+    }
+    
+    .notifications-container {
+        left: 10px;
+        right: 10px;
+        max-width: none;
+    }
+}
+
+/* ✅ IMPRESSÃO */
+@media print {
+    .container {
+        box-shadow: none;
+        padding: 0;
+        max-width: none;
+    }
+    
+    button, .form-buttons, .modal {
+        display: none !important;
+    }
+    
+    section {
+        background-color: white;
+        border: none;
+        padding: 10px 0;
+    }
+    
+    table {
+        box-shadow: none;
+    }
+    
+    .resumo-container {
+        border: 1px solid #000;
+    }
+}
+
+/* ✅ ESTILOS ESPECÍFICOS DA FOLHA DE PAGAMENTO */
+.folha-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 6px;
+}
+
+.folha-periodo {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.folha-empresa {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.quinzena-options {
+    background-color: #e3f2fd;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid var(--info-color);
+    margin: 15px 0;
+}
+
+.valor-destaque {
+    font-weight: bold;
+    color: var(--success-color);
+    font-size: 16px;
+}
+
+.valor-negativo {
+    color: var(--danger-color);
+}
+
+.campo-calculado {
+    background-color: #f8f9fa;
+    border: 1px dashed #dee2e6;
+    font-weight: bold;
+}
+
+.info-funcionario {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    border-left: 4px solid var(--info-color);
+}
+
+.badge-status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: white;
+    display: inline-block;
+    text-align: center;
+    min-width: 80px;
+}
+
+.badge-ativo {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.badge-inativo {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.badge-pendente {
+    background-color: var(--warning-color);
+    color: white;
+}
+
+/* ✅ NOVOS ESTILOS PARA BOTÕES DE AÇÃO */
+.action-button {
+    padding: 6px 8px;
+    margin: 2px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+}
+
+.action-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.edit-button {
+    background-color: var(--btn-editar);
+    color: white;
+}
+
+.edit-button:hover {
+    background-color: #218838;
+}
+
+.print-button {
+    background-color: var(--btn-listar);
+    color: white;
+}
+
+.print-button:hover {
+    background-color: #e6890e;
+}
+
+.delete-button {
+    background-color: var(--btn-excluir);
+    color: white;
+}
+
+.delete-button:hover {
+    background-color: #c82333;
+}
+
+/* ✅ NOVOS BOTÕES DE AÇÃO ESPECÍFICOS */
+.dar-baixa-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+}
+
+.dar-baixa-button:hover {
+    background-color: #218838;
+}
+
+.fechar-mes-button {
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+}
+
+.fechar-mes-button:hover {
+    background-color: #138496;
+}
+
+.clonar-folha-button {
+    background-color: #6f42c1;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+}
+
+.clonar-folha-button:hover {
+    background-color: #5a32a3;
+}
+
+.cancelar-baixa-button {
+    background-color: #ffc107;
+    color: #212529;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+}
+
+.cancelar-baixa-button:hover {
+    background-color: #e0a800;
+}
+
+.cancelar-fechamento-button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+}
+
+.cancelar-fechamento-button:hover {
+    background-color: #c82333;
+}
+
+/* ✅ ESTILOS PARA LINHAS DE FOLHA */
+.folha-row {
+    transition: background-color 0.3s ease;
+}
+
+.folha-row:hover {
+    background-color: #f8f9fa;
+}
+
+.folha-fechada {
+    background-color: #f8f9fa;
+    opacity: 0.8;
+}
+
+.folha-fechada td {
+    color: #6c757d;
+}
+
+/* ✅ CÉLULA DE AÇÕES */
+.actions-cell {
+    white-space: normal;         /* ✅ Permitir controle de quebra via flex */
+    text-align: center;
+}
+
+/* ✅ Ajuste específico para o modal de Cargos */
+#cargosListModal .actions-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    width: 140px;
+    min-width: 140px;
+}
+
+#cargosListModal .action-button {
+    width: 28px;
+    height: 28px;
+    margin: 0 2px;
+}
+
+.actions-cell .action-button {
+    margin: 1px;
+}
+
+/* ✅ RESPONSIVIDADE PARA BOTÕES */
+@media (max-width: 768px) {
+    .actions-cell {
+        min-width: 150px;
+    }
+    
+    .action-button {
+        padding: 4px 6px;
+        font-size: 11px;
+        min-width: 28px;
+        height: 28px;
+    }
+    
+    .actions-cell .action-button {
+        margin: 1px;
+    }
+}
+
+@media (max-width: 480px) {
+    .actions-cell {
+        min-width: 120px;
+    }
+    
+    .action-button {
+        padding: 3px 5px;
+        font-size: 10px;
+        min-width: 24px;
+        height: 24px;
+    }
+}
+
+/* ✅ TOGGLE SWITCH ELEGANTE */
+.toggle-container {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 20px;
+    transition: all 0.3s ease;
+}
+
+.toggle-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.toggle-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.toggle-title i {
+    color: #6c757d;
+    font-size: 16px;
+}
+
+.toggle-switch-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.toggle-label {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 500;
+    min-width: 60px;
+    text-align: center;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 26px;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 26px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: #28a745;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+.toggle-description {
+    font-size: 12px;
+    color: #6c757d;
+    line-height: 1.4;
+    text-align: center;
+}
+
+/* Estados visuais do container */
+.toggle-container.modo-ativo {
+    background-color: #f0f8f0;
+    border-color: #28a745;
+}
+
+.toggle-container.modo-inativo {
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+}
+
+.toggle-container.funcionario-ativo {
+    background-color: #f0f8f0;
+    border-color: #28a745;
+}
+
+.toggle-container.funcionario-inativo {
+    background-color: #fff5f5;
+    border-color: #e74c3c;
+}
+
+/* Estilos para funcionários inativos na lista */
+.funcionario-inativo {
+    opacity: 0.7;
+    background-color: #f8f9fa !important;
+}
+
+.funcionario-inativo td {
+    color: #6c757d;
+}
+
+/* Toggle para funcionários individuais vs todos */
+.toggle-container.funcionarios-individuais {
+    background-color: #f0f8f0;
+    border-color: #28a745;
+}
+
+.toggle-container.funcionarios-todos {
+    background-color: #e3f2fd;
+    border-color: #2196f3;
+}
+
+/* Debug para funcionários inativos que ainda aparecem na tabela */
+.funcionario-inativo-debug {
+    background-color: #ffebee !important;
+    border-left: 4px solid #f44336 !important;
+}
+
+.funcionario-inativo-debug td {
+    color: #d32f2f !important;
+    font-style: italic;
+}
+
+/* ✅ FIM DOS ESTILOS */
+
+/* ✅ ESTILOS PARA MODAL DE FOLHAS FECHADAS */
+.filtros-folhas-fechadas {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    border: 1px solid #dee2e6;
+}
+
+.filtros-folhas-fechadas .campos-grid {
+    margin-bottom: 0;
+}
+
+.filtros-folhas-fechadas .form-group:last-child {
+    display: flex;
+    align-items: end;
+}
+
+.filtros-folhas-fechadas .btn-listar {
+    height: 38px;
+    margin-top: 0;
+}
+
+/* ✅ ESTILOS PARA TABELA DE FOLHAS FECHADAS */
+#folhasFechadasTable tr {
+    transition: background-color 0.3s ease;
+}
+
+#folhasFechadasTable tr:hover {
+    background-color: #f8f9fa;
+}
+
+#folhasFechadasTable .valor-destaque {
+    font-weight: bold;
+    color: var(--success-color);
+}
+
+/* ✅ ESTILOS PARA FOLHAS FECHADAS NA TABELA PRINCIPAL */
+.folha-fechada {
+    background-color: #f8f9fa !important;
+    opacity: 0.8;
+}
+
+.folha-fechada td {
+    color: #6c757d !important;
+}
+
+.folha-fechada .badge-status {
+    opacity: 0.7;
+}
+
+/* ✅ INDICADORES VISUAIS DE STATUS */
+.badge-status.quinzena_paga {
+    background-color: #20c997 !important;
+}
+
+.badge-status.mes_fechado {
+    background-color: #6f42c1 !important;
+}
+
+.badge-status.rascunho {
+    background-color: #6c757d !important;
+}
+
+.badge-status.calculada {
+    background-color: #17a2b8 !important;
+}
+
+.badge-status.aprovada {
+    background-color: #28a745 !important;
+}
+
+.badge-status.paga {
+    background-color: #007bff !important;
+}
+
+.badge-status.cancelada {
+    background-color: #dc3545 !important;
+}
+
+/* ✅ ESTILOS PARA PAGINAÇÃO */
+.paginacao-controles {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    margin-bottom: 20px;
+}
+
+.paginacao-info {
+    font-size: 14px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.paginacao-navegacao {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-paginacao {
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    background-color: white;
+    color: #495057;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-paginacao:hover:not(:disabled) {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.btn-paginacao:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagina-atual {
+    font-weight: 600;
+    color: #495057;
+    padding: 8px 12px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    min-width: 100px;
+    text-align: center;
+}
+
+.paginacao-config {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.paginacao-config label {
+    font-size: 14px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.paginacao-config select {
+    padding: 6px 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background-color: white;
+    color: #495057;
+    font-size: 14px;
+}
+
+/* ✅ RESPONSIVIDADE PARA PAGINAÇÃO */
+@media (max-width: 768px) {
+    .paginacao-controles {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .paginacao-navegacao {
+        justify-content: center;
+    }
+    
+    .paginacao-config {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .paginacao-navegacao {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .btn-paginacao {
+        padding: 6px 8px;
+        min-width: 35px;
+        font-size: 12px;
+    }
+    
+    .pagina-atual {
+        min-width: 80px;
+        font-size: 12px;
+    }
+}
+
+/* ✅ TABELA DE FOLHAS FECHADAS - RESPONSIVA */
+.folhas-fechadas-table {
+    width: 100%;
+    min-width: 1200px; /* Largura mínima para evitar compressão */
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.folhas-fechadas-table th,
+.folhas-fechadas-table td {
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+    white-space: nowrap; /* Evitar quebra de linha */
+}
+
+.folhas-fechadas-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: var(--primary-color);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.folhas-fechadas-table td {
+    vertical-align: top;
+}
+
+/* Container responsivo para a tabela */
+.folhas-fechadas-table .table-container {
+    overflow-x: auto;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+/* Ajustes para telas menores */
+@media (max-width: 1200px) {
+    .folhas-fechadas-table {
+        font-size: 14px;
+    }
+    
+    .folhas-fechadas-table th,
+    .folhas-fechadas-table td {
+        padding: 8px 6px;
+    }
+    
+    .folhas-fechadas-table .actions-cell {
+        min-width: 120px;
+    }
+}
+
+@media (max-width: 768px) {
+    .folhas-fechadas-table {
+        font-size: 12px;
+    }
+    
+    .folhas-fechadas-table th,
+    .folhas-fechadas-table td {
+        padding: 6px 4px;
+    }
+    
+    .folhas-fechadas-table .actions-cell {
+        min-width: 100px;
+    }
+    
+    .folhas-fechadas-table .action-button {
+        padding: 4px 6px;
+        font-size: 12px;
+    }
+}
+
+/* Scrollbar personalizada para a tabela */
+.folhas-fechadas-table .table-container::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+}
+
+.folhas-fechadas-table .table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.folhas-fechadas-table .table-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.folhas-fechadas-table .table-container::-webkit-scrollbar-thumb:hover {
+    background-color: #4a4a4a;
+}
+
+/* Estilos para coluna Detalhes colapsível */
+.folhas-fechadas-table .detalhes-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    color: #007bff;
+    margin-right: 5px;
+    font-size: 1.2em;
+    transition: color 0.3s ease;
+}
+
+.folhas-fechadas-table .detalhes-toggle:hover {
+    color: #0056b3;
+}
+
+.folhas-fechadas-table .detalhes-row {
+    background-color: #f8f9fa;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
+.folhas-fechadas-table .detalhes-row.hidden {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.folhas-fechadas-table .detalhes-content {
+    padding: 10px;
+    border-top: 1px solid #dee2e6;
+}
+
+.folhas-fechadas-table .detalhes-content div {
+    margin-bottom: 5px;
+}
+
+.folhas-fechadas-table .no-wrap {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 🎯 MODAL INTEGRADO DE CONFIRMAÇÃO - ANIMAÇÕES */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Estilos responsivos para o modal */
+@media (max-width: 768px) {
+    .modal-content {
+        max-width: 95% !important;
+        padding: 20px !important;
+    }
+    
+    .modal-content .botoes {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    
+    .modal-content button {
+        min-width: 100% !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-content {
+        padding: 15px !important;
+    }
+    
+    .modal-content h3 {
+        font-size: 18px !important;
+    }
+    
+    .modal-content .detalhes {
+        padding: 15px !important;
+    }
+}
+
+/* 💰 INDICADOR DE CONTAS CRIADAS */
+.indicador-contas {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    animation: slideIn 0.5s ease;
+}
+
+.indicador-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: #495057;
+    padding: 10px 15px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.indicador-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.indicador-item i {
+    font-size: 18px;
+}
+
+.indicador-item span {
+    font-size: 20px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.link-sistema-financeiro {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.link-sistema-financeiro:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+/* Responsividade do indicador */
+@media (max-width: 768px) {
+    .indicador-contas {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .indicador-item {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .indicador-contas {
+        padding: 10px;
+        margin: 15px 0;
+    }
+    
+    .indicador-item {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    .indicador-item span {
+        font-size: 18px;
+    }
+}
+
+/* ====== Resumo da Folha - Seleção de Colunas ====== */
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 6px;
+    align-items: start;
+}
+.checkbox-heading {
+    margin-top: 8px;
+    margin-bottom: 4px;
+    color: #555;
+}
+.checkbox-section + .checkbox-section {
+    margin-top: 12px;
+}
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.25;
+    color: #333;
+    cursor: pointer;
+}
+.checkbox-item input[type="checkbox"] { width: 16px; height: 16px; }
+.checkbox-label { flex: 1; }
+.checkbox-toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.checkbox-filter {
+    margin-top: 6px;
+}
+
+.checkbox-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 8px;
+}
+.checkbox-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.checkbox-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    border-bottom: 1px solid #eee;
+}
+.checkbox-card-body { padding: 8px 10px; }
+.checkbox-group-actions { display:flex; gap:6px; }
+.mini-btn {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: #eef3ff;
+    border: 1px solid #d6e0ff;
+    color: #2c3e50;
+    cursor: pointer;
+}
+/* Interações de botão como no módulo folha */
+.mini-btn:hover { background: #e6eeff; border-color: #c6d2ff; }
+.mini-btn:active { transform: translateY(1px); background: #dbe6ff; }
+.mini-btn:focus { outline: 2px solid #99b3ff; outline-offset: 1px; }
+.mini-btn[disabled], .mini-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+@media (max-width: 768px) {
+    #acoes-principais .form-buttons {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* 📱 MOBILE STACK PARA BOTÕES PRINCIPAIS */
+@media (max-width: 480px) {
+    #acoes-principais .form-buttons {
+        grid-template-columns: 1fr;
+    }
+    #acoes-principais .form-buttons button {
+        min-height: 42px;
+    }
+}
+
+#funcionarioModal,
+#cargoModal,
+#folhaModal,
+#cargosListModal,
+#folhasFechadasModal,
+#funcionariosListModal,
+#resumoFolhaModal {
+    overflow: hidden !important;
+    overscroll-behavior: contain;
+}
+
+#funcionarioModal .modal-content,
+#cargoModal .modal-content,
+#folhaModal .modal-content,
+#cargosListModal .modal-content,
+#folhasFechadasModal .modal-content,
+#funcionariosListModal .modal-content,
+#resumoFolhaModal .modal-content {
+    max-height: calc(100vh - 24px);
+    margin: 12px auto;
+    display: flex;
+    flex-direction: column;
+}
+
+#funcionarioModal .modal-body,
+#cargoModal .modal-body,
+#folhaModal .modal-body,
+#cargosListModal .modal-body,
+#folhasFechadasModal .modal-body,
+#funcionariosListModal .modal-body,
+#resumoFolhaModal .modal-body {
+    max-height: none !important;
+    min-height: 0;
+    flex: 1 1 auto;
+}
+
+#funcionarioModal table,
+#cargoModal table,
+#folhaModal table,
+#cargosListModal table,
+#folhasFechadasModal table,
+#funcionariosListModal table,
+#resumoFolhaModal table {
+    width: 100% !important;
+    table-layout: auto !important;
+}
+
+#funcionarioModal .action-button,
+#cargoModal .action-button,
+#folhaModal .action-button,
+#cargosListModal .action-button,
+#folhasFechadasModal .action-button,
+#funcionariosListModal .action-button,
+#resumoFolhaModal .action-button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+#cargosListModal .modal-body,
+#folhasFechadasModal .modal-body,
+#funcionariosListModal .modal-body,
+#resumoFolhaModal .modal-body {
+    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#cargosListModal .table-container,
+#folhasFechadasModal .table-container,
+#funcionariosListModal .table-container,
+#resumoFolhaModal .table-container {
+    overflow: auto !important;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+#folhasFechadasModal .modal-content {
+    max-width: 1240px;
+    width: 96%;
+}
+
+#folhasFechadasModal .modal-body {
+    padding: 14px 16px;
+}
+
+#folhasFechadasModal .table-container {
+    border: 1px solid #e4e9ef;
+    border-radius: 8px;
+}
+
+#folhasFechadasModal .folhas-fechadas-table {
+    width: 100%;
+    min-width: 980px;
+    table-layout: auto !important;
+    margin-top: 0;
+}
+
+#folhasFechadasModal .folhas-fechadas-table th,
+#folhasFechadasModal .folhas-fechadas-table td {
+    padding: 8px 8px;
+    font-size: 12px;
+    vertical-align: middle;
+}
+
+#folhasFechadasModal .folhas-fechadas-table th:nth-child(1),
+#folhasFechadasModal .folhas-fechadas-table td:nth-child(1) {
+    width: 32% !important;
+    min-width: 260px !important;
+}
+
+#folhasFechadasModal .ff-col-funcionario {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+#folhasFechadasModal .ff-nome {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+#folhasFechadasModal .ff-cargo {
+    margin-top: 2px;
+    font-size: 11px;
+    color: #667085;
+}
+
+#folhasFechadasModal .folhas-fechadas-table th:nth-child(2),
+#folhasFechadasModal .folhas-fechadas-table td:nth-child(2) {
+    width: 10ch !important;
+    min-width: 90px !important;
+    text-align: center;
+    white-space: nowrap;
+}
+
+#folhasFechadasModal .folhas-fechadas-table th:nth-child(3),
+#folhasFechadasModal .folhas-fechadas-table td:nth-child(3) {
+    width: 16ch !important;
+    min-width: 150px !important;
+    text-align: center;
+    white-space: nowrap;
+}
+
+#folhasFechadasModal .folhas-fechadas-table th:nth-child(4),
+#folhasFechadasModal .folhas-fechadas-table td:nth-child(4) {
+    width: 9ch !important;
+    min-width: 84px !important;
+    text-align: center;
+    white-space: nowrap;
+}
+
+#folhasFechadasModal .folhas-fechadas-table th:nth-child(5),
+#folhasFechadasModal .folhas-fechadas-table td:nth-child(5),
+#folhasFechadasModal .folhas-fechadas-table th:nth-child(6),
+#folhasFechadasModal .folhas-fechadas-table td:nth-child(6),
+#folhasFechadasModal .folhas-fechadas-table th:nth-child(8),
+#folhasFechadasModal .folhas-fechadas-table td:nth-child(8) {
+    width: 12ch !important;
+    min-width: 110px !important;
+    text-align: right;
+    white-space: nowrap;
+}
+
+#folhasFechadasModal .folhas-fechadas-table th:nth-child(7),
+#folhasFechadasModal .folhas-fechadas-table td:nth-child(7) {
+    width: 24% !important;
+    min-width: 220px !important;
+}
+
+#folhasFechadasModal .ff-col-detalhes {
+    white-space: normal;
+}
+
+#folhasFechadasModal .ff-col-detalhes .detalhes-info {
+    font-size: 11px;
+    color: #4b5563;
+    line-height: 1.25;
+}
+
+#folhasFechadasModal .folhas-fechadas-table th:nth-child(9),
+#folhasFechadasModal .folhas-fechadas-table td:nth-child(9) {
+    width: 88px !important;
+    min-width: 88px !important;
+    text-align: center;
+    white-space: nowrap;
+}
+
+#folhasFechadasModal td.actions-cell {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+}
+
+#folhasFechadasModal td.actions-cell .action-button {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+@media (max-width: 1200px) {
+    #folhasFechadasModal .folhas-fechadas-table {
+        min-width: 900px;
+    }
+}
+
+@media (max-width: 900px) {
+    #folhasFechadasModal .modal-body {
+        padding: 10px 10px;
+    }
+    #folhasFechadasModal .folhas-fechadas-table {
+        min-width: 820px;
+    }
+    #folhasFechadasModal .folhas-fechadas-table th,
+    #folhasFechadasModal .folhas-fechadas-table td {
+        padding: 7px 6px;
+        font-size: 11px;
+    }
+    #folhasFechadasModal .ff-nome {
+        font-size: 12px;
+    }
+}
+
+#resumoFolhaModal .modal-content {
+    max-width: 1180px;
+    width: 96%;
+}
+
+#resumoFolhaModal .modal-body {
+    padding: 14px 16px;
+    overflow: auto !important;
+}
+
+#resumoFolhaModal #resumoColSearch {
+    width: 100%;
+    border: 1px solid #d8dee6;
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+#resumoFolhaModal .resumo-toolbar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+#resumoFolhaModal .resumo-toolbar-btn {
+    width: 100%;
+    min-height: 36px;
+    padding: 8px 10px;
+    display: inline-flex;
+    gap: 6px;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.2;
+    border-radius: 8px;
+}
+
+#resumoFolhaModal .resumo-toolbar-btn i {
+    width: 14px;
+    text-align: center;
+    font-size: 12px;
+    flex: 0 0 14px;
+}
+
+#resumoFolhaModal .resumo-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+#resumoFolhaModal .resumo-footer-btn {
+    min-width: 150px;
+    min-height: 38px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+#resumoFolhaModal .resumo-footer-btn i {
+    width: 14px;
+    text-align: center;
+}
+
+@media (max-width: 980px) {
+    #resumoFolhaModal .resumo-toolbar {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    #resumoFolhaModal .modal-body {
+        padding: 10px 10px;
+    }
+    #resumoFolhaModal .resumo-toolbar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    #resumoFolhaModal .resumo-footer {
+        justify-content: stretch;
+        flex-direction: column-reverse;
+    }
+    #resumoFolhaModal .resumo-footer-btn {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    #resumoFolhaModal .resumo-toolbar {
+        grid-template-columns: 1fr;
+    }
+}
+
+#cargosListModal .modal-content {
+    max-width: 1040px;
+    width: 94%;
+}
+
+#cargosListModal .modal-body {
+    padding: 14px 16px;
+}
+
+#cargosListModal .modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+#cargosListModal .cargos-footer-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+#cargosListModal .footer-secondary.cargos-footer-actions {
+    justify-content: flex-start;
+}
+
+#cargosListModal .footer-primary.cargos-footer-actions {
+    justify-content: flex-end;
+}
+
+#cargosListModal .cargos-footer-actions button {
+    min-height: 36px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+#cargosListModal .cargos-footer-actions button i {
+    width: 14px;
+    text-align: center;
+}
+
+#relatorioModal .modal-content {
+    max-width: 1060px;
+    width: 94%;
+}
+
+#relatorioModal .modal-body {
+    padding: 14px 16px;
+}
+
+#relatorioModal .export-options {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+#relatorioModal .relatorio-export-btn {
+    min-height: 40px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 10px;
+}
+
+#relatorioModal .relatorio-export-btn i {
+    width: 14px;
+    text-align: center;
+}
+
+#relatorioModal .relatorio-footer-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+#relatorioModal .relatorio-footer-buttons {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 8px;
+}
+
+#relatorioModal .relatorio-footer-btn {
+    min-height: 36px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+#relatorioModal .relatorio-footer-btn i {
+    width: 14px;
+    text-align: center;
+}
+
+@media (max-width: 980px) {
+    #relatorioModal .export-options {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .modal-footer .footer-secondary,
+    .modal-footer .footer-primary {
+        width: 100%;
+    }
+    .modal-footer .footer-secondary button,
+    .modal-footer .footer-primary button {
+        width: 100%;
+    }
+
+    #cargosListModal .modal-body,
+    #relatorioModal .modal-body {
+        padding: 10px 10px;
+    }
+    #cargosListModal .cargos-footer-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+    #cargosListModal .cargos-footer-actions button {
+        flex: 1 1 auto;
+    }
+    #relatorioModal .export-options {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    #relatorioModal .relatorio-footer-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    #relatorioModal .relatorio-footer-buttons {
+        justify-content: stretch;
+    }
+    #relatorioModal .relatorio-footer-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    #relatorioModal .export-options {
+        grid-template-columns: 1fr;
+    }
+}

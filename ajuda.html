@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual e Ajuda | Sisweb</title>
+    <meta name="description" content="Manual e central de ajuda com busca e passo a passo com imagens.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="ui-components.css">
+    <link rel="stylesheet" href="layout-comum.css">
+    <script src="menu-component.js?v=20260326"></script>
+    <style>
+        .help-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 16px;
+            align-items: start;
+        }
+        .help-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+        }
+        .help-sidebar {
+            position: sticky;
+            top: 92px;
+            padding: 12px;
+        }
+        .help-main {
+            padding: 16px;
+            min-height: 70vh;
+        }
+        .help-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .help-header h1 {
+            margin: 0;
+            font-size: 18px;
+            color: #0f172a;
+        }
+        .help-header p {
+            margin: 6px 0 0;
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .help-search {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .help-search .field {
+            flex: 1;
+            position: relative;
+        }
+        .help-search input {
+            width: 100%;
+            padding: 10px 12px 10px 34px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+        }
+        .help-search input:focus {
+            border-color: rgba(37,99,235,0.6);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+        }
+        .help-search .field i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 14px;
+        }
+        .help-search button {
+            border: 1px solid #e5e7eb;
+            background: #f8fafc;
+            color: #0f172a;
+            border-radius: 10px;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: background-color 160ms ease;
+            font-size: 13px;
+        }
+        .help-search button:hover { background: #eef2ff; }
+        .help-list {
+            padding: 10px;
+        }
+        .help-list .cat {
+            margin: 10px 0 6px;
+            font-size: 11px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+        .help-item {
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 160ms ease;
+        }
+        .help-item:hover { background: #f8fafc; }
+        .help-item.active { background: #eff6ff; }
+        .help-item .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            margin-top: 4px;
+            background: #2563eb;
+            flex: 0 0 auto;
+        }
+        .help-item .txt {
+            min-width: 0;
+        }
+        .help-item .title {
+            font-size: 13px;
+            color: #0f172a;
+            line-height: 1.35;
+        }
+        .help-item .meta {
+            margin-top: 2px;
+            font-size: 12px;
+            color: #64748b;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .help-content h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #0f172a;
+        }
+        .help-content .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            border: 1px solid #e5e7eb;
+            color: #334155;
+            background: #f8fafc;
+            margin: 10px 0 16px;
+        }
+        .help-content .body {
+            color: #0f172a;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .help-content .body h3 {
+            margin: 18px 0 8px;
+            font-size: 14px;
+            color: #0f172a;
+        }
+        .help-content .body ul { margin: 8px 0 0 18px; }
+        .help-content .body li { margin: 6px 0; }
+        .help-grid {
+            margin-top: 14px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .help-shot {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fff;
+        }
+        .help-shot button {
+            border: 0;
+            padding: 0;
+            background: transparent;
+            display: block;
+            width: 100%;
+            cursor: zoom-in;
+        }
+        .help-shot img {
+            width: 100%;
+            height: 170px;
+            object-fit: cover;
+            display: block;
+            background: #f1f5f9;
+        }
+        .help-shot figcaption {
+            padding: 10px 10px 11px;
+            font-size: 12px;
+            color: #475569;
+        }
+        .help-empty {
+            padding: 24px;
+            color: #64748b;
+            font-size: 14px;
+        }
+        .help-lightbox {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.72);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            padding: 18px;
+        }
+        .help-lightbox.active { display: flex; }
+        .help-lightbox .panel {
+            width: min(1100px, 100%);
+            background: #0b1220;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.12);
+            overflow: hidden;
+            box-shadow: 0 16px 50px rgba(0,0,0,0.45);
+        }
+        .help-lightbox .bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            color: #e2e8f0;
+            background: rgba(15, 23, 42, 0.85);
+        }
+        .help-lightbox .bar .cap {
+            font-size: 13px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .help-lightbox .bar button {
+            border: 1px solid rgba(255,255,255,0.18);
+            background: transparent;
+            color: #e2e8f0;
+            border-radius: 10px;
+            padding: 8px 10px;
+            cursor: pointer;
+        }
+        .help-lightbox img {
+            width: 100%;
+            height: auto;
+            display: block;
+            background: #0b1220;
+        }
+        @media (max-width: 900px) {
+            .help-layout { grid-template-columns: 1fr; }
+            .help-sidebar { position: static; }
+            .help-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <main-menu></main-menu>
+
+        <div class="help-layout">
+            <aside class="help-card help-sidebar" aria-label="Índice do manual">
+                <div class="help-search">
+                    <div class="field">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input id="helpSearchInput" type="search" placeholder="Buscar no manual…" autocomplete="off">
+                    </div>
+                    <button id="helpClearBtn" type="button">Limpar</button>
+                </div>
+                <div id="helpList" class="help-list"></div>
+            </aside>
+
+            <main class="help-card help-main" aria-label="Conteúdo do manual">
+                <div class="help-header">
+                    <h1>Manual e Ajuda</h1>
+                    <p>Pesquise por assunto ou navegue por tópicos. As imagens são ilustrações; você pode substituir por prints reais depois.</p>
+                </div>
+                <div id="helpContent" class="help-content" style="padding: 16px;"></div>
+            </main>
+        </div>
+    </div>
+
+    <div id="helpLightbox" class="help-lightbox" role="dialog" aria-modal="true" aria-label="Visualização de imagem">
+        <div class="panel">
+            <div class="bar">
+                <div id="helpLightboxCaption" class="cap"></div>
+                <button id="helpLightboxClose" type="button">Fechar</button>
+            </div>
+            <img id="helpLightboxImg" alt="">
+        </div>
+    </div>
+
+    <script src="ajuda.js?v=20260326"></script>
+</body>
+</html>
+

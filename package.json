@@ -1,0 +1,17 @@
+{
+  "type": "module",
+  "scripts": {
+    "lint": "eslint \"folha_pagamento/**/*.js\" --max-warnings=0",
+    "typecheck": "tsc --noEmit --allowJs folha_pagamento/folha-lancamentos.js folha_pagamento/folha-main.js folha_pagamento/folha-filtros.js folha_pagamento/folha-funcionarios.js folha_pagamento/folha-paginacao.js"
+  },
+  "devDependencies": {
+    "@types/node": "^24.1.0",
+    "eslint": "^9.33.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "firebase-admin": "^13.7.0"
+  }
+}

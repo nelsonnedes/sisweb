@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Aplicar Correção - Vendas Romaneios</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid;
+        }
+        .alert.info {
+            background: #ebf3fd;
+            border-color: #3498db;
+            color: #2c3e50;
+        }
+        .alert.success {
+            background: #d5f4e6;
+            border-color: #27ae60;
+            color: #2c3e50;
+        }
+        .alert.warning {
+            background: #fef9e7;
+            border-color: #f39c12;
+            color: #2c3e50;
+        }
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .code {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button.success {
+            background: #27ae60;
+        }
+        button.warning {
+            background: #f39c12;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #ffeaa7;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Aplicar Correção - Romaneios PCT no Vendas</h1>
+        
+        <div class="alert info">
+            <strong>ℹ️ Objetivo:</strong> Esta página aplica a correção específica para o problema dos romaneios PCT que não aparecem na lista do módulo de vendas.
+        </div>
+        
+        <div class="highlight">
+            <strong>📋 Status do Problema:</strong><br>
+            ✅ Dados encontrados: 5 romaneios PCT no localStorage<br>
+            ✅ Estrutura válida: Array com dados corretos<br>
+            ❌ Problema: Função carregarRomaneiosPorTipo() não está funcionando<br>
+            🎯 Solução: Substituir função e forçar reload
+        </div>
+        
+        <div class="step">
+            <h3>📋 Passo 1: Preparar a Correção</h3>
+            <p>Primeiro, carregue o script de correção:</p>
+            <button onclick="carregarScript()">🔄 Carregar Script de Correção</button>
+            <div id="status1" class="alert info" style="display:none;"></div>
+        </div>
+        
+        <div class="step">
+            <h3>🎯 Passo 2: Aplicar no Vendas.html</h3>
+            <p>Para aplicar a correção, você deve:</p>
+            <ol>
+                <li><strong>Abrir o vendas.html</strong> em uma nova aba</li>
+                <li><strong>Abrir o Console</strong> (F12 → Console)</li>
+                <li><strong>Colar e executar</strong> o código abaixo:</li>
+            </ol>
+            
+            <div class="code" id="codigoCorrecao">
+                // Carregue este código no console do vendas.html
+                const script = document.createElement('script');
+                script.src = 'corrigir_vendas_romaneios.js';
+                document.head.appendChild(script);
+                
+                script.onload = function() {
+                    console.log('Script carregado! Executando correção...');
+                    corrigirVendasRomaneios();
+                };
+            </div>
+            
+            <button onclick="copiarCodigo()">📋 Copiar Código</button>
+            <button onclick="abrirVendas()">🔗 Abrir Vendas.html</button>
+        </div>
+        
+        <div class="step">
+            <h3>⚡ Passo 3: Correção Rápida (Alternativa)</h3>
+            <p>Se preferir uma correção mais direta, use este código no console do vendas.html:</p>
+            
+            <div class="code" id="codigoRapido">
+                // Correção rápida - cole no console do vendas.html
+                async function correcaoRapida() {
+                    console.log('🔧 Aplicando correção rápida...');
+                    
+                    const baseKey = 'romaneiosPct';
+                    let tenant = null;
+                    try {
+                        const raw = localStorage.getItem('company_info');
+                        if (raw) {
+                            const obj = JSON.parse(raw);
+                            tenant = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                        }
+                    } catch (e) {}
+                    const candidates = [];
+                    if (tenant) candidates.push(`companies/${tenant}/${baseKey}`);
+                    candidates.push(baseKey);
+                    let dados = null;
+                    for (const k of candidates) {
+                        const val = localStorage.getItem(k);
+                        if (val) { dados = val; break; }
+                    }
+                    if (!dados) {
+                        console.error('❌ Dados não encontrados');
+                        return;
+                    }
+                    
+                    const romaneios = JSON.parse(dados);
+                    const selectRomaneio = document.getElementById('romaneioSelect');
+                    const tipoRomaneio = document.getElementById('tipoRomaneio');
+                    
+                    if (!selectRomaneio || !tipoRomaneio) {
+                        console.error('❌ Elementos não encontrados');
+                        return;
+                    }
+                    
+                    // Definir tipo e limpar select
+                    tipoRomaneio.value = 'romaneiosPct';
+                    selectRomaneio.innerHTML = '<option value="">Selecione um romaneio</option>';
+                    
+                    // Adicionar romaneios
+                    romaneios.forEach((romaneio, index) => {
+                        const option = document.createElement('option');
+                        option.value = index;
+                        
+                        const data = romaneio.data ? new Date(romaneio.data).toLocaleDateString('pt-BR') : 'S/Data';
+                        const cliente = romaneio.cliente?.nome || romaneio.clienteNome || 'Cliente não informado';
+                        const volume = (romaneio.totalVolume || romaneio.volumeTotal || 0).toFixed(3).replace('.', ',');
+                        
+                        option.textContent = `${data} - ${cliente} - ${volume} m³`;
+                        selectRomaneio.appendChild(option);
+                    });
+                    
+                    console.log(`✅ ${romaneios.length} romaneios PCT carregados!`);
+                }
+                
+                correcaoRapida();
+            </div>
+            
+            <button onclick="copiarCodigoRapido()">📋 Copiar Código Rápido</button>
+        </div>
+        
+        <div class="step">
+            <h3>🧪 Passo 4: Testar a Solução</h3>
+            <p>Após aplicar a correção:</p>
+            <ol>
+                <li>No vendas.html, selecione <strong>"Romaneio PCT"</strong> no dropdown</li>
+                <li>Verifique se os 5 romaneios aparecem na lista</li>
+                <li>Tente selecionar um romaneio para confirmar que funciona</li>
+            </ol>
+            
+            <div class="alert success">
+                <strong>✅ Resultado Esperado:</strong><br>
+                Você deve ver 5 romaneios PCT na lista, incluindo:<br>
+                • 18/05/2025 - Jean Portal - [volume] m³<br>
+                • Outros 4 romaneios com dados corretos
+            </div>
+        </div>
+        
+        <div class="step">
+            <h3>🔧 Solução Permanente</h3>
+            <p>Para uma correção permanente, adicione esta linha no final do arquivo <code>vendas.html</code>, antes do fechamento da tag <code>&lt;/body&gt;</code>:</p>
+            
+            <div class="code">
+                &lt;script src="corrigir_vendas_romaneios.js"&gt;&lt;/script&gt;
+                &lt;script&gt;
+                    // Aplicar correção automaticamente quando a página carregar
+                    window.addEventListener('load', function() {
+                        setTimeout(function() {
+                            if (typeof corrigirVendasRomaneios === 'function') {
+                                console.log('Aplicando correção automática...');
+                                corrigirVendasRomaneios();
+                            }
+                        }, 1000);
+                    });
+                &lt;/script&gt;
+            </div>
+        </div>
+        
+        <div class="alert warning">
+            <strong>⚠️ Importante:</strong><br>
+            • Mantenha um backup dos arquivos antes de fazer alterações permanentes<br>
+            • Teste a solução em um ambiente de desenvolvimento primeiro<br>
+            • Se algo der errado, atualize a página para voltar ao estado original
+        </div>
+    </div>
+    
+    <script>
+        function carregarScript() {
+            const script = document.createElement('script');
+            script.src = 'corrigir_vendas_romaneios.js';
+            document.head.appendChild(script);
+            
+            script.onload = function() {
+                const status = document.getElementById('status1');
+                status.style.display = 'block';
+                status.className = 'alert success';
+                status.innerHTML = '<strong>✅ Script carregado com sucesso!</strong><br>Agora você pode aplicar a correção no vendas.html.';
+            };
+            
+            script.onerror = function() {
+                const status = document.getElementById('status1');
+                status.style.display = 'block';
+                status.className = 'alert warning';
+                status.innerHTML = '<strong>⚠️ Erro ao carregar script!</strong><br>Verifique se o arquivo corrigir_vendas_romaneios.js existe.';
+            };
+        }
+        
+        function copiarCodigo() {
+            const codigo = document.getElementById('codigoCorrecao').textContent;
+            navigator.clipboard.writeText(codigo).then(function() {
+                alert('✅ Código copiado! Cole no console do vendas.html');
+            }).catch(function() {
+                alert('❌ Erro ao copiar. Selecione e copie manualmente.');
+            });
+        }
+        
+        function copiarCodigoRapido() {
+            const codigo = document.getElementById('codigoRapido').textContent;
+            navigator.clipboard.writeText(codigo).then(function() {
+                alert('✅ Código rápido copiado! Cole no console do vendas.html');
+            }).catch(function() {
+                alert('❌ Erro ao copiar. Selecione e copie manualmente.');
+            });
+        }
+        
+        function abrirVendas() {
+            window.open('vendas.html', '_blank');
+        }
+    </script>
+    <script src="global-footer.js"></script>
+</body>
+</html> 

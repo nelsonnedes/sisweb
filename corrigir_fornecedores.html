@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Correção de Fornecedores</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #28a745;
+        }
+        
+        .log-area {
+            background: #000;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            border-radius: 10px;
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #56ccf2, #2f80ed);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            color: white;
+        }
+        
+        .btn-info {
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            color: white;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Correção de Fornecedores</h1>
+            <p>Resolva problemas de inconsistência nos dados de fornecedores</p>
+        </div>
+        
+        <div class="alert alert-info">
+            <strong>🔍 Problema:</strong> Mensagem "Já existe um fornecedor" mas o fornecedor não aparece na lista.<br>
+            <strong>✅ Solução:</strong> Este sistema irá diagnosticar e corrigir automaticamente os dados inconsistentes.
+        </div>
+        
+        <div class="status-card">
+            <h3>📊 Status do Sistema</h3>
+            <p id="statusText">Aguardando inicialização...</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        
+        <div class="log-area" id="logArea">
+Carregando sistema de diagnóstico...
+        </div>
+        
+        <div class="buttons">
+            <button class="btn btn-primary" onclick="executarDiagnostico()">
+                🔍 Executar Diagnóstico
+            </button>
+            <button class="btn btn-success" onclick="corrigirAutomaticamente()">
+                🚀 Correção Automática
+            </button>
+            <button class="btn btn-warning" onclick="verificarFornecedorEspecifico()">
+                🔎 Verificar Fornecedor
+            </button>
+            <button class="btn btn-info" onclick="voltarAoSistema()">
+                ⬅️ Voltar ao Sistema
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts necessários -->
+    <script src="firebaseService.js"></script>
+    <script>
+        // Funções auxiliares do sistema
+        function generateUniqueId(prefix = '') {
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substring(2, 8);
+            return `${prefix}${timestamp}_${random}`;
+        }
+
+        function resolveCompanyId() {
+            try {
+                const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                if (svc && typeof svc.getTenantId === 'function') {
+                    const t = svc.getTenantId();
+                    if (t) return String(t);
+                }
+            } catch (_) {}
+            try {
+                if (window.appTenantId) return String(window.appTenantId);
+                if (window.companyInfo) {
+                    const raw = window.companyInfo;
+                    const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                    if (id) return String(id);
+                }
+                const stored = localStorage.getItem('company_info');
+                if (stored) {
+                    const obj = JSON.parse(stored);
+                    const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                    if (id) return String(id);
+                }
+            } catch (_) {}
+            return null;
+        }
+
+        function getLocalStorageKeys(key) {
+            const keys = [];
+            try {
+                const base = String(key || '');
+                if (!base) return keys;
+                const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                if (svc && typeof svc.getNamespacedPath === 'function') {
+                    const ns = svc.getNamespacedPath(base);
+                    if (ns && ns !== base) keys.push(ns);
+                } else {
+                    const companyId = resolveCompanyId();
+                    if (companyId && !/^companies\//.test(base) && !/^users\//.test(base)) {
+                        keys.push(`companies/${companyId}/${base}`);
+                    }
+                }
+                keys.push(base);
+            } catch (_) {}
+            return [...new Set(keys)];
+        }
+
+        function readLocalStorageValue(key) {
+            for (const k of getLocalStorageKeys(key)) {
+                const val = localStorage.getItem(k);
+                if (val) return val;
+            }
+            return null;
+        }
+
+        function persistLocalValue(key, data) {
+            try {
+                if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {
+                    window.SiswebStorage.write(key, data);
+                    return;
+                }
+            } catch (_) {}
+            const payload = JSON.stringify(data);
+            for (const k of getLocalStorageKeys(key)) {
+                localStorage.setItem(k, payload);
+            }
+        }
+
+        function saveData(key, data) {
+            try {
+                persistLocalValue(key, data);
+                return true;
+            } catch (error) {
+                console.error('Erro ao salvar dados:', error);
+                return false;
+            }
+        }
+
+        function getData(key) {
+            try {
+                const data = readLocalStorageValue(key);
+                return data ? JSON.parse(data) : null;
+            } catch (error) {
+                console.error('Erro ao recuperar dados:', error);
+                return null;
+            }
+        }
+
+        async function carregarFornecedoresDoFirebase() {
+            try {
+                if (!window.firebaseService || !window.firebaseService.loadFromFirebase) {
+                    addLog('⚠️ Firebase Service não disponível, usando apenas dados locais');
+                    return;
+                }
+
+                addLog('📥 Tentando carregar fornecedores do Firebase...');
+                // Tentar coleção unificada de clientes
+                const clientsResult = await window.firebaseService.loadFromFirebase('clients');
+                let clientsArray = [];
+                if (clientsResult) {
+                    clientsArray = Array.isArray(clientsResult) ? clientsResult : Object.values(clientsResult || {});
+                    addLog(`✅ Carregados ${clientsArray.length} fornecedores da coleção 'clients'`);
+                    persistLocalValue('clients', clientsArray);
+                    window.clients = clientsArray;
+                }
+
+                // Tentar coleção específica/legada de fornecedores se existir
+                const fornecedoresResult = await window.firebaseService.loadFromFirebase('fornecedores');
+                let fornecedoresArray = [];
+                if (fornecedoresResult) {
+                    fornecedoresArray = Array.isArray(fornecedoresResult) ? fornecedoresResult : Object.values(fornecedoresResult || {});
+                    addLog(`✅ Carregados ${fornecedoresArray.length} fornecedores da coleção 'fornecedores'`);
+                    // Usar 'clientesTora' como área de trabalho para consolidação
+                    persistLocalValue('clientesTora', fornecedoresArray);
+                }
+            } catch (error) {
+                addLog(`❌ Erro ao carregar fornecedores do Firebase: ${error.message}`);
+            }
+        }
+
+        // Controle da interface
+        let currentStep = 0;
+        const totalSteps = 4;
+
+        function updateProgress(step) {
+            currentStep = step;
+            const percentage = (step / totalSteps) * 100;
+            document.getElementById('progressFill').style.width = percentage + '%';
+        }
+
+        function addLog(message) {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toLocaleTimeString();
+            logArea.textContent += `[${timestamp}] ${message}\n`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function updateStatus(message) {
+            document.getElementById('statusText').textContent = message;
+        }
+
+        // Função de diagnóstico
+        async function executarDiagnostico() {
+            addLog("🔍 INICIANDO DIAGNÓSTICO COMPLETO...");
+            updateStatus("Executando diagnóstico...");
+            updateProgress(1);
+
+            // Carregar do Firebase antes de diagnosticar
+            await carregarFornecedoresDoFirebase();
+
+            setTimeout(() => {
+                try {
+                    // Verificar diferentes fontes de dados
+                    const clientesTora = getData('clientesTora') || [];
+                    const clients = getData('clients') || [];
+                    const windowClients = window.clients || [];
+
+                    addLog(`📊 DADOS ENCONTRADOS:`);
+                    addLog(`- clientesTora: ${clientesTora.length} registros`);
+                    addLog(`- clients: ${clients.length} registros`);
+                    addLog(`- window.clients: ${windowClients.length} registros`);
+
+                    // Verificar duplicatas
+                    const todosFornecedores = [...clientesTora, ...clients, ...windowClients];
+                    const nomes = todosFornecedores.map(c => (c.nome || c.name || '').toLowerCase());
+                    const duplicatas = nomes.filter((nome, index) => nomes.indexOf(nome) !== index && nome);
+
+                    addLog(`🔄 DUPLICATAS: ${duplicatas.length}`);
+                    if (duplicatas.length > 0) {
+                        duplicatas.forEach(nome => addLog(`  - ${nome}`));
+                    }
+
+                    // Verificar registros com problemas
+                    const problemáticos = todosFornecedores.filter(c => 
+                        !c.id || (!c.nome && !c.name) || !c.cidade || !c.estado
+                    );
+
+                    addLog(`⚠️ REGISTROS PROBLEMÁTICOS: ${problemáticos.length}`);
+
+                    updateStatus("Diagnóstico concluído");
+                    updateProgress(2);
+                    addLog("✅ DIAGNÓSTICO CONCLUÍDO!");
+
+                } catch (error) {
+                    addLog(`❌ ERRO NO DIAGNÓSTICO: ${error.message}`);
+                    updateStatus("Erro no diagnóstico");
+                }
+            }, 500);
+        }
+
+        // Função de correção automática
+        async function corrigirAutomaticamente() {
+            addLog("🚀 INICIANDO CORREÇÃO AUTOMÁTICA...");
+            updateStatus("Executando correção...");
+            updateProgress(2);
+
+            await carregarFornecedoresDoFirebase();
+
+            setTimeout(() => {
+                try {
+                    // Obter todos os dados
+                    const clientesTora = getData('clientesTora') || [];
+                    const clients = getData('clients') || [];
+                    const windowClients = window.clients || [];
+
+                    addLog("🧹 CONSOLIDANDO DADOS...");
+
+                    // Criar lista limpa
+                    const fornecedoresLimpos = [];
+                    const nomesJaAdicionados = new Set();
+
+                    const todasAsFontes = [...clientesTora, ...clients, ...windowClients];
+
+                    for (const fornecedor of todasAsFontes) {
+                        const nome = (fornecedor.nome || fornecedor.name || '').trim();
+                        const nomeKey = nome.toLowerCase();
+
+                        if (!nome || !fornecedor.cidade || !fornecedor.estado || nomesJaAdicionados.has(nomeKey)) {
+                            continue;
+                        }
+
+                    const companyId = resolveCompanyId();
+                    const fornecedorLimpo = {
+                        id: fornecedor.id || generateUniqueId('cl'),
+                        nome: nome,
+                        name: nome,
+                            cnpj: fornecedor.cnpj || '',
+                            inscricaoEstadual: fornecedor.inscricaoEstadual || fornecedor.stateRegistration || '',
+                            stateRegistration: fornecedor.inscricaoEstadual || fornecedor.stateRegistration || '',
+                            estado: fornecedor.estado || fornecedor.state || '',
+                            state: fornecedor.estado || fornecedor.state || '',
+                            cidade: fornecedor.cidade || fornecedor.city || '',
+                            city: fornecedor.cidade || fornecedor.city || '',
+                            telefone: fornecedor.telefone || fornecedor.phone || '',
+                            phone: fornecedor.telefone || fornecedor.phone || '',
+                            email: fornecedor.email || '',
+                            endereco: fornecedor.endereco || fornecedor.address || '',
+                            address: fornecedor.endereco || fornecedor.address || '',
+                            numero: fornecedor.numero || fornecedor.number || '',
+                            number: fornecedor.numero || fornecedor.number || '',
+                        bairro: fornecedor.bairro || fornecedor.neighborhood || '',
+                        neighborhood: fornecedor.bairro || fornecedor.neighborhood || '',
+                        observacoes: fornecedor.observacoes || fornecedor.obs || '',
+                        obs: fornecedor.observacoes || fornecedor.obs || '',
+                        created: fornecedor.created || new Date().toISOString(),
+                        updated: new Date().toISOString(),
+                        companyId: companyId || undefined
+                    };
+
+                        fornecedoresLimpos.push(fornecedorLimpo);
+                        nomesJaAdicionados.add(nomeKey);
+                    }
+
+                    updateProgress(3);
+                    addLog(`💾 SALVANDO ${fornecedoresLimpos.length} FORNECEDORES...`);
+
+                    // Salvar dados limpos
+                    saveData('clientesTora', fornecedoresLimpos);
+                    saveData('clients', fornecedoresLimpos);
+                    window.clients = fornecedoresLimpos;
+
+                    updateProgress(4);
+                    updateStatus("Correção concluída com sucesso!");
+                    addLog("🎉 CORREÇÃO CONCLUÍDA COM SUCESSO!");
+                    addLog(`📊 Total de fornecedores válidos: ${fornecedoresLimpos.length}`);
+
+                    // Mostrar alerta de sucesso
+                    setTimeout(() => {
+                        alert("✅ Correção concluída! Os dados dos fornecedores foram consolidados e limpos.");
+                    }, 1000);
+
+                } catch (error) {
+                    addLog(`❌ ERRO NA CORREÇÃO: ${error.message}`);
+                    updateStatus("Erro na correção");
+                }
+            }, 1000);
+        }
+
+        // Verificar fornecedor específico
+        async function verificarFornecedorEspecifico() {
+            const nome = prompt("Digite o nome do fornecedor para verificar:");
+            if (!nome) return;
+
+            addLog(`🔍 VERIFICANDO FORNECEDOR: "${nome}"`);
+
+            await carregarFornecedoresDoFirebase();
+
+            const clientesTora = getData('clientesTora') || [];
+            const clients = getData('clients') || [];
+            const windowClients = window.clients || [];
+
+            const nomeNormalizado = nome.toLowerCase().trim();
+
+            const encontradoEmClientesTora = clientesTora.find(c => 
+                (c.nome || c.name || '').toLowerCase().trim() === nomeNormalizado
+            );
+
+            const encontradoEmClients = clients.find(c => 
+                (c.nome || c.name || '').toLowerCase().trim() === nomeNormalizado
+            );
+
+            const encontradoEmWindow = windowClients.find(c => 
+                (c.nome || c.name || '').toLowerCase().trim() === nomeNormalizado
+            );
+
+            addLog("📍 RESULTADOS DA BUSCA:");
+            addLog(`- Em clientesTora: ${encontradoEmClientesTora ? 'ENCONTRADO' : 'NÃO ENCONTRADO'}`);
+            addLog(`- Em clients: ${encontradoEmClients ? 'ENCONTRADO' : 'NÃO ENCONTRADO'}`);
+            addLog(`- Em window.clients: ${encontradoEmWindow ? 'ENCONTRADO' : 'NÃO ENCONTRADO'}`);
+
+            if (encontradoEmClientesTora) addLog("✅ Dados válidos encontrados em clientesTora");
+            if (encontradoEmClients) addLog("✅ Dados válidos encontrados em clients");
+            if (encontradoEmWindow) addLog("✅ Dados válidos encontrados em window.clients");
+        }
+
+        function voltarAoSistema() {
+            if (confirm("Deseja voltar ao sistema principal?")) {
+                window.location.href = 'romaneiotora.html';
+            }
+        }
+
+        // Inicialização
+        window.addEventListener('load', function() {
+            addLog("✅ SISTEMA DE CORREÇÃO CARREGADO!");
+            updateStatus("Sistema pronto para uso");
+            addLog("📖 Use os botões acima para executar as funções:");
+            addLog("• Diagnóstico - Analisa os dados atuais");
+            addLog("• Correção Automática - Corrige problemas encontrados");
+            addLog("• Verificar Fornecedor - Busca fornecedor específico");
+            // Pré-carregar dados do Firebase para melhorar experiência
+            carregarFornecedoresDoFirebase();
+        });
+    </script>
+    <script src="global-footer.js"></script>
+</body>
+</html>

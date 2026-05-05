@@ -1,0 +1,446 @@
+/* 
+ * ==========================================
+ * UI COMPONENTS - SISWEB 4.0
+ * ==========================================
+ * Arquivo CSS unificado para padronização de
+ * Botões, Tabelas, Paginações e Modais
+ * ==========================================
+ */
+
+:root {
+    --primary-color: #2c3e50;
+    --primary-light: #34495e;
+    --secondary-color: #17a2b8;
+    --success-color: #27ae60;
+    --danger-color: #e74c3c;
+    --danger-dark: #c0392b;
+    --warning-color: #f39c12;
+    --light-bg: #f8f9fa;
+    --border-color: #e1e8ed;
+    --text-main: #333;
+    --text-muted: #657786;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* ==========================================
+ * 1. BOTÕES (Buttons)
+ * ========================================== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    text-decoration: none;
+    box-shadow: none !important; /* Remover sombra negra dos botões */
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.btn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 12px;
+    gap: 6px;
+}
+
+.btn-lg {
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: var(--radius-md);
+}
+
+/* Cores de Botões */
+.btn-primary { background-color: var(--primary-color); color: #fff; }
+.btn-primary:hover:not(:disabled) { background-color: var(--primary-light); }
+
+.btn-success, .btn-salvar, .btn-adicionar { background-color: var(--success-color); color: #fff; }
+.btn-success:hover:not(:disabled), .btn-salvar:hover:not(:disabled), .btn-adicionar:hover:not(:disabled) { background-color: #219653; }
+
+.btn-danger, .btn-excluir { background-color: var(--danger-color); color: #fff; }
+.btn-danger:hover:not(:disabled), .btn-excluir:hover:not(:disabled) { background-color: var(--danger-dark); }
+
+.btn-warning, .btn-editar { background-color: var(--warning-color); color: #fff; }
+.btn-warning:hover:not(:disabled), .btn-editar:hover:not(:disabled) { background-color: #e67e22; }
+
+.btn-info, .btn-listar { background-color: var(--secondary-color); color: #fff; }
+.btn-info:hover:not(:disabled), .btn-listar:hover:not(:disabled) { background-color: #138496; }
+
+.btn-outline { background-color: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
+.btn-outline:hover:not(:disabled) { background-color: var(--light-bg); border-color: #ccc; }
+
+
+/* ==========================================
+ * 2. TABELAS (Tables)
+ * ========================================== */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    background: #fff;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1rem;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    font-size: 14px;
+    text-align: left;
+}
+
+.table th,
+.table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.table th {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    font-weight: 600;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Coluna de Ações unificada */
+.table th.actions-col, 
+.table td.actions-col,
+.table th:last-child,
+.table td:last-child {
+    text-align: center;
+    white-space: nowrap;
+    width: 1%; /* Força a coluna a ocupar o mínimo de espaço necessário */
+}
+
+.table .actions-container,
+.table .btn-group {
+    display: inline-flex;
+    gap: 6px;
+    justify-content: center;
+}
+
+
+/* ==========================================
+ * 3. PAGINAÇÃO (Pagination)
+ * ========================================== */
+.pagination-container {
+    display: flex;
+    justify-content: center; /* Centralizado */
+    align-items: center;
+    padding: 12px 16px;
+    background: #fff;
+    border-top: 1px solid var(--border-color);
+    border-bottom-left-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.pagination-info {
+    color: var(--text-muted);
+    font-size: 13px;
+    display: none; /* Oculta info de paginação se não for mais desejado, ou mantenha e use flex-direction column se quiser separar */
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin: 12px 0 4px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.pagination-controls button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--primary-color);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+    background: var(--light-bg);
+    border-color: #ccc;
+}
+
+.pagination-controls button.active {
+    background: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+    font-weight: bold;
+}
+
+.pagination-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f8f9fa;
+}
+
+
+/* ==========================================
+ * 4. MODAIS (Modals)
+ * ========================================== */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 9999990;
+    backdrop-filter: blur(3px);
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 4vh auto;
+    width: 90%;
+    max-width: 800px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+    max-height: 92vh;
+    animation: modalFadeIn 0.3s ease;
+    position: relative;
+    padding: 0; /* REMOVIDO: Padding global do content para evitar quebras com o header/footer */
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    color: #fff;
+    border-top-left-radius: var(--radius-md);
+    border-top-right-radius: var(--radius-md);
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #fff !important; /* Força cor branca para sobrescrever estilos antigos */
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.close-modal {
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.close-modal:hover {
+    color: #fff !important;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+}
+
+.modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1 1 auto;
+    background: #fff;
+}
+
+.modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    background: #fafafa;
+    border-bottom-left-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Modais Largos (Listas) */
+.modal-content.modal-lg {
+    max-width: 1100px;
+}
+
+
+/* ==========================================
+ * 5. RESPONSIVIDADE PWA (Mobile)
+ * ========================================== */
+@media (max-width: 768px) {
+    /* Ajustes Gerais */
+    body { font-size: 14px; }
+    
+    .btn {
+        padding: 10px 16px; /* Maior área de toque */
+        min-height: 44px; /* Touch target size (Apple/Google guidelines) */
+    }
+    
+    .btn-sm { min-height: 36px; }
+
+    /* Modais Fullscreen no Mobile */
+    .modal-content {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+    
+    .modal-body {
+        padding: 16px;
+        overflow-y: auto; /* scroll interno garantido no mobile */
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .modal-header {
+        border-radius: 0;
+        padding: 12px 16px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .modal-footer {
+        border-radius: 0;
+        padding: 12px 16px;
+        /* Sticky bottom para garantir que botões Salvar não sumam */
+        position: sticky;
+        bottom: 0;
+        background: #fff;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        z-index: 10;
+        flex-direction: column-reverse; /* Cancelar embaixo, Salvar em cima */
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+        margin: 0;
+    }
+    
+    /* Paginação responsiva */
+    .pagination-container {
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .pagination-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    /* Tabelas em formato Card (Mobile View) */
+    .table-responsive.mobile-cards table,
+    .table-responsive.mobile-cards thead,
+    .table-responsive.mobile-cards tbody,
+    .table-responsive.mobile-cards th,
+    .table-responsive.mobile-cards td,
+    .table-responsive.mobile-cards tr {
+        display: block;
+    }
+
+    .table-responsive.mobile-cards thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    .table-responsive.mobile-cards tr {
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        margin-bottom: 12px;
+        background: #fff;
+        padding: 8px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .table-responsive.mobile-cards td {
+        border: none;
+        border-bottom: 1px solid #f0f0f0;
+        position: relative;
+        padding-left: 45%;
+        text-align: right;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .table-responsive.mobile-cards td:last-child {
+        border-bottom: 0;
+        justify-content: center;
+        padding-left: 0;
+        padding-top: 12px;
+    }
+
+    .table-responsive.mobile-cards td:before {
+        position: absolute;
+        top: 50%;
+        left: 12px;
+        transform: translateY(-50%);
+        width: 40%;
+        padding-right: 10px;
+        white-space: nowrap;
+        text-align: left;
+        font-weight: bold;
+        color: var(--text-muted);
+        content: attr(data-label);
+    }
+}

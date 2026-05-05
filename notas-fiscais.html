@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notas Fiscais - Sistema de Gestão</title>
+    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="ui-components.css">
+    <link rel="stylesheet" href="layout-comum.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="romaneio-comum.css">
+    <link rel="stylesheet" href="status-styles.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        /* Note: Container styles are now in layout-comum.css */
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            display: inline-block;
+            font-size: 24px;
+        }
+
+        h2, h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+            background-color: #f8f9fa;
+            border-radius: 4px 4px 0 0;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6c757d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            background-color: white;
+        }
+
+        .tab:hover {
+            background-color: #e9ecef;
+            color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-section {
+            margin-bottom: 25px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 20px;
+            background-color: #fafafa;
+        }
+
+        .form-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 16px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.25);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-start;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1a252f;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-small {
+            padding: 5px 8px;
+            font-size: 12px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 13px;
+        }
+
+        .data-table th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .data-table tr:nth-of-type(odd) {
+            background-color: #f9f9f9;
+        }
+
+        .data-table tr:nth-of-type(even) {
+            background-color: white;
+        }
+
+        .status-badge {
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-emitida {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-cancelada {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-rascunho {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .search-box {
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 15px;
+        }
+
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary-color), #1a252f);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.8rem;
+            color: white;
+        }
+
+        .stat-card p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .items-section {
+            margin-top: 20px;
+        }
+
+        .item-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 8px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .item-row:first-child {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .number-cell {
+            text-align: right !important;
+            font-family: monospace;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+            }
+            
+            .tab {
+                flex: 1;
+                min-width: 120px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+
+            .item-row {
+                grid-template-columns: 1fr;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <main-menu></main-menu>
+        
+        <h1>
+            <i class="fas fa-receipt"></i> Sistema de Notas Fiscais
+        </h1>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('emissao')">
+                <i class="fas fa-plus"></i> Emissão
+            </button>
+            <button class="tab" onclick="showTab('consulta')">
+                <i class="fas fa-search"></i> Consulta
+            </button>
+            <button class="tab" onclick="showTab('dashboard')">
+                <i class="fas fa-chart-bar"></i> Dashboard
+            </button>
+            <button class="tab" onclick="showTab('configuracao')">
+                <i class="fas fa-cog"></i> Configuração
+            </button>
+        </div>
+
+        <!-- Aba Emissão -->
+        <div id="emissao" class="tab-content active">
+            <form id="nfForm">
+                <div class="form-section">
+                    <h3><i class="fas fa-info-circle"></i> Dados da Nota Fiscal</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nfNumero">Número da NF:</label>
+                            <input type="text" id="nfNumero" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="nfSerie">Série:</label>
+                            <input type="text" id="nfSerie" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="nfDataEmissao">Data de Emissão:</label>
+                            <input type="date" id="nfDataEmissao" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="nfTipo">Tipo de Operação:</label>
+                            <select id="nfTipo" required>
+                                <option value="">Selecione...</option>
+                                <option value="saida">Saída</option>
+                                <option value="entrada">Entrada</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3><i class="fas fa-user"></i> Dados do Destinatário</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nfCliente">Cliente:</label>
+                            <select id="nfCliente" required>
+                                <option value="">Selecione um cliente...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="nfClienteCnpj">CNPJ/CPF:</label>
+                            <input type="text" id="nfClienteCnpj" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nfClienteEndereco">Endereço:</label>
+                            <input type="text" id="nfClienteEndereco" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="nfClienteCidade">Cidade:</label>
+                            <input type="text" id="nfClienteCidade" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="nfClienteUf">UF:</label>
+                            <select id="nfClienteUf" disabled>
+                                <option value="">Selecione...</option>
+                                <option value="AC">Acre</option>
+                                <option value="AL">Alagoas</option>
+                                <option value="AP">Amapá</option>
+                                <option value="AM">Amazonas</option>
+                                <option value="BA">Bahia</option>
+                                <option value="CE">Ceará</option>
+                                <option value="DF">Distrito Federal</option>
+                                <option value="ES">Espírito Santo</option>
+                                <option value="GO">Goiás</option>
+                                <option value="MA">Maranhão</option>
+                                <option value="MT">Mato Grosso</option>
+                                <option value="MS">Mato Grosso do Sul</option>
+                                <option value="MG">Minas Gerais</option>
+                                <option value="PA">Pará</option>
+                                <option value="PB">Paraíba</option>
+                                <option value="PR">Paraná</option>
+                                <option value="PE">Pernambuco</option>
+                                <option value="PI">Piauí</option>
+                                <option value="RJ">Rio de Janeiro</option>
+                                <option value="RN">Rio Grande do Norte</option>
+                                <option value="RS">Rio Grande do Sul</option>
+                                <option value="RO">Rondônia</option>
+                                <option value="RR">Roraima</option>
+                                <option value="SC">Santa Catarina</option>
+                                <option value="SP">São Paulo</option>
+                                <option value="SE">Sergipe</option>
+                                <option value="TO">Tocantins</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section items-section">
+                    <h3><i class="fas fa-list"></i> Itens da Nota Fiscal</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="itemProduto">Produto:</label>
+                            <select id="itemProduto">
+                                <option value="">Selecione um produto...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="itemQuantidade">Quantidade:</label>
+                            <input type="number" id="itemQuantidade" step="0.001" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="itemValorUnitario">Valor Unitário:</label>
+                            <input type="text" id="itemValorUnitario" placeholder="R$ 0,00">
+                        </div>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <button type="button" onclick="adicionarItem()" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Adicionar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <div class="item-row">
+                            <div>Produto</div>
+                            <div>Quantidade</div>
+                            <div>Valor Unit.</div>
+                            <div>Total</div>
+                            <div>CFOP</div>
+                            <div>Ações</div>
+                        </div>
+                        <div id="itensContainer"></div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3><i class="fas fa-calculator"></i> Totais</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nfSubTotal">Subtotal:</label>
+                            <input type="text" id="nfSubTotal" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="nfDesconto">Desconto:</label>
+                            <input type="text" id="nfDesconto" placeholder="R$ 0,00">
+                        </div>
+                        <div class="form-group">
+                            <label for="nfTotal">Total:</label>
+                            <input type="text" id="nfTotal" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" onclick="salvarRascunho()" class="btn btn-warning">
+                        <i class="fas fa-save"></i> Salvar Rascunho
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check"></i> Emitir NF-e
+                    </button>
+                    <button type="button" onclick="limparFormulario()" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Limpar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Aba Consulta -->
+        <div id="consulta" class="tab-content">
+            <div class="form-row">
+                <div class="form-group">
+                    <input type="text" id="searchNF" class="search-box" placeholder="Buscar por número, cliente ou CNPJ...">
+                </div>
+                <div class="form-group">
+                    <select id="filterStatus">
+                        <option value="">Todos os status</option>
+                        <option value="rascunho">Rascunho</option>
+                        <option value="emitida">Emitida</option>
+                        <option value="cancelada">Cancelada</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button onclick="consultarNotas()" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Série</th>
+                            <th>Data</th>
+                            <th>Cliente</th>
+                            <th class="number-cell">Valor</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="notasTable">
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: #666; font-style: italic;">Nenhuma nota fiscal encontrada</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Aba Dashboard -->
+        <div id="dashboard" class="tab-content">
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <h3 id="totalNotasEmitidas">0</h3>
+                    <p>Notas Emitidas</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="valorTotalMes">R$ 0,00</h3>
+                    <p>Faturamento do Mês</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalRascunhos">0</h3>
+                    <p>Rascunhos</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalCanceladas">0</h3>
+                    <p>Canceladas</p>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3><i class="fas fa-chart-line"></i> Relatórios</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="relPeriodoInicio">Data Início:</label>
+                        <input type="date" id="relPeriodoInicio">
+                    </div>
+                    <div class="form-group">
+                        <label for="relPeriodoFim">Data Fim:</label>
+                        <input type="date" id="relPeriodoFim">
+                    </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button onclick="gerarRelatorio()" class="btn btn-primary">
+                            <i class="fas fa-chart-bar"></i> Gerar Relatório
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba Configuração -->
+        <div id="configuracao" class="tab-content">
+            <div class="form-section">
+                <h3><i class="fas fa-cog"></i> Configurações Gerais</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cfgSerieNF">Série Padrão:</label>
+                        <input type="text" id="cfgSerieNF" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgProximoNumero">Próximo Número:</label>
+                        <input type="number" id="cfgProximoNumero" min="1" value="1">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cfgCfopPadrao">CFOP Padrão:</label>
+                        <input type="text" id="cfgCfopPadrao" value="5102">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgAmbiente">Ambiente:</label>
+                        <select id="cfgAmbiente">
+                            <option value="homologacao">Homologação</option>
+                            <option value="producao">Produção</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button onclick="salvarConfiguracoes()" class="btn btn-success">
+                        <i class="fas fa-save"></i> Salvar Configurações
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { 
+            loadFromFirebase, 
+            saveToFirebase, 
+            removeFromFirebase, 
+            updatePaths, 
+            getServerTimestamp, 
+            authService, 
+            isFirebaseOperational,
+            setTenantId,
+            subscribe,
+            getCurrentTenantId
+        } from './firebaseService.js';
+        window.firebaseService = {
+            loadFromFirebase,
+            saveToFirebase,
+            removeFromFirebase,
+            updatePaths,
+            serverTimestamp: getServerTimestamp,
+            authService,
+            isFirebaseOperational,
+            setTenantId,
+            subscribe,
+            getCurrentTenantId,
+            getTenantId: getCurrentTenantId
+        };
+        try {
+            if (window.appTenantId) {
+                window.firebaseService.setTenantId(window.appTenantId);
+            } else {
+                const raw = localStorage.getItem('company_info');
+                if (raw) {
+                    const obj = JSON.parse(raw);
+                    const tid = String(obj.companyId || obj.id || obj.tenantId || obj.companyID || '').trim();
+                    window.appTenantId = tid;
+                    if (tid) window.firebaseService.setTenantId(tid);
+                }
+            }
+        } catch (_) {}
+    </script>
+    <script src="auth.js"></script>
+    <script src="menu-component.js?v=20260326"></script>
+    <script src="cities-loader.js"></script>
+    <script src="client-service.js"></script>
+    <script>
+        // Dados das notas fiscais
+        let notasFiscais = [];
+        let editandoNota = null;
+
+        // Inicialização da página
+        document.addEventListener('DOMContentLoaded', async function() {
+            carregarNotasFiscais();
+            configurarEventos();
+            await carregarClientesNF();
+            
+            const ufClienteId = document.getElementById('nfClienteUf') ? 'nfClienteUf' : (document.getElementById('uf-emitente') ? 'uf-emitente' : null);
+            const cidadeClienteId = document.getElementById('nfClienteCidade') ? 'nfClienteCidade' : (document.getElementById('cidade-emitente') ? 'cidade-emitente' : null);
+            if (ufClienteId && cidadeClienteId) {
+                criarSelectEstados(ufClienteId, '', function(uf) {
+                    popularCidades(cidadeClienteId, uf);
+                });
+            }
+        });
+
+        function configurarEventos() {
+            // Eventos dos botões (com guardas para evitar erros quando não existirem)
+            const btnNova = document.getElementById('btn-nova-nota');
+            if (btnNova) btnNova.addEventListener('click', novaNotaFiscal);
+
+            const btnSalvar = document.getElementById('btn-salvar-nota');
+            if (btnSalvar) btnSalvar.addEventListener('click', salvarNotaFiscal);
+
+            const btnCancelar = document.getElementById('btn-cancelar-nota');
+            if (btnCancelar) btnCancelar.addEventListener('click', cancelarEdicao);
+
+            const btnAdicionarItem = document.getElementById('btn-adicionar-item');
+            if (btnAdicionarItem) btnAdicionarItem.addEventListener('click', adicionarItem);
+            
+            // Eventos de busca CEP
+            const cepEmitente = document.getElementById('cep-emitente');
+            if (cepEmitente) cepEmitente.addEventListener('blur', function() {
+                buscarCEPEmitente(this.value);
+            });
+            
+            const cepDestinatario = document.getElementById('cep-destinatario');
+            if (cepDestinatario) cepDestinatario.addEventListener('blur', function() {
+                buscarCEPDestinatario(this.value);
+            });
+            
+            // Formatação de CEP
+            if (cepEmitente) cepEmitente.addEventListener('input', function() {
+                this.value = formatarCEP(this.value);
+            });
+            
+            if (cepDestinatario) cepDestinatario.addEventListener('input', function() {
+                this.value = formatarCEP(this.value);
+            });
+        }
+
+        async function carregarClientesNF() {
+            const select = document.getElementById('nfCliente');
+            if (!select) return;
+            try {
+                let clientesList = [];
+                if (window.clientService && typeof window.clientService.getClients === 'function') {
+                    clientesList = await window.clientService.getClients(true);
+                } else if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+                    const res = await window.firebaseService.loadFromFirebase('clients');
+                    if (res && res.success && res.data) {
+                        clientesList = Array.isArray(res.data) ? res.data : Object.values(res.data || {});
+                    }
+                } else if (typeof window.getData === 'function') {
+                    clientesList = await window.getData('clients') || [];
+                }
+                if (!Array.isArray(clientesList)) clientesList = [];
+                const keepFirst = select.options.length ? select.options[0] : null;
+                select.innerHTML = '';
+                if (keepFirst) select.appendChild(keepFirst);
+                clientesList.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = String(c.id || '');
+                    opt.textContent = c.nome || c.name || c.razao || c.razaoSocial || 'Cliente';
+                    opt.dataset.cnpj = c.cnpj || c.cpf || '';
+                    opt.dataset.endereco = c.endereco || c.address || '';
+                    opt.dataset.cidade = c.cidade || c.city || '';
+                    opt.dataset.uf = c.estado || c.state || '';
+                    opt.dataset.bairro = c.bairro || '';
+                    select.appendChild(opt);
+                });
+                select.onchange = function() {
+                    const opt = select.options[select.selectedIndex];
+                    const cnpjEl = document.getElementById('nfClienteCnpj');
+                    const endEl = document.getElementById('nfClienteEndereco');
+                    const cidadeEl = document.getElementById('nfClienteCidade');
+                    const ufEl = document.getElementById('nfClienteUf');
+                    const bairroEl = document.getElementById('nfClienteBairro');
+                    if (cnpjEl) cnpjEl.value = opt?.dataset?.cnpj || '';
+                    if (endEl) endEl.value = opt?.dataset?.endereco || '';
+                    if (cidadeEl) cidadeEl.value = opt?.dataset?.cidade || '';
+                    if (ufEl) ufEl.value = opt?.dataset?.uf || '';
+                    if (bairroEl) bairroEl.value = opt?.dataset?.bairro || '';
+                };
+            } catch (e) {
+                console.warn('Falha ao carregar clientes na NF:', e?.message || e);
+            }
+        }
+
+        async function buscarCEPEmitente(cep) {
+            const dados = await buscarCEP(cep);
+            if (dados) {
+                const enderecoEl = document.getElementById('nfClienteEndereco') || document.getElementById('endereco-emitente');
+                const bairroEl = document.getElementById('nfClienteBairro') || document.getElementById('bairro-emitente');
+                if (enderecoEl) enderecoEl.value = dados.logradouro;
+                if (bairroEl) bairroEl.value = dados.bairro;
+                
+                // Selecionar UF e cidade
+                const ufSelect = document.getElementById('nfClienteUf') || document.getElementById('uf-emitente');
+                if (ufSelect) ufSelect.value = dados.uf;
+                
+                // Carregar cidades e selecionar
+                const cidadeId = document.getElementById('nfClienteCidade') ? 'nfClienteCidade' : 'cidade-emitente';
+                await popularCidades(cidadeId, dados.uf, dados.cidade);
+            }
+        }
+
+        async function buscarCEPDestinatario(cep) {
+            const dados = await buscarCEP(cep);
+            if (dados) {
+                const enderecoEl = document.getElementById('nfClienteEndereco') || document.getElementById('endereco-destinatario');
+                const bairroEl = document.getElementById('nfClienteBairro') || document.getElementById('bairro-destinatario');
+                if (enderecoEl) enderecoEl.value = dados.logradouro;
+                if (bairroEl) bairroEl.value = dados.bairro;
+                
+                const ufSelect = document.getElementById('nfClienteUf') || document.getElementById('uf-destinatario');
+                if (ufSelect) ufSelect.value = dados.uf;
+                
+                const cidadeId = document.getElementById('nfClienteCidade') ? 'nfClienteCidade' : 'cidade-destinatario';
+                await popularCidades(cidadeId, dados.uf, dados.cidade);
+            }
+        }
+
+        function carregarNotasFiscais() {
+            // Simular carregamento de dados
+            notasFiscais = [
+                {
+                    id: 1,
+                    numero: '000001',
+                    serie: '1',
+                    dataEmissao: '2024-01-15',
+                    emitente: 'Empresa ABC Ltda',
+                    destinatario: 'Cliente XYZ',
+                    valorTotal: 1500.00,
+                    status: 'Autorizada'
+                },
+                {
+                    id: 2,
+                    numero: '000002',
+                    serie: '1',
+                    dataEmissao: '2024-01-16',
+                    emitente: 'Empresa ABC Ltda',
+                    destinatario: 'Cliente DEF',
+                    valorTotal: 2300.50,
+                    status: 'Pendente'
+                }
+            ];
+            
+            atualizarTabelaNotas();
+        }
+
+        function atualizarTabelaNotas() {
+            const tbody = document.getElementById('notasTable');
+            if (!tbody) {
+                console.warn('⚠️ Tabela de notas não encontrada (#notasTable)');
+                return;
+            }
+            tbody.innerHTML = '';
+            
+            notasFiscais.forEach(nota => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${nota.numero}</td>
+                    <td>${nota.serie}</td>
+                    <td>${formatarData(nota.dataEmissao)}</td>
+                    <td>${nota.emitente}</td>
+                    <td>${nota.destinatario}</td>
+                    <td>R$ ${nota.valorTotal.toFixed(2)}</td>
+                    <td><span class="status ${nota.status.toLowerCase()}">${nota.status}</span></td>
+                    <td>
+                        <button onclick="editarNota(${nota.id})" class="btn-editar">Editar</button>
+                        <button onclick="excluirNota(${nota.id})" class="btn-excluir">Excluir</button>
+                        <button onclick="visualizarNota(${nota.id})" class="btn-visualizar">Ver</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function novaNotaFiscal() {
+            editandoNota = null;
+            limparFormulario();
+            document.getElementById('form-nota').style.display = 'block';
+            document.getElementById('lista-notas').style.display = 'none';
+        }
+
+        function editarNota(id) {
+            const nota = notasFiscais.find(n => n.id === id);
+            if (nota) {
+                editandoNota = nota;
+                preencherFormulario(nota);
+                document.getElementById('form-nota').style.display = 'block';
+                document.getElementById('lista-notas').style.display = 'none';
+            }
+        }
+
+        function excluirNota(id) {
+            if (confirm('Tem certeza que deseja excluir esta nota fiscal?')) {
+                notasFiscais = notasFiscais.filter(n => n.id !== id);
+                atualizarTabelaNotas();
+            }
+        }
+
+        function visualizarNota(id) {
+            const nota = notasFiscais.find(n => n.id === id);
+            if (nota) {
+                alert(`Nota Fiscal ${nota.numero}\nSérie: ${nota.serie}\nValor: R$ ${nota.valorTotal.toFixed(2)}`);
+            }
+        }
+
+        // ✅ Navegação entre abas
+        function showTab(tabName) {
+            // Ocultar todas as tabs
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => tab.classList.remove('active'));
+
+            // Remover classe active de todas as tabs
+            const tabs = document.querySelectorAll('.tabs .tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Mostrar tab selecionada
+            const content = document.getElementById(tabName);
+            if (content) content.classList.add('active');
+
+            // Marcar o botão da tab como ativo
+            const tabButton = document.querySelector(`.tabs .tab[onclick*="showTab('${tabName}')"]`);
+            if (tabButton) tabButton.classList.add('active');
+        }
+
+        function salvarNotaFiscal() {
+            const formData = coletarDadosFormulario();
+            
+            if (!validarFormulario(formData)) {
+                return;
+            }
+            
+            if (editandoNota) {
+                // Atualizar nota existente
+                const index = notasFiscais.findIndex(n => n.id === editandoNota.id);
+                notasFiscais[index] = { ...editandoNota, ...formData };
+            } else {
+                // Criar nova nota
+                const novoId = Math.max(...notasFiscais.map(n => n.id), 0) + 1;
+                notasFiscais.push({ id: novoId, ...formData });
+            }
+            
+            atualizarTabelaNotas();
+            cancelarEdicao();
+            alert('Nota fiscal salva com sucesso!');
+        }
+
+        function cancelarEdicao() {
+            editandoNota = null;
+            document.getElementById('form-nota').style.display = 'none';
+            document.getElementById('lista-notas').style.display = 'block';
+        }
+
+        function coletarDadosFormulario() {
+            return {
+                numero: document.getElementById('numero-nota').value,
+                serie: document.getElementById('serie-nota').value,
+                dataEmissao: document.getElementById('data-emissao').value,
+                emitente: document.getElementById('razao-emitente').value,
+                destinatario: document.getElementById('razao-destinatario').value,
+                valorTotal: parseFloat(document.getElementById('valor-total').value) || 0,
+                status: 'Pendente'
+            };
+        }
+
+        function validarFormulario(data) {
+            if (!data.numero || !data.serie || !data.dataEmissao) {
+                alert('Por favor, preencha todos os campos obrigatórios.');
+                return false;
+            }
+            return true;
+        }
+
+        function preencherFormulario(nota) {
+            document.getElementById('numero-nota').value = nota.numero;
+            document.getElementById('serie-nota').value = nota.serie;
+            document.getElementById('data-emissao').value = nota.dataEmissao;
+            document.getElementById('razao-emitente').value = nota.emitente;
+            document.getElementById('razao-destinatario').value = nota.destinatario;
+            document.getElementById('valor-total').value = nota.valorTotal;
+        }
+
+        function limparFormulario() {
+            document.getElementById('form-nota').reset();
+        }
+
+        function adicionarItem() {
+            const tbody = document.querySelector('#tabela-itens tbody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="text" placeholder="Descrição do produto"></td>
+                <td><input type="number" placeholder="Qtd" min="1"></td>
+                <td><input type="number" placeholder="Valor unitário" step="0.01"></td>
+                <td><input type="number" placeholder="Total" readonly></td>
+                <td><button onclick="removerItem(this)" class="btn-excluir">Remover</button></td>
+            `;
+            tbody.appendChild(tr);
+            
+            // Configurar cálculo automático
+            const qtdInput = tr.querySelector('input[placeholder="Qtd"]');
+            const valorInput = tr.querySelector('input[placeholder="Valor unitário"]');
+            const totalInput = tr.querySelector('input[placeholder="Total"]');
+            
+            function calcularTotal() {
+                const qtd = parseFloat(qtdInput.value) || 0;
+                const valor = parseFloat(valorInput.value) || 0;
+                totalInput.value = (qtd * valor).toFixed(2);
+                calcularTotalGeral();
+            }
+            
+            qtdInput.addEventListener('input', calcularTotal);
+            valorInput.addEventListener('input', calcularTotal);
+        }
+
+        function removerItem(button) {
+            button.closest('tr').remove();
+            calcularTotalGeral();
+        }
+
+        function calcularTotalGeral() {
+            const totais = document.querySelectorAll('#tabela-itens input[placeholder="Total"]');
+            let total = 0;
+            
+            totais.forEach(input => {
+                total += parseFloat(input.value) || 0;
+            });
+            
+            document.getElementById('valor-total').value = total.toFixed(2);
+        }
+
+        function formatarData(data) {
+            return new Date(data).toLocaleDateString('pt-BR');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,2206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Assinaturas - Sistema</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="admin-modern.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .page-header h1 {
+            color: #2c3e50;
+        }
+
+        .filter-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filter-btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            background-color: #f5f5f5;
+            color: #7f8c8d;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn.active {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .filter-btn:hover:not(.active) {
+            background-color: #eee;
+        }
+
+        .subscriptions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        .subscriptions-table th, 
+        .subscriptions-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .subscriptions-table th {
+            font-weight: bold;
+            color: #7f8c8d;
+            font-size: 14px;
+            background-color: #f9f9f9;
+        }
+
+        .subscriptions-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .subscriptions-table tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .status {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .status-active {
+            background-color: #e3fcef;
+            color: #27ae60;
+        }
+
+        .status-pending {
+            background-color: #fef5e7;
+            color: #f39c12;
+        }
+
+        .status-expired {
+            background-color: #f8f9fa;
+            color: #95a5a6;
+        }
+
+        .status-rejected {
+            background-color: #fde9e9;
+            color: #e74c3c;
+        }
+
+        .origin-tag {
+            padding: 5px 10px;
+            border-radius: 14px;
+            font-size: 11px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .origin-new {
+            background-color: #e3fcef;
+            color: #1e8449;
+        }
+
+        .origin-legacy {
+            background-color: #fff4e5;
+            color: #b35c00;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .view-btn {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .view-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .approve-btn {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .approve-btn:hover {
+            background-color: #219955;
+        }
+
+        .reject-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .reject-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .block-btn {
+            background-color: #4b5563;
+            color: white;
+        }
+
+        .block-btn:hover {
+            background-color: #374151;
+        }
+
+        .unblock-btn {
+            background-color: #16a34a;
+            color: white;
+        }
+
+        .unblock-btn:hover {
+            background-color: #15803d;
+        }
+
+        .pending-btn {
+            background-color: #d97706;
+            color: white;
+        }
+
+        .pending-btn:hover {
+            background-color: #b45309;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            overflow: auto;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
+            color: #95a5a6;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-btn:hover {
+            color: #2c3e50;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-header h2 {
+            color: #2c3e50;
+            font-size: 22px;
+        }
+
+        .payment-details, .user-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .detail-group {
+            margin-bottom: 15px;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .detail-value {
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .receipt-section {
+            margin-bottom: 25px;
+        }
+
+        .receipt-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .receipt-image {
+            max-width: 100%;
+            border-radius: 4px;
+            border: 1px solid #eee;
+            margin-bottom: 15px;
+        }
+
+        .receipt-link {
+            display: inline-block;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: #2563eb;
+            text-decoration: underline;
+            word-break: break-all;
+        }
+
+        .receipt-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .hash-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            border: 1px solid #dbeafe;
+            background: #eff6ff;
+            color: #1e3a8a;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+        }
+
+        .hash-indicator strong {
+            font-family: inherit;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .filetype-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 58px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #334155;
+            text-transform: uppercase;
+        }
+
+        .filetype-badge.badge-pdf {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #b91c1c;
+        }
+
+        .filetype-badge.badge-image {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1d4ed8;
+        }
+
+        .download-proof-btn {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #0f172a;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .download-proof-btn:hover {
+            background: #f8fafc;
+        }
+
+        .notes-section {
+            margin-bottom: 25px;
+        }
+
+        .notes-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+
+        .modal-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .approve-modal-btn {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .approve-modal-btn:hover {
+            background-color: #219955;
+        }
+
+        .reject-modal-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .reject-modal-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .secondary-modal-btn {
+            background-color: #4b5563;
+            color: white;
+        }
+
+        .secondary-modal-btn:hover {
+            background-color: #374151;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+
+        .data-origin-panel {
+            margin-bottom: 14px;
+            border: 1px solid #dbeafe;
+            background: #eff6ff;
+            color: #1e3a8a;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 12px;
+            line-height: 1.45;
+            display: none;
+        }
+
+        .pix-panel-header {
+            margin: 2px 0 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .pix-panel-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .pix-panel-actions select {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 13px;
+        }
+
+        .status-auto {
+            background-color: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            color: #ddd;
+            margin-bottom: 15px;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .filter-section {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .filter-btn { width: 100%; justify-content: center; }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .pix-panel-actions {
+                width: 100%;
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .pix-panel-actions select,
+            .pix-panel-actions button {
+                width: 100%;
+            }
+
+            .payment-details, .user-details {
+                grid-template-columns: 1fr;
+            }
+
+            .subscriptions-table.responsive-stack thead { display: none; }
+            .subscriptions-table.responsive-stack tbody { display: block; width: 100%; }
+            .subscriptions-table.responsive-stack tbody tr {
+                display: block;
+                border: 1px solid #e5e7eb;
+                border-radius: 10px;
+                margin: 0 0 10px;
+                padding: 6px 8px;
+                background: #fff;
+            }
+            .subscriptions-table.responsive-stack tbody td {
+                display: grid;
+                grid-template-columns: minmax(92px, 38%) 1fr;
+                gap: 8px;
+                border: 0;
+                border-bottom: 1px dashed #e2e8f0;
+                padding: 7px 0;
+                white-space: normal;
+            }
+            .subscriptions-table.responsive-stack tbody td::before {
+                content: attr(data-label);
+                font-size: 11px;
+                font-weight: 700;
+                color: #475569;
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
+            }
+            .subscriptions-table.responsive-stack tbody td:last-child { border-bottom: 0; }
+            .subscriptions-table.responsive-stack tbody td[colspan] {
+                display: block;
+                border-bottom: 0;
+                text-align: center;
+            }
+            .subscriptions-table.responsive-stack tbody td[colspan]::before { content: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <main-menu></main-menu>
+
+        <div class="page-header">
+            <h1>Gerenciar Assinaturas</h1>
+            <div style="display: flex; gap: 10px;"></div>
+        </div>
+        <div id="subscriptionsDataOriginPanel" class="data-origin-panel"></div>
+
+        <div class="filter-section">
+            <button class="filter-btn active" data-filter="all">Todas</button>
+            <button class="filter-btn" data-filter="trial">Trial Ativo</button>
+            <button class="filter-btn" data-filter="pending">Pendentes</button>
+            <button class="filter-btn" data-filter="active">Ativas</button>
+            <button class="filter-btn" data-filter="expired">Expiradas</button>
+            <button class="filter-btn" data-filter="blocked">Bloqueadas</button>
+        </div>
+
+        <table class="subscriptions-table" id="subscriptionsTable">
+            <thead>
+                <tr>
+                    <th>Usuário</th>
+                    <th>Plano</th>
+                    <th>Data</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Origem do Dado</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="subscriptionsTableBody">
+                <!-- Os dados serão carregados dinamicamente -->
+                <tr>
+                    <td colspan="7" class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Carregando assinaturas...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="pix-panel-header">
+            <h2 style="margin: 4px 0; color:#2c3e50;">Pagamentos PIX Automáticos</h2>
+            <div class="pix-panel-actions">
+                <select id="autoPixStatusFilter">
+                    <option value="all">Todos os status</option>
+                    <option value="pending">Pendentes</option>
+                    <option value="approved">Aprovados</option>
+                    <option value="rejected">Rejeitados</option>
+                </select>
+                <button class="action-btn view-btn" id="reloadAutoPixBtn"><i class="fas fa-sync-alt"></i> Recarregar</button>
+            </div>
+        </div>
+        <table class="subscriptions-table">
+            <thead>
+                <tr>
+                    <th>Usuário</th>
+                    <th>Plano</th>
+                    <th>Valor</th>
+                    <th>Status PIX</th>
+                    <th>Criado em</th>
+                    <th>Provider ID</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="autoPixTableBody">
+                <tr>
+                    <td colspan="7" class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Carregando pagamentos PIX automáticos...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2 style="margin: 8px 0 12px; color:#2c3e50;">Solicitações de Prorrogação</h2>
+        <table class="subscriptions-table">
+            <thead>
+                <tr>
+                    <th>Usuário</th>
+                    <th>Dias solicitados</th>
+                    <th>Justificativa</th>
+                    <th>Data</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="extensionRequestsTableBody">
+                <tr>
+                    <td colspan="5" class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Carregando solicitações...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Modal de Detalhes da Assinatura -->
+        <div id="subscriptionModal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+                
+                <div class="modal-header">
+                    <h2>Detalhes da Assinatura</h2>
+                </div>
+                
+                <div class="user-details">
+                    <div>
+                        <div class="detail-group">
+                            <div class="detail-label">Usuário</div>
+                            <div class="detail-value" id="modal-username">-</div>
+                        </div>
+                        
+                        <div class="detail-group">
+                            <div class="detail-label">Email</div>
+                            <div class="detail-value" id="modal-email">-</div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="detail-group">
+                            <div class="detail-label">Data de Registro</div>
+                            <div class="detail-value" id="modal-registration-date">-</div>
+                        </div>
+                        
+                        <div class="detail-group">
+                            <div class="detail-label">Último Login</div>
+                            <div class="detail-value" id="modal-last-login">-</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="payment-details">
+                    <div>
+                        <div class="detail-group">
+                            <div class="detail-label">Plano</div>
+                            <div class="detail-value" id="modal-plan">-</div>
+                        </div>
+                        
+                        <div class="detail-group">
+                            <div class="detail-label">Valor</div>
+                            <div class="detail-value" id="modal-amount">-</div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="detail-group">
+                            <div class="detail-label">Data de Pagamento</div>
+                            <div class="detail-value" id="modal-payment-date">-</div>
+                        </div>
+                        
+                        <div class="detail-group">
+                            <div class="detail-label">Status</div>
+                            <div class="detail-value" id="modal-status">-</div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="detail-group">
+                            <div class="detail-label">Válido até</div>
+                            <div class="detail-value" id="modal-valid-until">-</div>
+                        </div>
+                        
+                        <div class="detail-group">
+                            <div class="detail-label">Código</div>
+                            <div class="detail-value" id="modal-code">-</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="receipt-section" id="receipt-section">
+                    <div class="receipt-title">
+                        <i class="fas fa-receipt"></i> Comprovante de Pagamento
+                    </div>
+                    <div class="receipt-toolbar">
+                        <span class="filetype-badge" id="modal-filetype-badge">ARQ</span>
+                        <span class="hash-indicator" id="modal-proof-hash-indicator" style="display:none;"><strong>HASH</strong> <span id="modal-proof-hash-short">-</span></span>
+                        <button type="button" class="download-proof-btn" id="modal-download-proof-btn" onclick="downloadCurrentProof()" style="display:none;">
+                            <i class="fas fa-download"></i> Download direto
+                        </button>
+                    </div>
+                    <img src="" alt="Comprovante de Pagamento" class="receipt-image" id="modal-receipt">
+                    <a href="#" target="_blank" rel="noopener noreferrer" class="receipt-link" id="modal-receipt-link" style="display:none;">Abrir comprovante</a>
+                    <div class="detail-group">
+                        <div class="detail-label">Método de Pagamento</div>
+                        <div class="detail-value" id="modal-payment-method">PIX</div>
+                    </div>
+                </div>
+                
+                <div class="notes-section" id="notes-section">
+                    <div class="detail-label">Notas de Aprovação</div>
+                    <textarea class="notes-textarea" id="modal-notes" placeholder="Adicione notas sobre esta assinatura (opcional)"></textarea>
+                </div>
+                
+                <div class="modal-actions" id="modal-actions">
+                    <button class="modal-btn approve-modal-btn" id="approve-btn" onclick="approvePayment(currentUser)">
+                        <i class="fas fa-check"></i> Aprovar Assinatura
+                    </button>
+                    <button class="modal-btn reject-modal-btn" id="reject-btn" onclick="rejectPayment(currentUser)">
+                        <i class="fas fa-times"></i> Rejeitar
+                    </button>
+                </div>
+                <div class="modal-actions" id="modal-status-actions" style="margin-top: 10px;">
+                    <button class="modal-btn secondary-modal-btn" onclick="setStatusFromModal('blocked')">
+                        <i class="fas fa-user-lock"></i> Bloquear
+                    </button>
+                    <button class="modal-btn approve-modal-btn" onclick="setStatusFromModal('active')">
+                        <i class="fas fa-user-check"></i> Ativar
+                    </button>
+                    <button class="modal-btn reject-modal-btn" onclick="setStatusFromModal('pending')">
+                        <i class="fas fa-hourglass-half"></i> Marcar Pendente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script type="module">
+        import * as firebaseSvc from './firebaseService.js';
+        window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
+    </script>
+    <script src="menu-component.js?v=20260326"></script>
+    <script src="menu.js"></script>
+    <script>
+        // Variável para armazenar os dados da assinatura atual
+        let currentSubscriptionId = null;
+        let subscriptionsData = [];
+        let autoPixPayments = [];
+        let currentUser = null; // Armazenar o usuário atual sendo visualizado no modal
+        let currentProofUrl = '';
+        let currentProofFileName = '';
+        let responsiveTableHydrationScheduled = false;
+
+        function hydrateResponsiveTable(tableEl) {
+            if (!tableEl) return;
+            const headers = Array.from(tableEl.querySelectorAll('thead th')).map((th) => String(th.textContent || '').trim());
+            if (!headers.length) return;
+            tableEl.querySelectorAll('tbody tr').forEach((tr) => {
+                tr.querySelectorAll('td').forEach((td, index) => {
+                    if (td.hasAttribute('colspan')) {
+                        td.removeAttribute('data-label');
+                        return;
+                    }
+                    const label = headers[index] || '';
+                    if (label) td.setAttribute('data-label', label);
+                });
+            });
+            tableEl.classList.add('responsive-stack');
+        }
+
+        function scheduleResponsiveTableHydration() {
+            if (responsiveTableHydrationScheduled) return;
+            responsiveTableHydrationScheduled = true;
+            requestAnimationFrame(() => {
+                responsiveTableHydrationScheduled = false;
+                document.querySelectorAll('.subscriptions-table').forEach((tableEl) => hydrateResponsiveTable(tableEl));
+            });
+        }
+
+        function getProofTypeInfo(pendingPayment) {
+            const mime = String((pendingPayment && pendingPayment.proofMimeType) || '').toLowerCase();
+            const fileName = String((pendingPayment && pendingPayment.proofFileName) || '').toLowerCase();
+            const proofUrl = String((pendingPayment && pendingPayment.proofUrl) || '').toLowerCase();
+            const probe = `${mime} ${fileName} ${proofUrl}`;
+            if (probe.includes('pdf')) {
+                return { label: 'PDF', badgeClass: 'badge-pdf' };
+            }
+            if (probe.includes('png')) {
+                return { label: 'PNG', badgeClass: 'badge-image' };
+            }
+            if (probe.includes('jpg') || probe.includes('jpeg')) {
+                return { label: 'JPG', badgeClass: 'badge-image' };
+            }
+            if (probe.includes('webp')) {
+                return { label: 'WEBP', badgeClass: 'badge-image' };
+            }
+            if (probe.includes('gif')) {
+                return { label: 'GIF', badgeClass: 'badge-image' };
+            }
+            return { label: 'ARQ', badgeClass: '' };
+        }
+
+        function downloadCurrentProof() {
+            if (!currentProofUrl) {
+                alert('Comprovante indisponível para download.');
+                return;
+            }
+            const anchor = document.createElement('a');
+            anchor.href = currentProofUrl;
+            anchor.target = '_blank';
+            anchor.rel = 'noopener noreferrer';
+            anchor.download = currentProofFileName || 'comprovante';
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+        }
+
+        function getShortProofHash(pendingPayment) {
+            const raw = String(
+                (pendingPayment && pendingPayment.proofHash) ||
+                (pendingPayment && pendingPayment.proofFingerprint) ||
+                ''
+            ).replace(/[^a-fA-F0-9]/g, '');
+            if (!raw) return '';
+            if (raw.length <= 12) return raw.toUpperCase();
+            return `${raw.slice(0, 8).toUpperCase()}…${raw.slice(-4).toUpperCase()}`;
+        }
+
+        function getAnyUid(user) {
+            return user && (user.uid || user.id || user.userId) ? String(user.uid || user.id || user.userId) : '';
+        }
+
+        function parseCurrentUserSafe() {
+            try {
+                const raw = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                return raw && typeof raw === 'object' ? raw : null;
+            } catch (_) {
+                return null;
+            }
+        }
+
+        async function hasSuperAdminAccess() {
+            if (window.isSuperAdminSession && typeof window.isSuperAdminSession === 'function') {
+                return !!(await window.isSuperAdminSession());
+            }
+            const currentUser = parseCurrentUserSafe();
+            return window.isSuperAdminUid ? window.isSuperAdminUid(getAnyUid(currentUser)) : false;
+        }
+
+        async function hasSubscriptionsAdminAccess() {
+            if (await hasSuperAdminAccess()) return true;
+            if (window.hasAdminPageAccess && typeof window.hasAdminPageAccess === 'function') {
+                return !!(await window.hasAdminPageAccess('subscriptions'));
+            }
+            return false;
+        }
+
+        function getSubscriptionStatusKey(user) {
+            if (window.resolveSubscriptionStatus && typeof window.resolveSubscriptionStatus === 'function') {
+                return window.resolveSubscriptionStatus(user);
+            }
+            return 'expired';
+        }
+
+        function getStatusLabel(status) {
+            if (status === 'blocked') return 'Bloqueado';
+            if (status === 'pending') return 'Pendente';
+            if (status === 'trial_active') return 'Trial Ativo';
+            if (status === 'active') return 'Ativa';
+            return 'Expirado';
+        }
+
+        function findUserIndexByIdentity(users, user) {
+            const uid = getAnyUid(user);
+            if (uid) {
+                const byUid = users.findIndex((u) => getAnyUid(u) === uid);
+                if (byUid >= 0) return byUid;
+            }
+            return users.findIndex((u) => u.email === user.email);
+        }
+
+        function patchLocalUserStatus(targetUser, status, reason) {
+            const users = parseUsersCacheSafe();
+            const index = findUserIndexByIdentity(users, targetUser);
+            if (index < 0) throw new Error('Usuário não encontrado');
+            const actor = parseCurrentUserSafe() || {};
+            const updated = { ...(users[index] || {}) };
+            updated.subscriptionStatus = status;
+            updated.statusReason = reason || '';
+            updated.updatedAt = new Date().toISOString();
+            updated.updatedBy = getAnyUid(actor) || actor.email || 'admin';
+            if (status === 'blocked') updated.accountStatus = 'blocked';
+            if (status === 'active' || status === 'trial_active') updated.accountStatus = 'active';
+            if (status === 'pending') {
+                const pending = updated.pendingPayment || {};
+                updated.pendingPayment = {
+                    ...pending,
+                    status: 'pending',
+                    amount: typeof pending.amount === 'number' ? pending.amount : 0,
+                    method: pending.method || 'PIX',
+                    date: pending.date || new Date().toISOString(),
+                    reference: pending.reference || `manual-${Date.now()}`
+                };
+            }
+            users[index] = updated;
+            persistUsersCache(users);
+            return updated;
+        }
+
+        function sanitizeUserForCache(user) {
+            const out = { ...(user || {}) };
+            if (out.pendingPayment) {
+                out.pendingPayment = {
+                    status: out.pendingPayment.status || '',
+                    plan: out.pendingPayment.plan || '',
+                    requestId: out.pendingPayment.requestId || '',
+                    reference: out.pendingPayment.reference || ''
+                };
+            }
+            if (Array.isArray(out.payments)) {
+                out.payments = out.payments.map((p) => ({
+                    status: p && p.status ? p.status : '',
+                    date: p && p.date ? p.date : '',
+                    reference: p && p.reference ? p.reference : ''
+                }));
+            }
+            return out;
+        }
+
+        function persistUsersCache(users) {
+            const safeList = (Array.isArray(users) ? users : []).map(sanitizeUserForCache);
+            localStorage.setItem('users', JSON.stringify(safeList));
+        }
+
+        function parseUsersCacheSafe() {
+            try {
+                const raw = JSON.parse(localStorage.getItem('users') || '[]');
+                if (Array.isArray(raw)) return raw;
+                if (raw && typeof raw === 'object') return Object.values(raw);
+                return [];
+            } catch (_) {
+                return [];
+            }
+        }
+
+        function scrubUsersCacheIfNeeded() {
+            const list = parseUsersCacheSafe();
+            persistUsersCache(list);
+        }
+
+        function notifyDashboardSync(meta) {
+            try {
+                const payload = {
+                    type: 'subscription-status-updated',
+                    at: new Date().toISOString(),
+                    ...(meta || {})
+                };
+                localStorage.setItem('sisweb:subscriptions:lastUpdate', JSON.stringify(payload));
+            } catch (_) {}
+        }
+
+        async function setUserAccessStatusFlow(targetUser, status, source) {
+            if (!(await hasSubscriptionsAdminAccess())) {
+                alert('Acesso restrito para gerenciamento de assinaturas.');
+                window.location.href = 'index.html';
+                return;
+            }
+            const label = getStatusLabel(status);
+            const who = targetUser.username || targetUser.email || 'usuário';
+            if (!confirm(`Confirma alterar o status de ${who} para "${label}"?`)) return;
+            const reasonPrompt = prompt(`Motivo da alteração para "${label}" (opcional):`, '') || '';
+            let cloudApplied = false;
+            try {
+                const targetUid = getAnyUid(targetUser);
+                if (targetUid && window.firebaseService && typeof window.firebaseService.setUserAccessStatus === 'function') {
+                    const result = await window.firebaseService.setUserAccessStatus(targetUid, status, reasonPrompt);
+                    cloudApplied = !!(result && result.success);
+                    if (!cloudApplied && result && result.error) {
+                        console.warn('Falha ao atualizar status no Firebase:', result.error);
+                    }
+                }
+            } catch (error) {
+                console.warn('Erro ao chamar setUserAccessStatus:', error);
+            }
+            const updated = patchLocalUserStatus(targetUser, status, reasonPrompt);
+            currentUser = updated;
+            loadSubscriptions(currentFilter);
+            notifyDashboardSync({
+                status,
+                uid: getAnyUid(updated),
+                email: updated.email || ''
+            });
+            if (source === 'modal') openUserDetails(updated);
+            alert(cloudApplied ? `Status atualizado para "${label}" com sucesso.` : `Status atualizado localmente para "${label}".`);
+        }
+
+        async function setStatusFromModal(status) {
+            if (!currentUser) {
+                alert('Nenhum usuário selecionado.');
+                return;
+            }
+            await setUserAccessStatusFlow(currentUser, status, 'modal');
+        }
+
+        function normalizeUsersCollection(usersRaw) {
+            if (Array.isArray(usersRaw)) return usersRaw.filter(Boolean);
+            if (usersRaw && typeof usersRaw === 'object') return Object.values(usersRaw).filter(Boolean);
+            return [];
+        }
+
+        function unwrapFirebaseCollectionPayload(payload) {
+            if (!payload) return [];
+            if (Array.isArray(payload)) return payload;
+            if (payload && typeof payload === 'object' && Object.prototype.hasOwnProperty.call(payload, 'success')) {
+                if (payload.success === true) return payload.data || [];
+                return [];
+            }
+            return payload;
+        }
+
+        function buildUsersFromSubscriptionRequests(requestsRaw, usersExisting) {
+            const reqMap = requestsRaw && typeof requestsRaw === 'object' ? requestsRaw : {};
+            const existing = {};
+            (Array.isArray(usersExisting) ? usersExisting : []).forEach((u) => {
+                const id = getAnyUid(u);
+                if (id) existing[id] = u;
+            });
+            const synthesized = [];
+            Object.entries(reqMap).forEach(([uid, requestsById]) => {
+                if (!requestsById || typeof requestsById !== 'object') return;
+                const requests = Object.values(requestsById).filter((r) => r && typeof r === 'object');
+                if (!requests.length) return;
+                requests.sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
+                const latest = requests[0];
+                if (!latest) return;
+                const profile = existing[uid] || {};
+                const pending = latest.status === 'pending' ? latest : null;
+                synthesized.push({
+                    uid,
+                    email: profile.email || latest.email || '',
+                    username: profile.username || profile.displayName || latest.username || (profile.email || latest.email || uid),
+                    companyId: profile.companyId || latest.companyId || '',
+                    subscriptionStatus: pending ? 'pending' : (profile.subscriptionStatus || 'expired'),
+                    accountStatus: pending ? 'pending' : (profile.accountStatus || 'active'),
+                    statusReason: pending ? 'Aguardando validação administrativa do comprovante.' : (profile.statusReason || ''),
+                    pendingPayment: pending ? {
+                        status: 'pending',
+                        plan: latest.plan || 'monthly',
+                        amount: Number(latest.amount || 0),
+                        method: String(latest.method || 'pix').toUpperCase(),
+                        date: latest.date || latest.createdAt || new Date().toISOString(),
+                        reference: latest.reference || latest.requestId || '',
+                        requestId: latest.requestId || '',
+                        proofUrl: latest.proofUrl || '',
+                        proofStoragePath: latest.proofStoragePath || '',
+                        proofFileName: latest.proofFileName || '',
+                        proofMimeType: latest.proofMimeType || '',
+                        proofHash: latest.proofHash || '',
+                        proofFingerprint: latest.proofFingerprint || ''
+                    } : (profile.pendingPayment || null),
+                    updatedAt: latest.createdAt || latest.date || profile.updatedAt || new Date().toISOString()
+                });
+            });
+            return synthesized;
+        }
+
+        function mergeUsersByIdentity(primaryUsers, extraUsers) {
+            const map = new Map();
+            const setItem = (user, preferIncoming) => {
+                const entry = user && typeof user === 'object' ? user : null;
+                if (!entry) return;
+                const uid = getAnyUid(entry);
+                const email = String(entry.email || '').trim().toLowerCase();
+                const key = uid ? `uid:${uid}` : (email ? `email:${email}` : '');
+                if (!key) return;
+                if (!map.has(key)) {
+                    map.set(key, entry);
+                    return;
+                }
+                if (preferIncoming) {
+                    const current = map.get(key) || {};
+                    map.set(key, {
+                        ...current,
+                        ...entry,
+                        pendingPayment: entry.pendingPayment || current.pendingPayment || null
+                    });
+                }
+            };
+            (Array.isArray(primaryUsers) ? primaryUsers : []).forEach((u) => setItem(u, false));
+            (Array.isArray(extraUsers) ? extraUsers : []).forEach((u) => setItem(u, true));
+            return Array.from(map.values());
+        }
+
+        function renderSubscriptionsDataOrigin(meta) {
+            const panel = document.getElementById('subscriptionsDataOriginPanel');
+            if (!panel) return;
+            if (!meta || typeof meta !== 'object') {
+                panel.style.display = 'none';
+                panel.textContent = '';
+                return;
+            }
+            const company = meta.companyIdEffective || 'sem companyId';
+            const scope = meta.isSuperAdmin ? 'Super Admin (root + tenant)' : 'Usuário Empresa (escopo filtrado)';
+            const rootCount = Number(meta.rootCount || 0);
+            const tenantCount = Number(meta.tenantCount || 0);
+            const mergedCount = Number(meta.mergedCount || 0);
+            panel.style.display = 'block';
+            panel.textContent = `Origem dos dados (${meta.path || 'users'}): ${scope} | companyId efetivo: ${company} | Root: ${rootCount} | Tenant: ${tenantCount} | Final: ${mergedCount}`;
+        }
+
+        function parseDateSafe(value) {
+            if (!value) return null;
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return null;
+            return d;
+        }
+
+        function formatDateSafe(value) {
+            const d = parseDateSafe(value);
+            return d ? d.toLocaleDateString('pt-BR') : 'N/A';
+        }
+
+        function formatCurrencySafe(value) {
+            const n = Number(value || 0);
+            if (!Number.isFinite(n)) return 'N/A';
+            return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function normalizeAutoPixStatus(rawStatus) {
+            const key = String(rawStatus || '').toLowerCase().trim();
+            if (key === 'approved') return 'approved';
+            if (['rejected', 'cancelled', 'refunded', 'charged_back'].includes(key)) return 'rejected';
+            return 'pending';
+        }
+
+        function autoPixStatusLabel(status) {
+            if (status === 'approved') return 'Aprovado';
+            if (status === 'rejected') return 'Rejeitado';
+            return 'Pendente';
+        }
+
+        function autoPixStatusClass(status) {
+            if (status === 'approved') return 'status-active';
+            if (status === 'rejected') return 'status-rejected';
+            return 'status-pending';
+        }
+
+        function planLabelByType(type) {
+            const key = String(type || '').toLowerCase();
+            if (key === 'monthly') return 'Mensal';
+            if (key === 'quarterly' || key === 'annual') return 'Trimestral';
+            if (key === 'premium') return 'Premium';
+            return 'N/A';
+        }
+
+        function defaultAmountByType(type) {
+            const key = String(type || '').toLowerCase();
+            if (key === 'monthly') return 19.9;
+            if (key === 'quarterly' || key === 'annual') return 59.9;
+            if (key === 'premium') return 228;
+            return null;
+        }
+
+        function deriveLegacySubscription(user) {
+            const source = user && typeof user === 'object' ? user : {};
+            const sub = source.subscription && typeof source.subscription === 'object' ? source.subscription : {};
+            const type = sub.type || source.subscriptionType || source.planType || '';
+            let start = sub.startDate || source.subscriptionStartDate || source.startDate || source.createdAt || null;
+            let end = sub.endDate || source.subscriptionEndDate || source.endDate || null;
+            if (!start && source.trialStart) start = source.trialStart;
+            if (!end && start && type) {
+                const d = parseDateSafe(start);
+                if (d) {
+                    const key = String(type).toLowerCase();
+                    if (key === 'premium') d.setFullYear(d.getFullYear() + 1);
+                    else if (key === 'quarterly' || key === 'annual') d.setMonth(d.getMonth() + 3);
+                    else d.setMonth(d.getMonth() + 1);
+                    end = d.toISOString();
+                }
+            }
+            const amount = sub.amount != null ? Number(sub.amount) : defaultAmountByType(type);
+            const hasSubscription = !!(type || start || end || source.hasActiveSubscription === true);
+            return {
+                hasSubscription,
+                type: type || 'monthly',
+                startDate: start,
+                endDate: end,
+                amount
+            };
+        }
+
+        function classifySubscriptionDataOrigin(user, legacy) {
+            const source = user && typeof user === 'object' ? user : {};
+            const sub = source.subscription && typeof source.subscription === 'object' ? source.subscription : null;
+            const hasModernSubscription = !!(sub && sub.type && sub.startDate && sub.endDate);
+            if (hasModernSubscription) return { key: 'new', label: 'Novo' };
+            const hasLegacyKeys = !!(
+                source.subscriptionType
+                || source.subscriptionStartDate
+                || source.subscriptionEndDate
+                || source.planType
+                || source.hasActiveSubscription === true
+            );
+            if (hasLegacyKeys || (legacy && legacy.hasSubscription)) return { key: 'legacy', label: 'Legado' };
+            if (source.pendingPayment && source.pendingPayment.status === 'pending') return { key: 'new', label: 'Novo' };
+            if (source.trialStart) return { key: 'new', label: 'Novo' };
+            return { key: 'new', label: 'Novo' };
+        }
+
+        function getUserSubscriptionPresentation(user) {
+            const statusKey = getSubscriptionStatusKey(user);
+            const pending = user && user.pendingPayment && user.pendingPayment.status === 'pending' ? user.pendingPayment : null;
+            const legacy = deriveLegacySubscription(user);
+            const origin = classifySubscriptionDataOrigin(user, legacy);
+            if (pending) {
+                const pendingLabel = planLabelByType(pending.plan);
+                return {
+                    planLabel: pendingLabel === 'N/A' ? 'Pendente' : pendingLabel,
+                    startText: formatDateSafe(pending.date),
+                    endText: 'Aguardando aprovação',
+                    valueText: formatCurrencySafe(pending.amount),
+                    sortDate: parseDateSafe(pending.date) || new Date(0),
+                    code: pending.reference || pending.requestId || 'N/A',
+                    dataOriginLabel: origin.label,
+                    dataOriginKey: origin.key
+                };
+            }
+            if (user && user.trialStart && statusKey === 'trial_active') {
+                const trialStart = parseDateSafe(user.trialStart);
+                const trialEnd = trialStart ? new Date(trialStart) : null;
+                if (trialEnd) trialEnd.setDate(trialEnd.getDate() + 30);
+                return {
+                    planLabel: 'Teste Gratuito',
+                    startText: trialStart ? trialStart.toLocaleDateString('pt-BR') : 'N/A',
+                    endText: trialEnd ? trialEnd.toLocaleDateString('pt-BR') : 'N/A',
+                    valueText: 'Gratuito',
+                    sortDate: trialStart || new Date(0),
+                    code: 'N/A',
+                    dataOriginLabel: origin.label,
+                    dataOriginKey: origin.key
+                };
+            }
+            if (legacy.hasSubscription) {
+                return {
+                    planLabel: planLabelByType(legacy.type),
+                    startText: formatDateSafe(legacy.startDate),
+                    endText: formatDateSafe(legacy.endDate),
+                    valueText: legacy.amount == null ? 'N/A' : formatCurrencySafe(legacy.amount),
+                    sortDate: parseDateSafe(legacy.startDate) || parseDateSafe(legacy.endDate) || new Date(0),
+                    code: (user && user.subscription && user.subscription.validationCode) || 'N/A',
+                    dataOriginLabel: origin.label,
+                    dataOriginKey: origin.key
+                };
+            }
+            return {
+                planLabel: 'N/A',
+                startText: 'N/A',
+                endText: 'N/A',
+                valueText: 'N/A',
+                sortDate: parseDateSafe(user && (user.updatedAt || user.createdAt)) || new Date(0),
+                code: 'N/A',
+                dataOriginLabel: origin.label,
+                dataOriginKey: origin.key
+            };
+        }
+
+        async function loadUsersCollection() {
+            try {
+                if (window.firebaseService && typeof window.firebaseService.getAll === 'function') {
+                    const remoteRaw = await window.firebaseService.getAll('users');
+                    renderSubscriptionsDataOrigin(remoteRaw && remoteRaw.meta ? remoteRaw.meta : null);
+                    let remoteUsers = normalizeUsersCollection(unwrapFirebaseCollectionPayload(remoteRaw));
+                    const reqPayload = await window.firebaseService.getAll('subscriptionRequests');
+                    const reqData = unwrapFirebaseCollectionPayload(reqPayload);
+                    const synthesized = buildUsersFromSubscriptionRequests(reqData, remoteUsers);
+                    remoteUsers = mergeUsersByIdentity(remoteUsers, synthesized);
+                    persistUsersCache(remoteUsers);
+                    return remoteUsers;
+                }
+            } catch (error) {
+                console.warn('Falha ao carregar usuários do Firebase em assinaturas:', error);
+            }
+            renderSubscriptionsDataOrigin(null);
+            const localRaw = parseUsersCacheSafe();
+            return normalizeUsersCollection(localRaw);
+        }
+        
+        // Verificar se o usuário é administrador
+        async function checkAdminAccess() {
+            try {
+                const isAdmin = await hasSubscriptionsAdminAccess();
+                if (isAdmin) {
+                    try {
+                        if (window.firebaseService && typeof window.firebaseService.syncMyAdminClaims === 'function') {
+                            await window.firebaseService.syncMyAdminClaims();
+                        }
+                        if (window.firebaseService && window.firebaseService.authService && typeof window.firebaseService.authService.getCurrentUser === 'function') {
+                            const authUser = await window.firebaseService.authService.getCurrentUser();
+                            if (authUser && typeof authUser.getIdTokenResult === 'function') {
+                                await authUser.getIdTokenResult(true);
+                            }
+                        }
+                    } catch (_) {}
+                    return true;
+                }
+                alert('Acesso restrito. Você não tem permissões de administrador.');
+                window.location.href = 'index.html';
+                return false;
+            } catch (error) {
+                console.error('Erro ao verificar permissões de admin:', error);
+                alert('Erro ao verificar permissões. Por favor, faça login novamente.');
+                window.location.href = 'login.html';
+                return false;
+            }
+        }
+        
+        // Carregar todas as assinaturas
+        async function loadSubscriptions(filter = 'all') {
+            try {
+                const users = await loadUsersCollection();
+                subscriptionsData = Array.isArray(users) ? users.slice(0) : [];
+                
+                // Elementos da tabela
+                const tableBody = document.getElementById('subscriptionsTableBody');
+                tableBody.innerHTML = ''; // Limpar a tabela
+                
+                // Filtrar usuários de acordo com o filtro selecionado
+                let filteredUsers = [];
+                
+                if (filter === 'all') {
+                    filteredUsers = users.filter(user => {
+                        const statusKey = getSubscriptionStatusKey(user);
+                        return ['trial_active', 'pending', 'pending_grace', 'active', 'expired', 'blocked'].includes(statusKey);
+                    });
+                } else if (filter === 'active') {
+                    filteredUsers = users.filter(user => getSubscriptionStatusKey(user) === 'active');
+                } else if (filter === 'trial') {
+                    filteredUsers = users.filter(user => getSubscriptionStatusKey(user) === 'trial_active');
+                } else if (filter === 'expired') {
+                    filteredUsers = users.filter(user => getSubscriptionStatusKey(user) === 'expired');
+                } else if (filter === 'pending') {
+                    filteredUsers = users.filter(user => ['pending', 'pending_grace'].includes(getSubscriptionStatusKey(user)));
+                } else if (filter === 'blocked') {
+                    filteredUsers = users.filter(user => getSubscriptionStatusKey(user) === 'blocked');
+                }
+                
+                // Ordenar por data (mais recentes primeiro)
+                filteredUsers.sort((a, b) => getUserSubscriptionPresentation(b).sortDate - getUserSubscriptionPresentation(a).sortDate);
+                
+                if (filteredUsers.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="7" class="no-data">Nenhuma assinatura encontrada</td></tr>';
+                    scheduleResponsiveTableHydration();
+                    return;
+                }
+                
+                // Adicionar cada usuário à tabela
+                filteredUsers.forEach(user => {
+                    const row = document.createElement('tr');
+                    
+                    // Coluna de usuário
+                    const userCell = document.createElement('td');
+                    userCell.textContent = user.username || user.displayName || (user.email ? user.email.split('@')[0] : 'Usuário');
+                    row.appendChild(userCell);
+                    const view = getUserSubscriptionPresentation(user);
+                    
+                    // Coluna de plano
+                    const planCell = document.createElement('td');
+                    planCell.textContent = view.planLabel;
+                    row.appendChild(planCell);
+                    
+                    // Coluna de data
+                    const dateCell = document.createElement('td');
+                    dateCell.innerHTML = `
+                        <div>Início: ${view.startText}</div>
+                        <div>Fim: ${view.endText}</div>
+                    `;
+                    row.appendChild(dateCell);
+                    
+                    // Coluna de valor
+                    const valueCell = document.createElement('td');
+                    valueCell.textContent = view.valueText;
+                    row.appendChild(valueCell);
+                    
+                    // Coluna de status
+                    const statusCell = document.createElement('td');
+                    let statusClass = '';
+                    let statusText = '';
+                    
+                    const statusKey = getSubscriptionStatusKey(user);
+                    if (statusKey === 'blocked') {
+                        statusClass = 'status-expired';
+                        statusText = 'Bloqueado';
+                    } else if (statusKey === 'pending' || statusKey === 'pending_grace') {
+                        statusClass = 'status-pending';
+                        statusText = statusKey === 'pending_grace' ? 'Pendente (carência)' : 'Pendente';
+                    } else if (statusKey === 'trial_active') {
+                        statusClass = 'status-active';
+                        statusText = 'Trial Ativo';
+                    } else if (statusKey === 'active') {
+                        statusClass = 'status-active';
+                        statusText = 'Ativa';
+                    } else {
+                        statusClass = 'status-expired';
+                        statusText = 'Expirado';
+                    }
+                    
+                    const statusSpan = document.createElement('span');
+                    statusSpan.className = `status ${statusClass}`;
+                    statusSpan.textContent = statusText;
+                    statusCell.appendChild(statusSpan);
+                    row.appendChild(statusCell);
+
+                    const originCell = document.createElement('td');
+                    const originClass = view.dataOriginKey === 'legacy' ? 'origin-legacy' : 'origin-new';
+                    originCell.innerHTML = `<span class="origin-tag ${originClass}">${view.dataOriginLabel}</span>`;
+                    row.appendChild(originCell);
+                    
+                    // Coluna de ações
+                    const actionsCell = document.createElement('td');
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'action-buttons';
+                    
+                    // Botão de visualizar
+                    const viewBtn = document.createElement('button');
+                    viewBtn.className = 'action-btn view-btn';
+                    viewBtn.innerHTML = '<i class="fas fa-eye"></i> Ver';
+                    viewBtn.addEventListener('click', function() {
+                        openUserDetails(user);
+                    });
+                    actionsDiv.appendChild(viewBtn);
+                    
+                    // Botão de aprovar (apenas para pagamentos pendentes)
+                    if (user.pendingPayment && user.pendingPayment.status === 'pending') {
+                        const approveBtn = document.createElement('button');
+                        approveBtn.className = 'action-btn approve-btn';
+                        approveBtn.innerHTML = '<i class="fas fa-check"></i> Aprovar';
+                        approveBtn.addEventListener('click', function() {
+                            approvePayment(user);
+                        });
+                        actionsDiv.appendChild(approveBtn);
+                        
+                        const rejectBtn = document.createElement('button');
+                        rejectBtn.className = 'action-btn reject-btn';
+                        rejectBtn.innerHTML = '<i class="fas fa-times"></i> Rejeitar';
+                        rejectBtn.addEventListener('click', function() {
+                            rejectPayment(user);
+                        });
+                        actionsDiv.appendChild(rejectBtn);
+                    }
+                    if (statusKey === 'blocked') {
+                        const unblockBtn = document.createElement('button');
+                        unblockBtn.className = 'action-btn unblock-btn';
+                        unblockBtn.innerHTML = '<i class="fas fa-user-check"></i> Ativar';
+                        unblockBtn.addEventListener('click', function() {
+                            setUserAccessStatusFlow(user, 'active', 'table');
+                        });
+                        actionsDiv.appendChild(unblockBtn);
+                    } else {
+                        const blockBtn = document.createElement('button');
+                        blockBtn.className = 'action-btn block-btn';
+                        blockBtn.innerHTML = '<i class="fas fa-user-lock"></i> Bloquear';
+                        blockBtn.addEventListener('click', function() {
+                            setUserAccessStatusFlow(user, 'blocked', 'table');
+                        });
+                        actionsDiv.appendChild(blockBtn);
+                    }
+                    if (statusKey !== 'pending') {
+                        const pendingBtn = document.createElement('button');
+                        pendingBtn.className = 'action-btn pending-btn';
+                        pendingBtn.innerHTML = '<i class="fas fa-hourglass-half"></i> Pendente';
+                        pendingBtn.addEventListener('click', function() {
+                            setUserAccessStatusFlow(user, 'pending', 'table');
+                        });
+                        actionsDiv.appendChild(pendingBtn);
+                    }
+                    
+                    actionsCell.appendChild(actionsDiv);
+                    row.appendChild(actionsCell);
+                    
+                    // Adicionar linha à tabela
+                    tableBody.appendChild(row);
+                });
+                scheduleResponsiveTableHydration();
+                
+            } catch (error) {
+                console.error('Erro ao carregar assinaturas:', error);
+                const tableBody = document.getElementById('subscriptionsTableBody');
+                tableBody.innerHTML = '<tr><td colspan="7" class="no-data">Erro ao carregar assinaturas</td></tr>';
+                scheduleResponsiveTableHydration();
+            }
+        }
+
+        async function revalidateAutoPix(payment) {
+            try {
+                if (!window.firebaseService || typeof window.firebaseService.revalidatePixPayment !== 'function') {
+                    throw new Error('Serviço de revalidação PIX indisponível.');
+                }
+                const result = await window.firebaseService.revalidatePixPayment({
+                    paymentId: String(payment && payment.paymentId || ''),
+                    providerPaymentId: String(payment && payment.providerPaymentId || '')
+                });
+                if (!result || result.success === false) {
+                    throw new Error((result && result.error) || 'Falha ao revalidar PIX.');
+                }
+                alert('PIX revalidado com sucesso.');
+                await loadAutoPixPayments();
+            } catch (error) {
+                alert(error.message || 'Erro ao revalidar PIX.');
+            }
+        }
+
+        function renderAutoPixPaymentsTable() {
+            const tbody = document.getElementById('autoPixTableBody');
+            const statusFilterEl = document.getElementById('autoPixStatusFilter');
+            if (!tbody) return;
+            const statusFilter = String((statusFilterEl && statusFilterEl.value) || 'all').toLowerCase();
+            const filtered = autoPixPayments.filter((item) => {
+                if (statusFilter === 'all') return true;
+                return String(item.status || '') === statusFilter;
+            });
+            if (!filtered.length) {
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Nenhum pagamento PIX automático para o filtro atual.</td></tr>`;
+                scheduleResponsiveTableHydration();
+                return;
+            }
+            tbody.innerHTML = filtered.map((item) => {
+                const createdAt = item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : '-';
+                const userLabel = item.userName || item.email || item.uid || '-';
+                const status = String(item.status || 'pending');
+                const canRevalidate = status !== 'approved';
+                return `
+                    <tr>
+                        <td><strong>${userLabel}</strong><br><span style="font-size:12px;color:#64748b;">${item.email || '-'}</span></td>
+                        <td>${item.planLabel}</td>
+                        <td>${formatCurrencySafe(item.amount)}</td>
+                        <td><span class="status ${autoPixStatusClass(status)} status-auto">${autoPixStatusLabel(status)}</span></td>
+                        <td>${createdAt}</td>
+                        <td style="font-size:12px;">${item.providerPaymentId || '-'}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn view-btn" onclick="window.open('subscription-status.html','_blank')"><i class="fas fa-eye"></i> Status</button>
+                                ${canRevalidate ? `<button class="action-btn approve-btn" data-action="revalidate" data-payment-id="${String(item.paymentId || '')}"><i class="fas fa-sync"></i> Revalidar</button>` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            tbody.querySelectorAll('button[data-action="revalidate"]').forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    const paymentId = String(btn.getAttribute('data-payment-id') || '');
+                    const target = autoPixPayments.find((p) => String(p.paymentId || '') === paymentId);
+                    if (!target) return;
+                    await revalidateAutoPix(target);
+                });
+            });
+            scheduleResponsiveTableHydration();
+        }
+
+        async function loadAutoPixPayments() {
+            const tbody = document.getElementById('autoPixTableBody');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="7" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando pagamentos PIX automáticos...</td></tr>`;
+            }
+            try {
+                if (!window.firebaseService || typeof window.firebaseService.getAll !== 'function') {
+                    throw new Error('Serviço de leitura indisponível.');
+                }
+                if (!subscriptionsData.length) {
+                    subscriptionsData = await loadUsersCollection();
+                }
+                const usersByUid = {};
+                (Array.isArray(subscriptionsData) ? subscriptionsData : []).forEach((u) => {
+                    const uid = getAnyUid(u);
+                    if (uid) usersByUid[uid] = u;
+                });
+                const res = await window.firebaseService.getAll('subscriptionPayments');
+                const map = res && res.success ? res.data : res;
+                const list = [];
+                if (map && typeof map === 'object') {
+                    Object.keys(map).forEach((paymentId) => {
+                        const raw = map[paymentId] || {};
+                        if (!raw || typeof raw !== 'object') return;
+                        const uid = String(raw.uid || '').trim();
+                        const user = uid && usersByUid[uid] ? usersByUid[uid] : {};
+                        const status = normalizeAutoPixStatus(raw.status || raw.providerStatus);
+                        list.push({
+                            paymentId: String(raw.paymentId || paymentId),
+                            providerPaymentId: String(raw.providerPaymentId || ''),
+                            uid,
+                            email: String((user && user.email) || raw.email || '').trim(),
+                            userName: String((user && (user.username || user.displayName)) || raw.username || '').trim(),
+                            planLabel: planLabelByType(raw.plan || raw.planKey || ''),
+                            amount: Number(raw.paidAmount != null ? raw.paidAmount : raw.amount || 0),
+                            status,
+                            createdAt: raw.createdAt || raw.updatedAt || null
+                        });
+                    });
+                }
+                list.sort((a, b) => {
+                    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return tb - ta;
+                });
+                autoPixPayments = list;
+                renderAutoPixPaymentsTable();
+            } catch (error) {
+                autoPixPayments = [];
+                if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Erro ao carregar PIX automático: ${error.message || error}</td></tr>`;
+            }
+        }
+        
+        // Abrir detalhes do usuário
+        function openUserDetails(user) {
+            try {
+                console.log("Abrindo detalhes do usuário:", user);
+                
+                // Armazenar o usuário atual para referência
+                currentUser = user;
+                
+                // Preencher modal com os detalhes do usuário
+                document.getElementById('modal-username').textContent = user.username || user.email;
+                document.getElementById('modal-email').textContent = user.email;
+                document.getElementById('modal-registration-date').textContent = user.createdAt ? 
+                    new Date(user.createdAt).toLocaleDateString('pt-BR') : 'N/A';
+                document.getElementById('modal-last-login').textContent = user.lastLogin ? 
+                    new Date(user.lastLogin).toLocaleDateString('pt-BR') : 'N/A';
+                
+                // Detalhes da assinatura
+                const view = getUserSubscriptionPresentation(user);
+                document.getElementById('modal-plan').textContent = view.planLabel;
+                document.getElementById('modal-amount').textContent = view.valueText;
+                document.getElementById('modal-payment-date').textContent = view.startText;
+                document.getElementById('modal-valid-until').textContent = view.endText;
+                document.getElementById('modal-code').textContent = view.code;
+                if (user.pendingPayment && user.pendingPayment.status === 'pending') {
+                    document.getElementById('modal-payment-method').textContent = user.pendingPayment.method || 'PIX';
+                }
+                const statusKey = getSubscriptionStatusKey(user);
+                const statusLabel = statusKey === 'blocked'
+                    ? 'Bloqueado'
+                    : statusKey === 'pending'
+                        ? 'Pendente'
+                        : statusKey === 'trial_active'
+                            ? 'Trial Ativo'
+                            : statusKey === 'active'
+                                ? 'Ativa'
+                                : 'Expirado';
+                document.getElementById('modal-status').textContent = statusLabel;
+                
+                // Verificar se há pagamento pendente
+                if (user.pendingPayment && user.pendingPayment.status === 'pending') {
+                    document.getElementById('modal-actions').style.display = 'flex';
+                    document.getElementById('notes-section').style.display = 'block';
+                } else {
+                    document.getElementById('modal-actions').style.display = 'none';
+                    document.getElementById('notes-section').style.display = 'none';
+                }
+                document.getElementById('modal-status-actions').style.display = 'flex';
+                
+                const pending = user.pendingPayment && user.pendingPayment.status === 'pending' ? user.pendingPayment : null;
+                if (pending) {
+                    document.getElementById('receipt-section').style.display = 'block';
+                    document.getElementById('modal-payment-method').textContent = pending.method || 'PIX';
+                    const proofUrl = pending.proofUrl || '';
+                    currentProofUrl = proofUrl;
+                    currentProofFileName = pending.proofFileName || 'comprovante';
+                    const proofMime = String(pending.proofMimeType || '').toLowerCase();
+                    const isImage = proofUrl && (proofMime.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(proofUrl));
+                    const imgEl = document.getElementById('modal-receipt');
+                    const linkEl = document.getElementById('modal-receipt-link');
+                    const badgeEl = document.getElementById('modal-filetype-badge');
+                    const hashWrapEl = document.getElementById('modal-proof-hash-indicator');
+                    const hashTextEl = document.getElementById('modal-proof-hash-short');
+                    const downloadBtn = document.getElementById('modal-download-proof-btn');
+                    const typeInfo = getProofTypeInfo(pending);
+                    badgeEl.textContent = typeInfo.label;
+                    badgeEl.className = `filetype-badge ${typeInfo.badgeClass}`.trim();
+                    const shortHash = getShortProofHash(pending);
+                    if (shortHash) {
+                        hashTextEl.textContent = shortHash;
+                        hashWrapEl.style.display = 'inline-flex';
+                    } else {
+                        hashTextEl.textContent = '-';
+                        hashWrapEl.style.display = 'none';
+                    }
+                    downloadBtn.style.display = proofUrl ? 'inline-flex' : 'none';
+                    if (isImage) {
+                        imgEl.src = proofUrl;
+                        imgEl.style.display = 'block';
+                    } else {
+                        imgEl.removeAttribute('src');
+                        imgEl.style.display = 'none';
+                    }
+                    if (proofUrl) {
+                        linkEl.href = proofUrl;
+                        linkEl.style.display = 'inline-block';
+                    } else {
+                        linkEl.href = '#';
+                        linkEl.style.display = 'none';
+                    }
+                } else {
+                    currentProofUrl = '';
+                    currentProofFileName = '';
+                    const hashWrapEl = document.getElementById('modal-proof-hash-indicator');
+                    const hashTextEl = document.getElementById('modal-proof-hash-short');
+                    hashTextEl.textContent = '-';
+                    hashWrapEl.style.display = 'none';
+                    document.getElementById('receipt-section').style.display = 'none';
+                }
+                
+                // Abrir modal
+                document.getElementById('subscriptionModal').style.display = 'block';
+            } catch (error) {
+                console.error('Erro ao abrir detalhes do usuário:', error);
+                alert('Erro ao abrir detalhes do usuário');
+            }
+        }
+        
+        // Fechar modal
+        function closeModal() {
+            document.getElementById('subscriptionModal').style.display = 'none';
+            document.getElementById('modal-notes').value = '';
+        }
+        
+        // Aprovar pagamento
+        async function approvePayment(user) {
+            if (!(await hasSubscriptionsAdminAccess())) {
+                alert('Acesso restrito para gerenciamento de assinaturas.');
+                window.location.href = 'index.html';
+                return;
+            }
+            if (!confirm(`Confirmar aprovação do pagamento para ${user.username || user.email}?`)) {
+                return;
+            }
+            
+            try {
+                const requestId = user.pendingPayment && user.pendingPayment.requestId ? user.pendingPayment.requestId : null;
+                const uid = getAnyUid(user);
+                if (requestId && uid && window.firebaseService && typeof window.firebaseService.prepareSubscriptionApproval === 'function' && typeof window.firebaseService.confirmSubscriptionApproval === 'function') {
+                    const prep = await window.firebaseService.prepareSubscriptionApproval({ requestId, uid, action: 'approve' });
+                    if (!prep.success) throw new Error(prep.error || 'Falha na preparação da aprovação dupla.');
+                    const challengeCode = prep.data && prep.data.challengeToken ? prep.data.challengeToken : '';
+                    if (!challengeCode) throw new Error('Challenge não retornado pelo backend.');
+                    const confirmationPhrase = prompt('Confirmação dupla: digite APROVAR para concluir a aprovação auditável:');
+                    if (String(confirmationPhrase || '').trim().toUpperCase() !== 'APROVAR') {
+                        throw new Error('Confirmação dupla inválida. Operação cancelada.');
+                    }
+                    const note = document.getElementById('modal-notes').value.trim();
+                    const confirmed = await window.firebaseService.confirmSubscriptionApproval({
+                        requestId,
+                        uid,
+                        challengeToken: challengeCode,
+                        decision: 'approve',
+                        reviewNote: note
+                    });
+                    if (!confirmed.success) throw new Error(confirmed.error || 'Falha ao concluir aprovação dupla.');
+                    const users = parseUsersCacheSafe();
+                    const idx = users.findIndex(u => getAnyUid(u) === uid || u.email === user.email);
+                    if (idx >= 0) {
+                        users[idx].subscriptionStatus = 'active';
+                        users[idx].accountStatus = 'active';
+                        users[idx].statusReason = '';
+                        users[idx].pendingPayment = null;
+                        users[idx].updatedAt = new Date().toISOString();
+                        persistUsersCache(users);
+                    }
+                    notifyDashboardSync({ status: 'active', uid, email: user.email || '' });
+                    alert('Pagamento aprovado com dupla confirmação e trilha de auditoria.');
+                    loadSubscriptions(currentFilter);
+                    loadAutoPixPayments();
+                    return;
+                }
+                // Obter todos os usuários
+                const users = parseUsersCacheSafe();
+                
+                // Encontrar o usuário no array
+                const userIndex = users.findIndex(u => u.email === user.email);
+                if (userIndex === -1) {
+                    throw new Error('Usuário não encontrado');
+                }
+                
+                // Atualizar usuário
+                const updatedUser = users[userIndex];
+                
+                // Criar ou atualizar assinatura
+                if (!updatedUser.subscription) {
+                    updatedUser.subscription = {};
+                }
+                
+                const pendingPayment = updatedUser.pendingPayment;
+                if (!pendingPayment) {
+                    throw new Error('Pagamento pendente não encontrado');
+                }
+                
+                // Definir dados da assinatura
+                const startDate = new Date();
+                let endDate = new Date(startDate);
+                
+                // Definir data de término com base no tipo de plano
+                if (pendingPayment.plan === 'monthly') {
+                    endDate.setMonth(endDate.getMonth() + 1);
+                } else if (pendingPayment.plan === 'annual') {
+                    endDate.setFullYear(endDate.getFullYear() + 1);
+                } else if (pendingPayment.plan === 'premium') {
+                    endDate.setMonth(endDate.getMonth() + 1);
+                } else {
+                    // Plano padrão: 1 mês
+                    endDate.setMonth(endDate.getMonth() + 1);
+                }
+                
+                // Atualizar assinatura
+                updatedUser.subscription = {
+                    type: pendingPayment.plan,
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString(),
+                    active: true
+                };
+                updatedUser.subscriptionStatus = 'active';
+                updatedUser.statusReason = '';
+                updatedUser.updatedAt = new Date().toISOString();
+                updatedUser.accountStatus = 'active';
+                
+                // Criar registro de pagamento
+                if (!updatedUser.payments) {
+                    updatedUser.payments = [];
+                }
+                
+                updatedUser.payments.push({
+                    date: new Date().toISOString(),
+                    amount: pendingPayment.amount,
+                    method: pendingPayment.method,
+                    status: 'approved',
+                    reference: pendingPayment.reference
+                });
+                
+                // Remover pagamento pendente
+                delete updatedUser.pendingPayment;
+                
+                // Atualizar usuário no array
+                users[userIndex] = updatedUser;
+                
+                // Salvar no localStorage
+                persistUsersCache(users);
+                notifyDashboardSync({
+                    status: 'active',
+                    uid: getAnyUid(updatedUser),
+                    email: updatedUser.email || ''
+                });
+                
+                alert('Pagamento aprovado com sucesso!');
+                
+                // Recarregar lista de assinaturas
+                loadSubscriptions(currentFilter);
+                loadAutoPixPayments();
+                if (window.firebaseService && typeof window.firebaseService.setUserAccessStatus === 'function') {
+                    const uid = getAnyUid(updatedUser);
+                    if (uid) {
+                        window.firebaseService.setUserAccessStatus(uid, 'active', 'Pagamento aprovado manualmente pelo super admin').catch(() => {});
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Erro ao aprovar pagamento:', error);
+                alert(`Erro ao aprovar pagamento: ${error.message}`);
+            }
+        }
+        
+        // Rejeitar pagamento
+        async function rejectPayment(user) {
+            if (!(await hasSubscriptionsAdminAccess())) {
+                alert('Acesso restrito para gerenciamento de assinaturas.');
+                window.location.href = 'index.html';
+                return;
+            }
+            if (!confirm(`Confirmar rejeição do pagamento para ${user.username || user.email}?`)) {
+                return;
+            }
+            
+            try {
+                const requestId = user.pendingPayment && user.pendingPayment.requestId ? user.pendingPayment.requestId : null;
+                const uid = getAnyUid(user);
+                if (requestId && uid && window.firebaseService && typeof window.firebaseService.prepareSubscriptionApproval === 'function' && typeof window.firebaseService.confirmSubscriptionApproval === 'function') {
+                    const prep = await window.firebaseService.prepareSubscriptionApproval({ requestId, uid, action: 'reject' });
+                    if (!prep.success) throw new Error(prep.error || 'Falha na preparação da rejeição dupla.');
+                    const challengeCode = prep.data && prep.data.challengeToken ? prep.data.challengeToken : '';
+                    if (!challengeCode) throw new Error('Challenge não retornado pelo backend.');
+                    const confirmationPhrase = prompt('Confirmação dupla: digite REJEITAR para concluir a rejeição auditável:');
+                    if (String(confirmationPhrase || '').trim().toUpperCase() !== 'REJEITAR') {
+                        throw new Error('Confirmação dupla inválida. Operação cancelada.');
+                    }
+                    const note = document.getElementById('modal-notes').value.trim();
+                    const confirmed = await window.firebaseService.confirmSubscriptionApproval({
+                        requestId,
+                        uid,
+                        challengeToken: challengeCode,
+                        decision: 'reject',
+                        reviewNote: note
+                    });
+                    if (!confirmed.success) throw new Error(confirmed.error || 'Falha ao concluir rejeição dupla.');
+                    const users = parseUsersCacheSafe();
+                    const idx = users.findIndex(u => getAnyUid(u) === uid || u.email === user.email);
+                    if (idx >= 0) {
+                        users[idx].subscriptionStatus = 'expired';
+                        users[idx].accountStatus = 'blocked';
+                        users[idx].statusReason = 'Pagamento rejeitado pelo superadmin.';
+                        users[idx].pendingPayment = null;
+                        users[idx].updatedAt = new Date().toISOString();
+                        persistUsersCache(users);
+                    }
+                    notifyDashboardSync({ status: 'expired', uid, email: user.email || '' });
+                    alert('Pagamento rejeitado com dupla confirmação e trilha de auditoria.');
+                    loadSubscriptions(currentFilter);
+                    return;
+                }
+                // Obter todos os usuários
+                const users = parseUsersCacheSafe();
+                
+                // Encontrar o usuário no array
+                const userIndex = users.findIndex(u => u.email === user.email);
+                if (userIndex === -1) {
+                    throw new Error('Usuário não encontrado');
+                }
+                
+                // Atualizar usuário
+                const updatedUser = users[userIndex];
+                
+                const pendingPayment = updatedUser.pendingPayment;
+                if (!pendingPayment) {
+                    throw new Error('Pagamento pendente não encontrado');
+                }
+                
+                // Criar registro de pagamento rejeitado
+                if (!updatedUser.payments) {
+                    updatedUser.payments = [];
+                }
+                
+                updatedUser.payments.push({
+                    date: new Date().toISOString(),
+                    amount: pendingPayment.amount,
+                    method: pendingPayment.method,
+                    status: 'rejected',
+                    reference: pendingPayment.reference
+                });
+                updatedUser.subscriptionStatus = 'expired';
+                updatedUser.statusReason = 'Pagamento rejeitado pelo administrador.';
+                updatedUser.updatedAt = new Date().toISOString();
+                
+                // Remover pagamento pendente
+                delete updatedUser.pendingPayment;
+                
+                // Atualizar usuário no array
+                users[userIndex] = updatedUser;
+                
+                // Salvar no localStorage
+                persistUsersCache(users);
+                notifyDashboardSync({
+                    status: 'expired',
+                    uid: getAnyUid(updatedUser),
+                    email: updatedUser.email || ''
+                });
+                
+                alert('Pagamento rejeitado com sucesso!');
+                
+                // Recarregar lista de assinaturas
+                loadSubscriptions(currentFilter);
+                loadAutoPixPayments();
+                if (window.firebaseService && typeof window.firebaseService.setUserAccessStatus === 'function') {
+                    const uid = getAnyUid(updatedUser);
+                    if (uid) {
+                        window.firebaseService.setUserAccessStatus(uid, 'expired', 'Pagamento rejeitado manualmente pelo super admin').catch(() => {});
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Erro ao rejeitar pagamento:', error);
+                alert(`Erro ao rejeitar pagamento: ${error.message}`);
+            }
+        }
+        
+        // Variável para acompanhar o filtro atual
+        let currentFilter = 'all';
+        
+        // Configurar filtros
+        function setupFilters() {
+            const filterButtons = document.querySelectorAll('.filter-btn:not([onclick])');
+            
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remover classe ativa de todos os botões de filtro
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // Adicionar classe ativa ao botão clicado
+                    button.classList.add('active');
+                    
+                    // Atualizar filtro atual
+                    currentFilter = button.getAttribute('data-filter');
+                    
+                    // Carregar assinaturas com o novo filtro
+                    loadSubscriptions(currentFilter);
+                });
+            });
+        }
+
+        async function loadExtensionRequests() {
+            const tbody = document.getElementById('extensionRequestsTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = `<tr><td colspan="5" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando solicitações...</td></tr>`;
+            try {
+                if (!(await hasSuperAdminAccess()) || !window.firebaseService || typeof window.firebaseService.getOpenExtensionRequests !== 'function') {
+                    tbody.innerHTML = `<tr><td colspan="5" class="empty-state">Apenas super admin pode visualizar solicitações.</td></tr>`;
+                    return;
+                }
+                const result = await window.firebaseService.getOpenExtensionRequests();
+                const requests = result.success && result.data && Array.isArray(result.data.requests) ? result.data.requests : [];
+                if (!requests.length) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="empty-state">Nenhuma solicitação pendente.</td></tr>`;
+                    scheduleResponsiveTableHydration();
+                    return;
+                }
+                tbody.innerHTML = requests.map((req) => {
+                    const date = req.createdAt ? new Date(req.createdAt).toLocaleString('pt-BR') : '-';
+                    const justification = String(req.justification || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const profile = req.userProfile || {};
+                    const userLabel = profile.displayName || profile.email || req.uid || '-';
+                    const companyLabel = profile.companyName || profile.companyId || 'Empresa não identificada';
+                    return `
+                        <tr>
+                            <td>
+                                <strong>${userLabel}</strong><br>
+                                <span style="font-size:12px;color:#64748b;">${profile.email || req.uid || '-'}</span><br>
+                                <span style="font-size:12px;color:#64748b;">${companyLabel}</span>
+                            </td>
+                            <td>${req.requestedDays || 0}</td>
+                            <td style="max-width:280px;white-space:normal;">${justification}</td>
+                            <td>${date}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="action-btn approve-btn" onclick="reviewExtensionRequest('${req.uid}','${req.requestId}',true,${req.requestedDays || 1})"><i class="fas fa-check"></i> Aprovar</button>
+                                    <button class="action-btn reject-btn" onclick="reviewExtensionRequest('${req.uid}','${req.requestId}',false,0)"><i class="fas fa-times"></i> Rejeitar</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                scheduleResponsiveTableHydration();
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="5" class="empty-state">Erro ao carregar solicitações: ${error.message}</td></tr>`;
+                scheduleResponsiveTableHydration();
+            }
+        }
+
+        window.reviewExtensionRequest = async function(uid, requestId, approve, suggestedDays) {
+            try {
+                if (!(await hasSuperAdminAccess())) {
+                    alert('Apenas super admin pode revisar solicitações.');
+                    return;
+                }
+                const note = prompt('Informe uma observação da revisão (opcional):', '') || '';
+                let grantedDays = 0;
+                if (approve) {
+                    const asked = prompt('Quantos dias deseja conceder?', String(suggestedDays || 1));
+                    grantedDays = parseInt(asked || '0', 10);
+                    if (!grantedDays || grantedDays < 1 || grantedDays > 60) {
+                        throw new Error('Dias concedidos inválidos (1 a 60).');
+                    }
+                }
+                if (!window.firebaseService || typeof window.firebaseService.reviewSubscriptionExtensionRequest !== 'function') {
+                    throw new Error('Serviço de revisão de prorrogação indisponível.');
+                }
+                const result = await window.firebaseService.reviewSubscriptionExtensionRequest({
+                    uid,
+                    requestId,
+                    approve: !!approve,
+                    grantedDays,
+                    reviewNote: note
+                });
+                if (!result.success) throw new Error(result.error || 'Falha ao revisar solicitação.');
+                alert(approve ? 'Prorrogação aprovada com sucesso.' : 'Solicitação rejeitada com sucesso.');
+                await loadExtensionRequests();
+                await loadSubscriptions(currentFilter);
+                await loadAutoPixPayments();
+            } catch (error) {
+                alert(error.message || 'Erro ao revisar solicitação.');
+            }
+        };
+        
+        async function cleanupSampleData() {
+            alert('Operação removida no modo produção.');
+        }
+        
+        // Função auxiliar para obter detalhes do usuário atual
+        async function getCurrentUserDetailsSafe() {
+            // Verificar se a função está disponível no auth.js
+            if (typeof window.getCurrentUserDetails === 'function') {
+                return window.getCurrentUserDetails();
+            }
+            
+            // Fallback: buscar do localStorage
+            try {
+                const currentUser = parseCurrentUserSafe();
+                if (!currentUser) return null;
+                
+                const users = parseUsersCacheSafe();
+                const userDetails = users.find(u => u.email === currentUser.email);
+                
+                return {
+                    ...currentUser,
+                    ...(userDetails || {})
+                };
+            } catch (error) {
+                console.error('Erro ao obter detalhes do usuário:', error);
+                return null;
+            }
+        }
+        
+        // Fechar modal ao clicar fora
+        window.onclick = function(event) {
+            const modal = document.getElementById('subscriptionModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+        
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', async function() {
+            scrubUsersCacheIfNeeded();
+            // Verificar permissões de admin
+            const isAdmin = await checkAdminAccess();
+            
+            if (isAdmin) {
+                // Configurar filtros
+                setupFilters();
+                try {
+                    const params = new URLSearchParams(window.location.search || '');
+                    const requestedFilter = String(params.get('filter') || 'all').toLowerCase();
+                    const accepted = new Set(['all', 'trial', 'pending', 'active', 'expired', 'blocked']);
+                    if (accepted.has(requestedFilter)) {
+                        currentFilter = requestedFilter;
+                        document.querySelectorAll('.filter-btn').forEach((btn) => {
+                            const key = String(btn.getAttribute('data-filter') || '').toLowerCase();
+                            btn.classList.toggle('active', key === requestedFilter);
+                        });
+                    }
+                } catch (_) {}
+                
+                // Carregar assinaturas iniciais
+                loadSubscriptions(currentFilter);
+                loadExtensionRequests();
+                loadAutoPixPayments();
+                const autoPixFilterEl = document.getElementById('autoPixStatusFilter');
+                if (autoPixFilterEl) autoPixFilterEl.addEventListener('change', renderAutoPixPaymentsTable);
+                const autoPixReloadBtn = document.getElementById('reloadAutoPixBtn');
+                if (autoPixReloadBtn) autoPixReloadBtn.addEventListener('click', () => loadAutoPixPayments());
+            }
+        });
+    </script>
+</body>
+</html>

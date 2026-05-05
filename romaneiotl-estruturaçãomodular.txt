@@ -1,0 +1,27 @@
+romaneiotl/
+├── romaneiotl.html (apenas HTML limpo)
+├── modules/
+│   ├── core/
+│   │   ├── firebase-service.js
+│   │   ├── data-manager.js
+│   │   └── utils.js
+│   ├── items/
+│   │   ├── adicionar-item.js
+│   │   ├── editar-item.js
+│   │   ├── excluir-item.js
+│   │   └── renderizar-tabela.js
+│   ├── romaneio/
+│   │   ├── salvar-romaneio.js
+│   │   ├── listar-romaneios.js
+│   │   └── editar-romaneio.js
+│   ├── reports/
+│   │   ├── imprimir-romaneio.js
+│   │   ├── relatorio-completo.js
+│   │   └── relatorio-resumido.js
+│   ├── modals/
+│   │   ├── modal-clientes.js
+│   │   ├── modal-especies.js
+│   │   └── modal-lista-romaneios.js
+│   └── crud/
+│       ├── clientes-crud.js
+│       └── especies-crud.js

@@ -1,0 +1,49 @@
+{
+  "hosting": {
+    "site": "sisweb-7ce82",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "**/*.md",
+      "**/backup/**",
+      "**/temp_**",
+      "**/*_old.*",
+      "**/*_backup.*",
+      "**/*.bat",
+      "**/*.exe",
+      "**/*.sh",
+      "**/*.com",
+      "**/*.cmd"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css|html|json)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          },
+          {
+            "key": "Expires",
+            "value": "0"
+          }
+        ]
+      }
+    ]
+  },
+  "database": {
+    "rules": "firebase-rules-development.json"
+  }
+}

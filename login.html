@@ -1,0 +1,2041 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <title>Portal de Acesso - SisWeb</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <!-- Script para suprimir erros de extensões do navegador -->
+    <script>
+        // ✅ CORREÇÃO: Suprimir erros de message channel causados por extensões do navegador
+        // Estes erros não afetam a funcionalidade do sistema, são causados por extensões
+        (function() {
+            'use strict';
+            
+            // Capturar erros globais não tratados
+            window.addEventListener('error', function(event) {
+                // Verificar se é o erro específico de message channel
+                if (event.message && event.message.includes('message channel closed before a response was received')) {
+                    console.debug('🔇 Erro de extensão do navegador suprimido:', event.message);
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return false;
+                }
+            }, true);
+            
+            // Capturar promises rejeitadas não tratadas
+            window.addEventListener('unhandledrejection', function(event) {
+                if (event.reason && event.reason.message && 
+                    event.reason.message.includes('message channel closed before a response was received')) {
+                    console.debug('🔇 Promise rejeitada de extensão suprimida:', event.reason.message);
+                    event.preventDefault();
+                    return false;
+                }
+            });
+            
+            // Sobrescrever console.error temporariamente para filtrar esses erros específicos
+            const originalConsoleError = console.error;
+            console.error = function(...args) {
+                const message = args.join(' ');
+                if (message.includes('message channel closed before a response was received')) {
+                    console.debug('🔇 Console error de extensão suprimido:', message);
+                    return;
+                }
+                originalConsoleError.apply(console, args);
+            };
+            
+            // Restaurar console.error após 10 segundos para não afetar outros erros legítimos
+            setTimeout(() => {
+                console.error = originalConsoleError;
+                console.debug('✅ Console.error restaurado após filtrar erros de extensões');
+            }, 10000);
+            
+            console.debug('✅ Sistema de supressão de erros de extensões ativado');
+        })();
+        
+        // ✅ PROTEÇÃO ADICIONAL: Interceptar addEventListener para prevenir retornos true problemáticos
+        (function() {
+            const originalAddEventListener = EventTarget.prototype.addEventListener;
+            
+            EventTarget.prototype.addEventListener = function(type, listener, options) {
+                if (typeof listener === 'function') {
+                    const wrappedListener = function(event) {
+                        try {
+                            const result = listener.call(this, event);
+                            // Se a função retornar true, converter para false para evitar problemas com extensões
+                            if (result === true && type !== 'beforeunload') {
+                                console.debug('🔇 Convertendo retorno true para false em listener:', type);
+                                return false;
+                            }
+                            return result;
+                        } catch (error) {
+                            console.error('Erro em event listener:', error);
+                            return false;
+                        }
+                    };
+                    
+                    return originalAddEventListener.call(this, type, wrappedListener, options);
+                }
+                
+                return originalAddEventListener.call(this, type, listener, options);
+            };
+            
+            console.debug('✅ Proteção de event listeners ativada');
+        })();
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: radial-gradient(circle at 10% 10%, rgba(52, 152, 219, 0.35), transparent 40%), radial-gradient(circle at 90% 90%, rgba(39, 174, 96, 0.35), transparent 40%), linear-gradient(135deg, #1f2937, #334155 45%, #1d4ed8);
+            position: relative;
+            overflow-x: hidden;
+            padding: 24px;
+        }
+        
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+    /* Removido Unsplash externo para evitar ORB e problemas de CORS */
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 50%, #27ae60 100%);
+            opacity: 0.15;
+            z-index: -1;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.96);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 24px 55px rgba(0, 0, 0, 0.26);
+            width: 100%;
+            max-width: 460px;
+            text-align: center;
+            animation: fadeIn 0.5s ease-out;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(10px);
+        }
+
+        .container::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(140deg, rgba(255,255,255,0.45), rgba(255,255,255,0));
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo-container {
+            margin-bottom: 26px;
+        }
+
+        .logo-icon {
+            font-size: 48px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 18px;
+            font-size: 28px;
+            position: relative;
+        }
+        
+        h1::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            bottom: -10px;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(90deg, #3498db, #2c3e50);
+        }
+
+        .auth-subtitle {
+            color: #475569;
+            font-size: 14px;
+            line-height: 1.55;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #34495e;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 5px;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #7f8c8d;
+            transition: color 0.3s;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 12px 12px 45px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background-color: #f9f9f9;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #3498db;
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        input:focus + i {
+            color: #3498db;
+        }
+
+        button {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .system-health {
+            margin-bottom: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            text-align: left;
+            border: 1px solid #dbeafe;
+            background: #eff6ff;
+            color: #1e3a8a;
+            display: none;
+        }
+
+        .system-health.system-ok {
+            border-color: #bbf7d0;
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .system-health.system-warn {
+            border-color: #fde68a;
+            background: #fffbeb;
+            color: #92400e;
+        }
+
+        .system-health.system-error {
+            border-color: #fecaca;
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .system-health-title {
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .system-health-text {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        button::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+            transform: translateX(-100%);
+            animation: shine 3s infinite;
+        }
+        
+        @keyframes shine {
+            0% { transform: translateX(-100%); }
+            20% { transform: translateX(100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+
+        .forgot-password {
+            margin-top: 15px;
+            color: #7f8c8d;
+            text-decoration: none;
+            font-size: 14px;
+            display: inline-block;
+            transition: color 0.3s;
+        }
+
+        .forgot-password:hover {
+            color: #3498db;
+            text-decoration: underline;
+        }
+
+        .register-link {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #ecf0f1;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .login-footer-note {
+            margin-top: 16px;
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        .register-link a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        .register-link a:hover {
+            color: #2980b9;
+            text-decoration: underline;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+            padding: 8px;
+            background-color: #fdedec;
+            border-radius: 4px;
+            border-left: 3px solid #e74c3c;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .success-message {
+            color: #27ae60;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+            padding: 8px;
+            background-color: #e9f7ef;
+            border-radius: 4px;
+            border-left: 3px solid #27ae60;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .success-message i {
+            margin-right: 5px;
+            color: #27ae60;
+        }
+        
+        /* Animação para mensagem de sucesso */
+        @keyframes successPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+        
+        .success-animation {
+            animation: successPulse 1s ease-in-out 3;
+        }
+
+        /* Modal de Registro */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 40px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.4s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #7f8c8d;
+            transition: color 0.3s;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .close:hover {
+            color: #e74c3c;
+            background-color: #f8f9fa;
+        }
+
+        /* Estilo para o spinner de carregamento */
+        .loading-spinner {
+            display: none;
+            margin: 15px auto;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Estilos para login com Google */
+        .social-login {
+            margin-top: 25px;
+            padding-top: 15px;
+        }
+        
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: white;
+            color: #333;
+            border: 1px solid #ddd;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .google-btn:hover {
+            background-color: #f5f5f5;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .google-btn i {
+            font-size: 18px;
+            color: #4285F4;
+            margin-right: 10px;
+        }
+        
+        .or-divider {
+            margin: 20px 0;
+            position: relative;
+            text-align: center;
+        }
+        
+        .or-divider:before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 45%;
+            border-top: 1px solid #ecf0f1;
+        }
+        
+        .or-divider:after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: 0;
+            width: 45%;
+            border-top: 1px solid #ecf0f1;
+        }
+        
+        .or-divider span {
+            background-color: white;
+            padding: 0 10px;
+            position: relative;
+            z-index: 1;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        /* Estilos para mensagem de manutenção */
+        .maintenance-message {
+            display: none;
+            background-color: #fff8e1;
+            color: #7a4f01;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            text-align: left;
+            border: 1px solid #f8d37b;
+        }
+        
+        .maintenance-message strong {
+            display: inline-block;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+        
+        .maintenance-btn {
+            background: linear-gradient(135deg, #f39c12, #e74c3c);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 7px 11px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.3s;
+            font-weight: 600;
+            width: auto;
+        }
+
+        .global-system-footer {
+            position: static;
+            width: min(100%, 460px);
+            margin: 16px auto 0;
+            background: rgba(15, 23, 42, 0.42);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 10px;
+            backdrop-filter: blur(4px);
+            color: #e2e8f0;
+            font-size: 12px;
+            padding: 10px 12px;
+            text-align: center;
+            z-index: 1;
+        }
+
+        .global-system-footer .global-footer-contact {
+            color: #93c5fd;
+        }
+        
+        .maintenance-btn:hover {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+                width: 90%;
+                margin: 20px;
+            }
+
+            .global-system-footer {
+                width: calc(100% - 24px);
+                margin-top: 12px;
+            }
+            
+            .modal-content {
+                padding: 25px 15px;
+                width: 95%;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+            
+            .logo-icon {
+                font-size: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-container">
+            <i class="fas fa-tree logo-icon"></i>
+            <h1>SisWeb</h1>
+            <p class="auth-subtitle">Acesse sua conta com segurança para continuar no sistema de gestão.</p>
+        </div>
+        
+        <!-- Mensagem de manutenção - Versão simplificada -->
+        <div id="maintenanceMessage" style="display: none;" class="maintenance-message">
+            <strong>Problema de Conexão</strong>
+            <p>Detectamos um problema ao conectar com nossos serviços.</p>
+            <button id="clearCacheBtn" class="maintenance-btn">
+                <i class="fas fa-broom"></i> Limpar Cache e Tentar Novamente
+            </button>
+        </div>
+
+        <div id="systemHealth" class="system-health">
+            <div class="system-health-title" id="systemHealthTitle">Verificando serviços...</div>
+            <div class="system-health-text" id="systemHealthText">Aguarde enquanto validamos os módulos críticos.</div>
+        </div>
+        
+        <form id="loginForm" onsubmit="return handleLogin(event)">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <div class="input-group">
+                    <input type="email" id="email" autocomplete="email" required placeholder="Seu email">
+                    <i class="fas fa-envelope"></i>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <div class="input-group">
+                    <input type="password" id="password" autocomplete="current-password" required placeholder="Sua senha">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <div id="errorMessage" class="error-message"></div>
+            </div>
+
+            <button type="submit">
+                <i class="fas fa-sign-in-alt"></i> Entrar
+            </button>
+            <div id="loading-spinner" class="loading-spinner"></div>
+            <a href="#" class="forgot-password" onclick="showForgotPassword()">
+                <i class="fas fa-question-circle"></i> Esqueceu a senha?
+            </a>
+
+            <div class="register-link">
+                Não tem uma conta? <a href="#" onclick="showRegisterModal()">Registre-se</a>
+            </div>
+            <div class="login-footer-note">
+                Ambiente protegido por autenticação e regras de segurança por empresa.
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal de Registro -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeRegisterModal()">&times;</span>
+            <h2 style="margin-bottom: 30px; color: #2c3e50; text-align: center;">Criar Conta</h2>
+            
+            <form id="registerForm" onsubmit="return handleRegister(event)">
+                <div class="form-group">
+                    <label for="regUsername">Nome Completo</label>
+                    <div class="input-group">
+                        <input type="text" id="regUsername" autocomplete="name" required placeholder="Seu nome completo">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="regEmail">E-mail</label>
+                    <div class="input-group">
+                        <input type="email" id="regEmail" autocomplete="email" required placeholder="Seu melhor email">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="regPassword">Senha</label>
+                    <div class="input-group">
+                        <input type="password" id="regPassword" autocomplete="new-password" required placeholder="Mínimo 6 caracteres">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="regConfirmPassword">Confirmar Senha</label>
+                    <div class="input-group">
+                        <input type="password" id="regConfirmPassword" autocomplete="new-password" required placeholder="Repita sua senha">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <div id="regErrorMessage" class="error-message"></div>
+                </div>
+
+                <button type="submit">
+                    <i class="fas fa-user-plus"></i> Registrar
+                </button>
+                <div id="register-loading-spinner" class="loading-spinner"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Recuperação de Senha -->
+    <div id="forgotPasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeForgotPasswordModal()">&times;</span>
+            <h2 style="margin-bottom: 30px; color: #2c3e50; text-align: center;">Recuperar Senha</h2>
+            
+            <form id="forgotPasswordForm" onsubmit="return handlePasswordReset(event)">
+                <div class="form-group">
+                    <label for="resetEmail">Email da Conta</label>
+                    <div class="input-group">
+                        <input type="email" id="resetEmail" autocomplete="email" required placeholder="Email cadastrado">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div id="resetErrorMessage" class="error-message"></div>
+                    <div id="resetSuccessMessage" class="success-message"></div>
+                </div>
+                
+                <button type="submit">
+                    <i class="fas fa-paper-plane"></i> Enviar Link de Recuperação
+                </button>
+                <div id="reset-loading-spinner" class="loading-spinner"></div>
+                
+                <p class="note" style="margin-top: 20px; font-size: 13px; color: #7f8c8d; text-align: center;">
+                    Um link será enviado para o email informado com instruções para redefinir sua senha.
+                </p>
+                
+                <div style="margin-top: 15px; text-align: center;">
+                    <button type="button" id="checkFirebaseStatusBtn" style="background: #f39c12; margin-top: 5px; font-size: 14px; padding: 8px 15px;">
+                        <i class="fas fa-heartbeat"></i> Verificar Status do Firebase
+                    </button>
+                    
+                    <button type="button" id="testEmailBtn" style="background: #3498db; margin-top: 5px; margin-left: 5px; font-size: 14px; padding: 8px 15px;">
+                        <i class="fas fa-paper-plane"></i> Testar Envio de Email
+                </button>
+            </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Carregar auth.js tradicional primeiro -->
+    <script src="js/deep-clean.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        function hideSystemHealth() {
+            const container = document.getElementById('systemHealth');
+            if (container) container.style.display = 'none';
+        }
+
+        function setSystemHealth(type, title, text) {
+            const container = document.getElementById('systemHealth');
+            const titleEl = document.getElementById('systemHealthTitle');
+            const textEl = document.getElementById('systemHealthText');
+            if (!container || !titleEl || !textEl) return;
+            container.classList.remove('system-ok', 'system-warn', 'system-error');
+            container.classList.add(type === 'ok' ? 'system-ok' : type === 'warn' ? 'system-warn' : 'system-error');
+            titleEl.textContent = title;
+            textEl.textContent = text;
+            container.style.display = 'block';
+        }
+
+        function showMaintenanceMessage(text) {
+            const maintenanceMessage = document.getElementById('maintenanceMessage');
+            if (!maintenanceMessage) return;
+            const messageText = text || 'Detectamos instabilidade de conexão. Você pode tentar novamente em alguns segundos.';
+            maintenanceMessage.innerHTML = `
+                <strong>Conexão instável</strong>
+                <p>${messageText}</p>
+                <button id="clearCacheBtn" class="maintenance-btn">
+                    <i class="fas fa-broom"></i> Limpar Cache e Tentar Novamente
+                </button>
+            `;
+            maintenanceMessage.style.display = 'block';
+        }
+
+        function hideMaintenanceMessage() {
+            const maintenanceMessage = document.getElementById('maintenanceMessage');
+            if (maintenanceMessage) maintenanceMessage.style.display = 'none';
+        }
+
+        function getLoginExecutor() {
+            if (typeof window.login === 'function') return window.login;
+            if (window.firebaseService && window.firebaseService.authService && typeof window.firebaseService.authService.login === 'function') {
+                return (email, password) => window.firebaseService.authService.login(email, password);
+            }
+            return null;
+        }
+
+        async function waitForLoginExecutor(maxWaitMs = 3500, intervalMs = 150) {
+            const startedAt = Date.now();
+            let executor = getLoginExecutor();
+            while (!executor && Date.now() - startedAt < maxWaitMs) {
+                await new Promise((resolve) => setTimeout(resolve, intervalMs));
+                executor = getLoginExecutor();
+            }
+            return executor;
+        }
+
+        async function waitForFirebaseConnection(maxWaitMs = 4500, intervalMs = 250) {
+            const startedAt = Date.now();
+            while (Date.now() - startedAt < maxWaitMs) {
+                if (window._FIREBASE_CONNECTED === true) return true;
+                await new Promise((resolve) => setTimeout(resolve, intervalMs));
+            }
+            return window._FIREBASE_CONNECTED === true;
+        }
+
+        function runLoginHealthCheck(showOk = false) {
+            const issues = [];
+            const warnings = [];
+            const hasAuthJsLogin = typeof window.login === 'function';
+            const hasFirebaseService = !!window.firebaseService;
+            const hasAuthService = !!(window.firebaseService && window.firebaseService.authService);
+            const hasLoginService = !!getLoginExecutor();
+
+            if (!hasFirebaseService) issues.push('firebaseService não carregou');
+            if (!hasAuthService) issues.push('authService indisponível');
+            if (!hasLoginService) issues.push('método de login indisponível');
+            if (!hasAuthJsLogin && hasLoginService) warnings.push('modo de contingência ativo');
+
+            if (issues.length === 0 && warnings.length === 0) {
+                if (showOk) setSystemHealth('ok', 'Serviços online', 'Autenticação pronta para uso.');
+                else hideSystemHealth();
+            } else if (issues.length === 0) {
+                setSystemHealth('warn', 'Serviço parcial', `Login disponível com fallback: ${warnings.join(', ')}.`);
+            } else {
+                setSystemHealth('error', 'Falha em módulo crítico', `Diagnóstico: ${issues.join('; ')}. Tente limpar cache e recarregar.`);
+            }
+            return { issues, warnings };
+        }
+
+        async function getRedirectTarget(result) {
+            const params = new URLSearchParams(window.location.search);
+            const redirect = params.get('redirect');
+            const requested = redirect ? decodeURIComponent(redirect) : 'index.html';
+            const details = window.getCurrentUserDetails ? await window.getCurrentUserDetails() : null;
+            const isAdmin = window.isSuperAdminSession ? await window.isSuperAdminSession() : false;
+            const isAdminPanelUser = window.hasAnyAdminPanelAccess ? await window.hasAnyAdminPanelAccess() : false;
+            const statusKey = (result && result.subscriptionStatus)
+                || (window.resolveSubscriptionStatus ? window.resolveSubscriptionStatus(details || {}) : 'expired');
+            const flowRedirect = result && result.flowRedirect ? String(result.flowRedirect) : '';
+            if (flowRedirect) return flowRedirect;
+            if (window.resolvePostLoginRoute) {
+                try {
+                    const routed = await window.resolvePostLoginRoute({
+                        ...(details || {}),
+                        subscriptionStatus: statusKey
+                    }, {
+                        requestedRedirect: requested,
+                        statusKey,
+                        isSuperAdmin: isAdmin,
+                        isAdminPanelUser
+                    });
+                    if (routed) return routed;
+                } catch (_) {}
+            }
+            const loweredRequested = String(requested || '').toLowerCase();
+            if (isAdmin) {
+                if (!requested || loweredRequested === 'index.html' || loweredRequested.includes('subscription.html') || loweredRequested.includes('subscription-status.html') || loweredRequested.includes('login.html')) {
+                    return 'admin.html?tab=dashboard';
+                }
+                return requested;
+            }
+            if (isAdminPanelUser) {
+                if (!requested || loweredRequested === 'index.html' || loweredRequested.includes('subscription.html') || loweredRequested.includes('subscription-status.html') || loweredRequested.includes('login.html')) {
+                    return 'admin.html?tab=dashboard';
+                }
+                if (loweredRequested.includes('admin-') || loweredRequested.includes('admin.html')) return requested;
+                return 'admin.html?tab=dashboard';
+            }
+            if (!isAdmin) {
+                if (statusKey === 'unknown') {
+                    if (loweredRequested.includes('admin-') || loweredRequested.includes('company.html')) return 'index.html';
+                    if (requested) return requested;
+                    return 'index.html';
+                }
+                if (statusKey === 'expired') return 'subscription.html?reason=expired';
+                if (statusKey === 'blocked') return 'subscription.html?reason=blocked';
+                if (statusKey === 'pending' || statusKey === 'pending_grace') return 'subscription.html?reason=pending';
+                if (statusKey === 'pending_grace') return 'index.html';
+                if (loweredRequested.includes('admin-') || loweredRequested.includes('company.html')) return 'index.html';
+            }
+            if (requested) return requested;
+            return 'index.html';
+        }
+
+        // Função para login
+        window.handleLogin = async function(event) {
+            event.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            const loadingSpinner = document.getElementById('loading-spinner');
+
+            errorMessage.style.display = 'none';
+            loadingSpinner.style.display = 'block';
+            runLoginHealthCheck(false);
+
+            try {
+                console.log("Attempting login for:", email);
+                if (window._FIREBASE_CONNECTED === false) {
+                    setSystemHealth('warn', 'Reconectando serviços', 'Conexão oscilando. Aguarde enquanto restabelecemos o Firebase...');
+                    const reconnected = await waitForFirebaseConnection(4500);
+                    if (!reconnected) {
+                        errorMessage.textContent = 'Conexão instável. Não foi possível conectar ao servidor de autenticação. Tente novamente em instantes.';
+                        errorMessage.style.display = 'block';
+                        setSystemHealth('error', 'Servidor indisponível', 'Não foi possível estabelecer conexão com o Firebase.');
+                        return;
+                    }
+                }
+                const executeLogin = await waitForLoginExecutor();
+                if (!executeLogin) {
+                    errorMessage.textContent = 'Serviço de autenticação indisponível no momento. Recarregue a página ou use "Limpar Cache e Tentar Novamente".';
+                    errorMessage.style.display = 'block';
+                    setSystemHealth('error', 'Login indisponível', 'Não foi possível inicializar o módulo de autenticação.');
+                    return;
+                }
+                const result = await executeLogin(email, password);
+
+                if (result.success) {
+                    console.log("Login successful!");
+                    setSystemHealth('ok', 'Login realizado', 'Redirecionando para o sistema...');
+                    window.location.href = await getRedirectTarget(result);
+                } else {
+                    let errorMsg = result.error || 'Erro desconhecido ao fazer login.';
+                    if (result.error && result.error.includes('auth/user-not-found')) {
+                        errorMsg = 'Usuário não encontrado. Verifique seu email.';
+                    } else if (result.error && result.error.includes('auth/wrong-password')) {
+                        errorMsg = 'Senha incorreta.';
+                    } else if (result.error && result.error.includes('auth/invalid-email')) {
+                        errorMsg = 'Email inválido.';
+                    } else if (result.error && result.error.includes('auth/network-request-failed')) {
+                        errorMsg = 'Erro de conexão. Verifique sua internet.';
+                    }
+                    errorMessage.textContent = errorMsg;
+                    errorMessage.style.display = 'block';
+                    setSystemHealth('warn', 'Não foi possível autenticar', 'Verifique suas credenciais e tente novamente.');
+                }
+            } catch (error) {
+                console.error("Login error:", error);
+                let errorMsg = error.message || 'Erro inesperado ao fazer login.';
+                if (error.code === 'auth/user-not-found') {
+                    errorMsg = 'Usuário não encontrado. Verifique seu email.';
+                } else if (error.code === 'auth/wrong-password') {
+                    errorMsg = 'Senha incorreta.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMsg = 'Email inválido.';
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMsg = 'Erro de conexão. Verifique sua internet.';
+                }
+                errorMessage.textContent = errorMsg;
+                errorMessage.style.display = 'block';
+                setSystemHealth('error', 'Erro ao autenticar', 'Ocorreu uma falha técnica durante o login. Tente novamente.');
+            } finally {
+                loadingSpinner.style.display = 'none';
+            }
+        };
+
+        // Função para registrar novo usuário
+        window.handleRegister = async function(event) {
+            event.preventDefault();
+            
+            try {
+                // Verificar se já existe um usuário logado
+                const currentUser = await window.getCurrentUserDetails();
+                if (currentUser) {
+                    console.log("⚠️ Usuário já está logado:", currentUser.email);
+                    try {
+                        if (typeof window.__toast === 'function') {
+                            window.__toast(`Você já está logado com a conta ${currentUser.email}. Faça logout primeiro.`, 'warning', { duration: 5000 });
+                        } else if (window.Utils && window.Utils.showToast) {
+                            window.Utils.showToast(`Você já está logado com a conta ${currentUser.email}. Faça logout primeiro.`, 'warning');
+                        }
+                    } catch (_) {}
+                    closeRegisterModal();
+                    return;
+                }
+                
+                // Mostrar spinner de carregamento
+                const spinner = document.getElementById('register-loading-spinner');
+                spinner.style.display = 'block';
+                
+                // Obter dados do formulário
+                const username = document.getElementById('regUsername').value;
+                const email = document.getElementById('regEmail').value;
+                const password = document.getElementById('regPassword').value;
+                const confirmPassword = document.getElementById('regConfirmPassword').value;
+                
+                // Referência para exibir erros
+                const errorMessage = document.getElementById('regErrorMessage');
+                errorMessage.style.display = 'none';
+                
+                // Validar senhas
+                if (password !== confirmPassword) {
+                    errorMessage.textContent = 'As senhas não coincidem';
+                    errorMessage.style.display = 'block';
+                    spinner.style.display = 'none';
+                    return;
+                }
+                
+                // Validar requisitos mínimos
+                if (password.length < 6) {
+                    errorMessage.textContent = 'A senha deve ter pelo menos 6 caracteres';
+                    errorMessage.style.display = 'block';
+                    spinner.style.display = 'none';
+                    return;
+                }
+                
+                console.log("👤 Registrando novo usuário...");
+                
+                // Usar diretamente o serviço de autenticação
+                const result = await window.register(email, password);
+                
+                if (result.success) {
+                    console.log("✅ Registro realizado com sucesso!");
+                    
+                    // Informar usuário
+                    try {
+                        if (typeof window.__toast === 'function') {
+                            window.__toast('Conta criada com sucesso! Você tem 30 dias de teste gratuito.', 'success');
+                        } else if (window.Utils && window.Utils.showToast) {
+                            window.Utils.showToast('Conta criada com sucesso! Você tem 30 dias de teste gratuito.', 'success');
+                        }
+                    } catch (_) {}
+                    
+                    // Fechar modal e redirecionar
+                    closeRegisterModal();
+                    window.location.href = await getRedirectTarget({ needsCompanyRegistration: true });
+                } else {
+                    // Melhorar tratamento de erros específicos
+                    let errorMsg = result.error || 'Erro ao criar conta';
+                    
+                    if (result.error && result.error.includes('email-already-in-use')) {
+                        errorMsg = 'Este email já está cadastrado. Use "Esqueci minha senha" ou tente fazer login.';
+                    } else if (result.error && result.error.includes('network-request-failed')) {
+                        errorMsg = 'Erro de conectividade. Verifique se você já não está logado ou tente novamente.';
+                    } else if (result.error && result.error.includes('weak-password')) {
+                        errorMsg = 'Senha muito fraca. Use pelo menos 6 caracteres com números e letras.';
+                    }
+                    
+                    // Exibir mensagem de erro
+                    errorMessage.textContent = errorMsg;
+                    errorMessage.style.display = 'block';
+                    spinner.style.display = 'none';
+                }
+            } catch (error) {
+                console.error("❌ Erro no registro:", error);
+                
+                // Melhorar tratamento de erros específicos
+                let errorMsg = error.message || 'Erro ao criar conta';
+                
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMsg = 'Este email já está cadastrado. Use "Esqueci minha senha" ou tente fazer login.';
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMsg = 'Erro de conectividade. Você pode já estar logado - verifique ou limpe o cache.';
+                } else if (error.code === 'auth/weak-password') {
+                    errorMsg = 'Senha muito fraca. Use pelo menos 6 caracteres com números e letras.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMsg = 'Formato de email inválido.';
+                }
+                
+                // Exibir mensagem de erro
+                const errorMessage = document.getElementById('regErrorMessage');
+                errorMessage.textContent = errorMsg;
+                errorMessage.style.display = 'block';
+                
+                // Esconder spinner
+                document.getElementById('register-loading-spinner').style.display = 'none';
+            }
+        };
+        
+        // Função para recuperação de senha
+        window.handlePasswordReset = async function(event) {
+            event.preventDefault();
+            
+            try {
+                // Mostrar spinner de carregamento
+                const spinner = document.getElementById('reset-loading-spinner');
+                spinner.style.display = 'block';
+                
+                // Limpar mensagens anteriores
+                const errorMessage = document.getElementById('resetErrorMessage');
+                const successMessage = document.getElementById('resetSuccessMessage');
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+                
+                // Obter email do formulário
+                const email = document.getElementById('resetEmail').value;
+                
+                if (!email) {
+                    errorMessage.textContent = 'Por favor, informe seu email';
+                    errorMessage.style.display = 'block';
+                    spinner.style.display = 'none';
+                    return;
+                }
+                
+                // Verificar se o Firebase está online
+                if (window._FIREBASE_CONNECTED === false) {
+                    console.error("❌ Firebase offline - não é possível enviar email de recuperação");
+                    errorMessage.textContent = 'Sistema offline. Não é possível enviar email de recuperação neste momento.';
+                    errorMessage.style.display = 'block';
+                    spinner.style.display = 'none';
+                    return;
+                }
+                
+                console.log("🔑 Solicitando recuperação de senha para:", email);
+                
+                // Usar Firebase para enviar email de redefinição
+                await window.firebaseService.authService.sendPasswordResetEmail(email);
+                
+                console.log("✅ Email de recuperação enviado com sucesso");
+                
+                // Mostrar mensagem de sucesso
+                successMessage.innerHTML = `<i class="fas fa-check-circle"></i> Email de recuperação enviado para <strong>${email}</strong>. <br>Verifique sua caixa de entrada e pasta de spam.`;
+                successMessage.style.display = 'block';
+                successMessage.classList.add('success-animation');
+                spinner.style.display = 'none';
+                
+                // Limpar o campo de email
+                document.getElementById('resetEmail').value = '';
+                
+                // Fechar o modal após 5 segundos
+                setTimeout(() => {
+                    closeForgotPasswordModal();
+                }, 5000);
+                
+            } catch (error) {
+                console.error("❌ Erro ao enviar email de recuperação:", error);
+                
+                let mensagemErro = 'Erro ao enviar email de recuperação.';
+                
+                // Personalizar mensagem de erro com base no código
+                if (error.code === 'auth/user-not-found') {
+                    mensagemErro = 'Não existe uma conta com este email.';
+                } else if (error.code === 'auth/invalid-email') {
+                    mensagemErro = 'O formato do email é inválido.';
+                } else if (error.code === 'auth/missing-email') {
+                    mensagemErro = 'Por favor, informe seu email.';
+                } else if (error.code === 'auth/network-request-failed') {
+                    mensagemErro = 'Erro de conexão. Verifique sua internet e tente novamente.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    mensagemErro = 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    mensagemErro = 'Recuperação de senha desativada pelo administrador.';
+                }
+                
+                // Exibir mensagem de erro
+                errorMessage.textContent = mensagemErro;
+                errorMessage.style.display = 'block';
+                
+                // Esconder spinner
+                spinner.style.display = 'none';
+            }
+        };
+    </script>
+
+    <!-- Importar módulos do Firebase -->
+    <script type="module">
+        // Importar os serviços necessários do Firebase
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut,
+            onAuthStateChanged,
+            sendPasswordResetEmail
+        } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { getApps } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getDatabase, ref, set, get, remove, child, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js';
+        
+        // Disponibilizar firebaseService globalmente para auth.js
+        window.firebaseService = { authService, isFirebaseOperational, setCompanyClaim };
+        if (typeof window.runLoginHealthCheck === 'function') {
+            window.runLoginHealthCheck();
+        }
+        
+        // Carregar auth.js como script tradicional
+        // As funções login, getData, saveData estarão disponíveis globalmente
+
+        // Verificar se já existe uma instância do Firebase
+        let app, auth;
+        
+        // Verificar se o Firebase já foi inicializado pelo firebaseService.js
+        if (window._FIREBASE_APP) {
+            console.log("📦 Reaproveitando instância Firebase do firebaseService.js");
+            app = window._FIREBASE_APP;
+            auth = getAuth(app);
+        } else {
+            // Verificar apps existentes
+            const existingApps = getApps();
+            if (existingApps.length > 0) {
+                console.log("♻️ Reutilizando app Firebase existente");
+                app = existingApps[0];
+                auth = getAuth(app);
+            } else {
+                console.error("❌ Nenhuma instância do Firebase encontrada. O firebaseService.js deve ser carregado primeiro.");
+            }
+        }
+        
+        // Salvar referências para diagnóstico
+        if (app && auth) {
+            window._FIREBASE_APP = app;
+            window.auth = auth;
+        }
+        
+        // Verificar se a API do Firebase pode ser carregada
+        let firebaseIsOperational = true;
+        
+        // Função auxiliar para detectar problemas com o Firebase
+        async function checkFirebaseStatus() {
+            try {
+                // Verificar status do Firebase usando a função dedicada
+                const status = isFirebaseOperational();
+                
+                if (!status.operational) {
+                    console.error("🔥 Firebase não operacional:", status.message);
+                    if (typeof window.showMaintenanceMessage === 'function') {
+                        window.showMaintenanceMessage(`Serviço de autenticação indisponível: ${status.message}`);
+                    }
+                    
+                    firebaseIsOperational = false;
+                    return false;
+                }
+                
+                // Tentar fazer uma chamada para verificar a autenticação
+                await authService.getCurrentUser()
+                    .catch(error => {
+                        if (error.code === 'auth/api-key-not-valid') {
+                            throw new Error('Chave API do Firebase inválida');
+                        }
+                        // Outros erros podem ser OK - apenas retornar null
+                        return null;
+                    });
+                
+                console.log("✅ Firebase operacional e autenticação disponível");
+                return true;
+            } catch (error) {
+                console.error("🔥 Erro crítico de autenticação:", error);
+                if (typeof window.showMaintenanceMessage === 'function') {
+                    window.showMaintenanceMessage(`Erro ao validar autenticação: ${error.message}`);
+                }
+                
+                firebaseIsOperational = false;
+                return false;
+            }
+        }
+        
+        // Verificar Firebase na inicialização
+        checkFirebaseStatus();
+
+        // Utilitário legado: alvo de redirecionamento básico
+        function getLegacyRedirectTarget() {
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                const p = params.get('redirect');
+                if (p) { return p; }
+                const reason = (params.get('reason') || '').toLowerCase();
+                // Caso não haja redirect explícito, usar referência de origem
+                const ref = document.referrer || '';
+                if (ref && ref.indexOf('/folha_pagamento/') !== -1) {
+                    return 'folha_pagamento/folha.html';
+                }
+                if (reason.includes('ui_not_authenticated') || reason.includes('save_requires_auth') || reason.includes('firebase_user_null') || reason.includes('session_expired') || reason.includes('logout_menu')) {
+                    return 'folha_pagamento/folha.html';
+                }
+                return 'index.html';
+            } catch (e) {
+                return 'index.html';
+            }
+        }
+
+        async function resolveSafeRedirectTarget(options = {}) {
+            if (options && options.forceSystemHome === true) return 'index.html';
+            try {
+                if (typeof window.getRedirectTarget === 'function') {
+                    const target = await window.getRedirectTarget(options);
+                    const lowered = String(target || '').toLowerCase();
+                    if (!target) return getLegacyRedirectTarget();
+                    if (lowered.includes('login.html')) return getLegacyRedirectTarget();
+                    if (options && options.preventSubscriptionLoop && (lowered.includes('subscription.html') || lowered.includes('subscription-status.html'))) {
+                        const isAdmin = window.isSuperAdminSession ? await window.isSuperAdminSession() : false;
+                        const isAdminPanelUser = window.hasAnyAdminPanelAccess ? await window.hasAnyAdminPanelAccess() : false;
+                        if (isAdmin || isAdminPanelUser) return 'admin.html?tab=dashboard';
+                    }
+                    return target;
+                }
+            } catch (_) {}
+            return getLegacyRedirectTarget();
+        }
+
+        function shouldForceHomeFromLoginContext() {
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                const redirect = String(params.get('redirect') || '').toLowerCase();
+                if (!redirect) return false;
+                if (redirect.includes('subscription.html') || redirect.includes('subscription-status.html')) return true;
+                if (redirect.includes('login.html')) return true;
+                return false;
+            } catch (_) {
+                return false;
+            }
+        }
+
+
+        
+        // Função para registrar novo usuário
+        window.handleRegister = async function(event) {
+            event.preventDefault();
+            
+            try {
+                // Verificar se já existe um usuário logado
+                const currentUser = await authService.getCurrentUser();
+                if (currentUser) {
+                    console.log("⚠️ Usuário já está logado:", currentUser.email);
+                    try {
+                        if (typeof window.__toast === 'function') {
+                            window.__toast(`Você já está logado com a conta ${currentUser.email}. Faça logout primeiro.`, 'warning', { duration: 5000 });
+                        } else if (window.Utils && window.Utils.showToast) {
+                            window.Utils.showToast(`Você já está logado com a conta ${currentUser.email}. Faça logout primeiro.`, 'warning');
+                        }
+                    } catch (_) {}
+                    closeRegisterModal();
+                    return;
+                }
+                
+                // Mostrar spinner de carregamento
+                const spinner = document.getElementById('register-loading-spinner');
+                spinner.style.display = 'block';
+                
+                // Obter dados do formulário
+                const username = document.getElementById('regUsername').value;
+                const email = document.getElementById('regEmail').value;
+                const password = document.getElementById('regPassword').value;
+                const confirmPassword = document.getElementById('regConfirmPassword').value;
+                
+                // Referência para exibir erros
+                const errorMessage = document.getElementById('regErrorMessage');
+                errorMessage.style.display = 'none';
+                
+                // Validar senhas
+                if (password !== confirmPassword) {
+                    errorMessage.textContent = 'As senhas não coincidem';
+                    errorMessage.style.display = 'block';
+                    spinner.style.display = 'none';
+                    return;
+                }
+                
+                // Validar requisitos mínimos
+                if (password.length < 6) {
+                    errorMessage.textContent = 'A senha deve ter pelo menos 6 caracteres';
+                    errorMessage.style.display = 'block';
+                    spinner.style.display = 'none';
+                    return;
+                }
+                
+                console.log("👤 Registrando novo usuário...");
+                
+                // Usar diretamente o serviço de autenticação
+                const result = await authService.register(email, password, username);
+                
+                if (result.success) {
+                    console.log("✅ Registro realizado com sucesso!");
+                    
+                    // Informar usuário
+                    try {
+                        if (typeof window.__toast === 'function') {
+                            window.__toast('Conta criada com sucesso! Você tem 30 dias de teste gratuito.', 'success');
+                        } else if (window.Utils && window.Utils.showToast) {
+                            window.Utils.showToast('Conta criada com sucesso! Você tem 30 dias de teste gratuito.', 'success');
+                        }
+                    } catch (_) {}
+                    
+                    // Fechar modal e redirecionar
+                    closeRegisterModal();
+                    window.location.href = await resolveSafeRedirectTarget({ needsCompanyRegistration: true });
+                } else {
+                    // Melhorar tratamento de erros específicos
+                    let errorMsg = result.error || 'Erro ao criar conta';
+                    
+                    if (result.error && result.error.includes('email-already-in-use')) {
+                        errorMsg = 'Este email já está cadastrado. Use "Esqueci minha senha" ou tente fazer login.';
+                    } else if (result.error && result.error.includes('network-request-failed')) {
+                        errorMsg = 'Erro de conectividade. Verifique se você já não está logado ou tente novamente.';
+                    } else if (result.error && result.error.includes('weak-password')) {
+                        errorMsg = 'Senha muito fraca. Use pelo menos 6 caracteres com números e letras.';
+                    }
+                    
+                    // Exibir mensagem de erro
+                    errorMessage.textContent = errorMsg;
+                    errorMessage.style.display = 'block';
+                    spinner.style.display = 'none';
+                }
+            } catch (error) {
+                console.error("❌ Erro no registro:", error);
+                
+                // Melhorar tratamento de erros específicos
+                let errorMsg = error.message || 'Erro ao criar conta';
+                
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMsg = 'Este email já está cadastrado. Use "Esqueci minha senha" ou tente fazer login.';
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMsg = 'Erro de conectividade. Você pode já estar logado - verifique ou limpe o cache.';
+                } else if (error.code === 'auth/weak-password') {
+                    errorMsg = 'Senha muito fraca. Use pelo menos 6 caracteres com números e letras.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMsg = 'Formato de email inválido.';
+                }
+                
+                // Exibir mensagem de erro
+                const errorMessage = document.getElementById('regErrorMessage');
+                errorMessage.textContent = errorMsg;
+                errorMessage.style.display = 'block';
+                
+                // Esconder spinner
+                document.getElementById('register-loading-spinner').style.display = 'none';
+            }
+        };
+        
+        // Função para recuperação de senha
+        window.handlePasswordReset = async function(event) {
+            event.preventDefault();
+            
+            try {
+                // Mostrar spinner de carregamento
+                const spinner = document.getElementById('reset-loading-spinner');
+                spinner.style.display = 'block';
+                
+                // Limpar mensagens anteriores
+                const errorMessage = document.getElementById('resetErrorMessage');
+                const successMessage = document.getElementById('resetSuccessMessage');
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+                
+                // Obter email do formulário
+                const email = document.getElementById('resetEmail').value;
+                
+                if (!email) {
+                    errorMessage.textContent = 'Por favor, informe seu email';
+                    errorMessage.style.display = 'block';
+                    spinner.style.display = 'none';
+                    return;
+                }
+                
+                // Verificar se o Firebase está online
+                if (window._FIREBASE_CONNECTED === false) {
+                    console.error("❌ Firebase offline - não é possível enviar email de recuperação");
+                    errorMessage.textContent = 'Sistema offline. Não é possível enviar email de recuperação neste momento.';
+                    errorMessage.style.display = 'block';
+                    spinner.style.display = 'none';
+                    return;
+                }
+                
+                console.log("🔑 Solicitando recuperação de senha para:", email);
+                
+                // Usar Firebase para enviar email de redefinição
+                await sendPasswordResetEmail(auth, email);
+                
+                console.log("✅ Email de recuperação enviado com sucesso");
+                
+                // Mostrar mensagem de sucesso
+                successMessage.innerHTML = `<i class="fas fa-check-circle"></i> Email de recuperação enviado para <strong>${email}</strong>. <br>Verifique sua caixa de entrada e pasta de spam.`;
+                successMessage.style.display = 'block';
+                successMessage.classList.add('success-animation');
+                spinner.style.display = 'none';
+                
+                // Limpar o campo de email
+                document.getElementById('resetEmail').value = '';
+                
+                // Fechar o modal após 5 segundos
+                setTimeout(() => {
+                    closeForgotPasswordModal();
+                }, 5000);
+                
+            } catch (error) {
+                console.error("❌ Erro ao enviar email de recuperação:", error);
+                
+                let mensagemErro = 'Erro ao enviar email de recuperação.';
+                
+                // Personalizar mensagem de erro com base no código
+                if (error.code === 'auth/user-not-found') {
+                    mensagemErro = 'Não existe uma conta com este email.';
+                } else if (error.code === 'auth/invalid-email') {
+                    mensagemErro = 'O formato do email é inválido.';
+                } else if (error.code === 'auth/missing-email') {
+                    mensagemErro = 'Por favor, informe seu email.';
+                } else if (error.code === 'auth/network-request-failed') {
+                    mensagemErro = 'Erro de conexão. Verifique sua internet e tente novamente.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    mensagemErro = 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    mensagemErro = 'Recuperação de senha desativada pelo administrador.';
+                }
+                
+                // Exibir mensagem de erro
+                errorMessage.textContent = mensagemErro;
+                errorMessage.style.display = 'block';
+                
+                // Esconder spinner
+                spinner.style.display = 'none';
+            }
+        };
+        
+        // Verificar se o usuário já está autenticado
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log("🔍 Verificando estado de autenticação...");
+            runLoginHealthCheck(false);
+            
+            // Processar parâmetros da URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const noRedirect = urlParams.get('noRedirect') === 'true';
+            const resetSession = urlParams.get('reset') === 'true';
+            const isOffline = urlParams.get('offline') === 'true';
+            const hasError = urlParams.get('error') === 'true';
+            const requestedLogout = urlParams.get('logout') === '1';
+            
+            // Processar parâmetros especiais
+            if (resetSession) {
+                console.log("🔄 Parâmetro 'reset' detectado, limpando dados de sessão");
+                sessionStorage.clear();
+                localStorage.removeItem('firebaseInitialized');
+                // Remover parâmetro da URL para evitar loops
+                window.history.replaceState({}, document.title, 'login.html');
+                // Mostrar mensagem
+                document.getElementById('errorMessage').textContent = "Sessão reiniciada. Por favor, faça login novamente.";
+                document.getElementById('errorMessage').style.display = 'block';
+                showMaintenanceMessage('Sessão reiniciada com sucesso. Faça login novamente.');
+                return;
+            }
+            
+            // Forçar logout quando vindo do menu (sair)
+            if (requestedLogout) {
+                try {
+                    console.log("🚪 Logout solicitado via parâmetro de URL, encerrando sessão...");
+                    if (window.authService && typeof window.authService.logout === 'function') {
+                        await window.authService.logout();
+                    } else if (window.firebaseService && window.firebaseService.authService && typeof window.firebaseService.authService.logout === 'function') {
+                        await window.firebaseService.authService.logout();
+                    }
+                } catch (e) {
+                    console.warn("⚠️ Falha ao executar logout programático:", e && e.message);
+                } finally {
+                    try {
+                        sessionStorage.clear();
+                        localStorage.removeItem('currentUser');
+                        localStorage.removeItem('persistentUser');
+                        localStorage.removeItem('auth');
+                        localStorage.removeItem('firebaseInitialized');
+                    } catch(_) {}
+                    // Limpar parâmetro da URL
+                    urlParams.delete('logout');
+                    const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+                    window.history.replaceState({}, document.title, newUrl);
+                    console.log("✅ Sessão limpa após logout via URL");
+                }
+            }
+            
+            if (isOffline) {
+                console.log("⚠️ Parâmetro 'offline' detectado, Firebase está offline");
+                document.getElementById('errorMessage').textContent = "O sistema está operando em modo offline. Algumas funcionalidades podem estar limitadas.";
+                document.getElementById('errorMessage').style.display = 'block';
+                showMaintenanceMessage('Modo offline detectado. Você pode tentar novamente quando a conexão estabilizar.');
+                // Remover parâmetro da URL
+                window.history.replaceState({}, document.title, 'login.html');
+            }
+            
+            if (hasError) {
+                console.log("⚠️ Parâmetro 'error' detectado, exibindo opções de manutenção");
+                document.getElementById('errorMessage').textContent = "Ocorreu um erro ao verificar sua autenticação. Por favor, tente novamente.";
+                document.getElementById('errorMessage').style.display = 'block';
+                showMaintenanceMessage();
+                // Remover parâmetro da URL
+                window.history.replaceState({}, document.title, 'login.html');
+                return;
+            }
+            
+            // Verificar se é um recarregamento da página
+            const pageLoadCount = parseInt(sessionStorage.getItem('pageLoadCount') || '0') + 1;
+            sessionStorage.setItem('pageLoadCount', pageLoadCount.toString());
+            
+            // Detectar loop de redirecionamento
+            const redirectCount = parseInt(sessionStorage.getItem('redirectCount') || '0');
+            console.log(`🔄 Contador de redirecionamentos: ${redirectCount}`);
+            
+            // Se detectar um loop (5+ redirecionamentos), interromper
+            if (redirectCount > 5) {
+                console.log("⚠️ Loop de redirecionamento detectado! Interrompendo ciclo.");
+                showMaintenanceMessage('Detectamos muitas tentativas de redirecionamento. Faça login manualmente.');
+                
+                // Limpar contador para permitir nova tentativa mais tarde
+                sessionStorage.setItem('redirectCount', '0');
+                
+                // Mostrar mensagem de erro para o usuário
+                const errorMessage = document.getElementById('errorMessage');
+                errorMessage.textContent = "Detectamos um problema de autenticação. Tente usar os botões de manutenção abaixo.";
+                errorMessage.style.display = 'block';
+                
+                return; // Parar aqui e não tentar redirecionamento
+            }
+            
+            if (noRedirect) {
+                console.log("🚫 Parâmetro noRedirect detectado");
+                window.history.replaceState({}, document.title, 'login.html');
+            }
+            
+            try {
+                // Verificar Firebase disponível
+                if (window._FIREBASE_CONNECTED === false) {
+                    console.log("⚠️ Firebase offline, aguardando reconexão...");
+                    setSystemHealth('warn', 'Conexão degradada', 'Aguardando reconexão do Firebase...');
+                    const reconnected = await waitForFirebaseConnection(4500);
+                    if (!reconnected) {
+                        showMaintenanceMessage('Conexão ainda instável. Você pode tentar login manualmente ou limpar cache.');
+                        setSystemHealth('warn', 'Conexão instável', 'O sistema segue tentando reconectar em segundo plano.');
+                    } else {
+                        hideMaintenanceMessage();
+                        runLoginHealthCheck(false);
+                    }
+                }
+                
+                // Verificar estado de autenticação
+                const user = await authService.getCurrentUser();
+                
+                if (user) {
+                    console.log("👤 Usuário já autenticado:", user.email);
+                    const autoForceHome = shouldForceHomeFromLoginContext();
+                    const isAdminSession = (window.isSuperAdminSession ? await window.isSuperAdminSession() : false)
+                        || (window.hasAnyAdminPanelAccess ? await window.hasAnyAdminPanelAccess() : false);
+                    const targetForLoggedSession = await getRedirectTarget({});
+                    try {
+                        const existingCurrent = JSON.parse(localStorage.getItem('currentUser') || 'null') || {};
+                        const normalizedCurrent = {
+                            ...existingCurrent,
+                            uid: user.uid || existingCurrent.uid || existingCurrent.id || existingCurrent.userId,
+                            email: user.email || existingCurrent.email || '',
+                            displayName: user.displayName || existingCurrent.displayName || existingCurrent.username || (user.email ? user.email.split('@')[0] : '')
+                        };
+                        localStorage.setItem('currentUser', JSON.stringify(normalizedCurrent));
+                        sessionStorage.setItem('userAuthenticated', 'true');
+                        sessionStorage.setItem('lastLogin', Date.now().toString());
+                        sessionStorage.setItem('redirectCount', '0');
+                    } catch (_) {}
+                    if (autoForceHome && isAdminSession) {
+                        setSystemHealth('ok', 'Sessão ativa detectada', 'Redirecionando automaticamente para o gerenciamento...');
+                        setTimeout(() => {
+                            window.location.href = 'admin.html?tab=dashboard';
+                        }, 250);
+                    } else if (targetForLoggedSession && !String(targetForLoggedSession).toLowerCase().includes('login.html')) {
+                        setSystemHealth('ok', 'Sessão ativa detectada', 'Redirecionando automaticamente...');
+                        setTimeout(() => {
+                            window.location.href = targetForLoggedSession;
+                        }, 250);
+                    }
+                    
+                    return;
+                    
+                } else {
+                    console.log("👤 Nenhum usuário autenticado");
+                    hideMaintenanceMessage();
+                    runLoginHealthCheck(false);
+                }
+            } catch (error) {
+                console.error("❌ Erro ao verificar autenticação:", error);
+                showMaintenanceMessage('Falha ao validar sessão automaticamente. Tente login manual.');
+                setSystemHealth('warn', 'Verificação parcial', 'Não foi possível validar sessão automaticamente.');
+            }
+        });
+
+        // Funções para manutenção e cache
+        document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('click', function(event) {
+                const target = event.target && event.target.closest ? event.target.closest('#clearCacheBtn') : null;
+                if (!target) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    if (confirm('Isso fará uma limpeza profunda no sistema (Cache, Dados Locais, Login). Deseja continuar?')) {
+                        if (typeof window.deepCleanAndReload === 'function') {
+                            window.deepCleanAndReload();
+                        } else {
+                            alert('Erro: Script de limpeza não carregado. Tentando limpeza básica.');
+                            localStorage.clear();
+                            sessionStorage.clear();
+                            window.location.reload();
+                        }
+                    }
+                    
+                    return false; 
+                });
+        });
+        
+        // Botão para verificar status do Firebase
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkStatusBtn = document.getElementById('checkFirebaseStatusBtn');
+            if (checkStatusBtn) {
+                checkStatusBtn.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    const statusInfo = document.createElement('div');
+                    statusInfo.style.backgroundColor = '#f8f9fa';
+                    statusInfo.style.padding = '10px';
+                    statusInfo.style.borderRadius = '5px';
+                    statusInfo.style.marginTop = '15px';
+                    statusInfo.style.fontSize = '13px';
+                    statusInfo.style.textAlign = 'left';
+                    
+                    // Verificar status do Firebase
+                    const isInitialized = !!window._FIREBASE_APP;
+                    const isConnected = window._FIREBASE_CONNECTED;
+                    const hasAuth = !!window.auth;
+                    
+                    statusInfo.innerHTML = `
+                        <p><strong>Diagnóstico Firebase:</strong></p>
+                        <ul style="padding-left: 20px; margin: 5px 0;">
+                            <li>Firebase inicializado: <span style="color: ${isInitialized ? 'green' : 'red'}">${isInitialized ? 'Sim' : 'Não'}</span></li>
+                            <li>Estado da conexão: <span style="color: ${isConnected === true ? 'green' : isConnected === false ? 'red' : 'orange'}">${isConnected === true ? 'Online' : isConnected === false ? 'Offline' : 'Desconhecido'}</span></li>
+                            <li>Autenticação disponível: <span style="color: ${hasAuth ? 'green' : 'red'}">${hasAuth ? 'Sim' : 'Não'}</span></li>
+                        </ul>
+                        <p style="margin-top: 10px; font-size: 12px;">Recomendação: ${(isConnected === false) ? 'O Firebase está offline. Limpe o cache e tente novamente.' : (isConnected === true && hasAuth) ? 'Tudo parece estar funcionando. Verifique se digitou o email correto e se o mesmo está cadastrado no sistema.' : 'Há problemas com a configuração do Firebase. Tente limpar o cache ou contate o suporte.'}</p>
+                    `;
+                    
+                    // Adicionar ao formulário
+                    const form = document.getElementById('forgotPasswordForm');
+                    
+                    // Remover diagnóstico anterior, se existir
+                    const oldStatus = document.getElementById('firebaseStatusInfo');
+                    if (oldStatus) {
+                        oldStatus.remove();
+                    }
+                    
+                    statusInfo.id = 'firebaseStatusInfo';
+                    form.appendChild(statusInfo);
+                    
+                    console.log("📊 Diagnóstico do Firebase:", {
+                        isInitialized,
+                        isConnected,
+                        hasAuth
+                    });
+                    
+                    return false; // Não retornar true para evitar problemas com extensões
+                });
+            }
+            
+            // Botão para testar envio de email
+            const testEmailBtn = document.getElementById('testEmailBtn');
+            if (testEmailBtn) {
+                testEmailBtn.addEventListener('click', async function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    const emailInput = document.getElementById('resetEmail');
+                    const email = emailInput.value.trim();
+                    
+                    if (!email) {
+                        alert('Por favor, digite um email para testar.');
+                        emailInput.focus();
+                        return false;
+                    }
+                    
+                    const logDiv = document.createElement('div');
+                    logDiv.style.backgroundColor = '#f8f9fa';
+                    logDiv.style.padding = '10px';
+                    logDiv.style.borderRadius = '5px';
+                    logDiv.style.marginTop = '15px';
+                    logDiv.style.fontSize = '13px';
+                    logDiv.style.textAlign = 'left';
+                    logDiv.style.fontFamily = 'monospace';
+                    logDiv.id = 'emailTestLog';
+                    
+                    // Remover log anterior, se existir
+                    const oldLog = document.getElementById('emailTestLog');
+                    if (oldLog) {
+                        oldLog.remove();
+                    }
+                    
+                    logDiv.innerHTML = '<p><strong>📋 Log de teste:</strong></p>';
+                    
+                    // Adicionar ao formulário
+                    const form = document.getElementById('forgotPasswordForm');
+                    form.appendChild(logDiv);
+                    
+                    // Função para adicionar mensagem ao log
+                    const addLog = (message, type = 'info') => {
+                        const colors = {
+                            info: '#333',
+                            success: 'green',
+                            error: 'red',
+                            warning: 'orange'
+                        };
+                        
+                        const line = document.createElement('div');
+                        line.style.color = colors[type];
+                        line.style.margin = '5px 0';
+                        line.innerHTML = message;
+                        logDiv.appendChild(line);
+                    };
+                    
+                    try {
+                        // Verificar se o Firebase está inicializado
+                        if (!window._FIREBASE_APP) {
+                            addLog('❌ Firebase não inicializado!', 'error');
+                            return;
+                        }
+                        
+                        addLog(`🔍 Testando envio para: ${email}`, 'info');
+                        
+                        // Verificar conexão
+                        if (window._FIREBASE_CONNECTED === false) {
+                            addLog('⚠️ Firebase está offline!', 'warning');
+                        } else if (window._FIREBASE_CONNECTED === true) {
+                            addLog('✅ Firebase está online', 'success');
+                        } else {
+                            addLog('⚠️ Estado da conexão desconhecido', 'warning');
+                        }
+                        
+                        // Verificar se auth está disponível
+                        if (!window.auth) {
+                            addLog('❌ Objeto de autenticação não disponível!', 'error');
+                            return;
+                        }
+                        
+                        addLog('⏳ Enviando solicitação...', 'info');
+                        
+                        // Tentar enviar email
+                        await sendPasswordResetEmail(auth, email);
+                        
+                        addLog('✅ Solicitação enviada com sucesso!', 'success');
+                        addLog('📧 Se o email estiver registrado, você receberá um link de redefinição.', 'info');
+                        addLog('🔍 Verifique também sua pasta de spam/lixo eletrônico.', 'info');
+                        
+                    } catch (error) {
+                        addLog(`❌ Erro: ${error.message}`, 'error');
+                        addLog(`Código: ${error.code || 'desconhecido'}`, 'error');
+                        
+                        if (error.code === 'auth/user-not-found') {
+                            addLog('⚠️ Este email não está registrado no sistema.', 'warning');
+                        } else if (error.code === 'auth/invalid-email') {
+                            addLog('⚠️ O formato do email é inválido.', 'warning');
+                        } else if (error.code === 'auth/network-request-failed') {
+                            addLog('⚠️ Problema de conexão. Verifique sua internet.', 'warning');
+                        }
+                        
+                        console.error('Erro completo:', error);
+                    }
+                    
+                    return false; // Não retornar true para evitar problemas com extensões
+                });
+            }
+        });
+        
+        // Definir contador de carregamentos de página
+        const pageLoadCount = parseInt(localStorage.getItem('pageLoadCount') || '0') + 1;
+        localStorage.setItem('pageLoadCount', pageLoadCount.toString());
+        
+        // Mostrar manutenção apenas se a conexão continuar offline por alguns segundos
+        setTimeout(async () => {
+            if (window._FIREBASE_CONNECTED === false) {
+                const recovered = await waitForFirebaseConnection(2500, 250);
+                if (!recovered) {
+                    showMaintenanceMessage('Conexão ainda indisponível após tentativas de reconexão.');
+                    setSystemHealth('warn', 'Conexão instável', 'Você pode tentar login manualmente ou limpar cache.');
+                } else {
+                    hideMaintenanceMessage();
+                    runLoginHealthCheck(false);
+                }
+            } else {
+                hideMaintenanceMessage();
+                runLoginHealthCheck(false);
+            }
+        }, 1200);
+
+        function clearAllAuthLocalState() {
+            try {
+                sessionStorage.clear();
+                localStorage.removeItem('firebaseInitialized');
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('persistentUser');
+                localStorage.removeItem('auth');
+                localStorage.removeItem('userAuthenticated');
+                localStorage.removeItem('redirectCount');
+                localStorage.removeItem('pageLoadCount');
+            } catch (_) {}
+        }
+
+        async function tryRemoteSignOut() {
+            let lastError = null;
+            const candidates = [];
+            if (window.authFunctions && typeof window.authFunctions.logout === 'function') candidates.push(window.authFunctions.logout);
+            if (window.firebaseService && window.firebaseService.authService && typeof window.firebaseService.authService.logout === 'function') {
+                candidates.push(() => window.firebaseService.authService.logout());
+            }
+            if (typeof authService !== 'undefined' && authService && typeof authService.logout === 'function') {
+                candidates.push(() => authService.logout());
+            }
+            for (const fn of candidates) {
+                try {
+                    await fn();
+                    return { success: true };
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+            return { success: false, error: lastError };
+        }
+
+        async function forceLogoutSession() {
+            try {
+                console.log("🚪 Forçando logout completo...");
+                let result = await tryRemoteSignOut();
+                if (!result.success && window._FIREBASE_CONNECTED === false) {
+                    await waitForFirebaseConnection(3500, 250);
+                    result = await tryRemoteSignOut();
+                }
+                clearAllAuthLocalState();
+                if (!result.success && result.error) {
+                    throw result.error;
+                }
+                window.location.href = 'login.html?noRedirect=true';
+            } catch (error) {
+                clearAllAuthLocalState();
+                console.error("❌ Erro no logout:", error);
+                setSystemHealth('warn', 'Logout parcial', 'Sessão local foi limpa. Recarregue para confirmar o logout remoto.');
+                showMaintenanceMessage('Não foi possível confirmar logout remoto imediatamente. Tente novamente em alguns segundos.');
+                try {
+                    if (typeof window.__toast === 'function') {
+                        window.__toast("Sessão local limpa. Faça nova tentativa de logout remoto.", 'warning', { duration: 5000 });
+                    } else if (window.Utils && window.Utils.showToast) {
+                        window.Utils.showToast("Sessão local limpa. Faça nova tentativa de logout remoto.", 'warning');
+                    }
+                } catch (_) {}
+            }
+        }
+
+        async function goToSystemHome() {
+            const target = await resolveSafeRedirectTarget({ preventSubscriptionLoop: true });
+            window.location.href = target;
+        }
+
+        window.logout = forceLogoutSession;
+        window.forceLogoutSession = forceLogoutSession;
+        window.redirectToIndex = goToSystemHome;
+        window.goToSystemHome = goToSystemHome;
+    </script>
+
+    <script>
+        // Funções do Modal
+        function showRegisterModal() {
+            document.getElementById('registerModal').style.display = 'block';
+            // Limpar formulário e mensagens de erro
+            document.getElementById('registerForm').reset();
+            document.getElementById('regErrorMessage').style.display = 'none';
+        }
+
+        function closeRegisterModal() {
+            document.getElementById('registerModal').style.display = 'none';
+            document.getElementById('regErrorMessage').style.display = 'none';
+            document.getElementById('register-loading-spinner').style.display = 'none';
+        }
+
+        function showForgotPassword() {
+            document.getElementById('forgotPasswordModal').style.display = 'block';
+            // Limpar formulário e mensagens de erro
+            document.getElementById('forgotPasswordForm').reset();
+            document.getElementById('resetErrorMessage').style.display = 'none';
+            document.getElementById('resetSuccessMessage').style.display = 'none';
+        }
+
+        function closeForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').style.display = 'none';
+            document.getElementById('resetErrorMessage').style.display = 'none';
+            document.getElementById('resetSuccessMessage').style.display = 'none';
+            document.getElementById('reset-loading-spinner').style.display = 'none';
+        }
+
+        // Fechar modal ao clicar fora
+        window.onclick = function(event) {
+            const registerModal = document.getElementById('registerModal');
+            const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+            
+            if (event.target == registerModal) {
+                closeRegisterModal();
+            } else if (event.target == forgotPasswordModal) {
+                closeForgotPasswordModal();
+            }
+        }
+    </script>
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });
+});
+</script>
+</script>
+<script>
+(function(){
+    var containerId='__toast_container__',lastMsg='',lastAt=0,MAX_TOASTS=4;
+    function ensure(){var c=document.getElementById(containerId);if(!c){c=document.createElement('div');c.id=containerId;c.style.cssText='position:fixed;top:16px;right:16px;z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none;';document.body.appendChild(c);}return c;}
+    function color(t){if(t==='error')return'#c0392b';if(t==='success')return'#27ae60';if(t==='warning')return'#f39c12';return'#2c3e50';}
+    function show(message,type,opts){try{var now=Date.now(),s=String(message||'');if(s===lastMsg&&now-lastAt<500)return;lastMsg=s;lastAt=now;var c=ensure();while(c.children.length>=MAX_TOASTS){try{c.removeChild(c.firstElementChild);}catch(e){break;}}var t=document.createElement('div');t.setAttribute('role','status');t.style.cssText='background:'+color(type)+';color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.25);font:14px/1.4 system-ui;max-width:420px;display:flex;align-items:center;gap:10px;pointer-events:auto;';var txt=document.createElement('div');txt.textContent=s;txt.title=s;txt.style.cssText='flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';var close=document.createElement('button');close.textContent='×';close.style.cssText='background:transparent;border:0;color:#fff;font-size:16px;line-height:1;cursor:pointer;';close.onclick=function(){try{c.removeChild(t);}catch(e){}};t.appendChild(txt);t.appendChild(close);c.appendChild(t);var dDefault=(type==='error'?0:(type==='warning'?4000:3000));var d=(opts&&typeof opts.duration==='number')?opts.duration:dDefault;if(d>0){setTimeout(function(){try{c.removeChild(t);}catch(e){}},d);}}catch(e){}}
+    window.__toast=show;
+    var originalAlert=window.alert;
+    window.alert=function(msg){var m=String(msg||'');var lower=m.toLowerCase();var type=(lower.includes('erro')||lower.includes('error')||lower.includes('❌'))?'error':(lower.includes('sucesso')||lower.includes('✅'))?'success':'info';show(m,type,{duration:type==='error'?0:3000});};
+})();
+</script>
+</body>
+</html>

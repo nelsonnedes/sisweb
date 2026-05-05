@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finanças - Sistema de Gestão</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="ui-components.css">
+    <link rel="stylesheet" href="layout-comum.css">
+    <style>
+        .table .actions-cell .actions-inline {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .table .actions-cell .btn {
+            width: 28px !important;
+            min-width: 28px !important;
+            height: 28px !important;
+            padding: 0 !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            line-height: 1 !important;
+            margin: 0 !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            transition: transform 140ms ease, box-shadow 160ms ease, background-color 160ms ease;
+            will-change: transform;
+        }
+        .table .actions-cell .btn i {
+            font-size: 14px !important;
+            line-height: 1 !important;
+        }
+        .table .actions-cell .btn:hover {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.16);
+        }
+        .table .actions-cell .btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.14);
+        }
+        .table .actions-cell .btn:focus-visible {
+            outline: 2px solid rgba(0,123,255,0.3);
+            outline-offset: 2px;
+        }
+        @media (max-width: 768px) {
+            .table .actions-cell .btn {
+                width: 26px !important;
+                min-width: 26px !important;
+                height: 26px !important;
+            }
+            .table .actions-cell .btn i {
+                font-size: 13px !important;
+                line-height: 1 !important;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="print-styles.css">
+    <script src="menu-component.js?v=20260326"></script>
+    <style>
+        /* Note: Container styles are now in layout-comum.css */
+
+        .finance-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .finance-header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .modal-header h2,
+        .modal-header h3 {
+            color: #fff !important; /* Força cor branca para os títulos dos modais */
+            text-align: left;
+            margin-bottom: 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: #e9ecef;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab:hover {
+            background: #dee2e6;
+        }
+
+        .tab.active {
+            background: #007bff;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-card.receber {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .dashboard-card.pagar {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .dashboard-card.saldo {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: #2c3e50;
+        }
+
+        .dashboard-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+        }
+
+        .dashboard-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-row.form-row-main {
+            grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+        }
+
+        .form-group.fg-compact input,
+        .form-group.fg-compact select {
+            max-width: 100%;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .field-with-action {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .field-with-action select {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .field-action-btn {
+            width: 34px;
+            min-width: 34px;
+            height: 34px;
+            border-radius: 6px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .installments-section {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .installment-row {
+            display: grid;
+            grid-template-columns: minmax(130px, 1fr) minmax(130px, 1fr) minmax(150px, 1fr) auto auto;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .installment-row .parcel-value-input,
+        .installment-row .parcel-date-input {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .installment-row .parcel-attach-btn,
+        .installment-row .btn-danger {
+            min-width: 28px;
+            padding: 5px 8px;
+            line-height: 1;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .table th.actions-head { text-align: center; }
+        .actions-cell { text-align: left !important; }
+        .actions-inline button { min-width: 40px; }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-indicator {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-pendente {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-pago {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-vencido {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-parcial {
+            background: #e2e3e5;
+            color: #495057;
+            border: 1px solid #6c757d;
+        }
+
+        .filters-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .filters-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            align-items: end;
+        }
+        .filters-row .actions-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+            align-items: center;
+            justify-self: end;
+        }
+        /* Áreas de grid para reordenar em telas médias */
+        .filters-row .fg-status { grid-area: status; }
+        .filters-row .fg-cliente { grid-area: cliente; }
+        .filters-row .fg-fornecedor { grid-area: fornecedor; }
+        .filters-row .fg-categoria { grid-area: categoria; }
+        .filters-row .fg-tipo { grid-area: tipo; }
+        .filters-row .fg-numero { grid-area: numero; }
+        .filters-row .fg-inicio { grid-area: inicio; }
+        .filters-row .fg-fim { grid-area: fim; }
+        .filters-row .actions-group { grid-area: actions; }
+        @media (max-width: 1200px) {
+            .filters-row-receber {
+                grid-template-columns: repeat(3, minmax(200px, 1fr));
+                grid-template-areas:
+                    "cliente categoria tipo"
+                    "numero inicio fim"
+                    "status actions actions";
+            }
+            .filters-row-pagar {
+                grid-template-columns: repeat(3, minmax(200px, 1fr));
+                grid-template-areas:
+                    "fornecedor categoria tipo"
+                    "numero inicio fim"
+                    "status actions actions";
+            }
+        }
+        /* Largura controlada para datas, categoria e tipo em telas grandes */
+        @media (min-width: 1200px) {
+            .filters-row .fg-inicio input,
+            .filters-row .fg-fim input,
+            .filters-row .fg-categoria select,
+            .filters-row .fg-tipo select {
+                max-width: 200px;
+                width: 100%;
+                justify-self: start;
+                margin-right: 8px;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #newClientModal .modal-content,
+        #financeClienteModal .modal-content,
+        #financeFornecedorModal .modal-content {
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            max-height: 88vh;
+        }
+
+        #newClientModal .modal-header,
+        #financeClienteModal .modal-header,
+        #financeFornecedorModal .modal-header {
+            margin: 0;
+            border-radius: 8px 8px 0 0;
+            color: #fff;
+        }
+
+        #newClientModal .modal-body,
+        #financeClienteModal .modal-body,
+        #financeFornecedorModal .modal-body {
+            padding: 14px 16px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        #newClientModal .modal-footer,
+        #financeClienteModal .modal-footer,
+        #financeFornecedorModal .modal-footer {
+            padding: 10px 16px;
+            margin-top: 0;
+            border-top: 1px solid #e4eaf1;
+            background: #f8fbff;
+            flex-shrink: 0;
+        }
+
+        #newClientModal .modal-title,
+        #financeClienteModal .modal-title,
+        #financeFornecedorModal .modal-title,
+        #newClientModal h1,
+        #newClientModal h2,
+        #newClientModal h3,
+        #financeClienteModal h1,
+        #financeClienteModal h2,
+        #financeClienteModal h3,
+        #financeFornecedorModal h1,
+        #financeFornecedorModal h2,
+        #financeFornecedorModal h3,
+        #newClientModalLabel {
+            color: #fff !important;
+            -webkit-text-fill-color: #fff !important;
+            background: transparent !important;
+        }
+
+        @media (max-width: 480px) {
+            #newClientModal .modal-content,
+            #financeClienteModal .modal-content,
+            #financeFornecedorModal .modal-content {
+                width: 96%;
+                max-height: 92vh;
+            }
+
+            #newClientModal .modal-body,
+            #financeClienteModal .modal-body,
+            #financeFornecedorModal .modal-body {
+                padding: 12px;
+            }
+
+            #newClientModal .modal-footer,
+            #financeClienteModal .modal-footer,
+            #financeFornecedorModal .modal-footer {
+                padding: 8px 10px;
+                gap: 8px;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        #anexosModal .modal-content {
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            max-height: 88vh;
+        }
+
+        #anexosModal .modal-header {
+            margin: 0;
+            padding: 14px 16px;
+            border-bottom: 1px solid #e4eaf1;
+            background: #2c3e50;
+            color: #fff;
+        }
+
+        #anexosModal .modal-body {
+            padding: 14px 16px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        #anexosModal .modal-footer {
+            padding: 10px 16px;
+            border-top: 1px solid #e4eaf1;
+            background: #f8fbff;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        #anexosTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #anexosTable th,
+        #anexosTable td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #eef2f7;
+            vertical-align: middle;
+            font-size: 13px;
+        }
+
+        #anexosTable thead th {
+            position: sticky;
+            top: 0;
+            background: #f1f5f9;
+            z-index: 1;
+        }
+
+        #anexosTable td:last-child {
+            white-space: nowrap;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .summary-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .summary-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        @media (max-width: 768px) {
+            .finance-container {
+                padding: 10px;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .dashboard-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-row {
+                grid-template-columns: 1fr;
+            }
+
+            .installment-row {
+                grid-template-columns: 1fr;
+                gap: 5px;
+                white-space: normal;
+            }
+        }
+    </style>
+    </head>
+<body>
+    <!-- Loading overlay -->
+    <!-- Removido: Usando overlay global do layout-comum.css via JS -->
+    <div class="container">
+        <main-menu></main-menu>
+        
+        <div class="finance-header">
+            <h1><i class="fas fa-chart-line"></i> Sistema Financeiro</h1>
+            <span id="connectionBadge" style="display:inline-block; margin-left: auto; padding: 4px 8px; border-radius: 12px; background:#ffc107; color:#212529; font-size:12px; align-self:center;">Modo Offline</span>
+        </div>
+        
+
+        <!-- Dashboard Cards -->
+        <div class="dashboard-cards">
+            <div class="dashboard-card receber">
+                <h3><i class="fas fa-arrow-down"></i> Contas a Receber</h3>
+                <div class="value" id="totalReceber">R$ 0,00</div>
+                <small id="contasReceber">0 contas</small>
+            </div>
+            <div class="dashboard-card pagar">
+                <h3><i class="fas fa-arrow-up"></i> Contas a Pagar</h3>
+                <div class="value" id="totalPagar">R$ 0,00</div>
+                <small id="contasPagar">0 contas</small>
+            </div>
+            <div class="dashboard-card saldo">
+                <h3><i class="fas fa-balance-scale"></i> Saldo Projetado</h3>
+                <div class="value" id="saldoProjetado">R$ 0,00</div>
+                <small>Próximos 30 dias</small>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <button class="tab active" data-tab="dashboard" onclick="showTab('dashboard')">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </button>
+            <button class="tab" data-tab="receber" onclick="showTab('receber')">
+                <i class="fas fa-arrow-down"></i> Contas a Receber
+            </button>
+            <button class="tab" data-tab="pagar" onclick="showTab('pagar')">
+                <i class="fas fa-arrow-up"></i> Contas a Pagar
+            </button>
+            <button class="tab" data-tab="fluxo" onclick="showTab('fluxo')">
+                <i class="fas fa-chart-area"></i> Fluxo de Caixa
+            </button>
+            <button class="tab" data-tab="relatorios" onclick="showTab('relatorios')">
+                <i class="fas fa-file-alt"></i> Relatórios
+            </button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="chart-container">
+                <h3>Fluxo de Caixa - Próximos 30 Dias</h3>
+                <canvas id="fluxoCaixaChart" width="400" height="200"></canvas>
+            </div>
+
+            <div class="summary-box">
+                <h3>Resumo Financeiro</h3>
+                <div class="summary-row">
+                    <span>Contas Vencidas (Receber):</span>
+                    <span id="receberVencidas" style="color: #dc3545;">R$ 0,00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Contas Vencidas (Pagar):</span>
+                    <span id="pagarVencidas" style="color: #dc3545;">R$ 0,00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Vencendo Hoje:</span>
+                    <span id="vencendoHoje" style="color: #ffc107;">R$ 0,00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Próximos 7 dias:</span>
+                    <span id="proximos7Dias" style="color: #17a2b8;">R$ 0,00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contas a Receber Tab -->
+        <div id="receber" class="tab-content">
+            <div class="form-section">
+                <h3>Nova Conta a Receber</h3>
+                <form id="receberForm">
+                    <input type="hidden" id="receberNumero">
+                    <div class="form-row form-row-main">
+                        <div class="form-group">
+                            <label for="receberCliente">Cliente:</label>
+                            <div class="field-with-action">
+                                <select id="receberCliente" required>
+                                    <option value="">Selecione um cliente</option>
+                                </select>
+                                <button type="button" onclick="abrirCadastroClienteFinanceiro()" class="btn-primary btn-small field-action-btn" title="Novo Cliente">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="receberDescricao">Descrição:</label>
+                            <input type="text" id="receberDescricao" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="receberValorTotal">Valor Total:</label>
+                            <input type="text" id="receberValorTotal" required>
+                        </div>
+                        <div class="form-group fg-compact">
+                            <label for="receberJurosTipo">Juros:</label>
+                            <select id="receberJurosTipo">
+                                <option value="none" selected>Sem Juros</option>
+                                <option value="simples">Juros Simples</option>
+                                <option value="composto">Juros Composto</option>
+                            </select>
+                        </div>
+                        <div class="form-group fg-compact">
+                            <label for="receberJurosTaxa">Taxa (%):</label>
+                            <input type="number" id="receberJurosTaxa" min="0" step="0.01" value="0">
+                        </div>
+                        <div class="form-group fg-compact">
+                            <label for="receberParcelas">Número de Parcelas:</label>
+                            <input type="number" id="receberParcelas" min="1" max="60" value="1">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="receberDataVencimento">Data do Primeiro Vencimento:</label>
+                            <input type="date" id="receberDataVencimento" required>
+                        </div>
+                        <div class="form-group fg-compact">
+                            <label for="receberCategoria">Categoria:</label>
+                            <select id="receberCategoria">
+                                <option value="vendas">Vendas</option>
+                                <option value="compras">Compras</option>
+                                <option value="servicos">Serviços</option>
+                                <option value="carrego">Carrego</option>
+                                <option value="mes_fechado">Mês Fechado</option>
+                                <option value="quinzena_1">1° Quinzena</option>
+                                <option value="quinzena_2">2° Quinzena</option>
+                                <option value="ferias">Férias</option>
+                                <option value="rescisao">Rescisão</option>
+                                <option value="multas">Multas</option>
+                                <option value="taxas">Taxas</option>
+                                <option value="outros">Outros</option>
+                            </select>
+                        </div>
+                        <div class="form-group fg-compact">
+                            <label for="receberTipo">Tipo:</label>
+                            <select id="receberTipo">
+                                <option value="a_vista">À Vista</option>
+                                <option value="receber">Receber</option>
+                                <option value="entrada">Entrada</option>
+                                <option value="parcela">Parcela</option>
+                                <option value="cheque_pre">Cheque-pré</option>
+                                <option value="boleto">Boleto</option>
+                                <option value="pix">Pix</option>
+                                <option value="cartao">Cartão</option>
+                                <option value="permuta">Permuta</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="receberAnexoManual">Anexo:</label>
+                            <div class="field-with-action">
+                                <input type="file" id="receberAnexoManual" accept="image/*,application/pdf" style="display:none;" onchange="onManualAttachmentSelected('receber')">
+                                <button type="button" id="receberAnexoManualBtn" class="btn btn-info btn-small field-action-btn" title="Anexar arquivo" onclick="handleManualAttachmentAction('receber')">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="receberObservacoes">Observações:</label>
+                            <textarea id="receberObservacoes"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="installments-section" id="receberParcelasContainer" style="display: none;">
+                        <h4>Parcelas</h4>
+                        <div id="receberParcelasList"></div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                        <button type="button" id="receberGerarParcelasBtn" class="btn btn-warning" onclick="gerarParcelas('receber')">
+                            <i class="fas fa-calculator"></i> Gerar Parcelas
+                        </button>
+                        <button class="btn btn-success action-btn" onclick="imprimirTabela('receber')" title="Imprimir">
+                            <i class="fas fa-print"></i>
+                        </button>
+                        <button class="btn btn-secondary action-btn" onclick="openColumnsConfig('receber')" title="Customizar colunas">
+                            <i class="fas fa-list"></i>
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="limparFiltros('receber'); limparFormulario('receberForm')">
+                            <i class="fas fa-times"></i> Limpar
+                        </button>
+                        <span id="receberSelCount" class="sel-count-badge">0 selecionados</span>
+                    </div>
+                </form>
+            </div>
+
+            <div class="filters-section">
+                    <div class="filters-row filters-row-receber">
+                    <div class="form-group fg-status">
+                        <label for="filtroReceberStatus">Status:</label>
+                        <select id="filtroReceberStatus">
+                            <option value="em_aberto" selected>Em Aberto</option>
+                            <option value="todos">Todos</option>
+                            <option value="pendente">Pendente</option>
+                            <option value="parcial">Parcial</option>
+                            <option value="pago">Pago</option>
+                            <option value="vencido">Vencido</option>
+                        </select>
+                    </div>
+                    <div class="form-group fg-cliente">
+                        <label for="filtroReceberCliente">Cliente:</label>
+                        <select id="filtroReceberCliente">
+                            <option value="">Todos os clientes</option>
+                        </select>
+                    </div>
+                    <div class="form-group fg-categoria">
+                        <label for="filtroReceberCategoria">Categoria:</label>
+                        <select id="filtroReceberCategoria">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div class="form-group fg-tipo">
+                        <label for="filtroReceberTipo">Tipo:</label>
+                        <select id="filtroReceberTipo">
+                            <option value="">Todos</option>
+                            <option value="a_vista">À Vista</option>
+                            <option value="receber">Receber</option>
+                            <option value="entrada">Entrada</option>
+                            <option value="parcela">Parcela</option>
+                            <option value="cheque_pre">Cheque‑pré</option>
+                            <option value="boleto">Boleto</option>
+                            <option value="pix">Pix</option>
+                            <option value="cartao">Cartão</option>
+                            <option value="permuta">Permuta</option>
+                        </select>
+                    </div>
+                        <div class="form-group fg-numero">
+                            <label for="filtroReceberNumeroPedido">Nº Pedido:</label>
+                            <input type="text" id="filtroReceberNumeroPedido" placeholder="000001">
+                        </div>
+                    <div class="form-group fg-inicio">
+                        <label for="filtroReceberDataInicio">Data Início:</label>
+                        <input type="date" id="filtroReceberDataInicio">
+                    </div>
+                    <div class="form-group fg-fim">
+                        <label for="filtroReceberDataFim">Data Fim:</label>
+                        <input type="date" id="filtroReceberDataFim">
+                    </div>
+                    
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="table">
+                    <thead id="receberTableHead">
+                        <tr>
+                            <th style="width:36px; text-align:center;"><input type="checkbox" id="selReceberAll" onchange="toggleSelecionarTodosReceber(this.checked)" aria-label="Selecionar todos"></th>
+                            <th>Pedido Nº</th>
+                            <th>Cliente</th>
+                            <th>Descrição</th>
+                            <th>Valor</th>
+                            <th>Vencimento</th>
+                            <th>Juros</th>
+                            <th>Status</th>
+                            <th>Categoria</th>
+                            <th>Tipo</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="receberTable">
+                        <tr>
+                            <td colspan="11" style="text-align: center;">Nenhuma conta a receber encontrada</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- Paginação Receber -->
+            <div id="receberPagination" class="pagination" style="margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 10px;"></div>
+        </div>
+
+        <!-- Contas a Pagar Tab -->
+        <div id="pagar" class="tab-content">
+            <div class="form-section">
+                <h3>Nova Conta a Pagar</h3>
+                <form id="pagarForm">
+                    <input type="hidden" id="pagarNumero">
+                    <div class="form-row form-row-main">
+                        <div class="form-group">
+                            <label for="pagarFornecedor">Fornecedor:</label>
+                            <div class="field-with-action">
+                                <select id="pagarFornecedor" required>
+                                    <option value="">Selecione um fornecedor</option>
+                                </select>
+                                <button type="button" onclick="abrirCadastroFornecedorFinanceiro()" class="btn-primary btn-small field-action-btn" title="Novo Fornecedor">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="pagarDescricao">Descrição:</label>
+                            <input type="text" id="pagarDescricao" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="pagarValorTotal">Valor Total:</label>
+                            <input type="text" id="pagarValorTotal" required>
+                        </div>
+                        <div class="form-group fg-compact">
+                            <label for="pagarJurosTipo">Juros:</label>
+                            <select id="pagarJurosTipo">
+                                <option value="none" selected>Sem Juros</option>
+                                <option value="simples">Juros Simples</option>
+                                <option value="composto">Juros Composto</option>
+                            </select>
+                        </div>
+                        <div class="form-group fg-compact">
+                            <label for="pagarJurosTaxa">Taxa (%):</label>
+                            <input type="number" id="pagarJurosTaxa" min="0" step="0.01" value="0">
+                        </div>
+                        <div class="form-group fg-compact">
+                            <label for="pagarParcelas">Número de Parcelas:</label>
+                            <input type="number" id="pagarParcelas" min="1" max="60" value="1">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pagarDataVencimento">Data do Primeiro Vencimento:</label>
+                            <input type="date" id="pagarDataVencimento" required>
+                        </div>
+                        <div class="form-group fg-compact">
+                            <label for="pagarCategoria">Categoria:</label>
+                            <select id="pagarCategoria">
+                                <option value="vendas">Vendas</option>
+                                <option value="compras">Compras</option>
+                                <option value="servicos">Serviços</option>
+                                <option value="carrego">Carrego</option>
+                                <option value="mes_fechado">Mês Fechado</option>
+                                <option value="quinzena_1">1° Quinzena</option>
+                                <option value="quinzena_2">2° Quinzena</option>
+                                <option value="ferias">Férias</option>
+                                <option value="rescisao">Rescisão</option>
+                                <option value="multas">Multas</option>
+                                <option value="taxas">Taxas</option>
+                                <option value="outros">Outros</option>
+                            </select>
+                        </div>
+                        <div class="form-group fg-compact">
+                            <label for="pagarTipo">Tipo:</label>
+                            <select id="pagarTipo">
+                                <option value="a_vista">À Vista</option>
+                                <option value="pagar">Pagar</option>
+                                <option value="entrada">Entrada</option>
+                                <option value="parcela">Parcela</option>
+                                <option value="cheque_pre">Cheque-pré</option>
+                                <option value="boleto">Boleto</option>
+                                <option value="pix">Pix</option>
+                                <option value="cartao">Cartão</option>
+                                <option value="permuta">Permuta</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="pagarAnexoManual">Anexo:</label>
+                            <div class="field-with-action">
+                                <input type="file" id="pagarAnexoManual" accept="image/*,application/pdf" style="display:none;" onchange="onManualAttachmentSelected('pagar')">
+                                <button type="button" id="pagarAnexoManualBtn" class="btn btn-info btn-small field-action-btn" title="Anexar arquivo" onclick="handleManualAttachmentAction('pagar')">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="pagarObservacoes">Observações:</label>
+                            <textarea id="pagarObservacoes"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="installments-section" id="pagarParcelasContainer" style="display: none;">
+                        <h4>Parcelas</h4>
+                        <div id="pagarParcelasList"></div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                        <button type="button" id="pagarGerarParcelasBtn" class="btn btn-warning" onclick="gerarParcelas('pagar')">
+                            <i class="fas fa-calculator"></i> Gerar Parcelas
+                        </button>
+                        <button class="btn btn-success action-btn" onclick="imprimirTabela('pagar')" title="Imprimir">
+                            <i class="fas fa-print"></i>
+                        </button>
+                        <button class="btn btn-secondary action-btn" onclick="openColumnsConfig('pagar')" title="Customizar colunas">
+                            <i class="fas fa-list"></i>
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="limparFiltros('pagar'); limparFormulario('pagarForm')">
+                            <i class="fas fa-times"></i> Limpar
+                        </button>
+                        <span id="pagarSelCount" class="sel-count-badge">0 selecionados</span>
+                    </div>
+                </form>
+            </div>
+
+            <div class="filters-section">
+                <div class="filters-row filters-row-pagar">
+                    <div class="form-group fg-status">
+                        <label for="filtroPagarStatus">Status:</label>
+                        <select id="filtroPagarStatus">
+                            <option value="em_aberto" selected>Em Aberto</option>
+                            <option value="todos">Todos</option>
+                            <option value="pendente">Pendente</option>
+                            <option value="parcial">Parcial</option>
+                            <option value="pago">Pago</option>
+                            <option value="vencido">Vencido</option>
+                        </select>
+                    </div>
+                    <div class="form-group fg-fornecedor">
+                        <label for="filtroPagarFornecedor">Fornecedor:</label>
+                        <select id="filtroPagarFornecedor">
+                            <option value="">Todos os fornecedores</option>
+                        </select>
+                    </div>
+                    <div class="form-group fg-categoria">
+                        <label for="filtroPagarCategoria">Categoria:</label>
+                        <select id="filtroPagarCategoria">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div class="form-group fg-tipo">
+                        <label for="filtroPagarTipo">Tipo:</label>
+                        <select id="filtroPagarTipo">
+                            <option value="">Todos</option>
+                            <option value="a_vista">À Vista</option>
+                            <option value="pagar">Pagar</option>
+                            <option value="entrada">Entrada</option>
+                            <option value="parcela">Parcela</option>
+                            <option value="cheque_pre">Cheque‑pré</option>
+                            <option value="boleto">Boleto</option>
+                            <option value="pix">Pix</option>
+                            <option value="cartao">Cartão</option>
+                            <option value="permuta">Permuta</option>
+                        </select>
+                    </div>
+                    <div class="form-group fg-numero">
+                        <label for="filtroPagarNumeroPedido">Nº Pedido:</label>
+                        <input type="text" id="filtroPagarNumeroPedido" placeholder="000001">
+                    </div>
+                    <div class="form-group fg-inicio">
+                        <label for="filtroPagarDataInicio">Data Início:</label>
+                        <input type="date" id="filtroPagarDataInicio">
+                    </div>
+                    <div class="form-group fg-fim">
+                        <label for="filtroPagarDataFim">Data Fim:</label>
+                        <input type="date" id="filtroPagarDataFim">
+                    </div>
+                    
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="table">
+                    <thead id="pagarTableHead">
+                        <tr>
+                            <th style="width:36px; text-align:center;"><input type="checkbox" id="selPagarAll" onchange="toggleSelecionarTodosPagar(this.checked)" aria-label="Selecionar todos"></th>
+                            <th>Pedido Nº</th>
+                            <th>Fornecedor</th>
+                            <th>Descrição</th>
+                            <th>Valor</th>
+                            <th>Vencimento</th>
+                            <th>Juros</th>
+                            <th>Status</th>
+                            <th>Categoria</th>
+                            <th>Tipo</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pagarTable">
+                        <tr>
+                            <td colspan="11" style="text-align: center;">Nenhuma conta a pagar encontrada</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- Paginação Pagar -->
+            <div id="pagarPagination" class="pagination" style="margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 10px;"></div>
+        </div>
+
+        <!-- Fluxo de Caixa Tab -->
+        <div id="fluxo" class="tab-content">
+            <div class="filters-section">
+                <div class="filters-row">
+                    <div class="form-group">
+                        <label for="fluxoDataInicio">Data Início:</label>
+                        <input type="date" id="fluxoDataInicio">
+                    </div>
+                    <div class="form-group">
+                        <label for="fluxoDataFim">Data Fim:</label>
+                        <input type="date" id="fluxoDataFim">
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-primary" onclick="gerarFluxoCaixa()">
+                            <i class="fas fa-chart-line"></i> Gerar Fluxo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>Fluxo de Caixa Detalhado</h3>
+                <canvas id="fluxoDetalhadoChart" width="400" height="300"></canvas>
+            </div>
+
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Entradas</th>
+                            <th>Saídas</th>
+                            <th>Saldo do Dia</th>
+                            <th>Saldo Acumulado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fluxoTable">
+                        <tr>
+                            <td colspan="5" style="text-align: center;">Selecione um período para visualizar o fluxo de caixa</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Relatórios Tab -->
+        <div id="relatorios" class="tab-content">
+            <div class="form-section">
+                <h3>Gerar Relatórios</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tipoRelatorio">Tipo de Relatório:</label>
+                        <select id="tipoRelatorio">
+                            <option value="inadimplencia">Inadimplência</option>
+                            <option value="faturamento">Faturamento por Período</option>
+                            <option value="categorias">Análise por Categorias</option>
+                            <option value="clientes">Ranking de Clientes</option>
+                            <option value="fornecedores">Ranking de Fornecedores</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="relDataInicio">Data Início:</label>
+                        <input type="date" id="relDataInicio">
+                    </div>
+                    <div class="form-group">
+                        <label for="relDataFim">Data Fim:</label>
+                        <input type="date" id="relDataFim">
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-primary" onclick="gerarRelatorio()">
+                            <i class="fas fa-file-alt"></i> Gerar Relatório
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-success" onclick="exportarDados('excel')" title="Exportar para Excel">
+                            <i class="fas fa-file-excel"></i> Excel
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-danger" onclick="exportarDados('pdf')" title="Exportar para PDF">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="relatorioResult" style="display: none;">
+                <div class="summary-box">
+                    <h3 id="relatorioTitulo">Relatório</h3>
+                    <div id="relatorioContent"></div>
+                </div>
+            </div>
+            
+            <!-- ✅ NOVO: Seção de Backup e Restore -->
+            <div class="form-section" id="backupRestoreSection">
+                <h3>🔄 Backup e Restore de Dados</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <button class="btn btn-warning" onclick="fazerBackup()">
+                            <i class="fas fa-download"></i> Fazer Backup
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label for="arquivoRestore">Restaurar Backup:</label>
+                        <input type="file" id="arquivoRestore" accept=".json" onchange="restaurarBackup(event)">
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-danger" onclick="limparTodosDados()" title="Atenção: Remove todos os dados!">
+                            <i class="fas fa-trash"></i> Limpar Dados
+                        </button>
+                    </div>
+                </div>
+                <div style="background: #fff3cd; padding: 10px; border-radius: 4px; margin-top: 10px; font-size: 0.9em;">
+                    <i class="fas fa-info-circle" style="color: #856404;"></i>
+                    <strong>Importante:</strong> O backup salva todas as contas (a pagar e receber) em um arquivo JSON. 
+                    Use esta funcionalidade regularmente para proteger seus dados.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Pagamento/Recebimento -->
+    <div id="pagamentoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="pagamentoModalTitle">Registrar Pagamento</h3>
+                <span class="close" onclick="fecharModal('pagamentoModal')">&times;</span>
+            </div>
+            <form id="pagamentoForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pagamentoData">Data do Pagamento:</label>
+                        <input type="date" id="pagamentoData" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="pagamentoValor">Valor Pago:</label>
+                        <input type="text" id="pagamentoValor" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pagamentoMetodo">Método de Pagamento:</label>
+                        <select id="pagamentoMetodo">
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="pix">PIX</option>
+                            <option value="transferencia">Transferência</option>
+                            <option value="cartao">Cartão</option>
+                            <option value="cheque">Cheque</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pagamentoObservacoes">Observações:</label>
+                        <textarea id="pagamentoObservacoes"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="pagamentoComprovante">Anexar Comprovante / Recibo:</label>
+                        <input type="file" id="pagamentoComprovante" accept="image/*,application/pdf" style="padding: 8px; border: 1px dashed #ccc; border-radius: 4px; background: #fff;">
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check"></i> Confirmar
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="fecharModal('pagamentoModal')">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="anexosModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="anexosModalTitle">Anexos</h3>
+                <span class="close" onclick="fecharModal('anexosModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="anexosModalMeta" style="margin-bottom: 10px; color: #475569; font-size: 13px;"></div>
+                <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                    <table id="anexosTable">
+                        <thead>
+                            <tr>
+                                <th>Arquivo</th>
+                                <th style="width: 120px;">Tipo</th>
+                                <th style="width: 110px; text-align:right;">Tamanho</th>
+                                <th style="width: 170px;">Enviado em</th>
+                                <th style="width: 180px;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="anexosTableBody">
+                            <tr><td colspan="5" style="text-align:center; padding: 14px;">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="fecharModal('anexosModal')">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="anexarArquivoContaPeloModal()">
+                    <i class="fas fa-paperclip"></i> Adicionar Anexo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+    .icon.custom-columns { display:inline-block; width:18px; height:18px; margin-left:6px; background:#007bff; border-radius:3px; cursor:pointer; vertical-align:middle; }
+    .icon.small-list { display:inline-block; width:18px; height:18px; margin-left:4px; background:#6c757d; border-radius:3px; cursor:pointer; vertical-align:middle; }
+    .icon.custom-columns.active { box-shadow: 0 0 0 2px rgba(0,123,255,0.4) inset; }
+    .modal .columns-list { max-height:320px; overflow:auto; border:1px solid #ddd; border-radius:4px; padding:8px; }
+    .columns-item { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px; border-bottom:1px solid #eee; }
+    .columns-item button { padding:2px 6px; }
+    .filters-section{ width:100%; }
+    .filters-row{ display:flex; flex-wrap:nowrap; gap:8px; align-items:flex-end; width:100%; }
+    .filters-row .form-group{ display:flex; flex-direction:column; gap:4px; flex:1 1 120px; min-width:120px; }
+    .filters-row .form-group select,
+    .filters-row .form-group input{ width:100%; }
+    .filters-row .form-group button.btn{ height:36px; }
+    .filters-row .actions-group .btn{ width:auto; }
+    .filters-row #filtroReceberNumeroPedido,
+    .filters-row #filtroPagarNumeroPedido{ width:110px; min-width:110px; }
+    .filters-row #filtroReceberCategoria,
+    .filters-row #filtroPagarCategoria{ width:160px; min-width:160px; }
+    .filters-row #filtroReceberDataInicio,
+    .filters-row #filtroReceberDataFim,
+    .filters-row #filtroPagarDataInicio,
+    .filters-row #filtroPagarDataFim{ width:150px; min-width:150px; }
+    .filters-row .form-group .btn.btn-primary{ min-width:90px; padding:6px 10px; }
+    .filters-row .actions-group{ display:flex; flex-direction:row; align-items:center; gap:8px; flex:0 0 auto; }
+    .filters-row .actions-group .action-btn{ display:inline-flex; align-items:center; justify-content:center; gap:6px; height:36px; width:40px; }
+    @media (min-width: 1600px){
+        .filters-row .form-group{ min-width:160px; }
+    }
+    @media (max-width: 1366px){
+        .filters-row{ gap:6px; }
+        .filters-row .form-group{ min-width:110px; }
+        .filters-row .actions-group .action-btn{ width:36px; height:34px; }
+    }
+    .table .actions-inline{ display:inline-flex; align-items:center; gap:6px; flex-wrap:nowrap; }
+    .table .actions-inline .btn{ display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:4px 8px; font-size:12px; }
+    .table { table-layout: auto; }
+    @media (max-width: 1366px){
+        .table { font-size: 13px; }
+        .table th, .table td { padding:6px; }
+    }
+    @media (max-width: 1280px){
+        .table { font-size: 12px; }
+        .table th, .table td { padding:5px; }
+    }
+    @media (min-width: 1920px){
+        .table { font-size: 14px; }
+    }
+    </style>
+    <div id="printColumnsModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="printColumnsModalTitle">Configurar colunas</h3>
+                <span class="close" onclick="fecharModal('printColumnsModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group" style="width:100%;">
+                        <div id="printColumnsList" class="columns-list"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="text-align:right;">
+                <button class="btn btn-primary" onclick="saveColumnsConfig()"><i class="fas fa-save"></i> Salvar</button>
+                <button class="btn btn-danger" onclick="fecharModal('printColumnsModal')"><i class="fas fa-times"></i> Cancelar</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });
+        try {
+            var h = window.location && window.location.hostname ? window.location.hostname : '';
+            var prod = h.indexOf('sisweb-7ce82.web.app') !== -1 || h.indexOf('sisweb-7ce82.firebaseapp.com') !== -1;
+            var allow = !!localStorage.getItem('allow_backup_restore') || /\bdebug=1\b/.test(window.location.search || '');
+            var section = document.getElementById('backupRestoreSection');
+            if (prod && section && !allow) { section.style.display = 'none'; }
+        } catch(_) {}
+    });
+    </script>
+    
+    <!-- Definir tenant (empresa) antes de inicializar Firebase -->
+    <script>
+        (function(){
+            try {
+                const raw = localStorage.getItem('company_info');
+                if (raw) {
+                    const obj = JSON.parse(raw);
+                    window.appTenantId = String(obj.id || obj.companyId || obj.slug || obj.nome || obj.name || 'default').replace(/\s+/g,'_').toLowerCase();
+                    if (window.firebaseService && typeof window.firebaseService.setTenantId === 'function') {
+                        window.firebaseService.setTenantId(window.appTenantId);
+                    }
+                }
+            } catch(e) { console.warn('⚠️ [Finanças] Não foi possível definir tenantId:', e.message || e); }
+        })();
+    </script>
+    
+    <!-- ✅ CORRIGIDO: Firebase inicializado diretamente -->
+    <script type="module">
+        import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, get, child, onValue, off, update, remove, serverTimestamp, push } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getAuth, onAuthStateChanged, signInAnonymously, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject, getBlob } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
+            authDomain: "sisweb-7ce82.firebaseapp.com",
+            databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "sisweb-7ce82",
+            storageBucket: "sisweb-7ce82.firebasestorage.app",
+            messagingSenderId: "240003261222",
+            appId: "1:240003261222:web:1aeaf919ddc7e5c691d7e7",
+            measurementId: "G-FTC6JZ5ZGX"
+        };
+        
+        try {
+            let app;
+            if (window._FIREBASE_APP) {
+                app = window._FIREBASE_APP;
+            } else {
+                const apps = getApps();
+                app = apps.length > 0 ? apps[0] : initializeApp(firebaseConfig);
+            }
+            window.database = getDatabase(app);
+            const auth = getAuth(app);
+            
+            window.firebaseRef = ref;
+            window.firebaseSet = set;
+            
+            // 🔐 Autenticação para regras com login
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    window.firebaseAuthUser = user;
+                    try { window.firebaseAuthDisabled = false; } catch(_) {}
+                    try { if (typeof updateOfflineBadge === 'function') updateOfflineBadge(); } catch(_) {}
+                } else {
+                    signInAnonymously(auth).then(() => {
+                    }).catch(err => {
+                        console.error('❌ [Finanças] Falha no login anônimo:', err);
+                        window.firebaseAuthDisabled = true;
+                        try { if (typeof updateOfflineBadge === 'function') updateOfflineBadge(); } catch(_) {}
+                    });
+                }
+            });
+            
+
+            function getTenantId() {
+                try {
+                    if (window.appTenantId) return String(window.appTenantId);
+                    const raw = localStorage.getItem('company_info');
+                    if (raw) {
+                        const obj = JSON.parse(raw);
+                        return String(obj.id || obj.companyId || obj.slug || obj.nome || obj.name || 'default').replace(/\s+/g,'_').toLowerCase();
+                    }
+                } catch (_) {}
+                return null;
+            }
+            function getNamespacedPath(path) {
+                try {
+                    if (!path || /^companies\//.test(path) || /^users\//.test(path) || String(path).startsWith('/')) return path;
+                    const t = getTenantId();
+                    if (t) return `companies/${t}/${path}`;
+                    return path;
+                } catch (_) { return path; }
+            }
+
+            function sanitizeFirebasePayload(val) {
+                if (val === undefined || val === null) return null;
+                if (Array.isArray(val)) return val.map(sanitizeFirebasePayload);
+                if (typeof val === 'object') {
+                    const out = {};
+                    Object.keys(val).forEach(k => {
+                        const v = val[k];
+                        if (v === undefined) return; // drop undefined keys
+                        out[k] = sanitizeFirebasePayload(v);
+                    });
+                    return out;
+                }
+                if (typeof val === 'function') return null;
+                return val;
+            }
+            function handleAuthError(e, context = {}) {
+                try {
+                    const msg = String((e && e.message) || e || '').toLowerCase();
+                    const code = String((e && e.code) || '').toLowerCase();
+                    const path = String((context && context.path) || '').toLowerCase().replace(/^\/+/, '');
+                    const isPermDenied = msg.includes('permission_denied') || msg.includes('permission denied') || code.includes('permission-denied');
+                    const isAdminRestricted = code.includes('admin-restricted-operation') || msg.includes('admin-restricted-operation');
+                    if (isPermDenied || isAdminRestricted) {
+                        const isLowPriorityPath =
+                            /(^|\/)printpreferences\//.test(path) ||
+                            /(^|\/)finance_snapshots\//.test(path) ||
+                            path === 'multiple_paths_write';
+                        if (isLowPriorityPath) {
+                            console.warn('⚠️ [Finanças] Permissão limitada em recurso opcional:', path || 'desconhecido');
+                            return true;
+                        }
+                        const now = Date.now();
+                        const lastWarnAt = Number(window.__finPermWarnAt || 0);
+                        if (!lastWarnAt || (now - lastWarnAt) > 15000) {
+                            window.__finPermWarnAt = now;
+                            try { mostrarNotificacao('Aviso de permissão. Verifique sua assinatura e dados da empresa.', 'warning'); } catch(_) {}
+                        }
+                        console.warn('⚠️ [Finanças] Erro de permissão detectado (não forçando logout automático para evitar loops). Verifique o tenant ID.');
+                        return true;
+                    }
+                } catch(_) {}
+                return false;
+            }
+            window.firebaseService = {
+                loadFromFirebase: async (path) => {
+                    const base = String(path || '');
+                    const alts = new Set([base]);
+                    if (base.startsWith('contasPagar/')) {
+                        alts.add(base.replace('contasPagar/', 'contaspagar/'));
+                        alts.add(base.replace('contasPagar/', 'contas_pagar/'));
+                    }
+                    if (base.startsWith('contasReceber/')) {
+                        alts.add(base.replace('contasReceber/', 'contas_receber/'));
+                        alts.add(base.replace('contasReceber/', 'contasreceber/'));
+                    }
+                    const candidates = [];
+                    alts.forEach(a => { candidates.push(getNamespacedPath(a)); });
+                    const dbRef = ref(window.database);
+                    for (const candidate of candidates) {
+                        try {
+                            const snap = await get(child(dbRef, candidate));
+                            if (snap.exists()) {
+                                return { success: true, data: snap.val(), source: 'firebase', path: candidate };
+                            }
+                        } catch (_) {}
+                    }
+                    return { success: true, data: null, source: 'firebase' };
+                },
+                saveToFirebase: async (path, key, data) => {
+                    let base = String(path || '');
+                    base = base.replace(/^contaspagar(\/|$)/, 'financas/pagar$1').replace(/^contas_pagar(\/|$)/, 'financas/pagar$1').replace(/^contasreceber(\/|$)/, 'financas/receber$1').replace(/^contas_receber(\/|$)/, 'financas/receber$1');
+                    const writePath = getNamespacedPath(base);
+                    const payload = sanitizeFirebasePayload(data);
+                    try {
+                        if (key === null || key === undefined) {
+                            const baseRef = ref(window.database, writePath);
+                            await set(baseRef, payload);
+                            return { success: true, key: writePath, source: 'firebase' };
+                        } else if (key === 'auto' || key === true) {
+                            const baseRef = ref(window.database, writePath);
+                            const pushed = push(baseRef);
+                            await set(pushed, payload);
+                            return { success: true, key: pushed.key, source: 'firebase' };
+                        } else {
+                            const itemRef = ref(window.database, `${writePath}/${key}`);
+                            await set(itemRef, payload);
+                            return { success: true, key: key, source: 'firebase' };
+                        }
+                    } catch (e) {
+                        if (handleAuthError(e, { path: writePath })) {
+                            return { success: false, error: 'auth', source: 'firebase' };
+                        }
+                        throw e;
+                    }
+                },
+                updatePaths: async (updatesObj) => {
+                    const t = getTenantId();
+                    if (!t) { console.warn('⚠️ updatePaths travado: Sem tenant'); return { success: false, error: 'Sem tenant' }; }
+                    const out = {};
+                    Object.entries(updatesObj || {}).forEach(([k,v]) => {
+                        const ck = String(k)
+                            .replace(/^\/+/, '')
+                            .replace(/^contaspagar(\/|$)/, 'financas/pagar$1')
+                            .replace(/^contas_pagar(\/|$)/, 'financas/pagar$1')
+                            .replace(/^contasreceber(\/|$)/, 'financas/receber$1')
+                            .replace(/^contas_receber(\/|$)/, 'financas/receber$1');
+                        const np = String(getNamespacedPath(ck) || '').replace(/^\/+/, '');
+                        if (!np) return;
+                        out[np] = sanitizeFirebasePayload(v);
+                    });
+                    if (!Object.keys(out).length) return { success: true };
+                    try {
+                        await update(ref(window.database), out);
+                        return { success: true };
+                    } catch (e) {
+                        const msg = String((e && e.message) || e || '').toLowerCase();
+                        const code = String((e && e.code) || '').toLowerCase();
+                        const isPermDenied = msg.includes('permission_denied') || msg.includes('permission denied') || code.includes('permission-denied');
+                        if (isPermDenied) {
+                            let applied = 0;
+                            for (const [p, value] of Object.entries(out)) {
+                                try {
+                                    if (value === null) {
+                                        await remove(ref(window.database, p));
+                                    } else {
+                                        await set(ref(window.database, p), value);
+                                    }
+                                    applied += 1;
+                                } catch (_) {}
+                            }
+                            if (applied === Object.keys(out).length) {
+                                return { success: true, fallback: 'single_writes' };
+                            }
+                            if (handleAuthError(e, { path: 'multiple_paths_write' })) {
+                                return { success: false, error: 'auth', source: 'firebase' };
+                            }
+                            return { success: false, error: 'partial_write_failed', source: 'firebase' };
+                        }
+                        if (handleAuthError(e, { path: 'multiple_paths_write' })) {
+                            return { success: false, error: 'auth', source: 'firebase' };
+                        }
+                        throw e;
+                    }
+                },
+                removeFromFirebase: async (path) => {
+                    const base = String(path || '').replace(/^contaspagar(\/|$)/, 'financas/pagar$1').replace(/^contas_pagar(\/|$)/, 'financas/pagar$1').replace(/^contasreceber(\/|$)/, 'financas/receber$1').replace(/^contas_receber(\/|$)/, 'financas/receber$1');
+                    try {
+                        await remove(ref(window.database, getNamespacedPath(base)));
+                        return { success: true };
+                    } catch (e) {
+                        if (handleAuthError(e, { path: base })) {
+                            return { success: false, error: 'auth', source: 'firebase' };
+                        }
+                        throw e;
+                    }
+                },
+                getFromFirebase: (path) => window.firebaseService.loadFromFirebase(path),
+                updateFirebase: (path, data) => window.firebaseService.saveToFirebase(path, null, data),
+                serverTimestamp: () => serverTimestamp(),
+                authService: { getCurrentUser: async () => auth.currentUser, logout: async () => { try { await signOut(auth); } catch(_){}} },
+                isFirebaseOperational: () => ({ operational: !!window.database && !!auth }),
+                setTenantId: (id) => { window.appTenantId = id ? String(id) : null; },
+                getCurrentTenantId: () => getTenantId(),
+                getCurrentUid: () => { const u = auth.currentUser || window.firebaseAuthUser; return u ? String(u.uid) : null; },
+                storage: {
+                    upload: async (path, file) => {
+                        try {
+                            const s = getStorage();
+                            const r = storageRef(s, path);
+                            const snapshot = await uploadBytes(r, file);
+                            const url = await getDownloadURL(snapshot.ref);
+                            return url;
+                        } catch (e) {
+                            console.error('❌ [Storage] Erro no upload:', e);
+                            throw e;
+                        }
+                    },
+                    getBlob: async (path) => {
+                        const s = getStorage();
+                        const r = storageRef(s, path);
+                        return await getBlob(r);
+                    },
+                    delete: async (path) => {
+                        try {
+                            const s = getStorage();
+                            const r = storageRef(s, path);
+                            await deleteObject(r);
+                            return true;
+                        } catch (e) {
+                            console.error('❌ [Storage] Erro ao remover arquivo:', e);
+                            throw e;
+                        }
+                    }
+                },
+                database: {
+                    ref: (path) => {
+                        const r = ref(window.database, getNamespacedPath(path));
+                        return {
+                            on: (eventType, handler) => { if (eventType === 'value') onValue(r, (snap) => handler({ val: () => snap.val(), key: snap.key })); },
+                            off: (eventType, handler) => { off(r); },
+                            once: async (eventType) => { const s = await get(r); return { val: () => s.val(), key: s.key }; },
+                            set: (data) => set(r, data),
+                            remove: () => remove(r)
+                        };
+                    }
+                }
+            };
+        } catch (error) {
+            console.error('❌ Erro ao inicializar Firebase no sistema financeiro:', error);
+        }
+    </script>
+    
+    <script src="storageService.js"></script>
+    <script src="client-service.js"></script>
+    <script src="schema-migration-contatos.js"></script>
+    <script src="financas.js?v=20260327_1"></script>
+</body>
+</html>

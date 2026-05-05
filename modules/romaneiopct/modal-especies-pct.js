@@ -1,0 +1,841 @@
+/**
+ * 🌳 MÓDULO: Modal de Espécies - Romaneio PCT
+ * 
+ * Responsabilidades:
+ * - Gerenciar modal de lista de espécies específico para PCT
+ * - Paginação e filtros
+ * - Integração com Firebase
+ * - Compatibilidade com sistema padronizado
+ * 
+ * ✅ BASEADO EM: modules/modals/modal-especies.js (romaneiotl)
+ * ✅ FIREBASE PRIORITY: Firebase primeiro, localStorage como fallback
+ * ✅ PRESERVA: Todas as funcionalidades PCT específicas
+ * 
+ * 🔄 VERSÃO: 3.1 - Modal de lista padronizado EXATAMENTE igual ao ROMANEIOTL
+ * 🆕 NOVIDADES: 
+ *   - Modal dedicado para criação/edição (em vez de prompts)
+ *   - Integração com openSpeciesCreationModal e openSpeciesEditModal
+ *   - Fallbacks robustos para compatibilidade
+ */
+
+window.ModalEspeciesPCT = (function() {
+    'use strict';
+
+    function forceShowModal(modal) {
+        if (!modal) return;
+        try {
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+            modal.style.setProperty('display', 'block', 'important');
+            modal.style.setProperty('position', 'fixed', 'important');
+            modal.style.setProperty('top', '0', 'important');
+            modal.style.setProperty('left', '0', 'important');
+            modal.style.setProperty('width', '100%', 'important');
+            modal.style.setProperty('height', '100%', 'important');
+            modal.style.setProperty('visibility', 'visible', 'important');
+            modal.style.setProperty('opacity', '1', 'important');
+            modal.style.setProperty('pointer-events', 'auto', 'important');
+            modal.style.setProperty('z-index', '9999999', 'important');
+            document.body.style.overflow = 'hidden';
+        } catch (_) {}
+    }
+
+    // ✅ CONFIGURAÇÕES
+    const CONFIG = {
+        modalId: 'speciesListModal',
+        tableId: 'speciesListTable',
+        filterId: 'speciesListFilter',
+        paginationId: 'speciesListPagination',
+        itemsPerPage: 5
+    };
+
+    // ✅ ESTADO DO MODAL
+    let state = {
+        currentPage: 1,
+        species: [],
+        filteredSpecies: [],
+        isLoading: false
+    };
+
+    function resolveCompanyId() {
+        try {
+            const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+            if (svc && typeof svc.getTenantId === 'function') {
+                const t = svc.getTenantId();
+                if (t) return String(t);
+            }
+        } catch (_) {}
+        try {
+            if (window.appTenantId) return String(window.appTenantId);
+            if (window.companyInfo) {
+                const raw = window.companyInfo;
+                const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                if (id) return String(id);
+            }
+            const stored = localStorage.getItem('company_info');
+            if (stored) {
+                const obj = JSON.parse(stored);
+                const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                if (id) return String(id);
+            }
+        } catch (_) {}
+        return null;
+    }
+
+    function getLocalStorageKeys(key) {
+        const keys = [];
+        try {
+            const base = String(key || '');
+            if (!base) return keys;
+            const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+            if (svc && typeof svc.getNamespacedPath === 'function') {
+                const ns = svc.getNamespacedPath(base);
+                if (ns && ns !== base) {
+                    keys.push(ns);
+                    return [...new Set(keys)];
+                }
+            } else {
+                const companyId = resolveCompanyId();
+                if (companyId && !/^companies\//.test(base) && !/^users\//.test(base)) {
+                    keys.push(`companies/${companyId}/${base}`);
+                    return [...new Set(keys)];
+                }
+            }
+        } catch (_) {}
+        return [...new Set(keys)];
+    }
+
+    function readLocalStorageValue(key) {
+        for (const k of getLocalStorageKeys(key)) {
+            const val = localStorage.getItem(k);
+            if (val) return val;
+        }
+        return null;
+    }
+
+    function writeLocalStorageValue(key, data) {
+        const payload = typeof data === 'string' ? data : JSON.stringify(data);
+        for (const k of getLocalStorageKeys(key)) {
+            localStorage.setItem(k, payload);
+        }
+    }
+
+    /**
+     * ✅ ABRIR MODAL DE LISTA DE ESPÉCIES
+     */
+    async function openModal() {
+        console.log('🌳 PCT: Abrindo modal de lista de espécies...');
+        
+        try {
+            const modal = document.getElementById(CONFIG.modalId);
+            if (!modal) {
+                console.error('❌ PCT: Modal de espécies não encontrado no DOM');
+                return;
+            }
+
+            // Exibir modal
+            forceShowModal(modal);
+            if (typeof window.debugModalGeometry === 'function') {
+                setTimeout(() => window.debugModalGeometry(CONFIG.modalId), 50);
+            }
+            
+            // Carregar dados
+            await loadSpecies();
+            
+            // Renderizar lista
+            renderSpeciesList();
+            renderPagination();
+            
+            // Configurar eventos
+            setupEventListeners();
+            
+            // ✅ FOCO AUTOMÁTICO NO CAMPO DE FILTRO
+            const filterInput = document.getElementById(CONFIG.filterId);
+            if (filterInput) {
+                setTimeout(() => {
+                    filterInput.focus();
+                }, 300); // Delay para garantir que o modal esteja visível
+            }
+            
+            console.log('✅ PCT: Modal de espécies aberto com sucesso');
+            
+        } catch (error) {
+            console.error('❌ PCT: Erro ao abrir modal de espécies:', error);
+            showError('Erro ao carregar lista de espécies');
+        }
+    }
+
+    /**
+     * ✅ CARREGAR ESPÉCIES DO FIREBASE
+     */
+    async function loadSpecies() {
+        console.log('📂 PCT: Carregando espécies do Firebase...');
+        console.log('🔍 PCT: Iniciando carregamento de espécies');
+        
+        state.isLoading = true;
+        updateLoadingState();
+        
+        try {
+            let species = [];
+            
+            // Tentar carregar do Firebase primeiro
+            if (window.firebaseService) {
+                try {
+                    console.log('🔍 PCT: Tentando carregar do Firebase...');
+                    
+                    // ✅ ESPECÍFICO PCT: Usar loadFromFirebase se disponível
+                    if (typeof window.firebaseService.loadFromFirebase === 'function') {
+                        console.log("🔥 PCT: Carregando espécies da coleção 'species'...");
+                        const result = await window.firebaseService.loadFromFirebase('species');
+                        console.log("✅ PCT: loadFromFirebase resultado:", result);
+                        
+                        if (result && result.success && result.data) {
+                            const firebaseData = result.data;
+                            console.log(`🔍 PCT: Dados brutos do Firebase (species):`, firebaseData);
+                            
+                            // ✅ PROCESSAMENTO CORRETO
+                            if (typeof firebaseData === 'object' && !Array.isArray(firebaseData)) {
+                                console.log('🔍 PCT: Dados são um objeto, convertendo para array');
+                                species = Object.keys(firebaseData).map(key => {
+                                    const item = firebaseData[key];
+                                    return {
+                                        id: key,
+                                        ...item
+                                    };
+                                }).filter(item => item && (item.nome || item.name));
+                            } else if (Array.isArray(firebaseData)) {
+                                console.log('🔍 PCT: Dados são um array');
+                                species = firebaseData.filter(item => item && (item.nome || item.name));
+                            }
+                            
+                            console.log(`✅ PCT: ${species.length} espécies processadas do Firebase`);
+                            
+                        } else {
+                            console.warn('⚠️ PCT: Nenhum dado encontrado no Firebase');
+                            throw new Error('Dados não encontrados no Firebase');
+                        }
+                        
+                    } else {
+                        // Fallback para métodos alternativos
+                        console.log('🔍 PCT: loadFromFirebase não disponível, tentando getData...');
+                        
+                        if (typeof window.getData === 'function') {
+                            const firebaseSpecies = await window.getData('especies') || [];
+                            species = Array.isArray(firebaseSpecies) ? firebaseSpecies : 
+                                     typeof firebaseSpecies === 'object' ? Object.values(firebaseSpecies) : [];
+                            console.log(`✅ PCT: ${species.length} espécies carregadas via getData`);
+                        } else {
+                            throw new Error('Nenhum método de carregamento Firebase disponível');
+                        }
+                    }
+                    
+                } catch (firebaseError) {
+                    console.warn('⚠️ PCT: Erro ao carregar do Firebase:', firebaseError);
+                    
+                    // Fallback para localStorage
+                    console.log('🔍 PCT: Tentando fallback para localStorage...');
+                    const localSpecies = JSON.parse(readLocalStorageValue('species') || '[]');
+                    species = localSpecies;
+                    console.log(`⚠️ PCT: ${species.length} espécies carregadas do localStorage (fallback)`);
+                }
+            } else {
+                console.log('🔍 PCT: firebaseService não disponível, usando localStorage');
+                // Apenas localStorage se Firebase não estiver disponível
+                const localSpecies = JSON.parse(readLocalStorageValue('species') || '[]');
+                species = localSpecies;
+                console.log(`📦 PCT: ${species.length} espécies carregadas do localStorage`);
+            }
+            
+            console.log(`🔍 PCT: Total de espécies antes da normalização: ${species.length}`);
+            
+            // Normalizar dados para compatibilidade PCT
+            state.species = species.map((specie, index) => {
+                const normalizedSpecie = {
+                    id: specie.id || specie.key || `SPECIES_PCT_${Date.now()}_${index}`,
+                    nome: specie.nome || specie.name || specie.especie || 'Nome não informado',
+                    name: specie.nome || specie.name || specie.especie || 'Nome não informado', // Compatibilidade
+                    descricao: specie.descricao || specie.description || specie.desc || '',
+                    description: specie.descricao || specie.description || specie.desc || '', // Compatibilidade
+                    categoria: specie.categoria || specie.category || specie.cat || '',
+                    category: specie.categoria || specie.category || specie.cat || '', // Compatibilidade
+                    densidade: specie.densidade || specie.density || specie.dens || null,
+                    density: specie.densidade || specie.density || specie.dens || null, // Compatibilidade
+                    origem: specie.origem || specie.origin || specie.ori || '',
+                    origin: specie.origem || specie.origin || specie.ori || '', // Compatibilidade
+                    uso: specie.uso || specie.use || specie.utilidade || '',
+                    use: specie.uso || specie.use || specie.utilidade || '' // Compatibilidade
+                };
+                
+                return normalizedSpecie;
+            });
+            
+            // ✅ ORDENAR por última atualização (prioriza updatedAt/createdAt e fallbacks)
+            const parseTime = (s) => {
+                const u = s && (s.updatedAt || (s._metadata && s._metadata.lastUpdated));
+                if (typeof u === 'number') return u;
+                if (typeof u === 'string') { const t = Date.parse(u); if (!isNaN(t)) return t; }
+                const c = s && s.createdAt;
+                if (typeof c === 'number') return c;
+                if (typeof c === 'string') { const t = Date.parse(c); if (!isNaN(t)) return t; }
+                const idn = parseFloat(s && s.id);
+                if (!isNaN(idn)) return idn;
+                return 0;
+            };
+            state.species.sort((a, b) => parseTime(b) - parseTime(a));
+            state.filteredSpecies = [...state.species];
+            state.currentPage = 1;
+            
+            console.log(`✅ PCT: ${state.species.length} espécies processadas e normalizadas`);
+            console.log('🔍 PCT: Estado final das espécies:', {
+                total: state.species.length,
+                filtered: state.filteredSpecies.length,
+                currentPage: state.currentPage,
+                itemsPerPage: CONFIG.itemsPerPage
+            });
+            
+        } catch (error) {
+            console.error('❌ PCT: Erro ao carregar espécies:', error);
+            state.species = [];
+            state.filteredSpecies = [];
+            showError('Erro ao carregar dados das espécies');
+        } finally {
+            state.isLoading = false;
+            updateLoadingState();
+            console.log('🔍 PCT: Carregamento finalizado');
+        }
+    }
+
+    /**
+     * ✅ RENDERIZAR LISTA DE ESPÉCIES
+     */
+    function renderSpeciesList() {
+        const tbody = document.getElementById(CONFIG.tableId);
+        if (!tbody) {
+            console.error('❌ PCT: Tabela de espécies não encontrada');
+            return;
+        }
+
+        // Calcular itens da página atual
+        const startIndex = (state.currentPage - 1) * CONFIG.itemsPerPage;
+        const endIndex = startIndex + CONFIG.itemsPerPage;
+        const speciesToShow = state.filteredSpecies.slice(startIndex, endIndex);
+
+        if (state.isLoading) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: center; padding: 20px;">
+                        <i class="fas fa-spinner fa-spin"></i> Carregando espécies...
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        if (speciesToShow.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: center; padding: 20px; color: #666;">
+                        <i class="fas fa-tree"></i><br>
+                        ${state.filteredSpecies.length === 0 ? 'Nenhuma espécie cadastrada' : 'Nenhuma espécie encontrada com os filtros aplicados'}
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = speciesToShow.map(specie => `
+            <tr>
+                <td>${specie.nome}</td>
+                <td>${specie.descricao}</td>
+                <td style="text-align: center;">
+                    <div class="btn-group">
+                        <button class="action-button select-button" onclick="window.ModalEspeciesPCT.selectSpecie('${specie.nome}')" title="Selecionar Espécie">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="action-button edit-button" onclick="window.ModalEspeciesPCT.editSpecie('${specie.id}')" title="Editar Espécie">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+
+        // ✅ REMOVIDO: Botão "Nova Espécie" dentro da tabela. Padronizado no footer.
+
+        // Atualizar informações do modal
+        updateModalInfo();
+    }
+
+    /**
+     * ✅ RENDERIZAR PAGINAÇÃO
+     */
+    function renderPagination() {
+        const container = document.getElementById(CONFIG.paginationId);
+        if (!container) return;
+
+        const totalPages = Math.ceil(state.filteredSpecies.length / CONFIG.itemsPerPage);
+
+        if (totalPages <= 1) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'flex';
+        container.innerHTML = '';
+
+        const addBtn = (label, page, disabled = false, active = false) => {
+            const btn = document.createElement('button');
+            btn.textContent = label;
+            if (active) btn.classList.add('active');
+            btn.disabled = disabled;
+            btn.onclick = () => goToPage(page);
+            container.appendChild(btn);
+        };
+
+        addBtn('<<<', 1, state.currentPage === 1);
+        addBtn('<', state.currentPage - 1, state.currentPage === 1);
+
+        const startPage = Math.max(1, state.currentPage - 2);
+        const endPage = Math.min(totalPages, state.currentPage + 2);
+
+        if (startPage > 1) {
+            addBtn('1', 1, false, state.currentPage === 1);
+            if (startPage > 2) {
+                const span = document.createElement('span');
+                span.textContent = '...';
+                container.appendChild(span);
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            addBtn(String(i), i, false, i === state.currentPage);
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                const span = document.createElement('span');
+                span.textContent = '...';
+                container.appendChild(span);
+            }
+            addBtn(String(totalPages), totalPages, false, state.currentPage === totalPages);
+        }
+
+        addBtn('>', state.currentPage + 1, state.currentPage === totalPages);
+        addBtn('>>>', totalPages, state.currentPage === totalPages);
+    }
+
+    /**
+     * ✅ NAVEGAR PARA PÁGINA
+     */
+    function goToPage(page) {
+        state.currentPage = page;
+        renderSpeciesList();
+        renderPagination();
+    }
+
+    /**
+     * ✅ FILTRAR ESPÉCIES
+     */
+    function filterSpecies() {
+        const filterInput = document.getElementById(CONFIG.filterId);
+        if (!filterInput) return;
+
+        const filterText = filterInput.value.toLowerCase().trim();
+        
+        if (!filterText) {
+            state.filteredSpecies = [...state.species];
+        } else {
+            state.filteredSpecies = state.species.filter(specie => {
+                const nome = (specie.nome || '').toLowerCase();
+                const descricao = (specie.descricao || '').toLowerCase();
+                const categoria = (specie.categoria || '').toLowerCase();
+                const origem = (specie.origem || '').toLowerCase();
+                
+                return nome.includes(filterText) || 
+                       descricao.includes(filterText) || 
+                       categoria.includes(filterText) || 
+                       origem.includes(filterText);
+            });
+        }
+
+        state.currentPage = 1;
+        renderSpeciesList();
+        renderPagination();
+    }
+
+    /**
+     * ✅ SELECIONAR ESPÉCIE (ESPECÍFICO PCT) - CORRIGIDO PARA ATUALIZAR WINDOW.SELECTEDSPECIES
+     */
+    function selectSpecie(specieName) {
+        console.log(`✅ PCT: Selecionando espécie: ${specieName}`);
+        
+        // ✅ ESPECÍFICO PCT: Preencher campo especieInput
+        const especieInput = document.getElementById('especieInput');
+        if (especieInput) {
+            let nome = specieName || '';
+            if (window.isAllCaps && window.toTitleCasePt && window.isAllCaps(nome)) {
+                nome = window.toTitleCasePt(nome);
+            }
+            especieInput.value = nome;
+            console.log(`✅ PCT: Campo especieInput preenchido com "${nome}"`);
+        } else {
+            console.warn('⚠️ PCT: Campo especieInput não encontrado');
+        }
+
+        // ✅ CORREÇÃO CRÍTICA: Atualizar window.selectedSpecies (consistente com TL)
+        const selectedSpecie = state.species.find(s => s.nome === specieName);
+        if (selectedSpecie) {
+            window.selectedSpecies = {
+                nome: selectedSpecie.nome,
+                name: selectedSpecie.nome, // Compatibilidade
+                id: selectedSpecie.id,
+                descricao: selectedSpecie.descricao
+            };
+            console.log(`✅ PCT: window.selectedSpecies atualizado para:`, window.selectedSpecies);
+        } else {
+            // Fallback: criar objeto básico
+            window.selectedSpecies = {
+                nome: specieName,
+                name: specieName
+            };
+            console.log(`✅ PCT: window.selectedSpecies definido (fallback) para:`, window.selectedSpecies);
+        }
+
+        // Fechar modal
+        closeModal();
+        
+        // Notificar seleção
+        console.log(`✅ PCT: Espécie "${specieName}" selecionada e window.selectedSpecies atualizado`);
+        
+        // ✅ ESPECÍFICO PCT: Disparar evento personalizado se necessário
+        if (window.onSpeciesSelectedPCT && typeof window.onSpeciesSelectedPCT === 'function') {
+            const specie = state.species.find(s => s.nome === specieName);
+            window.onSpeciesSelectedPCT(specie);
+        }
+    }
+
+    /**
+     * ✅ EDITAR ESPÉCIE (Modal Padronizado - Seguindo Padrão ROMANEIOTL)
+     */
+    function editSpecie(specieId) {
+        console.log(`✏️ PCT: Editando espécie: ${specieId}`);
+        
+        // Buscar espécie nos dados
+        const specie = state.species.find(s => s.id === specieId);
+        if (!specie) {
+            console.error('❌ PCT: Espécie não encontrada:', specieId);
+            showError('Espécie não encontrada');
+            return;
+        }
+        
+        console.log(`🔍 PCT: Espécie encontrada para edição:`, specie);
+        console.log(`📝 PCT: Abrindo modal padronizado para editar "${specie.nome}"`);
+        
+        // ✅ PADRONIZAÇÃO: Usar modal dedicado em vez de prompt
+        if (window.openSpeciesEditModal && typeof window.openSpeciesEditModal === 'function') {
+            console.log('✅ PCT: Usando modal padronizado de edição');
+            
+            // Fechar modal de lista primeiro
+            closeModal();
+            
+            // Abrir modal de edição com dados da espécie
+            window.openSpeciesEditModal(specieId, specie);
+            
+        } else {
+            console.warn('⚠️ PCT: Modal padronizado não disponível, usando fallback prompt');
+            
+            // Fallback para prompt (caso o modal não esteja disponível)
+            setTimeout(() => {
+                const novoNome = prompt(`🌿 EDITAR ESPÉCIE\n\nNome atual: ${specie.nome}\n\nDigite o novo nome:`, specie.nome);
+                
+                if (novoNome === null) {
+                    console.log('✅ PCT: Edição cancelada pelo usuário');
+                    return;
+                }
+                
+                if (novoNome.trim() === '') {
+                    alert('❌ Nome da espécie não pode estar vazio!');
+                    return;
+                }
+                
+                if (novoNome.trim() === specie.nome) {
+                    console.log('✅ PCT: Nenhuma alteração feita');
+                    return;
+                }
+                
+                // Salvar via função dedicada do HTML
+                if (window.saveSpeciesPCT) {
+                    // Simular evento de formulário
+                    const fakeEvent = {
+                        preventDefault: () => {},
+                        target: {
+                            speciesName: { value: novoNome.trim() },
+                            speciesDescription: { value: specie.descricao || '' }
+                        }
+                    };
+                    window.editingSpeciesIdPCT = specieId;
+                    window.saveSpeciesPCT(fakeEvent);
+                    closeModal();
+                }
+            }, 100);
+        }
+    }
+    
+    /**
+     * ✅ SALVAR ESPÉCIE EDITADA NO FIREBASE
+     */
+    async function salvarEspecieEditada(specie) {
+        console.log(`💾 PCT: Salvando espécie editada:`, specie);
+        
+        try {
+            if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+                console.log('🔥 PCT: Salvando no Firebase...');
+                const companyId = resolveCompanyId();
+                // CORREÇÃO: Passar ID como chave (segundo argumento) e dados como terceiro
+                const result = await window.firebaseService.saveToFirebase('species', specie.id, {
+                    nome: specie.nome,
+                    descricao: specie.descricao || '',
+                    id: specie.id,
+                    companyId: companyId || specie.companyId || undefined
+                });
+                
+                if (result && result.success) {
+                    console.log('✅ PCT: Espécie salva no Firebase com sucesso');
+                    return result;
+                } else {
+                    throw new Error('Falha ao salvar no Firebase');
+                }
+            } else {
+                // Fallback para localStorage
+                console.log('📦 PCT: Salvando no localStorage...');
+                const especies = JSON.parse(readLocalStorageValue('species') || '[]');
+                const index = especies.findIndex(e => e.id === specie.id);
+                
+                if (index >= 0) {
+                    especies[index] = specie;
+                } else {
+                    especies.push(specie);
+                }
+                
+                writeLocalStorageValue('species', JSON.stringify(especies));
+                console.log('✅ PCT: Espécie salva no localStorage');
+                return { success: true };
+            }
+        } catch (error) {
+            console.error('❌ PCT: Erro ao salvar espécie:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * ✅ FECHAR MODAL
+     */
+    function closeModal() {
+        const modal = document.getElementById(CONFIG.modalId);
+        if (modal) {
+            modal.style.display = 'none';
+        try { document.body.style.overflow = ''; } catch (_) {}
+        }
+        
+        // ✅ LIMPAR CAMPO DE FILTRO AO FECHAR
+        const filterInput = document.getElementById(CONFIG.filterId);
+        if (filterInput) {
+            filterInput.value = '';
+            // Resetar filtro
+            state.filteredSpecies = [...state.species];
+            state.currentPage = 1;
+        }
+        
+        console.log('✅ PCT: Modal de espécies fechado e filtro limpo');
+    }
+
+    /**
+     * ✅ CONFIGURAR EVENT LISTENERS
+     */
+    function setupEventListeners() {
+        const modal = document.getElementById(CONFIG.modalId);
+        if (!modal) return;
+
+        // Filtro de busca
+        const filterInput = document.getElementById(CONFIG.filterId);
+        if (filterInput) {
+            filterInput.removeEventListener('input', filterSpecies); // Remover listener anterior
+            // ✅ Debounce de 300ms, e Enter aplica imediatamente
+            let filterTimeout;
+            const debouncedFilter = () => {
+                clearTimeout(filterTimeout);
+                filterTimeout = setTimeout(filterSpecies, 300);
+            };
+            filterInput.addEventListener('input', debouncedFilter);
+            filterInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    clearTimeout(filterTimeout);
+                    filterSpecies();
+                }
+            });
+        }
+
+        // Botões de fechar
+        const closeButtons = modal.querySelectorAll('.close-modal, .close-modal-btn');
+        closeButtons.forEach(btn => {
+            btn.onclick = closeModal;
+        });
+
+        // Fechar ao clicar fora
+        const handleOutsideClick = (event) => {
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+        
+        // Remover listener antigo se existir
+        if (modal._outsideClickHandler) {
+            window.removeEventListener('click', modal._outsideClickHandler);
+        }
+        
+        // Adicionar novo listener
+        modal._outsideClickHandler = handleOutsideClick;
+        window.addEventListener('click', handleOutsideClick);
+    }
+
+    /**
+     * ✅ ATUALIZAR ESTADO DE CARREGAMENTO
+     */
+    function updateLoadingState() {
+        renderSpeciesList();
+    }
+
+    /**
+     * ✅ ATUALIZAR INFORMAÇÕES DO MODAL
+     */
+    function updateModalInfo() {
+        const info = document.getElementById('speciesModalInfo');
+        if (info) {
+            const total = state.filteredSpecies.length;
+            info.textContent = `${total} espécie${total !== 1 ? 's' : ''} encontrada${total !== 1 ? 's' : ''}`;
+        }
+    }
+
+    // 📡 Atualizar lista quando houver evento de espécies atualizadas (com throttle)
+    window.addEventListener('species:updated', async function(e) {
+        try {
+            if (!window.__pctSpeciesRefreshTimer) {
+                window.__pctSpeciesRefreshTimer = setTimeout(async () => {
+                    window.__pctSpeciesRefreshTimer = null;
+                    await refresh();
+                    console.log('📡 PCT: Lista de espécies atualizada via evento species:updated');
+                }, 300);
+            }
+        } catch (err) {
+            console.warn('⚠️ PCT: Falha ao atualizar lista de espécies via evento:', err);
+        }
+    });
+
+    /**
+     * ✅ MOSTRAR ERRO
+     */
+    function showError(message) {
+        if (window.Utils && window.Utils.showToast) {
+            window.Utils.showToast(message, 'error');
+        } else {
+            console.error('PCT:', message);
+            alert('Erro: ' + message);
+        }
+    }
+
+    /**
+     * ✅ RECARREGAR LISTA
+     */
+    async function refresh() {
+        console.log('🔄 PCT: Recarregando lista de espécies...');
+        await loadSpecies();
+        renderSpeciesList();
+        renderPagination();
+    }
+
+    /**
+     * ✅ MOSTRAR TODAS AS ESPÉCIES (SEM PAGINAÇÃO)
+     */
+    function showAllSpecies() {
+        console.log('📋 PCT: Mostrando todas as espécies...');
+        
+        const tbody = document.getElementById(CONFIG.tableId);
+        if (!tbody) {
+            console.error('❌ PCT: Tabela de espécies não encontrada');
+            return;
+        }
+
+        if (state.isLoading) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: center; padding: 20px;">
+                        <i class="fas fa-spinner fa-spin"></i> Carregando espécies...
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        if (state.filteredSpecies.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: center; padding: 20px; color: #666;">
+                        <i class="fas fa-tree"></i><br>
+                        Nenhuma espécie cadastrada
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        // Mostrar TODAS as espécies filtradas
+        tbody.innerHTML = state.filteredSpecies.map(specie => `
+            <tr>
+                <td>${specie.nome}</td>
+                <td>${specie.descricao}</td>
+                <td style="text-align: center;">
+                    <div class="btn-group">
+                        <button class="action-button select-button" onclick="window.ModalEspeciesPCT.selectSpecie('${specie.nome}')" title="Selecionar Espécie">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="action-button edit-button" onclick="window.ModalEspeciesPCT.editSpecie('${specie.id}')" title="Editar Espécie">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+
+        // Ocultar paginação
+        const paginationContainer = document.getElementById(CONFIG.paginationId);
+        if (paginationContainer) {
+            paginationContainer.style.display = 'none';
+        }
+
+        // Atualizar informações do modal
+        updateModalInfo();
+        
+        console.log(`✅ PCT: Todas as ${state.filteredSpecies.length} espécies exibidas`);
+    }
+
+    // ✅ INTERFACE PÚBLICA
+    return {
+        openModal,
+        closeModal,
+        selectSpecie,
+        editSpecie,
+        refresh,
+        loadSpecies,
+        showAllSpecies
+    };
+
+})();
+
+// ✅ FUNÇÕES GLOBAIS PARA COMPATIBILIDADE PCT
+window.openSpeciesListModal = window.ModalEspeciesPCT.openModal;
+window.selectSpecies = window.ModalEspeciesPCT.selectSpecie;
+window.renderSpeciesListPCT = window.ModalEspeciesPCT.refresh;
+
+console.log('✅ Módulo ModalEspeciesPCT carregado com sucesso');

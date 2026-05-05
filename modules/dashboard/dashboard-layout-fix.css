@@ -1,0 +1,314 @@
+/**
+ * 🎯 CORREÇÕES DE LAYOUT - DASHBOARD RESPONSIVO
+ * 
+ * Correções específicas para problemas de layout e responsividade
+ * Aplicado após o dashboard-styles.css para sobrescrever estilos problemáticos
+ * 
+ * ✅ MOBILE FIRST: Otimizado para dispositivos móveis
+ * ✅ PERFORMANCE: CSS otimizado para renderização rápida
+ */
+
+/* ========================================================================
+   CORREÇÕES GERAIS DE LAYOUT
+   ======================================================================== */
+
+/* Garantir que o container não quebre o layout */
+.container {
+    width: 100% !important;
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+    padding: 20px !important;
+    box-sizing: border-box !important;
+}
+
+/* Menu dentro do container com espaçamento adequado */
+.container main-menu {
+    display: block;
+    margin-bottom: 20px;
+}
+
+/* Correção do header do dashboard */
+.dashboard-header {
+    margin-top: 0 !important;
+    margin-bottom: 30px !important;
+}
+
+/* ========================================================================
+   CORREÇÕES DE RESPONSIVIDADE
+   ======================================================================== */
+
+/* Tablets */
+@media (max-width: 992px) {
+    .container {
+        padding: 15px !important;
+    }
+    
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 15px !important;
+    }
+    
+    .dashboard-header {
+        padding: 15px !important;
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px !important;
+    }
+    
+    .kpi-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+    
+    .kpi-card {
+        padding: 15px !important;
+    }
+    
+    .dashboard-header {
+        padding: 12px !important;
+    }
+    
+    .header-info h1 {
+        font-size: 1.4rem !important;
+    }
+    
+    .btn-refresh {
+        padding: 8px 12px !important;
+        font-size: 0.9rem !important;
+    }
+}
+
+/* Mobile pequeno */
+@media (max-width: 480px) {
+    .container {
+        padding: 8px !important;
+    }
+    
+    .kpi-card {
+        flex-direction: column !important;
+        text-align: center !important;
+        padding: 12px !important;
+    }
+    
+    .kpi-icon {
+        margin-right: 0 !important;
+        margin-bottom: 12px !important;
+        width: 50px !important;
+        height: 50px !important;
+        font-size: 1.2rem !important;
+    }
+    
+    .kpi-value {
+        font-size: 1.6rem !important;
+    }
+    
+    .header-info h1 {
+        font-size: 1.2rem !important;
+    }
+    
+    .dashboard-header {
+        flex-direction: column !important;
+        text-align: center !important;
+        gap: 15px !important;
+    }
+    
+    .btn-refresh {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+}
+
+/* ========================================================================
+   CORREÇÕES DE PERFORMANCE
+   ======================================================================== */
+
+/* Otimizar transições para melhor performance */
+.kpi-card,
+.dashboard-header,
+.dollar-card,
+.chart-container,
+.table-container {
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+/* Reduzir shadows em mobile para melhor performance */
+@media (max-width: 768px) {
+    .kpi-card,
+    .dashboard-header,
+    .dollar-card,
+    .chart-container,
+    .table-container {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+    }
+    
+    .kpi-card:hover,
+    .dollar-card:hover,
+    .chart-container:hover,
+    .table-container:hover {
+        transform: none !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+    }
+}
+
+/* ========================================================================
+   CORREÇÕES ESPECÍFICAS PARA WIDGETS
+   ======================================================================== */
+
+/* Widget do dólar responsivo */
+.dollar-widget {
+    margin: 0 0 30px 0 !important;
+}
+
+.dollar-card {
+    overflow: hidden;
+}
+
+@media (max-width: 576px) {
+    .dollar-content {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+    
+    .dollar-rate {
+        font-size: 1.8rem !important;
+    }
+    
+    .dollar-variation {
+        font-size: 1rem !important;
+    }
+    
+    .dollar-details {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+    
+    .rate-info {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+    }
+}
+
+/* Gráficos responsivos */
+.charts-section {
+    margin-bottom: 30px !important;
+}
+
+@media (max-width: 576px) {
+    .chart-container {
+        padding: 12px !important;
+    }
+    
+    .chart-container h3 {
+        font-size: 1rem !important;
+        margin-bottom: 15px !important;
+    }
+    
+    .chart-container canvas {
+        max-height: 250px !important;
+    }
+}
+
+/* Tabelas responsivas */
+@media (max-width: 576px) {
+    .data-table {
+        font-size: 0.8rem !important;
+        overflow-x: auto !important;
+        display: block !important;
+        white-space: nowrap !important;
+    }
+    
+    .data-table thead,
+    .data-table tbody,
+    .data-table th,
+    .data-table td,
+    .data-table tr {
+        display: block !important;
+    }
+    
+    .data-table thead tr {
+        position: absolute !important;
+        top: -9999px !important;
+        left: -9999px !important;
+    }
+    
+    .data-table tr {
+        border: 1px solid #ccc !important;
+        margin-bottom: 10px !important;
+        padding: 10px !important;
+        border-radius: 8px !important;
+        background: #fff !important;
+    }
+    
+    .data-table td {
+        border: none !important;
+        position: relative !important;
+        padding-left: 50% !important;
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+    }
+    
+    .data-table td:before {
+        content: attr(data-label) !important;
+        position: absolute !important;
+        left: 6px !important;
+        width: 45% !important;
+        padding-right: 10px !important;
+        white-space: nowrap !important;
+        font-weight: bold !important;
+        color: var(--dashboard-dark) !important;
+    }
+}
+
+/* ========================================================================
+   CORREÇÕES DE ACESSIBILIDADE
+   ======================================================================== */
+
+/* Melhorar contraste em elementos interativos */
+.btn-refresh:focus {
+    outline: 2px solid var(--dashboard-primary) !important;
+    outline-offset: 2px !important;
+}
+
+/* Indicadores de loading mais visíveis */
+.dashboard-loading {
+    backdrop-filter: blur(2px);
+}
+
+.loading-spinner {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+/* ========================================================================
+   CORREÇÕES PARA IMPRESSÃO
+   ======================================================================== */
+
+@media print {
+    .dashboard-header .header-actions,
+    .btn-refresh {
+        display: none !important;
+    }
+    
+    .kpi-card,
+    .dollar-card,
+    .chart-container,
+    .table-container {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        break-inside: avoid !important;
+    }
+    
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}

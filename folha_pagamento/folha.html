@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Folha de Pagamento - Sistema SisWeb</title>
+    
+    <!-- ✅ MESMOS IMPORTS DO ROMANEIOPCT -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- CSS do sistema - ORDEM IMPORTANTE -->
+    <link rel="stylesheet" href="../layout-comum.css">
+    <link rel="stylesheet" href="../print-styles.css">
+    <link rel="stylesheet" href="../menu.css">
+    <link rel="stylesheet" href="../ui-components.css">
+    <link rel="stylesheet" href="folha.css">
+    <link rel="stylesheet" href="folha-menu-original-completo.css">
+    <script src="../menu-component.js?v=20260326"></script>
+    <!-- 🎨 LOADING E CONEXÃO OTIMIZADOS -->
+    <link rel="stylesheet" href="folha-loading-styles.css">
+    <style>
+      .calc-badge { display:none; margin-top:4px; }
+      .calc-pill { display:inline-block; background:#eef; border-radius:12px; padding:2px 8px; margin-right:6px; margin-top:2px; font-size:12px; color:#333; }
+      .info-toggle { cursor:pointer; color:#1976d2; margin-left:6px; vertical-align:middle; }
+      .info-toggle.active { color:#0d47a1; }
+    </style>
+    
+    <!-- ✅ FIREBASE - CÓPIA EXATA DO ROMANEIOPCT -->
+    <script type="module">
+        import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getAuth, onAuthStateChanged, signInAnonymously, setPersistence, browserLocalPersistence, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        
+        const firebaseConfig = {
+            // ✅ MESMAS CREDENCIAIS DO ROMANEIO TL (compatível com PCT)
+            apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
+            authDomain: "sisweb-7ce82.firebaseapp.com",
+            databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "sisweb-7ce82",
+            storageBucket: "sisweb-7ce82.firebasestorage.app",
+            messagingSenderId: "240003261222",
+            appId: "1:240003261222:web:1aeaf919ddc7e5c691d7e7",
+            measurementId: "G-FTC6JZ5ZGX"
+        };
+        
+        // Reutilizar instância global do Firebase se existir para evitar perda de sessão
+        let app;
+        try {
+            if (window._FIREBASE_APP) {
+                console.log('♻️ Reutilizando app Firebase global');
+                app = window._FIREBASE_APP;
+            } else {
+                const apps = getApps();
+                if (apps && apps.length > 0) {
+                    console.log('♻️ Reutilizando app Firebase existente');
+                    app = apps[0];
+                } else {
+                    app = initializeApp(firebaseConfig);
+                    console.log('✅ Firebase inicializado (Folha)');
+                }
+            }
+        } catch (e) {
+            console.warn('⚠️ Falha ao reutilizar app, inicializando novo', e && e.message);
+            app = initializeApp(firebaseConfig);
+        }
+
+        window.database = getDatabase(app);
+        const auth = getAuth(app);
+        // Expor objetos/funções necessárias para integração com guardas
+        window.firebaseAuth = auth;
+        window.firebaseOnAuthStateChanged = onAuthStateChanged;
+        window.firebaseSignOut = () => signOut(auth);
+        // Persistir sessão para evitar múltiplos logins e chamadas redundantes
+        setPersistence(auth, browserLocalPersistence).catch(err => {
+            console.warn('⚠️ Persistência local não aplicada:', err && err.message);
+        });
+
+        // Expor app globalmente para reutilização em outras páginas
+        try { window._FIREBASE_APP = app; } catch(e) {}
+        
+        // ✅ TESTE DE CONEXÃO
+        console.log('🔥 Firebase inicializado:', {
+            app: !!app,
+            database: !!window.database,
+            databaseURL: firebaseConfig.databaseURL
+        });
+        
+        // ✅ TESTE DE CONECTIVIDADE
+        setTimeout(() => {
+            if (window.database) {
+                console.log('✅ Firebase database disponível para uso');
+                
+                // ✅ TESTE DE CONEXÃO REAL
+                try {
+                    // ✅ CORREÇÃO: Firebase v10 usa ref() como função importada
+                    console.log('✅ Firebase database disponível para uso');
+                    console.log('📊 Tipo do database:', typeof window.database);
+                    console.log('📊 Propriedades do database:', Object.keys(window.database || {}));
+                } catch (error) {
+                    console.error('❌ Erro ao verificar Firebase database:', error);
+                }
+            } else {
+                console.error('❌ Firebase database não disponível');
+            }
+        }, 1000);
+        
+        // ✅ TESTE ADICIONAL APÓS 3 SEGUNDOS
+        setTimeout(() => {
+            console.log('🔍 Status final do Firebase:', {
+                database: !!window.database,
+                databaseType: typeof window.database,
+                databaseKeys: window.database ? Object.keys(window.database) : 'N/A',
+                documentReadyState: document.readyState
+            });
+        }, 3000);
+
+        // 🔐 AUTENTICAÇÃO PARA ESCRITA (regras com login habilitadas)
+        let __anonAuthInFlight = false;
+        // Desabilitar tentativa de login anônimo por padrão
+        if (typeof window.ENABLE_ANON_AUTH === 'undefined') window.ENABLE_ANON_AUTH = false;
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log('🔐 Usuário autenticado:', user.uid);
+                window.firebaseAuthUser = user;
+            } else {
+                console.log('ℹ️ Usuário não autenticado. Aguardando login via UI.');
+                window._AUTH_ANON_DISABLED = true;
+            }
+        });
+    </script>
+    <!-- 🔒 Guarda de Autenticação de UI (redireciona para login quando necessário) -->
+    <script>
+      (function(){
+        const isInSubfolder = (location.pathname||'').includes('/folha_pagamento/');
+        const loginUrlBase = isInSubfolder ? '../login.html' : 'login.html';
+        const companyUrlBase = isInSubfolder ? '../company.html' : 'company.html';
+
+        function getUiUser(){
+          try { return JSON.parse(localStorage.getItem('currentUser')); } catch(e) { return null; }
+        }
+
+        function getPersistentUser(){
+          try { return JSON.parse(localStorage.getItem('persistentUser')); } catch(e) { return null; }
+        }
+
+        function isUiAuthenticated(){
+          const u = getUiUser();
+          const p = getPersistentUser();
+          const firebaseUser = (window.firebaseAuth && window.firebaseAuth.currentUser) || window.firebaseAuthUser;
+          const sessionUser = (sessionStorage.getItem('userAuthenticated') === 'true');
+          const companyInfo = (function(){ try { return JSON.parse(localStorage.getItem('company_info')); } catch(e) { return null; } })();
+          const hasValidCompanyId = !!(companyInfo && (companyInfo.id || companyInfo.companyId || companyInfo.slug || companyInfo.nome || companyInfo.name));
+          return !!(u || p || firebaseUser || sessionUser) && hasValidCompanyId;
+        }
+
+        function syncTenantFromCompanyInfo(){
+          try {
+            const raw = localStorage.getItem('company_info');
+            if (!raw) return;
+            const obj = JSON.parse(raw);
+            const tenant = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+            if (tenant) {
+              window.appTenantId = String(tenant);
+              if (window.firebaseService && typeof window.firebaseService.setTenantId === 'function') {
+                window.firebaseService.setTenantId(window.appTenantId);
+              }
+            }
+          } catch(e) {}
+        }
+
+        function redirectToLogin(reason){
+          const msg = reason === 'save_requires_auth' ? 'Para salvar, faça login.' : 'Autenticação necessária.';
+          if (window.FolhaUtils && window.FolhaUtils.showToast) {
+            window.FolhaUtils.showToast(msg + ' Redirecionando…', 'warning', 3000);
+          } else {
+            try { alert(msg); } catch(e) {}
+          }
+          // Incluir alvo de retorno para pós-login
+          const currentPath = window.location.pathname + (window.location.hash || '');
+          const url = `${loginUrlBase}?noRedirect=true&reason=${encodeURIComponent(reason||'auth_required')}&redirect=${encodeURIComponent(currentPath)}`;
+          setTimeout(() => { window.location.href = url; }, 700);
+        }
+
+        syncTenantFromCompanyInfo();
+
+        let authStateResolved = false;
+        try {
+          if (window.firebaseOnAuthStateChanged && window.firebaseAuth) {
+            window.firebaseOnAuthStateChanged(window.firebaseAuth, function(user){
+              authStateResolved = true;
+              if (user) window.firebaseAuthUser = user;
+            });
+          }
+        } catch(e) {}
+
+        // Expor utilitário para uso em outros módulos
+        window.UIAuth = { isAuthenticated: isUiAuthenticated, redirectToLogin };
+
+        // Redirecionar imediatamente se acessar área restrita sem autenticação
+        document.addEventListener('DOMContentLoaded', function(){
+          const start = Date.now();
+          const maxWait = 8000;
+          const check = () => {
+            syncTenantFromCompanyInfo();
+            const firebaseUser = (window.firebaseAuth && window.firebaseAuth.currentUser) || window.firebaseAuthUser;
+            const u = getUiUser();
+            const companyInfo = (function(){ try { return JSON.parse(localStorage.getItem('company_info')); } catch(e) { return null; } })();
+            const hasValidCompanyId = !!(companyInfo && (companyInfo.id || companyInfo.companyId || companyInfo.slug || companyInfo.nome || companyInfo.name));
+            
+            // Se já estiver autenticado na UI, permitir acesso
+            if (isUiAuthenticated()) return;
+            
+            // Se tiver usuário local mas sem empresa, redirecionar para seleção de empresa
+            if (u && !hasValidCompanyId) {
+                const currentPath = window.location.pathname + (window.location.hash || '');
+                const url = `${companyUrlBase}?redirect=${encodeURIComponent(currentPath)}`;
+                setTimeout(() => { window.location.href = url; }, 400);
+                return;
+            }
+
+            if (authStateResolved || (Date.now() - start) >= maxWait) {
+              if (firebaseUser && !hasValidCompanyId) {
+                const currentPath = window.location.pathname + (window.location.hash || '');
+                const url = `${companyUrlBase}?redirect=${encodeURIComponent(currentPath)}`;
+                setTimeout(() => { window.location.href = url; }, 400);
+                return;
+              }
+              if (!isUiAuthenticated()) {
+                console.warn('⚠️ [Folha] Usuário não autenticado na UI, porém redirecionamento brutal ignorado temporariamente para evitar loop.');
+                // redirectToLogin('ui_not_authenticated');
+              }
+              return;
+            }
+            setTimeout(check, 200);
+          };
+          setTimeout(check, 300);
+        });
+
+        // Detectar perda de autenticação em tempo real (ex.: logout em outra aba)
+        window.addEventListener('storage', function(ev){
+          if (ev && (ev.key === 'currentUser' || ev.key === 'persistentUser' || ev.key === 'company_info')) {
+            syncTenantFromCompanyInfo();
+            const firebaseUser = (window.firebaseAuth && window.firebaseAuth.currentUser) || window.firebaseAuthUser;
+            const companyInfo = (function(){ try { return JSON.parse(localStorage.getItem('company_info')); } catch(e) { return null; } })();
+            const hasValidCompanyId = !!(companyInfo && (companyInfo.id || companyInfo.companyId || companyInfo.slug || companyInfo.nome || companyInfo.name));
+            if (ev.key === 'company_info') {
+              if (firebaseUser && !hasValidCompanyId) {
+                const currentPath = window.location.pathname + (window.location.hash || '');
+                const url = `${companyUrlBase}?redirect=${encodeURIComponent(currentPath)}`;
+                setTimeout(() => { window.location.href = url; }, 400);
+                return;
+              }
+              return;
+            }
+            if (!isUiAuthenticated()) {
+              redirectToLogin('session_expired');
+            }
+          }
+        });
+      })();
+    </script>
+    <!-- 🌐 Handler Global de Erros e Diagnóstico -->
+    <script>
+        (function(){
+            const logs = [];
+            function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+            function render(){
+                const el = document.getElementById('problems_and_diagnostics');
+                if (!el) return;
+                if (!logs.length) {
+                    el.innerHTML = '<div style="color:#2e7d32;">Nenhum erro capturado até agora.</div>';
+                    const diagSec = document.getElementById('diagnostico-section');
+                    if (diagSec) diagSec.style.display = 'none';
+                    return;
+                }
+                const items = logs.map(l => `<li>${esc(l.time)} — ${esc(l.msg)} ${l.src? '['+esc(l.src)+']':''} ${l.line? ('@'+l.line+':'+(l.col||'')) : ''}</li>`).join('');
+                el.innerHTML = `<ul style="font-size:12px;color:#c00;">${items}</ul>`;
+                const diagSec = document.getElementById('diagnostico-section');
+                if (diagSec) diagSec.style.display = 'block';
+            }
+            window.addEventListener('error', function(e){
+                const src = e.filename || (e.target && e.target.src) || '';
+                const msg = e.message || (e.error && e.error.message) || 'Erro';
+                logs.push({ time: new Date().toISOString(), msg, src, line: e.lineno, col: e.colno });
+                render();
+            }, true);
+            window.addEventListener('unhandledrejection', function(e){
+                const reason = e.reason || {};
+                const msg = (reason && reason.message) ? reason.message : String(reason);
+                logs.push({ time: new Date().toISOString(), msg: 'UnhandledPromiseRejection: ' + msg, src: '', line: 0, col: 0 });
+                render();
+            });
+            document.addEventListener('DOMContentLoaded', render);
+        })();
+    </script>
+</head>
+<body>
+    <div class="container">
+        <!-- ✅ MENU COMPONENT PADRÃO -->
+        <main-menu></main-menu>
+        
+        <!-- ✅ TÍTULO PADRÃO -->
+        <h1><i class="fas fa-file-invoice-dollar"></i> Folha de Pagamento</h1>
+        
+        <!-- 🔍 SEÇÃO DE FILTROS -->
+        <section id="filtros-section">
+            <h2>Filtros</h2>
+            <div class="campos-grid">
+                <div class="form-group">
+                    <label for="mesAno">
+                        <i class="fas fa-calendar"></i> Mês/Ano:
+                    </label>
+                    <input type="month" id="mesAno">
+                </div>
+                <div class="form-group">
+                    <label for="tipoFolha">
+                        <i class="fas fa-list"></i> Tipo:
+                    </label>
+                    <select id="tipoFolha">
+                        <option value="">Todos</option>
+                        <option value="quinzena">Quinzena</option>
+                        <option value="mes">Mês Fechado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="funcionarioFiltro">
+                        <i class="fas fa-user"></i> Funcionário:
+                    </label>
+                    <div class="autocomplete-container">
+                        <input type="text" id="funcionarioFiltro" class="autocomplete-input" 
+                               placeholder="Digite o nome ou cargo...">
+                        <div class="autocomplete-icons-container">
+                            <span class="autocomplete-icon" title="Listar Funcionários" 
+                                  onclick="openFuncionariosListModal()">
+                                <i class="fas fa-list"></i>
+                            </span>
+                            <span class="autocomplete-icon" title="Limpar Filtro" 
+                                  onclick="limparFiltroFuncionario()" style="color: #dc3545;">
+                                <i class="fas fa-times"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 💰 INDICADOR DE CONTAS CRIADAS -->
+        <section id="indicador-contas-section" style="display: none;">
+            <div class="indicador-contas">
+                <div class="indicador-item">
+                    <i class="fas fa-check-circle" style="color: #28a745;"></i>
+                    <span id="contasQuinzena">0</span> Quinzenas Pagas
+                </div>
+                <div class="indicador-item">
+                    <i class="fas fa-archive" style="color: #6f42c1;"></i>
+                    <span id="contasMes">0</span> Meses Fechados
+                </div>
+                <div class="indicador-item">
+                    <i class="fas fa-external-link-alt" style="color: #007bff;"></i>
+                    <a href="../financas.html" target="_blank" class="link-sistema-financeiro">
+                        Ver no Sistema Financeiro
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 🧪 DIAGNÓSTICO EM TEMPO REAL (oculto por padrão) -->
+        <section id="diagnostico-section" style="display:none;">
+            <h2>Diagnóstico</h2>
+            <div id="problems_and_diagnostics" style="background:#fff3cd; border:1px solid #ffeeba; padding:10px; border-radius:4px; color:#856404;">
+                Carregando diagnóstico...
+            </div>
+        </section>
+
+        <!-- ➕ BOTÕES DE AÇÃO PRINCIPAIS -->
+        <section id="acoes-principais">
+            <div class="form-buttons">
+                <button type="button" class="btn-adicionar" onclick="openNovoFuncionarioModal()">
+                    <i class="fas fa-user-plus"></i> Novo Funcionário
+                </button>
+                <button type="button" class="btn-salvar" onclick="openNovoCargoModal()">
+                    <i class="fas fa-briefcase"></i> Novo Cargo
+                </button>
+                <button type="button" class="btn-listar" onclick="openNovaFolhaModal()">
+                    <i class="fas fa-file-invoice-dollar"></i> Nova Folha
+                </button>
+                <button type="button" class="btn-editar" onclick="openRelatorioModal()">
+                    <i class="fas fa-chart-bar"></i> Relatórios
+                </button>
+                <button type="button" class="btn-listar" onclick="openFolhasFechadasModal()">
+                    <i class="fas fa-archive"></i> Folhas Fechadas
+                </button>
+                <button type="button" class="btn-listar" onclick="openResumoFolhaModal()" title="Resumo da Folha (seleção de colunas)">
+                    <i class="fas fa-table"></i> Resumo da Folha
+                </button>
+                <!-- [BH] Ações rápidas do Banco de Horas -->
+                <button type="button" class="btn-adicionar" id="bh-btnAddCredito" title="Lançar Banco de Horas (crédito)" aria-label="Lançar BH" onclick="window.bhOpenLancamento && window.bhOpenLancamento(1)">
+                    <i class="fas fa-plus-circle"></i> Lançar BH
+                </button>
+                <button type="button" class="btn-editar" id="bh-btnAddDebito" title="Lançar Banco de Horas (débito)" aria-label="Débito BH" onclick="window.bhOpenLancamento && window.bhOpenLancamento(-1)">
+                    <i class="fas fa-minus-circle"></i> Débito BH
+                </button>
+                <button type="button" class="btn-salvar" id="bh-btnCompensar" title="Compensar Banco de Horas" aria-label="Compensar BH" onclick="window.bhOpenCompensar && window.bhOpenCompensar()">
+                    <i class="fas fa-balance-scale"></i> Compensar BH
+                </button>
+                <button type="button" class="btn-listar" id="btnBHExtrato" onclick="window.bhRelExtrato && window.bhRelExtrato()">
+                    <i class="fas fa-file-alt"></i> Extrato BH
+                </button>
+                <button type="button" class="btn-listar" id="btnBHEspelho" onclick="window.bhRelEspelho && window.bhRelEspelho()">
+                    <i class="fas fa-clipboard-list"></i> Espelho BH
+                </button>
+                <button type="button" class="btn-listar" id="btnBHVencimentos" onclick="window.bhRelVencimentos && window.bhRelVencimentos()">
+                    <i class="fas fa-hourglass-half"></i> Vencimentos BH
+                </button>
+                <button type="button" class="btn-editar" id="btnBHContrato" onclick="window.bhRelContrato && window.bhRelContrato()">
+                    <i class="fas fa-file-signature"></i> Acordo BH
+                </button>
+                <button type="button" class="btn-editar" id="btnBHGerenciar" onclick="window.bhOpenGerenciar && window.bhOpenGerenciar()">
+                    <i class="fas fa-tools"></i> Gerenciar BH
+                </button>
+            </div>
+        </section>
+
+		<!-- Fallback defensivo para garantir openRelatorioModal/closeRelatorioModal -->
+		<script>
+			if (!window.openRelatorioModal) {
+				window.openRelatorioModal = function() {
+					if (window.folhaRelatorios && typeof window.folhaRelatorios.openRelatorioModal === 'function') {
+						return window.folhaRelatorios.openRelatorioModal();
+					}
+					setTimeout(() => window.openRelatorioModal && window.openRelatorioModal(), 300);
+				};
+			}
+			if (!window.closeRelatorioModal) {
+				window.closeRelatorioModal = function() {
+					if (window.folhaRelatorios && typeof window.folhaRelatorios.closeRelatorioModal === 'function') {
+						return window.folhaRelatorios.closeRelatorioModal();
+					}
+					const modal = document.getElementById('relatorioModal');
+					if (modal) modal.style.display = 'none';
+				};
+			}
+            // Fallback para abrir lista de funcionários (evitar ReferenceError nos cliques do filtro)
+            if (!window.openFuncionariosListModal) {
+                window.openFuncionariosListModal = function() {
+                    if (window.folhaFuncionarios && typeof window.folhaFuncionarios.openFuncionariosListModal === 'function') {
+                        return window.folhaFuncionarios.openFuncionariosListModal();
+                    }
+                    const diag = document.getElementById('problems_and_diagnostics');
+                    if (diag) {
+                        diag.innerHTML += '<div style="color:#c00;">openFuncionariosListModal não disponível no momento. Aguarde módulos carregarem.</div>';
+                    }
+                };
+            }
+		</script>
+
+        <!-- 📋 TABELA DE FOLHAS -->
+        <section id="tabela-folhas-section" style="display:none;">
+            <div class="section-title-actions">
+                <button class="btn btn-secondary action-btn" onclick="openFolhasColumnsConfigModal()" title="Configurar colunas" type="button">
+                    <i class="fas fa-list"></i>
+                </button>
+                <h2>Folhas de Pagamento</h2>
+            </div>
+            <div class="table-container">
+                <table id="folhasTable">
+                    <thead>
+                        <tr>
+                            <th data-sort-key="funcionario"><i class="fas fa-user"></i> Funcionário</th>
+                            <th data-sort-key="formaPagamento"><i class="fas fa-wallet"></i> Forma Pgto.</th>
+                            <th data-sort-key="mesAno"><i class="fas fa-calendar"></i> Mês/Ano</th>
+                            <th data-sort-key="tipo"><i class="fas fa-list"></i> Tipo</th>
+                            <th data-sort-key="percentual"><i class="fas fa-percentage"></i> %</th>
+                            <th data-sort-key="salarioBase"><i class="fas fa-dollar-sign"></i> Salário Base</th>
+                            <th data-sort-key="quinzena"><i class="fas fa-calendar-alt"></i> 1ª Quinzena</th>
+                            <th data-sort-key="acrescimos"><i class="fas fa-plus"></i> Acréscimos</th>
+                            <th data-sort-key="descontos"><i class="fas fa-minus"></i> Descontos</th>
+                            <th data-sort-key="vales"><i class="fas fa-hand-holding-usd"></i> Total Vales</th>
+                            <th data-sort-key="liquido"><i class="fas fa-money-bill"></i> Líquido</th>
+                            <th data-sort-key="acoes"><i class="fas fa-cogs"></i> Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="folhasTableBody">
+                        <tr>
+                            <td colspan="12" style="text-align: center; padding: 20px; color: #666;">
+                                <i class="fas fa-inbox" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
+                                Nenhuma folha de pagamento cadastrada
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 📊 SEÇÃO DE TOTAIS -->
+        <section id="totais-section" style="display:none;">
+            <div class="resumo-note">
+                <i class="fas fa-filter"></i> Resumo calculado apenas com lançamentos não baixados.
+            </div>
+            <div class="resumo-container">
+                <div class="resumo-item">
+                    <h3>Total Bruto:</h3>
+                    <span id="totalBruto">R$ 0,00</span>
+                </div>
+                <div class="resumo-item">
+                    <h3>Total 1° Quinzena:</h3>
+                    <span id="totalQuinzena">R$ 0,00</span>
+                </div>
+                <div class="resumo-item">
+                    <h3>Total Acréscimos:</h3>
+                    <span id="totalAcrescimos">R$ 0,00</span>
+                </div>
+                <div class="resumo-item">
+                    <h3>Total Descontos:</h3>
+                    <span id="totalDescontos">R$ 0,00</span>
+                </div>
+                <div class="resumo-item">
+                    <h3>Total 2° Quinzena:</h3>
+                    <span id="totalLiquido">R$ 0,00</span>
+                </div>
+                <div class="resumo-item resumo-item-pagos">
+                    <h3>Total Pagos:</h3>
+                    <span id="totalPagos">R$ 0,00</span>
+                </div>
+                <div class="resumo-item resumo-item-restantes">
+                    <h3>Total Restantes:</h3>
+                    <span id="totalRestantes">R$ 0,00</span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 🧾 MODAIS PADRONIZADOS -->
+    <!-- Modal de Funcionário -->
+    <div id="funcionarioModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="funcionarioModalTitle">Novo Funcionário</h3>
+                <span class="close-modal" onclick="closeFuncionarioModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="funcionarioForm">
+                    <input type="hidden" id="funcionarioId">
+                <div class="form-group">
+                    <label for="funcionarioNome">
+                        <i class="fas fa-user"></i> Nome Completo:
+                    </label>
+                    <input type="text" id="funcionarioNome" required>
+                </div>
+                <div class="campos-grid">
+                    <div class="form-group">
+                        <label for="funcionarioCpf">
+                            <i class="fas fa-id-card"></i> CPF:
+                        </label>
+                        <input type="text" id="funcionarioCpf" placeholder="000.000.000-00" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="funcionarioPis">
+                            <i class="fas fa-hashtag"></i> PIS:
+                        </label>
+                        <input type="text" id="funcionarioPis" placeholder="000.00000.00-0">
+                    </div>
+                </div>
+                <div class="campos-grid">
+                    <div class="form-group">
+                        <label for="funcionarioCtps">
+                            <i class="fas fa-book"></i> CTPS:
+                        </label>
+                        <input type="text" id="funcionarioCtps" placeholder="0000000-00">
+                    </div>
+                    <div class="form-group">
+                        <label for="funcionarioSalario">
+                            <i class="fas fa-dollar-sign"></i> Salário Base:
+                        </label>
+                        <input type="number" id="funcionarioSalario" step="0.01" min="0" 
+                               placeholder="0,00" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="funcionarioCargo">
+                        <i class="fas fa-briefcase"></i> Cargo:
+                    </label>
+                    <div class="autocomplete-container">
+                        <input type="text" id="funcionarioCargo" class="autocomplete-input" 
+                               placeholder="Selecione um cargo...">
+                        <div class="autocomplete-icons-container">
+                            <span class="autocomplete-icon" title="Listar Cargos" 
+                                  onclick="openCargosListModal()">
+                                <i class="fas fa-list"></i>
+                            </span>
+                            <span class="autocomplete-icon" title="Novo Cargo" 
+                                  onclick="openNovoCargoModal()">
+                                <i class="fas fa-plus"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="campos-grid">
+                    <div class="form-group">
+                        <label for="funcionarioTipoContrato">
+                            <i class="fas fa-file-contract"></i> Tipo de Contrato:
+                        </label>
+                        <select id="funcionarioTipoContrato" required>
+                            <option value="">Selecione o tipo</option>
+                            <option value="clt">CLT</option>
+                            <option value="temporario">Temporário</option>
+                            <option value="terceirizado">Terceirizado</option>
+                            <option value="estagio">Estágio</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="funcionarioDataAdmissional">
+                            <i class="fas fa-calendar-plus"></i> Data Admissional:
+                        </label>
+                        <input type="date" id="funcionarioDataAdmissional" required>
+                    </div>
+                </div>
+                <div class="campos-grid">
+                    <div class="form-group">
+                        <label for="funcionarioFormaPagamento">
+                            <i class="fas fa-wallet"></i> Forma de Pagamento:
+                        </label>
+                        <select id="funcionarioFormaPagamento">
+                            <option value="">Selecione</option>
+                            <option value="PIX">PIX</option>
+                            <option value="Conta Bancária">Conta Bancária</option>
+                            <option value="Dinheiro">Dinheiro</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="funcionarioPixGroup">
+                        <label for="funcionarioPix">
+                            <i class="fas fa-key"></i> Chave PIX:
+                        </label>
+                        <input type="text" id="funcionarioPix" placeholder="CPF, e-mail, telefone ou chave aleatória">
+                    </div>
+                </div>
+                <div class="campos-grid" id="funcionarioContaBancariaGroup">
+                    <div class="form-group">
+                        <label for="funcionarioBeneficiario">
+                            <i class="fas fa-user-check"></i> Beneficiário:
+                        </label>
+                        <input type="text" id="funcionarioBeneficiario" placeholder="Nome do beneficiário da conta">
+                    </div>
+                    <div class="form-group">
+                        <label for="funcionarioBanco">
+                            <i class="fas fa-university"></i> Banco:
+                        </label>
+                        <input type="text" id="funcionarioBanco" placeholder="Ex: Banco do Brasil">
+                    </div>
+                    <div class="form-group">
+                        <label for="funcionarioAgencia">
+                            <i class="fas fa-hashtag"></i> Agência:
+                        </label>
+                        <input type="text" id="funcionarioAgencia" placeholder="Ex: 1234">
+                    </div>
+                    <div class="form-group">
+                        <label for="funcionarioConta">
+                            <i class="fas fa-credit-card"></i> Conta:
+                        </label>
+                        <input type="text" id="funcionarioConta" placeholder="Ex: 12345-6">
+                    </div>
+                </div>
+                <div class="campos-grid">
+                    <div class="form-group">
+                        <label for="funcionarioAtivo">
+                            <i class="fas fa-toggle-on"></i> Status do Funcionário:
+                        </label>
+                        <div id="funcionarioAtivoContainer" class="toggle-container funcionario-ativo">
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="funcionarioAtivo" checked>
+                                <span class="toggle-slider"></span>
+                            </div>
+                            <span id="funcionarioAtivoDescricao" class="toggle-description">
+                                Funcionário Ativo - Aparece nos relatórios e lançamentos
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <div class="footer-secondary">
+                    <button type="button" class="back-button close-modal-btn" onclick="closeFuncionarioModal()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+                <div class="footer-primary">
+                    <button type="submit" class="btn-save" id="saveFuncionarioBtn">
+                        <i class="fas fa-save"></i> Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Cargo -->
+    <div id="cargoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="cargoModalTitle">Novo Cargo</h3>
+                <span class="close-modal" onclick="closeCargoModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="cargoForm">
+                    <input type="hidden" id="cargoId">
+                <div class="form-group">
+                    <label for="cargoNome">
+                        <i class="fas fa-briefcase"></i> Nome do Cargo:
+                    </label>
+                    <input type="text" id="cargoNome" required placeholder="Ex: Operador de Máquinas">
+                </div>
+                <div class="form-group">
+                    <label for="cargoSalarioBase">
+                        <i class="fas fa-dollar-sign"></i> Salário Base Padrão:
+                    </label>
+                    <input type="number" id="cargoSalarioBase" step="0.01" min="0" 
+                           placeholder="0,00" required>
+                </div>
+                <div class="campos-grid">
+                    <div class="form-group">
+                        <label for="cargoPericulosidade">
+                            <i class="fas fa-exclamation-triangle"></i> Periculosidade (%):
+                        </label>
+                        <input type="number" id="cargoPericulosidade" step="0.01" min="0" max="100" 
+                               placeholder="0,00">
+                    </div>
+                    <div class="form-group">
+                        <label for="cargoAdicionalNoturno">
+                            <i class="fas fa-moon"></i> Adicional Noturno (%):
+                        </label>
+                        <input type="number" id="cargoAdicionalNoturno" step="0.01" min="0" max="100" 
+                               placeholder="0,00">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="cargoObservacoes">
+                        <i class="fas fa-sticky-note"></i> Observações:
+                    </label>
+                    <textarea id="cargoObservacoes" rows="3" 
+                              placeholder="Informações adicionais sobre o cargo..."></textarea>
+                </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <div class="footer-secondary">
+                    <button type="button" class="back-button close-modal-btn" onclick="closeCargoModal()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+                <div class="footer-primary">
+                    <button type="submit" class="btn-save" id="saveCargoBtn">
+                        <i class="fas fa-save"></i> Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Nova Folha -->
+    <div id="folhaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="folhaModalTitle">Nova Folha de Pagamento</h3>
+                <span class="close-modal" onclick="closeFolhaModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="folhaForm">
+                    <input type="hidden" id="folhaId">
+                <div class="form-group">
+                    <label for="folhaFuncionario">
+                        <i class="fas fa-user"></i> Funcionário:
+                    </label>
+                    <div class="autocomplete-container">
+                        <input type="text" id="folhaFuncionario" class="autocomplete-input" 
+                               placeholder="Selecione um funcionário..." required>
+                        <div class="autocomplete-icons-container">
+                            <span class="autocomplete-icon" title="Listar Funcionários" 
+                                  onclick="openFuncionariosListModal()">
+                                <i class="fas fa-list"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="campos-grid">
+                    <div class="form-group">
+                        <label for="folhaMesAno">
+                            <i class="fas fa-calendar"></i> Mês/Ano:
+                        </label>
+                        <input type="month" id="folhaMesAno" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="folhaTipoPagamento">
+                            <i class="fas fa-list"></i> Tipo de Pagamento:
+                        </label>
+                        <select id="folhaTipoPagamento" required onchange="toggleQuinzenaOptions()">
+                            <option value="">Selecione o tipo</option>
+                            <option value="quinzena">Quinzena</option>
+                            <option value="mes">Mês Fechado</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Opções de Quinzena -->
+                <div id="quinzenaOptions" style="display: none;">
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="quinzenaPercentual">
+                                <i class="fas fa-percentage"></i> Percentual:
+                            </label>
+                            <select id="quinzenaPercentual" onchange="toggleValorManual()">
+                                <option value="40">40%</option>
+                                <option value="50">50%</option>
+                                <option value="60">60%</option>
+                                <option value="100">100%</option>
+                                <option value="manual">Valor Manual</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="valorManualGroup" style="display: none;">
+                            <label for="quinzenaValorManual">
+                                <i class="fas fa-dollar-sign"></i> Valor Manual:
+                            </label>
+                            <input type="number" id="quinzenaValorManual" step="0.01" min="0" 
+                                   placeholder="0,00">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dias Trabalhados (novo) -->
+                <div class="form-group">
+                    <label for="folhaDiasTrabalhados">
+                        <i class="fas fa-calendar-check"></i> Dias Trabalhados:
+                    </label>
+                    <input type="number" id="folhaDiasTrabalhados" step="1" min="0" max="31" placeholder="0">
+                </div>
+
+                <!-- Adicionais -->
+                <h3>Adicionais</h3>
+                <div class="campos-grid">
+                    <div class="form-group">
+                        <label for="folhaHorasExtras" title="Hora normal = salário/220 (arredondada a 2 casas). Hora extra = hora normal × (1 + %). Total = hora extra (arredondada) × horas.">
+                            <i class="fas fa-clock"></i> Horas Extras:
+                        </label>
+                        <input type="number" id="folhaHorasExtras" step="0.01" min="0" 
+                               placeholder="0,00">
+                        <span class="info-toggle" id="heInfoToggle" title="Mostrar cálculo"><i class="fas fa-info-circle"></i></span>
+                        <div id="heCalcBadge" class="calc-badge"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="folhaPercentualExtra">
+                            <i class="fas fa-percentage"></i> % Extra:
+                        </label>
+                        <input type="number" id="folhaPercentualExtra" step="0.01" min="0" max="200" 
+                               placeholder="50,00" value="50">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="folhaPremioAssiduidade">
+                        <i class="fas fa-award"></i> Prêmio de Assiduidade:
+                    </label>
+                    <input type="number" id="folhaPremioAssiduidade" step="0.01" min="0" placeholder="0,00">
+                </div>
+                <div class="form-group">
+                    <label for="folhaBonificacoes">
+                        <i class="fas fa-gift"></i> Bonificações:
+                    </label>
+                    <input type="number" id="folhaBonificacoes" step="0.01" min="0" 
+                           placeholder="0,00">
+                </div>
+
+                <!-- Toggle: Usar Salário Bruto para Quinzena (Base + Bonificações) -->
+                <div id="usarBrutoContainer" class="toggle-container modo-inativo" style="margin-top: 10px;">
+                    <div class="toggle-header">
+                        <div class="toggle-title">
+                            <i class="fas fa-balance-scale"></i>
+                            <span>Usar Salário Bruto na Quinzena</span>
+                        </div>
+                        <div class="toggle-switch-container">
+                            <span class="toggle-label">Base</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="usarSalarioBrutoParaQuinzena">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label">Bruto</span>
+                        </div>
+                    </div>
+                    <div class="toggle-description" id="usarBrutoDescricao">
+                        Quando ativo, a quinzena será calculada sobre Salário Bruto = Salário Base da Categoria + Bonificações. Demais cálculos usam o Salário Base.
+                    </div>
+                </div>
+
+                <!-- Família -->
+                <h3>Família</h3>
+                <div class="campos-grid">
+                    <div class="form-group">
+                        <label for="folhaQtdFilhos">
+                            <i class="fas fa-child"></i> Quantidade de Filhos:
+                        </label>
+                        <input type="number" id="folhaQtdFilhos" step="1" min="0" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="folhaSalarioFamilia" title="Elegível quando remuneração ≤ R$ 1.906,04. Cota por dependente (R$ 65,00). Proporcional aos dias trabalhados quando informado.">
+                            <i class="fas fa-hand-holding-heart"></i> Salário Família:
+                        </label>
+                        <input type="number" id="folhaSalarioFamilia" step="0.01" min="0" placeholder="0,00" readonly>
+                        <span class="info-toggle" id="sfInfoToggle" title="Mostrar cálculo"><i class="fas fa-info-circle"></i></span>
+                        <div id="sfCalcBadge" class="calc-badge"></div>
+                    </div>
+                </div>
+
+                <!-- Configurações de Salvamento -->
+                <div id="modoCumulativoContainer" class="toggle-container modo-inativo">
+                    <div class="toggle-header">
+                        <div class="toggle-title">
+                            <i class="fas fa-cog"></i>
+                            <span>Modo de Salvamento</span>
+                        </div>
+                        <div class="toggle-switch-container">
+                            <span class="toggle-label">Substituir</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="modoCumulativo">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label">Somar</span>
+                        </div>
+                    </div>
+                    <div class="toggle-description">
+                        <span id="modoCumulativoDescricao">
+                            Os valores informados <strong>substituirão</strong> completamente os valores existentes
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Configurações de Descontos Automáticos -->
+                <div class="toggle-container modo-inativo" style="margin-top: 10px; border-left: 4px solid #f39c12;">
+                    <div class="toggle-header">
+                        <div class="toggle-title">
+                            <i class="fas fa-calculator"></i>
+                            <span>Remover Cálculos Automáticos</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="folhaRemoverCalculosAutomaticos">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-description">
+                        Se marcado, os descontos de <strong>INSS e IRRF, FGTS</strong>, não serão calculados automaticamente (valores zerados).
+                    </div>
+                </div>
+
+                <!-- Descontos -->
+                <h3>Descontos</h3>
+                <div class="campos-grid">
+                    <div class="form-group">
+                        <label for="folhaFaltas" title="Desconto Faltas = (salário/30) × dias de falta. Quando informado dias trabalhados, faltas = 30 − dias trabalhados.">
+                            <i class="fas fa-user-times"></i> Faltas (dias):
+                        </label>
+                        <input type="number" id="folhaFaltas" step="0.5" min="0" 
+                               placeholder="0">
+                        <span class="info-toggle" id="faltasInfoToggle" title="Mostrar cálculo"><i class="fas fa-info-circle"></i></span>
+                        <div id="faltasCalcBadge" class="calc-badge"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="folhaTotalFaltas" title="Total de faltas em R$. Arredondado a 2 casas.">
+                            <i class="fas fa-user-clock"></i> Total Faltas R$:
+                        </label>
+                        <input type="number" id="folhaTotalFaltas" step="0.01" min="0" placeholder="0,00" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="folhaVales">
+                            <i class="fas fa-money-bill-wave"></i> Vales:
+                        </label>
+                        <input type="number" id="folhaVales" step="0.01" min="0" 
+                               placeholder="0,00">
+                    </div>
+                </div>
+
+                <!-- Campos de Encargos Unificados (Auto/Manual) -->
+                <div class="campos-grid">
+                    <div class="form-group">
+                        <label for="folhaDescontoINSSManual" id="labelINSS">
+                            <i class="fas fa-id-card"></i> INSS (Auto):
+                        </label>
+                        <input type="number" id="folhaDescontoINSSManual" step="0.01" min="0" placeholder="0,00">
+                    </div>
+                    <div class="form-group">
+                        <label for="folhaDescontoIRRFManual" id="labelIRRF">
+                            <i class="fas fa-file-invoice-dollar"></i> IRRF (Auto):
+                        </label>
+                        <input type="number" id="folhaDescontoIRRFManual" step="0.01" min="0" placeholder="0,00">
+                    </div>
+                    <div class="form-group">
+                        <label for="folhaDescontoFGTS" id="labelFGTS" title="Valor do FGTS - Informativo (não descontado do líquido)">
+                            <i class="fas fa-piggy-bank"></i> FGTS (8%):
+                        </label>
+                        <input type="number" id="folhaDescontoFGTS" step="0.01" min="0" placeholder="0,00">
+                    </div>
+                </div>
+
+                <div class="campos-grid">
+                    <div class="form-group">
+                        <label for="folhaDescRepousoRemunerado">
+                            <i class="fas fa-bed"></i> Desc. Repouso Remunerado:
+                        </label>
+                        <input type="number" id="folhaDescRepousoRemunerado" step="0.01" min="0" placeholder="0,00">
+                    </div>
+                    <div class="form-group">
+                        <label for="folhaContribuicaoConfederativa">
+                            <i class="fas fa-users-cog"></i> Contribuição Confederativa:
+                        </label>
+                        <input type="number" id="folhaContribuicaoConfederativa" step="0.01" min="0" placeholder="0,00">
+                    </div>
+                    <div class="form-group">
+                        <label for="folhaContribuicaoSindical">
+                            <i class="fas fa-users"></i> Contribuição Sindical:
+                        </label>
+                        <input type="number" id="folhaContribuicaoSindical" step="0.01" min="0" placeholder="0,00">
+                    </div>
+                    <div class="form-group">
+                        <label for="folhaEmprestimoConsignado">
+                            <i class="fas fa-hand-holding-usd"></i> Empréstimo Consignado CLT:
+                        </label>
+                        <input type="number" id="folhaEmprestimoConsignado" step="0.01" min="0" placeholder="0,00">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="folhaOutrosDescontos">
+                        <i class="fas fa-minus-circle"></i> Outros Descontos:
+                    </label>
+                    <input type="number" id="folhaOutrosDescontos" step="0.01" min="0" 
+                           placeholder="0,00">
+                </div>
+
+                <!-- Resumo Calculado -->
+                <div id="resumoCalculado" class="resumo-container">
+                    <div class="resumo-item">
+                        <h4>Salário Bruto:</h4>
+                        <span id="resumoBruto">R$ 0,00</span>
+                    </div>
+                    <div class="resumo-item">
+                        <h4>Total Quinzena:</h4>
+                        <span id="resumoQuinzena">R$ 0,00</span>
+                    </div>
+                    <div class="resumo-item">
+                        <h4>Total Acréscimos:</h4>
+                        <span id="resumoAcrescimos">R$ 0,00</span>
+                    </div>
+                    <div class="resumo-item">
+                        <h4>Total Descontos:
+                          <span class="info-toggle" id="diagInfoToggle" title="Comparar modal vs tabela"><i class="fas fa-balance-scale"></i></span>
+                        </h4>
+                        <span id="resumoDescontos">R$ 0,00</span>
+                        <div id="diagCalcBadge" class="calc-badge"></div>
+                    </div>
+                    <div class="resumo-item">
+                        <h4>Total 2° Quinzena:</h4>
+                        <span id="resumoLiquido">R$ 0,00</span>
+                    </div>
+                </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <div class="footer-secondary">
+                    <button type="button" class="back-button close-modal-btn" onclick="closeFolhaModal()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+                <div class="footer-primary">
+                    <button type="submit" class="btn-save" id="saveFolhaBtn">
+                        <i class="fas fa-save"></i> Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Lista de Funcionários será criado dinamicamente -->
+
+    <!-- Modal de Lista de Cargos -->
+    <div id="cargosListModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">📋 Lista de Cargos</h3>
+                <span class="close-modal" onclick="closeCargosListModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="cargosListFilter" 
+                       placeholder="🔍 Filtrar por nome, salário ou adicionais..." 
+                       style="width: 100%; padding: 10px; margin-bottom: 15px;">
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Salário Base</th>
+                                <th>Periculosidade</th>
+                                <th>Adicional Noturno</th>
+                                <th>Total</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cargosListTable">
+                            <!-- Conteúdo dinâmico -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer footer-with-info">
+                <div class="footer-info" style="color: #666; font-size: 14px;">
+                    <i class="fas fa-info-circle"></i> <span id="cargosModalInfo">Carregando...</span>
+                </div>
+                <div class="footer-secondary cargos-footer-actions">
+                    <button type="button" class="back-button close-modal-btn cargos-footer-btn" onclick="closeCargosListModal()"><i class="fas fa-times"></i> Fechar</button>
+                </div>
+                <div class="footer-primary cargos-footer-actions">
+                    <button type="button" class="btn-adicionar cargos-footer-btn" onclick="openNovoCargoModal()"><i class="fas fa-plus-circle"></i> Novo Cargo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Folhas Fechadas -->
+    <div id="folhasFechadasModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">📁 Folhas Fechadas</h3>
+                <span class="close-modal" onclick="closeFolhasFechadasModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="filtros-folhas-fechadas">
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="filtroFechadasMesAno">
+                                <i class="fas fa-calendar"></i> Mês/Ano:
+                            </label>
+                            <input type="month" id="filtroFechadasMesAno">
+                        </div>
+                        <div class="form-group">
+                        <label for="filtroFechadasFuncionario">
+                            <i class="fas fa-user"></i> Funcionário:
+                        </label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="filtroFechadasFuncionario" placeholder="Filtrar por funcionário..." class="autocomplete-input">
+                            <div class="autocomplete-icons-container">
+                                <span class="autocomplete-icon" title="Listar Funcionários" onclick="openFuncionariosListModal()">
+                                    <i class="fas fa-list"></i>
+                                </span>
+                            </div>
+                        </div>
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn-listar" onclick="filtrarFolhasFechadas()">
+                                <i class="fas fa-search"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="table folhas-fechadas-table">
+                        <thead>
+                            <tr>
+                                <th class="no-wrap" data-sort-key="funcionario">Funcionário</th>
+                                <th data-sort-key="mesAno">Mês/Ano</th>
+                                <th data-sort-key="tipo">Tipo</th>
+                                <th data-sort-key="percentual">Percentual</th>
+                                <th data-sort-key="salarioBase">Salário Base</th>
+                                <th data-sort-key="quinzena">1ª Quinzena</th>
+                                <th data-sort-key="detalhes">Detalhes</th>
+                                <th data-sort-key="liquido">Líquido</th>
+                                <th data-sort-key="acoes">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="folhasFechadasTable">
+                            <tr>
+                                <td colspan="9" style="text-align: center; padding: 20px; color: #666;">
+                                    <i class="fas fa-inbox" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
+                                    Nenhuma folha fechada encontrada
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer footer-with-info">
+                <div class="footer-info" style="color: #666; font-size: 14px;">
+                    <i class="fas fa-info-circle"></i> <span id="folhasFechadasInfo">Carregando...</span>
+                </div>
+                <div class="footer-secondary">
+                    <button type="button" class="back-button close-modal-btn" onclick="closeFolhasFechadasModal()"><i class="fas fa-times"></i> Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ferramentas Admin: Normalizar Quinzena (executa na sessão autenticada) -->
+    <section id="admin-tools-normalizer" style="display:none; margin: 12px 20px;">
+      <div style="border:1px solid #ddd;border-radius:8px;padding:12px;">
+        <h3 style="margin:0 0 8px 0;">Ferramentas (Admin)</h3>
+        <p style="margin:0 0 6px 0; font-size:13px; color:#444;">Atualiza somente <code>tipoPagamento</code> para registros de quinzena sem este campo. Mês/Mês Fechado não são alterados.</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+          <button id="btnDryFolhas" class="btn" style="background:#f39c12;color:#fff;">Dry Run (folhas)</button>
+          <button id="btnApplyFolhas" class="btn" style="background:#1976d2;color:#fff;">Aplicar (folhas)</button>
+          <button id="btnDryPctFolhas" class="btn" style="background:#f39c12;color:#fff;">Dry % (folhas)</button>
+          <button id="btnApplyPctFolhas" class="btn" style="background:#1976d2;color:#fff;">Aplicar % (folhas)</button>
+          <button id="btnDryConsistencyFolhas" class="btn" style="background:#f39c12;color:#fff;">Dry Consistência</button>
+          <button id="btnApplyConsistencyFolhas" class="btn" style="background:#1976d2;color:#fff;">Aplicar Consistência</button>
+        </div>
+        <div style="margin-top:8px; display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+          <div>
+            <label for="pctIdInput" style="font-size:12px;color:#555;">ID da Folha</label>
+            <input id="pctIdInput" type="text" placeholder="ex.: -OdUKrvio1JpzUFF9wL7" style="padding:6px;border:1px solid #ddd;border-radius:6px;min-width:280px;" />
+          </div>
+          <div>
+            <label for="pctValueInput" style="font-size:12px;color:#555;">Percentual (%)</label>
+            <input id="pctValueInput" type="number" min="1" max="100" step="1" placeholder="ex.: 40" style="padding:6px;border:1px solid #ddd;border-radius:6px;min-width:120px;" />
+          </div>
+          <div>
+            <button id="btnApplyPctIdFolhas" class="btn" style="background:#27ae60;color:#fff;">Aplicar % por ID (folhas)</button>
+          </div>
+        </div>
+        <div id="adminNormalizerLog" style="background:#f9fafb;border:1px solid #eee;border-radius:6px;padding:8px;height:160px;overflow:auto;font-family:ui-monospace,Consolas,monospace;font-size:12px;"></div>
+      </div>
+    </section>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text" id="loadingText">Carregando...</div>
+        </div>
+    </div>
+
+    <script>
+      (function(){
+        const params = new URLSearchParams(location.search);
+        const isAdminMode = params.get('admin') === '1';
+        const box = document.getElementById('admin-tools-normalizer');
+        if (isAdminMode && box) box.style.display = 'block';
+        const logEl = document.getElementById('adminNormalizerLog');
+        const log = (msg) => { if (!logEl) return; logEl.textContent += msg + "\n"; logEl.scrollTop = logEl.scrollHeight; }
+        const bind = (id, handler) => { const el = document.getElementById(id); if (el) el.addEventListener('click', handler); };
+        bind('btnDryFolhas', async () => {
+          try { const r = await window.FolhaUtils.normalizarQuinzenas({ dryRun: true, path: 'folhas' }); log(`Dry(folhas): total=${r.total}, elegiveis=${r.elegiveis}`); }
+          catch(e){ log('Erro dry(folhas): '+(e&&e.message)); }
+        });
+        bind('btnApplyFolhas', async () => {
+          try { const r = await window.FolhaUtils.normalizarQuinzenas({ dryRun: false, path: 'folhas' }); log(`Aplicado(folhas): atualizados=${r.atualizados}/${r.elegiveis}`); }
+          catch(e){ log('Erro aplicar(folhas): '+(e&&e.message)); }
+        });
+        bind('btnDryPctFolhas', async () => {
+          try { const r = await window.FolhaUtils.normalizarPercentualQuinzena({ dryRun: true, path: 'folhas' }); log(`Dry%(folhas): total=${r.total}, elegiveis=${r.elegiveis}`); }
+          catch(e){ log('Erro dry%(folhas): '+(e&&e.message)); }
+        });
+        bind('btnApplyPctFolhas', async () => {
+          try { const r = await window.FolhaUtils.normalizarPercentualQuinzena({ dryRun: false, path: 'folhas' }); log(`Aplicado%(folhas): atualizados=${r.atualizados}/${r.elegiveis}`); }
+          catch(e){ log('Erro aplicar%(folhas): '+(e&&e.message)); }
+        });
+        bind('btnDryConsistencyFolhas', async () => {
+          try { const r = await window.FolhaUtils.normalizarConsistenciaFolhas({ dryRun: true, path: 'folhas' }); log(`Dry Consistência: total=${r.total}, elegiveis=${r.elegiveis}`); }
+          catch(e){ log('Erro dry consistência: '+(e&&e.message)); }
+        });
+        bind('btnApplyConsistencyFolhas', async () => {
+          try { const r = await window.FolhaUtils.normalizarConsistenciaFolhas({ dryRun: false, path: 'folhas' }); log(`Aplicado Consistência: atualizados=${r.atualizados}/${r.elegiveis}`); }
+          catch(e){ log('Erro aplicar consistência: '+(e&&e.message)); }
+        });
+        const getPctInputs = () => {
+          const id = (document.getElementById('pctIdInput') && document.getElementById('pctIdInput').value || '').trim();
+          const valRaw = (document.getElementById('pctValueInput') && document.getElementById('pctValueInput').value || '').trim();
+          const val = parseFloat(valRaw);
+          return { id, val };
+        };
+        bind('btnApplyPctIdFolhas', async () => {
+          const { id, val } = getPctInputs();
+          if (!id || !Number.isFinite(val)) { log('Parâmetros inválidos: informe ID e Percentual'); return; }
+          try { const ok = await window.FolhaUtils.atualizarPercentualQuinzenaPorId({ id, percentual: val, path: 'folhas' }); log(ok ? `Aplicado % por ID (folhas): ${id} -> ${val}%` : 'Falha ao aplicar % por ID (folhas)'); }
+          catch(e){ log('Erro aplicar % por ID (folhas): '+(e&&e.message)); }
+        });
+      })();
+    </script>
+
+    <!-- Scripts na ordem otimizada -->
+    <!-- 🐛 DEBUG: Carregar ANTES de folha-utils.js -->
+    <script src="debug-folha-utils.js"></script>
+    <script src="folha-utils.js"></script>
+    <script src="folha-config.js"></script>
+    <script src="folha-calculos.js"></script>
+    <script src="folha-firebase-manager.js"></script>
+    <script src="folha-firebase-optimized.js"></script>
+    <script src="folha-funcionarios.js"></script>
+    <script src="folha-cargos.js"></script>
+    <script src="folha-lancamentos.js"></script>
+    <script src="folha-relatorios.js"></script>
+    <script src="folha-filtros.js"></script>
+    <script src="folha-paginacao.js"></script>
+    <script src="folha-main.js"></script>
+    <!-- [BH] Banco de Horas (mantendo ordem base intacta; novos scripts após a base) -->
+    <script src="banco-horas-config.js"></script>
+    <script src="banco-horas-service.js"></script>
+    <script src="banco-horas-firebase.js"></script>
+    <script src="banco-horas-relatorios.js"></script>
+    <script src="banco-horas-ui.js"></script>
+</body>
+</html>

@@ -1,0 +1,886 @@
+ ✅ Navegação forçada configurada para 22 links de submenu
+ 🐛 DEBUG: Iniciando diagnóstico de FolhaUtils...
+ 🔍 Estado inicial: Object
+ 🐛 DEBUG: Diagnóstico configurado
+ ✅ Classe FolhaUtils exportada para window (protegida contra sobrescrita)
+ ✅ Função renderizarTabelaLancamentos exportada para window (forçado)
+ ✅ Método renderizarTabelaLancamentos disponível
+ ✅ Função global renderizarTabelaLancamentos disponível
+ 🛠️ Módulo FolhaUtils carregado
+ ⚙️ Módulo FolhaConfig carregado
+ 🧮 Folha Cálculos carregado com sucesso
+ 📊 Funções disponíveis: Array(16)
+ 🔥 Firebase Connection Manager carregado
+ 🔥 Firebase Service otimizado carregado
+ 👥 Módulo de funcionários carregado
+ 🔍 [DEBUG] Inicialização folhaCargos: undefined undefined
+ 🔍 [DEBUG] Inicializando folha-lancamentos.js...
+ ⚠️ Firebase database não disponível ainda. Tentando novamente em 500ms...
+loadLancamentos @ folha-lancamentos.js:34
+ ✅ [DEBUG] window.folhaLancamentos criado: FolhaLancamentos
+ 📌 getCompanyData global exposto para relatórios externos
+ 📄 Módulo de paginação carregado
+ ⚠️ Classe FolhaUtils ainda não disponível (carregando...)
+(anonymous) @ folha-utils.js:1651
+ ✅ Função global renderizarTabelaLancamentos disponível
+ ✅ Verificação concluída: Todos os componentes carregados Object
+ ⚠️ Firebase database não disponível ainda. Tentando novamente em 500ms...
+loadLancamentos @ folha-lancamentos.js:34
+ // [BH] banco-horas-config.js carregado
+ // [BH] banco-horas-service.js carregado
+ // [BH] banco-horas-firebase.js carregado
+ // [BH] banco-horas-relatorios.js carregado
+ // [BH] banco-horas-ui.js carregado
+ 🔥 Firebase inicializado: Object
+ 📄 DOM carregado - verificando FolhaUtils...
+ ⚠️ Classe FolhaUtils ainda não disponível no DOM (pode estar carregando)
+(anonymous) @ folha-utils.js:1285
+ ⚙️ Folha Config inicializado
+ 🔥 Inicializando Firebase Connection Manager...
+ 🔍 Status inicial: Object
+ 🔍 Aguardando Firebase... Object
+ ✅ Firebase database disponível
+ 🔍 Detalhes do database: Object
+ 🔥 Firebase Connection Manager inicializado (Singleton)
+ ✅ FolhaConfig (instância) inicializado globalmente
+ ✅ Conexão Firebase estabelecida
+ ✅ Listeners de rede configurados
+ ✅ Firebase Connection Manager inicializado com sucesso
+ 📊 Inicializando sistema de relatórios...
+ 🎯 Configurando event listeners de relatórios...
+ ✅ Event listener configurado para botão de relatório
+ ✅ Event listener global para botões de impressão configurado
+ ✅ Event listeners de relatórios configurados (sem duplicação)
+ ✅ Sistema de relatórios inicializado
+ 🔍 Inicializando sistema de filtros...
+ 🎯 Configurando event listeners de filtros...
+ ✅ Event listener mesAno configurado
+ ✅ Event listener tipoFolha configurado
+ ✅ Event listeners funcionarioFiltro configurados (input + change)
+ ℹ️ Watcher periódico desativado; usando somente eventos para sincronizar dados
+ ✅ Event listeners de filtros configurados (sem duplicação)
+ ✅ Listeners de sincronização configurados nos filtros
+ 🔍 0 registros carregados para filtros
+ 🔍 Dados carregados: 0 registros disponíveis para filtros
+ 🔁 Filtros restaurados/normalizados: Object
+ ✅ Sistema de filtros inicializado com prioridade (db+utils prontos)
+ 📄 Sistema de paginação inicializado
+ 🎨 Criando controles de paginação...
+ ✅ Seção de tabela encontrada: 
+ ✅ Controles de paginação inseridos após a tabela
+ 🎯 Configurando eventos de paginação...
+ 🔍 Elementos de paginação encontrados: Object
+ ✅ Eventos de paginação configurados
+ ✅ Sistema de paginação inicializado
+ 📄 DOM carregado, inicializando Sistema de Folha de Pagamento...
+ 🎯 Sistema Folha de Pagamento inicializado
+ ✅ Sistema de Folha de Pagamento criado com sucesso
+ ✅ Listeners de conexão Firebase configurados
+ 🔥 Firebase desconectado
+ 📡 Carregando dados do Firebase: folha/configuracoes
+ 📡 Carregando dados do Firebase: folha/bancoHoras/config
+ 📡 Carregando dados do Firebase: folha/folhas
+ ✅ Firebase Connection Manager disponível globalmente
+ ✅ Firebase database disponível para uso
+ ✅ Firebase database disponível para uso
+ 📊 Tipo do database: object
+ 📊 Propriedades do database: Array(5)
+ 🔍 Verificando inicialização cargos: database=true, form=true
+ 🏢 Inicializando sistema de cargos...
+ ✅ Sistema de cargos inicializado com formulário disponível
+ 🎯 Configurando event listeners de cargos...
+ ✅ Configurando event listener para cargoForm
+ 🔘 Configurando botão de salvar cargo
+ ✅ Event listeners de cargos configurados (sem duplicação)
+ 📡 Carregando dados do Firebase: folha/bancoHoras/config
+ // [BH] UI inicializada
+ 🔥 Firebase conectado
+ 📋 Processando fila (0 operações)
+ ✅ Fila processada
+ 🔄 Atualizando dados obsoletos...
+ 📋 32 cargos carregados
+ ✅ Dados carregados: folha/configuracoes (0 itens)
+ ⚙️ Config remota aplicada: Object
+ ✅ Dados carregados: folha/bancoHoras/config (0 itens)
+ // [BH] Config carregada do RTDB
+ // [BH] Config BH carregada
+ 🔍 Verificação automática de scroll executada
+ 🔥 Inicializando Firebase Service otimizado...
+ ✅ Firebase Connection Manager disponível
+ ✅ Firebase Service e Sync Manager inicializados
+ ✅ Firebase Service otimizado inicializado
+ 🔍 Verificando inicialização funcionários: firebase=true, utils=true, form=true
+ 👥 Inicializando sistema de funcionários...
+ ✅ Listeners de sincronização configurados
+ 📂 Carregando funcionários...
+ 🔄 Loading...
+ 🔍 Buscando na coleção: funcionarios
+ ✅ Sistema de funcionários inicializado
+ 📂 Carregando funcionários...
+ 🔄 Loading...
+ 🔍 Buscando na coleção: funcionarios
+ ✅ Formulário de funcionário encontrado - configurando eventos
+ ⏳ Aguardando carregamento completo dos scripts...
+ 🚀 Inicializando Sistema de Folha de Pagamento...
+ ⏳ Iniciando verificação de dependências...
+ ⏳ Aguardando dependências (0/100): Object
+ ✅ Dependências essenciais carregadas
+ 📦 Aguardando inicialização dos módulos...
+ ⏳ Aguardando módulos (0/100): Object
+ ✅ Módulos carregados
+ ⌨️ Configurando navegação com Enter...
+ ✅ Navegação com Enter configurada
+ 🎭 Configurando eventos dos modais...
+ ✅ Eventos dos modais configurados
+ 🔍 Configurando filtros...
+ ✅ Sistema de filtros inicializado
+ 📊 Carregando dados iniciais com sistema otimizado...
+ 🔄 Carregando dados com otimização...
+ 🔄 Carregando dados do tipo: funcionarios
+ 🔄 Carregando dados do tipo: cargos
+ 🔄 Carregando dados do tipo: folhas
+ 🎯 Configurando event listeners de funcionários...
+ ✅ Configurando event listener para funcionarioForm
+ 🔘 Configurando botão de salvar funcionário
+ ✅ Toggle funcionário ativo configurado
+ 👆 Configurando rastreamento de campos de funcionário...
+ ✅ Rastreamento configurado para: funcionarioFiltro
+ ✅ Rastreamento configurado para: folhaFuncionario
+ ✅ Rastreamento configurado para: bh-funcionario-nome
+ ✅ Rastreamento configurado para: bh-ger-func-nome
+ ✅ Event listeners de funcionários configurados (sem duplicação)
+ 📡 Carregando dados do Firebase: folha/funcionarios
+ 📡 Carregando dados do Firebase: folha/cargos
+ 📡 Carregando dados do Firebase: folha/folha/folhas
+ ✅ Dados carregados: folha/folhas (145 itens)
+ 📊 Lançamentos carregados do Firebase: 145
+ ✅ Lançamentos recarregados: 433
+ 📡 Evento folhas:updated recebido nos filtros - reloading data Object
+ ⏳ Ignorando reload até dados prontos
+ ✅ Fallback de dados iniciais carregado: 433 registros
+ ✅ Dados carregados: folha/bancoHoras/config (0 itens)
+ // [BH] Config carregada do RTDB
+ ✅ Dados carregados: folha/funcionarios (48 itens)
+ 👥 35 funcionários ativos carregados
+ ✅ Dados carregados: folha/cargos (0 itens)
+ ✅ Dados carregados: folha/folha/folhas (0 itens)
+ 📦 Dados carregados do cache: folha/funcionarios
+ 👥 Funcionários de funcionarios: 48
+ 👥 Total funcionários únicos carregados: 35
+ 📊 Dados carregados: 145 lançamentos, 35 funcionários
+ 📡 Carregando dados do Firebase: cargos
+ ✅ Dados carregados: cargos (32 itens)
+ 🏢 32 cargos carregados
+ 📡 Carregando dados do Firebase: folha/folhas
+ 🔍 Status final do Firebase: Object
+ ✅ Dados carregados: folha/folhas (145 itens)
+ 📊 145 folhas normalizadas (multi-path)
+ 💰 145 folhas carregadas
+ ✅ Todos os dados carregados com otimização
+ 🔗 Reconciliadas 145 folhas com 35 funcionários
+ ✅ Dados iniciais carregados com sucesso
+ 🎨 Configurando interface...
+ 🔍 Configurando autocomplete de funcionários...
+ ✅ Autocomplete de funcionários configurado
+ 🔘 Configurando botões de ação...
+ ✅ Botões de ação configurados
+ 🔥 Configurando status Firebase...
+ ✅ Status Firebase configurado
+ ✅ Interface configurada com sucesso
+ 📅 Configurando datas padrão...
+ ✅ Datas padrão configuradas com sucesso
+ ✅ Sistema Folha de Pagamento inicializado com sucesso!
+ 📊 Dados carregados, aguardando sistema de filtros assumir controle da renderização...
+ 📡 Dados do folha-main prontos, assumindo controle da renderização...
+ 🎯 Aplicando filtro de mês atual após dados prontos... 2025-11
+ 🔍 Aplicando filtros... Filtros ativos: SIM
+ 🎯 Aplicando filtros automáticos essenciais (sempre)...
+ 🎯 Aplicando filtros adicionais do usuário...
+ 📊 Aplicando filtros via sistema de paginação...
+ 🔍 Aplicando filtros com paginação: Object
+ 📄 Paginação configurada: 33 itens, 7 páginas
+ 📄 Renderizando página 1: Object
+ ✅ Chamando renderizarTabelaLancamentos com dados da página
+ 📊 Renderizando tabela unificada com 5 lançamentos
+ 🔍 Funcionário encontrado no sistema: CAMYLA DE TARSIA REIS DOS SANTOS - Status: ATIVO
+ ✅ Funcionário ativo aceito: CAMYLA DE TARSIA REIS DOS SANTOS (ID: id_1754937672194_9zc0qqguw)
+ 🔍 Funcionário encontrado no sistema: YLLA KANANDA TEIXEIRA DIAS - Status: ATIVO
+ ✅ Funcionário ativo aceito: YLLA KANANDA TEIXEIRA DIAS (ID: id_1754937507566_6do1826kf)
+ 🔍 Funcionário encontrado no sistema: JOSUÉ SOARES SANTOS - Status: ATIVO
+ ✅ Funcionário ativo aceito: JOSUÉ SOARES SANTOS (ID: id_1754941456925_uo8xbg92f)
+ 🔍 Funcionário encontrado no sistema: MARLYSON GOMES PEREIRA - Status: ATIVO
+ ✅ Funcionário ativo aceito: MARLYSON GOMES PEREIRA (ID: id_1754941988189_p4kjz93m1)
+ 🔍 Funcionário encontrado no sistema: Daniel Oliveira - Status: ATIVO
+ ✅ Funcionário ativo aceito: Daniel Oliveira (ID: id_1762177645292_cp5z8yf4u)
+ 📊 Após filtro de inativos na função unificada: 5/5 lançamentos
+ 📋 Lançamento 1: Object
+ 📋 Lançamento 2: Object
+ 📋 Lançamento 3: Object
+ 📋 Lançamento 4: Object
+ 📋 Lançamento 5: Object
+ 🎨 Iniciando renderização de 5 linhas...
+ 🎨 Renderizando linha 1/5 para CAMYLA DE TARSIA REIS DOS SANTOS
+ 🎨 Renderizando botões para: CAMYLA DE TARSIA REIS DOS SANTOS Object
+ 🔍 Funções globais disponíveis: Object
+ 🔧 Status extraído do objeto: rascunho Object
+ 🎯 Renderizando botões para: CAMYLA DE TARSIA REIS DOS SANTOS Object
+ 🔍 Verificando botão Dar Baixa: tipo=mes, statusString=rascunho, includes=true
+ ℹ️ Não adicionando botão Dar Baixa: tipo=mes, statusString=rascunho
+ 🔍 Verificando botão Fechar Mês para quinzena: tipo=mes, statusString=rascunho, igual=false
+ ℹ️ Não adicionando botão Fechar Mês para quinzena: tipo=mes, statusString=rascunho
+ 🔍 Verificando botão Fechar Mês para mês: tipo=mes, statusString=rascunho, includes=true
+ ✅ Adicionando botão Fechar Mês para mês: -OdTgXmnRyNopItuFPyL
+ 🔍 Verificando botão Clonar: statusString=rascunho, diferente=true
+ ✅ Adicionando botão Clonar para: -OdTgXmnRyNopItuFPyL 
+ 🎯 Total de botões renderizados: 2
+ 🎨 Botões renderizados: SIM Object
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 🎨 Renderizando linha 2/5 para YLLA KANANDA TEIXEIRA DIAS
+ 🎨 Renderizando botões para: YLLA KANANDA TEIXEIRA DIAS Object
+ 🔍 Funções globais disponíveis: Object
+ 🔧 Status extraído do objeto: rascunho Object
+ 🎯 Renderizando botões para: YLLA KANANDA TEIXEIRA DIAS Object
+ 🔍 Verificando botão Dar Baixa: tipo=mes, statusString=rascunho, includes=true
+ ℹ️ Não adicionando botão Dar Baixa: tipo=mes, statusString=rascunho
+ 🔍 Verificando botão Fechar Mês para quinzena: tipo=mes, statusString=rascunho, igual=false
+ ℹ️ Não adicionando botão Fechar Mês para quinzena: tipo=mes, statusString=rascunho
+ 🔍 Verificando botão Fechar Mês para mês: tipo=mes, statusString=rascunho, includes=true
+ ✅ Adicionando botão Fechar Mês para mês: -OdTk1LvvgFzruNNtHpV
+ 🔍 Verificando botão Clonar: statusString=rascunho, diferente=true
+ ✅ Adicionando botão Clonar para: -OdTk1LvvgFzruNNtHpV 
+ 🎯 Total de botões renderizados: 2
+ 🎨 Botões renderizados: SIM Object
+ 🔍 ===== DEBUG DESCONTOS: YLLA KANANDA TEIXEIRA DIAS =====
+ 📊 Estrutura da folha: Object
+ ⚠️ FALTAS NÃO CALCULADAS: salarioBase=1805, dias=0, FolhaCalculos=true
+ 💰 DETALHAMENTO DOS DESCONTOS:
+ 📊 INSS: R$ 189.04 (fontes: calc.calculoINSS.valor=undefined, c.inss.valor=189.04185, folha.inss.valor=undefined, calc.inss=undefined)
+ 📊 IRRF: R$ 2.61 (fontes: calc.calculoIRRF.valor=undefined, c.irrf.valor=2.6068612500000086, folha.irrf.valor=undefined, calc.irrf=undefined)
+ 📊 Vales: R$ 0.00 (fontes: folha.vales=0, c.vales=0, calc.vales=undefined)
+ 📊 Outros Descontos: R$ 440.38
+ 📊 Desconto Faltas: R$ 0.00
+ 📊 Desconto Repouso: R$ 0.00
+ 📊 INSS Manual: R$ 76.94
+ 📊 Contrib. Confederativa: R$ 0.00
+ 📊 Contrib. Sindical: R$ 0.00
+ 📊 Desconto IRPJ: R$ 0.00
+ 📊 Empréstimo Consignado: R$ 513.04
+ 💰 TOTAL DESCONTOS: R$ 1222.01
+ 🔍 ===== FIM DEBUG DESCONTOS =====
+ 🔍 ===== DEBUG DESCONTOS: YLLA KANANDA TEIXEIRA DIAS =====
+ 📊 Estrutura da folha: Object
+ ⚠️ FALTAS NÃO CALCULADAS: salarioBase=1805, dias=0, FolhaCalculos=true
+ 💰 DETALHAMENTO DOS DESCONTOS:
+ 📊 INSS: R$ 189.04 (fontes: calc.calculoINSS.valor=undefined, c.inss.valor=189.04185, folha.inss.valor=undefined, calc.inss=undefined)
+ 📊 IRRF: R$ 2.61 (fontes: calc.calculoIRRF.valor=undefined, c.irrf.valor=2.6068612500000086, folha.irrf.valor=undefined, calc.irrf=undefined)
+ 📊 Vales: R$ 0.00 (fontes: folha.vales=0, c.vales=0, calc.vales=undefined)
+ 📊 Outros Descontos: R$ 440.38
+ 📊 Desconto Faltas: R$ 0.00
+ 📊 Desconto Repouso: R$ 0.00
+ 📊 INSS Manual: R$ 76.94
+ 📊 Contrib. Confederativa: R$ 0.00
+ 📊 Contrib. Sindical: R$ 0.00
+ 📊 Desconto IRPJ: R$ 0.00
+ 📊 Empréstimo Consignado: R$ 513.04
+ 💰 TOTAL DESCONTOS: R$ 1222.01
+ 🔍 ===== FIM DEBUG DESCONTOS =====
+ 🎨 Renderizando linha 3/5 para JOSUÉ SOARES SANTOS
+ 🎨 Renderizando botões para: JOSUÉ SOARES SANTOS Object
+ 🔍 Funções globais disponíveis: Object
+ 🔧 Status extraído do objeto: rascunho Object
+ 🎯 Renderizando botões para: JOSUÉ SOARES SANTOS Object
+ 🔍 Verificando botão Dar Baixa: tipo=mes, statusString=rascunho, includes=true
+ ℹ️ Não adicionando botão Dar Baixa: tipo=mes, statusString=rascunho
+ 🔍 Verificando botão Fechar Mês para quinzena: tipo=mes, statusString=rascunho, igual=false
+ ℹ️ Não adicionando botão Fechar Mês para quinzena: tipo=mes, statusString=rascunho
+ 🔍 Verificando botão Fechar Mês para mês: tipo=mes, statusString=rascunho, includes=true
+ ✅ Adicionando botão Fechar Mês para mês: -OdTlq_TDlIud2U5bsif
+ 🔍 Verificando botão Clonar: statusString=rascunho, diferente=true
+ ✅ Adicionando botão Clonar para: -OdTlq_TDlIud2U5bsif 
+ 🎯 Total de botões renderizados: 2
+ 🎨 Botões renderizados: SIM Object
+ 🎨 Renderizando linha 4/5 para MARLYSON GOMES PEREIRA
+ 🎨 Renderizando botões para: MARLYSON GOMES PEREIRA Object
+ 🔍 Funções globais disponíveis: Object
+ 🔧 Status extraído do objeto: rascunho Object
+ 🎯 Renderizando botões para: MARLYSON GOMES PEREIRA Object
+ 🔍 Verificando botão Dar Baixa: tipo=mes, statusString=rascunho, includes=true
+ ℹ️ Não adicionando botão Dar Baixa: tipo=mes, statusString=rascunho
+ 🔍 Verificando botão Fechar Mês para quinzena: tipo=mes, statusString=rascunho, igual=false
+ ℹ️ Não adicionando botão Fechar Mês para quinzena: tipo=mes, statusString=rascunho
+ 🔍 Verificando botão Fechar Mês para mês: tipo=mes, statusString=rascunho, includes=true
+ ✅ Adicionando botão Fechar Mês para mês: -OdTmIoaLkVM4SNVhZnw
+ 🔍 Verificando botão Clonar: statusString=rascunho, diferente=true
+ ✅ Adicionando botão Clonar para: -OdTmIoaLkVM4SNVhZnw 
+ 🎯 Total de botões renderizados: 2
+ 🎨 Botões renderizados: SIM Object
+ 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+ 🎨 Renderizando linha 5/5 para Daniel Oliveira
+ 🎨 Renderizando botões para: Daniel Oliveira Object
+ 🔍 Funções globais disponíveis: Object
+ 🔧 Status extraído do objeto: rascunho Object
+ 🎯 Renderizando botões para: Daniel Oliveira Object
+ 🔍 Verificando botão Dar Baixa: tipo=mes, statusString=rascunho, includes=true
+ ℹ️ Não adicionando botão Dar Baixa: tipo=mes, statusString=rascunho
+ 🔍 Verificando botão Fechar Mês para quinzena: tipo=mes, statusString=rascunho, igual=false
+ ℹ️ Não adicionando botão Fechar Mês para quinzena: tipo=mes, statusString=rascunho
+ 🔍 Verificando botão Fechar Mês para mês: tipo=mes, statusString=rascunho, includes=true
+ ✅ Adicionando botão Fechar Mês para mês: -OdUKrvio1JpzUFF9wL7
+ 🔍 Verificando botão Clonar: statusString=rascunho, diferente=true
+ ✅ Adicionando botão Clonar para: -OdUKrvio1JpzUFF9wL7 
+ 🎯 Total de botões renderizados: 2
+ 🎨 Botões renderizados: SIM Object
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 🚫 Faltas: 22 dias x R$ 76.33 = R$ 1679.33
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 🚫 Faltas: 22 dias x R$ 76.33 = R$ 1679.33
+ 🎨 5 linhas HTML geradas, inserindo no tbody...
+ ✅ Tabela unificada renderizada com 5 linhas (com filtro de inativos)
+ 🔍 Verificação final: 5 linhas inseridas no DOM
+ 📊 Atualizando totais com 5 folhas
+ 📊 Calculando totais para 5 folhas ativas (mesmo filtro do relatório)
+ 🧮 Calculando totais folha.html exatos para cada coluna...
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 📊 folha.html - Base CAMYLA DE TARSIA REIS DOS SANTOS: 2290
+ 📊 folha.html - Quinzena CAMYLA DE TARSIA REIS DOS SANTOS: 0
+ 📊 folha.html - Acréscimos CAMYLA DE TARSIA REIS DOS SANTOS: 0
+ 📊 folha.html - Descontos CAMYLA DE TARSIA REIS DOS SANTOS: 184.91985
+ 📊 folha.html - Líquido CAMYLA DE TARSIA REIS DOS SANTOS: 2105.08015
+ 🔍 ===== DEBUG DESCONTOS: YLLA KANANDA TEIXEIRA DIAS =====
+ 📊 Estrutura da folha: Object
+ ⚠️ FALTAS NÃO CALCULADAS: salarioBase=1805, dias=0, FolhaCalculos=true
+ 💰 DETALHAMENTO DOS DESCONTOS:
+ 📊 INSS: R$ 189.04 (fontes: calc.calculoINSS.valor=undefined, c.inss.valor=189.04185, folha.inss.valor=undefined, calc.inss=undefined)
+ 📊 IRRF: R$ 2.61 (fontes: calc.calculoIRRF.valor=undefined, c.irrf.valor=2.6068612500000086, folha.irrf.valor=undefined, calc.irrf=undefined)
+ 📊 Vales: R$ 0.00 (fontes: folha.vales=0, c.vales=0, calc.vales=undefined)
+ 📊 Outros Descontos: R$ 440.38
+ 📊 Desconto Faltas: R$ 0.00
+ 📊 Desconto Repouso: R$ 0.00
+ 📊 INSS Manual: R$ 76.94
+ 📊 Contrib. Confederativa: R$ 0.00
+ 📊 Contrib. Sindical: R$ 0.00
+ 📊 Desconto IRPJ: R$ 0.00
+ 📊 Empréstimo Consignado: R$ 513.04
+ 💰 TOTAL DESCONTOS: R$ 1222.01
+ 🔍 ===== FIM DEBUG DESCONTOS =====
+ 🔍 ===== DEBUG DESCONTOS: YLLA KANANDA TEIXEIRA DIAS =====
+ 📊 Estrutura da folha: Object
+ ⚠️ FALTAS NÃO CALCULADAS: salarioBase=1805, dias=0, FolhaCalculos=true
+ 💰 DETALHAMENTO DOS DESCONTOS:
+ 📊 INSS: R$ 189.04 (fontes: calc.calculoINSS.valor=undefined, c.inss.valor=189.04185, folha.inss.valor=undefined, calc.inss=undefined)
+ 📊 IRRF: R$ 2.61 (fontes: calc.calculoIRRF.valor=undefined, c.irrf.valor=2.6068612500000086, folha.irrf.valor=undefined, calc.irrf=undefined)
+ 📊 Vales: R$ 0.00 (fontes: folha.vales=0, c.vales=0, calc.vales=undefined)
+ 📊 Outros Descontos: R$ 440.38
+ 📊 Desconto Faltas: R$ 0.00
+ 📊 Desconto Repouso: R$ 0.00
+ 📊 INSS Manual: R$ 76.94
+ 📊 Contrib. Confederativa: R$ 0.00
+ 📊 Contrib. Sindical: R$ 0.00
+ 📊 Desconto IRPJ: R$ 0.00
+ 📊 Empréstimo Consignado: R$ 513.04
+ 💰 TOTAL DESCONTOS: R$ 1222.01
+ 🔍 ===== FIM DEBUG DESCONTOS =====
+ 📊 folha.html - Base YLLA KANANDA TEIXEIRA DIAS: 1805
+ 📊 folha.html - Quinzena YLLA KANANDA TEIXEIRA DIAS: 0
+ 📊 folha.html - Acréscimos YLLA KANANDA TEIXEIRA DIAS: 530.8
+ 📊 folha.html - Descontos YLLA KANANDA TEIXEIRA DIAS: 1222.00871125
+ 📊 folha.html - Líquido YLLA KANANDA TEIXEIRA DIAS: 1113.7912887500001
+ 📊 folha.html - Base JOSUÉ SOARES SANTOS: 2290
+ 📊 folha.html - Quinzena JOSUÉ SOARES SANTOS: 0
+ 📊 folha.html - Acréscimos JOSUÉ SOARES SANTOS: 45.8
+ 📊 folha.html - Descontos JOSUÉ SOARES SANTOS: 891.10871125
+ 📊 folha.html - Líquido JOSUÉ SOARES SANTOS: 1444.6912887500002
+ 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+ 📊 folha.html - Base MARLYSON GOMES PEREIRA: 1805
+ 📊 folha.html - Quinzena MARLYSON GOMES PEREIRA: 0
+ 📊 folha.html - Acréscimos MARLYSON GOMES PEREIRA: 0
+ 📊 folha.html - Descontos MARLYSON GOMES PEREIRA: 373.81985
+ 📊 folha.html - Líquido MARLYSON GOMES PEREIRA: 1431.1801500000001
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 🚫 Faltas: 22 dias x R$ 76.33 = R$ 1679.33
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 🚫 Faltas: 22 dias x R$ 76.33 = R$ 1679.33
+ 📊 folha.html - Base Daniel Oliveira: 2290
+ 📊 folha.html - Quinzena Daniel Oliveira: 0
+ 📊 folha.html - Acréscimos Daniel Oliveira: 0
+ 📊 folha.html - Descontos Daniel Oliveira: 1864.2531833333333
+ 📊 folha.html - Líquido Daniel Oliveira: 425.74681666666675
+ 🧮 TOTAIS folha.html CALCULADOS:
+ 📊 Total Bruto: 10480.00
+ 📊 Total Quinzena: 0.00
+ 📊 Total Acréscimos: 576.60
+ 📊 Total Descontos: 4536.11
+ 📊 Total Líquido: 6520.49
+ ✅ Interface dos totais atualizada
+ ✅ Totais atualizados: Object
+ ✅ Totais atualizados após renderização unificada
+ ✅ Filtros aplicados com paginação
+ 🧮 Calculando totais após aplicar filtros...
+ 🧮 INICIANDO cálculo de totais filtrados... 33 registros
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 🔍 ===== DEBUG DESCONTOS: YLLA KANANDA TEIXEIRA DIAS =====
+ 📊 Estrutura da folha: Object
+ ⚠️ FALTAS NÃO CALCULADAS: salarioBase=1805, dias=0, FolhaCalculos=true
+ 💰 DETALHAMENTO DOS DESCONTOS:
+ 📊 INSS: R$ 189.04 (fontes: calc.calculoINSS.valor=undefined, c.inss.valor=189.04185, folha.inss.valor=undefined, calc.inss=undefined)
+ 📊 IRRF: R$ 2.61 (fontes: calc.calculoIRRF.valor=undefined, c.irrf.valor=2.6068612500000086, folha.irrf.valor=undefined, calc.irrf=undefined)
+ 📊 Vales: R$ 0.00 (fontes: folha.vales=0, c.vales=0, calc.vales=undefined)
+ 📊 Outros Descontos: R$ 440.38
+ 📊 Desconto Faltas: R$ 0.00
+ 📊 Desconto Repouso: R$ 0.00
+ 📊 INSS Manual: R$ 76.94
+ 📊 Contrib. Confederativa: R$ 0.00
+ 📊 Contrib. Sindical: R$ 0.00
+ 📊 Desconto IRPJ: R$ 0.00
+ 📊 Empréstimo Consignado: R$ 513.04
+ 💰 TOTAL DESCONTOS: R$ 1222.01
+ 🔍 ===== FIM DEBUG DESCONTOS =====
+ 🔍 ===== DEBUG DESCONTOS: YLLA KANANDA TEIXEIRA DIAS =====
+ 📊 Estrutura da folha: Object
+ ⚠️ FALTAS NÃO CALCULADAS: salarioBase=1805, dias=0, FolhaCalculos=true
+ 💰 DETALHAMENTO DOS DESCONTOS:
+ 📊 INSS: R$ 189.04 (fontes: calc.calculoINSS.valor=undefined, c.inss.valor=189.04185, folha.inss.valor=undefined, calc.inss=undefined)
+ 📊 IRRF: R$ 2.61 (fontes: calc.calculoIRRF.valor=undefined, c.irrf.valor=2.6068612500000086, folha.irrf.valor=undefined, calc.irrf=undefined)
+ 📊 Vales: R$ 0.00 (fontes: folha.vales=0, c.vales=0, calc.vales=undefined)
+ 📊 Outros Descontos: R$ 440.38
+ 📊 Desconto Faltas: R$ 0.00
+ 📊 Desconto Repouso: R$ 0.00
+ 📊 INSS Manual: R$ 76.94
+ 📊 Contrib. Confederativa: R$ 0.00
+ 📊 Contrib. Sindical: R$ 0.00
+ 📊 Desconto IRPJ: R$ 0.00
+ 📊 Empréstimo Consignado: R$ 513.04
+ 💰 TOTAL DESCONTOS: R$ 1222.01
+ 🔍 ===== FIM DEBUG DESCONTOS =====
+ 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 🚫 Faltas: 22 dias x R$ 76.33 = R$ 1679.33
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 🚫 Faltas: 22 dias x R$ 76.33 = R$ 1679.33
+ 💸 IRRF: Base R$ 1778.55 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1778.55 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1770.95 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1770.95 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1778.55 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1778.55 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1281.30 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1281.30 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1778.55 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1778.55 → R$ 0.00 (0%)
+ 🔍 ===== DEBUG DESCONTOS: JOAO PAULO FARIAS RAMOS =====
+ 📊 Estrutura da folha: Object
+ 🔧 RECALCULANDO ENCARGOS: salário=1805, INSS atual=144.51885, IRRF atual=0
+ 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+ 🔧 IRRF RECALCULADO: R$ 0.00 (dependentes: 0)
+ ⚠️ FALTAS NÃO CALCULADAS: salarioBase=1805, dias=0, FolhaCalculos=true
+ 💰 DETALHAMENTO DOS DESCONTOS:
+ 📊 INSS: R$ 144.52 (fontes: calc.calculoINSS.valor=undefined, c.inss.valor=144.51885, folha.inss.valor=undefined, calc.inss=undefined)
+ 📊 IRRF: R$ 0.00 (fontes: calc.calculoIRRF.valor=undefined, c.irrf.valor=0, folha.irrf.valor=undefined, calc.irrf=undefined)
+ 📊 Vales: R$ 0.00 (fontes: folha.vales=0, c.vales=0, calc.vales=undefined)
+ 📊 Outros Descontos: R$ 0.00
+ 📊 Desconto Faltas: R$ 0.00
+ 📊 Desconto Repouso: R$ 0.00
+ 📊 INSS Manual: R$ 139.68
+ 📊 Contrib. Confederativa: R$ 45.13
+ 📊 Contrib. Sindical: R$ 0.00
+ 📊 Desconto IRPJ: R$ 0.00
+ 📊 Empréstimo Consignado: R$ 0.00
+ 💰 TOTAL DESCONTOS: R$ 329.33
+ 🔍 ===== FIM DEBUG DESCONTOS =====
+ 🔍 ===== DEBUG DESCONTOS: JOAO PAULO FARIAS RAMOS =====
+ 📊 Estrutura da folha: Object
+ 🔧 RECALCULANDO ENCARGOS: salário=1805, INSS atual=144.51885, IRRF atual=0
+ 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+ 🔧 IRRF RECALCULADO: R$ 0.00 (dependentes: 0)
+ ⚠️ FALTAS NÃO CALCULADAS: salarioBase=1805, dias=0, FolhaCalculos=true
+ 💰 DETALHAMENTO DOS DESCONTOS:
+ 📊 INSS: R$ 144.52 (fontes: calc.calculoINSS.valor=undefined, c.inss.valor=144.51885, folha.inss.valor=undefined, calc.inss=undefined)
+ 📊 IRRF: R$ 0.00 (fontes: calc.calculoIRRF.valor=undefined, c.irrf.valor=0, folha.irrf.valor=undefined, calc.irrf=undefined)
+ 📊 Vales: R$ 0.00 (fontes: folha.vales=0, c.vales=0, calc.vales=undefined)
+ 📊 Outros Descontos: R$ 0.00
+ 📊 Desconto Faltas: R$ 0.00
+ 📊 Desconto Repouso: R$ 0.00
+ 📊 INSS Manual: R$ 139.68
+ 📊 Contrib. Confederativa: R$ 45.13
+ 📊 Contrib. Sindical: R$ 0.00
+ 📊 Desconto IRPJ: R$ 0.00
+ 📊 Empréstimo Consignado: R$ 0.00
+ 💰 TOTAL DESCONTOS: R$ 329.33
+ 🔍 ===== FIM DEBUG DESCONTOS =====
+ 💸 IRRF: Base R$ 1625.67 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1625.67 → R$ 0.00 (0%)
+ 🚫 Faltas: 24 dias x R$ 76.33 = R$ 1832.00
+ 🚫 Faltas: 24 dias x R$ 76.33 = R$ 1832.00
+ 🚫 Faltas: 24 dias x R$ 76.33 = R$ 1832.00
+ 🚫 Faltas: 24 dias x R$ 76.33 = R$ 1832.00
+ 💸 IRRF: Base R$ 1656.64 → R$ 0.00 (0%)
+ 🚫 Faltas: 25 dias x R$ 60.17 = R$ 1504.17
+ 💸 IRRF: Base R$ 1656.64 → R$ 0.00 (0%)
+ 🚫 Faltas: 25 dias x R$ 60.17 = R$ 1504.17
+ 🚫 Faltas: 28 dias x R$ 76.33 = R$ 2137.33
+ 🚫 Faltas: 28 dias x R$ 76.33 = R$ 2137.33
+ 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+ 🚫 Faltas: 27 dias x R$ 60.17 = R$ 1624.50
+ 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+ 🚫 Faltas: 27 dias x R$ 60.17 = R$ 1624.50
+ 💸 IRRF: Base R$ 1776.33 → R$ 0.00 (0%)
+ 🚫 Faltas: 25 dias x R$ 64.50 = R$ 1612.50
+ 💸 IRRF: Base R$ 1776.33 → R$ 0.00 (0%)
+ 🚫 Faltas: 25 dias x R$ 64.50 = R$ 1612.50
+ 🚫 Faltas: 22 dias x R$ 104.17 = R$ 2291.67
+ 🚫 Faltas: 22 dias x R$ 104.17 = R$ 2291.67
+ 🚫 Faltas: 22 dias x R$ 114.17 = R$ 2511.67
+ 🚫 Faltas: 22 dias x R$ 114.17 = R$ 2511.67
+ 💸 IRRF: Base R$ 1656.64 → R$ 0.00 (0%)
+ 🚫 Faltas: 23 dias x R$ 60.17 = R$ 1383.83
+ 💸 IRRF: Base R$ 1656.64 → R$ 0.00 (0%)
+ 🚫 Faltas: 23 dias x R$ 60.17 = R$ 1383.83
+ 💸 IRRF: Base R$ 1656.64 → R$ 0.00 (0%)
+ 🚫 Faltas: 23 dias x R$ 60.17 = R$ 1383.83
+ 💸 IRRF: Base R$ 1656.64 → R$ 0.00 (0%)
+ 🚫 Faltas: 23 dias x R$ 60.17 = R$ 1383.83
+ 🚫 Faltas: 25 dias x R$ 76.33 = R$ 1908.33
+ 🚫 Faltas: 25 dias x R$ 76.33 = R$ 1908.33
+ 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1770.31 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1770.31 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1782.03 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1782.03 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+ 🚫 Faltas: 25 dias x R$ 60.17 = R$ 1504.17
+ 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+ 🚫 Faltas: 25 dias x R$ 60.17 = R$ 1504.17
+ 💸 IRRF: Base R$ 1782.03 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1782.03 → R$ 0.00 (0%)
+ 🧮 TOTAIS FILTRADOS CALCULADOS: Object
+ 📡 Evento totaisFiltradosAtualizados recebido - atualizando totais com base na tabela renderizada
+ 📊 Atualizando totais com 33 folhas
+ 📊 Calculando totais para 33 folhas ativas (mesmo filtro do relatório)
+ 🧮 Calculando totais folha.html exatos para cada coluna...
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 📊 folha.html - Base CAMYLA DE TARSIA REIS DOS SANTOS: 2290
+ 📊 folha.html - Quinzena CAMYLA DE TARSIA REIS DOS SANTOS: 0
+ 📊 folha.html - Acréscimos CAMYLA DE TARSIA REIS DOS SANTOS: 0
+ 📊 folha.html - Descontos CAMYLA DE TARSIA REIS DOS SANTOS: 184.91985
+ 📊 folha.html - Líquido CAMYLA DE TARSIA REIS DOS SANTOS: 2105.08015
+ 🔍 ===== DEBUG DESCONTOS: YLLA KANANDA TEIXEIRA DIAS =====
+ 📊 Estrutura da folha: Object
+ ⚠️ FALTAS NÃO CALCULADAS: salarioBase=1805, dias=0, FolhaCalculos=true
+ 💰 DETALHAMENTO DOS DESCONTOS:
+ 📊 INSS: R$ 189.04 (fontes: calc.calculoINSS.valor=undefined, c.inss.valor=189.04185, folha.inss.valor=undefined, calc.inss=undefined)
+ 📊 IRRF: R$ 2.61 (fontes: calc.calculoIRRF.valor=undefined, c.irrf.valor=2.6068612500000086, folha.irrf.valor=undefined, calc.irrf=undefined)
+ 📊 Vales: R$ 0.00 (fontes: folha.vales=0, c.vales=0, calc.vales=undefined)
+ 📊 Outros Descontos: R$ 440.38
+ 📊 Desconto Faltas: R$ 0.00
+ 📊 Desconto Repouso: R$ 0.00
+ 📊 INSS Manual: R$ 76.94
+ 📊 Contrib. Confederativa: R$ 0.00
+ 📊 Contrib. Sindical: R$ 0.00
+ 📊 Desconto IRPJ: R$ 0.00
+ 📊 Empréstimo Consignado: R$ 513.04
+ 💰 TOTAL DESCONTOS: R$ 1222.01
+ 🔍 ===== FIM DEBUG DESCONTOS =====
+ 🔍 ===== DEBUG DESCONTOS: YLLA KANANDA TEIXEIRA DIAS =====
+ 📊 Estrutura da folha: Object
+ ⚠️ FALTAS NÃO CALCULADAS: salarioBase=1805, dias=0, FolhaCalculos=true
+ 💰 DETALHAMENTO DOS DESCONTOS:
+ 📊 INSS: R$ 189.04 (fontes: calc.calculoINSS.valor=undefined, c.inss.valor=189.04185, folha.inss.valor=undefined, calc.inss=undefined)
+ 📊 IRRF: R$ 2.61 (fontes: calc.calculoIRRF.valor=undefined, c.irrf.valor=2.6068612500000086, folha.irrf.valor=undefined, calc.irrf=undefined)
+ 📊 Vales: R$ 0.00 (fontes: folha.vales=0, c.vales=0, calc.vales=undefined)
+ 📊 Outros Descontos: R$ 440.38
+ 📊 Desconto Faltas: R$ 0.00
+ 📊 Desconto Repouso: R$ 0.00
+ 📊 INSS Manual: R$ 76.94
+ 📊 Contrib. Confederativa: R$ 0.00
+ 📊 Contrib. Sindical: R$ 0.00
+ 📊 Desconto IRPJ: R$ 0.00
+ 📊 Empréstimo Consignado: R$ 513.04
+ 💰 TOTAL DESCONTOS: R$ 1222.01
+ 🔍 ===== FIM DEBUG DESCONTOS =====
+ 📊 folha.html - Base YLLA KANANDA TEIXEIRA DIAS: 1805
+ 📊 folha.html - Quinzena YLLA KANANDA TEIXEIRA DIAS: 0
+ 📊 folha.html - Acréscimos YLLA KANANDA TEIXEIRA DIAS: 530.8
+ 📊 folha.html - Descontos YLLA KANANDA TEIXEIRA DIAS: 1222.00871125
+ 📊 folha.html - Líquido YLLA KANANDA TEIXEIRA DIAS: 1113.7912887500001
+ 📊 folha.html - Base JOSUÉ SOARES SANTOS: 2290
+ 📊 folha.html - Quinzena JOSUÉ SOARES SANTOS: 0
+ 📊 folha.html - Acréscimos JOSUÉ SOARES SANTOS: 45.8
+ 📊 folha.html - Descontos JOSUÉ SOARES SANTOS: 891.10871125
+ 📊 folha.html - Líquido JOSUÉ SOARES SANTOS: 1444.6912887500002
+ 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+ 📊 folha.html - Base MARLYSON GOMES PEREIRA: 1805
+ 📊 folha.html - Quinzena MARLYSON GOMES PEREIRA: 0
+ 📊 folha.html - Acréscimos MARLYSON GOMES PEREIRA: 0
+ 📊 folha.html - Descontos MARLYSON GOMES PEREIRA: 373.81985
+ 📊 folha.html - Líquido MARLYSON GOMES PEREIRA: 1431.1801500000001
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 🚫 Faltas: 22 dias x R$ 76.33 = R$ 1679.33
+ 💸 IRRF: Base R$ 2105.08 → R$ 0.00 (0%)
+ 🚫 Faltas: 22 dias x R$ 76.33 = R$ 1679.33
+ 📊 folha.html - Base Daniel Oliveira: 2290
+ 📊 folha.html - Quinzena Daniel Oliveira: 0
+ 📊 folha.html - Acréscimos Daniel Oliveira: 0
+ 📊 folha.html - Descontos Daniel Oliveira: 1864.2531833333333
+ 📊 folha.html - Líquido Daniel Oliveira: 425.74681666666675
+ 💸 IRRF: Base R$ 1778.55 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1778.55 → R$ 0.00 (0%)
+ 📊 folha.html - Base SANDSON DE OLIVEIRA DA SILVA: 1935
+ 📊 folha.html - Quinzena SANDSON DE OLIVEIRA DA SILVA: 0
+ 📊 folha.html - Acréscimos SANDSON DE OLIVEIRA DA SILVA: 38.7
+ 📊 folha.html - Descontos SANDSON DE OLIVEIRA DA SILVA: 307.83285
+ 📊 folha.html - Líquido SANDSON DE OLIVEIRA DA SILVA: 1665.86715
+ 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+ 📊 folha.html - Base JHONATA PINTO DA SILVA: 1805
+ 📊 folha.html - Quinzena JHONATA PINTO DA SILVA: 0
+ 📊 folha.html - Acréscimos JHONATA PINTO DA SILVA: 36.1
+ 📊 folha.html - Descontos JHONATA PINTO DA SILVA: 329.32885
+ 📊 folha.html - Líquido JHONATA PINTO DA SILVA: 1511.77115
+ 💸 IRRF: Base R$ 1770.95 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1770.95 → R$ 0.00 (0%)
+ 📊 folha.html - Base DAVID BENTO DE MEDEIROS: 1935
+ 📊 folha.html - Quinzena DAVID BENTO DE MEDEIROS: 0
+ 📊 folha.html - Acréscimos DAVID BENTO DE MEDEIROS: 123.12
+ 📊 folha.html - Descontos DAVID BENTO DE MEDEIROS: 315.43065
+ 📊 folha.html - Líquido DAVID BENTO DE MEDEIROS: 1742.6893499999999
+ 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+ 📊 folha.html - Base VENILSON CORDEIRO DA COSTA: 1805
+ 📊 folha.html - Quinzena VENILSON CORDEIRO DA COSTA: 0
+ 📊 folha.html - Acréscimos VENILSON CORDEIRO DA COSTA: 36.1
+ 📊 folha.html - Descontos VENILSON CORDEIRO DA COSTA: 284.19885
+ 📊 folha.html - Líquido VENILSON CORDEIRO DA COSTA: 1556.90115
+ 💸 IRRF: Base R$ 1778.55 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1778.55 → R$ 0.00 (0%)
+ 📊 folha.html - Base JAILSON FERREIRA DE OLIVEIRA: 1935
+ 📊 folha.html - Quinzena JAILSON FERREIRA DE OLIVEIRA: 0
+ 📊 folha.html - Acréscimos JAILSON FERREIRA DE OLIVEIRA: 38.7
+ 📊 folha.html - Descontos JAILSON FERREIRA DE OLIVEIRA: 307.83285
+ 📊 folha.html - Líquido JAILSON FERREIRA DE OLIVEIRA: 1665.86715
+ 💸 IRRF: Base R$ 1281.30 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1281.30 → R$ 0.00 (0%)
+ 📊 folha.html - Base RICARDO CORREA TRINDADE: 1805
+ 📊 folha.html - Quinzena RICARDO CORREA TRINDADE: 0
+ 📊 folha.html - Acréscimos RICARDO CORREA TRINDADE: 166.1
+ 📊 folha.html - Descontos RICARDO CORREA TRINDADE: 284.19885
+ 📊 folha.html - Líquido RICARDO CORREA TRINDADE: 1686.90115
+ 💸 IRRF: Base R$ 1778.55 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1778.55 → R$ 0.00 (0%)
+ 📊 folha.html - Base THAYSON TRAVASSOS DE MOURA: 1935
+ 📊 folha.html - Quinzena THAYSON TRAVASSOS DE MOURA: 0
+ 📊 folha.html - Acréscimos THAYSON TRAVASSOS DE MOURA: 38.7
+ 📊 folha.html - Descontos THAYSON TRAVASSOS DE MOURA: 537.83285
+ 📊 folha.html - Líquido THAYSON TRAVASSOS DE MOURA: 1435.86715
+ 🔍 ===== DEBUG DESCONTOS: JOAO PAULO FARIAS RAMOS =====
+ 📊 Estrutura da folha: Object
+ 🔧 RECALCULANDO ENCARGOS: salário=1805, INSS atual=144.51885, IRRF atual=0
+ 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+ 🔧 IRRF RECALCULADO: R$ 0.00 (dependentes: 0)
+ ⚠️ FALTAS NÃO CALCULADAS: salarioBase=1805, dias=0, FolhaCalculos=true
+ 💰 DETALHAMENTO DOS DESCONTOS:
+ 📊 INSS: R$ 144.52 (fontes: calc.calculoINSS.valor=undefined, c.inss.valor=144.51885, folha.inss.valor=undefined, calc.inss=undefined)
+ 📊 IRRF: R$ 0.00 (fontes: calc.calculoIRRF.valor=undefined, c.irrf.valor=0, folha.irrf.valor=undefined, calc.irrf=undefined)
+ 📊 Vales: R$ 0.00 (fontes: folha.vales=0, c.vales=0, calc.vales=undefined)
+ 📊 Outros Descontos: R$ 0.00
+ 📊 Desconto Faltas: R$ 0.00
+ 📊 Desconto Repouso: R$ 0.00
+ 📊 INSS Manual: R$ 139.68
+ 📊 Contrib. Confederativa: R$ 45.13
+ 📊 Contrib. Sindical: R$ 0.00
+ 📊 Desconto IRPJ: R$ 0.00
+ 📊 Empréstimo Consignado: R$ 0.00
+ 💰 TOTAL DESCONTOS: R$ 329.33
+ 🔍 ===== FIM DEBUG DESCONTOS =====
+ 🔍 ===== DEBUG DESCONTOS: JOAO PAULO FARIAS RAMOS =====
+ 📊 Estrutura da folha: Object
+ 🔧 RECALCULANDO ENCARGOS: salário=1805, INSS atual=144.51885, IRRF atual=0
+ 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+ 🔧 IRRF RECALCULADO: R$ 0.00 (dependentes: 0)
+ ⚠️ FALTAS NÃO CALCULADAS: salarioBase=1805, dias=0, FolhaCalculos=true
+ 💰 DETALHAMENTO DOS DESCONTOS:
+ 📊 INSS: R$ 144.52 (fontes: calc.calculoINSS.valor=undefined, c.inss.valor=144.51885, folha.inss.valor=undefined, calc.inss=undefined)
+ 📊 IRRF: R$ 0.00 (fontes: calc.calculoIRRF.valor=undefined, c.irrf.valor=0, folha.irrf.valor=undefined, calc.irrf=undefined)
+ 📊 Vales: R$ 0.00 (fontes: folha.vales=0, c.vales=0, calc.vales=undefined)
+ 📊 Outros Descontos: R$ 0.00
+ 📊 Desconto Faltas: R$ 0.00
+ 📊 Desconto Repouso: R$ 0.00
+ 📊 INSS Manual: R$ 139.68
+ 📊 Contrib. Confederativa: R$ 45.13
+ 📊 Contrib. Sindical: R$ 0.00
+ 📊 Desconto IRPJ: R$ 0.00
+ 📊 Empréstimo Consignado: R$ 0.00
+ 💰 TOTAL DESCONTOS: R$ 329.33
+ 🔍 ===== FIM DEBUG DESCONTOS =====
+ 📊 folha.html - Base JOAO PAULO FARIAS RAMOS: 1805
+ 📊 folha.html - Quinzena JOAO PAULO FARIAS RAMOS: 0
+ 📊 folha.html - Acréscimos JOAO PAULO FARIAS RAMOS: 36.1
+ 📊 folha.html - Descontos JOAO PAULO FARIAS RAMOS: 329.32885
+ 📊 folha.html - Líquido JOAO PAULO FARIAS RAMOS: 1511.77115
+ 💸 IRRF: Base R$ 1625.67 → R$ 0.00 (0%)
+ 💸 IRRF: Base R$ 1625.67 → R$ 0.00 (0%)
+ 📊 folha.html - Base EDSON JUNIOR ROCHA DA SILVA: 1805
+ 📊 folha.html - Quinzena EDSON JUNIOR ROCHA DA SILVA: 0
+ 📊 folha.html - Acréscimos EDSON JUNIOR ROCHA DA SILVA: 422.90000000000003
+ 📊 folha.html - Descontos EDSON JUNIOR ROCHA DA SILVA: 364.14085
+ 📊 folha.html - Líquido EDSON JUNIOR ROCHA DA SILVA: 1863.75915
+ 📊 folha.html - Base JUNIOR MONTEIRO GONÇALVES: 2290
+ 📊 folha.html - Quinzena JUNIOR MONTEIRO GONÇALVES: 0
+ 📊 folha.html - Acréscimos JUNIOR MONTEIRO GONÇALVES: 45.8
+ 📊 folha.html - Descontos JUNIOR MONTEIRO GONÇALVES: 524.9787112500001
+ 📊 folha.html - Líquido JUNIOR MONTEIRO GONÇALVES: 1810.8212887500001
+ 🚫 Faltas: 24 dias x R$ 76.33 = R$ 1832.00
+ 🚫 Faltas: 24 dias x R$ 76.33 = R$ 1832.00
+ 📊 folha.html - Base ANTONIO ISMAEL: 2290
+ 📊 folha.html - Quinzena ANTONIO ISMAEL: 0
+ 📊 folha.html - Acréscimos ANTONIO ISMAEL: 74.25
+ 📊 folha.html - Descontos ANTONIO ISMAEL: 2079.85092375
+ 📊 folha.html - Líquido ANTONIO ISMAEL: 284.3990762499998
+ 🚫 Faltas: 24 dias x R$ 76.33 = R$ 1832.00
+ 🚫 Faltas: 24 dias x R$ 76.33 = R$ 1832.00
+ 📊 folha.html - Base Jean Miranda: 2290
+ 📊 folha.html - Quinzena Jean Miranda: 0
+ 📊 folha.html - Acréscimos Jean Miranda: 74.94545454545454
+ 📊 folha.html - Descontos Jean Miranda: 2028.2609794318182
+ 📊 folha.html - Líquido Jean Miranda: 336.6844751136364
+ 💸 IRRF: Base R$ 1656.64 → R$ 0.00 (0%)
+ 🚫 Faltas: 25 dias x R$ 60.17 = R$ 1504.17
+ 💸 IRRF: Base R$ 1656.64 → R$ 0.00 (0%)
+ 🚫 Faltas: 25 dias x R$ 60.17 = R$ 1504.17
+ 📊 folha.html - Base Manoel Rayan: 1805
+ 📊 folha.html - Quinzena Manoel Rayan: 0
+ 📊 folha.html - Acréscimos Manoel Rayan: 78.76363636363638
+ 📊 folha.html - Descontos Manoel Rayan: 1652.5252439393937
+ 📊 folha.html - Líquido Manoel Rayan: 231.23839242424265
+ 🚫 Faltas: 28 dias x R$ 76.33 = R$ 2137.33
+ 🚫 Faltas: 28 dias x R$ 76.33 = R$ 2137.33
+ 📊 folha.html - Base Cristiano: 2290
+ 📊 folha.html - Quinzena Cristiano: 0
+ 📊 folha.html - Acréscimos Cristiano: 49.963636363636354
+ 📊 folha.html - Descontos Cristiano: 2329.6409400378784
+ 📊 folha.html - Líquido Cristiano: 10.322696325757988
+ 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+ 🚫 Faltas: 27 dias x R$ 60.17 = R$ 1624.50
+ 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+ 🚫 Faltas: 27 dias x R$ 60.17 = R$ 1624.50
+ 📊 folha.html - Base LUCAS  OLIVEIRA: 1805
+ 📊 folha.html - Quinzena LUCAS  OLIVEIRA: 0
+ 📊 folha.html - Acréscimos LUCAS  OLIVEIRA: 0
+ 📊 folha.html - Descontos LUCAS  OLIVEIRA: 1800.76985
+ 📊 folha.html - Líquido LUCAS  OLIVEIRA: 4.230150000000094
+ 💸 IRRF: Base R$ 1776.33 → R$ 0.00 (0%)
+ 🚫 Faltas: 25 dias x R$ 64.50 = R$ 1612.50
+ 💸 IRRF: Base R$ 1776.33 → R$ 0.00 (0%)
+ 🚫 Faltas: 25 dias x R$ 64.50 = R$ 1612.50
+ 📊 folha.html - Base Paulo Henrique: 1935
+ 📊 folha.html - Quinzena Paulo Henrique: 0
+ 📊 folha.html - Acréscimos Paulo Henrique: 63.32727272727273
+ 📊 folha.html - Descontos Paulo Henrique: 1771.1693045454545
+ 📊 folha.html - Líquido Paulo Henrique: 227.1579681818182
+ 🚫 Faltas: 22 dias x R$ 104.17 = R$ 2291.67
+ 🚫 Faltas: 22 dias x R$ 104.17 = R$ 2291.67
+ 📊 folha.html - Base FABRICIO BORGES: 3125
+ 📊 folha.html - Quinzena FABRICIO BORGES: 0
+ 📊 folha.html - Acréscimos FABRICIO BORGES: 136.36363636363637
+ 📊 folha.html - Descontos FABRICIO BORGES: 2657.1265805303033
+ 📊 folha.html - Líquido FABRICIO BORGES: 604.2370558333332
+ 🚫 Faltas: 22 dias x R$ 114.17 = R$ 2511.67
+ 🚫 Faltas: 22 dias x R$ 114.17 = R$ 2511.67
+ 📊 folha.html - Base Alzemir Evangelista de Oliveira: 3425
+ 📊 folha.html - Quinzena Alzemir Evangelista de Oliveira: 0
+ 📊 folha.html - Acréscimos Alzemir Evangelista de Oliveira: 149.45454545454547
+ 📊 folha.html - Descontos Alzemir Evangelista de Oliveira: 2956.0254896212127
+ 📊 folha.html - Líquido Alzemir Evangelista de Oliveira: 618.4290558333328
+ 💸 IRRF: Base R$ 1656.64 → R$ 0.00 (0%)
+ 🚫 Faltas: 23 dias x R$ 60.17 = R$ 1383.83
+ 💸 IRRF: Base R$ 1656.64 → R$ 0.00 (0%)
+ 🚫 Faltas: 23 dias x R$ 60.17 = R$ 1383.83
+ 📊 folha.html - Base Manoel da Silva: 1805
+ 📊 folha.html - Quinzena Manoel da Silva: 0
+ 📊 folha.html - Acréscimos Manoel da Silva: 78.76363636363638
+ 📊 folha.html - Descontos Manoel da Silva: 1532.1919106060604
+ 📊 folha.html - Líquido Manoel da Silva: 351.5717257575759
+ 💸 IRRF: Base R$ 1656.64 → R$ 0.00 (0%)
+ 🚫 Faltas: 23 dias x R$ 60.17 = R$ 1383.83
+ 💸 IRRF: Base R$ 1656.64 → R$ 0.00 (0%)
+ 🚫 Faltas: 23 dias x R$ 60.17 = R$ 1383.83
+ 📊 folha.html - Base Emanoel Almeida: 1805
+ 📊 folha.html - Quinzena Emanoel Almeida: 0
+ 📊 folha.html - Acréscimos Emanoel Almeida: 78.76363636363638
+ 📊 folha.html - Descontos Emanoel Almeida: 1532.1919106060604
+ 📊 folha.html - Líquido Emanoel Almeida: 351.5717257575759
+ 🚫 Faltas: 25 dias x R$ 76.33 = R$ 1908.33
+ 🚫 Faltas: 25 dias x R$ 76.33 = R$ 1908.33
+ 📊 folha.html - Base Izaias cordeiro: 2290
+ 📊 folha.html - Quinzena Izaias cordeiro: 0
+ 📊 folha.html - Acréscimos Izaias cordeiro: 99.92727272727271
+folha-main.js:747 📊 folha.html - Descontos Izaias cordeiro: 2108.547685492424
+folha-main.js:748 📊 folha.html - Líquido Izaias cordeiro: 281.3795872348487
+folha-calculos.js:245 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+folha-calculos.js:245 💸 IRRF: Base R$ 1660.48 → R$ 0.00 (0%)
+folha-main.js:744 📊 folha.html - Base JONISY DE JESUS RIBEIRO DE LIMA: 1805
+folha-main.js:745 📊 folha.html - Quinzena JONISY DE JESUS RIBEIRO DE LIMA: 0
+folha-main.js:746 📊 folha.html - Acréscimos JONISY DE JESUS RIBEIRO DE LIMA: 36.1
+folha-main.js:747 📊 folha.html - Descontos JONISY DE JESUS RIBEIRO DE LIMA: 610.44885
+folha-main.js:748 📊 folha.html - Líquido JONISY DE JESUS RIBEIRO DE LIMA: 1230.65115
+folha-main.js:744 📊 folha.html - Base FABIO DA SILVA: 3125
+folha-main.js:745 📊 folha.html - Quinzena FABIO DA SILVA: 0
+folha-main.js:746 📊 folha.html - Acréscimos FABIO DA SILVA: 472.5
+folha-main.js:747 📊 folha.html - Descontos FABIO DA SILVA: 796.6962775
+folha-main.js:748 📊 folha.html - Líquido FABIO DA SILVA: 2800.8037225
+folha-calculos.js:245 💸 IRRF: Base R$ 1770.31 → R$ 0.00 (0%)
+folha-calculos.js:245 💸 IRRF: Base R$ 1770.31 → R$ 0.00 (0%)
+folha-main.js:744 📊 folha.html - Base JOSÉ ALBERTO LIMA DOS SANTOS: 1935
+folha-main.js:745 📊 folha.html - Quinzena JOSÉ ALBERTO LIMA DOS SANTOS: 0
+folha-main.js:746 📊 folha.html - Acréscimos JOSÉ ALBERTO LIMA DOS SANTOS: 130.1727272727273
+folha-main.js:747 📊 folha.html - Descontos JOSÉ ALBERTO LIMA DOS SANTOS: 316.0653954545454
+folha-main.js:748 📊 folha.html - Líquido JOSÉ ALBERTO LIMA DOS SANTOS: 1749.1073318181816
+folha-calculos.js:245 💸 IRRF: Base R$ 1782.03 → R$ 0.00 (0%)
+folha-calculos.js:245 💸 IRRF: Base R$ 1782.03 → R$ 0.00 (0%)
+folha-main.js:744 📊 folha.html - Base JOSÉ DESIDERIO SAMPAIO GOMES: 1935
+folha-main.js:745 📊 folha.html - Quinzena JOSÉ DESIDERIO SAMPAIO GOMES: 0
+folha-main.js:746 📊 folha.html - Acréscimos JOSÉ DESIDERIO SAMPAIO GOMES: 0
+folha-main.js:747 📊 folha.html - Descontos JOSÉ DESIDERIO SAMPAIO GOMES: 152.96985
+folha-main.js:748 📊 folha.html - Líquido JOSÉ DESIDERIO SAMPAIO GOMES: 1782.03015
+folha-main.js:744 📊 folha.html - Base SINGLESON NASCIMENTO: 3125
+folha-main.js:745 📊 folha.html - Quinzena SINGLESON NASCIMENTO: 0
+folha-main.js:746 📊 folha.html - Acréscimos SINGLESON NASCIMENTO: 375
+folha-main.js:747 📊 folha.html - Descontos SINGLESON NASCIMENTO: 525.5962775
+folha-main.js:748 📊 folha.html - Líquido SINGLESON NASCIMENTO: 2974.4037225
+folha-calculos.js:245 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+folha-calculos.js:271 🚫 Faltas: 25 dias x R$ 60.17 = R$ 1504.17
+folha-calculos.js:245 💸 IRRF: Base R$ 1663.73 → R$ 0.00 (0%)
+folha-calculos.js:271 🚫 Faltas: 25 dias x R$ 60.17 = R$ 1504.17
+folha-main.js:744 📊 folha.html - Base Mario Edir: 1805
+folha-main.js:745 📊 folha.html - Quinzena Mario Edir: 0
+folha-main.js:746 📊 folha.html - Acréscimos Mario Edir: 0
+folha-main.js:747 📊 folha.html - Descontos Mario Edir: 1645.4365166666664
+folha-main.js:748 📊 folha.html - Líquido Mario Edir: 159.56348333333358
+folha-calculos.js:245 💸 IRRF: Base R$ 1782.03 → R$ 0.00 (0%)
+folha-calculos.js:245 💸 IRRF: Base R$ 1782.03 → R$ 0.00 (0%)
+folha-main.js:744 📊 folha.html - Base DALGLESON LOPES SILVA: 1935
+folha-main.js:745 📊 folha.html - Quinzena DALGLESON LOPES SILVA: 0
+folha-main.js:746 📊 folha.html - Acréscimos DALGLESON LOPES SILVA: 0
+folha-main.js:747 📊 folha.html - Descontos DALGLESON LOPES SILVA: 417.93985000000004
+folha-main.js:748 📊 folha.html - Líquido DALGLESON LOPES SILVA: 1517.06015
+folha-main.js:759 🧮 TOTAIS folha.html CALCULADOS:
+folha-main.js:760 📊 Total Bruto: 70065.00
+folha-main.js:761 📊 Total Quinzena: 0.00
+folha-main.js:762 📊 Total Acréscimos: 3457.22
+folha-main.js:763 📊 Total Descontos: 35034.67
+folha-main.js:764 📊 Total Líquido: 38487.55
+folha-main.js:805 ✅ Interface dos totais atualizada
+folha-main.js:769 ✅ Totais atualizados: Objectacrescimos: 3457.215454545455bruto: 70065descontos: 35034.66830276515liquido: 38487.5471517803quinzena: 0[[Prototype]]: Object
+folha-filtros.js:608 🔍 Filtros aplicados: 33/145 registros, totais atualizados

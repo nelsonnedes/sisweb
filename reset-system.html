@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset de Sistema - Produção</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; padding: 40px; background: #f0f2f5; text-align: center; }
+        .card { background: white; max-width: 600px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1 { color: #e74c3c; }
+        p { color: #555; line-height: 1.6; }
+        .btn { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 20px; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        #status { margin-top: 20px; font-weight: bold; }
+        .hidden { display: none; }
+    </style>
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <div class="card">
+        <h1>⚠️ Reset Total do Sistema</h1>
+        <p>Esta ferramenta irá apagar <strong>TODOS</strong> os dados do banco de dados (Realtime Database).</p>
+        <p>Isso é irreversível. Use apenas para iniciar o modo de produção do zero.</p>
+        
+        <div id="loginSection">
+            <p>Faça login para continuar (Necessário ser Admin):</p>
+            <input type="email" id="email" placeholder="Email" style="padding: 10px; width: 80%; margin-bottom: 10px;">
+            <input type="password" id="password" placeholder="Senha" style="padding: 10px; width: 80%;">
+            <br>
+            <button class="btn" style="background:#3498db; color:white;" onclick="login()">Login</button>
+        </div>
+
+        <div id="actionSection" class="hidden">
+            <p style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 4px;">
+                Logado como: <span id="userEmail"></span>
+            </p>
+            <button class="btn btn-danger" onclick="wipeData()">🗑️ APAGAR TUDO E INICIAR PRODUÇÃO</button>
+        </div>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
+            authDomain: "sisweb-7ce82.firebaseapp.com",
+            databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "sisweb-7ce82",
+            storageBucket: "sisweb-7ce82.firebasestorage.app",
+            messagingSenderId: "240003261222",
+            appId: "1:240003261222:web:1aeaf919ddc7e5c691d7e7"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        function login() {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            auth.signInWithEmailAndPassword(email, pass)
+                .then(userCred => {
+                    document.getElementById('loginSection').classList.add('hidden');
+                    document.getElementById('actionSection').classList.remove('hidden');
+                    document.getElementById('userEmail').innerText = userCred.user.email;
+                    document.getElementById('status').innerText = "";
+                })
+                .catch(err => {
+                    document.getElementById('status').innerText = "Erro: " + err.message;
+                    document.getElementById('status').style.color = "red";
+                });
+        }
+
+        function wipeData() {
+            if (!confirm("TEM CERTEZA ABSOLUTA? ISSO APAGARÁ TUDO!")) return;
+            if (!confirm("ÚLTIMA CHANCE: CONFIRMAR LIMPEZA TOTAL?")) return;
+
+            document.getElementById('status').innerText = "Apagando...";
+            
+            // Tentar apagar a raiz. Note que as regras de segurança podem impedir isso
+            // se o usuário não for admin no Firebase Console ou se as regras não permitirem write na raiz.
+            // Se falhar, tentaremos apagar collections conhecidas.
+            
+            db.ref('/').remove()
+                .then(() => {
+                    document.getElementById('status').innerText = "✅ SUCESSO! Banco limpo.";
+                    document.getElementById('status').style.color = "green";
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('status').innerText = "Erro ao apagar raiz: " + err.message + ". Tentando apagar por empresa...";
+                    
+                    // Fallback: Tentar apagar companies/{id}
+                    auth.currentUser.getIdTokenResult().then(token => {
+                        const companyId = token.claims.companyId;
+                        if (companyId) {
+                            db.ref(`companies/${companyId}`).remove()
+                                .then(() => {
+                                    document.getElementById('status').innerText = "✅ SUCESSO! Dados da sua empresa apagados.";
+                                    document.getElementById('status').style.color = "green";
+                                })
+                                .catch(e => {
+                                     document.getElementById('status').innerText = "❌ FALHA FINAL: " + e.message;
+                                });
+                        } else {
+                            document.getElementById('status').innerText = "❌ Falha: Usuário sem companyId e sem permissão de root.";
+                        }
+                    });
+                });
+        }
+    </script>
+    <script src="global-footer.js"></script>
+</body>
+</html>

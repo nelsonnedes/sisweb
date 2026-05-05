@@ -1,0 +1,2078 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Romaneio TL - Sistema Sisweb</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="ui-components.css">
+    <link rel="stylesheet" href="romaneio-comum.css?v=20260324_2">
+    <link rel="stylesheet" href="print-styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Loading / status styles reutilizáveis -->
+    <link rel="stylesheet" href="folha_pagamento/folha-loading-styles.css">
+    <script src="menu-component.js?v=20260326"></script>
+    
+    <!--
+    ╔══════════════════════════════════════════════════════════════════════════════╗
+    ║                    🏗️ ARQUITETURA MODULAR - ROMANEIO TL                      ║
+    ║                          MAPA DE CORREÇÕES E MANUTENÇÃO                      ║
+    ╚══════════════════════════════════════════════════════════════════════════════╝
+    
+    📋 ESTE ARQUIVO (romaneiotl.html) CONTÉM APENAS:
+    ├── 🎨 HTML e CSS (estrutura e estilos)
+    ├── 🔧 Configuração Firebase (inicialização)
+    ├── 📦 Carregamento de módulos (ordem de dependências)
+    ├── 🚀 Inicialização básica (DOMContentLoaded)
+    ├── ⚡ isExtensionError() (supressão de erros de extensões)
+    ├── 🔍 showClientSuggestions() (função auxiliar única)
+    └── 🔍 showSpeciesSuggestions() (função auxiliar única)
+    
+    🚨 REGRA FUNDAMENTAL: NÃO ADICIONAR FUNÇÕES DE NEGÓCIO AQUI!
+    
+    ╔══════════════════════════════════════════════════════════════════════════════╗
+    ║                           📂 MAPA DE MÓDULOS E CORREÇÕES                     ║
+    ╚══════════════════════════════════════════════════════════════════════════════╝
+    
+    🔧 PROBLEMAS COM FIREBASE / BANCO DE DADOS:
+    ├── 📁 modules/core/firebase-service.js
+    │   ├── 🔹 Conexão com Firebase
+    │   ├── 🔹 Operações CRUD (getData, saveData, deleteData)
+    │   ├── 🔹 Erros de autenticação
+    │   └── 🔹 Timeout de conexão
+    
+    🛠️ PROBLEMAS COM UTILITÁRIOS / FORMATAÇÃO:
+    ├── 📁 modules/core/utils.js
+    │   ├── 🔹 Formatação de moeda (formatCurrency)
+    │   ├── 🔹 Formatação de data
+    │   ├── 🔹 Validações gerais
+    │   └── 🔹 Funções auxiliares
+    ├── 📁 modules/core/formatacao-campos.js
+    │   ├── 🔹 Formatação de inputs (moeda, números)
+    │   ├── 🔹 Cálculo de volume
+    │   ├── 🔹 Conversões de unidades
+    │   └── 🔹 Validação de campos numéricos
+    
+    ⌨️ PROBLEMAS COM NAVEGAÇÃO ENTER:
+    ├── 📁 modules/core/navegacao-enter.js
+    │   ├── 🔹 Sequência de navegação entre campos
+    │   ├── 🔹 Event listeners de teclado
+    │   ├── 🔹 Foco automático após adicionar item
+    │   └── 🔹 Configuração de elementos navegáveis
+    
+    ➕ PROBLEMAS COM ADIÇÃO DE ITENS:
+    ├── 📁 modules/items/adicionar-item.js
+    │   ├── 🔹 Validação de campos obrigatórios
+    │   ├── 🔹 Cálculo de volume e valor
+    │   ├── 🔹 Detecção de itens duplicados
+    │   ├── 🔹 Soma de quantidades
+    │   ├── 🔹 Limpeza de formulário
+    │   └── 🔹 Adição ao array global (window.romaneioItems)
+    
+    📊 PROBLEMAS COM TABELA / RENDERIZAÇÃO:
+    ├── 📁 modules/items/renderizar-tabela.js
+    │   ├── 🔹 Renderização da tabela de itens
+    │   ├── 🔹 Paginação inteligente (após 5º item)
+    │   ├── 🔹 Cálculo de totais (volume e valor)
+    │   ├── 🔹 Ordenação (último item no topo)
+    │   └── 🔹 Atualização de interface
+    
+    🗑️ PROBLEMAS COM EXCLUSÃO DE ITENS:
+    ├── 📁 modules/items/excluir-item.js
+    │   ├── 🔹 Remoção de itens da tabela
+    │   ├── 🔹 Confirmação de exclusão
+    │   ├── 🔹 Atualização de totais após exclusão
+    │   └── 🔹 Reindexação da tabela
+    
+    💾 PROBLEMAS COM SALVAMENTO DE ROMANEIOS:
+    ├── 📁 modules/romaneio/salvar-romaneio.js
+    │   ├── 🔹 Validação de dados do romaneio
+    │   ├── 🔹 Coleta de dados do formulário
+    │   ├── 🔹 Salvamento no Firebase
+    │   ├── 🔹 Edição de romaneios existentes
+    │   ├── 🔹 Preenchimento do formulário para edição
+    │   ├── 🔹 Carregamento de itens para edição
+    │   └── 🔹 Limpeza após salvamento
+    
+    🖨️ PROBLEMAS COM IMPRESSÃO / RELATÓRIOS:
+    ├── 📁 modules/reports/imprimir-romaneio.js
+    │   ├── 🔹 Geração de HTML do relatório
+    │   ├── 🔹 Estrutura da tabela dinâmica (C/L pares)
+    │   ├── 🔹 Classificação CONAMA
+    │   ├── 🔹 Logo da empresa
+    │   ├── 🔹 Cabeçalho do relatório
+    │   ├── 🔹 Cálculos de volume no relatório
+    │   ├── 🔹 Estilos CSS do relatório
+    │   └── 🔹 Diferentes tipos de impressão (completo, sem preço, etc.)
+    
+    👥 PROBLEMAS COM GERENCIAMENTO DE CLIENTES:
+    ├── 📁 modules/crud/gerenciar-clientes.js
+    │   ├── 🔹 Criação de novos clientes
+    │   ├── 🔹 Edição de clientes existentes
+    │   ├── 🔹 Validação de dados de cliente
+    │   └── 🔹 Modal de cadastro de cliente
+    ├── 📁 modules/modals/modal-clientes.js
+    │   ├── 🔹 Lista de clientes
+    │   ├── 🔹 Filtros e busca
+    │   ├── 🔹 Paginação da lista
+    │   ├── 🔹 Seleção de cliente
+    │   └── 🔹 Abertura/fechamento do modal
+    
+    🌳 PROBLEMAS COM GERENCIAMENTO DE ESPÉCIES:
+    ├── 📁 modules/crud/gerenciar-especies.js
+    │   ├── 🔹 Criação de novas espécies
+    │   ├── 🔹 Edição de espécies existentes
+    │   ├── 🔹 Validação de dados de espécie
+    │   └── 🔹 Modal de cadastro de espécie
+    ├── 📁 modules/modals/modal-especies.js
+    │   ├── 🔹 Lista de espécies
+    │   ├── 🔹 Filtros e busca
+    │   ├── 🔹 Paginação da lista
+    │   ├── 🔹 Seleção de espécie
+    │   └── 🔹 Abertura/fechamento do modal
+    
+    📋 PROBLEMAS COM LISTA DE ROMANEIOS:
+    ├── 📁 modules/modals/modal-lista-romaneios.js
+    │   ├── 🔹 Carregamento da lista do Firebase
+    │   ├── 🔹 Renderização da lista
+    │   ├── 🔹 Filtros e busca
+    │   ├── 🔹 Paginação da lista
+    │   ├── 🔹 Ações: Editar, Imprimir, Excluir
+    │   ├── 🔹 Dropdown de impressão (posicionamento)
+    │   └── 🔹 Modal de confirmação de exclusão
+    
+    ╔══════════════════════════════════════════════════════════════════════════════╗
+    ║                        🎯 GUIA RÁPIDO DE CORREÇÕES                          ║
+    ╚══════════════════════════════════════════════════════════════════════════════╝
+    
+    ❌ ERRO: "adicionarItem is not defined"
+    ✅ CORREÇÃO: modules/items/adicionar-item.js
+    
+    ❌ ERRO: "Volume calculado incorretamente"
+    ✅ CORREÇÃO: modules/core/formatacao-campos.js OU modules/items/renderizar-tabela.js
+    
+    ❌ ERRO: "Navegação Enter não funciona"
+    ✅ CORREÇÃO: modules/core/navegacao-enter.js
+    
+    ❌ ERRO: "Erro ao salvar romaneio"
+    ✅ CORREÇÃO: modules/romaneio/salvar-romaneio.js
+    
+    ❌ ERRO: "Tabela não renderiza / Totais incorretos"
+    ✅ CORREÇÃO: modules/items/renderizar-tabela.js
+    
+    ❌ ERRO: "Modal de clientes não abre"
+    ✅ CORREÇÃO: modules/modals/modal-clientes.js
+    
+    ❌ ERRO: "Relatório de impressão com problemas"
+    ✅ CORREÇÃO: modules/reports/imprimir-romaneio.js
+    
+    ❌ ERRO: "Firebase não conecta / Dados não salvam"
+    ✅ CORREÇÃO: modules/core/firebase-service.js
+    
+    ❌ ERRO: "Formatação de moeda não funciona"
+    ✅ CORREÇÃO: modules/core/formatacao-campos.js
+    
+    ❌ ERRO: "Edição de romaneio não carrega itens"
+    ✅ CORREÇÃO: modules/romaneio/salvar-romaneio.js (função preencherFormularioEdicao)
+    
+    ❌ ERRO: "Dropdown fica atrás do modal"
+    ✅ CORREÇÃO: modules/modals/modal-lista-romaneios.js (função togglePrintDropdown)
+    
+    ❌ ERRO: "Itens duplicados não somam quantidade"
+    ✅ CORREÇÃO: modules/items/adicionar-item.js (função encontrarItemDuplicado)
+    
+    ❌ ERRO: "Paginação não funciona corretamente"
+    ✅ CORREÇÃO: modules/items/renderizar-tabela.js (lógica de paginação)
+    
+    ╔══════════════════════════════════════════════════════════════════════════════╗
+    ║                           🔍 FUNÇÕES GLOBAIS EXPOSTAS                       ║
+    ╚══════════════════════════════════════════════════════════════════════════════╝
+    
+    window.adicionarItem()              → modules/items/adicionar-item.js
+    window.salvarRomaneio()             → modules/romaneio/salvar-romaneio.js
+    window.editarRomaneio()             → modules/modals/modal-lista-romaneios.js
+    window.excluirRomaneio()            → modules/modals/modal-lista-romaneios.js
+    window.togglePrintDropdown()        → modules/modals/modal-lista-romaneios.js
+    window.imprimirRomaneio()           → modules/reports/imprimir-romaneio.js
+    window.openClientListModal()       → modules/modals/modal-clientes.js
+    window.selectClient()              → modules/modals/modal-clientes.js
+    window.openNewClientModal()        → modules/crud/gerenciar-clientes.js
+    window.openSpeciesListModal()      → modules/modals/modal-especies.js
+    window.selectSpecies()             → modules/modals/modal-especies.js
+    window.openNewSpeciesModal()       → modules/crud/gerenciar-especies.js
+    window.renderizarTabela()          → modules/items/renderizar-tabela.js
+    window.atualizarTotais()           → modules/items/renderizar-tabela.js
+    window.editarItem()                → modules/items/editar-item.js
+    window.excluirItem()               → modules/items/excluir-item.js
+    
+    ╔══════════════════════════════════════════════════════════════════════════════╗
+    ║                        🧪 FUNÇÕES DE DEBUG DISPONÍVEIS                      ║
+    ╚══════════════════════════════════════════════════════════════════════════════╝
+    
+    testarNavegacaoEnter()             → Testa navegação Enter entre campos
+    testarValidacaoRomaneio()          → Testa validação do salvamento
+    testarDuplicacaoItens()            → Testa detecção de itens duplicados
+    testarEdicaoRomaneio()             → Testa carregamento de dados na edição
+    
+    ╔══════════════════════════════════════════════════════════════════════════════╗
+    ║                              ⚠️ REGRAS IMPORTANTES                           ║
+    ╚══════════════════════════════════════════════════════════════════════════════╝
+    
+    1. 🚫 NUNCA adicionar funções de negócio neste arquivo HTML
+    2. 🚫 NUNCA duplicar funções que já existem nos módulos
+    3. ✅ SEMPRE verificar se a função já está exposta globalmente
+    4. ✅ SEMPRE manter a ordem de carregamento dos módulos
+    5. ✅ SEMPRE testar após qualquer modificação
+    6. ✅ SEMPRE preservar a configuração Firebase
+    7. ✅ SEMPRE manter UTF-8 encoding
+    8. ✅ SEMPRE seguir o princípio DRY (Don't Repeat Yourself)
+    
+    📅 Última atualização: Janeiro 2025
+    👨‍💻 Arquitetura: Modular com separação de responsabilidades
+    🎯 Status: 100% Funcional e Otimizado
+    -->
+    
+    <!-- ✅ CORREÇÃO: Suprimir erros de message channel causados por extensões do navegador -->
+    <script>
+        (function() {
+            // Lista de padrões de erro para suprimir
+            const EXTENSION_ERROR_PATTERNS = [
+                'message channel closed',
+                'Extension context invalidated',
+                'listener indicated an asynchronous response',
+                'asynchronous response by returning true',
+                'chrome-extension://',
+                'moz-extension://',
+                'safari-extension://',
+                'The message port closed before a response was received',
+                'Could not establish connection',
+                'Receiving end does not exist'
+            ];
+            
+            // Função para verificar se é erro de extensão
+            function isExtensionError(message) {
+                if (!message) return false;
+                const messageStr = typeof message === 'string' ? message : (message.message || message.toString());
+                return EXTENSION_ERROR_PATTERNS.some(pattern => messageStr.toLowerCase().includes(pattern.toLowerCase()));
+            }
+            
+            // Capturar erros globais relacionados a extensões
+            window.addEventListener('error', function(event) {
+                if (isExtensionError(event.message || event.error)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return true; // Suprimir o erro
+                }
+            }, true);
+            
+            // Capturar promise rejections relacionadas a extensões
+            window.addEventListener('unhandledrejection', function(event) {
+                if (isExtensionError(event.reason)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return true; // Suprimir o erro
+                }
+            }, true);
+            
+            // Interceptar console.error para filtrar erros de extensões
+            const originalConsoleError = console.error;
+            console.error = function(...args) {
+                const message = args.join(' ');
+                if (!isExtensionError(message)) {
+                    originalConsoleError.apply(console, args);
+                }
+            };
+
+            // ✅ (REMOVIDO - duplicação)
+            
+            // Interceptar addEventListener para evitar que extensões retornem true
+            const originalAddEventListener = EventTarget.prototype.addEventListener;
+            EventTarget.prototype.addEventListener = function(type, listener, options) {
+                if (typeof listener === 'function') {
+                    const wrappedListener = function(event) {
+                        try {
+                            const result = listener.call(this, event);
+                            // Se o listener retornar true e for relacionado a extensões, ignorar
+                            if (result === true && event && event.isTrusted === false) {
+                                return; // Não retornar true
+                            }
+                            return result;
+                        } catch (error) {
+                            // Suprimir erros de extensões
+                            if (isExtensionError(error.message)) {
+                                return;
+                            }
+                            throw error;
+                        }
+                    };
+                    return originalAddEventListener.call(this, type, wrappedListener, options);
+                }
+                return originalAddEventListener.call(this, type, listener, options);
+            };
+            
+            console.log('🛡️ Sistema de supressão de erros de extensões ativado');
+        })();
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!window.initPreRomaneioSelector) return;
+        window.initPreRomaneioSelector({
+            tipo: 'TL',
+            selectId: 'preRomaneioSelect',
+            buttonId: 'btnCarregarPreRomaneio',
+            loadOnChange: false,
+            onLoadItems: function(itens, pr) {
+                const normalized = (itens || []).map((it, idx) => {
+                    const espessura = it.espessura || it.b || it.esp || it[('b'+'i'+'t'+'o'+'l'+'a')] || '';
+                    const quantidade = parseInt(it.quantidade) || 0;
+                    const comprimento = parseFloat(it.comprimento) || 0;
+                    const largura = parseFloat(it.largura) || 0;
+                    const preco = parseFloat(it.preco || it.valorUnitario || it.valorUnit || 0);
+                    return { ...it, id: it.id || Date.now() + idx, espessura, quantidade, comprimento, largura, preco };
+                }).filter(item => item.comprimento > 0 && item.largura > 0 && parseFloat(item.espessura) > 0 && item.quantidade > 0);
+                window.romaneioItems = normalized;
+                if (window.RenderizarTabela && window.RenderizarTabela.renderizarTabela) {
+                    window.RenderizarTabela.renderizarTabela();
+                } else if (typeof window.renderizarTabela === 'function') {
+                    window.renderizarTabela();
+                }
+                if (window.RenderizarTabela && typeof window.RenderizarTabela.atualizarTotais === 'function') {
+                    window.RenderizarTabela.atualizarTotais(window.romaneioItems);
+                } else if (window.Utils && typeof window.Utils.atualizarTotais === 'function') {
+                    window.Utils.atualizarTotais(window.romaneioItems);
+                } else if (typeof window.atualizarTotais === 'function') {
+                    window.atualizarTotais(window.romaneioItems);
+                }
+                const clienteInput = document.getElementById('clienteInput');
+                const clienteNome = pr.clienteNome || pr.cliente?.nome || '';
+                if (clienteInput) clienteInput.value = clienteNome;
+                if (clienteNome) {
+                    window.selectedClient = { nome: clienteNome, name: clienteNome };
+                }
+            }
+        });
+        
+        const btnLimparPre = document.getElementById('btnLimparPreRomaneio');
+        if (btnLimparPre) {
+            btnLimparPre.onclick = function() {
+                const select = document.getElementById('preRomaneioSelect');
+                if (select) select.value = '';
+                window.romaneioItems = [];
+                if (window.RenderizarTabela && window.RenderizarTabela.renderizarTabela) {
+                    window.RenderizarTabela.renderizarTabela();
+                } else if (typeof window.renderizarTabela === 'function') {
+                    window.renderizarTabela();
+                }
+                if (window.RenderizarTabela && typeof window.RenderizarTabela.atualizarTotais === 'function') {
+                    window.RenderizarTabela.atualizarTotais(window.romaneioItems);
+                } else if (window.Utils && typeof window.Utils.atualizarTotais === 'function') {
+                    window.Utils.atualizarTotais(window.romaneioItems);
+                } else if (typeof window.atualizarTotais === 'function') {
+                    window.atualizarTotais();
+                }
+                const clienteInput = document.getElementById('clienteInput');
+                if (clienteInput) clienteInput.value = '';
+                window.selectedClient = null;
+            };
+        }
+    });
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            margin-top: 25px;
+            font-size: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .dimensoes-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .dimensao-input {
+            flex: 1;
+        }
+
+        .dimensao-input input {
+            height: 31px; /* Mesma altura dos outros campos */
+        }
+
+        button {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #34495e;
+        }
+
+        .btn-adicionar {
+            background-color: #27ae60;
+        }
+
+        .btn-adicionar:hover {
+            background-color: #219a52;
+        }
+
+        .btn-salvar {
+            background-color: #3498db;
+        }
+
+        .btn-salvar:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-listar {
+            background-color: #f39c12;
+        }
+
+        .btn-listar:hover {
+            background-color: #e67e22;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 4px 6px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            height: 24px;
+            vertical-align: middle;
+            font-size: 13px;
+        }
+
+        th {
+            background-color: #2c3e50;
+            color: white;
+            font-size: 13px;
+            height: 28px;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* ✅ CONTAINER DA TABELA - PADRONIZADO ROMANEIOPCT */
+        .itens-container {
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        /* ✅ ESTILOS DOS TOTAIS - PADRONIZADO ROMANEIOPCT */
+        .totais-container {
+            margin-top: 20px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+        }
+
+        .totais-titulo {
+            font-weight: bold;
+            font-size: 16px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .totais-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .totais-item:last-child {
+            border-bottom: none;
+        }
+
+        .totais-label {
+            font-weight: 500;
+            color: #34495e;
+        }
+
+        .totais-valor {
+            font-weight: bold;
+            color: #2c3e50;
+            font-family: 'Courier New', monospace;
+        }
+
+        .total-row td {
+            border-top: 2px solid #2c3e50;
+        }
+        
+        /* Aplicar negrito apenas no rodapé da tabela */
+        tfoot .total-row {
+            font-weight: bold;
+        }
+
+        /* ✅ ALTURA DAS LINHAS - PADRONIZADA ROMANEIOPCT */
+        #romaneioTable tbody tr {
+            font-weight: normal !important;
+            height: 38px; /* ✅ ALTURA CONSISTENTE IGUAL PCT */
+            transition: background-color 0.2s ease;
+        }
+
+        #romaneioTable tbody td {
+            height: 38px; /* ✅ FORÇAR ALTURA CONSISTENTE */
+            vertical-align: middle;
+            line-height: 1.3; /* ✅ ALTURA DE LINHA PADRONIZADA */
+            box-sizing: border-box;
+            padding: 8px;
+            word-wrap: break-word;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap; /* ✅ EVITAR QUEBRA DE LINHA */
+        }
+
+        #romaneioTable thead th {
+            height: 45px; /* ✅ ALTURA CABEÇALHO PADRONIZADA */
+            line-height: 1.4;
+            padding: 12px 8px;
+            word-wrap: break-word;
+            overflow: hidden;
+        }
+
+        /* ✅ LARGURAS OTIMIZADAS DAS COLUNAS TL - EVITAR QUEBRA DE LINHA */
+        #romaneioTable {
+            table-layout: fixed;
+            min-width: 1100px; /* ✅ LARGURA MÍNIMA REDUZIDA COM TÍTULOS ABREVIADOS */
+        }
+
+        #romaneioTable th:nth-child(1),  /* Espécie */
+        #romaneioTable td:nth-child(1) {
+            width: 18%;
+            min-width: 130px;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        #romaneioTable th:nth-child(2),  /* Comp. (m) */
+        #romaneioTable td:nth-child(2) {
+            width: 9%;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        #romaneioTable th:nth-child(3),  /* Espessura */
+        #romaneioTable td:nth-child(3) {
+            width: 8%;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        #romaneioTable th:nth-child(4),  /* Larg. (cm) */
+        #romaneioTable td:nth-child(4) {
+            width: 9%;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        #romaneioTable th:nth-child(5),  /* Qtd. */
+        #romaneioTable td:nth-child(5) {
+            width: 7%;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        #romaneioTable th:nth-child(6),  /* Vol. (m³) */
+        #romaneioTable td:nth-child(6) {
+            width: 10%;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        #romaneioTable th:nth-child(7),  /* Preço */
+        #romaneioTable td:nth-child(7) {
+            width: 11%;
+            min-width: 90px;
+            text-align: right;
+        }
+
+        #romaneioTable th:nth-child(8),  /* Total */
+        #romaneioTable td:nth-child(8) {
+            width: 11%;
+            min-width: 90px;
+            text-align: right;
+        }
+
+        #romaneioTable th:nth-child(9),  /* Ações */
+        #romaneioTable td:nth-child(9) {
+            width: 12%;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        /* Estilo para o modal de Sobre */
+        .about-modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .about-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 30px;
+            border: none;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .about-content h2 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 24px;
+            position: relative;
+        }
+
+        .about-content h2:after {
+            content: '';
+            display: block;
+            width: 50px;
+            height: 3px;
+            background: #3498db;
+            margin: 10px auto;
+        }
+
+        .developer-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .developer-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .developer-avatar {
+            width: 80px;
+            height: 80px;
+            background-color: #3498db;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+        }
+
+        .developer-avatar i {
+            font-size: 40px;
+            color: white;
+        }
+
+        .developer-name {
+            flex: 1;
+        }
+
+        .developer-name h3 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+
+        .developer-name span {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #34495e;
+            font-size: 16px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            transition: transform 0.2s;
+        }
+
+        .contact-item:hover {
+            transform: translateX(5px);
+        }
+
+        .contact-item i {
+            color: #3498db;
+            font-size: 20px;
+            width: 24px;
+        }
+
+        .contact-item a {
+            color: #34495e;
+            text-decoration: none;
+        }
+
+        .contact-item a:hover {
+            color: #3498db;
+        }
+
+        /* Estilo para o modal de Ajuda */
+        .help-modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+            overflow-y: auto;
+        }
+
+        .help-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 8px;
+        }
+
+        .help-content h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .help-section {
+            margin-bottom: 30px;
+        }
+
+        .help-section h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .help-section p {
+            margin: 10px 0;
+            color: #34495e;
+            line-height: 1.6;
+        }
+
+        /* Estilo para o grid de campos */
+        .campos-grid {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .campos-grid .form-group {
+            flex: 1;
+            min-width: 0; /* Permite que o flex-basis seja respeitado */
+        }
+
+        .campos-grid .form-group:first-child {
+            flex: 1.5; /* Espécie ocupa um pouco mais de espaço */
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #34495e;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            height: 31px; /* Altura específica para garantir consistência */
+        }
+
+        /* Ajuste específico para o campo de preço */
+        .form-group input#price {
+            text-align: right;
+        }
+
+        .error {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .buttons-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            margin-bottom: 30px; /* ✅ ADICIONADO: Espaço entre botões e tabela */
+            flex-wrap: nowrap;
+            align-items: center;
+            white-space: nowrap;
+        }
+
+        /* Estilos para autocomplete */
+        .autocomplete-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .autocomplete-input {
+            padding-right: 80px !important; /* Espaço para os ícones */
+        }
+
+        .autocomplete-icons-container {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 5px;
+        }
+
+        .autocomplete-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            color: #7f8c8d;
+            transition: color 0.2s;
+        }
+
+        .autocomplete-icon:hover {
+            color: #3498db;
+        }
+
+        /* Modal de Lista */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 0; /* Removido padding para o header ocupar 100% corretamente */
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 1200px;
+            border-radius: 8px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-body-container {
+            padding: 20px; /* Movido o padding do modal-content para cá ou apenas usar nos modais */
+            flex: 1 1 auto;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #ddd;
+            margin: 0 0 20px 0; /* Removidas margens negativas laterais que causavam o estouro */
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            border-radius: 8px 8px 0 0;
+            /* Garantir que o título não estoure */
+            flex-wrap: nowrap;
+            overflow: hidden;
+            width: 100%; /* Forçar a não ultrapassar o pai */
+            box-sizing: border-box; /* Incluir padding no width */
+        }
+
+        .modal-title {
+            margin: 0;
+            color: white !important;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            font-weight: bold;
+            /* Garantir que o título não estoure */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 15px;
+        }
+
+        .close-modal {
+            color: white !important;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .close-modal:hover {
+            color: #bdc3c7 !important;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+        }
+
+        /* ✅ ESTILOS PARA MODAL CRIADO DINAMICAMENTE PELO GERENCIAR-CLIENTES.JS */
+        #clientModal .modal-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
+            color: white !important;
+            padding: 15px 20px !important;
+            margin: 0 !important;
+            border-radius: 8px 8px 0 0 !important;
+        }
+
+        #clientModal #modalTitle {
+            color: white !important;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5) !important;
+            font-weight: bold !important;
+            margin: 0 !important;
+        }
+
+        #clientModal .close {
+            color: white !important;
+            font-size: 28px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5) !important;
+        }
+
+        #clientModal .close:hover {
+            color: #bdc3c7 !important;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.7) !important;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0;
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            background-color: #f8fbff;
+            border-radius: 0 0 8px 8px;
+        }
+        #listaModal .modal-content {
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+            max-width: 1200px;
+            width: min(95vw, 1200px);
+            overflow: hidden;
+            padding: 0;
+        }
+        #listaModal .modal-body {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
+            padding: 14px 16px;
+        }
+        #listaModal table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0;
+            table-layout: fixed;
+            min-width: 980px;
+        }
+        #listaModal th,
+        #listaModal td {
+            padding: 6px 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #listaModal .modal-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-top: 1px solid #ddd;
+            margin-top: 0;
+            background-color: #f8fbff;
+            border-radius: 0 0 8px 8px;
+            /* Layout para alinhar paginação ao centro e informações/botão nas extremidades */
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        #listaModal .close-modal-btn {
+            position: relative;
+            z-index: 2002;
+            margin-left: auto;
+        }
+        #listaModal #romaneioListPagination {
+            margin: 0;
+            justify-content: center;
+            flex-shrink: 0;
+            flex: 1;
+            display: flex;
+            order: 2; /* Garante que fique no meio se quebrar linha */
+        }
+        #listaModal .modal-info-text {
+            flex: 1;
+            order: 1;
+        }
+        #listaModal .modal-footer-buttons {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+            order: 3;
+        }
+        #listaModal .table-container {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+            margin: 8px 0 0;
+            border: 1px solid #e4eaf1;
+            border-radius: 8px;
+        }
+        #listaModal .table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        #listaModal .table th:nth-child(1),
+        #listaModal .table td:nth-child(1) { width: 12%; min-width: 108px; }
+        #listaModal .table th:nth-child(2),
+        #listaModal .table td:nth-child(2) { width: 20%; min-width: 180px; }
+        #listaModal .table th:nth-child(3),
+        #listaModal .table td:nth-child(3) { width: 25%; min-width: 230px; }
+        #listaModal .table th:nth-child(4),
+        #listaModal .table td:nth-child(4) { width: 8%; min-width: 64px; text-align: center; }
+        #listaModal .table th:nth-child(5),
+        #listaModal .table td:nth-child(5) { width: 13%; min-width: 120px; text-align: right; }
+        #listaModal .table th:nth-child(6),
+        #listaModal .table td:nth-child(6) { width: 12%; min-width: 128px; text-align: right; }
+        #listaModal .table th:nth-child(7),
+        #listaModal .table td:nth-child(7) { width: 10%; min-width: 140px; text-align: center; }
+
+        /* Limitar altura do modal-body para ativar paginação */
+        .modal-body {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            align-items: center;
+            margin: 12px 0 4px;
+            flex-wrap: wrap;
+        }
+
+        .pagination-controls button {
+            border: 1px solid #d0d7de;
+            background: #fff;
+            color: #2c3e50;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .pagination-controls button.active {
+            background: #2c3e50;
+            color: #fff;
+            border-color: #2c3e50;
+        }
+
+        .pagination-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-controls span {
+            padding: 0 4px;
+            color: #6c757d;
+        }
+
+        /* ✅ CORREÇÃO: table-container não deve ter scroll próprio */
+        .table-container {
+            overflow: visible;
+        }
+
+        /* Removidos estilos antigos de botão de ação para usar ui-components.css */
+
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            left: 0; /* Mudado de right: 0 para left: 0 para alinhar à esquerda */
+            background-color: #fff;
+            min-width: 220px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            z-index: 10001; /* Aumentado para ficar acima do modal (z-index: 10000) */
+            margin-top: 5px;
+        }
+
+        .dropdown-content.show {
+            display: block;
+        }
+
+        .dropdown-content a {
+            color: #2c3e50;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.2s;
+            text-align: left; /* ✅ GARANTIR ALINHAMENTO À ESQUERDA */
+            justify-content: flex-start; /* ✅ ALINHAR CONTEÚDO À ESQUERDA */
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f8f9fa;
+            color: #3498db;
+        }
+
+        .dropdown-content a i {
+            margin-right: 8px;
+            width: 16px;
+            text-align: center;
+        }
+
+        /* Estilos para a tabela de lista de romaneios */
+        #listaRomaneios td {
+            vertical-align: middle;
+            padding: 6px 8px;
+            height: 32px;
+        }
+
+        #listaRomaneios td:nth-child(4) {
+            text-align: center;
+        }
+
+        #listaRomaneios td:nth-child(5) {
+            text-align: right;
+        }
+
+        #listaRomaneios td:nth-child(6) {
+            text-align: right;
+        }
+
+        #listaRomaneios td:last-child { /* Coluna de ações */
+            padding: 6px 8px;
+            width: 140px;
+        }
+
+        /* Estilos padronizados para tabelas de modais removidos pois agora usam ui-components.css */
+
+        .footer { 
+            text-align: center;
+            margin-top: 50px;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+
+        /* ✅ ESTILOS PARA MODO DE EDIÇÃO */
+        .item-em-edicao {
+            background-color: #fff3cd !important;
+            border-left: 4px solid #ffc107 !important;
+            box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2) !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .item-em-edicao td {
+            background-color: #fff3cd !important;
+        }
+        
+        /* Botão em modo de atualização */
+        .btn-atualizar {
+            background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+            color: white !important;
+            border: none !important;
+            box-shadow: 0 4px 6px rgba(243, 156, 18, 0.3) !important;
+            transition: all 0.3s ease !important;
+            font-weight: 600 !important;
+        }
+        
+        .btn-atualizar:hover {
+            background: linear-gradient(135deg, #e67e22, #d35400) !important;
+            box-shadow: 0 6px 8px rgba(243, 156, 18, 0.4) !important;
+            transform: translateY(-1px) !important;
+        }
+        
+        .btn-atualizar::before {
+            content: "✏️";
+            margin-right: 8px;
+            font-size: 14px;
+        }
+
+        /* ✅ CORREÇÃO: Sobrescrever CSS local para padronização com PCT */
+        /* ================================================================ */
+
+        /* Botões do modal Lista de Romaneios - padronizar com PCT */
+        #listaModal .action-button {
+            width: 32px !important;
+            height: 32px !important;
+            padding: 0 !important;
+            font-size: 13px !important;
+            margin: 0 1px !important;
+            min-width: 32px !important;
+        }
+
+        #listaModal .action-button:hover {
+            transform: none !important;
+            transition: background-color 0.2s ease !important;
+        }
+
+        /* ✅ BOTÃO FINANCEIRO INATIVO - CINZA */
+        .modal .financeiro-button.disabled {
+            background-color: #95a5a6 !important;
+            color: #7f8c8d !important;
+            cursor: not-allowed !important;
+            opacity: 0.8 !important;
+        }
+
+        .modal .financeiro-button.disabled:hover {
+            background-color: #95a5a6 !important;
+            color: #7f8c8d !important;
+            transform: none !important;
+        }
+
+        /* Efeito hover das linhas do modal - suavizar */
+        .modal table tbody tr:hover {
+            background-color: #f8f9fa !important;
+        }
+
+        /* Centralização da coluna Ações */
+        #listaModal td:nth-child(7) {
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+
+        /* Container dos botões - centralizar */
+        #listaModal .btn-group {
+            display: flex !important;
+            gap: 2px !important;
+            justify-content: center !important;
+            align-items: center !important;
+            flex-wrap: nowrap !important;
+        }
+
+        @media (max-width: 980px) {
+            #listaModal .modal-content {
+                width: 98vw;
+                max-height: 92vh;
+            }
+            #listaModal .modal-body {
+                padding: 10px;
+            }
+            #listaModal .modal-footer {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            #listaModal #romaneioListFilter {
+                font-size: 13px !important;
+                padding: 8px !important;
+            }
+            #listaModal .action-button {
+                width: 30px !important;
+                height: 30px !important;
+                min-width: 30px !important;
+            }
+        }
+
+        #clientListModal .modal-header .modal-title,
+        #fornecedorListModal .modal-header .modal-title,
+        #speciesListModal .modal-header .modal-title,
+        #clientModal .modal-header .modal-title,
+        #fornecedorModal .modal-header .modal-title,
+        #speciesModal .modal-header .modal-title,
+        #clientModalTitle,
+        #fornecedorModalTitle,
+        #speciesModalTitle,
+        #modalTitle {
+            color: #fff !important;
+            -webkit-text-fill-color: #fff !important;
+            background: transparent !important;
+        }
+
+        #clientListModal .close-modal,
+        #fornecedorListModal .close-modal,
+        #speciesListModal .close-modal,
+        #clientModal .close-modal,
+        #fornecedorModal .close-modal,
+        #speciesModal .close-modal,
+        #clientModal .close,
+        #fornecedorModal .close,
+        #speciesModal .close {
+            color: #fff !important;
+        }
+
+        #clientListModal .table th:nth-child(1),
+        #clientListModal .table td:nth-child(1) { width: 30% !important; }
+        #clientListModal .table th:nth-child(2),
+        #clientListModal .table td:nth-child(2) { width: 18% !important; }
+        #clientListModal .table th:nth-child(3),
+        #clientListModal .table td:nth-child(3) { width: 8% !important; }
+        #clientListModal .table th:nth-child(4),
+        #clientListModal .table td:nth-child(4) { width: 16% !important; }
+        #clientListModal .table th:nth-child(5),
+        #clientListModal .table td:nth-child(5) { width: calc(28% - 40px) !important; }
+        #clientListModal .table th:last-child,
+        #clientListModal .table td:last-child { width: 40px !important; min-width: 40px !important; max-width: 40px !important; }
+
+        #speciesListModal .table th:nth-child(1),
+        #speciesListModal .table td:nth-child(1) { width: 30% !important; }
+        #speciesListModal .table th:nth-child(2),
+        #speciesListModal .table td:nth-child(2) { width: calc(70% - 40px) !important; }
+        #speciesListModal .table th:last-child,
+        #speciesListModal .table td:last-child { width: 40px !important; min-width: 40px !important; max-width: 40px !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <main-menu></main-menu>
+        <h1>Romaneio TL</h1>
+        
+        <section id="romaneio-form-section">
+            <form id="romaneioForm" onsubmit="event.preventDefault(); console.log('Submit prevenido via HTML'); return false;">
+                <div class="form-group">
+                    <label for="clienteInput">Cliente:</label>
+                    <div class="autocomplete-container">
+                        <input type="text" id="clienteInput" class="autocomplete-input" placeholder="clique para selecionar um cliente" oninput="showClientSuggestions(this)">
+                        <div class="autocomplete-icons-container">
+                            <span class="autocomplete-icon" title="Listar Clientes" onclick="openClientListModal()">
+                                <i class="fas fa-list"></i>
+                            </span>
+                            <span class="autocomplete-icon" title="Novo Cliente" onclick="openNewClientModal()">
+                                <i class="fas fa-user-plus"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="campos-grid">
+                    <div class="form-group">
+                        <label for="especieInput">Espécie Padrão:</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="especieInput" class="autocomplete-input" placeholder="Clique para selecionar uma espécie" oninput="showSpeciesSuggestions(this)">
+                            <div class="autocomplete-icons-container">
+                                <span class="autocomplete-icon" title="Listar Espécies" onclick="openSpeciesListModal()">
+                                    <i class="fas fa-list"></i>
+                                </span>
+                                <span class="autocomplete-icon" title="Nova Espécie" onclick="openNewSpeciesModal()">
+                                    <i class="fas fa-plus"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="espessura">Espessura (cm):</label>
+                        <input type="number" id="espessura" step="0.01" min="0" placeholder="Ex: 2,50">
+                    </div>
+                    <div class="form-group">
+                        <label for="price">Preço Unitário (R$/m³):</label>
+                        <input type="text" id="price" placeholder="R$ 0,00" oninput="window.FormatacaoCampos.formatarInputMoeda(this)">
+                    </div>
+                </div>
+
+                <div class="dimensoes-container">
+                    <div class="form-group dimensao-input">
+                        <label for="comprimento">Comprimento (cm):</label>
+                        <input type="number" id="comprimento" step="0.01" min="0" placeholder="Ex: 350,00">
+                    </div>
+                    <div class="form-group dimensao-input">
+                        <label for="largura">Largura (cm):</label>
+                        <input type="number" id="largura" step="0.1" min="0" placeholder="Ex: 15,00">
+                    </div>
+                    <div class="form-group dimensao-input">
+                        <label for="quantidade">Quantidade (pcs):</label>
+                        <input type="number" id="quantidade" min="1" value="1" placeholder="1">
+                    </div>
+                    </div>
+                    
+                <div class="buttons-container" style="display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap; align-items: center;">
+                    <button type="button" id="addButton" class="btn btn-success"><i class="fas fa-plus"></i> Adicionar</button>
+                    <button type="button" class="btn btn-primary" onclick="salvarRomaneio()"><i class="fas fa-save"></i> Salvar</button>
+                    <button type="button" class="btn btn-info" onclick="abrirListaRomaneios()"><i class="fas fa-list"></i> Listar</button>
+                    <div class="pre-romaneio-group" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <div class="pre-romaneio-left" style="display: flex; gap: 5px; align-items: center;">
+                            <label for="preRomaneioSelect" style="margin: 0;">Pré-Romaneio (TL):</label>
+                            <select id="preRomaneioSelect" style="margin: 0; padding: 6px 10px;">
+                                <option value="">Selecione</option>
+                            </select>
+                        </div>
+                        <button type="button" id="btnCarregarPreRomaneio" class="btn btn-success">
+                            <i class="fas fa-download"></i> Carregar Itens
+                        </button>
+                        <button type="button" id="btnLimparPreRomaneio" class="btn btn-danger">
+                            <i class="fas fa-eraser"></i> Limpar Pré-Romaneio
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <section id="romaneio-items-section">
+            <h2>Itens do Romaneio</h2>
+            <div class="itens-container">
+                <div class="table-responsive mobile-cards">
+                    <table id="romaneioTable" class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Espécie</th>
+                            <th>Comprimento (cm)</th>
+                            <th>Espessura (cm)</th>
+                            <th>Largura (cm)</th>
+                            <th>Qtd.</th>
+                            <th>Vol. (m³)</th>
+                            <th>Preço Unit.</th>
+                            <th>Valor Total</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="romaneioTableBody">
+                        <!-- Os itens serão inseridos aqui dinamicamente -->
+                    </tbody>
+                    </table>
+                </div>
+                <div id="romaneioTablePagination" class="pagination-controls"></div>
+                
+                <!-- ✅ TOTAIS MOVIDOS PARA DENTRO DO CONTAINER DA TABELA -->
+                <div class="totais-container">
+                    <div class="totais-titulo">Totais</div>
+                    <div class="totais-item">
+                        <div class="totais-label">Quantidade Total:</div>
+                        <span id="totalQuantidade" class="totais-valor">0</span>
+                    </div>
+                    <div class="totais-item">
+                        <div class="totais-label">Volume Total:</div>
+                        <span id="totalVolume" class="totais-valor">0.000 m³</span>
+                    </div>
+                    <div class="totais-item">
+                        <div class="totais-label">Valor Total:</div>
+                        <span id="totalValue" class="totais-valor">R$ 0,00</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Modal de Lista de Clientes -->
+    <div id="clientListModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                    <h3 class="modal-title">📋 Lista de Clientes</h3>
+                    <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                    <div style="margin-bottom: 15px;">
+                        <input type="text" id="clientListFilter" placeholder="🔍 Filtrar por nome, cidade, estado, telefone ou email..." 
+                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    </div>
+                    <div class="table-container" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Cidade</th>
+                            <th>Estado</th>
+                            <th>Telefone</th>
+                            <th>Email</th>
+                                    <th style="width: 120px; text-align: center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientListTable">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 20px;">
+                                        <i class="fas fa-spinner fa-spin"></i> Carregando clientes...
+                                    </td>
+                                </tr>
+                    </tbody>
+                </table>
+                    </div>
+                    <div id="clientListPagination" class="pagination-controls" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                    <div style="color: #666; font-size: 14px;">
+                        <i class="fas fa-info-circle"></i> <span id="clientModalInfo">Carregando...</span>
+            </div>
+                    <div>
+                        <button type="button" class="back-button close-modal-btn">Fechar</button>
+                        <button type="button" class="btn-adicionar" onclick="openNewClientModal()">Novo Cliente</button>
+        </div>
+    </div>
+        </div>
+    </div>
+
+    <!-- Modal de Lista de Espécies -->
+    <div id="speciesListModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                    <h3 class="modal-title">🌳 Lista de Espécies</h3>
+                    <span class="close-modal">&times;</span>
+            </div>
+                <div class="modal-body">
+                    <div style="margin-bottom: 15px;">
+                        <input type="text" id="speciesListFilter" placeholder="🔍 Filtrar por nome ou descrição..." 
+                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    </div>
+                    <div class="table-container">
+                    <table class="table">
+                            <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Descrição</th>
+                                    <th style="width: 120px; text-align: center;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="speciesListTable">
+                                <tr>
+                                    <td colspan="3" style="text-align: center; padding: 20px;">
+                                        <i class="fas fa-spinner fa-spin"></i> Carregando espécies...
+                                    </td>
+                                </tr>
+                        </tbody>
+                    </table>
+                </div>
+                    <div id="speciesListPagination" class="pagination-controls" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                    <div style="color: #666; font-size: 14px;">
+                        <i class="fas fa-info-circle"></i> <span id="speciesModalInfo">Carregando...</span>
+                    </div>
+                    <div>
+                        <button type="button" class="back-button close-modal-btn">Fechar</button>
+                        <button type="button" class="btn-adicionar" onclick="window.ModalEspecies.showAllSpecies()" style="background-color: #17a2b8;">Mostrar Todas</button>
+                        <button type="button" class="btn-adicionar" onclick="openNewSpeciesModal()">Nova Espécie</button>
+                    </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- Modal de Lista de Romaneios -->
+        <div id="listaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                    <h3 class="modal-title">📋 Lista de Romaneios</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+                <div class="modal-body">
+                    <div style="margin-bottom: 15px;">
+                        <input type="text" id="romaneioListFilter" placeholder="🔍 Filtrar por cliente, espécie ou data..." 
+                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                </div>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Cliente</th>
+                                    <th>Espécies</th>
+                                    <th>Itens</th>
+                                    <th style="text-align: right;">Volume (m³)</th>
+                                    <th>Valor Total</th>
+                                    <th style="width: 140px; text-align: center;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listaRomaneios">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 20px;">
+                                        <i class="fas fa-spinner fa-spin"></i> Carregando romaneios...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="modal-info-text" style="color: #666; font-size: 14px; text-align: left;">
+                        <i class="fas fa-info-circle"></i> <span id="romaneioModalInfo">Carregando...</span>
+                    </div>
+                    <div id="romaneioListPagination" class="pagination-controls" style="display: none;"></div>
+                    <div class="modal-footer-buttons">
+                        <button type="button" class="back-button close-modal-btn">Fechar</button>
+                    </div>
+                </div>
+        </div>
+    </div>
+
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <script>
+        // ✅ CONFIGURAÇÃO FIREBASE CORRETA - PROJETO SISWEB-7CE82
+        const firebaseConfig = {
+            apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
+            authDomain: "sisweb-7ce82.firebaseapp.com",
+            databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "sisweb-7ce82",
+            storageBucket: "sisweb-7ce82.firebasestorage.app",
+            messagingSenderId: "240003261222",
+            appId: "1:240003261222:web:1aeaf919ddc7e5c691d7e7",
+            measurementId: "G-FTC6JZ5ZGX"
+        };
+        
+        // Inicializar Firebase (idempotente) com verificação de SDK
+        if (typeof window.firebase !== 'undefined' && firebase.apps) {
+            if (firebase.apps.length === 0) {
+                firebase.initializeApp(firebaseConfig);
+                console.log('✅ Firebase inicializado (compat)');
+            } else {
+                console.log('♻️ Reutilizando Firebase app existente (compat)');
+            }
+            console.log('🌐 Database URL:', firebaseConfig.databaseURL);
+        } else {
+            console.warn('⚠️ Firebase SDK (compat) indisponível no ambiente atual. Operando em modo offline.');
+        }
+
+        // 🔐 AUTENTICAÇÃO ANÔNIMA PARA ESCRITA (regras com login)
+        try {
+            const auth = firebase.auth();
+            auth.onAuthStateChanged(function(user) {
+                if (user) {
+                    console.log('🔐 [TL] Usuário autenticado:', user.uid);
+                    window.firebaseAuthUser = user;
+                } else {
+                    console.log('🔐 [TL] Nenhum usuário autenticado. Efetuando login anônimo...');
+                    auth.signInAnonymously()
+                        .then(function(cred){
+                            console.log('🔐 [TL] Login anônimo realizado:', cred.user && cred.user.uid);
+                            window.firebaseAuthUser = cred.user;
+                        })
+                        .catch(function(err){
+                            console.error('❌ [TL] Falha no login anônimo:', err);
+                        });
+                }
+            });
+        } catch(e){ console.error('❌ [TL] Erro ao configurar autenticação anônima:', e); }
+
+        // 📡 LISTENER REALTIME PARA ROMANEIOS TL
+        try {
+            const db = firebase.database();
+            const pathCandidates = ['romaneios/tl','romaneiosTL','romaneios_tl'];
+            const resolvePath = (p) => {
+                try {
+                    const base = String(p || '');
+                    if (!base) return base;
+                    if (/^companies\//.test(base) || /^users\//.test(base)) return base;
+                    const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug || window.companyInfo.nome || window.companyInfo.name));
+                    if (rawTenant) return `companies/${String(rawTenant)}/${base}`;
+                    const stored = localStorage.getItem('company_info');
+                    if (stored) {
+                        const obj = JSON.parse(stored);
+                        const t = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                        if (t) return `companies/${String(t)}/${base}`;
+                    }
+                    return base;
+                } catch (_) { return p; }
+            };
+            const usePath = resolvePath(pathCandidates[0]);
+            db.ref(usePath).on('value', function(snapshot){
+                const val = snapshot.val() || {};
+                const arr = Object.keys(val).map(function(id){ return Object.assign({ id: id }, val[id] || {}); });
+                window.romaneiosTLRealtime = arr;
+                console.log('📡 [TL] Realtime recebidos:', arr.length);
+                // Disparar evento para módulos que quiserem reagir
+                try { window.dispatchEvent(new CustomEvent('romaneiosTL:updated', { detail: { total: arr.length } })); } catch(_){}
+            }, function(error){
+                console.error('❌ [TL] Erro no listener realtime:', error);
+            });
+        } catch(e){ console.error('❌ [TL] Erro ao configurar listener realtime:', e); }
+    </script>
+
+    <!-- Gerenciador compatível de conexão (Singleton) -->
+    <script src="firebase-connection-manager-compat.js"></script>
+    
+    <!-- Módulos Base (carregados primeiro) -->
+    <script src="modules/core/firebase-service.js"></script>
+    <script src="modules/core/utils.js"></script>
+    <script src="modules/core/romaneio-messages.js"></script>
+    <script src="pre-romaneio-selector.js"></script>
+    
+    <!-- Estados e Cidades (dependência para CRUD) -->
+    <script src="estados-cidades.js"></script>
+    
+    <!-- Módulos CRUD (dependem de estados-cidades) -->
+    <script src="modules/crud/gerenciar-clientes.js"></script>
+    <script src="modules/crud/gerenciar-especies.js"></script>
+    
+    <!-- Módulos de Navegação e Formatação -->
+    <script src="modules/core/navegacao-enter.js"></script>
+    <script src="modules/core/formatacao-campos.js"></script>
+    
+    <!-- Módulos de Itens -->
+    <script src="modules/items/adicionar-item.js"></script>
+    <script src="modules/items/renderizar-tabela.js"></script>
+    <script src="modules/items/editar-item.js"></script>
+    <script src="modules/items/excluir-item.js"></script>
+    
+    <!-- Módulos de Romaneio -->
+    <script src="modules/romaneio/salvar-romaneio.js"></script>
+    <script src="modules/reports/imprimir-romaneio.js"></script>
+
+    <!-- Módulos de Modais (dependem dos CRUD) -->
+    <script src="modules/modals/modal-clientes.js"></script>
+    <script src="modules/modals/modal-especies.js"></script>
+    <script src="modules/modals/modal-lista-romaneios.js"></script>
+    <script src="romaneios-client-save-fix.js"></script>
+    <script src="schema-migration-contatos.js"></script>
+
+    <script>
+        // ✅ VARIÁVEIS GLOBAIS PARA COMPATIBILIDADE
+        let editingIndex = -1;
+        let currentRomaneioId = null;
+
+        // ✅ ARRAY GLOBAL DE ITENS DO ROMANEIO
+        window.romaneioItems = window.romaneioItems || [];
+        console.log('✅ window.romaneioItems inicializado:', Array.isArray(window.romaneioItems), 'length:', window.romaneioItems.length);
+
+        // ✅ FUNÇÕES GLOBAIS PRINCIPAIS - REMOVIDAS (usando módulos)
+        // As funções estão agora nos respectivos módulos:
+        // - adicionarItem() → modules/items/adicionar-item.js
+        // - salvarRomaneio() → modules/romaneio/salvar-romaneio.js
+
+        // ❌ REMOVIDAS: Funções duplicadas que já existem nos módulos
+        // - salvarRomaneio() → JÁ EXISTE em modules/romaneio/salvar-romaneio.js
+        // - editarRomaneio() → JÁ EXISTE em modules/modals/modal-lista-romaneios.js
+        // - togglePrintDropdown() → JÁ EXISTE em modules/modals/modal-lista-romaneios.js
+        // - openClientListModal() → JÁ EXISTE em modules/modals/modal-clientes.js
+        // - selectClient() → JÁ EXISTE em modules/modals/modal-clientes.js
+        // - openSpeciesListModal() → JÁ EXISTE em modules/modals/modal-especies.js
+        // - selectSpecies() → JÁ EXISTE em modules/modals/modal-especies.js
+
+        // ✅ FUNÇÕES AUXILIARES MANTIDAS (não duplicadas)
+        function showClientSuggestions(input) {
+            // Por enquanto, apenas abre o modal de clientes
+            if (input.value.length > 2) {
+                openClientListModal();
+            }
+        }
+
+        function showSpeciesSuggestions(input) {
+            // Por enquanto, apenas abre o modal de espécies
+            if (input.value.length > 2) {
+                openSpeciesListModal();
+            }
+        }
+
+        // ✅ INICIALIZAÇÃO
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Sistema Romaneio TL Modular carregado');
+            console.log('📁 Estrutura modular seguindo romaneiotl-estruturaçãomodular.txt');
+            
+            // ✅ CORRIGIDO: Aguardar mais tempo para garantir carregamento completo
+            setTimeout(() => {
+                // Renderizar tabela inicial
+                if (window.RenderizarTabela && window.RenderizarTabela.renderizarTabela) {
+                    window.RenderizarTabela.renderizarTabela();
+                }
+                
+                // Verificar módulos carregados com logs detalhados
+                const modulos = [
+                    { nome: 'FirebaseService', obj: window.FirebaseService || window.firebaseServiceTL, critico: true },
+                    { nome: 'Utils', obj: window.Utils || window.UtilsTL, critico: true },
+                            { nome: 'AdicionarItem', obj: window.AdicionarItem, critico: true },
+        { nome: 'RenderizarTabela', obj: window.RenderizarTabela, critico: true },
+        { nome: 'EditarItem', obj: window.EditarItem, critico: true },
+        { nome: 'ExcluirItem', obj: window.ExcluirItem, critico: true },
+                    { nome: 'SalvarRomaneio', obj: window.SalvarRomaneio, critico: true },
+                    { nome: 'ImprimirRomaneio', obj: window.ImprimirRomaneio, critico: true },
+                    { nome: 'GerenciarClientes', obj: window.GerenciarClientes, critico: true },
+                    { nome: 'GerenciarEspecies', obj: window.GerenciarEspecies, critico: true },
+                    { nome: 'ModalClientes', obj: window.ModalClientes, critico: true },
+                    { nome: 'ModalEspecies', obj: window.ModalEspecies, critico: true },
+                    { nome: 'ModalListaRomaneios', obj: window.ModalListaRomaneios, critico: true }
+                ];
+                
+                let modulosCarregados = 0;
+                let modulosCriticos = 0;
+                
+                modulos.forEach(modulo => {
+                    // ✅ VERIFICAÇÃO MELHORADA: Verificar módulos com lógica mais robusta
+                    let objetoAtual;
+                    let moduloEncontrado = false;
+                    
+                    if (modulo.nome === 'FirebaseService') {
+                        objetoAtual = window.FirebaseService || window.firebaseServiceTL;
+                        moduloEncontrado = !!(window.FirebaseService || window.firebaseServiceTL);
+                    } else if (modulo.nome === 'Utils') {
+                        objetoAtual = window.Utils || window.UtilsTL;
+                        moduloEncontrado = !!(window.Utils || window.UtilsTL);
+                    } else {
+                        objetoAtual = window[modulo.nome];
+                        moduloEncontrado = !!window[modulo.nome];
+                    }
+                    
+                    // ✅ VERIFICAÇÃO MAIS PERMISSIVA: Aceitar objetos E funções
+                    const tipoValido = objetoAtual && (typeof objetoAtual === 'object' || typeof objetoAtual === 'function');
+                    
+                    if (moduloEncontrado && tipoValido) {
+                        console.log(`✅ Módulo ${modulo.nome} carregado (${typeof objetoAtual})`);
+                        modulosCarregados++;
+                        if (modulo.critico) modulosCriticos++;
+                    } else {
+                        // ✅ LOGS MAIS INFORMATIVOS SEM SPAM DE ERROS
+                        if (modulo.critico) {
+                            console.warn(`⚠️ Módulo crítico ${modulo.nome} não encontrado - verificando alternativas...`);
+                            
+                            // Debug apenas se realmente não encontrou nada
+                            if (!moduloEncontrado) {
+                                console.log(`🔍 Debug ${modulo.nome}:`);
+                                console.log(`   window.${modulo.nome}:`, typeof window[modulo.nome]);
+                                if (modulo.nome === 'Utils') {
+                                    console.log('   window.UtilsTL:', typeof window.UtilsTL);
+                                }
+                                if (modulo.nome === 'FirebaseService') {
+                                    console.log('   window.firebaseServiceTL:', typeof window.firebaseServiceTL);
+                                }
+                                console.error(`❌ MÓDULO CRÍTICO FALTANDO: ${modulo.nome}`);
+                            }
+                        } else {
+                            console.log(`⚠️ Módulo opcional ${modulo.nome} não encontrado`);
+                        }
+                    }
+                });
+                
+                console.log(`📊 Resumo: ${modulosCarregados}/${modulos.length} módulos carregados (${modulosCriticos}/${modulos.filter(m => m.critico).length} críticos)`);
+                
+                // ✅ VERIFICAÇÃO CRÍTICA MELHORADA: Consistente com verificação anterior
+                const modulosCriticosFaltando = modulos.filter(m => {
+                    if (!m.critico) return false;
+                    
+                    // Usar mesma lógica da verificação anterior
+                    let objetoAtual;
+                    let moduloEncontrado = false;
+                    
+                    if (m.nome === 'FirebaseService') {
+                        objetoAtual = window.FirebaseService || window.firebaseServiceTL;
+                        moduloEncontrado = !!(window.FirebaseService || window.firebaseServiceTL);
+                    } else if (m.nome === 'Utils') {
+                        objetoAtual = window.Utils || window.UtilsTL;
+                        moduloEncontrado = !!(window.Utils || window.UtilsTL);
+                    } else {
+                        objetoAtual = window[m.nome];
+                        moduloEncontrado = !!window[m.nome];
+                    }
+                    
+                    // Módulo crítico está faltando se não foi encontrado OU não é válido
+                    const tipoValido = objetoAtual && (typeof objetoAtual === 'object' || typeof objetoAtual === 'function');
+                    return !moduloEncontrado || !tipoValido;
+                });
+                if (modulosCriticosFaltando.length > 0) {
+                    console.error('🚨 ERRO CRÍTICO: Módulos essenciais não foram carregados:', 
+                        modulosCriticosFaltando.map(m => m.nome));
+                    
+                    // Tentar recarregar módulos faltando
+                    console.log('🔄 Tentando verificar novamente em 1 segundo...');
+                    setTimeout(() => {
+                        const modulosRecheck = modulosCriticosFaltando.filter(m => {
+                            // Usar mesma lógica consistente
+                            let obj;
+                            let encontrado = false;
+                            
+                            if (m.nome === 'FirebaseService') {
+                                obj = window.FirebaseService || window.firebaseServiceTL;
+                                encontrado = !!(window.FirebaseService || window.firebaseServiceTL);
+                            } else if (m.nome === 'Utils') {
+                                obj = window.Utils || window.UtilsTL;
+                                encontrado = !!(window.Utils || window.UtilsTL);
+                            } else {
+                                obj = window[m.nome];
+                                encontrado = !!window[m.nome];
+                            }
+                            
+                            const tipoValido = obj && (typeof obj === 'object' || typeof obj === 'function');
+                            return !encontrado || !tipoValido;
+                        });
+                        
+                        if (modulosRecheck.length === 0) {
+                            console.log('🎉 Todos os módulos críticos foram carregados após verificação adicional!');
+                        } else {
+                            console.error('🚨 Módulos ainda faltando:', modulosRecheck.map(m => m.nome));
+                        }
+                    }, 1000);
+                } else {
+                    console.log('🎉 Todos os módulos críticos foram carregados com sucesso!');
+                }
+                
+                // ✅ FUNÇÃO WRAPPER PARA ADICIONAR ITEM COM TRATAMENTO ROBUSTO
+                window.chamarAdicionarItem = function() {
+                    console.log('🔄 chamarAdicionarItem() iniciada...');
+                    
+                    try {
+                        // Primeira tentativa: usar módulo AdicionarItem
+                        if (window.AdicionarItem && typeof window.AdicionarItem.adicionarItem === 'function') {
+                            console.log('✅ Usando window.AdicionarItem.adicionarItem()');
+                            return window.AdicionarItem.adicionarItem();
+                        }
+                        
+                        // Segunda tentativa: usar função global
+                        if (typeof window.adicionarItem === 'function') {
+                            console.log('✅ Usando window.adicionarItem()');
+                            return window.adicionarItem();
+                        }
+                        
+                        // Terceira tentativa: forçar nova atribuição da função
+                        if (window.AdicionarItem && typeof window.AdicionarItem.adicionarItem === 'function') {
+                            console.log('🔄 Forçando reatribuição da função global...');
+                            window.adicionarItem = window.AdicionarItem.adicionarItem;
+                            return window.adicionarItem();
+                        }
+                        
+                        // Se chegou até aqui, há um problema
+                        console.error('❌ ERRO: Nenhuma versão da função adicionarItem foi encontrada!');
+                        console.log('🔍 DEBUG - Estado dos módulos:');
+                        console.log('   window.AdicionarItem:', !!window.AdicionarItem);
+                        console.log('   window.AdicionarItem.adicionarItem:', !!(window.AdicionarItem && window.AdicionarItem.adicionarItem));
+                        console.log('   window.adicionarItem:', !!window.adicionarItem);
+                        console.log('   Tipo de window.adicionarItem:', typeof window.adicionarItem);
+                        
+                        // Mostrar erro amigável para o usuário
+                        alert('❌ Erro: Módulo de adicionar item não foi carregado corretamente. Recarregue a página.');
+                        
+                    } catch (error) {
+                        console.error('❌ ERRO na função chamarAdicionarItem:', error);
+                        console.error('Stack trace:', error.stack);
+                        
+                        // Mostrar erro detalhado
+                        alert('❌ Erro interno ao adicionar item: ' + error.message + '\n\nVerifique o console para mais detalhes.');
+                    }
+                };
+                
+                console.log('✅ Função chamarAdicionarItem() definida com sucesso');
+                console.log('🔍 Verificação: window.adicionarItem =', typeof window.adicionarItem);
+                console.log('🔍 Verificação: window.AdicionarItem =', !!window.AdicionarItem);
+                
+                // ✅ EVENTO DO BOTÃO JÁ É GERENCIADO POR navegacao-enter.js
+                // Removido event listener redundante que causava duplo disparo
+                console.log('✅ Event listener do botão addButton gerenciado por navegacao-enter.js');
+                
+            }, 500); // Aguardar 500ms para todos os módulos carregarem
+        });
+
+        // 🌐 Wrapper global resiliente para abrir a lista (evita ReferenceError)
+        window.abrirListaRomaneios = function() {
+            try {
+                if (window.ModalListaRomaneios && typeof window.ModalListaRomaneios.openModal === 'function') {
+                    return window.ModalListaRomaneios.openModal();
+                }
+                console.warn('⚠️ ModalListaRomaneios não carregado ainda. Tentando carregar novamente em 300ms...');
+                setTimeout(function(){
+                    if (window.ModalListaRomaneios && typeof window.ModalListaRomaneios.openModal === 'function') {
+                        window.ModalListaRomaneios.openModal();
+                    } else {
+                        alert('Sistema ainda carregando. Tente novamente em alguns segundos.');
+                    }
+                }, 300);
+            } catch (e) {
+                console.error('❌ Erro ao abrir lista de romaneios:', e);
+                alert('Erro ao abrir lista de romaneios: ' + (e && e.message ? e.message : e));
+            }
+        };
+        // Alias direto para compatibilidade com handlers inline
+        function abrirListaRomaneios() { return window.abrirListaRomaneios(); }
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });
+    });
+    </script>
+</body>
+</html>

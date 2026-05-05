@@ -1,0 +1,258 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "test_connection": {
+      ".read": true,
+      ".write": true
+    },
+    "species": {
+      ".read": true,
+      ".write": true,
+      "$speciesId": {
+        ".validate": "newData.hasChild('name') && newData.child('name').isString() && newData.child('name').val().length > 0"
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "clients": {
+      ".read": true,
+      ".write": true,
+      "$clientId": {
+        ".validate": "(newData.hasChild('name') || newData.hasChild('nome')) && (newData.hasChild('name') ? newData.child('name').isString() && newData.child('name').val().length > 0 : newData.hasChild('nome') ? newData.child('nome').isString() && newData.child('nome').val().length > 0 : false)"
+      },
+      ".indexOn": ["name", "nome", "document", "timestamp"]
+    },
+    "fornecedores": {
+      ".read": true,
+      ".write": true,
+      "$fornecedorId": {
+        ".validate": "(newData.hasChild('nome') || newData.hasChild('name')) && (newData.hasChild('nome') ? newData.child('nome').isString() : newData.hasChild('name') ? newData.child('name').isString() : false)"
+      },
+      ".indexOn": ["nome", "name", "document", "timestamp"]
+    },
+    "romaneios": {
+      ".read": true,
+      ".write": true,
+      "pct": {
+        "$romaneioId": {
+          ".validate": "newData.hasChild('numero') && newData.child('numero').isString()"
+        },
+        ".indexOn": ["numero", "data", "cliente", "status", "timestamp"]
+      },
+      "tora": {
+        "$romaneioId": {
+          ".validate": "newData.hasChild('numero') && newData.child('numero').isString()"
+        },
+        ".indexOn": ["numero", "data", "cliente", "status", "timestamp"]
+      },
+      "tl": {
+        "$romaneioId": {
+          ".validate": "newData.hasChild('numero') && newData.child('numero').isString()"
+        },
+        ".indexOn": ["numero", "data", "cliente", "status", "timestamp"]
+      }
+    },
+    "romaneios_tl": {
+      ".read": true,
+      ".write": true,
+      "$romaneioId": {
+        ".validate": "newData.hasChild('cliente') && newData.hasChild('items')"
+      }
+    },
+    "romaneiosTL": {
+      ".read": true,
+      ".write": true,
+      "$romaneioId": {
+        ".validate": "newData.hasChild('cliente') && newData.hasChild('items')"
+      }
+    },
+    "romaneiosTora": {
+      ".read": true,
+      ".write": true,
+      "$romaneioId": {
+        ".validate": "newData.hasChild('numero') && newData.child('numero').isString()"
+      },
+      ".indexOn": ["numero", "data", "cliente", "status", "timestamp"]
+    },
+    "folha": {
+      ".read": true,
+      ".write": true,
+      "funcionarios": {
+        "$funcionarioId": {
+          ".validate": "newData.hasChild('nome') && newData.child('nome').isString() && newData.child('nome').val().length > 0"
+        },
+        ".indexOn": ["nome", "cpf", "ativo", "cargo"]
+      },
+      "cargos": {
+        "$cargoId": {
+          ".validate": "newData.hasChild('nome') && newData.child('nome').isString()"
+        },
+        ".indexOn": ["nome"]
+      },
+      "lancamentos": {
+        "$lancamentoId": {
+          ".validate": "newData.hasChild('funcionario') && newData.hasChild('mesAno') && newData.hasChild('tipo')"
+        },
+        ".indexOn": ["mesAno", "tipo", "status"]
+      },
+      "folhas": {
+        "$folhaId": {
+          ".read": true,
+          ".write": true
+        }
+      },
+      "bancoHoras": {
+        ".read": true,
+        ".write": true,
+        "config": {
+          ".read": true,
+          ".write": true
+        },
+        "lancamentos": {
+          "$funcionarioId": {
+            "$lancamentoId": {
+              ".validate": "newData.hasChild('data') && newData.hasChild('minutos') && newData.child('minutos').isNumber()"
+            }
+          }
+        },
+        "saldos": {
+          "$funcionarioId": {
+            ".read": true,
+            ".write": true,
+            ".validate": "newData.hasChild('saldoMinutos') && newData.child('saldoMinutos').isNumber()"
+          }
+        },
+        "assinaturas": {
+          "$funcionarioId": {
+            ".read": true,
+            ".write": true,
+            ".validate": "newData.hasChild('timestamp') && newData.child('timestamp').isString()"
+          }
+        },
+        "expiracoes": {
+          "$anoMes": {
+            ".read": true,
+            ".write": true
+          }
+        }
+      }
+    },
+    "funcionarios": { ".read": true, ".write": true },
+    "cargos": { ".read": true, ".write": true },
+    "folhas": { ".read": true, ".write": true },
+    "cadastros": { ".read": true, ".write": true },
+    "folha_pagamento": { ".read": true, ".write": true },
+    "contasPagar": {
+      ".read": true,
+      ".write": true,
+      "$contaId": {
+        ".validate": "newData.hasChild('descricao') && newData.child('descricao').isString() && newData.hasChild('valor') && newData.child('valor').isNumber()"
+      },
+      ".indexOn": ["dataVencimento", "status", "tipo"]
+    },
+    "contasReceber": {
+      ".read": true,
+      ".write": true
+    },
+    "companies": {
+      ".read": true,
+      ".write": "auth != null",
+      "$companyId": {
+        ".validate": "(newData.hasChild('nome') && newData.child('nome').isString()) || (newData.hasChild('name') && newData.child('name').isString())"
+      }
+    },
+    "orcamentos": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$orcamentoId": {
+        ".validate": "newData.hasChild('numero') && newData.child('numero').isString()"
+      },
+      ".indexOn": ["numero", "data", "cliente", "status"]
+    },
+    "logs": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$logId": {
+        ".validate": "newData.hasChild('timestamp') && newData.hasChild('message') && newData.child('timestamp').isString()"
+      }
+    },
+    "backups": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$backupId": {
+        ".validate": "newData.hasChild('timestamp') && newData.child('timestamp').isString()"
+      }
+    },
+    "system": {
+      ".read": "auth != null",
+      "config": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      },
+      "migrations": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      },
+      "sessions": {
+        "$uid": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": "auth != null && auth.uid == $uid"
+        }
+      }
+    },
+    "auth": {
+      "currentUser": {
+        ".read": "auth != null",
+        ".write": false
+      },
+      "users": {
+        "$uid": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": false
+        }
+      },
+      "sessions": {
+        "$uid": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": "auth != null && auth.uid == $uid"
+        }
+      }
+    },
+    "cache": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "preferences": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "data": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "indexedDB": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "pedidosVenda": {
+      ".read": true,
+      ".write": true
+    },
+    "produtos": {
+      ".read": true,
+      ".write": true
+    },
+    "clientesPct": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}
+

@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Governança de Acesso - Sisweb</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="menu.css">
+    <style>
+        * { box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { margin: 0; background: #f5f7fb; color: #0f172a; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 12px rgba(15,23,42,0.08); padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 16px; gap: 10px; flex-wrap: wrap; }
+        .title { font-size: 24px; font-weight: 700; margin: 0; color: #1e293b; }
+        .subtitle { font-size: 13px; color: #475569; margin: 4px 0 0; }
+        .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+        .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 14px; }
+        .card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; background: #fff; }
+        .card h3 { margin: 0 0 8px; font-size: 15px; color: #0f172a; }
+        .row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px dashed #e2e8f0; }
+        .row:last-child { border-bottom: none; }
+        .k { color: #475569; font-size: 12px; }
+        .v { color: #0f172a; font-size: 12px; font-weight: 600; text-align: right; word-break: break-word; }
+        .panel { border: 1px solid #dbeafe; border-radius: 10px; background: #f8fbff; padding: 12px; margin-bottom: 14px; }
+        .panel-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; color: #1e3a8a; font-weight: 700; }
+        .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+        .chip { padding: 6px 10px; border-radius: 999px; font-size: 12px; border: 1px solid #cbd5e1; background: #fff; color: #334155; }
+        .chip.ok { border-color: #86efac; background: #f0fdf4; color: #166534; }
+        .chip.warn { border-color: #fcd34d; background: #fffbeb; color: #92400e; }
+        .table-wrap { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { font-size: 12px; padding: 9px 10px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        th { background: #f8fafc; color: #334155; font-weight: 700; }
+        tr:last-child td { border-bottom: none; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+        .json { margin-top: 12px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; background: #0b1020; color: #dbeafe; font-size: 11px; max-height: 260px; overflow: auto; white-space: pre-wrap; }
+        .error { display: none; border: 1px solid #fecaca; background: #fef2f2; color: #991b1b; border-radius: 8px; padding: 10px; margin-bottom: 12px; font-size: 13px; }
+        .actions { display: flex; gap: 8px; }
+        .btn { border: 1px solid #cbd5e1; background: #fff; color: #0f172a; border-radius: 8px; font-size: 12px; font-weight: 700; padding: 8px 12px; cursor: pointer; }
+        .btn:hover { background: #f8fafc; }
+        .audit-toolbar { margin-top: 12px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .audit-select { border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; padding: 7px 10px; background: #fff; }
+        .audit-summary { font-size: 12px; color: #334155; font-weight: 700; }
+        .issue-badge { display: inline-block; border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 700; border: 1px solid #fecaca; color: #991b1b; background: #fff1f2; margin-right: 4px; margin-bottom: 4px; }
+        @media (max-width: 900px) {
+            body { padding: 10px; }
+            .container { padding: 12px; border-radius: 12px; }
+            .actions { width: 100%; display: grid; grid-template-columns: 1fr; }
+            .actions .btn { width: 100%; justify-content: center; }
+            .audit-toolbar { display: grid; grid-template-columns: 1fr; }
+            .audit-select, .audit-toolbar .btn { width: 100%; }
+            .table-wrap table.responsive-stack thead { display: none; }
+            .table-wrap table.responsive-stack tbody { display: block; width: 100%; }
+            .table-wrap table.responsive-stack tbody tr {
+                display: block;
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                margin: 0 0 10px;
+                padding: 6px 8px;
+                background: #fff;
+            }
+            .table-wrap table.responsive-stack tbody td {
+                display: grid;
+                grid-template-columns: minmax(96px, 38%) 1fr;
+                gap: 8px;
+                border-bottom: 1px dashed #e2e8f0;
+                border-left: 0;
+                border-right: 0;
+                border-top: 0;
+                padding: 7px 0;
+                white-space: normal;
+                word-break: break-word;
+            }
+            .table-wrap table.responsive-stack tbody td::before {
+                content: attr(data-label);
+                font-size: 11px;
+                font-weight: 700;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
+            }
+            .table-wrap table.responsive-stack tbody td:last-child { border-bottom: 0; }
+            .table-wrap table.responsive-stack tbody td[colspan] {
+                display: block;
+                border-bottom: 0;
+                text-align: center;
+            }
+            .table-wrap table.responsive-stack tbody td[colspan]::before { content: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <main-menu></main-menu>
+        <div class="header">
+            <div>
+                <h1 class="title">Governança de Acesso</h1>
+                <p class="subtitle">Visão em tempo real de claims, tenant ativo, companyId efetivo e escopo.</p>
+            </div>
+            <div class="actions">
+                <span class="badge" id="lastUpdated">Atualizando...</span>
+                <button class="btn" id="refreshBtn"><i class="fas fa-rotate"></i> Atualizar</button>
+                <button class="btn" id="auditClaimsBtn"><i class="fas fa-list-check"></i> Auditar Claims</button>
+                <button class="btn" id="reconcileClaimsBtn"><i class="fas fa-user-check"></i> Reconciliar Claims</button>
+            </div>
+        </div>
+
+        <div class="error" id="errorBox"></div>
+
+        <div class="panel">
+            <div class="panel-title">
+                <span>Resumo de Escopo</span>
+            </div>
+            <div class="chips" id="scopeChips"></div>
+        </div>
+
+        <div class="status-grid">
+            <div class="card">
+                <h3>Sessão Atual</h3>
+                <div class="row"><span class="k">UID</span><span class="v mono" id="sessionUid">-</span></div>
+                <div class="row"><span class="k">Email</span><span class="v" id="sessionEmail">-</span></div>
+                <div class="row"><span class="k">Nome</span><span class="v" id="sessionName">-</span></div>
+                <div class="row"><span class="k">Tenant Ativo</span><span class="v mono" id="sessionTenant">-</span></div>
+                <div class="row"><span class="k">companyId Efetivo</span><span class="v mono" id="sessionCompany">-</span></div>
+                <div class="row"><span class="k">Escopo</span><span class="v" id="sessionScope">-</span></div>
+            </div>
+            <div class="card">
+                <h3>Claims do Token</h3>
+                <div class="row"><span class="k">superadmin</span><span class="v" id="claimSuperadmin">-</span></div>
+                <div class="row"><span class="k">companyId</span><span class="v mono" id="claimCompanyId">-</span></div>
+                <div class="row"><span class="k">adminPanelUser</span><span class="v" id="claimAdminPanelUser">-</span></div>
+                <div class="row"><span class="k">tokenIssuedAt</span><span class="v mono" id="claimIssuedAt">-</span></div>
+                <div class="row"><span class="k">tokenAuthTime</span><span class="v mono" id="claimAuthTime">-</span></div>
+                <div class="row"><span class="k">tokenExp</span><span class="v mono" id="claimExp">-</span></div>
+            </div>
+            <div class="card">
+                <h3>Origem dos Dados</h3>
+                <div class="row"><span class="k">users root</span><span class="v" id="originUsersRoot">0</span></div>
+                <div class="row"><span class="k">users tenant</span><span class="v" id="originUsersTenant">0</span></div>
+                <div class="row"><span class="k">users final</span><span class="v" id="originUsersFinal">0</span></div>
+                <div class="row"><span class="k">requests root</span><span class="v" id="originReqRoot">0</span></div>
+                <div class="row"><span class="k">requests tenant</span><span class="v" id="originReqTenant">0</span></div>
+                <div class="row"><span class="k">requests final</span><span class="v" id="originReqFinal">0</span></div>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fonte</th>
+                        <th>Caminho Root</th>
+                        <th>Caminho Tenant</th>
+                        <th>companyId efetivo</th>
+                        <th>Tenants varridos</th>
+                        <th>timestamp</th>
+                    </tr>
+                </thead>
+                <tbody id="originTableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="audit-toolbar">
+            <label for="auditFilter" class="audit-summary">Filtro da Auditoria:</label>
+            <select id="auditFilter" class="audit-select">
+                <option value="all">Todos os auditados</option>
+                <option value="critical">Somente críticos</option>
+                <option value="superadmin_company">Somente superadmin com companyId</option>
+            </select>
+            <button class="btn" id="applyAuditFilterBtn"><i class="fas fa-filter"></i> Aplicar Filtro</button>
+            <button class="btn" id="fixAuditedBtn"><i class="fas fa-screwdriver-wrench"></i> Corrigir Somente Itens Auditados</button>
+            <span id="auditSummary" class="audit-summary">Sem auditoria carregada</span>
+        </div>
+
+        <div class="table-wrap" style="margin-top:10px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>UID</th>
+                        <th>Email</th>
+                        <th>Inconsistente</th>
+                        <th>Issues</th>
+                    </tr>
+                </thead>
+                <tbody id="auditTableBody">
+                    <tr><td colspan="4">Execute a auditoria para visualizar inconsistências.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="json mono" id="claimsJson">Aguardando token...</div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script type="module">
+        import * as firebaseSvc from './firebaseService.js';
+        window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
+    </script>
+    <script src="menu-component.js?v=20260326"></script>
+    <script src="menu.js"></script>
+    <script>
+        let refreshTimer = null;
+        let lastAuditData = null;
+        let lastAuditFilteredItems = [];
+        let responsiveTableHydrationScheduled = false;
+
+        function hydrateResponsiveTable(tableEl) {
+            if (!tableEl) return;
+            const headers = Array.from(tableEl.querySelectorAll('thead th')).map((th) => String(th.textContent || '').trim());
+            if (!headers.length) return;
+            tableEl.querySelectorAll('tbody tr').forEach((tr) => {
+                tr.querySelectorAll('td').forEach((td, index) => {
+                    if (td.hasAttribute('colspan')) {
+                        td.removeAttribute('data-label');
+                        return;
+                    }
+                    const label = headers[index] || '';
+                    if (label) td.setAttribute('data-label', label);
+                });
+            });
+            tableEl.classList.add('responsive-stack');
+        }
+
+        function scheduleResponsiveTablesHydration() {
+            if (responsiveTableHydrationScheduled) return;
+            responsiveTableHydrationScheduled = true;
+            requestAnimationFrame(() => {
+                responsiveTableHydrationScheduled = false;
+                document.querySelectorAll('.table-wrap table').forEach((tableEl) => hydrateResponsiveTable(tableEl));
+            });
+        }
+
+        function text(id, value) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = value === undefined || value === null || value === '' ? '-' : String(value);
+        }
+
+        function toIsoFromSeconds(value) {
+            const n = Number(value || 0);
+            if (!n) return '-';
+            return new Date(n * 1000).toISOString();
+        }
+
+        function parseCompanyInfo() {
+            try {
+                return JSON.parse(localStorage.getItem('company_info') || 'null') || null;
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function effectiveTenantFromContext(details, claims) {
+            const company = parseCompanyInfo();
+            return String(
+                (window.appTenantId) ||
+                (details && (details.companyId || details.companyID || details.tenantId)) ||
+                (claims && (claims.companyId || claims.companyID || claims.tenantId)) ||
+                (company && (company.id || company.companyId || company.slug || company.nome || company.name)) ||
+                ''
+            );
+        }
+
+        function buildScopeChipData(claims, tenantId) {
+            const isSuperadmin = !!(claims && claims.superadmin === true);
+            const hasTenant = !!tenantId;
+            const scope = isSuperadmin ? 'global' : (hasTenant ? 'empresa' : 'indefinido');
+            return { isSuperadmin, hasTenant, scope };
+        }
+
+        function renderScopeChips(scopeData) {
+            const box = document.getElementById('scopeChips');
+            if (!box) return;
+            const chips = [];
+            chips.push(`<span class="chip ${scopeData.isSuperadmin ? 'ok' : 'warn'}">superadmin: ${scopeData.isSuperadmin ? 'sim' : 'não'}</span>`);
+            chips.push(`<span class="chip ${scopeData.hasTenant ? 'ok' : 'warn'}">tenant ativo: ${scopeData.hasTenant ? 'sim' : 'não'}</span>`);
+            chips.push(`<span class="chip ${scopeData.scope === 'global' ? 'ok' : ''}">escopo: ${scopeData.scope}</span>`);
+            box.innerHTML = chips.join('');
+        }
+
+        function renderOriginTable(origins) {
+            const tbody = document.getElementById('originTableBody');
+            if (!tbody) return;
+            const entries = Object.entries(origins || {});
+            if (!entries.length) {
+                tbody.innerHTML = '<tr><td colspan="6">Sem metadados de origem ainda.</td></tr>';
+                scheduleResponsiveTablesHydration();
+                return;
+            }
+            tbody.innerHTML = entries.map(([name, meta]) => {
+                const m = meta || {};
+                return `<tr>
+                    <td>${name}</td>
+                    <td class="mono">${m.rootPath || '-'}</td>
+                    <td class="mono">${m.tenantPath || '-'}</td>
+                    <td class="mono">${m.companyIdEffective || '-'}</td>
+                    <td>${Number(m.tenantsScanned || 0)}</td>
+                    <td class="mono">${m.timestamp || '-'}</td>
+                </tr>`;
+            }).join('');
+            scheduleResponsiveTablesHydration();
+        }
+
+        function showError(msg) {
+            const box = document.getElementById('errorBox');
+            if (!box) return;
+            if (!msg) {
+                box.style.display = 'none';
+                box.textContent = '';
+                return;
+            }
+            box.style.display = 'block';
+            box.textContent = msg;
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function isCriticalAuditIssue(issue) {
+            const normalized = String(issue || '').toLowerCase();
+            return normalized.includes('sem superadmin') || normalized.includes('allowlisted');
+        }
+
+        function isSuperadminWithCompanyIssue(issue) {
+            const normalized = String(issue || '').toLowerCase();
+            return normalized.includes('superadmin=true com companyid');
+        }
+
+        function getAuditFilterValue() {
+            const el = document.getElementById('auditFilter');
+            return String(el && el.value ? el.value : 'all').toLowerCase();
+        }
+
+        function applyAuditFilter(data) {
+            const source = data && Array.isArray(data.items) ? data.items : [];
+            const filter = getAuditFilterValue();
+            if (filter === 'critical') {
+                return source.filter((item) => Array.isArray(item.issues) && item.issues.some(isCriticalAuditIssue));
+            }
+            if (filter === 'superadmin_company') {
+                return source.filter((item) => Array.isArray(item.issues) && item.issues.some(isSuperadminWithCompanyIssue));
+            }
+            return source;
+        }
+
+        function renderAuditTable(items) {
+            const tbody = document.getElementById('auditTableBody');
+            if (!tbody) return;
+            const list = Array.isArray(items) ? items : [];
+            if (!list.length) {
+                tbody.innerHTML = '<tr><td colspan="4">Nenhum item para o filtro atual.</td></tr>';
+                scheduleResponsiveTablesHydration();
+                return;
+            }
+            tbody.innerHTML = list.map((item) => {
+                const issues = Array.isArray(item.issues) ? item.issues : [];
+                const issueHtml = issues.length
+                    ? issues.map((issue) => `<span class="issue-badge">${escapeHtml(issue)}</span>`).join('')
+                    : '-';
+                return `<tr>
+                    <td class="mono">${escapeHtml(item.uid || '-')}</td>
+                    <td>${escapeHtml(item.email || '-')}</td>
+                    <td>${item.inconsistent ? 'Sim' : 'Não'}</td>
+                    <td>${issueHtml}</td>
+                </tr>`;
+            }).join('');
+            scheduleResponsiveTablesHydration();
+        }
+
+        function renderAuditSummary(data, filteredItems) {
+            const summary = document.getElementById('auditSummary');
+            if (!summary) return;
+            if (!data) {
+                summary.textContent = 'Sem auditoria carregada';
+                return;
+            }
+            summary.textContent = `Auditoria: total=${Number(data.totalUsers || 0)} | inconsistentes=${Number(data.inconsistentCount || 0)} | exibidos=${Array.isArray(filteredItems) ? filteredItems.length : 0}`;
+        }
+
+        function markSuperAdminCache() {
+            try { window.__SESSION_SUPERADMIN = true; } catch (_) {}
+            try {
+                const current = JSON.parse(localStorage.getItem('currentUser') || 'null') || {};
+                localStorage.setItem('currentUser', JSON.stringify({ ...current, superadmin: true, claims: { ...(current.claims || {}), superadmin: true } }));
+            } catch (_) {}
+            try {
+                const persistent = JSON.parse(localStorage.getItem('persistentUser') || 'null') || {};
+                if (Object.keys(persistent).length) {
+                    localStorage.setItem('persistentUser', JSON.stringify({ ...persistent, superadmin: true, claims: { ...(persistent.claims || {}), superadmin: true } }));
+                }
+            } catch (_) {}
+        }
+
+        async function ensureAdminAccess() {
+            try {
+                const isSuper = window.isSuperAdminSession ? await window.isSuperAdminSession() : false;
+                const hasAny = window.hasAnyAdminPanelAccess ? await window.hasAnyAdminPanelAccess() : false;
+                if (isSuper || hasAny) return true;
+            } catch (_) {}
+            for (let i = 0; i < 3; i += 1) {
+                try {
+                    const authUser = window.firebaseService && window.firebaseService.authService && typeof window.firebaseService.authService.getCurrentUser === 'function'
+                        ? await window.firebaseService.authService.getCurrentUser()
+                        : null;
+                    if (authUser && typeof authUser.getIdTokenResult === 'function') {
+                        const token = await authUser.getIdTokenResult(true);
+                        const claims = token && token.claims ? token.claims : {};
+                        if (claims.superadmin === true) {
+                            markSuperAdminCache();
+                            return true;
+                        }
+                    }
+                } catch (_) {}
+                await new Promise((resolve) => setTimeout(resolve, 250));
+            }
+            alert('Acesso restrito. Você não possui permissão administrativa.');
+            window.location.href = 'index.html';
+            return false;
+        }
+
+        async function collectSnapshot() {
+            const details = window.getCurrentUserDetails ? await window.getCurrentUserDetails() : null;
+            const authUser = window.firebaseService && window.firebaseService.authService && typeof window.firebaseService.authService.getCurrentUser === 'function'
+                ? await window.firebaseService.authService.getCurrentUser()
+                : null;
+            const tokenResult = authUser && typeof authUser.getIdTokenResult === 'function' ? await authUser.getIdTokenResult(true) : null;
+            const claims = tokenResult && tokenResult.claims ? tokenResult.claims : {};
+            if (window.firebaseService && typeof window.firebaseService.getAll === 'function') {
+                await window.firebaseService.getAll('users');
+                await window.firebaseService.getAll('subscriptionRequests');
+            }
+            const origins = window.__siswebDataOrigin || {};
+            const usersOrigin = origins.users || {};
+            const reqOrigin = origins.subscriptionRequests || {};
+            const tenant = effectiveTenantFromContext(details || {}, claims || {});
+            const scopeData = buildScopeChipData(claims || {}, tenant);
+            return { details, claims, tokenResult, origins, usersOrigin, reqOrigin, tenant, scopeData };
+        }
+
+        function renderSnapshot(snapshot) {
+            const details = snapshot.details || {};
+            const claims = snapshot.claims || {};
+            text('sessionUid', details.uid || details.id || details.userId || '-');
+            text('sessionEmail', details.email || '-');
+            text('sessionName', details.displayName || details.username || '-');
+            text('sessionTenant', snapshot.tenant || '-');
+            text('sessionCompany', claims.companyId || details.companyId || '-');
+            text('sessionScope', snapshot.scopeData.scope);
+            text('claimSuperadmin', claims.superadmin === true ? 'true' : 'false');
+            text('claimCompanyId', claims.companyId || '-');
+            text('claimAdminPanelUser', claims.adminPanelUser === true ? 'true' : 'false');
+            text('claimIssuedAt', snapshot.tokenResult && snapshot.tokenResult.issuedAtTime ? snapshot.tokenResult.issuedAtTime : '-');
+            text('claimAuthTime', toIsoFromSeconds(claims.auth_time));
+            text('claimExp', toIsoFromSeconds(claims.exp));
+            text('originUsersRoot', Number(snapshot.usersOrigin.rootCount || 0));
+            text('originUsersTenant', Number(snapshot.usersOrigin.tenantCount || 0));
+            text('originUsersFinal', Number(snapshot.usersOrigin.mergedCount || 0));
+            text('originReqRoot', Number(snapshot.reqOrigin.rootCount || 0));
+            text('originReqTenant', Number(snapshot.reqOrigin.tenantCount || 0));
+            text('originReqFinal', Number(snapshot.reqOrigin.mergedCount || 0));
+            renderScopeChips(snapshot.scopeData);
+            renderOriginTable(snapshot.origins);
+            const jsonEl = document.getElementById('claimsJson');
+            if (jsonEl) jsonEl.textContent = JSON.stringify(claims || {}, null, 2);
+            const stamp = document.getElementById('lastUpdated');
+            if (stamp) stamp.textContent = `Atualizado: ${new Date().toLocaleString('pt-BR')}`;
+        }
+
+        async function refreshGovernance() {
+            try {
+                showError('');
+                const snapshot = await collectSnapshot();
+                renderSnapshot(snapshot);
+            } catch (error) {
+                showError((error && error.message) ? error.message : String(error));
+            }
+        }
+
+        async function reconcileClaimsNow() {
+            if (!window.firebaseService || typeof window.firebaseService.reconcileSuperAdminClaims !== 'function') {
+                alert('Função de reconciliação indisponível.');
+                return;
+            }
+            const extraEmailsRaw = prompt('Emails extras (separados por vírgula) para reconciliar como superadmin:', '') || '';
+            const emails = String(extraEmailsRaw)
+                .split(/[,\s;]+/)
+                .map((v) => v.trim().toLowerCase())
+                .filter(Boolean);
+            const dryRun = confirm('Executar em modo simulação (sem gravar alterações)? Clique OK para simulação, Cancelar para aplicar.');
+            const result = await window.firebaseService.reconcileSuperAdminClaims({
+                emails,
+                removeCompanyIdClaim: true,
+                dryRun
+            });
+            if (!result || !result.success || !result.data) {
+                alert(`Falha na reconciliação: ${(result && result.error) || 'erro desconhecido'}`);
+                return;
+            }
+            const data = result.data || {};
+            alert(`Reconciliação concluída (${dryRun ? 'simulação' : 'aplicada'}): processados=${data.processed || 0}, alterados=${data.changed || 0}, sem alteração=${data.unchanged || 0}, não encontrados=${Array.isArray(data.missing) ? data.missing.length : 0}.`);
+            await refreshGovernance();
+        }
+
+        function renderAuditFromState() {
+            if (!lastAuditData) {
+                renderAuditTable([]);
+                renderAuditSummary(null, []);
+                return;
+            }
+            lastAuditFilteredItems = applyAuditFilter(lastAuditData);
+            renderAuditTable(lastAuditFilteredItems);
+            renderAuditSummary(lastAuditData, lastAuditFilteredItems);
+        }
+
+        async function auditClaimsNow() {
+            if (!window.firebaseService || typeof window.firebaseService.auditAdminClaimsInconsistencies !== 'function') {
+                alert('Função de auditoria indisponível.');
+                return;
+            }
+            const includeConsistent = confirm('Incluir também usuários consistentes no resultado? OK = sim, Cancelar = somente inconsistentes.');
+            const result = await window.firebaseService.auditAdminClaimsInconsistencies({ includeConsistent });
+            if (!result || !result.success || !result.data) {
+                alert(`Falha na auditoria: ${(result && result.error) || 'erro desconhecido'}`);
+                return;
+            }
+            const data = result.data || {};
+            lastAuditData = data;
+            renderAuditFromState();
+            const preview = Array.isArray(lastAuditFilteredItems) ? lastAuditFilteredItems.slice(0, 20) : [];
+            const jsonEl = document.getElementById('claimsJson');
+            if (jsonEl) {
+                jsonEl.textContent = JSON.stringify({
+                    generatedAt: data.generatedAt,
+                    totalUsers: data.totalUsers,
+                    inconsistentCount: data.inconsistentCount,
+                    consistentCount: data.consistentCount,
+                    preview
+                }, null, 2);
+            }
+            alert(`Auditoria concluída: total=${data.totalUsers || 0}, inconsistentes=${data.inconsistentCount || 0}, consistentes=${data.consistentCount || 0}, exibidos=${lastAuditFilteredItems.length}.`);
+        }
+
+        async function fixAuditedItemsNow() {
+            if (!lastAuditData) {
+                alert('Execute a auditoria antes de corrigir itens.');
+                return;
+            }
+            const targets = (Array.isArray(lastAuditFilteredItems) ? lastAuditFilteredItems : []).filter((item) => item && item.inconsistent);
+            if (!targets.length) {
+                alert('Não há itens inconsistentes no filtro atual.');
+                return;
+            }
+            if (!window.firebaseService || typeof window.firebaseService.reconcileSuperAdminClaims !== 'function') {
+                alert('Função de reconciliação indisponível.');
+                return;
+            }
+            const confirmFix = confirm(`Deseja corrigir ${targets.length} item(ns) inconsistentes exibidos?`);
+            if (!confirmFix) return;
+            const uids = targets.map((item) => String(item.uid || '')).filter(Boolean);
+            const emails = targets.map((item) => String(item.email || '').toLowerCase()).filter(Boolean);
+            const result = await window.firebaseService.reconcileSuperAdminClaims({
+                uids,
+                emails,
+                removeCompanyIdClaim: true,
+                dryRun: false
+            });
+            if (!result || !result.success || !result.data) {
+                alert(`Falha ao corrigir itens auditados: ${(result && result.error) || 'erro desconhecido'}`);
+                return;
+            }
+            const data = result.data || {};
+            alert(`Correção aplicada: processados=${data.processed || 0}, alterados=${data.changed || 0}, sem alteração=${data.unchanged || 0}.`);
+            await auditClaimsNow();
+            await refreshGovernance();
+        }
+
+        function attachRealtimeRefresh() {
+            if (refreshTimer) clearInterval(refreshTimer);
+            refreshTimer = setInterval(refreshGovernance, 8000);
+            window.addEventListener('focus', refreshGovernance);
+            window.addEventListener('storage', (event) => {
+                if (!event) return;
+                if (['currentUser', 'persistentUser', 'company_info', 'roles', 'sisweb:subscriptions:lastUpdate'].includes(event.key)) {
+                    refreshGovernance();
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const allowed = await ensureAdminAccess();
+            if (!allowed) return;
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) refreshBtn.addEventListener('click', refreshGovernance);
+            const auditBtn = document.getElementById('auditClaimsBtn');
+            if (auditBtn) auditBtn.addEventListener('click', auditClaimsNow);
+            const applyFilterBtn = document.getElementById('applyAuditFilterBtn');
+            if (applyFilterBtn) applyFilterBtn.addEventListener('click', renderAuditFromState);
+            const filterEl = document.getElementById('auditFilter');
+            if (filterEl) filterEl.addEventListener('change', renderAuditFromState);
+            const fixAuditedBtn = document.getElementById('fixAuditedBtn');
+            if (fixAuditedBtn) fixAuditedBtn.addEventListener('click', fixAuditedItemsNow);
+            const reconcileBtn = document.getElementById('reconcileClaimsBtn');
+            if (reconcileBtn) reconcileBtn.addEventListener('click', reconcileClaimsNow);
+            await refreshGovernance();
+            attachRealtimeRefresh();
+        });
+    </script>
+</body>
+</html>

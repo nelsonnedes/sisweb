@@ -1,0 +1,63 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "test_connection": {
+      ".read": true,
+      ".write": true
+    },
+    "species": {
+      ".read": true,
+      ".write": true,
+      "$speciesId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "system": {
+      "migrations": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "indexedDB": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "compras": {
+      ".read": true,
+      ".write": true,
+      "$pedidoId": {
+        ".validate": "newData.hasChild('numero') && newData.child('numero').isString() && newData.hasChild('fornecedorId') && newData.hasChild('itens')",
+        ".indexOn": ["numero", "data", "fornecedorId", "status"]
+      }
+    },
+    "contasPagar": {
+      ".read": true,
+      ".write": true,
+      "$contaId": {
+        ".validate": "newData.hasChild('descricao') && newData.child('descricao').isString() && newData.hasChild('valor') && newData.child('valor').isNumber() && newData.hasChild('dataVencimento')",
+        ".indexOn": ["dataVencimento", "status", "tipo", "origemId"]
+      }
+    },
+    "estoqueComprasMov": {
+      ".read": true,
+      ".write": true,
+      "$movId": {
+        ".validate": "newData.hasChild('origem') && newData.child('origem').isString() && newData.hasChild('origemId') && newData.hasChild('data') && newData.hasChild('fornecedorNome')",
+        ".indexOn": ["data", "fornecedorId", "origemId"]
+      }
+    }
+    ,
+    "romaneios": {
+      ".read": true,
+      ".write": true,
+      "tora": {
+        ".indexOn": ["numero", "data", "cliente", "status", "timestamp"],
+        "$romaneioId": {
+          ".validate": "newData.hasChild('numero') && (newData.child('numero').isString() || newData.child('numero').isNumber()) && newData.child('numero').val() != null"
+        }
+      }
+    }
+  }
+}

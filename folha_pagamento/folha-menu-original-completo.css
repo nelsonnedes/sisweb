@@ -1,0 +1,22 @@
+/**
+ * 🎯 FOLHA MENU ORIGINAL COMPLETO - CSS MÍNIMO
+ * Apenas ajustes essenciais sem interferir no menu original
+ */
+
+/* ✅ APENAS Z-INDEX PARA DROPDOWNS */
+.menu-item-container .dropdown-content {
+    z-index: 999999 !important;
+}
+
+/* ✅ REMOVER SEPARADORES SEM AFETAR ÍCONES */
+.menu-item-container::before,
+.menu-item-container::after {
+    display: none !important;
+}
+
+/* ✅ GARANTIR DROPDOWNS FUNCIONAIS */
+.dropdown-content.show-dropdown {
+    display: block !important;
+}
+
+/* ✅ DEIXAR TUDO MAIS FUNCIONAR NATURALMENTE */
