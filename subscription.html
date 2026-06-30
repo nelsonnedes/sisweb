@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assinatura - Sistema</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
     <style>
         * {
             margin: 0;
@@ -14,19 +15,34 @@
         }
 
         body {
-            background-color: #f5f5f5;
+            background-color: #0f172a;
             padding: 20px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
-            background: linear-gradient(135deg, #2c3e50, #3498db);
+            background: radial-gradient(circle at 10% 10%, rgba(52, 152, 219, 0.35), transparent 40%), radial-gradient(circle at 90% 90%, rgba(39, 174, 96, 0.35), transparent 40%), linear-gradient(135deg, #1e293b, #0f172a);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            opacity: 0.8;
+            z-index: -1;
         }
 
         .global-system-footer {
             width: min(100%, 1200px);
             margin: 22px auto 0;
+            color: #94a3b8;
         }
 
         .container {
@@ -45,12 +61,13 @@
         }
 
         .campaign-item {
-            background: rgba(255, 255, 255, 0.14);
-            border: 1px solid rgba(255, 255, 255, 0.26);
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
             padding: 12px;
             color: #e2e8f0;
             font-size: 13px;
+            backdrop-filter: blur(10px);
         }
 
         .subscription-plans {
@@ -60,37 +77,345 @@
             margin-top: 40px;
         }
 
-        .plan-card {
-            background-color: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
+        .subscription-message-cta {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            gap: 18px;
+            align-items: center;
             text-align: left;
+            color: #e2e8f0;
+            background: linear-gradient(135deg, rgba(20, 184, 166, 0.18), rgba(14, 165, 233, 0.12)), rgba(15, 23, 42, 0.72);
+            border: 1px solid rgba(94, 234, 212, 0.3);
+            border-radius: 18px;
+            padding: 22px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.26);
+            backdrop-filter: blur(18px);
+        }
+
+        .subscription-message-icon {
+            width: 58px;
+            height: 58px;
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #5eead4;
+            color: #042f2e;
+            font-size: 26px;
+            box-shadow: 0 16px 34px rgba(20, 184, 166, 0.28);
+        }
+
+        .subscription-message-kicker {
+            color: #67e8f9;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 5px;
+        }
+
+        .subscription-message-copy h2 {
+            margin: 0;
+            color: #f8fafc;
+            font-size: 24px;
+            letter-spacing: 0;
+        }
+
+        .subscription-message-copy p {
+            margin: 7px 0 0;
+            color: #cbd5e1;
+            line-height: 1.5;
+            max-width: 680px;
+        }
+
+        .subscription-message-button {
+            border: 0;
+            border-radius: 14px;
+            padding: 14px 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            background: #ffffff;
+            color: #0f172a;
+            font-weight: 900;
+            cursor: pointer;
+            white-space: nowrap;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.24);
+        }
+
+        .subscription-message-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.32);
+        }
+
+        #supportModal.subscription-public-support .support-mode-tabs,
+        #supportModal.subscription-public-support #siswebSupportTicketsPanel,
+        #supportModal.subscription-public-support .support-ticket {
+            display: none !important;
+        }
+
+        #supportModal.subscription-public-support #siswebSupportNewPanel {
+            display: block;
+        }
+
+        #supportModal.subscription-public-support .support-public-register {
+            background: #0f172a;
+        }
+
+        .subscription-guide {
+            margin-top: 34px;
+            text-align: left;
+            color: #e2e8f0;
+            background: rgba(15, 23, 42, 0.68);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 22px;
+            padding: 28px;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+            backdrop-filter: blur(18px);
+        }
+
+        .subscription-guide-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 16px;
+            align-items: start;
+            margin-bottom: 18px;
+        }
+
+        .subscription-guide-kicker {
+            color: #5eead4;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 6px;
+        }
+
+        .subscription-guide h2 {
+            margin: 0;
+            font-size: 28px;
+            letter-spacing: 0;
+            color: #f8fafc;
+        }
+
+        .subscription-guide-lead {
+            margin: 8px 0 0;
+            color: #cbd5e1;
+            line-height: 1.55;
+            max-width: 830px;
+        }
+
+        .subscription-guide-cta {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: #ffffff;
+            color: #0f172a;
+            text-decoration: none;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .subscription-guide-tools {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .subscription-guide-search {
+            width: 100%;
+            min-width: 0;
+            border: 1px solid rgba(148, 163, 184, 0.32);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #f8fafc;
+            padding: 13px 14px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .subscription-guide-search::placeholder {
+            color: #94a3b8;
+        }
+
+        .subscription-guide-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 14px;
+        }
+
+        .subscription-guide-card {
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.055);
+            padding: 15px;
+            min-width: 0;
+        }
+
+        .subscription-guide-card h3 {
+            color: #f8fafc;
+            font-size: 16px;
+            margin: 0 0 8px;
+            letter-spacing: 0;
+        }
+
+        .subscription-guide-card ul {
+            margin: 0;
+            padding-left: 18px;
+            color: #cbd5e1;
+            line-height: 1.5;
+            font-size: 13px;
+        }
+
+        .subscription-guide-shot {
+            margin-top: 12px;
+            border: 1px solid rgba(203, 213, 225, 0.22);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+        }
+
+        .subscription-guide-shot button {
+            display: block;
+            width: 100%;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            cursor: zoom-in;
+            text-align: left;
+            color: inherit;
+        }
+
+        .subscription-guide-shot img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            display: block;
+            background: #0f172a;
+        }
+
+        .subscription-guide-shot figcaption {
+            color: #cbd5e1;
+            font-size: 12px;
+            line-height: 1.45;
+            padding: 9px 10px;
+        }
+
+        .subscription-guide-lightbox {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.82);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+        }
+
+        .subscription-guide-lightbox.active {
+            display: flex;
+        }
+
+        .subscription-guide-lightbox-panel {
+            width: min(100%, 1080px);
+            max-height: calc(100dvh - 36px);
+            background: #ffffff;
+            color: #0f172a;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 28px 90px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .subscription-guide-lightbox-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .subscription-guide-lightbox-bar strong {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .subscription-guide-lightbox-close {
+            border: 0;
+            border-radius: 10px;
+            padding: 10px 12px;
+            background: #0f172a;
+            color: #fff;
+            cursor: pointer;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .subscription-guide-lightbox img {
+            width: 100%;
+            max-height: calc(100dvh - 120px);
+            object-fit: contain;
+            display: block;
+            background: #f8fafc;
+        }
+
+        .plan-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: left;
+            backdrop-filter: blur(16px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .plan-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(140deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
         }
 
         .plan-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-10px);
+            border-color: rgba(52, 152, 219, 0.5);
+            box-shadow: 0 30px 60px rgba(52, 152, 219, 0.2);
         }
 
         .plan-title {
-            color: #2c3e50;
-            font-size: 24px;
+            color: #f8fafc;
+            font-size: 26px;
             margin-bottom: 15px;
             text-align: left;
+            font-weight: 700;
         }
 
         .plan-price {
-            color: #27ae60;
-            font-size: 36px;
-            font-weight: bold;
+            color: #10b981;
+            font-size: 42px;
+            font-weight: 800;
             margin-bottom: 20px;
             text-align: left;
         }
 
         .plan-price small {
             font-size: 16px;
-            color: #7f8c8d;
+            color: #94a3b8;
+            font-weight: 500;
         }
 
         .plan-features {
@@ -100,13 +425,16 @@
         }
 
         .plan-features li {
-            margin: 10px 0;
-            color: #34495e;
+            margin: 12px 0;
+            color: #cbd5e1;
+            display: flex;
+            align-items: center;
         }
 
         .plan-features li i {
-            color: #27ae60;
-            margin-right: 10px;
+            color: #10b981;
+            margin-right: 12px;
+            font-size: 18px;
         }
 
         .method-badges {
@@ -119,39 +447,51 @@
 
         .method-badge {
             font-size: 12px;
-            padding: 6px 10px;
+            padding: 6px 12px;
             border-radius: 999px;
-            background: #eff6ff;
-            color: #1d4ed8;
-            border: 1px solid #bfdbfe;
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            font-weight: 600;
         }
 
         .select-plan {
-            background-color: #2c3e50;
+            background: linear-gradient(135deg, #10b981, #059669);
             color: white;
-            padding: 12px 24px;
+            padding: 16px 24px;
             border: none;
-            border-radius: 6px;
+            border-radius: 12px;
             cursor: pointer;
             font-size: 16px;
-            transition: background-color 0.3s ease;
+            font-weight: bold;
+            transition: all 0.3s ease;
             width: 100%;
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
         }
 
         .select-plan:hover {
-            background-color: #34495e;
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(16, 185, 129, 0.4);
         }
 
         .trial-info {
             color: white;
             margin-bottom: 40px;
-            padding: 20px;
-            background-color: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
         .trial-info h2 {
             margin-bottom: 10px;
+            font-size: 2rem;
+            background: linear-gradient(135deg, #f8fafc, #cbd5e1);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .modal {
@@ -575,6 +915,33 @@
             .container {
                 padding: 18px;
             }
+            .subscription-message-cta {
+                grid-template-columns: 1fr;
+                padding: 18px;
+            }
+            .subscription-message-icon {
+                width: 52px;
+                height: 52px;
+            }
+            .subscription-message-copy h2 {
+                font-size: 21px;
+            }
+            .subscription-message-button {
+                width: 100%;
+            }
+            .subscription-guide {
+                padding: 18px;
+            }
+            .subscription-guide-header,
+            .subscription-guide-tools {
+                grid-template-columns: 1fr;
+            }
+            .subscription-guide h2 {
+                font-size: 22px;
+            }
+            .subscription-guide-cta {
+                width: 100%;
+            }
             .plan-card {
                 padding: 18px;
             }
@@ -605,6 +972,154 @@
         </div>
 
         <div class="subscription-plans" id="plansContainer"></div>
+
+        <section class="subscription-message-cta" id="subscriptionMessageCenterCta" aria-label="Central de Mensagens">
+            <div class="subscription-message-icon" aria-hidden="true">
+                <i class="fas fa-headset"></i>
+            </div>
+            <div class="subscription-message-copy">
+                <div class="subscription-message-kicker">Atendimento direto</div>
+                <h2>Fale com o Admin pela Central de Mensagens</h2>
+                <p>Tire dúvidas sobre planos, teste grátis, pagamento, cadastro da empresa ou implantação. Clientes logados acompanham as respostas no histórico de tickets.</p>
+            </div>
+            <button id="subscriptionMessageCenterButton" class="subscription-message-button" type="button" onclick="openSubscriptionPublicMessageCenter()">
+                <i class="fas fa-comments"></i>
+                Abrir Central de Mensagens
+            </button>
+        </section>
+
+        <section class="subscription-guide" id="subscriptionQuickGuide" aria-label="Guia Rápido de Uso do Sistema">
+            <div class="subscription-guide-header">
+                <div>
+                    <div class="subscription-guide-kicker">Treinamento visual com dados fictícios</div>
+                    <h2>Guia Rápido de Uso do Sistema</h2>
+                    <p class="subscription-guide-lead">Conheça a ordem prática para começar no Sisweb: empresa, cadastros, romaneios, vendas, compras, estoque, financeiro, folha e suporte. Clique em qualquer imagem para ampliar e depois fechar para voltar ao guia.</p>
+                </div>
+                <a class="subscription-guide-cta" href="ajuda.html"><i class="fas fa-book-open"></i> Manual completo</a>
+            </div>
+            <div class="subscription-guide-tools">
+                <input id="subscriptionQuickGuideSearch" class="subscription-guide-search" type="search" placeholder="Pesquisar: toras, romaneio, venda, compra, estoque, folha, PIX..." autocomplete="off">
+                <a class="subscription-guide-cta" href="subscription.html?cupom=BLACKFRIDAI20&utm_source=guide&utm_medium=subscription&utm_campaign=madeireiro"><i class="fas fa-tag"></i> Ver oferta</a>
+            </div>
+            <div class="subscription-guide-grid">
+                <div class="subscription-guide-card" data-subscription-guide-keywords="empresa cadastro cnpj logo tenant companyid">
+                    <h3><i class="fas fa-building"></i> Configuração inicial</h3>
+                    <ul>
+                        <li>Cadastre a empresa e confirme contato/CNPJ.</li>
+                        <li>Defina o contexto multiempresa com segurança.</li>
+                    </ul>
+                    <figure class="subscription-guide-shot">
+                        <button type="button" data-guide-image="assets/help-manual/empresa-1.png?v=20260606" data-guide-caption="Cadastro da empresa com CNPJ, contato, logo e tenant.">
+                            <img src="assets/help-manual/empresa-1.png?v=20260606" alt="Print sanitizado do cadastro de empresa" loading="lazy" decoding="async">
+                            <figcaption>Empresa: base correta antes de operar.</figcaption>
+                        </button>
+                    </figure>
+                </div>
+                <div class="subscription-guide-card" data-subscription-guide-keywords="clientes fornecedores especies cadastros base">
+                    <h3><i class="fas fa-users"></i> Cadastros base</h3>
+                    <ul>
+                        <li>Clientes, fornecedores e espécies organizados.</li>
+                        <li>Busca e ações rápidas para rotina diária.</li>
+                    </ul>
+                    <figure class="subscription-guide-shot">
+                        <button type="button" data-guide-image="assets/help-manual/cadastros-1.png?v=20260606" data-guide-caption="Cadastros base com filtros, edição e listagem.">
+                            <img src="assets/help-manual/cadastros-1.png?v=20260606" alt="Print sanitizado de cadastros base" loading="lazy" decoding="async">
+                            <figcaption>Cadastros: a base para vendas, compras e romaneios.</figcaption>
+                        </button>
+                    </figure>
+                </div>
+                <div class="subscription-guide-card" data-subscription-guide-keywords="romaneio tora tl pct pes impressão desdobramento">
+                    <h3><i class="fas fa-file-alt"></i> Romaneios e toras</h3>
+                    <ul>
+                        <li>Pré-romaneio e emissão por tipo.</li>
+                        <li>Totais, medições e impressão profissional.</li>
+                    </ul>
+                    <figure class="subscription-guide-shot">
+                        <button type="button" data-guide-image="assets/help-manual/romaneios-1.png?v=20260606" data-guide-caption="Romaneios com cliente, espécie, itens, totais e impressão.">
+                            <img src="assets/help-manual/romaneios-1.png?v=20260606" alt="Print sanitizado de romaneios" loading="lazy" decoding="async">
+                            <figcaption>Romaneios: controle operacional do segmento madeireiro.</figcaption>
+                        </button>
+                    </figure>
+                </div>
+                <div class="subscription-guide-card" data-subscription-guide-keywords="vendas pedido cliente produto receber relatorio">
+                    <h3><i class="fas fa-shopping-cart"></i> Vendas</h3>
+                    <ul>
+                        <li>Pedidos com itens, parcelas e relatórios.</li>
+                        <li>Integração com contas a receber.</li>
+                    </ul>
+                    <figure class="subscription-guide-shot">
+                        <button type="button" data-guide-image="assets/help-manual/vendas-1.png?v=20260606" data-guide-caption="Pedidos de venda com itens, totais e lista para impressão.">
+                            <img src="assets/help-manual/vendas-1.png?v=20260606" alt="Print sanitizado de vendas" loading="lazy" decoding="async">
+                            <figcaption>Vendas: pedido, totalização e acompanhamento.</figcaption>
+                        </button>
+                    </figure>
+                </div>
+                <div class="subscription-guide-card" data-subscription-guide-keywords="compras fornecedor pedido pagar produto carrinho">
+                    <h3><i class="fas fa-shopping-bag"></i> Compras</h3>
+                    <ul>
+                        <li>Pedido de compra com fornecedor e itens.</li>
+                        <li>Parcelas conectadas ao financeiro.</li>
+                    </ul>
+                    <figure class="subscription-guide-shot">
+                        <button type="button" data-guide-image="assets/help-manual/compras-1.png?v=20260606" data-guide-caption="Compras com fornecedor, carrinho, parcelas e detalhes.">
+                            <img src="assets/help-manual/compras-1.png?v=20260606" alt="Print sanitizado de compras" loading="lazy" decoding="async">
+                            <figcaption>Compras: rotina de entrada e pagamento.</figcaption>
+                        </button>
+                    </figure>
+                </div>
+                <div class="subscription-guide-card" data-subscription-guide-keywords="estoque toras almoxarifado rastreabilidade baixa saldo">
+                    <h3><i class="fas fa-warehouse"></i> Estoque</h3>
+                    <ul>
+                        <li>Saldo, entrada, saída e rastreabilidade.</li>
+                        <li>Relatórios para conferência de volume.</li>
+                    </ul>
+                    <figure class="subscription-guide-shot">
+                        <button type="button" data-guide-image="assets/help-manual/estoque-1.png?v=20260606" data-guide-caption="Estoque com saldo, baixas, rastreabilidade e relatórios.">
+                            <img src="assets/help-manual/estoque-1.png?v=20260606" alt="Print sanitizado de estoque" loading="lazy" decoding="async">
+                            <figcaption>Estoque: visão operacional por volume e movimentação.</figcaption>
+                        </button>
+                    </figure>
+                </div>
+                <div class="subscription-guide-card" data-subscription-guide-keywords="financeiro pagar receber vencimento caixa anexo pagamento">
+                    <h3><i class="fas fa-coins"></i> Financeiro</h3>
+                    <ul>
+                        <li>Contas a pagar, receber e vencimentos.</li>
+                        <li>Registro de pagamentos e anexos.</li>
+                    </ul>
+                    <figure class="subscription-guide-shot">
+                        <button type="button" data-guide-image="assets/help-manual/financas-1.png?v=20260606" data-guide-caption="Financeiro com contas, vencimentos, anexos e pagamentos.">
+                            <img src="assets/help-manual/financas-1.png?v=20260606" alt="Print sanitizado do financeiro" loading="lazy" decoding="async">
+                            <figcaption>Financeiro: controle do caixa operacional.</figcaption>
+                        </button>
+                    </figure>
+                </div>
+                <div class="subscription-guide-card" data-subscription-guide-keywords="folha funcionario pix qrcode recibo quinzena">
+                    <h3><i class="fas fa-file-invoice-dollar"></i> Folha e PIX</h3>
+                    <ul>
+                        <li>Lançamentos, recibos e QR Code PIX.</li>
+                        <li>Controle por quinzena, mês e funcionário.</li>
+                    </ul>
+                    <figure class="subscription-guide-shot">
+                        <button type="button" data-guide-image="assets/help-manual/folha-1.png?v=20260606" data-guide-caption="Folha com lançamentos, QR Code PIX, valores pagos e recibos.">
+                            <img src="assets/help-manual/folha-1.png?v=20260606" alt="Print sanitizado de folha de pagamento" loading="lazy" decoding="async">
+                            <figcaption>Folha: pagamentos e comprovantes mais claros.</figcaption>
+                        </button>
+                    </figure>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="subscriptionGuideLightbox" class="subscription-guide-lightbox" role="dialog" aria-modal="true" aria-label="Imagem do guia rápido">
+        <div class="subscription-guide-lightbox-panel">
+            <div class="subscription-guide-lightbox-bar">
+                <strong id="subscriptionGuideLightboxCaption">Guia Rápido de Uso do Sistema</strong>
+                <button id="subscriptionGuideLightboxClose" class="subscription-guide-lightbox-close" type="button">
+                    <i class="fas fa-times"></i> Fechar e voltar ao Guia
+                </button>
+            </div>
+            <img id="subscriptionGuideLightboxImage" alt="">
+        </div>
     </div>
 
     <!-- Modal de Pagamento -->
@@ -616,28 +1131,12 @@
                 <div class="payment-subtitle">Escolha como deseja concluir sua renovação: PIX automático recomendado ou envio manual de comprovante.</div>
             </div>
             <div class="payment-mode-switch">
-                <button type="button" id="modePixAutoBtn" class="payment-mode-btn active" onclick="setPaymentFlowMode('pix_auto')">🔵 PIX Automático</button>
+                <button type="button" id="modeBricksBtn" class="payment-mode-btn active" onclick="setPaymentFlowMode('bricks')">🟢 Pagamento Online</button>
                 <button type="button" id="modeManualBtn" class="payment-mode-btn" onclick="setPaymentFlowMode('manual')">⚪ Enviar Comprovante</button>
             </div>
-            <div id="pixAutoPanel" class="flow-panel pix-auto-panel">
-                <div class="pix-status-row">
-                    <span id="pixStatusChip" class="pix-status-chip">Pronto para gerar cobrança PIX</span>
-                    <span id="pixCountdown" class="pix-expiration">Sem cobrança ativa</span>
-                </div>
-                <div class="pix-qr-shell">
-                    <img id="pixQrImage" alt="QR Code PIX" style="display:none;">
-                    <div id="pixQrPlaceholder" class="payment-subtitle">Clique em "Gerar PIX automático" para exibir o QR Code.</div>
-                </div>
-                <div class="pix-code-block">
-                    <div id="pixCodeValue" class="pix-code-value">Código PIX ainda não gerado.</div>
-                    <button type="button" class="copy-button" onclick="copyPixAutoCode()">Copiar</button>
-                </div>
-                <div class="pix-actions">
-                    <button type="button" id="btnGeneratePix" class="pix-action-primary" onclick="startPixAutomaticPayment()">Gerar PIX automático</button>
-                    <button type="button" id="btnAlreadyPaidPix" class="pix-action-secondary" onclick="revalidatePixPaymentNow()">Já paguei</button>
-                    <button type="button" class="pix-action-secondary" onclick="setPaymentFlowMode('manual')">Usar comprovante manual</button>
-                </div>
-                <div id="pixAutoHelper" class="pix-helper">Após pagar, a confirmação pode ocorrer automaticamente em poucos instantes.</div>
+            <div id="bricksPanel" class="flow-panel pix-auto-panel">
+                <div id="paymentBrick_container"></div>
+                <div id="brickLoadingHelper" class="pix-helper" style="text-align: center; display: none;">Carregando ambiente seguro de pagamento...</div>
             </div>
             <div id="manualFlowPanel" class="flow-panel" style="display:none;">
             <div class="pix-info">
@@ -684,6 +1183,14 @@
                             <label for="referralEmail">Campanha de Indicação (opcional)</label>
                             <input type="email" id="referralEmail" placeholder="Email de quem indicou você">
                         </div>
+                        <div class="referral-box" id="promoCodeBox">
+                            <label for="promoCodeInput">Cupom de Desconto (opcional)</label>
+                            <div style="display:flex; gap:8px; margin-top:6px;">
+                                <input type="text" id="promoCodeInput" placeholder="Ex: BLACKFRIDAY50" style="margin-top:0;">
+                                <button type="button" class="validate-button" style="margin:0; padding:10px;" onclick="applyPromoCode()">Aplicar</button>
+                            </div>
+                            <div id="promoCodeMessage" style="font-size: 13px; margin-top: 4px;"></div>
+                        </div>
                         <label for="paymentNotes">Observações do pagamento (opcional)</label>
                         <textarea id="paymentNotes" rows="3" placeholder="Ex.: pagamento realizado às 13:50, banco XYZ."></textarea>
                     </div>
@@ -716,7 +1223,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-    <script src="auth.js"></script>
+    <script src="menu-component.js?v=2026-06-10-subscription-status-ux-v1"></script>
+    <script src="auth.js?v=2026-06-10-subscription-status-ux-v1"></script>
     <script type="module">
         import {
             authService,
@@ -731,7 +1239,7 @@
             subscribe,
             getTenantId,
             getCurrentUid
-        } from './firebaseService.js';
+        } from './firebaseService.js?v=2026-06-10-subscription-status-ux-v1';
         window.firebaseService = {
             ...(window.firebaseService || {}),
             authService,
@@ -760,31 +1268,9 @@
                     alert('Seu período de modo leitura expirou. Para continuar no sistema, renove sua assinatura.');
                 }
             } catch (_) {}
-            const details = window.getCurrentUserDetails ? await window.getCurrentUserDetails() : null;
+            const details = await loadAuthenticatedSubscriptionContext({ rerender: true });
             if (!details || !details.email) {
-                console.warn('Usuário não autenticado. Redirecionando para página de login...');
-                window.location.href = 'login.html?redirect=subscription.html';
-                return;
-            }
-            const isAdmin = window.isSuperAdminSession ? await window.isSuperAdminSession() : false;
-            let statusKey = window.resolveSubscriptionStatus ? window.resolveSubscriptionStatus(details) : 'expired';
-            try {
-                const params = new URLSearchParams(window.location.search || '');
-                const intent = String(params.get('intent') || '').toLowerCase();
-                if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-                    const snap = await loadMyUserSnapshot(details);
-                    if (snap && typeof snap === 'object') {
-                        currentUserDetails = snap;
-                        statusKey = window.resolveSubscriptionStatus ? window.resolveSubscriptionStatus(snap) : statusKey;
-                    }
-                }
-            } catch (_) {}
-            if (!currentUserDetails) currentUserDetails = details;
-            currentStatusKey = statusKey;
-            const params2 = new URLSearchParams(window.location.search || '');
-            const intent2 = String(params2.get('intent') || '').toLowerCase();
-            if (!isAdmin && (statusKey === 'active' || statusKey === 'trial_active') && intent2 !== 'renew') {
-                window.location.href = 'index.html';
+                console.warn('Oferta pública carregada sem sessão autenticada. Login será solicitado somente nas ações.');
                 return;
             }
             console.log('Usuário autenticado:', details.email);
@@ -838,14 +1324,166 @@
         let validationCode = null;
         let subscriptionSettings = null;
         let currentUserDetails = null;
-        let currentStatusKey = 'expired';
+        let currentStatusKey = 'public';
         let paymentFlowMode = 'pix_auto';
         let currentPixPayment = null;
         let pixCountdownTimer = null;
         let pixSubscriptions = [];
+        let appliedPromoCode = null;
+        let appliedPromoDiscountAmount = 0;
+        let appliedPromoFinalPrice = 0;
+        let pendingPromoCodeFromUrl = '';
+        let postOnboardingIntentHandled = false;
 
         function currency(value) {
             return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function normalizePromoCodeInput(value) {
+            return String(value || '')
+                .trim()
+                .toUpperCase()
+                .replace(/[^A-Z0-9_-]/g, '')
+                .slice(0, 40);
+        }
+
+        function readPromoCodeFromUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                return normalizePromoCodeInput(params.get('cupom') || params.get('promo') || params.get('coupon') || '');
+            } catch (_) {
+                return '';
+            }
+        }
+
+        function getSubscriptionReturnTarget() {
+            try {
+                const fileName = (window.location.pathname || '/subscription.html').split('/').pop() || 'subscription.html';
+                return fileName + (window.location.search || '') + (window.location.hash || '');
+            } catch (_) {
+                return 'subscription.html';
+            }
+        }
+
+        function isPublicSubscriptionVisitor() {
+            return !currentUserDetails || !currentUserDetails.email || currentStatusKey === 'public';
+        }
+
+        async function hasAuthenticatedSubscriptionUser() {
+            if (currentUserDetails && currentUserDetails.email) return true;
+            try {
+                if (window.firebaseAuthUser && (window.firebaseAuthUser.uid || window.firebaseAuthUser.email)) return true;
+            } catch (_) {}
+            try {
+                const service = window.firebaseService && window.firebaseService.authService;
+                if (service && typeof service.getCurrentUser === 'function') {
+                    const authUser = await service.getCurrentUser();
+                    if (authUser && (authUser.uid || authUser.email)) {
+                        currentUserDetails = currentUserDetails || {
+                            uid: authUser.uid || '',
+                            email: authUser.email || '',
+                            displayName: authUser.displayName || ''
+                        };
+                        return true;
+                    }
+                }
+            } catch (_) {}
+            return false;
+        }
+
+        function copyMarketingParams(targetParams) {
+            try {
+                const source = new URLSearchParams(window.location.search || '');
+                ['cupom', 'promo', 'coupon', 'ref', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach((key) => {
+                    const value = source.get(key);
+                    if (value && !targetParams.has(key)) targetParams.set(key, value);
+                });
+            } catch (_) {}
+        }
+
+        function buildPostOnboardingSubscriptionTarget(intent, plan) {
+            const params = new URLSearchParams();
+            copyMarketingParams(params);
+            const normalizedIntent = String(intent || '').toLowerCase();
+            if (normalizedIntent === 'free_trial') {
+                params.set('intent', 'free_trial');
+                params.set('activateTrial', '1');
+            } else {
+                params.set('intent', 'payment');
+                params.set('checkout', '1');
+                params.set('plan', String(plan || 'monthly').toLowerCase());
+            }
+            return 'subscription.html?' + params.toString();
+        }
+
+        function buildCompanyOnboardingTarget(intent, plan) {
+            const normalizedIntent = String(intent || '').toLowerCase() === 'free_trial' ? 'free_trial' : 'payment';
+            const params = new URLSearchParams();
+            params.set('reason', 'subscription_onboarding');
+            params.set('subscriptionIntent', normalizedIntent);
+            if (normalizedIntent === 'payment') params.set('plan', String(plan || 'monthly').toLowerCase());
+            params.set('return', buildPostOnboardingSubscriptionTarget(normalizedIntent, plan));
+            return 'company.html?' + params.toString();
+        }
+
+        function redirectToSubscriptionRegistration(intent, plan) {
+            const normalizedIntent = String(intent || '').toLowerCase() === 'free_trial' ? 'free_trial' : 'payment';
+            const onboardingTarget = buildCompanyOnboardingTarget(normalizedIntent, plan);
+            try {
+                sessionStorage.setItem('siswebPendingSubscriptionOnboarding', JSON.stringify({
+                    intent: normalizedIntent,
+                    plan: String(plan || '').toLowerCase(),
+                    onboardingTarget,
+                    createdAt: Date.now()
+                }));
+            } catch (_) {}
+            const params = new URLSearchParams();
+            params.set('noRedirect', 'true');
+            params.set('mode', 'register');
+            params.set('reason', normalizedIntent === 'free_trial' ? 'subscription_free_trial' : 'subscription_payment');
+            params.set('redirect', onboardingTarget);
+            window.location.href = 'login.html?' + params.toString();
+        }
+
+        async function requireSubscriptionLogin(reason, options = {}) {
+            if (await hasAuthenticatedSubscriptionUser()) return true;
+            if (options && options.preferRegistration) {
+                redirectToSubscriptionRegistration(options.intent || reason, options.plan || currentPlan || '');
+                return false;
+            }
+            const params = new URLSearchParams();
+            params.set('noRedirect', 'true');
+            params.set('reason', reason || 'subscription_action');
+            params.set('redirect', getSubscriptionReturnTarget());
+            window.location.href = 'login.html?' + params.toString();
+            return false;
+        }
+
+        function getPaidPlanActionLabel() {
+            if (isPublicSubscriptionVisitor() || currentStatusKey === 'unknown') return 'Assinar';
+            if (currentStatusKey === 'active' || currentStatusKey === 'trial_active') return 'Alterar plano';
+            return 'Renovar Assinatura';
+        }
+
+        function getFreePlanActionLabel(trialDays) {
+            if (isPublicSubscriptionVisitor() || currentStatusKey === 'unknown') {
+                return trialDays > 0 ? `Começar ${trialDays} dias grátis` : 'Criar conta';
+            }
+            return 'Ativar Plano Grátis';
+        }
+
+        function prefillPromoCodeFromUrl() {
+            const code = pendingPromoCodeFromUrl || readPromoCodeFromUrl();
+            if (!code) return '';
+            pendingPromoCodeFromUrl = code;
+            const input = document.getElementById('promoCodeInput');
+            const msg = document.getElementById('promoCodeMessage');
+            if (input && !input.value) input.value = code;
+            if (msg && !appliedPromoCode) {
+                msg.style.color = '#2563eb';
+                msg.textContent = 'Cupom recebido pelo link. Selecione um plano para validar.';
+            }
+            return code;
         }
 
         function getPlanAmountFromSettings(planKey) {
@@ -1062,7 +1700,7 @@
                 button.textContent = 'Gerando PIX...';
             }
             try {
-                const response = await window.firebaseService.createPixPayment({ plan: currentPlan });
+                const response = await window.firebaseService.createPixPayment({ plan: currentPlan, promoCode: appliedPromoCode });
                 if (!response || response.success === false) {
                     throw new Error((response && response.error) || 'Falha ao gerar cobrança PIX.');
                 }
@@ -1132,27 +1770,135 @@
         }
 
         function setPaymentFlowMode(mode) {
-            const normalized = String(mode || '').toLowerCase() === 'manual' ? 'manual' : 'pix_auto';
-            if (normalized === 'pix_auto' && !isPixMethodEnabled()) {
-                paymentFlowMode = 'manual';
-            } else {
-                paymentFlowMode = normalized;
-            }
-            const pixBtn = document.getElementById('modePixAutoBtn');
+            const normalized = String(mode || '').toLowerCase() === 'manual' ? 'manual' : 'bricks';
+            paymentFlowMode = normalized;
+            const bricksBtn = document.getElementById('modeBricksBtn');
             const manualBtn = document.getElementById('modeManualBtn');
-            const pixPanel = document.getElementById('pixAutoPanel');
+            const bricksPanel = document.getElementById('bricksPanel');
             const manualPanel = document.getElementById('manualFlowPanel');
-            if (paymentFlowMode === 'pix_auto') {
-                if (pixBtn) pixBtn.classList.add('active');
+            if (paymentFlowMode === 'bricks') {
+                if (bricksBtn) bricksBtn.classList.add('active');
                 if (manualBtn) manualBtn.classList.remove('active');
-                if (pixPanel) pixPanel.style.display = 'block';
+                if (bricksPanel) bricksPanel.style.display = 'block';
                 if (manualPanel) manualPanel.style.display = 'none';
+                
+                // Inicializa o Brick se for a primeira vez
+                if (currentPlan && !window.brickController) {
+                    startBricksPayment();
+                }
             } else {
                 if (manualBtn) manualBtn.classList.add('active');
-                if (pixBtn) pixBtn.classList.remove('active');
+                if (bricksBtn) bricksBtn.classList.remove('active');
                 if (manualPanel) manualPanel.style.display = 'block';
-                if (pixPanel) pixPanel.style.display = 'none';
+                if (bricksPanel) bricksPanel.style.display = 'none';
                 showStep(1);
+            }
+        }
+
+        async function startBricksPayment() {
+            if (!currentPlan) return;
+            const helper = document.getElementById('brickLoadingHelper');
+            const container = document.getElementById('paymentBrick_container');
+            if (helper) helper.style.display = 'block';
+            if (container) container.innerHTML = ''; // Limpa antes de carregar
+            
+            try {
+                // 1. Chamar backend para criar a preference_id
+                const response = await window.firebaseService.createPaymentPreference({ plan: currentPlan, promoCode: appliedPromoCode });
+                if (!response || !response.success || !response.data || !response.data.preferenceId) {
+                    throw new Error((response && response.error) ? `Erro do Servidor: ${response.error}` : 'Falha ao gerar preferência de pagamento.');
+                }
+                const preferenceId = response.data.preferenceId;
+                const amount = response.data.amount;
+
+                // 2. Inicializar o SDK do Mercado Pago
+                // Tenta pegar a publicKey configurada nas settings do backend ou usa a chave fornecida.
+                const publicKey = (subscriptionSettings && subscriptionSettings.mercadopago && subscriptionSettings.mercadopago.publicKey) || 'APP_USR-c132956c-d3e0-494d-8e39-0a54000afaeb'; 
+                const mp = new MercadoPago(publicKey, { locale: 'pt-BR' });
+                const bricksBuilder = mp.bricks();
+
+                const renderPaymentBrick = async (bricksBuilder) => {
+                    const settings = {
+                        initialization: {
+                            amount: amount
+                        },
+                        customization: {
+                            paymentMethods: {
+                                creditCard: 'all',
+                                debitCard: 'all',
+                                bankTransfer: 'all'
+                            }
+                        },
+                        callbacks: {
+                            onReady: () => {
+                                if (helper) helper.style.display = 'none';
+                            },
+                            onSubmit: async ({ selectedPaymentMethod, formData }) => {
+                                return new Promise(async (resolve, reject) => {
+                                    try {
+                                        const result = await window.firebaseService.processPaymentBrick({ formData, plan: currentPlan });
+                                        if (result && result.success) {
+                                            resolve();
+                                            const providerPayment = result.data.providerPayment;
+                                            if (selectedPaymentMethod === 'bank_transfer' && providerPayment && providerPayment.point_of_interaction) {
+                                                const txData = providerPayment.point_of_interaction.transaction_data || {};
+                                                const qrCodeBase64 = txData.qr_code_base64;
+                                                const qrCode = txData.qr_code;
+                                                if (helper) {
+                                                    helper.innerHTML = `<div style="text-align: center; margin-top: 20px;">
+                                                        <h3 style="color:#10b981; margin-bottom: 15px;">PIX Gerado com Sucesso!</h3>
+                                                        <p style="margin-bottom: 10px; color: #f8fafc;">Escaneie o QR Code abaixo no app do seu banco:</p>
+                                                        <img src="data:image/png;base64,${qrCodeBase64}" style="width: 250px; height: 250px; display: block; margin: 0 auto 15px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"/>
+                                                        <p style="margin-bottom: 10px; color: #f8fafc;">Ou utilize a opção Copia e Cola:</p>
+                                                        <input type="text" value="${qrCode}" style="width:100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); color: white; text-align: center; margin-bottom: 20px; cursor: pointer;" readonly onclick="this.select(); document.execCommand('copy'); alert('Código PIX copiado!');" />
+                                                        <p style="font-size: 0.9em; color: #94a3b8;">Sua assinatura será ativada automaticamente após a confirmação do pagamento pelo banco (pode levar alguns segundos). Você pode fechar esta janela após pagar.</p>
+                                                    </div>`;
+                                                    helper.style.display = 'block';
+                                                    setTimeout(() => {
+                                                        helper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                    }, 100);
+                                                }
+                                                const brickContainer = document.getElementById('paymentBrick_container');
+                                                if (brickContainer) brickContainer.style.display = 'none';
+                                                setTimeout(() => window.location.reload(), 60000); // 1 minuto para poder ler o QR code
+                                            } else {
+                                                if (helper) {
+                                                    helper.textContent = 'Pagamento efetuado com sucesso! Processando a liberação...';
+                                                    helper.style.color = '#10b981';
+                                                    helper.style.display = 'block';
+                                                }
+                                                setTimeout(() => window.location.reload(), 3000);
+                                            }
+                                        } else {
+                                            reject();
+                                            if (helper) {
+                                                helper.textContent = (result && result.error) ? result.error : 'Erro ao processar o pagamento.';
+                                                helper.style.display = 'block';
+                                            }
+                                        }
+                                    } catch (err) {
+                                        reject();
+                                    }
+                                });
+                            },
+                            onError: (error) => {
+                                console.error('Erro no Brick do Mercado Pago', error);
+                                if (helper) {
+                                    helper.textContent = 'Erro ao carregar módulo de pagamento. Tente novamente.';
+                                    helper.style.display = 'block';
+                                }
+                            },
+                        },
+                    };
+                    window.brickController = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
+                };
+                
+                await renderPaymentBrick(bricksBuilder);
+            } catch (error) {
+                console.error(error);
+                if (helper) {
+                    helper.textContent = error.message || 'Falha ao iniciar pagamento. Tente novamente.';
+                }
             }
         }
 
@@ -1161,6 +1907,20 @@
             clearPixCountdown();
             currentPixPayment = null;
             renderPixData(null);
+            
+            if (window.brickController && typeof window.brickController.unmount === 'function') {
+                window.brickController.unmount();
+                window.brickController = null;
+            }
+
+            appliedPromoCode = null;
+            appliedPromoDiscountAmount = 0;
+            appliedPromoFinalPrice = 0;
+            const promoInput = document.getElementById('promoCodeInput');
+            const promoMsg = document.getElementById('promoCodeMessage');
+            if (promoInput) promoInput.value = '';
+            if (promoMsg) promoMsg.textContent = '';
+            
             document.getElementById('fileName').textContent = '';
             document.getElementById('btnEnviar').disabled = true;
             document.getElementById('validationMessage').textContent = '';
@@ -1168,6 +1928,65 @@
             if (btnGenerate) {
                 btnGenerate.disabled = false;
                 btnGenerate.textContent = 'Gerar PIX automático';
+            }
+        }
+
+        async function applyPromoCode() {
+            const input = document.getElementById('promoCodeInput');
+            const msg = document.getElementById('promoCodeMessage');
+            if (!input || !msg) return;
+            const code = input.value.trim().toUpperCase();
+            
+            if (!code) {
+                appliedPromoCode = null;
+                appliedPromoDiscountAmount = 0;
+                appliedPromoFinalPrice = 0;
+                msg.textContent = '';
+                updatePaymentAmountDisplay();
+                return;
+            }
+
+            msg.style.color = '#f59e0b';
+            msg.textContent = 'Validando cupom...';
+
+            try {
+                if (!window.firebaseService || typeof window.firebaseService.validatePromoCode !== 'function') {
+                    throw new Error("Serviço de validação indisponível.");
+                }
+                const result = await window.firebaseService.validatePromoCode({
+                    code: code,
+                    plan: currentPlan,
+                    planId: currentPlan,
+                    planKey: currentPlan
+                });
+
+                if (result && result.success && result.data && result.data.valid) {
+                    appliedPromoCode = code;
+                    appliedPromoDiscountAmount = result.data.discountAmount || 0;
+                    appliedPromoFinalPrice = result.data.finalPrice || 0;
+                    
+                    msg.style.color = '#10b981';
+                    msg.textContent = `Cupom aplicado! Desconto de ${currency(appliedPromoDiscountAmount)}`;
+                    updatePaymentAmountDisplay();
+                } else {
+                    throw new Error((result && result.data && result.data.message) || (result && result.error) || 'Cupom inválido.');
+                }
+            } catch (error) {
+                appliedPromoCode = null;
+                appliedPromoDiscountAmount = 0;
+                appliedPromoFinalPrice = 0;
+                msg.style.color = '#ef4444';
+                msg.textContent = error.message || 'Erro ao validar cupom.';
+                updatePaymentAmountDisplay();
+            }
+        }
+
+        function updatePaymentAmountDisplay() {
+            let baseAmount = getPlanAmountFromSettings(currentPlan);
+            if (appliedPromoFinalPrice > 0 || appliedPromoCode) {
+                document.getElementById('paymentAmount').innerHTML = `<span style="text-decoration:line-through; color:#94a3b8; font-size:0.9em; margin-right:8px;">${currency(baseAmount)}</span><span style="color:#10b981; font-weight:bold;">${currency(appliedPromoFinalPrice)}</span>`;
+            } else {
+                document.getElementById('paymentAmount').textContent = currency(baseAmount);
             }
         }
 
@@ -1197,35 +2016,143 @@
         }
 
         function getDefaultSettings() {
-            return null;
+            return {
+                __fallback: true,
+                plans: {
+                    monthly: {
+                        label: 'Plano Mensal',
+                        periodLabel: '/mês',
+                        amount: 19.9,
+                        enabled: true
+                    },
+                    quarterly: {
+                        label: 'Plano Trimestral',
+                        periodLabel: '/trimestre',
+                        amount: 59.9,
+                        enabled: true
+                    },
+                    premium: {
+                        label: 'Plano Premium',
+                        periodLabel: '/ano',
+                        amount: 228,
+                        enabled: true
+                    }
+                },
+                paymentMethods: {
+                    pix: true,
+                    boleto: false,
+                    card: false,
+                    transfer: false
+                },
+                paymentMeta: {
+                    pixKey: '',
+                    beneficiary: '',
+                    supportEmail: 'nedes1@hotmail.com'
+                },
+                promotion: {
+                    enabled: false,
+                    title: '',
+                    discountPercent: 0
+                },
+                campaign: {
+                    enabled: true,
+                    title: 'Sisweb para o segmento madeireiro',
+                    discountLadder: [],
+                    newClientGoal: { monthlyTarget: 0, bonusPercent: 0 },
+                    specieBalance: { enabled: false, conversionPercent: 10, cashoutThreshold: 300, minCashout: 50 },
+                    referral: { enabled: false, discountPercentForNewClient: 0, commissionPercentForReferrer: 0 }
+                },
+                freeTrialDays: 30,
+                lateGraceDays: 3
+            };
         }
 
-        async function loadSubscriptionSettingsSafe() {
+        function normalizeClientSubscriptionSettings(input) {
+            const defaults = getDefaultSettings();
+            const source = input && typeof input === 'object' ? input : {};
+            const plans = source.plans && typeof source.plans === 'object' ? source.plans : {};
+            const paymentMethods = source.paymentMethods && typeof source.paymentMethods === 'object' ? source.paymentMethods : {};
+            const paymentMeta = source.paymentMeta && typeof source.paymentMeta === 'object' ? source.paymentMeta : {};
+            const promotion = source.promotion && typeof source.promotion === 'object' ? source.promotion : {};
+            const campaign = source.campaign && typeof source.campaign === 'object' ? source.campaign : {};
+            return {
+                ...defaults,
+                ...source,
+                plans: {
+                    monthly: { ...defaults.plans.monthly, ...(plans.monthly || {}) },
+                    quarterly: { ...defaults.plans.quarterly, ...(plans.quarterly || {}) },
+                    premium: { ...defaults.plans.premium, ...(plans.premium || {}) },
+                    annual: { ...defaults.plans.quarterly, ...(plans.annual || {}) }
+                },
+                paymentMethods: { ...defaults.paymentMethods, ...paymentMethods },
+                paymentMeta: { ...defaults.paymentMeta, ...paymentMeta },
+                promotion: { ...defaults.promotion, ...promotion },
+                campaign: {
+                    ...defaults.campaign,
+                    ...campaign,
+                    newClientGoal: { ...defaults.campaign.newClientGoal, ...((campaign && campaign.newClientGoal) || {}) },
+                    specieBalance: { ...defaults.campaign.specieBalance, ...((campaign && campaign.specieBalance) || {}) },
+                    referral: { ...defaults.campaign.referral, ...((campaign && campaign.referral) || {}) },
+                    discountLadder: Array.isArray(campaign.discountLadder) ? campaign.discountLadder : defaults.campaign.discountLadder
+                },
+                freeTrialDays: Math.max(0, parseInt(source.freeTrialDays, 10) || defaults.freeTrialDays),
+                lateGraceDays: Math.max(0, parseInt(source.lateGraceDays, 10) || defaults.lateGraceDays),
+                __public: source.__public === true || source.public === true,
+                __fallback: source.__fallback === true
+            };
+        }
+
+        async function loadSubscriptionSettingsSafe(options = {}) {
             try {
                 if (window.firebaseService && typeof window.firebaseService.getSubscriptionSettings === 'function') {
                     const result = await window.firebaseService.getSubscriptionSettings();
                     if (result.success && result.data && result.data.settings) {
-                        subscriptionSettings = result.data.settings;
-                        localStorage.setItem('subscriptionSettingsCache', JSON.stringify(subscriptionSettings));
-                        return;
+                        subscriptionSettings = normalizeClientSubscriptionSettings({
+                            ...(result.data.settings || {}),
+                            __public: result.data.public === true || (result.data.settings && result.data.settings.__public === true)
+                        });
+                        const cacheKey = subscriptionSettings.__public ? 'subscriptionSettingsPublicCache' : 'subscriptionSettingsCache';
+                        localStorage.setItem(cacheKey, JSON.stringify(subscriptionSettings));
+                        return true;
                     }
                 }
             } catch (error) {
                 console.warn('Falha ao carregar configurações da assinatura via backend:', error);
             }
-            const cached = JSON.parse(localStorage.getItem('subscriptionSettingsCache') || 'null');
-            subscriptionSettings = cached || null;
+            if (options.allowCache !== false) {
+                const cached = JSON.parse(localStorage.getItem('subscriptionSettingsCache') || localStorage.getItem('subscriptionSettingsPublicCache') || 'null');
+                if (cached && typeof cached === 'object') {
+                    subscriptionSettings = normalizeClientSubscriptionSettings(cached);
+                    return false;
+                }
+            }
+            subscriptionSettings = getDefaultSettings();
+            return false;
         }
 
         function renderPromoAndTrial() {
             const trialText = document.getElementById('subscriptionSubtitle');
             const promoBox = document.getElementById('promotionBox');
             const trialDays = parseInt(subscriptionSettings && subscriptionSettings.freeTrialDays, 10) || 0;
+            const titleEl = document.getElementById('subscriptionTitle');
+            const publicVisitor = isPublicSubscriptionVisitor();
             if (!subscriptionSettings) {
+                if (titleEl) titleEl.textContent = 'Planos do Sisweb';
                 trialText.textContent = 'Configurações comerciais indisponíveis. O painel administrativo precisa definir planos e valores.';
+            } else if (subscriptionSettings.__fallback) {
+                if (titleEl) titleEl.textContent = 'Assine o Sisweb';
+                trialText.textContent = 'Não foi possível atualizar as configurações comerciais agora. Exibindo os planos padrão do Sisweb para você seguir com o cadastro.';
+            } else if (publicVisitor && trialDays > 0) {
+                if (titleEl) titleEl.textContent = 'Assine o Sisweb';
+                trialText.textContent = `Comece com ${trialDays} dia(s) grátis ou assine um plano direto após criar sua conta e cadastrar a empresa.`;
+            } else if (publicVisitor) {
+                if (titleEl) titleEl.textContent = 'Assine o Sisweb';
+                trialText.textContent = 'Crie sua conta, cadastre sua empresa e escolha o plano ideal para liberar o sistema.';
             } else if (trialDays > 0) {
+                if (titleEl) titleEl.textContent = 'Regularize sua assinatura';
                 trialText.textContent = `Seu período de teste expirou. Novos registros recebem ${trialDays} dia(s) grátis na primeira ativação.`;
             } else {
+                if (titleEl) titleEl.textContent = 'Regularize sua assinatura';
                 trialText.textContent = 'Seu período de teste expirou. Escolha um plano para continuar usando o sistema.';
             }
             const promo = subscriptionSettings && subscriptionSettings.promotion ? subscriptionSettings.promotion : {};
@@ -1269,6 +2196,34 @@
                 }
             } catch (_) {}
             return null;
+        }
+
+        async function loadAuthenticatedSubscriptionContext(options = {}) {
+            const details = window.getCurrentUserDetails ? await window.getCurrentUserDetails() : null;
+            if (!details || !details.email) {
+                currentUserDetails = null;
+                currentStatusKey = 'public';
+                if (options.rerender && subscriptionSettings && typeof renderPlans === 'function') {
+                    try { renderPlans(); } catch (_) {}
+                }
+                return null;
+            }
+            let statusKey = window.resolveSubscriptionStatus ? window.resolveSubscriptionStatus(details) : 'unknown';
+            try {
+                if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+                    const snap = await loadMyUserSnapshot(details);
+                    if (snap && typeof snap === 'object') {
+                        currentUserDetails = snap;
+                        statusKey = window.resolveSubscriptionStatus ? window.resolveSubscriptionStatus(snap) : statusKey;
+                    }
+                }
+            } catch (_) {}
+            if (!currentUserDetails) currentUserDetails = details;
+            currentStatusKey = statusKey || 'unknown';
+            if (options.rerender && subscriptionSettings && typeof renderPlans === 'function') {
+                try { renderPlans(); } catch (_) {}
+            }
+            return currentUserDetails;
         }
 
         async function loadMyUserSnapshot(details) {
@@ -1378,6 +2333,8 @@
             const freePlanNote = trialConsumed
                 ? 'Plano grátis já utilizado nesta conta. Apenas o administrador pode conceder dias extras.'
                 : 'Disponível apenas na primeira ativação.';
+            const paidPlanActionLabel = getPaidPlanActionLabel();
+            const freePlanActionLabel = getFreePlanActionLabel(trialDays);
             if (!enabledPlans.length) {
                 container.innerHTML = `
                     <div class="plan-card">
@@ -1399,17 +2356,12 @@
                                 <li><i class="fas fa-check"></i>Após o prazo, acesso em modo leitura</li>
                             </ul>
                             <div class="plan-disclaimer">${freePlanNote}</div>
-                            <button class="select-plan" onclick="activateFreePlan()" ${canActivateFreePlan ? '' : 'disabled'}>Ativar Plano Grátis</button>
+                            <button class="select-plan" onclick="activateFreePlan()" ${canActivateFreePlan ? '' : 'disabled'}>${freePlanActionLabel}</button>
                         </div>
                     `;
                 }
                 return;
             }
-            const methods = (subscriptionSettings && subscriptionSettings.paymentMethods) || {};
-            const badges = Object.keys(methods)
-                .filter((key) => methods[key] === true)
-                .map((key) => `<span class="method-badge">${key.toUpperCase()}</span>`)
-                .join('');
             const paidPlansHtml = enabledPlans.map((planKey) => {
                 const plan = planKey === 'annual' ? { ...(plans.annual || {}), label: 'Plano Trimestral', periodLabel: '/trimestre' } : plans[planKey];
                 let amount = Number(plan.amount || 0);
@@ -1434,8 +2386,7 @@
                             ${defaultFeatures.map((f) => `<li><i class="fas fa-check"></i>${f}</li>`).join('')}
                         </ul>
                         ${planKey === 'premium' ? '<div class="plan-disclaimer">Premium anual: desconto extra de 5% aplicado automaticamente no checkout.</div>' : ''}
-                        <div class="method-badges">${badges}</div>
-                        <button class="select-plan" onclick="showPaymentModal('${planKey}')">Renovar Assinatura</button>
+                        <button class="select-plan" onclick="showPaymentModal('${planKey}')">${paidPlanActionLabel}</button>
                     </div>
                 `;
             }).join('');
@@ -1452,14 +2403,18 @@
                         <li><i class="fas fa-check"></i>Após o prazo, acesso em modo leitura</li>
                     </ul>
                     <div class="plan-disclaimer">${freePlanNote}</div>
-                    <button class="select-plan" onclick="activateFreePlan()" ${canActivateFreePlan ? '' : 'disabled'}>Ativar Plano Grátis</button>
+                    <button class="select-plan" onclick="activateFreePlan()" ${canActivateFreePlan ? '' : 'disabled'}>${freePlanActionLabel}</button>
                 </div>
             ` : '';
             container.innerHTML = freePlanHtml + paidPlansHtml;
         }
 
-        async function activateFreePlan() {
+        async function activateFreePlan(options = {}) {
             try {
+                if (!(await requireSubscriptionLogin('subscription_free_trial', {
+                    preferRegistration: true,
+                    intent: 'free_trial'
+                }))) return;
                 const trialDays = parseInt(subscriptionSettings && subscriptionSettings.freeTrialDays, 10) || 0;
                 if (!trialDays) {
                     alert('Plano grátis está desativado nas configurações comerciais.');
@@ -1490,8 +2445,13 @@
             }
         }
 
-        function showPaymentModal(plan) {
+        async function showPaymentModal(plan, options = {}) {
             currentPlan = plan;
+            if (!(await requireSubscriptionLogin('subscription_payment', {
+                preferRegistration: true,
+                intent: 'payment',
+                plan
+            }))) return;
             const modal = document.getElementById('paymentModal');
             const amountElement = document.getElementById('paymentAmount');
             const selectedPlan = subscriptionSettings && subscriptionSettings.plans ? subscriptionSettings.plans[plan] : null;
@@ -1509,7 +2469,14 @@
             showStep(1);
             renderPaymentMethodsSelect();
             resetPaymentModalState();
-            setPaymentFlowMode(isPixMethodEnabled() ? 'pix_auto' : 'manual');
+            setPaymentFlowMode('bricks');
+            if (prefillPromoCodeFromUrl()) {
+                setTimeout(() => {
+                    applyPromoCode().catch((error) => {
+                        console.warn('Falha ao aplicar cupom recebido pelo link:', error);
+                    });
+                }, 0);
+            }
             
             modal.style.display = 'block';
             document.body.style.overflow = 'hidden';
@@ -1519,6 +2486,45 @@
         function showStep(step) {
             document.querySelectorAll('.step').forEach(el => el.style.display = 'none');
             document.getElementById('step' + step).style.display = 'block';
+        }
+
+        function readPostOnboardingIntent() {
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                const intent = String(params.get('intent') || '').toLowerCase();
+                const activateTrial = params.get('activateTrial') === '1' || intent === 'free_trial';
+                const checkout = params.get('checkout') === '1' || intent === 'payment';
+                const rawPlan = String(params.get('plan') || 'monthly').toLowerCase();
+                const allowedPlans = ['monthly', 'quarterly', 'premium', 'annual'];
+                const plan = allowedPlans.includes(rawPlan) ? rawPlan : 'monthly';
+                return { activateTrial, checkout, plan };
+            } catch (_) {
+                return { activateTrial: false, checkout: false, plan: 'monthly' };
+            }
+        }
+
+        async function handlePostOnboardingSubscriptionIntent() {
+            if (postOnboardingIntentHandled) return;
+            const intent = readPostOnboardingIntent();
+            if (!intent.activateTrial && !intent.checkout) return;
+            postOnboardingIntentHandled = true;
+            await loadAuthenticatedSubscriptionContext({ rerender: true });
+            if (!(await hasAuthenticatedSubscriptionUser())) {
+                await requireSubscriptionLogin('subscription_onboarding_resume');
+                return;
+            }
+            try { sessionStorage.removeItem('siswebPendingSubscriptionOnboarding'); } catch (_) {}
+            if (intent.activateTrial) {
+                if (currentStatusKey === 'active' || currentStatusKey === 'trial_active') {
+                    window.location.href = 'index.html';
+                    return;
+                }
+                await activateFreePlan({ fromOnboarding: true });
+                return;
+            }
+            if (intent.checkout) {
+                await showPaymentModal(intent.plan, { fromOnboarding: true });
+            }
         }
 
         function copyPixKey() {
@@ -1634,6 +2640,7 @@
                 alert('Por favor, selecione um comprovante primeiro.');
                 return;
             }
+            if (!(await requireSubscriptionLogin('subscription_proof'))) return;
 
             try {
                 validateFileSize(file);
@@ -1702,6 +2709,180 @@
             }
         });
 
+        function normalizeGuideSearchText(value) {
+            return String(value || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase();
+        }
+
+        function getSubscriptionSupportPrefill() {
+            const params = new URLSearchParams(window.location.search || '');
+            const promo = params.get('cupom') || params.get('promo') || '';
+            const intent = params.get('intent') || params.get('reason') || '';
+            const plan = currentPlan || params.get('plan') || '';
+            return [
+                'Olá Admin, vim pela página pública de assinatura do Sisweb.',
+                promo ? `Cupom/Oferta: ${promo}` : '',
+                intent ? `Intenção informada no link: ${intent}` : '',
+                plan ? `Plano em análise: ${plan}` : '',
+                'Gostaria de atendimento sobre planos, cadastro da empresa, teste grátis ou pagamento.'
+            ].filter(Boolean).join('\n');
+        }
+
+        function applySubscriptionSupportAccessMode(publicMode) {
+            const modal = document.getElementById('supportModal');
+            if (!modal) return;
+            modal.classList.toggle('subscription-public-support', publicMode);
+            modal.classList.toggle('support-public-mode', publicMode);
+            const title = modal.querySelector('h2');
+            const lead = modal.querySelector('.support-lead');
+            if (title) title.innerHTML = publicMode
+                ? '<i class="fas fa-headset"></i> Central de Mensagens Sisweb'
+                : '<i class="fas fa-headset"></i> Suporte Sisweb';
+            if (lead) lead.textContent = publicMode
+                ? 'Para visitantes, use WhatsApp, e-mail ou copie os dados da solicitação. Depois do registro e login, o histórico de tickets fica disponível no sistema.'
+                : 'Abra um ticket, acompanhe respostas do Admin e mantenha o histórico da solicitação no próprio sistema.';
+            const actions = modal.querySelector('#siswebSupportNewPanel .support-actions');
+            const emailButton = modal.querySelector('.support-email');
+            if (emailButton && !emailButton.disabled) {
+                emailButton.innerHTML = publicMode
+                    ? '<i class="fas fa-envelope"></i> Enviar e-mail'
+                    : '<i class="fas fa-envelope"></i> E-mail';
+            }
+            let registerButton = document.getElementById('subscriptionSupportRegisterButton');
+            if (publicMode && actions && !registerButton) {
+                registerButton = document.createElement('button');
+                registerButton.id = 'subscriptionSupportRegisterButton';
+                registerButton.type = 'button';
+                registerButton.className = 'support-action support-public-register';
+                registerButton.innerHTML = '<i class="fas fa-user-plus"></i> Registrar-se para abrir tickets';
+                registerButton.addEventListener('click', () => redirectToSubscriptionRegistration('payment', currentPlan || 'monthly'));
+                actions.appendChild(registerButton);
+            } else if (!publicMode && registerButton) {
+                registerButton.remove();
+            }
+            const feedback = document.getElementById('siswebSupportFeedback');
+            if (feedback && publicMode) {
+                feedback.textContent = 'Visitante público: tickets com histórico ficam disponíveis após registro/login.';
+                feedback.className = 'support-feedback';
+            }
+        }
+
+        async function openSubscriptionPublicMessageCenter() {
+            if (typeof window.showSupport !== 'function') {
+                alert('Central de Mensagens ainda está carregando. Aguarde alguns segundos e tente novamente.');
+                return;
+            }
+            const authenticated = await hasAuthenticatedSubscriptionUser();
+            window.__siswebSupportPublicMode = !authenticated;
+            window.showSupport();
+            applySubscriptionSupportAccessMode(!authenticated);
+            setTimeout(() => {
+                try {
+                    if (typeof window.switchSiswebSupportView === 'function') {
+                        window.switchSiswebSupportView('new');
+                    }
+                    applySubscriptionSupportAccessMode(!authenticated);
+                    const messageEl = document.getElementById('siswebSupportMessage');
+                    if (messageEl && !String(messageEl.value || '').trim()) {
+                        messageEl.value = getSubscriptionSupportPrefill();
+                    }
+                    if (messageEl && typeof messageEl.focus === 'function') {
+                        messageEl.focus();
+                    }
+                } catch (error) {
+                    console.warn('Não foi possível preencher a Central de Mensagens automaticamente:', error);
+                }
+            }, 120);
+        }
+
+        window.openSubscriptionPublicMessageCenter = openSubscriptionPublicMessageCenter;
+
+        function bindSubscriptionFooterContact() {
+            if (document.__subscriptionFooterContactBound) return;
+            document.__subscriptionFooterContactBound = true;
+            document.addEventListener('click', (event) => {
+                const target = event.target && typeof event.target.closest === 'function'
+                    ? event.target.closest('.global-footer-contact')
+                    : null;
+                if (!target) return;
+                event.preventDefault();
+                openSubscriptionPublicMessageCenter();
+            }, true);
+        }
+
+        function setupSubscriptionQuickGuide() {
+            const input = document.getElementById('subscriptionQuickGuideSearch');
+            const cards = Array.from(document.querySelectorAll('[data-subscription-guide-keywords]'));
+            if (input && cards.length) {
+                const apply = () => {
+                    const tokens = normalizeGuideSearchText(input.value).split(/\s+/).filter(Boolean);
+                    cards.forEach((card) => {
+                        const haystack = normalizeGuideSearchText([
+                            card.getAttribute('data-subscription-guide-keywords') || '',
+                            card.textContent || ''
+                        ].join(' '));
+                        const visible = !tokens.length || tokens.every((token) => haystack.includes(token));
+                        card.style.display = visible ? '' : 'none';
+                    });
+                };
+                if (input.dataset.guideSearchBound !== 'true') {
+                    input.dataset.guideSearchBound = 'true';
+                    input.addEventListener('input', apply);
+                }
+                apply();
+            }
+
+            const lightbox = document.getElementById('subscriptionGuideLightbox');
+            const lightboxImage = document.getElementById('subscriptionGuideLightboxImage');
+            const lightboxCaption = document.getElementById('subscriptionGuideLightboxCaption');
+            const closeButton = document.getElementById('subscriptionGuideLightboxClose');
+            const closeLightbox = () => {
+                if (!lightbox || !lightboxImage || !lightboxCaption) return;
+                lightbox.classList.remove('active');
+                lightboxImage.src = '';
+                lightboxImage.alt = '';
+                lightboxCaption.textContent = 'Guia Rápido de Uso do Sistema';
+                const guide = document.getElementById('subscriptionQuickGuide');
+                if (guide && typeof guide.scrollIntoView === 'function') {
+                    setTimeout(() => guide.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30);
+                }
+            };
+            document.querySelectorAll('[data-guide-image]').forEach((button) => {
+                if (button.dataset.guideImageBound === 'true') return;
+                button.dataset.guideImageBound = 'true';
+                button.addEventListener('click', () => {
+                    if (!lightbox || !lightboxImage || !lightboxCaption) return;
+                    const src = button.getAttribute('data-guide-image') || '';
+                    const caption = button.getAttribute('data-guide-caption') || 'Guia Rápido de Uso do Sistema';
+                    const img = button.querySelector('img');
+                    lightboxImage.src = src;
+                    lightboxImage.alt = img ? (img.getAttribute('alt') || caption) : caption;
+                    lightboxCaption.textContent = caption;
+                    lightbox.classList.add('active');
+                });
+            });
+            if (closeButton && closeButton.dataset.guideCloseBound !== 'true') {
+                closeButton.dataset.guideCloseBound = 'true';
+                closeButton.addEventListener('click', closeLightbox);
+            }
+            if (lightbox && lightbox.dataset.guideOverlayBound !== 'true') {
+                lightbox.dataset.guideOverlayBound = 'true';
+                lightbox.addEventListener('click', (event) => {
+                    if (event.target === lightbox) closeLightbox();
+                });
+            }
+            if (!document.__subscriptionGuideEscapeBound) {
+                document.__subscriptionGuideEscapeBound = true;
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape' && lightbox && lightbox.classList.contains('active')) {
+                        closeLightbox();
+                    }
+                });
+            }
+        }
+
         function generateValidationCode() {
             const timestamp = Date.now().toString(36);
             const random = Math.random().toString(36).substr(2, 5);
@@ -1740,7 +2921,8 @@
                 proofFileName: proofUpload && proofUpload.name ? proofUpload.name : '',
                 proofMimeType: proofUpload && proofUpload.contentType ? proofUpload.contentType : '',
                 referralEmail: referralEmailInput,
-                transactionMeta: transactionMeta && typeof transactionMeta === 'object' ? transactionMeta : {}
+                transactionMeta: transactionMeta && typeof transactionMeta === 'object' ? transactionMeta : {},
+                promoCode: appliedPromoCode
             });
             if (!backendResult.success) {
                 throw new Error(backendResult.error || 'Não foi possível registrar sua solicitação com segurança.');
@@ -1801,13 +2983,23 @@
         }
 
         document.addEventListener('DOMContentLoaded', async function() {
+            bindSubscriptionFooterContact();
+            setupSubscriptionQuickGuide();
             scrubPaymentDataFromLocalUsers();
             await loadSubscriptionSettingsSafe();
+            const details = await loadAuthenticatedSubscriptionContext({ rerender: false });
+            if (details && subscriptionSettings && (subscriptionSettings.__public || subscriptionSettings.__fallback)) {
+                await loadSubscriptionSettingsSafe({ allowCache: false });
+            }
             renderPromoAndTrial();
             renderPaymentMethodsSelect();
             renderPlans();
+            setupSubscriptionQuickGuide();
+            pendingPromoCodeFromUrl = readPromoCodeFromUrl();
+            prefillPromoCodeFromUrl();
             const methodSelect = document.getElementById('paymentMethodSelect');
             if (methodSelect) methodSelect.addEventListener('change', renderMethodSpecificFields);
+            await handlePostOnboardingSubscriptionIntent();
         });
     </script>
 </body>

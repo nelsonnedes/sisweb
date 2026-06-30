@@ -6,7 +6,7 @@
     <title>Status da Assinatura - Sistema</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <script src="menu-component.js?v=20260326"></script>
+    <script src="menu-component.js?v=2026-06-10-subscription-status-ux-v1"></script>
     <style>
         * {
             margin: 0;
@@ -51,6 +51,51 @@
             color: #4b5563;
             margin-bottom: 12px;
         }
+        .message-center {
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 62%);
+            padding: 16px;
+        }
+        .message-center p {
+            color: #475569;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 6px 0 0;
+        }
+        .message-center-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .message-center-action {
+            border: 0;
+            border-radius: 10px;
+            padding: 11px 14px;
+            cursor: pointer;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 42px;
+        }
+        .message-center-action.primary {
+            background: #2563eb;
+            color: #fff;
+        }
+        .message-center-action.secondary {
+            background: #ffffff;
+            color: #1e293b;
+            border: 1px solid #cbd5e1;
+        }
+        .message-center-preview {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 14px;
+        }
         .steps-list {
             padding-left: 18px;
             line-height: 1.7;
@@ -61,6 +106,43 @@
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 14px;
             margin-top: 16px;
+        }
+        .quick-guide-tools {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+            margin: 14px 0;
+        }
+        .quick-guide-search {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 11px 12px;
+            font-size: 14px;
+        }
+        .quick-guide-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 11px 13px;
+            border-radius: 8px;
+            background: #2563eb;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+        .guide-open-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            color: #1d4ed8;
+            font-size: 13px;
+            font-weight: 800;
+            text-decoration: none;
         }
         .module-card {
             border: 1px solid #e5e7eb;
@@ -102,6 +184,14 @@
             font-size: 12px;
             color: #4b5563;
             line-height: 1.45;
+        }
+        @media (max-width: 720px) {
+            .quick-guide-tools {
+                grid-template-columns: 1fr;
+            }
+            .quick-guide-link {
+                width: 100%;
+            }
         }
 
         .status-header {
@@ -148,6 +238,38 @@
 
         .info-card .warning {
             color: #e74c3c;
+        }
+
+        @media (max-width: 720px) {
+            .status-info,
+            .module-grid {
+                grid-template-columns: 1fr !important;
+                max-width: 100%;
+                min-width: 0;
+            }
+
+            .info-card,
+            .module-card,
+            .help-hub,
+            .screen-print,
+            .message-center {
+                max-width: 100%;
+                min-width: 0;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+
+            .info-card p,
+            .module-card h4,
+            .module-card li,
+            .message-center p {
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+            .message-center-actions {
+                display: grid;
+                grid-template-columns: 1fr;
+            }
         }
 
         .renew-button {
@@ -480,6 +602,457 @@
             text-decoration: none;
             cursor: pointer;
         }
+
+        :root {
+            --sisweb-ink: #102033;
+            --sisweb-muted: #64748b;
+            --sisweb-line: #dbe3ef;
+            --sisweb-panel: #ffffff;
+            --sisweb-soft: #f8fafc;
+            --sisweb-blue: #2563eb;
+            --sisweb-navy: #172554;
+            --sisweb-green: #0f766e;
+            --sisweb-amber: #d97706;
+            --sisweb-red: #dc2626;
+            --sisweb-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+        }
+
+        html {
+            background: #eef3f8;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 34%),
+                radial-gradient(circle at top right, rgba(15, 118, 110, 0.12), transparent 30%),
+                #eef3f8;
+            color: var(--sisweb-ink);
+            padding: 18px;
+        }
+
+        .container {
+            max-width: 1240px;
+            background: transparent;
+            padding: 0;
+            box-shadow: none;
+            border-radius: 0;
+        }
+
+        .subscription-status,
+        .help-hub {
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            border-radius: 18px;
+            box-shadow: var(--sisweb-shadow);
+        }
+
+        .subscription-status {
+            padding: 0;
+            overflow: hidden;
+            background: var(--sisweb-panel);
+        }
+
+        .status-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 20px;
+            align-items: center;
+            text-align: left;
+            margin: 0;
+            padding: 28px;
+            border-bottom: 0;
+            color: #fff;
+            background:
+                linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 64, 175, 0.92) 55%, rgba(15, 118, 110, 0.9));
+        }
+
+        .status-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0;
+            text-transform: uppercase;
+            color: #bfdbfe;
+            margin-bottom: 8px;
+        }
+
+        .status-header h2 {
+            color: #fff;
+            font-size: 30px;
+            line-height: 1.12;
+            margin: 0 0 10px;
+        }
+
+        .status-header p {
+            color: #dbeafe;
+            font-size: 15px;
+            line-height: 1.5;
+            margin: 0;
+            max-width: 760px;
+        }
+
+        #planType {
+            color: #fff;
+            font-weight: 800;
+        }
+
+        .status-header-side {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            min-width: 190px;
+        }
+
+        .status-state-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 36px;
+            padding: 9px 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            color: #fff;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .status-state-badge::before {
+            content: "";
+            width: 9px;
+            height: 9px;
+            border-radius: 999px;
+            background: #f59e0b;
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.18);
+        }
+
+        .status-state-badge.state-ok::before {
+            background: #22c55e;
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+        }
+
+        .status-state-badge.state-warning::before {
+            background: #f59e0b;
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.18);
+        }
+
+        .status-state-badge.state-danger::before {
+            background: #ef4444;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18);
+        }
+
+        .status-updated {
+            color: #bfdbfe;
+            font-size: 12px;
+            text-align: right;
+        }
+
+        .status-info {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin: 0;
+            padding: 22px;
+        }
+
+        .info-card {
+            background: var(--sisweb-soft);
+            border: 1px solid var(--sisweb-line);
+            border-radius: 14px;
+            box-shadow: none;
+        }
+
+        .status-card {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            gap: 14px;
+            align-items: start;
+            text-align: left;
+            background: #fff;
+            padding: 18px;
+        }
+
+        .status-card-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #eff6ff;
+            color: var(--sisweb-blue);
+            font-size: 17px;
+        }
+
+        .status-card:nth-child(2) .status-card-icon {
+            background: #ecfdf5;
+            color: var(--sisweb-green);
+        }
+
+        .status-card:nth-child(3) .status-card-icon {
+            background: #fff7ed;
+            color: var(--sisweb-amber);
+        }
+
+        .status-card:nth-child(4) .status-card-icon {
+            background: #fef2f2;
+            color: var(--sisweb-red);
+        }
+
+        .status-card h3,
+        .subscription-action-card h3,
+        .help-hub h3 {
+            color: var(--sisweb-ink);
+            font-size: 14px;
+            margin: 0 0 7px;
+        }
+
+        .status-card p {
+            color: var(--sisweb-ink);
+            font-size: 18px;
+            line-height: 1.25;
+            margin: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .status-card .highlight,
+        .info-card .highlight {
+            color: #15803d;
+        }
+
+        .status-card .warning,
+        .info-card .warning {
+            color: var(--sisweb-red);
+        }
+
+        .status-actions-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
+            gap: 16px;
+            padding: 0 22px 24px;
+        }
+
+        .subscription-action-card {
+            text-align: left;
+            padding: 20px;
+            background: #fff;
+            border: 1px solid var(--sisweb-line);
+            border-radius: 16px;
+        }
+
+        .action-card-heading {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .action-card-heading i {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0fdfa;
+            color: var(--sisweb-green);
+            flex: 0 0 auto;
+        }
+
+        .action-card-heading p,
+        .message-center p,
+        .help-hub p {
+            color: var(--sisweb-muted);
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 4px 0 0;
+        }
+
+        .extension-form {
+            display: grid;
+            gap: 10px;
+        }
+
+        .extension-form input,
+        .extension-form textarea,
+        .quick-guide-search {
+            width: 100%;
+            border: 1px solid #cbd5e1;
+            border-radius: 11px;
+            padding: 11px 12px;
+            background: #fff;
+            color: var(--sisweb-ink);
+            font-size: 14px;
+            outline: none;
+        }
+
+        .extension-form input:focus,
+        .extension-form textarea:focus,
+        .quick-guide-search:focus {
+            border-color: var(--sisweb-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .renew-button {
+            width: auto;
+            max-width: none;
+            margin: 0;
+            border-radius: 11px;
+            min-height: 44px;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 800;
+            background: var(--sisweb-green);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .renew-button:hover {
+            background: #0d9488;
+        }
+
+        .renew-button.secondary-action {
+            background: #334155;
+        }
+
+        .renew-button.secondary-action:hover {
+            background: #475569;
+        }
+
+        .renew-button.subscription-primary-renew {
+            margin-bottom: 14px;
+            background: var(--sisweb-blue);
+        }
+
+        .renew-button.subscription-primary-renew:hover {
+            background: #1d4ed8;
+        }
+
+        .message-center {
+            background:
+                linear-gradient(135deg, rgba(239, 246, 255, 0.96), rgba(255, 255, 255, 0.98) 58%),
+                #fff;
+            border-color: #bfdbfe;
+            padding: 20px;
+        }
+
+        .message-center .action-card-heading i {
+            background: #eff6ff;
+            color: var(--sisweb-blue);
+        }
+
+        .message-center-action {
+            border-radius: 11px;
+            min-height: 44px;
+        }
+
+        .message-center-action.primary {
+            background: var(--sisweb-blue);
+        }
+
+        .message-center-action.secondary {
+            background: #fff;
+        }
+
+        #readOnlyNotice {
+            margin: 18px 22px 0 !important;
+            border-radius: 14px;
+        }
+
+        .help-hub {
+            background: rgba(255, 255, 255, 0.96);
+            padding: 24px;
+        }
+
+        .steps-list {
+            background: #f8fafc;
+            border: 1px solid var(--sisweb-line);
+            border-radius: 14px;
+            padding: 16px 16px 16px 34px;
+        }
+
+        .module-card {
+            border-radius: 14px;
+            background: #fff;
+            padding: 16px;
+            transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+        }
+
+        .module-card:hover {
+            transform: translateY(-2px);
+            border-color: #bfdbfe;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09);
+        }
+
+        .screen-print {
+            border-radius: 12px;
+        }
+
+        .screen-print img {
+            border-radius: 9px;
+        }
+
+        @media (max-width: 940px) {
+            .status-header,
+            .status-actions-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .status-header-side {
+                align-items: flex-start;
+                min-width: 0;
+            }
+
+            .status-info {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 720px) {
+            body {
+                padding: 10px;
+            }
+
+            .status-header {
+                padding: 22px 18px;
+            }
+
+            .status-header h2 {
+                font-size: 25px;
+            }
+
+            .status-info,
+            .status-actions-layout {
+                padding-left: 14px;
+                padding-right: 14px;
+            }
+
+            .status-info {
+                grid-template-columns: 1fr !important;
+            }
+
+            .action-buttons,
+            .message-center-actions {
+                display: grid;
+                grid-template-columns: 1fr;
+            }
+
+            .renew-button,
+            .message-center-action {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -488,60 +1061,106 @@
 
         <div class="subscription-status">
             <div class="status-header">
-                <h2>Status da Assinatura</h2>
-                <p id="planType">Carregando...</p>
+                <div>
+                    <span class="status-eyebrow"><i class="fas fa-id-card"></i> Área do assinante</span>
+                    <h2>Status da Assinatura</h2>
+                    <p>Plano identificado: <span id="planType">Carregando...</span>. Acompanhe vencimento, regularização, suporte e modo leitura em um só lugar.</p>
+                </div>
+                <div class="status-header-side" aria-live="polite">
+                    <span id="statusStateBadge" class="status-state-badge state-warning">Atualizando</span>
+                    <span id="statusUpdatedAt" class="status-updated">Sincronizando dados reais</span>
+                </div>
             </div>
             <div id="readOnlyNotice" class="info-card" style="margin-bottom: 14px; text-align: left; display: none;"></div>
 
             <div class="status-info">
-                <div class="info-card">
-                    <h3>Plano Atual</h3>
-                    <p id="currentPlan">Carregando...</p>
+                <div class="info-card status-card">
+                    <span class="status-card-icon"><i class="fas fa-layer-group"></i></span>
+                    <div>
+                        <h3>Plano Atual</h3>
+                        <p id="currentPlan">Carregando...</p>
+                    </div>
                 </div>
-                <div class="info-card">
-                    <h3>Data de Contratação</h3>
-                    <p id="startDate">Carregando...</p>
+                <div class="info-card status-card">
+                    <span class="status-card-icon"><i class="fas fa-calendar-plus"></i></span>
+                    <div>
+                        <h3>Data de Contratação</h3>
+                        <p id="startDate">Carregando...</p>
+                    </div>
                 </div>
-                <div class="info-card">
-                    <h3>Data de Vencimento</h3>
-                    <p id="endDate">Carregando...</p>
+                <div class="info-card status-card">
+                    <span class="status-card-icon"><i class="fas fa-calendar-check"></i></span>
+                    <div>
+                        <h3>Data de Vencimento</h3>
+                        <p id="endDate">Carregando...</p>
+                    </div>
                 </div>
-                <div class="info-card">
-                    <h3>Dias Restantes</h3>
-                    <p id="daysLeft">Carregando...</p>
+                <div class="info-card status-card">
+                    <span class="status-card-icon"><i class="fas fa-hourglass-half"></i></span>
+                    <div>
+                        <h3>Dias Restantes</h3>
+                        <p id="daysLeft">Carregando...</p>
+                    </div>
                 </div>
             </div>
 
-            <button class="renew-button" onclick="renewSubscription()" id="renewButton" style="display: none;">
-                Renovar Assinatura
-            </button>
-            <div class="info-card" style="margin-top: 14px; text-align: left;">
-                <h3>Solicitar Prorrogação / Modo Leitura</h3>
-                <p style="font-size:13px;color:#64748b;">Envie justificativa para análise administrativa ou continue em leitura por prazo temporário.</p>
-                <input type="number" id="extensionDays" min="1" max="30" value="3" style="width:100%;padding:9px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px;" placeholder="Dias solicitados">
-                <textarea id="extensionJustification" rows="3" style="width:100%;padding:9px;border:1px solid #e5e7eb;border-radius:8px;" placeholder="Descreva o motivo da solicitação."></textarea>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-                    <button class="renew-button" type="button" onclick="requestExtension()" style="display:inline-block;">Solicitar Prorrogação</button>
-                    <button class="renew-button" type="button" onclick="continueReadOnlyMode()" style="display:inline-block;background:#0f766e;">Continuar em Modo Leitura</button>
+            <div class="status-actions-layout">
+                <div class="subscription-action-card">
+                    <div class="action-card-heading">
+                        <i class="fas fa-shield-alt"></i>
+                        <div>
+                            <h3>Regularização e acesso temporário</h3>
+                            <p>Renove quando necessário, solicite prorrogação para análise administrativa ou mantenha acesso somente leitura por prazo controlado.</p>
+                        </div>
+                    </div>
+                    <button class="renew-button subscription-primary-renew" onclick="renewSubscription()" id="renewButton" style="display: none;">
+                        <i class="fas fa-credit-card"></i> Renovar Assinatura
+                    </button>
+                    <div class="extension-form">
+                        <input type="number" id="extensionDays" min="1" max="30" value="3" placeholder="Dias solicitados">
+                        <textarea id="extensionJustification" rows="3" placeholder="Descreva o motivo da solicitação."></textarea>
+                        <div class="action-buttons">
+                            <button class="renew-button" type="button" onclick="requestExtension()"><i class="fas fa-paper-plane"></i> Solicitar Prorrogação</button>
+                            <button class="renew-button secondary-action" type="button" onclick="continueReadOnlyMode()"><i class="fas fa-eye"></i> Continuar em Modo Leitura</button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="info-card" style="margin-top: 14px; text-align: left;">
-                <h3>Central de Mensagens</h3>
-                <div id="statusAlertsList" style="display:flex;flex-direction:column;gap:8px;"></div>
+                <div class="subscription-action-card message-center">
+                    <div class="action-card-heading">
+                        <i class="fas fa-comments"></i>
+                        <div>
+                            <h3>Central de Mensagens</h3>
+                            <p>Fale com o Admin pelo fluxo de tickets. As respostas ficam salvas para acompanhamento nesta tela.</p>
+                        </div>
+                    </div>
+                    <div class="message-center-actions">
+                        <button class="message-center-action primary" type="button" onclick="openSubscriptionMessageCenter('new')">
+                            <i class="fas fa-paper-plane"></i> Nova mensagem para o Admin
+                        </button>
+                        <button class="message-center-action secondary" type="button" onclick="openSubscriptionMessageCenter('tickets')">
+                            <i class="fas fa-inbox"></i> Ver minhas conversas
+                        </button>
+                    </div>
+                    <div id="statusMessagesPreview" class="message-center-preview"></div>
+                </div>
             </div>
         </div>
 
         <div class="help-hub">
             <h3><i class="fas fa-map-signs"></i> Guia Rápido de Uso do Sistema</h3>
-            <p>Use este painel para entender o fluxo ideal por módulo e reduzir erros operacionais.</p>
+            <p>Use este painel para entender o fluxo ideal por módulo, localizar ajuda por funcionalidade e reduzir erros operacionais. As imagens são prints sanitizados com dados fictícios.</p>
+            <div class="quick-guide-tools">
+                <input id="quickGuideSearch" class="quick-guide-search" type="search" placeholder="Pesquisar: folha, pix, romaneio, venda, modal, recibo, financeiro..." autocomplete="off">
+                <a class="quick-guide-link" href="ajuda.html"><i class="fas fa-book-open"></i> Manual completo</a>
+            </div>
             <ol class="steps-list">
                 <li>Cadastre a empresa em <strong>Empresa</strong> e confirme os dados obrigatórios.</li>
                 <li>Cadastre <strong>Clientes</strong>, <strong>Fornecedores</strong> e <strong>Espécies</strong>.</li>
                 <li>Gere <strong>Pré-Romaneios</strong> e depois emita romaneios TL, PCT, PÉS ou TORA.</li>
-                <li>Acompanhe <strong>Financeiro</strong>, <strong>Estoque</strong> e <strong>Folha</strong> no menu principal.</li>
+                <li>Acompanhe <strong>Vendas</strong>, <strong>Compras</strong>, <strong>Financeiro</strong>, <strong>Estoque</strong> e <strong>Folha</strong> no menu principal.</li>
             </ol>
             <div class="module-grid">
-                <div class="module-card">
+                <div class="module-card" data-guide-keywords="empresa tenant cnpj logo cadastro configuração inicial">
                     <h4><i class="fas fa-building"></i> Configuração Inicial</h4>
                     <ul>
                         <li>Empresa e perfil de usuário</li>
@@ -549,11 +1168,12 @@
                         <li>Definição de tenant/companyId</li>
                     </ul>
                     <figure class="screen-print">
-                        <img src="help-assets/empresa/company.png?v=20260326" alt="Cadastro de empresa">
-                        <figcaption>company.html: cadastro de empresa com CNPJ e logo.</figcaption>
+                        <img src="assets/help-manual/empresa-1.png?v=20260606" alt="Print sanitizado do cadastro de empresa" loading="lazy" decoding="async">
+                        <figcaption>company.html: cadastro de empresa com CNPJ, contato, logo e tenant.</figcaption>
                     </figure>
+                    <a class="guide-open-link" href="ajuda.html#empresa"><i class="fas fa-arrow-right"></i> Ver capítulo Empresa</a>
                 </div>
-                <div class="module-card">
+                <div class="module-card" data-guide-keywords="clientes fornecedores especies cadastros base editar excluir listar">
                     <h4><i class="fas fa-users"></i> Cadastros Base</h4>
                     <ul>
                         <li>Clientes e fornecedores ativos</li>
@@ -561,11 +1181,12 @@
                         <li>Edição e exclusão com confirmação</li>
                     </ul>
                     <figure class="screen-print">
-                        <img src="help-assets/cadastros/clientes.png?v=20260326" alt="Listagem de clientes">
-                        <figcaption>client.html: listagem de clientes com filtros e ações.</figcaption>
+                        <img src="assets/help-manual/cadastros-1.png?v=20260606" alt="Print sanitizado de cadastros base" loading="lazy" decoding="async">
+                        <figcaption>Cadastros: clientes, fornecedores, espécies, filtros e ações.</figcaption>
                     </figure>
+                    <a class="guide-open-link" href="ajuda.html#cadastros"><i class="fas fa-arrow-right"></i> Ver capítulo Cadastros</a>
                 </div>
-                <div class="module-card">
+                <div class="module-card" data-guide-keywords="romaneio pre-romaneio tl pct pes tora emissão impressão lista">
                     <h4><i class="fas fa-file-alt"></i> Romaneios</h4>
                     <ul>
                         <li>Pré-romaneio por tipo</li>
@@ -573,11 +1194,38 @@
                         <li>Impressão e conferência final</li>
                     </ul>
                     <figure class="screen-print">
-                        <img src="help-assets/romaneios/preromaneio.png?v=20260326" alt="Pré-romaneio">
-                        <figcaption>preromaneio.html: seleção de cliente, espécie e itens.</figcaption>
+                        <img src="assets/help-manual/romaneios-1.png?v=20260606" alt="Print sanitizado de romaneios" loading="lazy" decoding="async">
+                        <figcaption>Romaneios: seleção de cliente, espécie, itens, totais e impressão.</figcaption>
                     </figure>
+                    <a class="guide-open-link" href="ajuda.html#romaneios"><i class="fas fa-arrow-right"></i> Ver capítulo Romaneios</a>
                 </div>
-                <div class="module-card">
+                <div class="module-card" data-guide-keywords="vendas pedidos lista pedido cliente produto receber atualizado ações">
+                    <h4><i class="fas fa-shopping-cart"></i> Vendas</h4>
+                    <ul>
+                        <li>Novo pedido e lista de pedidos</li>
+                        <li>Itens manuais, produtos e romaneios</li>
+                        <li>Contas a receber e relatórios</li>
+                    </ul>
+                    <figure class="screen-print">
+                        <img src="assets/help-manual/vendas-1.png?v=20260606" alt="Print sanitizado de vendas" loading="lazy" decoding="async">
+                        <figcaption>vendas.html: pedido, itens, totais, lista de pedidos e impressão.</figcaption>
+                    </figure>
+                    <a class="guide-open-link" href="ajuda.html#vendas"><i class="fas fa-arrow-right"></i> Ver capítulo Vendas</a>
+                </div>
+                <div class="module-card" data-guide-keywords="compras pedido fornecedor produto contas pagar carrinho relatório">
+                    <h4><i class="fas fa-shopping-bag"></i> Compras</h4>
+                    <ul>
+                        <li>Pedido de compra e fornecedores</li>
+                        <li>Carrinho de itens e produtos</li>
+                        <li>Contas a pagar integradas</li>
+                    </ul>
+                    <figure class="screen-print">
+                        <img src="assets/help-manual/compras-1.png?v=20260606" alt="Print sanitizado de compras" loading="lazy" decoding="async">
+                        <figcaption>compras.html: fornecedor, carrinho, parcelas e detalhes do pedido.</figcaption>
+                    </figure>
+                    <a class="guide-open-link" href="ajuda.html#compras"><i class="fas fa-arrow-right"></i> Ver capítulo Compras</a>
+                </div>
+                <div class="module-card" data-guide-keywords="financeiro contas pagar receber fluxo caixa vencimento pagamento anexo">
                     <h4><i class="fas fa-coins"></i> Financeiro e Gestão</h4>
                     <ul>
                         <li>Contas a pagar e a receber</li>
@@ -585,35 +1233,51 @@
                         <li>Status da assinatura e renovação</li>
                     </ul>
                     <figure class="screen-print">
-                        <img src="help-assets/financeiro/financas.png?v=20260326" alt="Tela financeira com filtros">
-                        <figcaption>financas.html: visão geral com filtros, receber e pagar.</figcaption>
+                        <img src="assets/help-manual/financas-1.png?v=20260606" alt="Print sanitizado do financeiro" loading="lazy" decoding="async">
+                        <figcaption>financas.html: receber, pagar, fluxo, anexos e registro de pagamento.</figcaption>
                     </figure>
+                    <a class="guide-open-link" href="ajuda.html#financas"><i class="fas fa-arrow-right"></i> Ver capítulo Financeiro</a>
                 </div>
-                <div class="module-card">
+                <div class="module-card" data-guide-keywords="estoque toras almoxarifado entrada saída baixa rastreabilidade movimentações">
                     <h4><i class="fas fa-warehouse"></i> Estoque e Compras</h4>
                     <ul>
-                        <li>Entrada por compras</li>
-                        <li>Movimentação e saldo</li>
-                        <li>Integração com financeiro</li>
+                        <li>Entrada e saída de toras</li>
+                        <li>Almoxarifado e movimentações</li>
+                        <li>Rastreabilidade e relatórios</li>
                     </ul>
                     <figure class="screen-print">
-                        <img src="help-assets/estoque/estoque.png?v=20260326" alt="Estoque e movimentações">
-                        <figcaption>estoque.html: saldo atual e histórico de movimentações.</figcaption>
+                        <img src="assets/help-manual/estoque-1.png?v=20260606" alt="Print sanitizado de estoque" loading="lazy" decoding="async">
+                        <figcaption>estoque.html: saldo, baixas, rastreabilidade e coluna de ações.</figcaption>
                     </figure>
+                    <a class="guide-open-link" href="ajuda.html#estoque"><i class="fas fa-arrow-right"></i> Ver capítulo Estoque</a>
                 </div>
-                <div class="module-card">
-                    <h4><i class="fas fa-user-cog"></i> Perfil e Suporte</h4>
+                <div class="module-card" data-guide-keywords="folha funcionário pix qrcode recibo quinzena mês fechado banco horas">
+                    <h4><i class="fas fa-file-invoice-dollar"></i> Folha</h4>
                     <ul>
-                        <li>Atualização de dados pessoais</li>
-                        <li>Alteração de senha</li>
-                        <li>Diagnóstico técnico com logs</li>
+                        <li>Funcionários, cargos e lançamentos</li>
+                        <li>QR Code PIX, recibos e baixas</li>
+                        <li>Banco de horas e relatórios</li>
                     </ul>
                     <figure class="screen-print">
-                        <img src="help-assets/perfil/user-profile.png?v=20260326" alt="Perfil do usuário">
-                        <figcaption>user-profile.html: edição de dados do usuário.</figcaption>
+                        <img src="assets/help-manual/folha-1.png?v=20260606" alt="Print sanitizado de folha de pagamento" loading="lazy" decoding="async">
+                        <figcaption>folha.html: lançamentos, QR Code PIX, valores pagos e recibos.</figcaption>
                     </figure>
+                    <a class="guide-open-link" href="ajuda.html#folha"><i class="fas fa-arrow-right"></i> Ver capítulo Folha</a>
                 </div>
-                <div class="module-card">
+                <div class="module-card" data-guide-keywords="notas fiscais nfe danfe mdfe certificado transporte produtos sefaz">
+                    <h4><i class="fas fa-receipt"></i> Fiscal</h4>
+                    <ul>
+                        <li>NF-e, DANFE e MDF-e</li>
+                        <li>Produtos, transporte e volumes</li>
+                        <li>Certificado e validação fiscal</li>
+                    </ul>
+                    <figure class="screen-print">
+                        <img src="assets/help-manual/fiscal-1.png?v=20260606" alt="Print sanitizado de notas fiscais" loading="lazy" decoding="async">
+                        <figcaption>notas-fiscais.html: revisão fiscal, produtos e transmissão.</figcaption>
+                    </figure>
+                    <a class="guide-open-link" href="ajuda.html#fiscal"><i class="fas fa-arrow-right"></i> Ver capítulo Fiscal</a>
+                </div>
+                <div class="module-card" data-guide-keywords="assinatura plano pagamento pix comprovante prorrogação modo leitura renovar">
                     <h4><i class="fas fa-id-card"></i> Assinatura</h4>
                     <ul>
                         <li>Status do plano atual e vencimento</li>
@@ -621,13 +1285,23 @@
                         <li>Seleção de plano e contratação</li>
                     </ul>
                     <figure class="screen-print">
-                        <img src="help-assets/assinatura/subscription-status.png?v=20260326" alt="Status da assinatura">
-                        <figcaption>subscription-status.html: status da assinatura e ações.</figcaption>
+                        <img src="assets/help-manual/assinatura-1.png?v=20260606" alt="Print sanitizado de assinatura" loading="lazy" decoding="async">
+                        <figcaption>subscription-status.html: status, renovação, PIX e comprovante.</figcaption>
                     </figure>
+                    <a class="guide-open-link" href="ajuda.html#assinatura"><i class="fas fa-arrow-right"></i> Ver capítulo Assinatura</a>
+                </div>
+                <div class="module-card" data-guide-keywords="perfil usuário senha contato suporte ticket ajuda whatsapp email">
+                    <h4><i class="fas fa-user-cog"></i> Perfil e Suporte</h4>
+                    <ul>
+                        <li>Atualização de dados pessoais</li>
+                        <li>Alteração de senha e sessão</li>
+                        <li>Central de Suporte e ticket</li>
+                    </ul>
                     <figure class="screen-print">
-                        <img src="help-assets/assinatura/subscription.png?v=20260326" alt="Seleção de planos">
-                        <figcaption>subscription.html: seleção e renovação de plano.</figcaption>
+                        <img src="assets/help-manual/perfil-1.png?v=20260606" alt="Print sanitizado de perfil" loading="lazy" decoding="async">
+                        <figcaption>user-profile.html: perfil do usuário, segurança e preferências.</figcaption>
                     </figure>
+                    <a class="guide-open-link" href="ajuda.html#perfil"><i class="fas fa-arrow-right"></i> Ver capítulo Perfil</a>
                 </div>
             </div>
         </div>
@@ -674,7 +1348,8 @@
                     <li>Cadastre empresa e confirme o perfil ativo.</li>
                     <li>Cadastre clientes, fornecedores e espécies.</li>
                     <li>Emita pré-romaneio e depois romaneio por tipo.</li>
-                    <li>Valide financeiro e estoque no dashboard.</li>
+                    <li>Registre vendas/compras e valide financeiro, estoque e folha no dashboard.</li>
+                    <li>Use o manual completo quando precisar localizar ajuda por modal, campo ou funcionalidade.</li>
                 </ul>
             </div>
 
@@ -682,54 +1357,58 @@
                 <h3>2) Exemplos práticos por módulo</h3>
                 <ul>
                     <li><strong>Empresa:</strong> preencher CNPJ, contato e logo.</li>
+                    <li><strong>Cadastros:</strong> criar clientes, fornecedores e espécies antes de operar.</li>
                     <li><strong>Romaneios:</strong> criar com cliente, espécie, itens e totais.</li>
+                    <li><strong>Vendas/Compras:</strong> conferir pessoa, itens, totais, parcelas e relatórios.</li>
                     <li><strong>Financeiro:</strong> acompanhar vencimento e status de títulos.</li>
-                    <li><strong>Perfil:</strong> atualizar nome, telefone e credenciais.</li>
+                    <li><strong>Folha:</strong> conferir funcionário, PIX, quinzena/mês e recibos.</li>
+                    <li><strong>Perfil/Suporte:</strong> atualizar contato e abrir ticket com contexto da tela.</li>
                 </ul>
+                <p><a class="guide-open-link" href="ajuda.html"><i class="fas fa-book-open"></i> Abrir manual completo com busca</a></p>
             </div>
 
             <div class="help-section">
-                <h3>3) Prints de tela recomendados no treinamento</h3>
+                <h3>3) Prints sanitizados para treinamento</h3>
                 <div class="module-grid">
-                    <div class="module-card">
+                    <div class="module-card" data-guide-keywords="empresa tenant cnpj logo configuração">
                         <h4><i class="fas fa-building"></i> Configuração Inicial</h4>
                         <figure class="screen-print">
-                            <img src="help-assets/empresa/company.png?v=20260326" alt="Cadastro de empresa">
-                            <figcaption>company.html: cadastro da empresa com CNPJ e logo.</figcaption>
+                            <img src="assets/help-manual/empresa-1.png?v=20260606" alt="Print sanitizado do cadastro de empresa" loading="lazy" decoding="async">
+                            <figcaption>company.html: cadastro da empresa com CNPJ, contato e logo.</figcaption>
                         </figure>
                     </div>
-                    <div class="module-card">
+                    <div class="module-card" data-guide-keywords="cadastros clientes fornecedores espécies">
                         <h4><i class="fas fa-users"></i> Cadastros Base</h4>
                         <figure class="screen-print">
-                            <img src="help-assets/cadastros/clientes.png?v=20260326" alt="Listagem de clientes">
-                            <figcaption>client.html: listagem de clientes com filtros.</figcaption>
+                            <img src="assets/help-manual/cadastros-1.png?v=20260606" alt="Print sanitizado de cadastros" loading="lazy" decoding="async">
+                            <figcaption>Cadastros: clientes, fornecedores e espécies com filtros.</figcaption>
                         </figure>
                     </div>
-                    <div class="module-card">
+                    <div class="module-card" data-guide-keywords="romaneio pré-romaneio emissão impressão">
                         <h4><i class="fas fa-file-alt"></i> Romaneios</h4>
                         <figure class="screen-print">
-                            <img src="help-assets/romaneios/preromaneio.png?v=20260326" alt="Pré-romaneio">
-                            <figcaption>preromaneio.html: pré-romaneio e preparação de emissão.</figcaption>
+                            <img src="assets/help-manual/romaneios-1.png?v=20260606" alt="Print sanitizado de romaneios" loading="lazy" decoding="async">
+                            <figcaption>Romaneios: pré-romaneio, itens, totais e impressão.</figcaption>
                         </figure>
                     </div>
-                    <div class="module-card">
+                    <div class="module-card" data-guide-keywords="financeiro receber pagar pagamento">
                         <h4><i class="fas fa-coins"></i> Financeiro</h4>
                         <figure class="screen-print">
-                            <img src="help-assets/financeiro/financas.png?v=20260326" alt="Tela de finanças">
+                            <img src="assets/help-manual/financas-1.png?v=20260606" alt="Print sanitizado de finanças" loading="lazy" decoding="async">
                             <figcaption>financas.html: visão geral com filtros e títulos.</figcaption>
                         </figure>
                     </div>
-                    <div class="module-card">
-                        <h4><i class="fas fa-user-cog"></i> Perfil e Suporte</h4>
+                    <div class="module-card" data-guide-keywords="folha pix qrcode recibo quinzena">
+                        <h4><i class="fas fa-file-invoice-dollar"></i> Folha</h4>
                         <figure class="screen-print">
-                            <img src="help-assets/perfil/user-profile.png?v=20260326" alt="Perfil do usuário">
-                            <figcaption>user-profile.html: atualização de dados do usuário.</figcaption>
+                            <img src="assets/help-manual/folha-1.png?v=20260606" alt="Print sanitizado de folha" loading="lazy" decoding="async">
+                            <figcaption>folha.html: lançamentos, QR Code PIX e recibos.</figcaption>
                         </figure>
                     </div>
-                    <div class="module-card">
+                    <div class="module-card" data-guide-keywords="assinatura plano renovação pagamento">
                         <h4><i class="fas fa-id-card"></i> Assinatura</h4>
                         <figure class="screen-print">
-                            <img src="help-assets/assinatura/subscription-status.png?v=20260326" alt="Status da assinatura">
+                            <img src="assets/help-manual/assinatura-1.png?v=20260606" alt="Print sanitizado de assinatura" loading="lazy" decoding="async">
                             <figcaption>subscription-status.html: status e ações de renovação.</figcaption>
                         </figure>
                     </div>
@@ -741,7 +1420,7 @@
                 <ul>
                     <li>Operar sempre com usuário autenticado e companyId correto.</li>
                     <li>Conferir toasts de sucesso após salvar/editar.</li>
-                    <li>Em dúvida, usar Diagnóstico para auditoria rápida.</li>
+                    <li>Em dúvida, abrir a Central de Suporte com a tela e o módulo onde ocorreu o problema.</li>
                     <li>Manter cadastro base atualizado antes das emissões.</li>
                 </ul>
             </div>
@@ -757,9 +1436,9 @@
         </div>
     </div>
 
-    <script src="auth.js"></script>
+    <script src="auth.js?v=2026-06-10-subscription-status-ux-v1"></script>
     <script type="module">
-        import { authService, isFirebaseOperational, getSubscriptionSettings, requestSubscriptionExtension, getAll, loadFromFirebase, getTenantId, getCurrentUid, grantReadOnlyGrace } from './firebaseService.js';
+        import { authService, isFirebaseOperational, getSubscriptionSettings, requestSubscriptionExtension, getAll, loadFromFirebase, getTenantId, getCurrentUid, grantReadOnlyGrace } from './firebaseService.js?v=2026-06-10-subscription-status-ux-v1';
         
         window.firebaseService = {
             ...(window.firebaseService || {}),
@@ -789,8 +1468,8 @@
         }
 
         function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('pt-BR');
+            const date = parseAnyDate(dateString);
+            return date ? date.toLocaleDateString('pt-BR') : 'Não informado';
         }
 
         function calculateDaysLeft(endDateString) {
@@ -838,9 +1517,108 @@
             return key;
         }
 
-        function resolvePlanSummary(user, settings, statusKey) {
+        function firstValidDate() {
+            for (let i = 0; i < arguments.length; i += 1) {
+                const parsed = parseAnyDate(arguments[i]);
+                if (parsed) return parsed;
+            }
+            return null;
+        }
+
+        function addPlanDuration(startDate, rawPlan, settings) {
+            const start = parseAnyDate(startDate);
+            if (!start) return null;
+            const plan = String(rawPlan || '').toLowerCase().trim();
+            const end = new Date(start.getTime());
+            if (['free_trial', 'trial', 'trial_active', 'teste_ativo'].includes(plan)) {
+                const days = parseInt(settings && settings.freeTrialDays, 10) || 30;
+                end.setDate(end.getDate() + days);
+                return end;
+            }
+            if (plan === 'premium') {
+                end.setFullYear(end.getFullYear() + 1);
+                return end;
+            }
+            if (['quarterly', 'trimestral', 'annual', 'anual'].includes(plan)) {
+                end.setMonth(end.getMonth() + 3);
+                return end;
+            }
+            end.setMonth(end.getMonth() + 1);
+            return end;
+        }
+
+        function getLatestPayment(user) {
+            const payments = Array.isArray(user && user.payments) ? user.payments : [];
+            return payments
+                .filter((payment) => payment && typeof payment === 'object')
+                .map((payment) => ({ payment, date: parseAnyDate(payment.date || payment.createdAt || payment.confirmedAt || payment.updatedAt) }))
+                .filter((entry) => entry.date)
+                .sort((a, b) => b.date.getTime() - a.date.getTime())
+                .map((entry) => entry.payment)[0] || null;
+        }
+
+        function resolveSubscriptionSnapshot(user, settings, statusKey) {
+            const u = user && typeof user === 'object' ? user : {};
+            const subscription = u.subscription && typeof u.subscription === 'object' ? u.subscription : {};
+            const pendingPayment = u.pendingPayment && String(u.pendingPayment.status || '').toLowerCase() === 'pending' ? u.pendingPayment : null;
+            const latestPayment = getLatestPayment(u);
+            const planRaw = subscription.planKey || subscription.key || subscription.type
+                || (pendingPayment && (pendingPayment.planKey || pendingPayment.plan))
+                || (latestPayment && (latestPayment.planKey || latestPayment.plan || latestPayment.type))
+                || u.planKey || u.plan || u.planType || u.subscriptionType
+                || (statusKey === 'trial_active' ? 'free_trial' : '');
+            const startDate = firstValidDate(
+                subscription.startDate,
+                subscription.subscriptionStart,
+                u.subscriptionStart,
+                u.subscription_start,
+                u.subscriptionStartDate,
+                u.subscriptionCreatedAt,
+                statusKey === 'trial_active' ? u.trialStart : null,
+                pendingPayment && (pendingPayment.date || pendingPayment.createdAt),
+                latestPayment && (latestPayment.date || latestPayment.createdAt || latestPayment.confirmedAt),
+                u.trialStart
+            );
+            let endDate = firstValidDate(
+                subscription.endDate,
+                subscription.subscriptionEnd,
+                u.subscriptionEnd,
+                u.subscription_end,
+                u.subscriptionEndDate,
+                u.expiresAt,
+                u.expirationDate,
+                u.validUntil,
+                u.readOnlyUntil
+            );
+            let endIsEstimated = false;
+            if (!endDate && startDate && (statusKey === 'active' || statusKey === 'trial_active')) {
+                endDate = addPlanDuration(startDate, planRaw || (statusKey === 'trial_active' ? 'free_trial' : 'monthly'), settings);
+                endIsEstimated = !!endDate;
+            }
+            return {
+                subscription,
+                pendingPayment,
+                latestPayment,
+                planRaw,
+                planLabel: normalizePlanLabel(planRaw),
+                startDate,
+                endDate,
+                endIsEstimated,
+                hasSubscription: !!(subscription.startDate || subscription.endDate || subscription.type || u.subscriptionStart || u.subscriptionEnd || u.subscriptionEndDate)
+            };
+        }
+
+        function formatResolvedDate(date, fallbackText, suffix) {
+            const parsed = parseAnyDate(date);
+            if (!parsed) return fallbackText || 'Não informado';
+            return parsed.toLocaleDateString('pt-BR') + (suffix ? ` ${suffix}` : '');
+        }
+
+        function resolvePlanSummary(user, settings, statusKey, snapshot) {
             const subscription = user && user.subscription ? user.subscription : {};
-            const pendingPayment = user && user.pendingPayment && user.pendingPayment.status === 'pending' ? user.pendingPayment : null;
+            const pendingPayment = snapshot && snapshot.pendingPayment
+                ? snapshot.pendingPayment
+                : (user && user.pendingPayment && String(user.pendingPayment.status || '').toLowerCase() === 'pending' ? user.pendingPayment : null);
             if (statusKey === 'trial_active') {
                 return { planName: 'Plano Atual', planValue: 'Free Trial' };
             }
@@ -850,7 +1628,7 @@
                     planValue: Number(pendingPayment.amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
                 };
             }
-            const key = normalizePlanLabel(subscription.planKey || subscription.key || subscription.type || '');
+            const key = normalizePlanLabel((snapshot && snapshot.planRaw) || subscription.planKey || subscription.key || subscription.type || '');
             if (key === 'Mensal') {
                 const amount = Number(settings && settings.plans && settings.plans.monthly ? settings.plans.monthly.amount : 19.9);
                 return { planName: 'Plano Atual', planValue: `Mensal • ${amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês` };
@@ -950,6 +1728,36 @@
             } catch (_) {}
             return null;
         }
+
+        function updateSubscriptionHeaderState(statusKey, daysLeft) {
+            const badge = document.getElementById('statusStateBadge');
+            const updated = document.getElementById('statusUpdatedAt');
+            if (!badge) return;
+            const key = String(statusKey || '').toLowerCase();
+            let label = 'Em análise';
+            let tone = 'state-warning';
+            if (key === 'active') {
+                label = daysLeft != null && daysLeft <= 5 ? 'Atenção' : 'Ativa';
+                tone = daysLeft != null && daysLeft <= 5 ? 'state-warning' : 'state-ok';
+            } else if (key === 'trial_active') {
+                label = 'Trial ativo';
+                tone = daysLeft != null && daysLeft <= 5 ? 'state-warning' : 'state-ok';
+            } else if (key === 'pending' || key === 'pending_grace') {
+                label = 'Pagamento em análise';
+                tone = 'state-warning';
+            } else if (key === 'expired') {
+                label = 'Expirada';
+                tone = 'state-danger';
+            } else if (key === 'blocked') {
+                label = 'Modo leitura';
+                tone = 'state-danger';
+            }
+            badge.className = `status-state-badge ${tone}`;
+            badge.textContent = label;
+            if (updated) {
+                updated.textContent = 'Atualizado agora';
+            }
+        }
         
         async function updateSubscriptionStatus() {
             try {
@@ -967,44 +1775,40 @@
                 renderReadOnlyNotice(statusKey, user);
                 if (!user) {
                     document.getElementById('planType').textContent = 'Usuário não encontrado';
-                    document.getElementById('currentPlan').textContent = 'N/A';
-                    document.getElementById('startDate').textContent = 'N/A';
-                    document.getElementById('endDate').textContent = 'N/A';
+                    document.getElementById('currentPlan').textContent = 'Dados remotos indisponíveis';
+                    document.getElementById('startDate').textContent = 'Não informado';
+                    document.getElementById('endDate').textContent = 'Não informado';
                     document.getElementById('daysLeft').textContent = '0';
                     document.getElementById('renewButton').style.display = 'block';
+                    updateSubscriptionHeaderState('expired', 0);
                     return;
                 }
 
-                const subscription = user.subscription || {};
-                const pendingPayment = user.pendingPayment && user.pendingPayment.status === 'pending' ? user.pendingPayment : null;
-                const hasSubscription = !!subscription.startDate || !!subscription.endDate || !!subscription.type;
-                const daysLeft = subscription.endDate ? calculateDaysLeft(subscription.endDate) : null;
+                const snapshot = resolveSubscriptionSnapshot(user, settings, statusKey);
+                const pendingPayment = snapshot.pendingPayment;
+                const daysLeft = snapshot.endDate ? calculateDaysLeft(snapshot.endDate) : null;
+                updateSubscriptionHeaderState(statusKey, daysLeft);
                 
-                const planSummary = resolvePlanSummary(user, settings, statusKey);
+                const planSummary = resolvePlanSummary(user, settings, statusKey, snapshot);
                 const planName = planSummary.planName;
                 const planValue = planSummary.planValue;
                 
                 document.getElementById('planType').textContent = planName;
                 document.getElementById('currentPlan').textContent = planValue;
-                document.getElementById('startDate').textContent = hasSubscription && subscription.startDate
-                    ? formatDate(subscription.startDate)
-                    : (pendingPayment && pendingPayment.date
-                        ? formatDate(pendingPayment.date)
-                        : (user.trialStart ? formatDate(user.trialStart) : 'N/A'));
-                if (statusKey === 'trial_active' && user.trialStart) {
-                    const trialStartDate = parseAnyDate(user.trialStart);
-                    if (!trialStartDate) {
-                        document.getElementById('endDate').textContent = 'N/A';
-                    } else {
-                    const trialEndDate = new Date(trialStartDate);
-                    const trialDays = parseInt(settings && settings.freeTrialDays, 10) || 30;
-                    trialEndDate.setDate(trialEndDate.getDate() + trialDays);
-                    document.getElementById('endDate').textContent = formatDate(trialEndDate);
-                    }
+                document.getElementById('startDate').textContent = formatResolvedDate(
+                    snapshot.startDate,
+                    pendingPayment ? 'Aguardando aprovação administrativa' : 'Não informado'
+                );
+                if (snapshot.endDate) {
+                    document.getElementById('endDate').textContent = formatResolvedDate(
+                        snapshot.endDate,
+                        'Não informado',
+                        snapshot.endIsEstimated ? '(estimado pelo plano)' : ''
+                    );
                 } else {
-                    document.getElementById('endDate').textContent = hasSubscription && subscription.endDate
-                        ? formatDate(subscription.endDate)
-                        : (pendingPayment ? 'Aguardando aprovação administrativa' : 'N/A');
+                    document.getElementById('endDate').textContent = pendingPayment
+                        ? 'Aguardando aprovação administrativa'
+                        : (statusKey === 'active' ? 'Sem vencimento registrado' : 'Não informado');
                 }
                 
                 const daysLeftElement = document.getElementById('daysLeft');
@@ -1014,7 +1818,7 @@
                     daysLeftElement.className = 'warning';
                     document.getElementById('renewButton').style.display = 'none';
                 } else if (statusKey === 'pending_grace') {
-                    const paymentDate = user.pendingPayment && user.pendingPayment.date ? new Date(user.pendingPayment.date) : new Date();
+                    const paymentDate = pendingPayment && pendingPayment.date ? new Date(pendingPayment.date) : new Date();
                     const ageDays = Number.isNaN(paymentDate.getTime()) ? 0 : Math.max(0, Math.ceil((new Date() - paymentDate) / (1000 * 60 * 60 * 24)));
                     let graceDays = 7;
                     try {
@@ -1032,26 +1836,27 @@
                     daysLeftElement.className = 'warning';
                     document.getElementById('renewButton').style.display = 'block';
                     document.getElementById('renewButton').textContent = 'Regularizar Pagamento';
-                } else if (statusKey === 'expired' || daysLeft < 0) {
+                } else if (statusKey === 'expired' || (daysLeft != null && daysLeft < 0)) {
                     daysLeftElement.textContent = 'Expirado';
                     daysLeftElement.className = 'warning';
                     document.getElementById('renewButton').style.display = 'block';
                     document.getElementById('renewButton').textContent = 'Renovar Assinatura';
                 } else if (statusKey === 'trial_active') {
                     const trialDays = parseInt(settings && settings.freeTrialDays, 10) || 30;
-                    const trialStartDate = parseAnyDate(user.trialStart);
+                    const trialStartDate = parseAnyDate(snapshot.startDate || user.trialStart);
                     const diffDays = trialStartDate ? Math.ceil((new Date() - trialStartDate) / (1000 * 60 * 60 * 24)) : null;
-                    const trialDaysLeft = diffDays == null || !Number.isFinite(diffDays) ? null : Math.max(0, trialDays - diffDays);
-                    daysLeftElement.textContent = trialDaysLeft == null ? 'N/A' : (trialDaysLeft + ' dias');
-                    daysLeftElement.className = trialDaysLeft <= 5 ? 'warning' : 'highlight';
+                    const trialDaysLeft = daysLeft != null ? Math.max(0, daysLeft) : (diffDays == null || !Number.isFinite(diffDays) ? null : Math.max(0, trialDays - diffDays));
+                    daysLeftElement.textContent = trialDaysLeft == null ? 'Sem data inicial registrada' : (trialDaysLeft + ' dias');
+                    daysLeftElement.className = trialDaysLeft != null && trialDaysLeft <= 5 ? 'warning' : 'highlight';
                     document.getElementById('renewButton').style.display = 'block';
                     document.getElementById('renewButton').textContent = 'Renovar Assinatura';
                 } else {
                     if (daysLeft == null) {
-                        daysLeftElement.textContent = 'N/A';
+                        daysLeftElement.textContent = statusKey === 'active' ? 'Sem vencimento registrado' : 'Não informado';
                         daysLeftElement.className = 'warning';
                         document.getElementById('renewButton').style.display = 'block';
                         document.getElementById('renewButton').textContent = 'Renovar Assinatura';
+                        updateSubscriptionHeaderState(statusKey, daysLeft);
                         return;
                     }
                     daysLeftElement.textContent = daysLeft + ' dias';
@@ -1072,6 +1877,7 @@
                 document.getElementById('startDate').textContent = 'Erro';
                 document.getElementById('endDate').textContent = 'Erro';
                 document.getElementById('daysLeft').textContent = 'Erro';
+                updateSubscriptionHeaderState('blocked', 0);
             }
         }
 
@@ -1080,7 +1886,8 @@
             if (!box) return;
             const params = new URLSearchParams(window.location.search || '');
             const reason = String(params.get('reason') || '').toLowerCase();
-            const endDate = user && user.subscription && user.subscription.endDate ? new Date(user.subscription.endDate) : null;
+            const snapshot = resolveSubscriptionSnapshot(user, null, statusKey);
+            const endDate = snapshot && snapshot.endDate ? snapshot.endDate : null;
             const endText = endDate && !Number.isNaN(endDate.getTime()) ? endDate.toLocaleDateString('pt-BR') : '--/--/----';
             if (reason === 'readonly_expired') {
                 box.style.display = 'block';
@@ -1119,11 +1926,11 @@
         }
 
         function renderStatusAlerts() {
-            const container = document.getElementById('statusAlertsList');
+            const container = document.getElementById('statusMessagesPreview');
             if (!container) return;
             const alerts = typeof window.getSystemAlerts === 'function' ? window.getSystemAlerts() : [];
             if (!alerts.length) {
-                container.innerHTML = '<div style="font-size:13px;color:#64748b;">Nenhuma mensagem recente.</div>';
+                container.innerHTML = '<div style="font-size:13px;color:#64748b;">Nenhuma notificação recente. Use "Nova mensagem" para abrir um ticket com o Admin.</div>';
                 return;
             }
             container.innerHTML = alerts.slice(0, 10).map((item) => {
@@ -1132,6 +1939,47 @@
                 const date = item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : '';
                 return `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;background:#fff;"><strong style="display:block;color:#1e293b;">${title}</strong><span style="display:block;color:#334155;font-size:13px;">${message}</span><small style="color:#94a3b8;">${date}</small></div>`;
             }).join('');
+        }
+
+        function prefillSubscriptionSupportMessage() {
+            const messageEl = document.getElementById('siswebSupportMessage');
+            if (!messageEl || String(messageEl.value || '').trim()) return;
+            const currentPlan = document.getElementById('currentPlan');
+            const endDate = document.getElementById('endDate');
+            const daysLeft = document.getElementById('daysLeft');
+            messageEl.value = [
+                'Olá Admin, preciso de atendimento sobre minha assinatura.',
+                '',
+                `Plano exibido: ${currentPlan ? currentPlan.textContent : 'não informado'}`,
+                `Vencimento exibido: ${endDate ? endDate.textContent : 'não informado'}`,
+                `Dias/status exibido: ${daysLeft ? daysLeft.textContent : 'não informado'}`,
+                '',
+                'Minha mensagem: '
+            ].join('\n');
+            try { messageEl.focus(); } catch (_) {}
+        }
+
+        function openSubscriptionMessageCenter(view) {
+            const targetView = view === 'tickets' ? 'tickets' : 'new';
+            const openModal = () => {
+                if (typeof window.showSupport !== 'function') {
+                    alert('Central de mensagens ainda está carregando. Aguarde alguns segundos e tente novamente.');
+                    return;
+                }
+                window.showSupport();
+                setTimeout(() => {
+                    if (typeof window.switchSiswebSupportView === 'function') {
+                        window.switchSiswebSupportView(targetView);
+                    }
+                    if (targetView === 'tickets' && typeof window.loadSiswebSupportTickets === 'function') {
+                        window.loadSiswebSupportTickets();
+                    }
+                    if (targetView === 'new') {
+                        prefillSubscriptionSupportMessage();
+                    }
+                }, 100);
+            };
+            openModal();
         }
 
         function renewSubscription() {
@@ -1177,6 +2025,32 @@
                     alert(error && error.message ? error.message : 'Não foi possível ativar o modo leitura.');
                 }
             })();
+        }
+
+        function normalizeGuideText(value) {
+            return String(value || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase();
+        }
+
+        function setupQuickGuideSearch() {
+            const input = document.getElementById('quickGuideSearch');
+            const cards = Array.from(document.querySelectorAll('.help-hub [data-guide-keywords]'));
+            if (!input || !cards.length) return;
+            const apply = () => {
+                const tokens = normalizeGuideText(input.value).split(/\s+/).filter(Boolean);
+                cards.forEach((card) => {
+                    const haystack = normalizeGuideText([
+                        card.getAttribute('data-guide-keywords') || '',
+                        card.textContent || ''
+                    ].join(' '));
+                    const visible = !tokens.length || tokens.every((token) => haystack.includes(token));
+                    card.style.display = visible ? '' : 'none';
+                });
+            };
+            input.addEventListener('input', apply);
+            apply();
         }
 
         // Funções para os modais de Sobre e Ajuda
@@ -1239,9 +2113,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             updateSubscriptionStatus();
             renderStatusAlerts();
+            setupQuickGuideSearch();
             const closeBtn = document.getElementById('helpImageClose');
             if (closeBtn) closeBtn.addEventListener('click', closeHelpImageLightbox);
-            document.querySelectorAll('#helpModal .screen-print img').forEach((imgEl) => {
+            document.querySelectorAll('.screen-print img').forEach((imgEl) => {
                 imgEl.addEventListener('click', function() {
                     const src = imgEl.getAttribute('src') || '';
                     const alt = imgEl.getAttribute('alt') || '';

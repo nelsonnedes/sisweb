@@ -14,23 +14,31 @@ console.log("📋 === ROMANEIO MANAGER UNIFICADO (v2.2 - Full UI) ===");
 
 // Helper para chaves de storage
 function getStorageKey(key) {
+    const clean = String(key || '').replace(/^\/+/, '');
+    if (!clean) return null;
+    if (/^companies\//.test(clean)) return clean;
+    if (/^users\//.test(clean)) return null;
     try {
         const svc = window.firebaseService || window.FirebaseService;
         if (svc && typeof svc.getCurrentTenantId === 'function') {
             const t = svc.getCurrentTenantId();
-            if (t) return `company_${t}__${key}`;
+            if (t) return `companies/${t}/${clean}`;
+        }
+        if (svc && typeof svc.getTenantId === 'function') {
+            const t = svc.getTenantId();
+            if (t) return `companies/${t}/${clean}`;
         }
     } catch (_) {}
     try {
-        if (window.appTenantId) return `company_${window.appTenantId}__${key}`;
+        if (window.appTenantId) return `companies/${window.appTenantId}/${clean}`;
         const raw = localStorage.getItem('company_info');
         if (raw) {
             const obj = JSON.parse(raw);
-            const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
-            if (id) return `company_${id}__${key}`;
+            const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
+            if (id) return `companies/${id}/${clean}`;
         }
     } catch (_) {}
-    return key;
+    return null;
 }
 
 class RomaneioManager {
@@ -59,7 +67,7 @@ class RomaneioManager {
     }
     
     _getCollectionKey(type) {
-        const map = { 'tora': 'romaneiosTora', 'pct': 'romaneiosPct', 'tl': 'romaneiosTl', 'pes': 'romaneiosPes' };
+        const map = { 'tora': 'romaneios/tora', 'pct': 'romaneios/pct', 'tl': 'romaneios/tl', 'pes': 'romaneios/pes' };
         return map[type] || `romaneios${type.charAt(0).toUpperCase() + type.slice(1)}`;
     }
     
@@ -72,95 +80,39 @@ class RomaneioManager {
         const key = this.collectionKey;
         try {
             let data = [];
-            // ✅ CORREÇÃO CRÍTICA: Desativar limpeza agressiva de cache
-            // Se forceRefresh for true, apenas invalidar a flag, não apagar dados preventivamente
-            // Isso evita que, se o Firebase falhar, o usuário fique sem dados locais
-            
+
             if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
                 try {
                     const result = await window.firebaseService.loadFromFirebase(key);
-                    if (result && result.success && result.data) {
+                    if (result && result.success) {
                         const firebaseData = result.data;
-                        
-                        // ✅ PROTEÇÃO CONTRA PERDA DE DADOS (EMPTY DATASET)
-                        // Se o Firebase retornar vazio mas tínhamos dados locais, verificar antes de sobrescrever
-                        if ((!firebaseData || (Array.isArray(firebaseData) && firebaseData.length === 0)) && !forceRefresh) {
-                            const localBackup = await this.loadFromLocalStorage();
-                            if (localBackup.length > 0) {
-                                console.warn(`⚠️ [${this.type}] Firebase retornou vazio, mas existem ${localBackup.length} itens locais. Mantendo locais por segurança.`);
-                                // Não sobrescrever 'data' com vazio
-                                data = localBackup;
-                            } else {
-                                data = []; // Realmente vazio
-                            }
-                        } else {
-                            // Processamento normal dos dados do Firebase
-                            if (Array.isArray(firebaseData)) {
-                                data = firebaseData.map(item => {
-                                    if (item && typeof item === 'object' && item['0'] === 'r' && item['1'] === 'o') {
-                                        if (!item.itens && !item.cliente && !item.fornecedor) return null;
-                                        const cleanItem = { ...item };
-                                        Object.keys(cleanItem).forEach(k => {
-                                            if (!isNaN(k) && parseInt(k) < 20) delete cleanItem[k];
-                                        });
-                                        return cleanItem;
-                                    }
-                                    return item;
-                                }).filter(item => item && (item.id || item.firebaseKey));
-                            } else if (typeof firebaseData === 'object' && firebaseData !== null) {
-                                data = Object.keys(firebaseData).map(k => {
-                                    let item = firebaseData[k];
-                                    if (item && typeof item === 'object') {
-                                        // Detecção de spread string
-                                        const isSpreadString = (item['0'] === 'r' && item['1'] === 'o') || (item[0] === 'r' && item[1] === 'o');
-                                        if (isSpreadString) {
-                                            if (!item.itens && !item.cliente && !item.fornecedor) return null;
-                                            const cleanItem = { ...item };
-                                            Object.keys(cleanItem).forEach(prop => {
-                                                if (!isNaN(prop) && parseInt(prop) < 20) delete cleanItem[prop];
-                                            });
-                                            item = cleanItem;
-                                        }
-                                    }
-                                    if (item && typeof item === 'object' && (item.id || k)) {
-                                        return { id: item.id || k, firebaseKey: k, ...item };
-                                    }
-                                    return null;
-                                }).filter(item => item !== null);
-                            }
-                            
-                            // Atualizar cache local apenas se tiver dados válidos
-                            if (data.length > 0) {
-                                const sk = getStorageKey(key);
-                                localStorage.setItem(sk, JSON.stringify(data));
-                            }
+                        if (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function') {
+                            data = window.RomaneioDataUtils.normalizeRomaneioCollection(firebaseData, { type: this.type });
+                        } else if (Array.isArray(firebaseData)) {
+                            data = firebaseData.filter(item => item && typeof item === 'object' && (item.id || item.firebaseKey || item.numero));
+                        } else if (firebaseData && typeof firebaseData === 'object') {
+                            data = Object.entries(firebaseData)
+                                .map(([k, item]) => item && typeof item === 'object' ? ({ id: item.id || k, firebaseKey: k, ...item }) : null)
+                                .filter(item => item && (item.id || item.firebaseKey || item.numero));
                         }
                         
                         try {
                             const tombKey = getStorageKey(this.deletedKey);
-                            const tomb = JSON.parse(localStorage.getItem(tombKey) || '[]').map(String);
+                            const tomb = tombKey ? JSON.parse(localStorage.getItem(tombKey) || '[]').map(String) : [];
                             if (tomb.length > 0) data = data.filter(r => !tomb.includes(String(r.id)) && !tomb.includes(String(r.firebaseKey)));
                         } catch (_) {}
                         
                         data.sort((a, b) => this.parseTime(b) - this.parseTime(a));
                         
                     } else if (result && result.data === null) {
-                        // Firebase retornou explicitamente null (coleção não existe)
-                        // Verificar se é seguro limpar localmente
-                        const localBackup = await this.loadFromLocalStorage();
-                        if (localBackup.length > 0) {
-                             console.warn(`⚠️ [${this.type}] Firebase retornou NULL. Mantendo ${localBackup.length} itens locais (Modo Offline/Segurança).`);
-                             data = localBackup;
-                        } else {
-                            data = [];
-                        }
+                        data = [];
                     }
                 } catch (err) {
                     console.error(`❌ [${this.type}] Erro crítico no loadFromFirebase:`, err);
-                    data = await this.loadFromLocalStorage();
+                    data = [];
                 }
             } else {
-                data = await this.loadFromLocalStorage();
+                data = [];
             }
             
             data = this.validateData(data);
@@ -175,6 +127,7 @@ class RomaneioManager {
     async loadFromLocalStorage() {
         try {
             const sk = getStorageKey(this.collectionKey);
+            if (!sk) return [];
             const raw = localStorage.getItem(sk);
             if (raw) return JSON.parse(raw);
         } catch (_) {}
@@ -183,13 +136,37 @@ class RomaneioManager {
     
     validateData(data) {
         if (!Array.isArray(data)) return [];
+        if (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.isValidRomaneioRecord === 'function') {
+            return data.filter(item => window.RomaneioDataUtils.isValidRomaneioRecord(item, item && (item.firebaseKey || item.key || item.id)));
+        }
         return data.filter(item => item && (item.id || item.firebaseKey));
     }
     
     parseTime(r) {
-        const m = r?._metadata?.lastUpdated;
-        if (m) return typeof m === 'number' ? m : Date.parse(m);
-        return Date.parse(r?.updatedAt || r?.dataCriacao || r?.created || r?.dataHora || 0) || 0;
+        if (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.parseRomaneioTimestamp === 'function') {
+            return window.RomaneioDataUtils.parseRomaneioTimestamp(r);
+        }
+        const candidates = [
+            r?._metadata?.lastUpdated,
+            r?.updatedAt,
+            r?.updated,
+            r?.lastModified,
+            r?.dataEmissao,
+            r?.data,
+            r?.dataHora,
+            r?.dataCriacao,
+            r?.createdAt,
+            r?.created,
+            r?.timestamp
+        ];
+        for (const candidate of candidates) {
+            if (!candidate) continue;
+            const ts = typeof candidate === 'number' ? candidate : Date.parse(candidate);
+            if (!isNaN(ts)) return ts;
+        }
+        const id = String(r?.id || r?.romaneioId || r?.firebaseKey || r?.key || r?.numero || r?.numeroRomaneio || '');
+        const match = id.match(/(\d{10,})/);
+        return match ? Number(match[1]) || 0 : 0;
     }
 
     async saveData(arg1, arg2) {
@@ -216,7 +193,7 @@ class RomaneioManager {
             const sk = getStorageKey(this.collectionKey);
             let localData = [];
             try {
-                localData = JSON.parse(localStorage.getItem(sk) || '[]');
+                localData = sk ? JSON.parse(localStorage.getItem(sk) || '[]') : [];
             } catch (_) {}
             
             for (const item of data) {
@@ -253,7 +230,7 @@ class RomaneioManager {
             }
             
             // Persistir cache local atualizado
-            if (count > 0) {
+            if (count > 0 && sk) {
                 localStorage.setItem(sk, JSON.stringify(localData));
                 this.applyFilter(this.currentFilter);
                 this.renderFilteredTable();
@@ -273,10 +250,10 @@ class RomaneioManager {
             const deleteKey = String((rec && (rec.firebaseKey || rec.id)) || sid);
 
             const tombKey = getStorageKey(this.deletedKey);
-            const tomb = JSON.parse(localStorage.getItem(tombKey) || '[]').map(String);
+            const tomb = tombKey ? JSON.parse(localStorage.getItem(tombKey) || '[]').map(String) : [];
             if (!tomb.includes(deleteKey)) {
                 tomb.push(deleteKey);
-                localStorage.setItem(tombKey, JSON.stringify(tomb));
+                if (tombKey) localStorage.setItem(tombKey, JSON.stringify(tomb));
             }
             if (window.firebaseService) {
                 if (typeof window.firebaseService.saveToFirebase === 'function') {
@@ -290,6 +267,7 @@ class RomaneioManager {
 
             try {
                 const sk = getStorageKey(this.collectionKey);
+                if (!sk) return;
                 const raw = localStorage.getItem(sk);
                 if (raw) {
                     const localData = JSON.parse(raw);
@@ -581,6 +559,9 @@ class RomaneioManager {
                         <div class="modal-info">
                             <i class="fas fa-info-circle me-1"></i> <span id="romaneioModalInfo_${this.modalId}">Carregando...</span>
                         </div>
+                        <button type="button" class="romaneio-print-config-trigger" onclick="window.RomaneioPrintConfig && window.RomaneioPrintConfig.openModal('${String(this.type || 'tora').toUpperCase()}')" title="Configurar colunas impressas">
+                            <i class="fas fa-print"></i> Configurar Impressão
+                        </button>
                         <button class="close-btn-footer close-modal-btn">Fechar</button>
                     </div>
                 </div>
@@ -800,7 +781,17 @@ window.togglePrintMenuTora = function(button, romaneioId, index) {
     document.querySelectorAll('.external-print-menu').forEach(menu => menu.remove());
     const externalMenu = document.createElement('div');
     externalMenu.className = 'external-print-menu';
-    externalMenu.style.cssText = `position: fixed; z-index: 9999; background: white; border: 1px solid #ccc; padding: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border-radius: 4px;`;
+    externalMenu.style.cssText = `
+        position: fixed;
+        z-index: 10000050;
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        padding: 10px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.28);
+        border-radius: 6px;
+        min-width: 180px;
+        pointer-events: auto;
+    `;
     externalMenu.innerHTML = `
         <div style="font-weight: bold; margin-bottom: 5px;">Imprimir</div>
         <button style="display:block; width:100%; text-align:left; border:none; background:none; padding: 5px; cursor:pointer" onclick="window.imprimirRomaneioTora('${romaneioId}', 'completo')">Completo</button>
@@ -808,9 +799,18 @@ window.togglePrintMenuTora = function(button, romaneioId, index) {
         <button style="display:block; width:100%; text-align:left; border:none; background:none; padding: 5px; cursor:pointer" onclick="window.imprimirRomaneioTora('${romaneioId}', 'sem_preco')">Sem Preço</button>
     `;
     const rect = button.getBoundingClientRect();
-    externalMenu.style.top = `${rect.bottom + 5}px`;
-    externalMenu.style.left = `${rect.left}px`;
     document.body.appendChild(externalMenu);
+    const menuWidth = Math.max(180, externalMenu.offsetWidth || 180);
+    const menuHeight = Math.max(120, externalMenu.offsetHeight || 120);
+    const top = rect.bottom + 5 + menuHeight > window.innerHeight - 12
+        ? Math.max(12, rect.top - menuHeight - 5)
+        : rect.bottom + 5;
+    const left = Math.min(
+        Math.max(12, rect.left),
+        Math.max(12, window.innerWidth - menuWidth - 12)
+    );
+    externalMenu.style.top = `${top}px`;
+    externalMenu.style.left = `${left}px`;
     setTimeout(() => {
         document.addEventListener('click', function close(e) {
             if (!externalMenu.contains(e.target) && e.target !== button) {

@@ -5,6 +5,33 @@ console.log('🔧 Iniciando correção de dados Firebase v3.4...');
 
 // Sistema de correção de dados Firebase
 window.correcaoFirebase = {
+    obterTenantId() {
+        try {
+            const svc = window.firebaseService || window.FirebaseService || window.firebaseServiceTL;
+            if (svc && typeof svc.getTenantId === 'function') return svc.getTenantId();
+            if (svc && typeof svc.getCurrentTenantId === 'function') return svc.getCurrentTenantId();
+        } catch (_) {}
+        try {
+            if (window.appTenantId) return window.appTenantId;
+            const raw = localStorage.getItem('company_info');
+            if (raw) {
+                const obj = JSON.parse(raw);
+                return obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
+            }
+        } catch (_) {}
+        return null;
+    },
+
+    resolverCaminho(colecao, id) {
+        const path = `${String(colecao || '').replace(/^\/+|\/+$/g, '')}/${String(id || '').replace(/^\/+|\/+$/g, '')}`;
+        if (/^(companies|users|roles|system)\//.test(path)) return path;
+        try {
+            const svc = window.firebaseService || window.FirebaseService || window.firebaseServiceTL;
+            if (svc && typeof svc.getNamespacedPath === 'function') return svc.getNamespacedPath(path);
+        } catch (_) {}
+        const tenant = this.obterTenantId();
+        return tenant ? `companies/${tenant}/${path}` : path;
+    },
     
     // Corrigir espécies com "Nome: undefined"
     async corrigirEspecies() {
@@ -16,7 +43,7 @@ window.correcaoFirebase = {
             }
             
             // Carregar dados atuais
-            const result = await window.firebaseService.loadFromFirebase('species');
+            const result = await window.firebaseService.loadFromFirebase('especies');
             
             if (!result.success || !result.data) {
                 console.log('⚠️ Nenhuma espécie encontrada para correção');
@@ -36,7 +63,7 @@ window.correcaoFirebase = {
                 // Verificar se é um registro válido
                 if (!especie || typeof especie !== 'object') {
                     console.log(`❌ Removendo espécie inválida: ${id}`);
-                    await this.removerRegistro('species', id);
+                    await this.removerRegistro('especies', id);
                     removidas++;
                     continue;
                 }
@@ -45,25 +72,25 @@ window.correcaoFirebase = {
                 const correcoes = {};
                 
                 // Corrigir nome undefined/vazio
-                if (!especie.nome && !especie.name) {
+                if (!especie.especie && !especie.nome && !especie.name) {
                     // Se não tem nome, tentar usar o ID como nome
                     if (id.includes('sp') || id.includes('species')) {
-                        correcoes.nome = `Espécie ${id}`;
+                        correcoes.especie = `Espécie ${id}`;
                     } else {
-                        correcoes.nome = 'Espécie sem nome';
+                        correcoes.especie = 'Espécie sem nome';
                     }
                     precisaCorrecao = true;
-                } else if (especie.name && !especie.nome) {
-                    correcoes.nome = especie.name;
+                } else if ((especie.name || especie.nome) && !especie.especie) {
+                    correcoes.especie = especie.name || especie.nome;
                     precisaCorrecao = true;
                 }
                 
-                // Corrigir descrição
-                if (!especie.descricao && !especie.description) {
-                    correcoes.descricao = '';
+                // Corrigir nome científico
+                if (!especie.nomeCientifico && (especie.descricao || especie.description || especie.decription)) {
+                    correcoes.nomeCientifico = especie.descricao || especie.description || especie.decription || '';
                     precisaCorrecao = true;
-                } else if (especie.description && !especie.descricao) {
-                    correcoes.descricao = especie.description;
+                } else if (!especie.nomeCientifico) {
+                    correcoes.nomeCientifico = '';
                     precisaCorrecao = true;
                 }
                 
@@ -75,9 +102,16 @@ window.correcaoFirebase = {
                 
                 // Aplicar correções se necessário
                 if (precisaCorrecao) {
-                    const especieCorrigida = { ...especie, ...correcoes };
-                    await this.atualizarRegistro('species', id, especieCorrigida);
-                    console.log(`✅ Espécie corrigida: ${id} -> ${correcoes.nome || especie.nome}`);
+                    const especieCorrigida = {
+                        id,
+                        especie: correcoes.especie || especie.especie || especie.nome || especie.name || '',
+                        nomeCientifico: correcoes.nomeCientifico !== undefined ? correcoes.nomeCientifico : (especie.nomeCientifico || ''),
+                        ativo: correcoes.ativo !== undefined ? correcoes.ativo : especie.ativo !== false,
+                        createdAt: especie.createdAt || new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+                    await this.atualizarRegistro('especies', id, especieCorrigida);
+                    console.log(`✅ Espécie corrigida: ${id} -> ${especieCorrigida.especie}`);
                     corrigidas++;
                 }
             }
@@ -259,8 +293,18 @@ window.correcaoFirebase = {
     // Atualizar registro no Firebase
     async atualizarRegistro(colecao, id, dados) {
         try {
+            const path = `${colecao}/${id}`;
+            const svc = window.firebaseService || window.FirebaseService || window.firebaseServiceTL;
+            if (svc && typeof svc.saveData === 'function') {
+                const result = await svc.saveData(path, dados);
+                return result && result.success !== false;
+            }
+            if (svc && typeof svc.saveToFirebase === 'function') {
+                const result = await svc.saveToFirebase(colecao, id, dados);
+                return result && result.success !== false;
+            }
             const database = firebase.database();
-            await database.ref(`${colecao}/${id}`).update(dados);
+            await database.ref(this.resolverCaminho(colecao, id)).update(dados);
             return true;
         } catch (error) {
             console.error(`❌ Erro ao atualizar ${colecao}/${id}:`, error);
@@ -271,8 +315,22 @@ window.correcaoFirebase = {
     // Remover registro do Firebase
     async removerRegistro(colecao, id) {
         try {
+            const path = `${colecao}/${id}`;
+            const svc = window.firebaseService || window.FirebaseService || window.firebaseServiceTL;
+            if (svc && typeof svc.deleteData === 'function') {
+                const result = await svc.deleteData(path);
+                return result && result.success !== false;
+            }
+            if (svc && typeof svc.deleteFromFirebase === 'function') {
+                const result = await svc.deleteFromFirebase(path);
+                return result && result.success !== false;
+            }
+            if (svc && typeof svc.removeFromFirebase === 'function') {
+                const result = await svc.removeFromFirebase(path);
+                return result && result.success !== false;
+            }
             const database = firebase.database();
-            await database.ref(`${colecao}/${id}`).remove();
+            await database.ref(this.resolverCaminho(colecao, id)).remove();
             return true;
         } catch (error) {
             console.error(`❌ Erro ao remover ${colecao}/${id}:`, error);
@@ -309,4 +367,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3000);
 });
 
-console.log('✅ Sistema de correção de dados Firebase carregado!'); 
+console.log('✅ Sistema de correção de dados Firebase carregado!');

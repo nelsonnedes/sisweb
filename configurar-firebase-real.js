@@ -25,9 +25,9 @@ console.log('🔧 Configurador Firebase Real v1.0');
  * 9. Adicione dados de teste no seu Realtime Database:
  * 
  *    {
- *      "species": {
- *        "sp1": {"nome": "Eucalipto", "descricao": "Eucalipto grandis"},
- *        "sp2": {"nome": "Pinus", "descricao": "Pinus elliottii"}
+ *      "especies": {
+ *        "sp1": {"especie": "Eucalipto", "nomeCientifico": "Eucalyptus grandis"},
+ *        "sp2": {"especie": "Pinus", "nomeCientifico": "Pinus elliottii"}
  *      },
  *      "clients": {
  *        "cl1": {"nome": "Cliente Teste", "email": "teste@email.com"},
@@ -188,4 +188,4 @@ window.firebaseConfigurator = {
 
 console.log('✅ Configurador Firebase Real carregado');
 console.log('🔥 Configuração: Projeto SISWEB-7CE82 (Região Ásia-Sudeste)');
-console.log('💡 Para configurar: adicione ?config=firebase na URL ou chame window.firebaseConfigurator.setupRealFirebase()'); 
+console.log('💡 Para configurar: adicione ?config=firebase na URL ou chame window.firebaseConfigurator.setupRealFirebase()');

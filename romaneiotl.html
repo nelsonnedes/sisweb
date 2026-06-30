@@ -7,12 +7,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
-    <link rel="stylesheet" href="romaneio-comum.css?v=20260324_2">
+    <link rel="stylesheet" href="romaneio-comum.css?v=20260607pwaqa">
+    <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <link rel="stylesheet" href="print-styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Loading / status styles reutilizáveis -->
     <link rel="stylesheet" href="folha_pagamento/folha-loading-styles.css">
-    <script src="menu-component.js?v=20260326"></script>
+    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
     
     <!--
     ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -359,6 +360,9 @@
                 const select = document.getElementById('preRomaneioSelect');
                 if (select) select.value = '';
                 window.romaneioItems = [];
+                window.currentPage = 1;
+                window.currentRomaneioId = null;
+                window.romaneioEditandoId = null;
                 if (window.RenderizarTabela && window.RenderizarTabela.renderizarTabela) {
                     window.RenderizarTabela.renderizarTabela();
                 } else if (typeof window.renderizarTabela === 'function') {
@@ -374,6 +378,10 @@
                 const clienteInput = document.getElementById('clienteInput');
                 if (clienteInput) clienteInput.value = '';
                 window.selectedClient = null;
+                window.selectedSpecies = null;
+                if (typeof window.limparCamposItem === 'function') {
+                    window.limparCamposItem();
+                }
             };
         }
     });
@@ -875,6 +883,59 @@
             text-align: right;
         }
 
+        .romaneio-header-fields {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .romaneio-date-field {
+            flex: 0 0 190px;
+            max-width: 190px;
+        }
+
+        .romaneio-date-field input[type="date"] {
+            box-sizing: border-box;
+            padding-right: 34px;
+            position: relative;
+            text-align: left;
+            width: 100%;
+        }
+
+        .romaneio-date-field input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            height: 18px;
+            padding: 2px;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+        }
+
+        .romaneio-date-field input[type="date"]::-webkit-date-and-time-value {
+            text-align: left;
+        }
+
+        .romaneio-client-field {
+            flex: 1 1 0;
+            min-width: 420px;
+            max-width: none;
+        }
+
+        @media (max-width: 640px) {
+            .romaneio-header-fields {
+                display: block;
+            }
+
+            .romaneio-date-field,
+            .romaneio-client-field {
+                min-width: 0;
+                max-width: none;
+            }
+        }
+
         .error {
             color: #e74c3c;
             font-size: 14px;
@@ -1202,6 +1263,24 @@
             margin-top: 5px;
         }
 
+        .external-print-menu.tl-print-dropdown-menu {
+            position: fixed !important;
+            z-index: 10000080 !important;
+            display: block !important;
+            min-width: 220px;
+            background: #fff;
+            border: 1px solid #d6e1ec;
+            border-radius: 6px;
+            box-shadow: 0 14px 34px rgba(13, 35, 57, 0.32);
+            overflow: hidden;
+            pointer-events: auto;
+        }
+
+        #listaModal.has-active-print-dropdown .close-modal,
+        #listaModal.has-active-print-dropdown .close-modal-btn {
+            z-index: 2;
+        }
+
         .dropdown-content.show {
             display: block;
         }
@@ -1224,6 +1303,30 @@
 
         .dropdown-content a i {
             margin-right: 8px;
+            width: 16px;
+            text-align: center;
+        }
+
+        .external-print-menu.tl-print-dropdown-menu .tl-print-option {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: #2c3e50;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-align: left;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .external-print-menu.tl-print-dropdown-menu .tl-print-option:hover {
+            background-color: #f8f9fa;
+            color: #3498db;
+        }
+
+        .external-print-menu.tl-print-dropdown-menu .tl-print-option i {
             width: 16px;
             text-align: center;
         }
@@ -1415,9 +1518,9 @@
         #speciesListModal .table th:nth-child(1),
         #speciesListModal .table td:nth-child(1) { width: 30% !important; }
         #speciesListModal .table th:nth-child(2),
-        #speciesListModal .table td:nth-child(2) { width: calc(70% - 40px) !important; }
+        #speciesListModal .table td:nth-child(2) { width: calc(70% - 92px) !important; }
         #speciesListModal .table th:last-child,
-        #speciesListModal .table td:last-child { width: 40px !important; min-width: 40px !important; max-width: 40px !important; }
+        #speciesListModal .table td:last-child { width: 92px !important; min-width: 92px !important; max-width: 92px !important; }
     </style>
 </head>
 <body>
@@ -1427,17 +1530,24 @@
         
         <section id="romaneio-form-section">
             <form id="romaneioForm" onsubmit="event.preventDefault(); console.log('Submit prevenido via HTML'); return false;">
-                <div class="form-group">
-                    <label for="clienteInput">Cliente:</label>
-                    <div class="autocomplete-container">
-                        <input type="text" id="clienteInput" class="autocomplete-input" placeholder="clique para selecionar um cliente" oninput="showClientSuggestions(this)">
-                        <div class="autocomplete-icons-container">
-                            <span class="autocomplete-icon" title="Listar Clientes" onclick="openClientListModal()">
-                                <i class="fas fa-list"></i>
-                            </span>
-                            <span class="autocomplete-icon" title="Novo Cliente" onclick="openNewClientModal()">
-                                <i class="fas fa-user-plus"></i>
-                            </span>
+                <div class="romaneio-header-fields">
+                    <div class="form-group romaneio-date-field">
+                        <label for="romaneioData">Data de Emissão:</label>
+                        <input type="date" id="romaneioData" autocomplete="off">
+                    </div>
+
+                    <div class="form-group romaneio-client-field">
+                        <label for="clienteInput">Cliente:</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="clienteInput" class="autocomplete-input" placeholder="clique para selecionar um cliente" oninput="showClientSuggestions(this)">
+                            <div class="autocomplete-icons-container">
+                                <span class="autocomplete-icon" title="Listar Clientes" onclick="openClientListModal()">
+                                    <i class="fas fa-list"></i>
+                                </span>
+                                <span class="autocomplete-icon" title="Novo Cliente" onclick="openNewClientModal()">
+                                    <i class="fas fa-user-plus"></i>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1446,7 +1556,7 @@
                     <div class="form-group">
                         <label for="especieInput">Espécie Padrão:</label>
                         <div class="autocomplete-container">
-                            <input type="text" id="especieInput" class="autocomplete-input" placeholder="Clique para selecionar uma espécie" oninput="showSpeciesSuggestions(this)">
+                            <input type="text" id="especieInput" class="autocomplete-input" placeholder="Clique para selecionar uma espécie" autocomplete="off" data-species-list-on-type="true" data-species-list-min-chars="3" oninput="showSpeciesSuggestions(this)">
                             <div class="autocomplete-icons-container">
                                 <span class="autocomplete-icon" title="Listar Espécies" onclick="openSpeciesListModal()">
                                     <i class="fas fa-list"></i>
@@ -1497,7 +1607,7 @@
                             <i class="fas fa-download"></i> Carregar Itens
                         </button>
                         <button type="button" id="btnLimparPreRomaneio" class="btn btn-danger">
-                            <i class="fas fa-eraser"></i> Limpar Pré-Romaneio
+                            <i class="fas fa-eraser"></i> Limpar
                         </button>
                     </div>
                 </div>
@@ -1571,7 +1681,7 @@
                             <th>Estado</th>
                             <th>Telefone</th>
                             <th>Email</th>
-                                    <th style="width: 120px; text-align: center;">Ações</th>
+                                    <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody id="clientListTable">
@@ -1606,7 +1716,7 @@
             </div>
                 <div class="modal-body">
                     <div style="margin-bottom: 15px;">
-                        <input type="text" id="speciesListFilter" placeholder="🔍 Filtrar por nome ou descrição..." 
+                        <input type="text" id="speciesListFilter" placeholder="🔍 Filtrar por espécie ou nome científico..."
                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
                     </div>
                     <div class="table-container">
@@ -1614,8 +1724,8 @@
                             <thead>
                             <tr>
                                 <th>Nome</th>
-                                <th>Descrição</th>
-                                    <th style="width: 120px; text-align: center;">Ações</th>
+                                <th>Nome Científico</th>
+                                    <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody id="speciesListTable">
@@ -1683,6 +1793,9 @@
                     </div>
                     <div id="romaneioListPagination" class="pagination-controls" style="display: none;"></div>
                     <div class="modal-footer-buttons">
+                        <button type="button" class="romaneio-print-config-trigger" onclick="window.RomaneioPrintConfig && window.RomaneioPrintConfig.openModal('TL')" title="Configurar colunas impressas">
+                            <i class="fas fa-print"></i> Configurar Impressão
+                        </button>
                         <button type="button" class="back-button close-modal-btn">Fechar</button>
                     </div>
                 </div>
@@ -1746,34 +1859,44 @@
         // 📡 LISTENER REALTIME PARA ROMANEIOS TL
         try {
             const db = firebase.database();
-            const pathCandidates = ['romaneios/tl','romaneiosTL','romaneios_tl'];
             const resolvePath = (p) => {
                 try {
                     const base = String(p || '');
                     if (!base) return base;
                     if (/^companies\//.test(base) || /^users\//.test(base)) return base;
-                    const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug || window.companyInfo.nome || window.companyInfo.name));
+                    const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                    const serviceTenant = svc && (typeof svc.getTenantId === 'function' ? svc.getTenantId() : (typeof svc.getCurrentTenantId === 'function' ? svc.getCurrentTenantId() : null));
+                    const rawTenant = serviceTenant || window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
                     if (rawTenant) return `companies/${String(rawTenant)}/${base}`;
                     const stored = localStorage.getItem('company_info');
                     if (stored) {
                         const obj = JSON.parse(stored);
-                        const t = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                        const t = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                         if (t) return `companies/${String(t)}/${base}`;
                     }
-                    return base;
-                } catch (_) { return p; }
+                    return null;
+                } catch (_) { return null; }
             };
-            const usePath = resolvePath(pathCandidates[0]);
-            db.ref(usePath).on('value', function(snapshot){
-                const val = snapshot.val() || {};
-                const arr = Object.keys(val).map(function(id){ return Object.assign({ id: id }, val[id] || {}); });
-                window.romaneiosTLRealtime = arr;
-                console.log('📡 [TL] Realtime recebidos:', arr.length);
-                // Disparar evento para módulos que quiserem reagir
-                try { window.dispatchEvent(new CustomEvent('romaneiosTL:updated', { detail: { total: arr.length } })); } catch(_){}
-            }, function(error){
-                console.error('❌ [TL] Erro no listener realtime:', error);
-            });
+            const usePath = resolvePath('romaneios/tl');
+            if (!usePath) {
+                console.warn('⚠️ [TL] Listener realtime não iniciado: empresa ativa não resolvida.');
+            } else {
+                db.ref(usePath).on('value', function(snapshot){
+                    const val = snapshot.val() || {};
+                    const arr = (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function')
+                        ? window.RomaneioDataUtils.normalizeRomaneioCollection(val, { type: 'TL' })
+                        : Object.keys(val)
+                            .filter(function(id){ return id && id !== '_metadata'; })
+                            .map(function(id){ return Object.assign({ id: id, firebaseKey: id }, val[id] || {}); })
+                            .filter(function(item){ return item && (item.id || item.numero || item.cliente || item.itens); });
+                    window.romaneiosTLRealtime = arr;
+                    console.log('📡 [TL] Realtime recebidos:', arr.length);
+                    // Disparar evento para módulos que quiserem reagir
+                    try { window.dispatchEvent(new CustomEvent('romaneiosTL:updated', { detail: { total: arr.length } })); } catch(_){}
+                }, function(error){
+                    console.error('❌ [TL] Erro no listener realtime:', error);
+                });
+            }
         } catch(e){ console.error('❌ [TL] Erro ao configurar listener realtime:', e); }
     </script>
 
@@ -1781,6 +1904,9 @@
     <script src="firebase-connection-manager-compat.js"></script>
     
     <!-- Módulos Base (carregados primeiro) -->
+    <script src="species-utils.js"></script>
+    <script src="species-store.js"></script>
+    <script src="species-modal-standard.js"></script>
     <script src="modules/core/firebase-service.js"></script>
     <script src="modules/core/utils.js"></script>
     <script src="modules/core/romaneio-messages.js"></script>
@@ -1799,12 +1925,14 @@
     
     <!-- Módulos de Itens -->
     <script src="modules/items/adicionar-item.js"></script>
+    <script src="romaneio-table-enhancements.js?v=20260601a"></script>
     <script src="modules/items/renderizar-tabela.js"></script>
     <script src="modules/items/editar-item.js"></script>
     <script src="modules/items/excluir-item.js"></script>
     
     <!-- Módulos de Romaneio -->
     <script src="modules/romaneio/salvar-romaneio.js"></script>
+    <script src="romaneio-print-config.js?v=20260603a"></script>
     <script src="modules/reports/imprimir-romaneio.js"></script>
 
     <!-- Módulos de Modais (dependem dos CRUD) -->
@@ -1846,8 +1974,12 @@
         }
 
         function showSpeciesSuggestions(input) {
-            // Por enquanto, apenas abre o modal de espécies
-            if (input.value.length > 2) {
+            if (window.SiswebSpeciesModal
+                && typeof window.SiswebSpeciesModal.openSpeciesListModalFromField === 'function'
+                && window.SiswebSpeciesModal.openSpeciesListModalFromField(input, { minChars: 3 })) {
+                return;
+            }
+            if (input && document.activeElement === input && input.value.length > 2) {
                 openSpeciesListModal();
             }
         }

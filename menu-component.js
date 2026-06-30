@@ -2,7 +2,294 @@
 // Menu Component v2.3 - Correção navegação submenus - 2025-01-08 15:45
 // Force cache break: 20250108154500
 // CORREÇÃO: Força navegação manual dos links dos submenus para evitar preventDefault fantasma
-if (!customElements.get('main-menu')) {
+(function setupSiswebPWA() {
+    if (typeof window === 'undefined' || window.__siswebPWAInitialized) return;
+    window.__siswebPWAInitialized = true;
+
+    const PWA_VERSION = '2026-06-11-profile-admin-v1';
+    const state = {
+        deferredPrompt: null,
+        floatingButton: null,
+        updateChecksBound: false
+    };
+
+    function resolveRootAsset(path) {
+        const normalized = String(path || '').replace(/^\/+/, '');
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            return `/${normalized}`;
+        }
+        const isInSubfolder = (window.location.pathname || '').includes('/folha_pagamento/');
+        return isInSubfolder ? `../${normalized}` : normalized;
+    }
+
+    function isStandalone() {
+        return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+            || window.navigator.standalone === true;
+    }
+
+    function ensureManifest() {
+        try {
+            if (!document.querySelector('link[rel="manifest"]')) {
+                const link = document.createElement('link');
+                link.rel = 'manifest';
+                link.href = resolveRootAsset('manifest.json');
+                document.head.appendChild(link);
+            }
+
+            if (!document.querySelector('meta[name="theme-color"]')) {
+                const meta = document.createElement('meta');
+                meta.name = 'theme-color';
+                meta.content = '#0f172a';
+                document.head.appendChild(meta);
+            }
+
+            if (!document.querySelector('link[rel="icon"][sizes="192x192"]')) {
+                const icon = document.createElement('link');
+                icon.rel = 'icon';
+                icon.type = 'image/png';
+                icon.sizes = '192x192';
+                icon.href = resolveRootAsset('assets/icons/icon-192x192.png');
+                document.head.appendChild(icon);
+            }
+
+            if (!document.querySelector('link[rel="apple-touch-icon"]')) {
+                const appleIcon = document.createElement('link');
+                appleIcon.rel = 'apple-touch-icon';
+                appleIcon.sizes = '180x180';
+                appleIcon.href = resolveRootAsset('assets/icons/apple-touch-icon.png');
+                document.head.appendChild(appleIcon);
+            }
+        } catch (error) {
+            console.warn('[PWA] Falha ao configurar manifest:', error);
+        }
+    }
+
+    function createFloatingButton() {
+        if (state.floatingButton) return state.floatingButton;
+        if (!document.body) return null;
+
+        const button = document.createElement('button');
+        button.id = 'sisweb-pwa-install-btn';
+        button.type = 'button';
+        button.setAttribute('aria-label', 'Instalar Sisweb');
+        button.innerHTML = '<i class="fas fa-download" aria-hidden="true"></i><span>Instalar Sisweb</span>';
+        button.style.cssText = [
+            'position:fixed',
+            'right:18px',
+            'bottom:18px',
+            'z-index:99998',
+            'display:none',
+            'align-items:center',
+            'gap:8px',
+            'border:0',
+            'border-radius:8px',
+            'background:#2c3e50',
+            'color:#fff',
+            'padding:11px 14px',
+            'font:600 14px/1.2 Arial,sans-serif',
+            'box-shadow:0 10px 24px rgba(0,0,0,.22)',
+            'cursor:pointer'
+        ].join(';');
+        button.addEventListener('click', promptInstall);
+        document.body.appendChild(button);
+        state.floatingButton = button;
+        return button;
+    }
+
+    function setInstallVisibility(visible) {
+        const shouldShow = Boolean(visible && state.deferredPrompt && !isStandalone());
+        const button = shouldShow ? createFloatingButton() : state.floatingButton;
+
+        if (button) {
+            button.style.display = shouldShow ? 'inline-flex' : 'none';
+        }
+
+        document.querySelectorAll('.pwa-install-link').forEach((link) => {
+            link.style.display = shouldShow ? 'block' : 'none';
+        });
+    }
+
+    function showInstallOption() {
+        if (!document.body) {
+            window.addEventListener('DOMContentLoaded', showInstallOption, { once: true });
+            return;
+        }
+        setInstallVisibility(true);
+    }
+
+    async function promptInstall(event) {
+        if (event && typeof event.preventDefault === 'function') {
+            event.preventDefault();
+        }
+
+        if (!state.deferredPrompt) {
+            if (window.__toast) {
+                window.__toast('A instalação ainda não está disponível neste navegador.', 'info');
+            }
+            return;
+        }
+
+        const promptEvent = state.deferredPrompt;
+        state.deferredPrompt = null;
+        setInstallVisibility(false);
+        promptEvent.prompt();
+
+        try {
+            await promptEvent.userChoice;
+        } catch (error) {
+            console.warn('[PWA] Falha ao concluir prompt de instalação:', error);
+        }
+    }
+
+    function bindInstallLinks(root) {
+        const container = root || document;
+        container.querySelectorAll('.pwa-install-link').forEach((link) => {
+            if (link.__siswebPwaBound) return;
+            link.__siswebPwaBound = true;
+            link.addEventListener('click', promptInstall);
+        });
+        setInstallVisibility(true);
+    }
+
+    function bindControllerReload(shouldReloadOnChange) {
+        if (!shouldReloadOnChange || !navigator.serviceWorker || navigator.serviceWorker.__siswebReloadBound) {
+            return;
+        }
+
+        navigator.serviceWorker.__siswebReloadBound = true;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            try {
+                sessionStorage.setItem('siswebPwaUpdateReady', PWA_VERSION);
+            } catch (_) {}
+            try {
+                if (typeof window.__toast === 'function') {
+                    window.__toast('Atualização Sisweb pronta. Ao abrir a próxima tela, o app já usará a versão nova.', 'info');
+                }
+            } catch (_) {}
+        });
+    }
+
+    function bindWorkerMessages() {
+        if (!navigator.serviceWorker || navigator.serviceWorker.__siswebMessageBound) {
+            return;
+        }
+        navigator.serviceWorker.__siswebMessageBound = true;
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            const data = event && event.data ? event.data : null;
+            if (!data || data.type !== 'SISWEB_PWA_UPDATED' || !data.version) return;
+            if (String(data.version) === PWA_VERSION) return;
+            try {
+                sessionStorage.setItem('siswebPwaUpdateReady', String(data.version));
+            } catch (_) {}
+            try {
+                if (typeof window.__toast === 'function') {
+                    window.__toast('Atualização Sisweb pronta. Continue navegando normalmente.', 'info');
+                }
+            } catch (_) {}
+        });
+    }
+
+    function setupUpdateChecks(registration) {
+        if (!registration || state.updateChecksBound) return;
+        state.updateChecksBound = true;
+        let lastUpdateCheckAt = 0;
+
+        const checkForUpdate = (force = false) => {
+            try {
+                const now = Date.now();
+                if (!force && (now - lastUpdateCheckAt) < 10000) return;
+                lastUpdateCheckAt = now;
+                if (registration.waiting && navigator.serviceWorker.controller) {
+                    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                }
+                const update = registration.update();
+                if (update && typeof update.catch === 'function') {
+                    update.catch((error) => console.warn('[PWA] Falha ao verificar atualização:', error));
+                }
+            } catch (error) {
+                console.warn('[PWA] Falha ao verificar atualização:', error);
+            }
+        };
+
+        window.addEventListener('focus', checkForUpdate);
+        window.addEventListener('online', () => checkForUpdate(true));
+        window.addEventListener('pageshow', () => checkForUpdate(true));
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) checkForUpdate(true);
+        });
+        window.setInterval(checkForUpdate, 30 * 60 * 1000);
+        window.setTimeout(() => checkForUpdate(true), 1500);
+        window.setTimeout(() => checkForUpdate(true), 8000);
+        window.SiswebPWACheckForUpdate = () => checkForUpdate(true);
+    }
+
+    async function registerServiceWorker() {
+        if (!('serviceWorker' in navigator)) return;
+        if (window.location.protocol !== 'http:' && window.location.protocol !== 'https:') return;
+
+        const hadController = Boolean(navigator.serviceWorker.controller);
+        bindControllerReload(hadController);
+        bindWorkerMessages();
+
+        try {
+            const registration = await navigator.serviceWorker.register(resolveRootAsset('sw.js'), { scope: '/' });
+
+            if (registration.waiting && hadController) {
+                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (!newWorker) return;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                });
+            });
+
+            setupUpdateChecks(registration);
+            const update = registration.update();
+            if (update && typeof update.catch === 'function') {
+                update.catch((error) => console.warn('[PWA] Falha ao verificar atualização:', error));
+            }
+        } catch (error) {
+            console.warn('[PWA] Falha ao registrar service worker:', error);
+        }
+    }
+
+    ensureManifest();
+
+    window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        state.deferredPrompt = event;
+        showInstallOption();
+    });
+
+    window.addEventListener('appinstalled', () => {
+        state.deferredPrompt = null;
+        setInstallVisibility(false);
+        if (window.__toast) {
+            window.__toast('Sisweb instalado com sucesso.', 'success');
+        }
+    });
+
+    if (document.readyState === 'complete') {
+        registerServiceWorker();
+    } else {
+        window.addEventListener('load', registerServiceWorker, { once: true });
+    }
+
+    window.SiswebPWA = {
+        version: PWA_VERSION,
+        bindInstallLinks,
+        promptInstall,
+        refreshInstallVisibility: () => setInstallVisibility(true),
+        checkForUpdate: () => (typeof window.SiswebPWACheckForUpdate === 'function' ? window.SiswebPWACheckForUpdate() : null)
+    };
+})();
+
+if (window.customElements && !window.customElements.get('main-menu')) {
     async function performSafeLogout(reason) {
         if (window.__logoutInProgress) return;
         window.__logoutInProgress = true;
@@ -30,6 +317,18 @@ if (!customElements.get('main-menu')) {
                 localStorage.removeItem('currentUser');
                 localStorage.removeItem('persistentUser');
                 localStorage.removeItem('auth');
+                if (typeof window.clearSiswebDurableAuthSession === 'function') {
+                    window.clearSiswebDurableAuthSession();
+                } else {
+                    localStorage.removeItem('siswebAuthSession');
+                }
+                if (typeof window.clearSiswebCompanyContextCache === 'function') {
+                    window.clearSiswebCompanyContextCache();
+                } else {
+                    localStorage.removeItem('company_info');
+                    window.companyInfo = null;
+                    window.appTenantId = null;
+                }
                 sessionStorage.clear();
             } catch {}
             const isLoginPage = /(^|\/)login\.html$/i.test(window.location.pathname || '');
@@ -262,12 +561,46 @@ if (!customElements.get('main-menu')) {
             }
         }
 
+        escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        getDisplayEmail() {
+            try {
+                const payload = this.getCurrentSessionProfile();
+                const email = String(payload.email || '').trim();
+                return email || 'Conta Sisweb';
+            } catch (_) {
+                return 'Conta Sisweb';
+            }
+        }
+
         buildSettingsGreetingHtml() {
-            const greetingName = this.getFirstName();
+            const greetingName = this.escapeHtml(this.getFirstName());
+            const email = this.escapeHtml(this.getDisplayEmail());
             const visual = this.getSubscriptionVisualState();
             const tone = String(visual && visual.tone ? visual.tone : 'yellow');
-            const summary = String(visual && visual.summary ? visual.summary : this.getSubscriptionSummaryText());
-            return `<i class="fas fa-user"></i><span class="greeting-name">Olá ${greetingName}</span><span class="greeting-meta"><span class="subscription-inline"><span class="subscription-indicator subscription-${tone}"></span>${summary}</span></span>`;
+            const summary = this.escapeHtml(visual && visual.summary ? visual.summary : this.getSubscriptionSummaryText());
+            const initial = this.escapeHtml(String(greetingName || 'U').charAt(0).toUpperCase() || 'U');
+            return `
+                <div class="settings-profile-card">
+                    <div class="settings-profile-main">
+                        <span class="settings-avatar">${initial}</span>
+                        <div class="settings-profile-copy">
+                            <strong class="greeting-name">Olá ${greetingName}</strong>
+                            <span class="greeting-email">${email}</span>
+                        </div>
+                    </div>
+                    <span class="subscription-inline subscription-pill-${tone}">
+                        <span class="subscription-indicator subscription-${tone}"></span>${summary}
+                    </span>
+                </div>
+            `;
         }
 
         async refreshSettingsUserInfo() {
@@ -275,7 +608,7 @@ if (!customElements.get('main-menu')) {
                 await this.hydrateCurrentSessionProfile();
             } catch (_) {}
             try {
-                const node = this.querySelector('.settings-dropdown .user-info span');
+                const node = this.querySelector('.settings-dropdown .settings-profile-card-slot');
                 if (!node) return;
                 node.innerHTML = this.buildSettingsGreetingHtml();
             } catch (_) {}
@@ -305,6 +638,45 @@ if (!customElements.get('main-menu')) {
             this.innerHTML = `
                 <style>
                     /* Estilos inline para garantir consistência */
+                    .sisweb-menu-shell {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        background-color: #2c3e50;
+                        border-radius: 8px;
+                        margin-bottom: 20px;
+                        padding: 10px;
+                    }
+                    .sisweb-menu-shell .menu {
+                        flex: 1 1 auto;
+                        min-width: 0;
+                        background: transparent;
+                        border-radius: 0;
+                        margin-bottom: 0;
+                        padding: 0;
+                    }
+                    .menu-quick-actions {
+                        display: flex;
+                        align-items: center;
+                        justify-content: flex-end;
+                        gap: 6px;
+                        margin-left: auto;
+                    }
+                    .menu-quick-actions .alerts-dropdown,
+                    .menu-quick-actions .settings-dropdown {
+                        margin-left: 0;
+                    }
+                    .menu-quick-actions .menu-item-trigger {
+                        width: 40px;
+                        height: 40px;
+                        display: inline-flex !important;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 0;
+                    }
+                    .menu-quick-actions .menu-label-mobile {
+                        display: none !important;
+                    }
                     .menu-item-container {
                         position: relative;
                         display: inline-block;
@@ -324,6 +696,21 @@ if (!customElements.get('main-menu')) {
                     }
 
                     .alerts-dropdown { position: relative; }
+                    .menu-item-trigger {
+                        color: #fff;
+                        border-radius: 4px;
+                        min-height: 40px;
+                        box-sizing: border-box;
+                    }
+                    .menu-item-trigger:hover,
+                    .menu-item-trigger:focus-visible {
+                        background: rgba(255,255,255,0.08);
+                        outline: none;
+                    }
+                    .mobile-menu-link,
+                    .mobile-logout-link {
+                        display: none;
+                    }
                     .alerts-panel {
                         right: 0;
                         left: auto;
@@ -419,6 +806,135 @@ if (!customElements.get('main-menu')) {
                     .admin-link i {
                         color: #e74c3c;
                     }
+                    .settings-dropdown .settings-panel {
+                        right: 0;
+                        left: auto;
+                        min-width: 320px;
+                        width: min(360px, calc(100vw - 24px));
+                        max-width: min(360px, calc(100vw - 24px));
+                        padding: 10px;
+                        background: #ffffff;
+                        border: 1px solid #dbe3ef;
+                        border-radius: 14px;
+                        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
+                        overflow: hidden;
+                    }
+                    .settings-profile-card-slot {
+                        padding: 0;
+                        margin: 0 0 8px;
+                        border: 0;
+                        color: #102033;
+                    }
+                    .settings-profile-card {
+                        display: grid;
+                        gap: 10px;
+                        padding: 12px;
+                        border-radius: 12px;
+                        background: linear-gradient(135deg, #f8fafc, #eef6ff);
+                        border: 1px solid #dbeafe;
+                    }
+                    .settings-profile-main {
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        min-width: 0;
+                    }
+                    .settings-avatar {
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 12px;
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        background: #1e3a8a;
+                        color: #ffffff;
+                        font-weight: 800;
+                        flex: 0 0 auto;
+                    }
+                    .settings-profile-copy {
+                        display: grid;
+                        min-width: 0;
+                    }
+                    .settings-dropdown .user-info .greeting-name,
+                    .settings-profile-copy .greeting-name {
+                        color: #102033;
+                        font-size: 0.96rem;
+                        line-height: 1.2;
+                        font-weight: 800;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
+                    .greeting-email {
+                        color: #64748b;
+                        font-size: 0.76rem;
+                        line-height: 1.3;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
+                    .settings-section {
+                        display: grid;
+                        gap: 4px;
+                        padding: 8px 0;
+                        border-top: 1px solid #edf2f7;
+                    }
+                    .settings-section:first-of-type {
+                        border-top: 0;
+                    }
+                    .settings-section-title {
+                        color: #64748b;
+                        font-size: 11px;
+                        font-weight: 800;
+                        letter-spacing: 0;
+                        text-transform: uppercase;
+                        padding: 2px 8px 4px;
+                    }
+                    .settings-dropdown .settings-action {
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        min-height: 40px;
+                        padding: 10px 11px;
+                        border-radius: 10px;
+                        color: #1e293b;
+                        white-space: normal;
+                    }
+                    .settings-dropdown .settings-action i {
+                        width: 18px;
+                        text-align: center;
+                        color: #2563eb;
+                        flex: 0 0 auto;
+                    }
+                    .settings-dropdown .settings-action:hover,
+                    .settings-dropdown .settings-action:focus-visible {
+                        background: #f1f5f9;
+                        text-decoration: none;
+                        outline: none;
+                    }
+                    .settings-dropdown .admin-section {
+                        border-top: 1px solid #fee2e2;
+                        background: #fff7f7;
+                        margin: 4px -2px 0;
+                        padding: 9px 2px;
+                        border-radius: 12px;
+                    }
+                    .settings-dropdown .admin-section .settings-section-title {
+                        color: #991b1b;
+                    }
+                    .settings-dropdown .admin-link.settings-action i {
+                        color: #dc2626;
+                    }
+                    .settings-exit {
+                        padding-bottom: 0;
+                    }
+                    .settings-exit .logout-link {
+                        color: #b91c1c;
+                        font-weight: 800;
+                    }
+                    .settings-exit .logout-link i {
+                        color: #dc2626;
+                    }
                     .settings-dropdown .user-info span {
                         display: flex;
                         flex-wrap: wrap;
@@ -444,8 +960,13 @@ if (!customElements.get('main-menu')) {
                         gap: 4px;
                         font-size: 0.78rem;
                         line-height: 1.2;
-                        max-width: 205px;
+                        max-width: 100%;
                         vertical-align: middle;
+                        padding: 7px 9px;
+                        border-radius: 999px;
+                        background: #ffffff;
+                        border: 1px solid #dbe3ef;
+                        color: #1e293b;
                     }
                     .subscription-indicator {
                         width: 8px;
@@ -471,10 +992,75 @@ if (!customElements.get('main-menu')) {
                             max-width: 185px;
                         }
                     }
+                    @media (max-width: 1024px) {
+                        .sisweb-menu-shell {
+                            position: relative;
+                            background: transparent;
+                            border-radius: 0;
+                            padding: 0;
+                            margin-bottom: 10px;
+                            justify-content: space-between;
+                        }
+                        .sisweb-menu-shell .menu {
+                            background-color: #2c3e50;
+                            padding: 60px 20px 20px;
+                            border-radius: 0;
+                            margin: 0;
+                        }
+                        .menu-quick-actions {
+                            gap: 8px;
+                            margin-left: 0;
+                        }
+                        .menu-quick-actions .alerts-dropdown,
+                        .menu-quick-actions .settings-dropdown {
+                            width: auto;
+                            margin-top: 0;
+                            position: relative;
+                        }
+                        .menu-quick-actions .alerts-dropdown .dropdown-content,
+                        .menu-quick-actions .settings-dropdown .dropdown-content {
+                            position: absolute;
+                            top: calc(100% + 8px);
+                            right: 0;
+                            left: auto;
+                            width: min(360px, calc(100vw - 20px));
+                            max-width: min(360px, calc(100vw - 20px));
+                            background: #ffffff;
+                            color: #1f2937;
+                            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.22);
+                            border: 1px solid #e5e7eb;
+                        }
+                        .menu-quick-actions .dropdown-content a {
+                            color: #2c3e50;
+                        }
+                        .menu-quick-actions .menu-item-trigger {
+                            width: 42px;
+                            height: 42px;
+                            padding: 0;
+                            border: 1px solid rgba(44, 62, 80, 0.16);
+                            border-radius: 10px;
+                            background: #2c3e50;
+                            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+                        }
+                        .mobile-menu-link,
+                        .mobile-logout-link {
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            color: #fff !important;
+                        }
+                        .mobile-menu-link.mobile-support-link {
+                            background: rgba(255,255,255,0.08);
+                            border-left: 3px solid rgba(255,255,255,0.35);
+                        }
+                        .mobile-logout-link {
+                            margin-top: 10px;
+                        }
+                    }
                 </style>
-                <button class="menu-toggle" id="menuToggleBtn"><i class="fas fa-bars"></i></button>
-                <div class="sidebar-overlay" id="sidebarOverlay"></div>
-                <div class="menu" id="mainMenuContainer">
+                <div class="sisweb-menu-shell">
+                    <button class="menu-toggle" id="menuToggleBtn" aria-label="Abrir menu"><i class="fas fa-bars"></i></button>
+                    <div class="menu" id="mainMenuContainer">
                     <a href="${homeUrl}" class="menu-item"><i class="fas fa-home"></i> Home</a>
                     
                     ${showBusinessModules ? `
@@ -530,63 +1116,86 @@ if (!customElements.get('main-menu')) {
                         </div>
                     </div>
                     ` : ''}
-                    
-                    <div class="alerts-dropdown">
-                        <div class="menu-item-trigger" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                            <i class="fas fa-bell alerts-icon"></i>
-                            <span class="menu-label-mobile" style="display:none; color:white; font-family:Arial;">Alertas</span>
-                        </div>
-                        <span class="alerts-badge" style="display:none;">0</span>
-                        <div class="dropdown-content alerts-panel">
-                            <div class="user-info">
-                                <span><i class="fas fa-bell"></i> Alertas</span>
-                            </div>
-                            <div class="alerts-actions" style="display:flex; gap:8px; padding: 0 12px 10px;">
-                                <button type="button" class="btn small" id="alertsMarkReadBtn"><i class="fas fa-check"></i><span>Marcar lidos</span></button>
-                                <button type="button" class="btn small" id="alertsClearBtn"><i class="fas fa-broom"></i><span>Limpar</span></button>
-                            </div>
-                            <div class="alerts-list"></div>
-                        </div>
+                    <a href="${this.resolveUrl('ajuda.html')}" class="menu-item mobile-menu-link"><i class="fas fa-book-open"></i> Ajuda</a>
+                    ${!adminContext.isSuperAdmin ? `<a href="#" class="menu-item mobile-menu-link mobile-support-link support-link"><i class="fas fa-headset"></i> Suporte</a>` : ''}
+                    ${showBusinessModules ? `<a href="${this.resolveUrl('subscription-status.html')}" class="menu-item mobile-menu-link"><i class="fas fa-star"></i> Assinatura</a>` : ''}
+                    <a href="#" class="menu-item mobile-logout-link logout-link"><i class="fas fa-sign-out-alt"></i> Sair</a>
                     </div>
-
-                    <!-- Configurações Dropdown -->
-                    <div class="settings-dropdown">
-                        <div class="menu-item-trigger" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                            <i class="fas fa-cog settings-icon"></i>
-                            <span class="menu-label-mobile" style="display:none; color:white; font-family:Arial;">Configurações</span>
+                    <div class="menu-quick-actions" aria-label="Ações rápidas">
+                        <div class="alerts-dropdown">
+                            <div class="menu-item-trigger alerts-trigger" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                                <i class="fas fa-bell alerts-icon"></i>
+                                <span class="menu-label-mobile" style="display:none; color:white; font-family:Arial;">Alertas</span>
+                            </div>
+                            <span class="alerts-badge" style="display:none;">0</span>
+                            <div class="dropdown-content alerts-panel">
+                                <div class="user-info">
+                                    <span><i class="fas fa-bell"></i> Alertas</span>
+                                </div>
+                                <div class="alerts-actions" style="display:flex; gap:8px; padding: 0 12px 10px;">
+                                    <button type="button" class="btn small" id="alertsMarkReadBtn"><i class="fas fa-check"></i><span>Marcar lidos</span></button>
+                                    <button type="button" class="btn small" id="alertsClearBtn"><i class="fas fa-broom"></i><span>Limpar</span></button>
+                                </div>
+                                <div class="alerts-list"></div>
+                            </div>
                         </div>
-                        <div class="dropdown-content">
-                            <div class="user-info">
-                                <span>${greetingHtml}</span>
+
+                        <!-- Configurações Dropdown -->
+                        <div class="settings-dropdown">
+                            <div class="menu-item-trigger settings-trigger" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                                <i class="fas fa-cog settings-icon"></i>
+                                <span class="menu-label-mobile" style="display:none; color:white; font-family:Arial;">Configurações</span>
                             </div>
-                            ${showBusinessModules ? `
-                            <a href="${this.resolveUrl('user-profile.html')}"><i class="fas fa-user-edit"></i> Meu Perfil</a>
-                            ${isAdmin ? `<a href="${this.resolveUrl('admin.html?tab=status')}"><i class="fas fa-tools"></i> Diagnóstico / Migração</a>` : ''}
-                            <a href="${this.resolveUrl('subscription-status.html')}"><i class="fas fa-star"></i> Assinatura</a>
-                            <a href="${this.resolveUrl('company.html')}"><i class="fas fa-building"></i> Empresa</a>
-                            <a href="${this.resolveUrl('ajuda.html')}" class="help-page-link"><i class="fas fa-book-open"></i> Ajuda</a>
-                            <a href="#" class="about-link"><i class="fas fa-info-circle"></i> Sobre</a>
-                            ` : ''}
-                            ${isAdmin ? `
-                            <div class="admin-section">
-                                ${adminContext.canDashboard ? `<a href="${this.resolveUrl('admin.html?tab=dashboard')}" class="admin-link"><i class="fas fa-shield-alt"></i> Painel Admin</a>` : ''}
-                                ${adminContext.canSubscriptions ? `<a href="${this.resolveUrl('admin.html?tab=subscriptions')}" class="admin-link"><i class="fas fa-clipboard-list"></i> Gerenciar Assinaturas</a>` : ''}
-                                ${adminContext.canSettings ? `<a href="${this.resolveUrl('admin.html?tab=settings')}" class="admin-link"><i class="fas fa-user-cog"></i> Configurações Admin</a>` : ''}
-                                ${(adminContext.canSettings || adminContext.canDashboard || adminContext.canSubscriptions) ? `<a href="${this.resolveUrl('admin-access-governance.html')}" class="admin-link"><i class="fas fa-user-shield"></i> Governança de Acesso</a>` : ''}
-                                ${''}
-                            </div>
-                            ` : ''}
-                            <div class="user-info">
-                                <a href="#" class="logout-link"><i class="fas fa-sign-out-alt"></i> Sair</a>
+                            <div class="dropdown-content settings-panel">
+                                <div class="user-info settings-profile-card-slot">
+                                    ${greetingHtml}
+                                </div>
+                                <div class="settings-section">
+                                    <span class="settings-section-title">Conta</span>
+                                    <a href="#" class="settings-action pwa-install-link" style="display:none;"><i class="fas fa-download"></i> Instalar aplicativo</a>
+                                    <a href="${this.resolveUrl('user-profile.html')}" class="settings-action"><i class="fas fa-user-edit"></i> Meu Perfil</a>
+                                </div>
+                                ${showBusinessModules ? `
+                                <div class="settings-section">
+                                    <span class="settings-section-title">Operação</span>
+                                    ${isAdmin ? `<a href="${this.resolveUrl('admin.html?tab=status')}" class="settings-action"><i class="fas fa-tools"></i> Diagnóstico / Migração</a>` : ''}
+                                    <a href="${this.resolveUrl('subscription-status.html')}" class="settings-action"><i class="fas fa-star"></i> Assinatura</a>
+                                    <a href="${this.resolveUrl('company.html')}" class="settings-action"><i class="fas fa-building"></i> Empresa</a>
+                                </div>
+                                ` : ''}
+                                <div class="settings-section">
+                                    <span class="settings-section-title">Ajuda</span>
+                                    <a href="${this.resolveUrl('ajuda.html')}" class="settings-action help-page-link"><i class="fas fa-book-open"></i> Ajuda</a>
+                                    ${!adminContext.isSuperAdmin ? `<a href="#" class="support-link settings-action"><i class="fas fa-headset"></i> Suporte</a>` : ''}
+                                    <a href="#" class="settings-action about-link"><i class="fas fa-info-circle"></i> Sobre</a>
+                                </div>
+                                ${isAdmin ? `
+                                <div class="settings-section admin-section">
+                                    <span class="settings-section-title">Administração</span>
+                                    ${adminContext.canDashboard ? `<a href="${this.resolveUrl('admin.html?tab=dashboard')}" class="admin-link settings-action"><i class="fas fa-shield-alt"></i> Painel Admin</a>` : ''}
+                                    ${adminContext.canSubscriptions ? `<a href="${this.resolveUrl('admin.html?tab=subscriptions')}" class="admin-link settings-action"><i class="fas fa-clipboard-list"></i> Gerenciar Assinaturas</a>` : ''}
+                                    ${adminContext.canSettings ? `<a href="${this.resolveUrl('admin.html?tab=settings')}" class="admin-link settings-action"><i class="fas fa-user-cog"></i> Configurações Admin</a>` : ''}
+                                    ${adminContext.isSuperAdmin ? `<a href="${this.resolveUrl('admin.html?tab=support')}" class="admin-link settings-action"><i class="fas fa-headset"></i> Fila de Suporte</a>` : ''}
+                                    ${(adminContext.canSettings || adminContext.canDashboard || adminContext.canSubscriptions) ? `<a href="${this.resolveUrl('admin-access-governance.html')}" class="admin-link settings-action"><i class="fas fa-user-shield"></i> Governança de Acesso</a>` : ''}
+                                    ${''}
+                                </div>
+                                ` : ''}
+                                <div class="settings-section settings-exit">
+                                    <a href="#" class="settings-action logout-link"><i class="fas fa-sign-out-alt"></i> Sair</a>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <div class="sidebar-overlay" id="sidebarOverlay"></div>
             `;
 
             // Configurar eventos de dropdown
             this.setupDropdowns();
             this.setupMobileSidebar();
+            if (window.SiswebPWA && typeof window.SiswebPWA.bindInstallLinks === 'function') {
+                window.SiswebPWA.bindInstallLinks(this);
+            }
             
             // ✅ CORREÇÃO CRÍTICA: Forçar navegação manual dos links dos submenus
             this.setupSubmenuNavigation();
@@ -707,10 +1316,10 @@ if (!customElements.get('main-menu')) {
             }
 
             // Settings dropdown
-            const settingsIcon = this.querySelector('.settings-icon');
+            const settingsTrigger = this.querySelector('.settings-dropdown .menu-item-trigger');
             const settingsDropdown = this.querySelector('.settings-dropdown .dropdown-content');
-            if (settingsIcon && settingsDropdown) {
-                settingsIcon.addEventListener('click', function(e) {
+            if (settingsTrigger && settingsDropdown) {
+                const toggleSettings = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     
@@ -721,40 +1330,90 @@ if (!customElements.get('main-menu')) {
                         }
                     });
                     
-                    settingsDropdown.classList.toggle('show-dropdown');
+                    const opened = settingsDropdown.classList.toggle('show-dropdown');
+                    settingsTrigger.setAttribute('aria-expanded', opened ? 'true' : 'false');
+                };
+                settingsTrigger.addEventListener('click', toggleSettings);
+                settingsTrigger.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') toggleSettings(e);
                 });
             }
 
-            const alertsIcon = this.querySelector('.alerts-icon');
+            const alertsTrigger = this.querySelector('.alerts-dropdown .menu-item-trigger');
             const alertsDropdown = this.querySelector('.alerts-panel');
-            if (alertsIcon && alertsDropdown) {
-                alertsIcon.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+            if (alertsTrigger && alertsDropdown) {
+                const openAlerts = () => {
                     document.querySelectorAll('.dropdown-content.show-dropdown').forEach(d => {
                         if (d !== alertsDropdown) d.classList.remove('show-dropdown');
                     });
-                    alertsDropdown.classList.toggle('show-dropdown');
+                    alertsDropdown.classList.add('show-dropdown');
+                    alertsTrigger.setAttribute('aria-expanded', 'true');
+                    try { this.recomputeSystemAlerts(); } catch (_) {}
+                    try { this.renderAlerts(); } catch (_) {}
+                };
+                const closeAlerts = () => {
+                    alertsDropdown.classList.remove('show-dropdown');
+                    alertsTrigger.setAttribute('aria-expanded', 'false');
+                };
+                const toggleAlerts = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
 
-                    if (alertsDropdown.classList.contains('show-dropdown')) {
-                        try { this.recomputeSystemAlerts(); } catch (_) {}
-                        try { this.renderAlerts(); } catch (_) {}
-                    }
+                    if (alertsDropdown.classList.contains('show-dropdown')) closeAlerts();
+                    else openAlerts();
+                };
+                alertsTrigger.addEventListener('click', toggleAlerts);
+                alertsTrigger.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') toggleAlerts(e);
                 });
+                const alertsShell = this.querySelector('.alerts-dropdown');
+                if (alertsShell) {
+                    let closeHoverTimer = null;
+                    const canOpenOnHover = () => {
+                        try {
+                            return !!(window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches);
+                        } catch (_) {
+                            return false;
+                        }
+                    };
+                    alertsShell.addEventListener('mouseenter', () => {
+                        if (!canOpenOnHover()) return;
+                        if (closeHoverTimer) clearTimeout(closeHoverTimer);
+                        openAlerts();
+                    });
+                    alertsShell.addEventListener('mouseleave', () => {
+                        if (!canOpenOnHover()) return;
+                        if (closeHoverTimer) clearTimeout(closeHoverTimer);
+                        closeHoverTimer = setTimeout(closeAlerts, 180);
+                    });
+                }
             }
 
             // Logout
-            const logoutLink = this.querySelector('.logout-link');
-            if (logoutLink) {
+            const logoutLinks = this.querySelectorAll('.logout-link');
+            logoutLinks.forEach((logoutLink) => {
                 logoutLink.addEventListener('click', async function(e) {
                     e.preventDefault();
                     await performSafeLogout('logout_menu');
                 });
-            }
+            });
+
+            // Support
+            const supportLinks = this.querySelectorAll('.support-link');
+            supportLinks.forEach((supportLink) => {
+                supportLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (typeof window.showSupport === 'function') {
+                        window.showSupport();
+                    } else {
+                        alert('Suporte indisponível no momento.');
+                    }
+                });
+            });
 
             // About
-            const aboutLink = this.querySelector('.about-link');
-            if (aboutLink) {
+            const aboutLinks = this.querySelectorAll('.about-link');
+            aboutLinks.forEach((aboutLink) => {
                 aboutLink.addEventListener('click', function(e) {
                     e.preventDefault();
                     if (typeof window.showAbout === 'function') {
@@ -763,7 +1422,7 @@ if (!customElements.get('main-menu')) {
                         alert('Informações sobre o sistema não disponíveis no momento.');
                     }
                 });
-            }
+            });
 
             // Fechar dropdowns ao clicar fora
             document.addEventListener('click', (e) => {
@@ -804,9 +1463,11 @@ if (!customElements.get('main-menu')) {
                     
                     if (settingsDropdown) {
                         settingsDropdown.classList.remove('show-dropdown');
+                        if (settingsTrigger) settingsTrigger.setAttribute('aria-expanded', 'false');
                     }
                     if (alertsDropdown) {
                         alertsDropdown.classList.remove('show-dropdown');
+                        if (alertsTrigger) alertsTrigger.setAttribute('aria-expanded', 'false');
                     }
                 }
             });
@@ -847,8 +1508,14 @@ if (!customElements.get('main-menu')) {
             }
             this.renderAlerts();
             this.refreshSettingsUserInfo();
-            setTimeout(() => this.refreshSettingsUserInfo(), 800);
-            setTimeout(() => this.refreshSettingsUserInfo(), 2000);
+            const refreshUserInfoLater = () => {
+                const node = this.querySelector('.settings-dropdown .settings-profile-card-slot');
+                const before = node ? node.innerHTML : '';
+                this.refreshSettingsUserInfo().finally(() => {
+                    if (node && node.innerHTML === before) return;
+                });
+            };
+            setTimeout(refreshUserInfoLater, 800);
             try {
                 window.addEventListener('storage', () => this.refreshSettingsUserInfo());
             } catch (_) {}
@@ -876,6 +1543,39 @@ if (!customElements.get('main-menu')) {
                         try { this.clearSystemAlerts(); } catch (_) {}
                     };
                 }
+                window.SiswebAdminOperationalAlerts = {
+                    ...(window.SiswebAdminOperationalAlerts || {}),
+                    recordFirebaseBillingError: (error, extra = {}) => {
+                        const payload = {
+                            status: 'blocked',
+                            source: 'browser',
+                            message: typeof error === 'string' ? error : (error && (error.message || error.error || error.lastError)) || String(error || ''),
+                            details: error && typeof error === 'object' ? error : null,
+                            billingUrl: 'https://console.cloud.google.com/billing/linkedaccount?project=sisweb-7ce82',
+                            updatedAt: new Date().toISOString(),
+                            ...((extra && typeof extra === 'object') ? extra : {})
+                        };
+                        try { localStorage.setItem('sisweb_admin_deploy_last_error', JSON.stringify(payload)); } catch (_) {}
+                        try { this.recomputeSystemAlerts(); } catch (_) {}
+                        try { this.renderAlerts(); } catch (_) {}
+                        try { window.dispatchEvent(new CustomEvent('systemAlerts:updated')); } catch (_) {}
+                        return payload;
+                    },
+                    clearFirebaseBillingError: () => {
+                        [
+                            'sisweb_admin_firebase_billing_status',
+                            'sisweb_firebase_billing_status',
+                            'sisweb_admin_deploy_last_error',
+                            'sisweb_deploy_last_error',
+                            'sisweb_operational_last_error'
+                        ].forEach((key) => {
+                            try { localStorage.removeItem(key); } catch (_) {}
+                        });
+                        try { this.recomputeSystemAlerts(); } catch (_) {}
+                        try { this.renderAlerts(); } catch (_) {}
+                        try { window.dispatchEvent(new CustomEvent('systemAlerts:updated')); } catch (_) {}
+                    }
+                };
             } catch (_) {}
 
             try {
@@ -948,7 +1648,7 @@ if (!customElements.get('main-menu')) {
                 const uid = (currentUser && (currentUser.uid || currentUser.id || currentUser.userId))
                     || (persistentUser && (persistentUser.uid || persistentUser.id || persistentUser.userId));
                 if (window.isSuperAdminUid && typeof window.isSuperAdminUid === 'function' && window.isSuperAdminUid(uid)) {
-                    return { isAdmin: true, canDashboard: true, canSubscriptions: true, canSettings: true };
+                    return { isAdmin: true, isSuperAdmin: true, canDashboard: true, canSubscriptions: true, canSettings: true };
                 }
                 const users = JSON.parse(localStorage.getItem('users') || '[]');
                 const userDetails = users.find((u) => (u.uid || u.id || u.userId) === uid || (currentUser && u.email === currentUser.email));
@@ -957,6 +1657,7 @@ if (!customElements.get('main-menu')) {
                 if (hasUserPermissions && userDetails.adminActive !== false) {
                     return {
                         isAdmin: true,
+                        isSuperAdmin: false,
                         canDashboard: userPerms.dashboard === true,
                         canSubscriptions: userPerms.subscriptions === true,
                         canSettings: userPerms.settings === true
@@ -969,15 +1670,16 @@ if (!customElements.get('main-menu')) {
                 if (hasRolePermissions && role.active !== false) {
                     return {
                         isAdmin: true,
+                        isSuperAdmin: false,
                         canDashboard: rolePerms.dashboard === true,
                         canSubscriptions: rolePerms.subscriptions === true,
                         canSettings: rolePerms.settings === true
                     };
                 }
-                return { isAdmin: false, canDashboard: false, canSubscriptions: false, canSettings: false };
+                return { isAdmin: false, isSuperAdmin: false, canDashboard: false, canSubscriptions: false, canSettings: false };
             } catch (error) {
                 console.error('Erro ao verificar permissões de admin:', error);
-                return { isAdmin: false, canDashboard: false, canSubscriptions: false, canSettings: false };
+                return { isAdmin: false, isSuperAdmin: false, canDashboard: false, canSubscriptions: false, canSettings: false };
             }
         }
 
@@ -1013,8 +1715,10 @@ if (!customElements.get('main-menu')) {
                                     ? 'sev-info'
                                     : '';
                     const cls = `alerts-item${sev ? ' ' + sev : ''}${a && a.read ? '' : ' unread'}`;
+                    const hrefEscaped = href.replace(/"/g,'&quot;');
+                    const targetAttr = /^https?:\/\//i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : '';
                     const messageHtml = href
-                        ? `<a class="alerts-item-message" href="${href.replace(/"/g,'&quot;')}">${message}</a>`
+                        ? `<a class="alerts-item-message" href="${hrefEscaped}"${targetAttr}>${message}</a>`
                         : `<span class="alerts-item-message">${message}</span>`;
                     return `<div class="${cls}"><strong class="alerts-item-title">${title}</strong>${messageHtml}</div>`;
                 }).join('');
@@ -1036,7 +1740,7 @@ if (!customElements.get('main-menu')) {
                     tenantId = String(ci.id || ci.companyId || ci.tenantId || '').trim();
                 } catch (_) {}
             }
-            return { isAdmin, uid: uid || 'anon', tenantId: tenantId || 'default' };
+            return { isAdmin, isSuperAdmin: !!(adminContext && adminContext.isSuperAdmin), uid: uid || 'anon', tenantId: tenantId || 'default' };
         }
 
         getAlertsStorageKey() {
@@ -1183,11 +1887,258 @@ if (!customElements.get('main-menu')) {
         async loadNamespaced(path) {
             try {
                 if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-                    const res = await window.firebaseService.loadFromFirebase(path);
+                    const res = await window.firebaseService.loadFromFirebase(path, { canonicalOnly: true });
                     return res && res.success ? res.data : (res && res.data ? res.data : res);
                 }
             } catch (_) {}
             return null;
+        }
+
+        parseOperationalJson(raw) {
+            try {
+                if (!raw) return null;
+                if (typeof raw !== 'string') return raw;
+                const trimmed = raw.trim();
+                if (!trimmed) return null;
+                if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+                    return JSON.parse(trimmed);
+                }
+                return { message: trimmed };
+            } catch (_) {
+                return { message: String(raw || '') };
+            }
+        }
+
+        removeOperationalAccents(value) {
+            try {
+                return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+            } catch (_) {
+                return String(value || '').toLowerCase();
+            }
+        }
+
+        collectOperationalSignals(raw, source) {
+            const signals = [];
+            const pushSignal = (value, fallbackId) => {
+                if (!value && value !== 0) return;
+                if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+                    signals.push({ id: fallbackId || source || 'signal', message: String(value), source });
+                    return;
+                }
+                if (typeof value !== 'object') return;
+                const hasSignalShape = [
+                    'status', 'state', 'situacao', 'message', 'error', 'lastError',
+                    'deployError', 'billingStatus', 'faturamentoStatus', 'billingUrl',
+                    'consoleUrl', 'href', 'amount', 'valor'
+                ].some((key) => Object.prototype.hasOwnProperty.call(value, key));
+                if (hasSignalShape) {
+                    signals.push({ ...value, id: value.id || fallbackId || source || 'signal', source });
+                    return;
+                }
+                Object.entries(value || {}).forEach(([key, child]) => pushSignal(child, key));
+            };
+            if (Array.isArray(raw)) raw.forEach((item, index) => pushSignal(item, `${source || 'signal'}_${index}`));
+            else pushSignal(raw, source);
+            return signals;
+        }
+
+        flattenOperationalText(value, depth = 0) {
+            if (value === null || typeof value === 'undefined' || depth > 2) return '';
+            if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
+            if (Array.isArray(value)) return value.slice(0, 12).map((item) => this.flattenOperationalText(item, depth + 1)).filter(Boolean).join(' ');
+            if (typeof value === 'object') {
+                return Object.entries(value).slice(0, 30).map(([key, child]) => `${key} ${this.flattenOperationalText(child, depth + 1)}`).filter(Boolean).join(' ');
+            }
+            return '';
+        }
+
+        isClosedOperationalSignal(signal) {
+            const statusText = this.removeOperationalAccents([
+                signal && signal.status,
+                signal && signal.state,
+                signal && signal.situacao,
+                signal && signal.billingStatus,
+                signal && signal.faturamentoStatus
+            ].filter(Boolean).join(' '));
+            if (signal && signal.active === false) return true;
+            if (!statusText) return false;
+            return /\b(ok|paid|pago|quitado|resolved|resolvido|closed|fechado|clear|limpo|inactive|inativo)\b/.test(statusText);
+        }
+
+        matchesFirebaseBillingDeployError(text) {
+            const normalized = this.removeOperationalAccents(text);
+            if (!normalized) return false;
+            return (
+                normalized.includes('please check billing account')
+                || normalized.includes('check billing account associated')
+                || (
+                    normalized.includes('generateuploadurl')
+                    && normalized.includes('write access')
+                    && normalized.includes('denied')
+                    && normalized.includes('billing')
+                )
+                || (
+                    normalized.includes('cloud functions')
+                    && normalized.includes('write access')
+                    && normalized.includes('denied')
+                    && normalized.includes('billing')
+                )
+                || (
+                    normalized.includes('billing account')
+                    && (normalized.includes('denied') || normalized.includes('disabled') || normalized.includes('overdue') || normalized.includes('past due'))
+                )
+            );
+        }
+
+        isFirebaseBillingOpenSignal(signal) {
+            if (!signal || this.isClosedOperationalSignal(signal)) return false;
+            const budgetRatio = Math.max(
+                Number(signal.usagePercent || signal.costRatio || 0),
+                Number(signal.alertThresholdExceeded || 0),
+                Number(signal.forecastThresholdExceeded || 0)
+            );
+            if (Number.isFinite(budgetRatio) && budgetRatio >= 0.8) return true;
+            const statusText = this.removeOperationalAccents([
+                signal.status,
+                signal.state,
+                signal.situacao,
+                signal.billingStatus,
+                signal.faturamentoStatus
+            ].filter(Boolean).join(' '));
+            const fullText = this.removeOperationalAccents(this.flattenOperationalText(signal));
+            if (this.matchesFirebaseBillingDeployError(fullText)) return true;
+            if (/\b(open|opened|overdue|past_due|past due|blocked|billing_blocked|pending|pendente|aberto|em aberto|atrasado|em atraso|vencido|bloqueado)\b/.test(statusText)) return true;
+            return (
+                (fullText.includes('firebase') || fullText.includes('billing') || fullText.includes('faturamento') || fullText.includes('fatura'))
+                && (
+                    fullText.includes('fatura em aberto')
+                    || fullText.includes('fatura em atraso')
+                    || fullText.includes('pagamento pendente')
+                    || fullText.includes('faturamento bloqueado')
+                    || fullText.includes('billing blocked')
+                    || fullText.includes('past due')
+                    || fullText.includes('overdue')
+                )
+            );
+        }
+
+        resolveFirebaseBillingUrl(signal) {
+            const raw = signal && (signal.billingUrl || signal.consoleUrl || signal.href || signal.url);
+            const href = String(raw || '').trim();
+            if (/^https?:\/\//i.test(href)) return href;
+            if (signal && (signal.budgetDisplayName || signal.alertThresholdExceeded || signal.forecastThresholdExceeded || signal.usagePercent)) {
+                return 'https://console.cloud.google.com/billing/budgets?project=sisweb-7ce82';
+            }
+            return 'https://console.cloud.google.com/billing/linkedaccount?project=sisweb-7ce82';
+        }
+
+        readLocalAdminOperationalSignals() {
+            const keys = [
+                'sisweb_admin_firebase_billing_status',
+                'sisweb_firebase_billing_status',
+                'sisweb_admin_deploy_last_error',
+                'sisweb_deploy_last_error',
+                'sisweb_operational_last_error'
+            ];
+            const signals = [];
+            keys.forEach((key) => {
+                try {
+                    const raw = localStorage.getItem(key);
+                    if (!raw) return;
+                    signals.push(...this.collectOperationalSignals(this.parseOperationalJson(raw), `local:${key}`));
+                } catch (_) {}
+            });
+            try {
+                if (window.__siswebDeployLastError) {
+                    signals.push(...this.collectOperationalSignals(window.__siswebDeployLastError, 'window.__siswebDeployLastError'));
+                }
+            } catch (_) {}
+            return signals;
+        }
+
+        buildAdminFirebaseBillingAlert(signal, now) {
+            const createdAt = now.toISOString();
+            const dayKey = createdAt.slice(0, 10);
+            const fullText = this.flattenOperationalText(signal);
+            const isDeployBlocked = this.matchesFirebaseBillingDeployError(fullText);
+            const statusText = this.removeOperationalAccents([
+                signal && signal.status,
+                signal && signal.state,
+                signal && signal.situacao,
+                signal && signal.billingStatus,
+                signal && signal.faturamentoStatus
+            ].filter(Boolean).join(' '));
+            const rawAmount = signal && (signal.amount || signal.valor || signal.total || signal.value);
+            const amountText = rawAmount
+                ? (typeof rawAmount === 'number' ? this.formatBRL(rawAmount) : String(rawAmount))
+                : '';
+            const detail = String(
+                (signal && (signal.message || signal.error || signal.lastError || signal.deployError || signal.details || signal.statusMessage))
+                || ''
+            ).trim();
+            const clippedDetail = detail ? detail.replace(/\s+/g, ' ').slice(0, 260) : '';
+            const budgetRatio = Math.max(
+                Number(signal && (signal.usagePercent || signal.costRatio || 0)),
+                Number(signal && (signal.alertThresholdExceeded || 0)),
+                Number(signal && (signal.forecastThresholdExceeded || 0))
+            );
+            const isBudgetSignal = Number.isFinite(budgetRatio) && budgetRatio > 0;
+            if (isBudgetSignal) {
+                const percent = Math.round(budgetRatio * 1000) / 10;
+                const budgetName = String(signal && signal.budgetDisplayName || 'Google Cloud Billing').trim();
+                return {
+                    id: `admin_google_cloud_budget__${dayKey}`,
+                    title: 'Google Cloud • Orçamento',
+                    message: `Orçamento ${budgetName} atingiu ${String(percent).replace('.', ',')}% do limite configurado. Clique para abrir Budgets e revisar consumo/faturas.`,
+                    href: this.resolveFirebaseBillingUrl(signal),
+                    severity: budgetRatio >= 1 ? 'error' : 'warning',
+                    createdAt,
+                    read: false
+                };
+            }
+            const statusPart = amountText ? ` Valor informado: ${amountText}.` : '';
+            const title = isDeployBlocked ? 'Firebase • Deploy bloqueado' : 'Firebase • Faturamento';
+            const message = isDeployBlocked
+                ? `Deploy/Cloud Functions bloqueado por faturamento ou conta de billing sem write access.${statusPart} Clique para abrir o painel de faturamento e regularizar.`
+                : `Fatura do Firebase em aberto, pendente ou em atraso detectada.${statusPart} Clique para abrir o painel de faturamento antes que deploys e serviços sejam bloqueados.`;
+            return {
+                id: `admin_firebase_billing_${isDeployBlocked ? 'deploy_blocked' : 'open'}__${dayKey}`,
+                title,
+                message: clippedDetail ? `${message}\nDetalhe: ${clippedDetail}` : message,
+                href: this.resolveFirebaseBillingUrl(signal),
+                severity: (isDeployBlocked || /blocked|bloqueado|overdue|atrasado|atraso|vencido|past due/.test(statusText)) ? 'error' : 'warning',
+                createdAt,
+                read: false
+            };
+        }
+
+        async getAdminOperationalAlerts(ctx, now) {
+            const adminContext = this.getAdminContext();
+            if (!((ctx && ctx.isSuperAdmin) || (adminContext && adminContext.isSuperAdmin))) return [];
+            const signals = [];
+            const remotePaths = [
+                'system/operationalAlerts/firebaseBilling',
+                'system/deployHealth/firebase',
+                'system/googleCloudBilling/summary',
+                'system/googleCloudBilling/budgetNotifications'
+            ];
+            for (const path of remotePaths) {
+                try {
+                    const data = await this.loadNamespaced(path);
+                    signals.push(...this.collectOperationalSignals(data, path));
+                } catch (_) {}
+            }
+            signals.push(...this.readLocalAdminOperationalSignals());
+            const active = signals.filter((signal) => this.isFirebaseBillingOpenSignal(signal));
+            if (!active.length) return [];
+            active.sort((a, b) => {
+                const aText = this.flattenOperationalText(a);
+                const bText = this.flattenOperationalText(b);
+                const aScore = this.matchesFirebaseBillingDeployError(aText) ? 2 : 1;
+                const bScore = this.matchesFirebaseBillingDeployError(bText) ? 2 : 1;
+                return bScore - aScore;
+            });
+            return [this.buildAdminFirebaseBillingAlert(active[0], now)];
         }
 
         async computeAlertsForUser(ctx) {
@@ -1354,8 +2305,7 @@ if (!customElements.get('main-menu')) {
 
             if (ctx.tenantId !== 'default') try {
                 const func1 = await this.loadNamespaced('funcionarios') || [];
-                const func2 = await this.loadNamespaced('folha/funcionarios') || [];
-                const funcionariosRaw = [...this.normalizeArrayLike(func1), ...this.normalizeArrayLike(func2)];
+                const funcionariosRaw = this.normalizeArrayLike(func1);
                 const uniqueFuncs = new Map();
                 funcionariosRaw.forEach(f => {
                     if (f && f.id && !uniqueFuncs.has(f.id)) uniqueFuncs.set(f.id, f);
@@ -1563,6 +2513,10 @@ if (!customElements.get('main-menu')) {
             const alerts = [];
             const now = new Date();
             try {
+                const operationalAlerts = await this.getAdminOperationalAlerts(ctx, now);
+                operationalAlerts.forEach((alert) => alerts.push(alert));
+            } catch (_) {}
+            try {
                 if (window.firebaseService && typeof window.firebaseService.getOpenExtensionRequests === 'function') {
                     const result = await window.firebaseService.getOpenExtensionRequests();
                     const items = result && result.success && result.data && Array.isArray(result.data.requests) ? result.data.requests : [];
@@ -1695,13 +2649,812 @@ const __siswebAboutModalTemplate = `
                 </div>
             </div>
             <div class="contact-info">
-                <div class="contact-item"><i class="fas fa-envelope"></i><a href="mailto:nedes1@hotmail.com">nedes1@hotmail.com</a></div>
-                <div class="contact-item"><i class="fas fa-phone"></i><a href="tel:+5591991311049">(91) 9 9131-1049</a></div>
+                <button type="button" class="about-support-button" onclick="window.showSupport && window.showSupport()"><i class="fas fa-headset"></i> Abrir suporte</button>
             </div>
             <div class="about-foot">© 2024 Sisweb. Todos os direitos reservados.</div>
         </div>
     </div>
 `;
+
+const __siswebSupportModalTemplate = `
+    <div class="support-content" role="dialog" aria-modal="true" aria-label="Suporte Sisweb">
+        <span class="close" onclick="window.closeSupportModal && window.closeSupportModal()">&times;</span>
+        <h2><i class="fas fa-headset"></i> Suporte Sisweb</h2>
+        <p class="support-lead">Abra um ticket, acompanhe respostas do Admin e mantenha o histórico da solicitação no próprio sistema.</p>
+        <div class="support-mode-tabs" role="tablist" aria-label="Opções do suporte">
+            <button type="button" id="siswebSupportNewTab" class="support-mode-tab active" onclick="window.switchSiswebSupportView && window.switchSiswebSupportView('new')"><i class="fas fa-plus-circle"></i> Novo ticket</button>
+            <button type="button" id="siswebSupportListTab" class="support-mode-tab" onclick="window.switchSiswebSupportView && window.switchSiswebSupportView('tickets')"><i class="fas fa-comments"></i> Meus tickets</button>
+        </div>
+        <div id="siswebSupportNewPanel" class="support-panel active">
+            <div id="siswebSupportContext" class="support-context"></div>
+            <label for="siswebSupportMessage" class="support-label">Mensagem</label>
+            <textarea id="siswebSupportMessage" rows="5" placeholder="Descreva o que aconteceu, qual funcionario/pedido/relatorio foi usado e o resultado esperado."></textarea>
+            <div class="support-attachment-field">
+                <label for="siswebSupportAttachments" class="support-label"><i class="fas fa-paperclip"></i> Anexos</label>
+                <input type="file" id="siswebSupportAttachments" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" multiple>
+                <div id="siswebSupportAttachmentsList" class="support-attachment-list">Opcional: ate 3 prints ou PDF, com tratamento para economizar armazenamento.</div>
+            </div>
+            <div class="support-actions">
+                <button type="button" class="support-action support-ticket" onclick="window.sendSiswebSupportTicket && window.sendSiswebSupportTicket()"><i class="fas fa-paper-plane"></i> Enviar ticket</button>
+                <button type="button" class="support-action support-whatsapp" onclick="window.sendSiswebSupportWhatsApp && window.sendSiswebSupportWhatsApp()"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+                <button type="button" class="support-action support-email" onclick="window.sendSiswebSupportEmail && window.sendSiswebSupportEmail()"><i class="fas fa-envelope"></i> E-mail</button>
+                <button type="button" class="support-action support-copy" onclick="window.copySiswebSupportContext && window.copySiswebSupportContext()"><i class="fas fa-copy"></i> Copiar dados</button>
+            </div>
+        </div>
+        <div id="siswebSupportTicketsPanel" class="support-panel">
+            <div class="support-tickets-toolbar">
+                <div>
+                    <strong>Meus tickets</strong>
+                    <span id="siswebSupportTicketsMeta">Carregando...</span>
+                </div>
+                <button type="button" class="support-action support-secondary" onclick="window.loadSiswebSupportTickets && window.loadSiswebSupportTickets()"><i class="fas fa-sync-alt"></i> Atualizar</button>
+            </div>
+            <div id="siswebSupportTicketsList" class="support-ticket-list">
+                <div class="support-empty">Abra o suporte para carregar seus tickets.</div>
+            </div>
+            <div id="siswebSupportThreadPanel" class="support-thread-panel" hidden>
+                <div class="support-thread-header">
+                    <button type="button" class="support-link-button" onclick="window.clearSiswebSupportActiveTicket && window.clearSiswebSupportActiveTicket()"><i class="fas fa-arrow-left"></i> Voltar para lista</button>
+                    <div id="siswebSupportThreadSummary"></div>
+                </div>
+                <div id="siswebSupportThread" class="support-thread"></div>
+                <label for="siswebSupportReplyMessage" class="support-label">Responder neste ticket</label>
+                <textarea id="siswebSupportReplyMessage" rows="4" placeholder="Digite uma resposta para o Admin..."></textarea>
+                <div class="support-attachment-field">
+                    <label for="siswebSupportReplyAttachments" class="support-label"><i class="fas fa-paperclip"></i> Anexos da resposta</label>
+                    <input type="file" id="siswebSupportReplyAttachments" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" multiple>
+                    <div id="siswebSupportReplyAttachmentsList" class="support-attachment-list">Opcional: ate 3 prints ou PDF.</div>
+                </div>
+                <div class="support-actions">
+                    <button type="button" class="support-action support-ticket" onclick="window.sendSiswebSupportTicketReply && window.sendSiswebSupportTicketReply()"><i class="fas fa-reply"></i> Enviar resposta</button>
+                    <button type="button" class="support-action support-secondary" onclick="window.closeSiswebSupportTicket && window.closeSiswebSupportTicket()"><i class="fas fa-check"></i> Marcar resolvido</button>
+                </div>
+            </div>
+        </div>
+        <div id="siswebSupportFeedback" class="support-feedback" role="status" aria-live="polite"></div>
+    </div>
+`;
+
+const SISWEB_SUPPORT_DRAFT_PREFIX = 'siswebSupportDraft:v1:';
+const SISWEB_SUPPORT_ATTACHMENT_MAX_FILES = 3;
+const SISWEB_SUPPORT_ATTACHMENT_MAX_UPLOAD_BYTES = 6 * 1024 * 1024;
+const SISWEB_SUPPORT_ATTACHMENT_MAX_IMAGE_SOURCE_BYTES = 12 * 1024 * 1024;
+const SISWEB_SUPPORT_ATTACHMENT_ALLOWED_TYPES = /^(image\/(png|jpe?g|webp|gif)|application\/pdf)$/i;
+let __siswebStorageServiceLoadPromise = null;
+
+function __siswebEscapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch] || ch;
+    });
+}
+
+function __siswebReadJsonStorage(keys) {
+    const storageList = [];
+    try { if (window.localStorage) storageList.push(window.localStorage); } catch (_) {}
+    try { if (window.sessionStorage) storageList.push(window.sessionStorage); } catch (_) {}
+    for (const storage of storageList) {
+        for (const key of keys) {
+            try {
+                const raw = storage.getItem(key);
+                if (!raw) continue;
+                const parsed = JSON.parse(raw);
+                if (parsed && typeof parsed === 'object') return parsed;
+            } catch (_) {}
+        }
+    }
+    return null;
+}
+
+function __siswebNormalizeModuleName(value) {
+    let cleaned = String(value || '').replace(/\s+/g, ' ').trim();
+    if (!cleaned) return '';
+    if (/^(carregando|loading|aguarde)([\s\.\-…:]*)$/i.test(cleaned)) return '';
+    cleaned = cleaned.replace(/^Sistema\s+de\s+Sistema\s+de\s+/i, 'Sistema de ');
+    return cleaned;
+}
+
+function __siswebInferSupportModuleName() {
+    const titlePart = __siswebNormalizeModuleName((document.title || '').split(' - ')[0]);
+    if (titlePart) return titlePart;
+    const selectors = ['h1.main-title', '.main-title', 'h1.page-title', '.page-title', 'h1'];
+    for (const selector of selectors) {
+        const el = document.querySelector(selector);
+        const candidate = __siswebNormalizeModuleName(el && el.textContent);
+        if (candidate) return candidate;
+    }
+    const pathName = (window.location.pathname || '').split('/').pop() || '';
+    const fallbackName = pathName.replace('.html', '').replace(/[-_]/g, ' ').trim();
+    return __siswebNormalizeModuleName(fallbackName) || 'Sisweb';
+}
+
+function __siswebGetSupportConfig() {
+    const stored = __siswebReadJsonStorage(['siswebSupportConfig', 'supportConfig']) || {};
+    const globalConfig = window.SISWEB_SUPPORT_CONFIG || window.siswebSupportConfig || {};
+    const config = { ...stored, ...globalConfig };
+    return {
+        email: String(config.email || config.supportEmail || config.paymentSupportEmail || 'nedes1@hotmail.com').trim(),
+        whatsapp: String(config.whatsapp || config.whatsappPhone || config.phone || '+5591991311049').trim(),
+        whatsappDisplay: String(config.whatsappDisplay || config.phoneDisplay || '(91) 9 9131-1049').trim()
+    };
+}
+
+function __siswebGetSupportContext() {
+    const current = __siswebReadJsonStorage(['currentUser', 'user', 'siswebCurrentUser']) || {};
+    const persistent = __siswebReadJsonStorage(['persistentUser', 'siswebPersistentUser']) || {};
+    const company = __siswebReadJsonStorage(['company_info', 'currentCompany', 'siswebCurrentCompany']) || {};
+    const companyId = String(
+        current.companyId || current.companyID || current.tenantId ||
+        persistent.companyId || persistent.companyID || persistent.tenantId ||
+        company.companyId || company.companyID || company.tenantId || company.id ||
+        window.appTenantId || ''
+    ).trim();
+    const userName = String(current.displayName || current.username || current.nome || persistent.displayName || persistent.username || persistent.nome || '').trim();
+    const userEmail = String(current.email || persistent.email || '').trim();
+    const uid = String(current.uid || current.id || persistent.uid || persistent.id || '').trim();
+    return {
+        moduleName: __siswebInferSupportModuleName(),
+        url: window.location.href,
+        path: window.location.pathname || '',
+        companyId,
+        userName,
+        userEmail,
+        uid,
+        generatedAt: new Date().toLocaleString('pt-BR')
+    };
+}
+
+function __siswebGetSupportDraftKey(ctx) {
+    const companyPart = String((ctx && ctx.companyId) || 'sem-tenant').replace(/[^\w.-]+/g, '_').slice(0, 80);
+    const pathPart = String((ctx && ctx.path) || 'inicio').replace(/[^\w.-]+/g, '_').slice(-120);
+    return `${SISWEB_SUPPORT_DRAFT_PREFIX}${companyPart}:${pathPart}`;
+}
+
+function __siswebSaveSupportDraft(message, ctx) {
+    const text = String(message || '').trim();
+    if (!text) return;
+    try {
+        const supportCtx = ctx || __siswebGetSupportContext();
+        window.localStorage.setItem(__siswebGetSupportDraftKey(supportCtx), JSON.stringify({
+            message: text.slice(0, 2000),
+            module: supportCtx.moduleName,
+            companyId: supportCtx.companyId || '',
+            path: supportCtx.path || '',
+            updatedAt: new Date().toISOString()
+        }));
+    } catch (_) {}
+}
+
+function __siswebLoadSupportDraft(ctx) {
+    try {
+        const raw = window.localStorage.getItem(__siswebGetSupportDraftKey(ctx || __siswebGetSupportContext()));
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed.message === 'string' ? parsed : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function __siswebClearSupportDraft(ctx) {
+    try {
+        window.localStorage.removeItem(__siswebGetSupportDraftKey(ctx || __siswebGetSupportContext()));
+    } catch (_) {}
+}
+
+function __siswebRestoreSupportDraft(ctx) {
+    const messageEl = document.getElementById('siswebSupportMessage');
+    if (!messageEl || String(messageEl.value || '').trim()) return;
+    const draft = __siswebLoadSupportDraft(ctx);
+    if (!draft || !draft.message) return;
+    messageEl.value = draft.message;
+    __siswebSetSupportFeedback('Rascunho local restaurado. Envie quando estiver online.', '');
+}
+
+function __siswebBindSupportDraftAutosave() {
+    const messageEl = document.getElementById('siswebSupportMessage');
+    if (!messageEl || messageEl.dataset.supportDraftBound === 'true') return;
+    messageEl.dataset.supportDraftBound = 'true';
+    messageEl.addEventListener('input', function() {
+        const text = String(messageEl.value || '').trim();
+        const ctx = __siswebGetSupportContext();
+        if (text) {
+            __siswebSaveSupportDraft(text, ctx);
+        } else {
+            __siswebClearSupportDraft(ctx);
+        }
+    });
+}
+
+function __siswebRenderSupportContext() {
+    const ctx = __siswebGetSupportContext();
+    window.__siswebLastSupportContext = ctx;
+    const contextEl = document.getElementById('siswebSupportContext');
+    if (!contextEl) return ctx;
+    const rows = [
+        ['Módulo', ctx.moduleName],
+        ['URL', ctx.url],
+        ['Empresa/Tenant', ctx.companyId || 'não identificado'],
+        ['Usuário', ctx.userName || ctx.userEmail || ctx.uid || 'não identificado'],
+        ['Gerado em', ctx.generatedAt]
+    ];
+    contextEl.innerHTML = rows.map(function(row) {
+        return `<div class="support-context-row"><strong>${__siswebEscapeHtml(row[0])}</strong><span>${__siswebEscapeHtml(row[1])}</span></div>`;
+    }).join('');
+    return ctx;
+}
+
+function __siswebSetSupportFeedback(message, type) {
+    const feedback = document.getElementById('siswebSupportFeedback');
+    if (!feedback) return;
+    feedback.textContent = String(message || '');
+    feedback.className = `support-feedback ${type || ''}`.trim();
+}
+
+function __siswebBuildSupportText() {
+    const ctx = __siswebGetSupportContext();
+    const messageEl = document.getElementById('siswebSupportMessage');
+    const message = String((messageEl && messageEl.value) || '').trim();
+    return [
+        'Solicitação de suporte Sisweb',
+        `Módulo: ${ctx.moduleName}`,
+        `URL: ${ctx.url}`,
+        `Empresa/Tenant: ${ctx.companyId || 'não identificado'}`,
+        `Usuário: ${ctx.userName || ctx.userEmail || ctx.uid || 'não identificado'}`,
+        `Gerado em: ${ctx.generatedAt}`,
+        message ? `Mensagem: ${message}` : ''
+    ].filter(Boolean).join('\n');
+}
+
+const __siswebSupportState = {
+    tickets: [],
+    activeTicketId: '',
+    loadedAt: 0
+};
+
+function __siswebResolveRootScriptPath(fileName) {
+    const normalized = String(fileName || '').replace(/^\/+/, '');
+    if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+        return `/${normalized}`;
+    }
+    const isInSubfolder = (window.location.pathname || '').includes('/folha_pagamento/');
+    return isInSubfolder ? `../${normalized}` : normalized;
+}
+
+async function __siswebResolveFirebaseService(requiredFunction) {
+    const required = String(requiredFunction || '').trim();
+    const current = window.firebaseService;
+    if (current && (!required || typeof current[required] === 'function')) {
+        return current;
+    }
+
+    try {
+        const version = window.SiswebPWA && window.SiswebPWA.version ? String(window.SiswebPWA.version) : String(Date.now());
+        const moduleUrl = `${__siswebResolveRootScriptPath('firebaseService.js')}?v=${encodeURIComponent(version)}`;
+        const imported = await import(moduleUrl);
+        const merged = { ...(window.firebaseService || {}), ...imported };
+        if (imported && imported.authService) {
+            merged.authService = imported.authService;
+        }
+        window.firebaseService = merged;
+        if (!required || typeof merged[required] === 'function') {
+            return merged;
+        }
+    } catch (error) {
+        console.warn('[Suporte Sisweb] Falha ao carregar firebaseService atualizado:', error);
+    }
+
+    return null;
+}
+
+async function __siswebResolveSupportAuthUser(service) {
+    try {
+        const authService = service && service.authService ? service.authService : null;
+        if (authService && typeof authService.getCurrentUser === 'function') {
+            return await authService.getCurrentUser();
+        }
+        if (service && service.auth && service.auth.currentUser) {
+            return service.auth.currentUser;
+        }
+    } catch (error) {
+        console.warn('[Suporte Sisweb] Falha ao validar autenticação Firebase:', error);
+    }
+    return null;
+}
+
+function __siswebFormatBytes(bytes) {
+    const value = Number(bytes || 0);
+    if (!Number.isFinite(value) || value <= 0) return '';
+    if (value >= 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`;
+    return `${Math.max(1, Math.round(value / 1024))} KB`;
+}
+
+function __siswebSupportAttachmentIds(scope) {
+    const isReply = scope === 'reply';
+    return {
+        input: isReply ? 'siswebSupportReplyAttachments' : 'siswebSupportAttachments',
+        list: isReply ? 'siswebSupportReplyAttachmentsList' : 'siswebSupportAttachmentsList'
+    };
+}
+
+function __siswebGetSelectedSupportFiles(scope) {
+    const ids = __siswebSupportAttachmentIds(scope);
+    const input = document.getElementById(ids.input);
+    return input && input.files ? Array.from(input.files) : [];
+}
+
+function __siswebValidateSupportAttachmentFile(file) {
+    if (!file) throw new Error('Arquivo de suporte não informado.');
+    const type = String(file.type || '').toLowerCase();
+    const size = Number(file.size || 0);
+    if (!SISWEB_SUPPORT_ATTACHMENT_ALLOWED_TYPES.test(type)) {
+        throw new Error(`Arquivo "${file.name || 'anexo'}" inválido. Use PNG, JPG, WEBP, GIF ou PDF.`);
+    }
+    if (type === 'application/pdf' && size > SISWEB_SUPPORT_ATTACHMENT_MAX_UPLOAD_BYTES) {
+        throw new Error(`PDF "${file.name || 'anexo'}" acima de 6MB.`);
+    }
+    if (type.startsWith('image/') && size > SISWEB_SUPPORT_ATTACHMENT_MAX_IMAGE_SOURCE_BYTES) {
+        throw new Error(`Imagem "${file.name || 'anexo'}" acima de 12MB.`);
+    }
+}
+
+function __siswebRenderSelectedSupportAttachments(scope) {
+    const ids = __siswebSupportAttachmentIds(scope);
+    const listEl = document.getElementById(ids.list);
+    if (!listEl) return;
+    const files = __siswebGetSelectedSupportFiles(scope);
+    if (!files.length) {
+        listEl.textContent = scope === 'reply'
+            ? 'Opcional: ate 3 prints ou PDF.'
+            : 'Opcional: ate 3 prints ou PDF, com tratamento para economizar armazenamento.';
+        listEl.classList.remove('has-files');
+        return;
+    }
+    listEl.classList.add('has-files');
+    listEl.innerHTML = files.map((file) => {
+        const icon = String(file.type || '').toLowerCase() === 'application/pdf' ? 'fa-file-pdf' : 'fa-image';
+        return `<span><i class="fas ${icon}"></i>${__siswebEscapeHtml(file.name || 'anexo')} <small>${__siswebEscapeHtml(__siswebFormatBytes(file.size))}</small></span>`;
+    }).join('');
+}
+
+function __siswebBindSupportAttachmentInputs() {
+    ['new', 'reply'].forEach((scope) => {
+        const ids = __siswebSupportAttachmentIds(scope);
+        const input = document.getElementById(ids.input);
+        if (!input || input.dataset.supportAttachmentBound === 'true') return;
+        input.dataset.supportAttachmentBound = 'true';
+        input.addEventListener('change', function() {
+            const files = __siswebGetSelectedSupportFiles(scope);
+            try {
+                if (files.length > SISWEB_SUPPORT_ATTACHMENT_MAX_FILES) {
+                    throw new Error(`Selecione no máximo ${SISWEB_SUPPORT_ATTACHMENT_MAX_FILES} anexos por mensagem.`);
+                }
+                files.forEach(__siswebValidateSupportAttachmentFile);
+                __siswebRenderSelectedSupportAttachments(scope);
+            } catch (error) {
+                input.value = '';
+                __siswebRenderSelectedSupportAttachments(scope);
+                __siswebSetSupportFeedback((error && error.message) || 'Anexo inválido.', 'error');
+            }
+        });
+        __siswebRenderSelectedSupportAttachments(scope);
+    });
+}
+
+function __siswebClearSupportAttachments(scope) {
+    const ids = __siswebSupportAttachmentIds(scope);
+    const input = document.getElementById(ids.input);
+    if (input) input.value = '';
+    __siswebRenderSelectedSupportAttachments(scope);
+}
+
+function __siswebLoadScriptOnce(src, id) {
+    return new Promise((resolve, reject) => {
+        const existing = document.getElementById(id);
+        if (existing && existing.dataset.loaded === 'true') {
+            resolve();
+            return;
+        }
+        if (existing) {
+            existing.addEventListener('load', () => resolve(), { once: true });
+            existing.addEventListener('error', () => reject(new Error(`Falha ao carregar ${src}`)), { once: true });
+            return;
+        }
+        const script = document.createElement('script');
+        script.id = id;
+        script.src = src;
+        script.defer = true;
+        script.onload = function() {
+            script.dataset.loaded = 'true';
+            resolve();
+        };
+        script.onerror = function() {
+            reject(new Error(`Falha ao carregar ${src}`));
+        };
+        document.head.appendChild(script);
+    });
+}
+
+async function __siswebResolveStorageService(service) {
+    if (!window.firebaseService && service) window.firebaseService = service;
+    if (window.storageService && typeof window.storageService.uploadSupportAttachment === 'function') {
+        return window.storageService;
+    }
+    if (!__siswebStorageServiceLoadPromise) {
+        const version = window.SiswebPWA && window.SiswebPWA.version ? String(window.SiswebPWA.version) : String(Date.now());
+        const src = `${__siswebResolveRootScriptPath('storageService.js')}?v=${encodeURIComponent(version)}`;
+        __siswebStorageServiceLoadPromise = __siswebLoadScriptOnce(src, 'sisweb-storage-service-script')
+            .then(() => window.storageService || null)
+            .catch((error) => {
+                __siswebStorageServiceLoadPromise = null;
+                throw error;
+            });
+    }
+    const storageService = await __siswebStorageServiceLoadPromise;
+    if (!storageService || typeof storageService.uploadSupportAttachment !== 'function') {
+        throw new Error('Serviço de anexos de suporte indisponível.');
+    }
+    return storageService;
+}
+
+async function __siswebUploadSupportAttachments(scope, ctx, ticketId, role, service, authUser) {
+    const files = __siswebGetSelectedSupportFiles(scope);
+    if (!files.length) return [];
+    if (__siswebIsPublicSupportMode()) {
+        throw new Error('Anexos de ticket ficam disponíveis somente após login.');
+    }
+    if (files.length > SISWEB_SUPPORT_ATTACHMENT_MAX_FILES) {
+        throw new Error(`Selecione no máximo ${SISWEB_SUPPORT_ATTACHMENT_MAX_FILES} anexos por mensagem.`);
+    }
+    files.forEach(__siswebValidateSupportAttachmentFile);
+    const storageService = await __siswebResolveStorageService(service);
+    const attachments = [];
+    const uid = String((authUser && authUser.uid) || (ctx && ctx.uid) || '').trim();
+    const companyId = String((ctx && ctx.companyId) || '').trim();
+    for (let i = 0; i < files.length; i += 1) {
+        const file = files[i];
+        __siswebSetSupportFeedback(`Tratando e enviando anexo ${i + 1}/${files.length}...`, '');
+        const meta = await storageService.uploadSupportAttachment(file, {
+            companyId,
+            uid,
+            ticketId: ticketId || `novo-${Date.now()}`,
+            role: role || 'customer'
+        });
+        attachments.push({
+            name: meta.name || meta.fileName || file.name || `anexo-${i + 1}`,
+            fileName: meta.fileName || meta.name || file.name || `anexo-${i + 1}`,
+            url: meta.url || meta.downloadURL || '',
+            downloadURL: meta.downloadURL || meta.url || '',
+            storagePath: meta.storagePath || meta.path || '',
+            contentType: meta.contentType || file.type || '',
+            size: Number(meta.size || file.size || 0),
+            originalSize: Number(meta.originalSize || file.size || 0),
+            compressed: meta.compressed === true,
+            uploadedAt: meta.uploadedAt || new Date().toISOString()
+        });
+    }
+    return attachments;
+}
+
+function __siswebNormalizeSupportAttachmentsForRender(value) {
+    return (Array.isArray(value) ? value : [])
+        .map((item) => item && typeof item === 'object' ? item : null)
+        .filter(Boolean)
+        .filter((item) => String(item.url || item.downloadURL || '').trim());
+}
+
+function __siswebRenderSupportAttachments(attachments) {
+    const list = __siswebNormalizeSupportAttachmentsForRender(attachments);
+    if (!list.length) return null;
+    const wrap = document.createElement('div');
+    wrap.className = 'support-message-attachments';
+    list.forEach((attachment, index) => {
+        const url = String(attachment.url || attachment.downloadURL || '').trim();
+        const contentType = String(attachment.contentType || '').toLowerCase();
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.className = 'support-attachment-link';
+        const icon = document.createElement('i');
+        icon.className = contentType === 'application/pdf' ? 'fas fa-file-pdf' : 'fas fa-image';
+        const span = document.createElement('span');
+        span.textContent = attachment.name || attachment.fileName || `Anexo ${index + 1}`;
+        link.appendChild(icon);
+        link.appendChild(span);
+        const sizeLabel = __siswebFormatBytes(attachment.size);
+        if (sizeLabel) {
+            const small = document.createElement('small');
+            small.textContent = sizeLabel;
+            link.appendChild(small);
+        }
+        wrap.appendChild(link);
+    });
+    return wrap;
+}
+
+function __siswebSupportResultData(result) {
+    if (result && result.data && typeof result.data === 'object') return result.data;
+    return result && typeof result === 'object' ? result : {};
+}
+
+function __siswebSupportStatusLabel(status) {
+    const key = String(status || '').toLowerCase();
+    const labels = {
+        open: 'Aberto',
+        waiting_support: 'Aguardando suporte',
+        waiting_customer: 'Aguardando você',
+        resolved: 'Resolvido',
+        closed: 'Fechado'
+    };
+    return labels[key] || 'Aberto';
+}
+
+function __siswebSupportPriorityLabel(priority) {
+    const key = String(priority || '').toLowerCase();
+    const labels = {
+        low: 'Baixa',
+        normal: 'Normal',
+        high: 'Alta',
+        critical: 'Crítica'
+    };
+    return labels[key] || 'Normal';
+}
+
+function __siswebIsPublicSupportMode() {
+    return window.__siswebSupportPublicMode === true;
+}
+
+function __siswebSupportDateLabel(value) {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function __siswebRenderSupportMessage(message) {
+    const role = String((message && message.authorRole) || '').toLowerCase();
+    const isSupport = role === 'superadmin' || role === 'support';
+    const isInternal = String((message && message.visibility) || '') === 'internal';
+    const item = document.createElement('div');
+    item.className = `support-message${isInternal ? ' internal' : (isSupport ? ' support' : ' customer')}`;
+    const meta = document.createElement('div');
+    meta.className = 'support-message-meta';
+    const author = document.createElement('span');
+    author.textContent = `${(message && (message.authorName || message.authorEmail || message.authorRole)) || 'Usuário'}${isInternal ? ' • nota interna' : ''}`;
+    const date = document.createElement('span');
+    date.textContent = __siswebSupportDateLabel(message && message.createdAt);
+    const text = document.createElement('div');
+    text.className = 'support-message-text';
+    text.textContent = (message && message.message) || '';
+    meta.appendChild(author);
+    meta.appendChild(date);
+    item.appendChild(meta);
+    item.appendChild(text);
+    const attachments = __siswebRenderSupportAttachments(message && message.attachments);
+    if (attachments) item.appendChild(attachments);
+    return item;
+}
+
+function __siswebSetSupportTicketsMeta(text) {
+    const meta = document.getElementById('siswebSupportTicketsMeta');
+    if (meta) meta.textContent = String(text || '');
+}
+
+function __siswebRenderSupportTicketsList(items) {
+    const listEl = document.getElementById('siswebSupportTicketsList');
+    if (!listEl) return;
+    const list = Array.isArray(items) ? items : [];
+    __siswebSetSupportTicketsMeta(`${list.length} ticket${list.length === 1 ? '' : 's'}`);
+    listEl.innerHTML = '';
+    if (!list.length) {
+        const empty = document.createElement('div');
+        empty.className = 'support-empty';
+        empty.textContent = 'Nenhum ticket aberto ainda. Crie um novo ticket para falar com o Admin.';
+        listEl.appendChild(empty);
+        return;
+    }
+    list.forEach((ticket) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'support-ticket-card';
+        card.dataset.ticketId = String(ticket.id || '');
+        const status = document.createElement('span');
+        status.className = `support-ticket-status status-${String(ticket.status || 'open').replace(/[^\w-]+/g, '')}`;
+        status.textContent = __siswebSupportStatusLabel(ticket.status);
+        const title = document.createElement('strong');
+        title.textContent = ticket.subject || 'Suporte Sisweb';
+        const meta = document.createElement('small');
+        meta.textContent = `${ticket.module || 'Sisweb'} • ${__siswebSupportDateLabel(ticket.updatedAt || ticket.createdAt)} • ${__siswebSupportPriorityLabel(ticket.priority)}`;
+        const preview = document.createElement('span');
+        preview.className = 'support-ticket-card-preview';
+        preview.textContent = ticket.lastMessagePreview || 'Sem prévia de mensagem.';
+        card.appendChild(status);
+        card.appendChild(title);
+        card.appendChild(meta);
+        card.appendChild(preview);
+        card.addEventListener('click', function() {
+            __siswebOpenSupportTicket(String(ticket.id || ''));
+        });
+        listEl.appendChild(card);
+    });
+}
+
+function __siswebClearSupportActiveTicket() {
+    __siswebSupportState.activeTicketId = '';
+    const panel = document.getElementById('siswebSupportThreadPanel');
+    if (panel) panel.hidden = true;
+    const reply = document.getElementById('siswebSupportReplyMessage');
+    if (reply) reply.value = '';
+}
+
+function __siswebSwitchSupportView(view) {
+    const next = __siswebIsPublicSupportMode() ? 'new' : (view === 'tickets' ? 'tickets' : 'new');
+    const newPanel = document.getElementById('siswebSupportNewPanel');
+    const ticketsPanel = document.getElementById('siswebSupportTicketsPanel');
+    const newTab = document.getElementById('siswebSupportNewTab');
+    const ticketsTab = document.getElementById('siswebSupportListTab');
+    if (newPanel) newPanel.classList.toggle('active', next === 'new');
+    if (ticketsPanel) ticketsPanel.classList.toggle('active', next === 'tickets');
+    if (newTab) newTab.classList.toggle('active', next === 'new');
+    if (ticketsTab) ticketsTab.classList.toggle('active', next === 'tickets');
+    if (!__siswebIsPublicSupportMode() && next === 'tickets' && (!__siswebSupportState.loadedAt || Date.now() - __siswebSupportState.loadedAt > 30000)) {
+        __siswebLoadMySupportTickets({ silent: true });
+    }
+}
+
+async function __siswebLoadMySupportTickets(options) {
+    const listEl = document.getElementById('siswebSupportTicketsList');
+    if (__siswebIsPublicSupportMode()) {
+        if (listEl) listEl.innerHTML = '<div class="support-empty">Histórico de tickets disponível após registro e login.</div>';
+        __siswebSetSupportTicketsMeta('registro necessário');
+        return;
+    }
+    const service = await __siswebResolveFirebaseService('listMySupportTickets');
+    if (!service || typeof service.listMySupportTickets !== 'function') {
+        if (listEl) listEl.innerHTML = '<div class="support-empty">Histórico indisponível. Atualize o sistema ou use WhatsApp/e-mail.</div>';
+        __siswebSetSupportTicketsMeta('indisponível');
+        return;
+    }
+    const authUser = await __siswebResolveSupportAuthUser(service);
+    if (!authUser) {
+        if (listEl) listEl.innerHTML = '<div class="support-empty">Entre novamente no Sisweb para carregar seus tickets com segurança.</div>';
+        __siswebSetSupportTicketsMeta('login necessário');
+        return;
+    }
+    if (listEl) listEl.innerHTML = '<div class="support-empty">Carregando seus tickets...</div>';
+    __siswebSetSupportTicketsMeta('Carregando...');
+    try {
+        const result = await service.listMySupportTickets({ limit: 30 });
+        const data = __siswebSupportResultData(result);
+        if (!result || result.success === false || data.success === false) {
+            throw new Error((result && result.error) || (data && data.error) || 'Falha ao carregar tickets.');
+        }
+        __siswebSupportState.tickets = Array.isArray(data.items) ? data.items : [];
+        __siswebSupportState.loadedAt = Date.now();
+        __siswebRenderSupportTicketsList(__siswebSupportState.tickets);
+        if (!options || !options.silent) __siswebSetSupportFeedback('Tickets atualizados.', 'success');
+    } catch (error) {
+        if (listEl) listEl.innerHTML = `<div class="support-empty">${__siswebEscapeHtml((error && error.message) || 'Erro ao carregar tickets.')}</div>`;
+        __siswebSetSupportTicketsMeta('erro');
+        if (!options || !options.silent) __siswebSetSupportFeedback((error && error.message) || 'Erro ao carregar tickets.', 'error');
+    }
+}
+
+function __siswebRenderSupportThread(ticket, messages) {
+    const panel = document.getElementById('siswebSupportThreadPanel');
+    const summary = document.getElementById('siswebSupportThreadSummary');
+    const thread = document.getElementById('siswebSupportThread');
+    if (panel) panel.hidden = false;
+    if (summary) {
+        summary.innerHTML = `
+            <strong>${__siswebEscapeHtml(ticket.subject || 'Suporte Sisweb')}</strong>
+            <span>${__siswebEscapeHtml(__siswebSupportStatusLabel(ticket.status))} • ${__siswebEscapeHtml(ticket.module || 'Sisweb')} • ${__siswebEscapeHtml(__siswebSupportDateLabel(ticket.updatedAt || ticket.createdAt))}</span>
+        `;
+    }
+    if (!thread) return;
+    thread.innerHTML = '';
+    const list = Array.isArray(messages) ? messages : [];
+    if (!list.length) {
+        const empty = document.createElement('div');
+        empty.className = 'support-empty';
+        empty.textContent = 'Nenhuma mensagem encontrada para este ticket.';
+        thread.appendChild(empty);
+    } else {
+        list.forEach((message) => thread.appendChild(__siswebRenderSupportMessage(message)));
+    }
+    thread.scrollTop = thread.scrollHeight;
+}
+
+async function __siswebOpenSupportTicket(ticketId) {
+    const safeTicketId = String(ticketId || '').trim();
+    if (!safeTicketId) return;
+    const service = await __siswebResolveFirebaseService('getSupportTicket');
+    if (!service || typeof service.getSupportTicket !== 'function') {
+        __siswebSetSupportFeedback('Serviço de ticket indisponível.', 'error');
+        return;
+    }
+    __siswebSupportState.activeTicketId = safeTicketId;
+    const thread = document.getElementById('siswebSupportThread');
+    if (thread) thread.innerHTML = '<div class="support-empty">Carregando conversa...</div>';
+    try {
+        const result = await service.getSupportTicket(safeTicketId);
+        const data = __siswebSupportResultData(result);
+        if (!result || result.success === false || data.success === false || !data.ticket) {
+            throw new Error((result && result.error) || (data && data.error) || 'Falha ao abrir ticket.');
+        }
+        __siswebRenderSupportThread(data.ticket, Array.isArray(data.messages) ? data.messages : []);
+    } catch (error) {
+        __siswebSetSupportFeedback((error && error.message) || 'Erro ao abrir ticket.', 'error');
+    }
+}
+
+async function __siswebSendSupportTicketReply() {
+    const ticketId = __siswebSupportState.activeTicketId;
+    const reply = document.getElementById('siswebSupportReplyMessage');
+    const message = String((reply && reply.value) || '').trim();
+    const service = await __siswebResolveFirebaseService('addSupportTicketMessage');
+    const files = __siswebGetSelectedSupportFiles('reply');
+    if (!ticketId) {
+        __siswebSetSupportFeedback('Selecione um ticket antes de responder.', 'error');
+        return;
+    }
+    if ((!message || message.length < 2) && !files.length) {
+        __siswebSetSupportFeedback('Digite uma resposta ou anexe um print antes de enviar.', 'error');
+        if (reply && typeof reply.focus === 'function') reply.focus();
+        return;
+    }
+    if (!service || typeof service.addSupportTicketMessage !== 'function') {
+        __siswebSetSupportFeedback('Serviço de resposta indisponível.', 'error');
+        return;
+    }
+    const authUser = await __siswebResolveSupportAuthUser(service);
+    if (!authUser) {
+        __siswebSetSupportFeedback('Entre novamente no Sisweb para responder com segurança.', 'error');
+        return;
+    }
+    try {
+        const ctx = __siswebGetSupportContext();
+        const attachments = await __siswebUploadSupportAttachments('reply', ctx, ticketId, 'customer', service, authUser);
+        __siswebSetSupportFeedback('Enviando resposta...', '');
+        const result = await service.addSupportTicketMessage(ticketId, message || 'Anexo enviado para análise.', { visibility: 'customer', attachments });
+        const data = __siswebSupportResultData(result);
+        if (!result || result.success === false || data.success === false) {
+            throw new Error((result && result.error) || (data && data.error) || 'Falha ao enviar resposta.');
+        }
+        if (reply) reply.value = '';
+        __siswebClearSupportAttachments('reply');
+        __siswebSetSupportFeedback('Resposta enviada para o Admin.', 'success');
+        await __siswebLoadMySupportTickets({ silent: true });
+        await __siswebOpenSupportTicket(ticketId);
+    } catch (error) {
+        __siswebSetSupportFeedback((error && error.message) || 'Erro ao responder ticket.', 'error');
+    }
+}
+
+async function __siswebCloseSupportTicket() {
+    const ticketId = __siswebSupportState.activeTicketId;
+    const service = await __siswebResolveFirebaseService('updateSupportTicketStatus');
+    if (!ticketId) {
+        __siswebSetSupportFeedback('Selecione um ticket antes de marcar como resolvido.', 'error');
+        return;
+    }
+    if (!service || typeof service.updateSupportTicketStatus !== 'function') {
+        __siswebSetSupportFeedback('Serviço de status indisponível.', 'error');
+        return;
+    }
+    try {
+        const result = await service.updateSupportTicketStatus(ticketId, { status: 'closed' });
+        const data = __siswebSupportResultData(result);
+        if (!result || result.success === false || data.success === false) {
+            throw new Error((result && result.error) || (data && data.error) || 'Falha ao fechar ticket.');
+        }
+        __siswebSetSupportFeedback('Ticket marcado como resolvido.', 'success');
+        await __siswebLoadMySupportTickets({ silent: true });
+        await __siswebOpenSupportTicket(ticketId);
+    } catch (error) {
+        __siswebSetSupportFeedback((error && error.message) || 'Erro ao fechar ticket.', 'error');
+    }
+}
 
 function ensureSystemHelpModal() {
     let helpModal = document.getElementById('helpModal');
@@ -1877,6 +3630,19 @@ function ensureSystemAboutModal() {
             #aboutModal .contact-item i { color: #64748b; }
             #aboutModal .contact-item a { color: #2563eb; text-decoration: none; }
             #aboutModal .contact-item a:hover { text-decoration: underline; }
+            #aboutModal .about-support-button {
+                border: 0;
+                border-radius: 10px;
+                padding: 10px 12px;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                font-weight: 700;
+                color: #ffffff;
+                background: #1d4ed8;
+            }
             #aboutModal .about-foot { margin-top: 10px; font-size: 12px; color: #64748b; }
         `;
         document.head.appendChild(aboutStyle);
@@ -1884,8 +3650,464 @@ function ensureSystemAboutModal() {
     return aboutModal;
 }
 
+function ensureSystemSupportModal() {
+    let supportModal = document.getElementById('supportModal');
+    if (!supportModal) {
+        supportModal = document.createElement('div');
+        supportModal.id = 'supportModal';
+        supportModal.className = 'support-modal';
+        supportModal.innerHTML = __siswebSupportModalTemplate;
+        document.body.appendChild(supportModal);
+    }
+    let supportStyle = document.getElementById('sisweb-support-modal-style');
+    if (!supportStyle) {
+        supportStyle = document.createElement('style');
+        supportStyle.id = 'sisweb-support-modal-style';
+        supportStyle.textContent = `
+            #supportModal {
+                position: fixed;
+                inset: 0;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                background: rgba(15, 23, 42, 0.55);
+                z-index: 2147483647 !important;
+                padding: 18px;
+            }
+            #supportModal .support-content {
+                width: min(680px, calc(100vw - 24px));
+                max-height: min(86vh, 820px);
+                overflow: auto;
+                background: #ffffff;
+                border-radius: 14px;
+                box-shadow: 0 14px 40px rgba(0,0,0,0.35);
+                padding: 18px;
+                position: relative;
+            }
+            #supportModal .close {
+                position: absolute;
+                top: 10px;
+                right: 12px;
+                width: 34px;
+                height: 34px;
+                border-radius: 10px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                font-size: 22px;
+                line-height: 1;
+                color: #0f172a;
+                background: #f1f5f9;
+            }
+            #supportModal .close:hover { background: #e2e8f0; }
+            #supportModal h2 {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin: 0 44px 8px 0;
+                color: #0f172a;
+                font-size: 20px;
+            }
+            #supportModal .support-lead {
+                margin: 0 0 12px;
+                color: #475569;
+                font-size: 14px;
+            }
+            #supportModal .support-mode-tabs {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+                margin: 0 0 12px;
+                padding: 4px;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                background: #f8fafc;
+            }
+            #supportModal .support-mode-tab {
+                border: 0;
+                border-radius: 9px;
+                padding: 10px 12px;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                color: #334155;
+                background: transparent;
+                font-weight: 700;
+            }
+            #supportModal .support-mode-tab.active {
+                color: #ffffff;
+                background: #1d4ed8;
+                box-shadow: 0 6px 16px rgba(29, 78, 216, 0.18);
+            }
+            #supportModal .support-panel {
+                display: none;
+            }
+            #supportModal .support-panel.active {
+                display: block;
+            }
+            #supportModal .support-context {
+                display: grid;
+                gap: 7px;
+                padding: 12px;
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                background: #f8fafc;
+                margin-bottom: 12px;
+            }
+            #supportModal .support-context-row {
+                display: grid;
+                grid-template-columns: minmax(110px, 0.34fr) minmax(0, 1fr);
+                gap: 10px;
+                font-size: 13px;
+                color: #334155;
+            }
+            #supportModal .support-context-row strong { color: #0f172a; }
+            #supportModal .support-context-row span {
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+            #supportModal .support-label {
+                display: block;
+                margin-bottom: 6px;
+                color: #0f172a;
+                font-weight: 700;
+                font-size: 13px;
+            }
+            #supportModal textarea {
+                width: 100%;
+                min-height: 128px;
+                resize: vertical;
+                box-sizing: border-box;
+                border: 1px solid #cbd5e1;
+                border-radius: 10px;
+                padding: 10px 12px;
+                font: 14px/1.45 Arial, sans-serif;
+                color: #0f172a;
+                background: #ffffff;
+            }
+            #supportModal textarea:focus {
+                border-color: #2563eb;
+                outline: 2px solid rgba(37, 99, 235, 0.18);
+            }
+            #supportModal .support-attachment-field {
+                margin-top: 10px;
+                padding: 10px;
+                border: 1px dashed #cbd5e1;
+                border-radius: 10px;
+                background: #f8fafc;
+            }
+            #supportModal.support-public-mode .support-attachment-field {
+                display: none !important;
+            }
+            #supportModal .support-attachment-field input[type="file"] {
+                width: 100%;
+                font-size: 13px;
+                color: #334155;
+            }
+            #supportModal .support-attachment-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                margin-top: 7px;
+                color: #64748b;
+                font-size: 12px;
+            }
+            #supportModal .support-attachment-list.has-files span {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                max-width: 100%;
+                border: 1px solid #dbeafe;
+                border-radius: 999px;
+                background: #eff6ff;
+                color: #1e40af;
+                padding: 4px 8px;
+                overflow-wrap: anywhere;
+            }
+            #supportModal .support-attachment-list small {
+                color: #64748b;
+            }
+            #supportModal .support-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-top: 12px;
+            }
+            #supportModal .support-action {
+                border: 0;
+                border-radius: 10px;
+                padding: 10px 12px;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 700;
+                color: #ffffff;
+                background: #334155;
+            }
+            #supportModal .support-action:hover { filter: brightness(0.96); }
+            #supportModal .support-ticket { background: #0f766e; }
+            #supportModal .support-whatsapp { background: #15803d; }
+            #supportModal .support-email { background: #1d4ed8; }
+            #supportModal .support-copy { background: #475569; }
+            #supportModal .support-secondary { background: #64748b; }
+            #supportModal .support-tickets-toolbar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+            #supportModal .support-tickets-toolbar strong {
+                display: block;
+                color: #0f172a;
+                font-size: 14px;
+            }
+            #supportModal .support-tickets-toolbar span {
+                display: block;
+                margin-top: 2px;
+                color: #64748b;
+                font-size: 12px;
+            }
+            #supportModal .support-ticket-list {
+                display: grid;
+                gap: 8px;
+                max-height: 220px;
+                overflow: auto;
+                padding-right: 2px;
+                margin-bottom: 12px;
+            }
+            #supportModal .support-ticket-card {
+                width: 100%;
+                text-align: left;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                background: #ffffff;
+                padding: 10px 12px;
+                cursor: pointer;
+                display: grid;
+                gap: 4px;
+                color: #0f172a;
+            }
+            #supportModal .support-ticket-card:hover {
+                border-color: #93c5fd;
+                background: #f8fbff;
+            }
+            #supportModal .support-ticket-status {
+                width: fit-content;
+                border-radius: 999px;
+                padding: 3px 8px;
+                background: #e0f2fe;
+                color: #0369a1;
+                font-size: 11px;
+                font-weight: 800;
+            }
+            #supportModal .support-ticket-status.status-waiting_customer { background: #fef3c7; color: #92400e; }
+            #supportModal .support-ticket-status.status-waiting_support { background: #dbeafe; color: #1d4ed8; }
+            #supportModal .support-ticket-status.status-closed,
+            #supportModal .support-ticket-status.status-resolved { background: #dcfce7; color: #166534; }
+            #supportModal .support-ticket-card small {
+                color: #64748b;
+                line-height: 1.35;
+            }
+            #supportModal .support-ticket-card-preview {
+                color: #334155;
+                font-size: 13px;
+                line-height: 1.35;
+                overflow-wrap: anywhere;
+            }
+            #supportModal .support-empty {
+                border: 1px dashed #cbd5e1;
+                border-radius: 12px;
+                padding: 12px;
+                color: #64748b;
+                background: #f8fafc;
+                font-size: 13px;
+            }
+            #supportModal .support-thread-panel {
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                background: #f8fafc;
+                padding: 12px;
+            }
+            #supportModal .support-thread-header {
+                display: grid;
+                gap: 8px;
+                margin-bottom: 10px;
+            }
+            #supportModal .support-thread-header strong {
+                display: block;
+                color: #0f172a;
+                overflow-wrap: anywhere;
+            }
+            #supportModal .support-thread-header span {
+                display: block;
+                margin-top: 2px;
+                color: #64748b;
+                font-size: 12px;
+            }
+            #supportModal .support-link-button {
+                width: fit-content;
+                border: 0;
+                background: transparent;
+                color: #1d4ed8;
+                cursor: pointer;
+                font-weight: 700;
+                padding: 0;
+            }
+            #supportModal .support-thread {
+                display: grid;
+                gap: 8px;
+                max-height: 260px;
+                overflow: auto;
+                margin-bottom: 12px;
+                padding-right: 2px;
+            }
+            #supportModal .support-message {
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 9px 10px;
+                background: #ffffff;
+            }
+            #supportModal .support-message.support {
+                background: #eff6ff;
+                border-color: #bfdbfe;
+            }
+            #supportModal .support-message.customer {
+                background: #f0fdf4;
+                border-color: #bbf7d0;
+            }
+            #supportModal .support-message.internal {
+                display: none;
+            }
+            #supportModal .support-message-meta {
+                display: flex;
+                justify-content: space-between;
+                gap: 8px;
+                color: #64748b;
+                font-size: 11px;
+                margin-bottom: 5px;
+            }
+            #supportModal .support-message-text {
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
+                color: #0f172a;
+                font-size: 13px;
+                line-height: 1.45;
+            }
+            #supportModal .support-message-attachments {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                margin-top: 8px;
+            }
+            #supportModal .support-attachment-link {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                max-width: 100%;
+                border: 1px solid #bfdbfe;
+                border-radius: 999px;
+                background: #ffffff;
+                color: #1d4ed8;
+                padding: 5px 8px;
+                font-size: 12px;
+                font-weight: 700;
+                text-decoration: none;
+                overflow-wrap: anywhere;
+            }
+            #supportModal .support-attachment-link:hover {
+                background: #eff6ff;
+            }
+            #supportModal .support-attachment-link small {
+                color: #64748b;
+                font-weight: 600;
+            }
+            #supportModal .support-feedback {
+                min-height: 18px;
+                margin-top: 10px;
+                font-size: 13px;
+                color: #475569;
+            }
+            #supportModal .support-feedback.success { color: #15803d; }
+            #supportModal .support-feedback.error { color: #b91c1c; }
+            #aboutModal .about-support-button {
+                border: 0;
+                border-radius: 10px;
+                padding: 10px 12px;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                font-weight: 700;
+                color: #ffffff;
+                background: #1d4ed8;
+            }
+            @media (max-width: 520px) {
+                #supportModal {
+                    align-items: stretch;
+                    padding: 10px;
+                }
+                #supportModal .support-content {
+                    width: 100%;
+                    max-height: calc(100vh - 20px);
+                    border-radius: 10px;
+                    padding: 14px;
+                }
+                #supportModal .support-context-row {
+                    grid-template-columns: 1fr;
+                    gap: 3px;
+                }
+                #supportModal .support-actions {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                }
+                #supportModal .support-action {
+                    justify-content: center;
+                    min-height: 44px;
+                }
+                #supportModal .support-mode-tabs,
+                #supportModal .support-tickets-toolbar,
+                #supportModal .support-message-meta {
+                    grid-template-columns: 1fr;
+                    display: grid;
+                }
+                #supportModal .support-tickets-toolbar .support-action {
+                    width: 100%;
+                }
+                #supportModal .support-ticket-list,
+                #supportModal .support-thread {
+                    max-height: 30vh;
+                }
+            }
+        `;
+        document.head.appendChild(supportStyle);
+    }
+    __siswebRenderSupportContext();
+    return supportModal;
+}
+
 function __siswebInitGlobalModals() {
     try {
+        if (typeof window.switchSiswebSupportView !== 'function') {
+            window.switchSiswebSupportView = __siswebSwitchSupportView;
+        }
+        if (typeof window.loadSiswebSupportTickets !== 'function') {
+            window.loadSiswebSupportTickets = function() { return __siswebLoadMySupportTickets(); };
+        }
+        if (typeof window.clearSiswebSupportActiveTicket !== 'function') {
+            window.clearSiswebSupportActiveTicket = __siswebClearSupportActiveTicket;
+        }
+        if (typeof window.sendSiswebSupportTicketReply !== 'function') {
+            window.sendSiswebSupportTicketReply = __siswebSendSupportTicketReply;
+        }
+        if (typeof window.closeSiswebSupportTicket !== 'function') {
+            window.closeSiswebSupportTicket = __siswebCloseSupportTicket;
+        }
         if (typeof window.showAbout !== 'function') {
             window.showAbout = function() {
                 const aboutModal = ensureSystemAboutModal();
@@ -1896,6 +4118,220 @@ function __siswebInitGlobalModals() {
             window.closeAboutModal = function() {
                 const aboutModal = ensureSystemAboutModal();
                 if (aboutModal) aboutModal.style.display = 'none';
+            };
+        }
+        if (typeof window.showSupport !== 'function') {
+            window.showSupport = function() {
+                const aboutModal = document.getElementById('aboutModal');
+                if (aboutModal) aboutModal.style.display = 'none';
+                const supportModal = ensureSystemSupportModal();
+                if (supportModal) supportModal.classList.toggle('support-public-mode', __siswebIsPublicSupportMode());
+                const ctx = __siswebRenderSupportContext();
+                __siswebBindSupportDraftAutosave();
+                __siswebBindSupportAttachmentInputs();
+                __siswebRestoreSupportDraft(ctx);
+                __siswebSwitchSupportView('new');
+                if (supportModal) supportModal.style.display = 'flex';
+                if (!__siswebIsPublicSupportMode()) {
+                    setTimeout(function() { __siswebLoadMySupportTickets({ silent: true }); }, 80);
+                }
+                const messageEl = document.getElementById('siswebSupportMessage');
+                if (messageEl && typeof messageEl.focus === 'function') {
+                    setTimeout(function() { try { messageEl.focus(); } catch (_) {} }, 80);
+                }
+            };
+        }
+        if (typeof window.closeSupportModal !== 'function') {
+            window.closeSupportModal = function() {
+                const supportModal = ensureSystemSupportModal();
+                if (supportModal) supportModal.style.display = 'none';
+            };
+        }
+        if (typeof window.sendSiswebSupportWhatsApp !== 'function') {
+            window.sendSiswebSupportWhatsApp = function() {
+                const config = __siswebGetSupportConfig();
+                const phone = String(config.whatsapp || '').replace(/\D+/g, '');
+                if (!phone) {
+                    __siswebSetSupportFeedback('WhatsApp de suporte não configurado.', 'error');
+                    return;
+                }
+                const text = __siswebBuildSupportText();
+                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+                __siswebSetSupportFeedback(`Abrindo WhatsApp ${config.whatsappDisplay || config.whatsapp}.`, 'success');
+            };
+        }
+        if (typeof window.sendSiswebSupportTicket !== 'function') {
+            window.sendSiswebSupportTicket = async function() {
+                if (__siswebIsPublicSupportMode()) {
+                    __siswebSetSupportFeedback('Para abrir ticket com histórico, registre-se ou entre no Sisweb. Visitantes podem usar WhatsApp, e-mail ou copiar os dados.', 'error');
+                    return;
+                }
+                const service = await __siswebResolveFirebaseService('createSupportTicket');
+                if (!service || typeof service.createSupportTicket !== 'function') {
+                    __siswebSetSupportFeedback('Envio de ticket indisponível. Use WhatsApp, e-mail ou copie os dados.', 'error');
+                    return;
+                }
+                const authUser = await __siswebResolveSupportAuthUser(service);
+                if (!authUser) {
+                    __siswebSetSupportFeedback('Entre novamente no Sisweb para enviar ticket com segurança.', 'error');
+                    return;
+                }
+                const messageEl = document.getElementById('siswebSupportMessage');
+                const message = String((messageEl && messageEl.value) || '').trim();
+                const files = __siswebGetSelectedSupportFiles('new');
+                if ((!message || message.length < 4) && !files.length) {
+                    __siswebSetSupportFeedback('Descreva a necessidade ou anexe um print antes de enviar o ticket.', 'error');
+                    if (messageEl && typeof messageEl.focus === 'function') messageEl.focus();
+                    return;
+                }
+                const ctx = __siswebGetSupportContext();
+                if (window.navigator && window.navigator.onLine === false) {
+                    __siswebSaveSupportDraft(message, ctx);
+                    __siswebSetSupportFeedback('Sem conexão agora. Rascunho salvo neste dispositivo para envio posterior.', 'error');
+                    return;
+                }
+                const button = document.querySelector('#supportModal .support-ticket');
+                if (button) {
+                    button.disabled = true;
+                    button.dataset.originalText = button.textContent || 'Enviar ticket';
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando';
+                }
+                __siswebSetSupportFeedback('Enviando ticket de suporte...', '');
+                try {
+                    const attachments = await __siswebUploadSupportAttachments('new', ctx, '', 'customer', service, authUser);
+                    const result = await service.createSupportTicket({
+                        subject: `Suporte - ${ctx.moduleName}`,
+                        message: message || 'Anexo enviado para análise.',
+                        module: ctx.moduleName,
+                        path: ctx.path,
+                        url: ctx.url,
+                        companyId: ctx.companyId || '',
+                        attachments,
+                        clientContext: {
+                            displayMode: (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ? 'standalone' : 'browser',
+                            viewport: `${window.innerWidth || 0}x${window.innerHeight || 0}`,
+                            userAgent: window.navigator && window.navigator.userAgent ? window.navigator.userAgent : '',
+                            platform: window.navigator && window.navigator.platform ? window.navigator.platform : '',
+                            language: window.navigator && window.navigator.language ? window.navigator.language : ''
+                        }
+                    });
+                    if (!result || result.success === false) {
+                        throw new Error((result && result.error) || 'Falha ao enviar ticket.');
+                    }
+                    const ticketId = result.data && (result.data.ticketId || (result.data.ticket && result.data.ticket.id));
+                    __siswebSetSupportFeedback(`Ticket enviado com sucesso${ticketId ? `: ${ticketId}` : ''}.`, 'success');
+                    if (messageEl) messageEl.value = '';
+                    __siswebClearSupportAttachments('new');
+                    __siswebClearSupportDraft(ctx);
+                    await __siswebLoadMySupportTickets({ silent: true });
+                    if (ticketId) {
+                        __siswebSwitchSupportView('tickets');
+                        await __siswebOpenSupportTicket(ticketId);
+                    }
+                } catch (error) {
+                    __siswebSaveSupportDraft(message, ctx);
+                    __siswebSetSupportFeedback((error && error.message) || 'Não foi possível enviar o ticket.', 'error');
+                } finally {
+                    if (button) {
+                        button.disabled = false;
+                        button.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar ticket';
+                    }
+                }
+            };
+        }
+        if (typeof window.sendSiswebSupportEmail !== 'function') {
+            window.sendSiswebSupportEmail = async function() {
+                const config = __siswebGetSupportConfig();
+                if (!config.email) {
+                    __siswebSetSupportFeedback('E-mail de suporte não configurado.', 'error');
+                    return;
+                }
+                const ctx = __siswebGetSupportContext();
+                const subject = `Suporte Sisweb - ${ctx.moduleName}`;
+                const body = __siswebBuildSupportText();
+                if (__siswebIsPublicSupportMode()) {
+                    const messageEl = document.getElementById('siswebSupportMessage');
+                    const message = String((messageEl && messageEl.value) || '').trim();
+                    if (!message || message.length < 8) {
+                        __siswebSetSupportFeedback('Descreva sua dúvida antes de enviar o e-mail.', 'error');
+                        if (messageEl && typeof messageEl.focus === 'function') messageEl.focus();
+                        return;
+                    }
+                    const service = await __siswebResolveFirebaseService('sendPublicSupportEmail');
+                    if (!service || typeof service.sendPublicSupportEmail !== 'function') {
+                        __siswebSetSupportFeedback('Envio direto indisponível. Use WhatsApp ou copie os dados.', 'error');
+                        return;
+                    }
+                    const button = document.querySelector('#supportModal .support-email');
+                    if (button) {
+                        button.disabled = true;
+                        button.dataset.originalText = button.textContent || 'E-mail';
+                        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando';
+                    }
+                    __siswebSetSupportFeedback('Enviando e-mail para o Admin...', '');
+                    try {
+                        const result = await service.sendPublicSupportEmail({
+                            source: 'subscription-public',
+                            module: ctx.moduleName || 'Assinatura pública',
+                            subject,
+                            message,
+                            url: ctx.url,
+                            path: ctx.path,
+                            promoCode: (new URLSearchParams(window.location.search || '')).get('cupom') || '',
+                            clientFingerprint: `${window.innerWidth || 0}x${window.innerHeight || 0}:${navigator.language || ''}`,
+                            clientContext: {
+                                displayMode: (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ? 'standalone' : 'browser',
+                                viewport: `${window.innerWidth || 0}x${window.innerHeight || 0}`,
+                                userAgent: window.navigator && window.navigator.userAgent ? window.navigator.userAgent : '',
+                                platform: window.navigator && window.navigator.platform ? window.navigator.platform : '',
+                                language: window.navigator && window.navigator.language ? window.navigator.language : ''
+                            },
+                            website: ''
+                        });
+                        if (!result || result.success === false || (result.data && result.data.success === false)) {
+                            throw new Error((result && result.error) || (result && result.data && result.data.error) || 'Falha ao enviar e-mail.');
+                        }
+                        __siswebClearSupportDraft(ctx);
+                        __siswebSetSupportFeedback('E-mail enviado ao Admin com sucesso. Você também pode registrar-se para acompanhar tickets com histórico.', 'success');
+                    } catch (error) {
+                        __siswebSaveSupportDraft(message, ctx);
+                        __siswebSetSupportFeedback((error && error.message) || 'Não foi possível enviar o e-mail agora.', 'error');
+                    } finally {
+                        if (button) {
+                            button.disabled = false;
+                            button.innerHTML = '<i class="fas fa-envelope"></i> E-mail';
+                        }
+                    }
+                    return;
+                }
+                window.location.href = `mailto:${config.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                __siswebSetSupportFeedback(`Abrindo e-mail para ${config.email}.`, 'success');
+            };
+        }
+        if (typeof window.copySiswebSupportContext !== 'function') {
+            window.copySiswebSupportContext = async function() {
+                const text = __siswebBuildSupportText();
+                try {
+                    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                        await navigator.clipboard.writeText(text);
+                        __siswebSetSupportFeedback('Dados de suporte copiados.', 'success');
+                        return;
+                    }
+                } catch (_) {}
+                const tmp = document.createElement('textarea');
+                tmp.value = text;
+                tmp.setAttribute('readonly', 'readonly');
+                tmp.style.position = 'fixed';
+                tmp.style.opacity = '0';
+                document.body.appendChild(tmp);
+                tmp.select();
+                try {
+                    document.execCommand('copy');
+                    __siswebSetSupportFeedback('Dados de suporte copiados.', 'success');
+                } catch (_) {
+                    __siswebSetSupportFeedback('Não foi possível copiar automaticamente.', 'error');
+                }
+                document.body.removeChild(tmp);
             };
         }
         if (typeof window.showHelp !== 'function') {
@@ -1920,15 +4356,19 @@ function __siswebInitGlobalModals() {
             window.addEventListener('click', function(event) {
                 const aboutModal = document.getElementById('aboutModal');
                 const helpModal = document.getElementById('helpModal');
+                const supportModal = document.getElementById('supportModal');
                 if (aboutModal && event.target === aboutModal) aboutModal.style.display = 'none';
                 if (helpModal && event.target === helpModal) helpModal.style.display = 'none';
+                if (supportModal && event.target === supportModal) supportModal.style.display = 'none';
             });
             window.addEventListener('keydown', function(e) {
                 if (!e || e.key !== 'Escape') return;
                 const aboutModal = document.getElementById('aboutModal');
                 const helpModal = document.getElementById('helpModal');
+                const supportModal = document.getElementById('supportModal');
                 if (aboutModal && aboutModal.style.display === 'block') aboutModal.style.display = 'none';
                 if (helpModal && helpModal.style.display === 'block') helpModal.style.display = 'none';
+                if (supportModal && supportModal.style.display !== 'none') supportModal.style.display = 'none';
             });
         }
     } catch (_) {}
@@ -1944,10 +4384,7 @@ if (document.readyState === 'loading') {
     if (window.__siswebFooterBootstrap) return;
     window.__siswebFooterBootstrap = true;
     function normalizeModuleName(value) {
-        const cleaned = String(value || '').replace(/\s+/g, ' ').trim();
-        if (!cleaned) return '';
-        if (/^(carregando|loading|aguarde)([\s\.\-…:]*)$/i.test(cleaned)) return '';
-        return cleaned;
+        return __siswebNormalizeModuleName(value);
     }
     function inferModuleName() {
         const titlePart = normalizeModuleName((document.title || '').split(' - ')[0]);
@@ -1972,11 +4409,8 @@ if (document.readyState === 'loading') {
         if (!contact || contact.dataset.bound === '1') return;
         contact.dataset.bound = '1';
         contact.addEventListener('click', function(e) {
-            const aboutLink = document.querySelector('a.about-link');
-            if (aboutLink) {
-                e.preventDefault();
-                aboutLink.click();
-            }
+            e.preventDefault();
+            if (typeof window.showSupport === 'function') window.showSupport();
         });
     }
     function bindFooterTitleObserver(footer) {
@@ -2029,7 +4463,7 @@ if (document.readyState === 'loading') {
         footer.className = 'global-system-footer';
         footer.removeAttribute('style');
         footer.innerHTML = `
-            <p>&copy; 2024 Sistema de <span class="global-footer-module"></span>. Todos os direitos reservados.</p>
+            <p>&copy; 2024 <span class="global-footer-module"></span>. Todos os direitos reservados.</p>
             <p>Desenvolvido por Nelson Brito <a href="#" class="global-footer-contact">Fale Conosco</a>.</p>
         `;
         setFooterModuleName(footer);

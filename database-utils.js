@@ -90,23 +90,32 @@ function resolveCompanyId() {
         if (window.appTenantId) return String(window.appTenantId);
         if (window.companyInfo) {
             const raw = window.companyInfo;
-            const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+            const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
             if (id) return String(id);
         }
         const stored = localStorage.getItem('company_info');
         if (stored) {
             const obj = JSON.parse(stored);
-            const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+            const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
             if (id) return String(id);
         }
     } catch (_) {}
     return null;
 }
 
-function getLocalStorageKeys(key) {
+function canonicalizeSpeciesKey(key) {
+    const clean = String(key || '').replace(/^\/+/, '');
+    return clean
+        .replace(/^data\/species(\/|$)/, 'especies$1')
+        .replace(/^species(\/|$)/, 'especies$1')
+        .replace(/^especiesPct(\/|$)/, 'especies$1');
+}
+
+function getLocalStorageKeys(key, includeLegacy = true) {
     const keys = [];
     try {
-        const base = String(key || '');
+        const original = String(key || '');
+        const base = canonicalizeSpeciesKey(original);
         if (!base) return keys;
         const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
         if (svc && typeof svc.getNamespacedPath === 'function') {
@@ -119,6 +128,19 @@ function getLocalStorageKeys(key) {
             }
         }
         keys.push(base);
+        const isLegacySpeciesKey = /^(species|especiesPct|data\/species)(\/|$)/.test(original);
+        if (includeLegacy && original && original !== base && !isLegacySpeciesKey) {
+            if (svc && typeof svc.getNamespacedPath === 'function') {
+                const legacyNs = svc.getNamespacedPath(original);
+                if (legacyNs && legacyNs !== original) keys.push(legacyNs);
+            } else {
+                const companyId = resolveCompanyId();
+                if (companyId && !/^companies\//.test(original) && !/^users\//.test(original)) {
+                    keys.push(`companies/${companyId}/${original}`);
+                }
+            }
+            keys.push(original);
+        }
     } catch (_) {}
     return [...new Set(keys)];
 }
@@ -193,7 +215,7 @@ function compactDataForStorage(key, value) {
 
 function writeLocalStorageValue(key, data) {
     const keyName = String(key || '');
-    const keys = getLocalStorageKeys(keyName);
+    const keys = getLocalStorageKeys(keyName, false);
     const writeToAll = (payload) => {
         for (const k of keys) {
             localStorage.setItem(k, payload);
@@ -520,10 +542,10 @@ async function syncAllData() {
     } catch (_) {}
     const keysToSync = [
         'clients',
-        'species',
+        'especies',
         'romaneios/pct', 'romaneios/tora', 'romaneios/tl', 'romaneios/pes',
         'financas/pagar', 'financas/receber',
-        'companies', 'systemConfig'
+        'companies'
     ];
     
     console.log('🔄 Iniciando sincronização completa...');

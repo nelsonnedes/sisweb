@@ -179,18 +179,80 @@ window.openNewClientModal = function() {
                 const stateEl = document.getElementById('clientState') || document.getElementById('state');
                 const cityEl = document.getElementById('clientCity') || document.getElementById('city');
                 const phoneEl = document.getElementById('clientPhone') || document.getElementById('phone');
+                const emailEl = document.getElementById('clientEmail') || document.getElementById('email');
+                const personTypeEl = document.getElementById('clientPersonType') || document.getElementById('personType');
+                const indIEDestEl = document.getElementById('clientIndIEDest') || document.getElementById('ieIndicator');
+                const stateRegistrationEl = document.getElementById('clientStateRegistration') || document.getElementById('stateRegistration');
+                const municipalRegistrationEl = document.getElementById('clientMunicipalRegistration') || document.getElementById('municipalRegistration');
+                const suframaEl = document.getElementById('clientSuframa') || document.getElementById('suframa');
+                const cepEl = document.getElementById('clientCep') || document.getElementById('postalCode');
                 const addressEl = document.getElementById('clientAddress') || document.getElementById('address');
+                const numberEl = document.getElementById('clientNumber') || document.getElementById('number');
+                const neighborhoodEl = document.getElementById('clientNeighborhood') || document.getElementById('neighborhood');
+                const complementEl = document.getElementById('clientComplement') || document.getElementById('complement');
+                const municipalityCodeEl = document.getElementById('clientMunicipalityCode') || document.getElementById('municipalityCode');
+                const countryCodeEl = document.getElementById('clientCountryCode') || document.getElementById('countryCode');
+                const countryNameEl = document.getElementById('clientCountryName') || document.getElementById('countryName');
                 const obsEl = document.getElementById('clientObs') || document.getElementById('obs');
+                const documento = cnpjEl ? cnpjEl.value : '';
+                const tipoPessoa = personTypeEl ? personTypeEl.value : '';
+                const indIEDest = indIEDestEl ? indIEDestEl.value : '';
+                const inscricaoEstadual = stateRegistrationEl ? stateRegistrationEl.value : '';
+                const inscricaoMunicipal = municipalRegistrationEl ? municipalRegistrationEl.value : '';
+                const cep = cepEl ? cepEl.value : '';
+                const complemento = complementEl ? complementEl.value : '';
+                const codigoMunicipio = municipalityCodeEl ? municipalityCodeEl.value : '';
+                const paisCodigo = countryCodeEl && countryCodeEl.value ? countryCodeEl.value : '1058';
+                const pais = countryNameEl && countryNameEl.value ? countryNameEl.value : 'Brasil';
                 
                 const payload = {
                     id: Date.now().toString(),
                     name: nameEl ? nameEl.value : '',
-                    cnpj: cnpjEl ? cnpjEl.value : '',
+                    cnpj: documento,
+                    documento,
+                    document: documento,
+                    tipoPessoa,
+                    personType: tipoPessoa,
+                    fiscalPersonType: tipoPessoa,
+                    indIEDest,
+                    indicadorInscricaoEstadual: indIEDest,
+                    ieIndicator: indIEDest,
+                    inscricaoEstadual,
+                    stateRegistration: inscricaoEstadual,
+                    inscricaoMunicipal,
+                    municipalRegistration: inscricaoMunicipal,
+                    suframa: suframaEl ? suframaEl.value : '',
+                    cep,
+                    postalCode: cep,
                     state: stateEl ? stateEl.value : '',
+                    estado: stateEl ? stateEl.value : '',
                     city: cityEl ? cityEl.value : '',
+                    cidade: cityEl ? cityEl.value : '',
                     phone: phoneEl ? phoneEl.value : '',
+                    telefone: phoneEl ? phoneEl.value : '',
+                    email: emailEl ? emailEl.value : '',
                     address: addressEl ? addressEl.value : '',
+                    endereco: addressEl ? addressEl.value : '',
+                    number: numberEl ? numberEl.value : '',
+                    numero: numberEl ? numberEl.value : '',
+                    neighborhood: neighborhoodEl ? neighborhoodEl.value : '',
+                    bairro: neighborhoodEl ? neighborhoodEl.value : '',
+                    complement: complemento,
+                    complemento,
+                    codigoMunicipio,
+                    municipioCodigo: codigoMunicipio,
+                    municipalityCode: codigoMunicipio,
+                    cMun: codigoMunicipio,
+                    countryCode: paisCodigo,
+                    paisCodigo,
+                    cPais: paisCodigo,
+                    country: pais,
+                    countryName: pais,
+                    pais,
+                    xPais: pais,
                     obs: obsEl ? obsEl.value : '',
+                    observacoes: obsEl ? obsEl.value : '',
+                    observations: obsEl ? obsEl.value : '',
                     companyId: typeof window.resolveCompanyId === 'function' ? window.resolveCompanyId() : undefined
                 };
                 

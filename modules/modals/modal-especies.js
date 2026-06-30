@@ -30,6 +30,49 @@ window.ModalEspecies = (function() {
         filteredSpecies: [],
         isLoading: false
     };
+    const speciesTools = window.SiswebSpecies || {};
+
+    function getSpeciesName(specie) {
+        if (speciesTools.getDisplayName) return speciesTools.getDisplayName(specie);
+        return String((specie && (specie.especie || specie.nome || specie.name)) || '').trim();
+    }
+
+    function getSpeciesScientific(specie) {
+        if (speciesTools.getScientificName) return speciesTools.getScientificName(specie);
+        return String((specie && (specie.nomeCientifico || specie.scientificName || specie.scientific || specie.descricao || specie.description || specie.decription)) || '').trim();
+    }
+
+    function normalizeSpecies(specie, index = 0) {
+        if (speciesTools.normalizeRecord) return speciesTools.normalizeRecord(specie, index);
+        const name = getSpeciesName(specie) || 'Nome não informado';
+        const scientific = getSpeciesScientific(specie);
+        return {
+            ...(specie || {}),
+            id: (specie && (specie.firebaseKey || specie.key || specie.id)) || `SPECIES_${Date.now()}_${index}`,
+            especie: name,
+            nome: name,
+            name,
+            nomeComum: (specie && (specie.nomeComum || specie.nome || specie.name)) || name,
+            nomeCientifico: scientific,
+            scientificName: scientific,
+            scientific
+        };
+    }
+
+    function normalizeSearchKey(value) {
+        if (speciesTools.normalizeNameKey) return speciesTools.normalizeNameKey(value);
+        return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    }
+
+    function escapeHtml(value) {
+        if (speciesTools.escapeHtml) return speciesTools.escapeHtml(value);
+        return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    }
+
+    function jsStringArg(value) {
+        return escapeHtml(JSON.stringify(String(value || '')));
+    }
+
     function resolveCompanyId() {
         try {
             const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
@@ -42,13 +85,13 @@ window.ModalEspecies = (function() {
             if (window.appTenantId) return String(window.appTenantId);
             if (window.companyInfo) {
                 const raw = window.companyInfo;
-                const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                 if (id) return String(id);
             }
             const stored = localStorage.getItem('company_info');
             if (stored) {
                 const obj = JSON.parse(stored);
-                const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                 if (id) return String(id);
             }
         } catch (_) {}
@@ -71,18 +114,13 @@ window.ModalEspecies = (function() {
     }
 
     function readLocalArray(base) {
+        const companyId = resolveCompanyId();
+        if (!companyId) return [];
         const nsKey = resolveStorageKey(base);
         try {
             const rawNs = localStorage.getItem(nsKey);
             if (rawNs) {
                 const parsed = JSON.parse(rawNs);
-                if (Array.isArray(parsed)) return parsed;
-            }
-        } catch (_) {}
-        try {
-            const raw = localStorage.getItem(base);
-            if (raw) {
-                const parsed = JSON.parse(raw);
                 if (Array.isArray(parsed)) return parsed;
             }
         } catch (_) {}
@@ -134,13 +172,31 @@ window.ModalEspecies = (function() {
      * ✅ CARREGAR ESPÉCIES DO FIREBASE
      */
     async function loadSpecies() {
-        console.log('📂 Carregando espécies do Firebase...');
-        console.log('🔍 DEBUG: Iniciando carregamento de espécies');
+        console.info('[Species] TL modal: carregando especies.');
         
         state.isLoading = true;
         updateLoadingState();
         
         try {
+            if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.getAll === 'function') {
+                const storeSpecies = await window.SiswebSpeciesStore.getAll({ waitRemote: true, timeoutMs: 5000 });
+                state.species = storeSpecies.map((specie, index) => ({
+                    ...normalizeSpecies(specie, index),
+                    categoria: specie.categoria || specie.category || specie.cat || '',
+                    category: specie.categoria || specie.category || specie.cat || '',
+                    densidade: specie.densidade || specie.density || specie.dens || null,
+                    density: specie.densidade || specie.density || specie.dens || null,
+                    origem: specie.origem || specie.origin || specie.ori || '',
+                    origin: specie.origem || specie.origin || specie.ori || '',
+                    uso: specie.uso || specie.use || specie.utilidade || '',
+                    use: specie.uso || specie.use || specie.utilidade || ''
+                }));
+                state.filteredSpecies = [...state.species];
+                state.currentPage = 1;
+                console.info(`[Species] TL modal: ${state.species.length} especies carregadas via store compartilhado.`);
+                return;
+            }
+
             let species = [];
             
             // Tentar carregar do Firebase primeiro
@@ -150,13 +206,13 @@ window.ModalEspecies = (function() {
                     
                     // ✅ USAR loadFromFirebase COMO ROMANEIOPCT
                     if (typeof window.FirebaseService.loadFromFirebase === 'function') {
-                        console.log("🔥 Carregando espécies da coleção 'species'...");
-                        const result = await window.FirebaseService.loadFromFirebase('species');
+                        console.log("🔥 Carregando espécies da coleção 'especies'...");
+                        const result = await window.FirebaseService.loadFromFirebase('especies');
                         console.log("✅ loadFromFirebase resultado:", result);
                         
                         if (result && result.success && result.data) {
                             const firebaseData = result.data;
-                            console.log(`🔍 DEBUG: Dados brutos do Firebase (species):`, firebaseData);
+                            console.log(`🔍 DEBUG: Dados brutos do Firebase (especies):`, firebaseData);
                             console.log(`🔍 DEBUG: Tipo de dados:`, typeof firebaseData);
                             console.log(`🔍 DEBUG: Chaves encontradas:`, Object.keys(firebaseData));
                             console.log(`🔍 DEBUG: Total de chaves:`, Object.keys(firebaseData).length);
@@ -165,16 +221,29 @@ window.ModalEspecies = (function() {
                             if (typeof firebaseData === 'object' && !Array.isArray(firebaseData)) {
                                 console.log('🔍 DEBUG: Dados são um objeto, convertendo para array');
                                 species = Object.keys(firebaseData).map(key => {
-                                    const item = firebaseData[key];
+                                    const item = firebaseData[key] || {};
                                     console.log(`🔍 DEBUG: Processando item ${key}:`, item);
                                     return {
+                                        ...item,
                                         id: key,
-                                        ...item
+                                        key,
+                                        firebaseKey: key,
+                                        originalId: item.id || item.key || key
                                     };
-                                }).filter(item => item && (item.nome || item.name));
+                                }).filter(item => item && (item.especie || item.nome || item.name));
                             } else if (Array.isArray(firebaseData)) {
                                 console.log('🔍 DEBUG: Dados são um array');
-                                species = firebaseData.filter(item => item && (item.nome || item.name));
+                                species = firebaseData.map((item, index) => {
+                                    const value = item || {};
+                                    const key = String(index);
+                                    return {
+                                        ...value,
+                                        id: key,
+                                        key,
+                                        firebaseKey: key,
+                                        originalId: value.id || value.key || key
+                                    };
+                                }).filter(item => item && (item.especie || item.nome || item.name));
                             }
                             
                             console.log(`✅ DEBUG: ${species.length} espécies processadas do Firebase`);
@@ -189,8 +258,7 @@ window.ModalEspecies = (function() {
                         // Fallback para loadData se loadFromFirebase não estiver disponível
                         console.log('🔍 DEBUG: loadFromFirebase não disponível, usando loadData...');
                         
-                        // Tentar diferentes caminhos possíveis no Firebase
-                        const possiblePaths = ['species', 'especies', 'Species', 'Especies'];
+                        const possiblePaths = ['especies'];
                         let firebaseSpecies = null;
                         let usedPath = '';
                         
@@ -218,17 +286,30 @@ window.ModalEspecies = (function() {
                             // Verificar se é um objeto com chaves ou um array
                             if (Array.isArray(firebaseSpecies)) {
                                 console.log('🔍 DEBUG: Dados são um array');
-                                species = firebaseSpecies.filter(item => item && (item.nome || item.name));
+                                species = firebaseSpecies.map((item, index) => {
+                                    const value = item || {};
+                                    const key = String(index);
+                                    return {
+                                        ...value,
+                                        id: key,
+                                        key,
+                                        firebaseKey: key,
+                                        originalId: value.id || value.key || key
+                                    };
+                                }).filter(item => item && (item.especie || item.nome || item.name));
                             } else if (typeof firebaseSpecies === 'object') {
                                 console.log('🔍 DEBUG: Dados são um objeto, convertendo para array');
                                 species = Object.keys(firebaseSpecies).map(key => {
-                                    const item = firebaseSpecies[key];
+                                    const item = firebaseSpecies[key] || {};
                                     console.log(`🔍 DEBUG: Processando item ${key}:`, item);
                                     return {
+                                        ...item,
                                         id: key,
-                                        ...item
+                                        key,
+                                        firebaseKey: key,
+                                        originalId: item.id || item.key || key
                                     };
-                                }).filter(item => item && (item.nome || item.name));
+                                }).filter(item => item && (item.especie || item.nome || item.name));
                             }
                             
                             console.log(`✅ DEBUG: ${species.length} espécies processadas do Firebase`);
@@ -253,29 +334,38 @@ window.ModalEspecies = (function() {
             } else {
                 console.log('🔍 DEBUG: FirebaseService não disponível, usando localStorage');
                 // Apenas localStorage se Firebase não estiver disponível
-                const localSpecies = readLocalArray('species');
+                const localSpecies = readLocalArray('especies');
                 species = localSpecies;
                 console.log(`📦 ${species.length} espécies carregadas do localStorage`);
             }
             
             console.log(`🔍 DEBUG: Total de espécies antes da normalização: ${species.length}`);
+
+            species = species.map((specie, index) => {
+                if (specie && (specie.firebaseKey || specie.key)) return specie;
+                const value = specie || {};
+                const key = String(index);
+                return {
+                    ...value,
+                    id: key,
+                    key,
+                    firebaseKey: key,
+                    originalId: value.id || value.key || key
+                };
+            });
             
             // Normalizar dados para compatibilidade
             state.species = species.map((specie, index) => {
                 const normalizedSpecie = {
-                    id: specie.id || specie.key || `SPECIES_${Date.now()}_${index}`,
-                    nome: specie.nome || specie.name || specie.especie || 'Nome não informado',
-                    name: specie.nome || specie.name || specie.especie || 'Nome não informado', // Compatibilidade
-                    descricao: specie.descricao || specie.description || specie.desc || '',
-                    description: specie.descricao || specie.description || specie.desc || '', // Compatibilidade
+                    ...normalizeSpecies(specie, index),
                     categoria: specie.categoria || specie.category || specie.cat || '',
-                    category: specie.categoria || specie.category || specie.cat || '', // Compatibilidade
+                    category: specie.categoria || specie.category || specie.cat || '',
                     densidade: specie.densidade || specie.density || specie.dens || null,
-                    density: specie.densidade || specie.density || specie.dens || null, // Compatibilidade
+                    density: specie.densidade || specie.density || specie.dens || null,
                     origem: specie.origem || specie.origin || specie.ori || '',
-                    origin: specie.origem || specie.origin || specie.ori || '', // Compatibilidade
+                    origin: specie.origem || specie.origin || specie.ori || '',
                     uso: specie.uso || specie.use || specie.utilidade || '',
-                    use: specie.uso || specie.use || specie.utilidade || '' // Compatibilidade
+                    use: specie.uso || specie.use || specie.utilidade || ''
                 };
                 
                 if (index < 5) {
@@ -293,11 +383,21 @@ window.ModalEspecies = (function() {
                 const c = s && s.createdAt;
                 if (typeof c === 'number') return c;
                 if (typeof c === 'string') { const t = Date.parse(c); if (!isNaN(t)) return t; }
-                const idn = parseFloat(s && s.id);
-                if (!isNaN(idn)) return idn;
-                return 0;
+                const idn = parseFloat(s && (s.originalId || s.id));
+                const keyedRecordBias = s && String(s.id || '') === String(s.originalId || '') ? 0.5 : 0;
+                if (!isNaN(idn)) return idn + keyedRecordBias;
+                return keyedRecordBias;
             };
             state.species.sort((a, b) => parseTime(b) - parseTime(a));
+            const seenSpecies = new Set();
+            state.species = state.species.filter((specie) => {
+                const key = (speciesTools.normalizeNameKey ? speciesTools.normalizeNameKey(getSpeciesName(specie)) : getSpeciesName(specie).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim());
+                const id = String(specie.firebaseKey || specie.key || specie.id || specie.originalId || '');
+                const dedupeKey = key || id;
+                if (!dedupeKey || seenSpecies.has(dedupeKey)) return false;
+                seenSpecies.add(dedupeKey);
+                return true;
+            });
             state.filteredSpecies = [...state.species];
             state.currentPage = 1;
             
@@ -313,7 +413,7 @@ window.ModalEspecies = (function() {
             if (state.species.length > 0) {
                 console.log('🔍 DEBUG: Primeiras 5 espécies normalizadas:');
                 state.species.slice(0, 5).forEach((specie, i) => {
-                    console.log(`  ${i + 1}. ${specie.nome} (ID: ${specie.id})`);
+                    console.log(`  ${i + 1}. ${getSpeciesName(specie)} (ID: ${specie.id})`);
                 });
             }
             
@@ -370,11 +470,11 @@ window.ModalEspecies = (function() {
 
         tbody.innerHTML = speciesToShow.map(specie => `
             <tr>
-                <td>${specie.nome}</td>
-                <td>${specie.descricao}</td>
+                <td>${escapeHtml(getSpeciesName(specie))}</td>
+                <td>${escapeHtml(getSpeciesScientific(specie) || '-')}</td>
                 <td style="text-align: center;">
                     <div class="btn-group">
-                        <button class="action-button select-button" onclick="window.ModalEspecies.selectSpecie('${specie.nome}')" title="Selecionar Espécie">
+                        <button class="action-button select-button" onclick="window.ModalEspecies.selectSpecie(${jsStringArg(getSpeciesName(specie))})" title="Selecionar Espécie">
                             <i class="fas fa-check"></i>
                         </button>
                         <button class="action-button edit-button" onclick="window.ModalEspecies.editSpecie('${specie.id}')" title="Editar Espécie">
@@ -463,20 +563,20 @@ window.ModalEspecies = (function() {
         const filterInput = document.getElementById(CONFIG.filterId);
         if (!filterInput) return;
 
-        const filterText = filterInput.value.toLowerCase().trim();
+        const filterText = normalizeSearchKey(filterInput.value);
         
         if (!filterText) {
             state.filteredSpecies = [...state.species];
         } else {
             state.filteredSpecies = state.species.filter(specie => {
-                const nome = (specie.nome || '').toLowerCase();
-                const descricao = (specie.descricao || '').toLowerCase();
-                const categoria = (specie.categoria || '').toLowerCase();
-                const origem = (specie.origem || '').toLowerCase();
+                const nome = normalizeSearchKey(getSpeciesName(specie));
+                const scientific = normalizeSearchKey(getSpeciesScientific(specie));
+                const categoria = normalizeSearchKey(specie.categoria || '');
+                const origem = normalizeSearchKey(specie.origem || '');
                 
-                return nome.includes(filterText) || 
-                       descricao.includes(filterText) || 
-                       categoria.includes(filterText) || 
+                return nome.includes(filterText) ||
+                       scientific.includes(filterText) ||
+                       categoria.includes(filterText) ||
                        origem.includes(filterText);
             });
         }
@@ -504,18 +604,21 @@ window.ModalEspecies = (function() {
         }
 
         // ✅ CORREÇÃO CRÍTICA: Atualizar window.selectedSpecies
-        const selectedSpecie = state.species.find(s => s.nome === specieName);
+        const selectedSpecie = state.species.find(s => getSpeciesName(s) === specieName);
         if (selectedSpecie) {
             window.selectedSpecies = {
-                nome: selectedSpecie.nome,
-                name: selectedSpecie.nome, // Compatibilidade
+                especie: getSpeciesName(selectedSpecie),
+                nome: getSpeciesName(selectedSpecie),
+                name: getSpeciesName(selectedSpecie), // Compatibilidade em memória
                 id: selectedSpecie.id,
-                descricao: selectedSpecie.descricao
+                nomeCientifico: getSpeciesScientific(selectedSpecie),
+                scientificName: getSpeciesScientific(selectedSpecie)
             };
             console.log(`✅ window.selectedSpecies atualizado para:`, window.selectedSpecies);
         } else {
             // Fallback: criar objeto básico
             window.selectedSpecies = {
+                especie: specieName,
                 nome: specieName,
                 name: specieName
             };
@@ -568,22 +671,30 @@ window.ModalEspecies = (function() {
         // Filtro de busca
         const filterInput = document.getElementById(CONFIG.filterId);
         if (filterInput) {
-            filterInput.removeEventListener('input', filterSpecies); // Remover listener anterior
+            if (filterInput.__speciesDebouncedFilter) {
+                filterInput.removeEventListener('input', filterInput.__speciesDebouncedFilter);
+            }
+            if (filterInput.__speciesEnterFilter) {
+                filterInput.removeEventListener('keydown', filterInput.__speciesEnterFilter);
+            }
             // ✅ Debounce de 300ms para reduzir re-renderizações
             let filterTimeout;
             const debouncedFilter = () => {
                 clearTimeout(filterTimeout);
                 filterTimeout = setTimeout(filterSpecies, 300);
             };
-            filterInput.addEventListener('input', debouncedFilter);
-            // Enter aplica imediatamente
-            filterInput.addEventListener('keydown', (e) => {
+            const enterFilter = (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     clearTimeout(filterTimeout);
                     filterSpecies();
                 }
-            });
+            };
+            filterInput.__speciesDebouncedFilter = debouncedFilter;
+            filterInput.__speciesEnterFilter = enterFilter;
+            filterInput.addEventListener('input', debouncedFilter);
+            // Enter aplica imediatamente
+            filterInput.addEventListener('keydown', enterFilter);
         }
 
         // Botões de fechar
@@ -642,6 +753,8 @@ window.ModalEspecies = (function() {
     // 📡 Atualizar lista quando houver evento de espécies atualizadas (com throttle)
     window.addEventListener('species:updated', async function(e) {
         try {
+            const modal = document.getElementById(CONFIG.modalId);
+            if (!modal || modal.style.display === 'none') return;
             if (!window.__tlSpeciesRefreshTimer) {
                 window.__tlSpeciesRefreshTimer = setTimeout(async () => {
                     window.__tlSpeciesRefreshTimer = null;
@@ -692,11 +805,11 @@ window.ModalEspecies = (function() {
         // Mostrar TODAS as espécies filtradas
         tbody.innerHTML = state.filteredSpecies.map(specie => `
             <tr>
-                <td>${specie.nome}</td>
-                <td>${specie.descricao}</td>
+                <td>${escapeHtml(getSpeciesName(specie))}</td>
+                <td>${escapeHtml(getSpeciesScientific(specie) || '-')}</td>
                 <td style="text-align: center;">
                     <div class="btn-group">
-                        <button class="action-button select-button" onclick="window.ModalEspecies.selectSpecie('${specie.nome}')" title="Selecionar Espécie">
+                        <button class="action-button select-button" onclick="window.ModalEspecies.selectSpecie(${jsStringArg(getSpeciesName(specie))})" title="Selecionar Espécie">
                             <i class="fas fa-check"></i>
                         </button>
                         <button class="action-button edit-button" onclick="window.ModalEspecies.editSpecie('${specie.id}')" title="Editar Espécie">

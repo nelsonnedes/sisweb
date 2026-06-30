@@ -14,7 +14,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="layout-comum.css">
-    <link rel="stylesheet" href="romaneio-comum.css">
+    <link rel="stylesheet" href="romaneio-comum.css?v=20260607pwaqa">
+    <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <link rel="stylesheet" href="print-styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -503,28 +504,30 @@
     </div>
 
     <!-- Modal de Nova Espécie -->
-    <div id="speciesModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="speciesModalTitle">Nova Espécie</h3>
-                <span class="close-modal">&times;</span>
+    <div id="speciesModal" class="modal species-standard-modal" aria-hidden="true">
+        <div class="modal-content species-standard-modal-content">
+            <div class="modal-header species-standard-header">
+                <h3 class="modal-title species-standard-title" id="speciesModalTitle">Nova Espécie</h3>
+                <button type="button" class="close-modal species-standard-close" aria-label="Fechar modal">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="speciesForm" onsubmit="saveSpecies(event); return false;">
+                <form id="speciesForm" class="species-standard-form" onsubmit="saveSpecies(event); return false;">
                     <input type="hidden" id="speciesId">
-                    <div class="form-group">
-                        <label for="speciesName">Nome:</label>
-                        <input type="text" id="speciesName" required>
+                    <div class="form-group species-standard-field">
+                        <label for="speciesName" class="species-standard-label">Nome da Espécie:</label>
+                        <input type="text" id="speciesName" class="species-standard-input" required>
+                        <div id="speciesNameSuggestionsReserve" class="species-name-suggestions-reserve" aria-hidden="true"></div>
+                        <div id="speciesNameDuplicateHint" class="species-duplicate-hint" aria-live="polite"></div>
                     </div>
-                    <div class="form-group">
-                        <label for="speciesDescription">Descrição:</label>
-                        <input type="text" id="speciesDescription">
+                    <div class="form-group species-standard-field">
+                        <label for="speciesDescription" class="species-standard-label">Nome Científico:</label>
+                        <textarea id="speciesDescription" class="species-standard-textarea" rows="3" placeholder="Ex.: Handroanthus albus"></textarea>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer species-standard-actions">
                 <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('speciesModal').style.display='none';">Cancelar</button>
-                <button type="button" class="btn-save" id="saveSpeciesBtn" onclick="saveSpecies()">Salvar</button>
+                <button type="button" class="btn-save" id="saveSpeciesBtn" onclick="saveSpecies()">Salvar Espécie</button>
             </div>
         </div>
     </div>
@@ -660,23 +663,26 @@
     <div id="speciesListModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">Lista de Espécies</h3>
+                <h3 class="modal-title">🌳 Lista de Espécies</h3>
                 <span class="close-modal">&times;</span>
             </div>
             <div class="modal-body">
-                <input type="text" id="speciesListFilter" placeholder="Filtrar espécies..." 
-                       style="margin: 10px 0; width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Nome</th>
-                            <th>Descrição</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="speciesListTable">
-                    </tbody>
-                </table>
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="speciesListFilter" placeholder="🔍 Filtrar por espécie ou nome científico...">
+                </div>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Nome Científico</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="speciesListTable">
+                        </tbody>
+                    </table>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('speciesListModal').style.display='none'">Fechar</button>
@@ -744,7 +750,17 @@
     <!-- Scripts essenciais de produção (ordem otimizada) -->
     <script src="estados-cidades.js"></script>
     <script src="client-modal-handler.js"></script>
-    <script src="menu-component.js?v=20260326"></script>
+    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
+    <script src="species-utils.js"></script>
+    <script src="species-store.js"></script>
+    <script src="species-modal-standard.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.enhance === 'function') {
+                window.SiswebSpeciesModal.enhance({ modal: document.getElementById('speciesModal') });
+            }
+        });
+    </script>
     
     <!-- Scripts de correção e funcionalidade -->
     <script src="correcao-interface-database.js"></script>

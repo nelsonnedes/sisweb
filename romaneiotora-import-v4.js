@@ -123,11 +123,18 @@ function processarMatrizImportada(matrix) {
     let colIndices = {
         especie: -1,
         plaqueta: -1,
+        custodia: -1,
         rodo: -1,
         comprimento: -1,
         oco1: -1,
         oco2: -1,
-        preco: -1
+        preco: -1,
+        compGeo: -1,
+        x1: -1,
+        x2: -1,
+        x3: -1,
+        x4: -1,
+        volumeGeo: -1
     };
 
     // Escanear as primeiras 20 linhas procurando cabeçalhos
@@ -141,8 +148,15 @@ function processarMatrizImportada(matrix) {
             
             if (val.includes('especie') || val.includes('descricao')) colIndices.especie = colIndex;
             else if (val.includes('plaqueta') || val.includes('placa') || val.includes('etiqueta')) colIndices.plaqueta = colIndex;
+            else if (val.includes('custodia') || val.includes('custody')) colIndices.custodia = colIndex;
+            else if ((val.includes('comp') && val.includes('geo')) || val.includes('comprimento geometrico')) colIndices.compGeo = colIndex;
+            else if (val === 'x1' || val.includes('x1')) colIndices.x1 = colIndex;
+            else if (val === 'x2' || val.includes('x2')) colIndices.x2 = colIndex;
+            else if (val === 'x3' || val.includes('x3')) colIndices.x3 = colIndex;
+            else if (val === 'x4' || val.includes('x4')) colIndices.x4 = colIndex;
+            else if ((val.includes('v') && val.includes('geo')) || val.includes('volume geometrico')) colIndices.volumeGeo = colIndex;
             else if (val.includes('rodo') || val.includes('diametro')) colIndices.rodo = colIndex;
-            else if (val.includes('comprimento') || val.includes('comp') || val.includes('metro')) colIndices.comprimento = colIndex;
+            else if ((val.includes('comprimento') || val.includes('comp') || val.includes('metro')) && !val.includes('geo')) colIndices.comprimento = colIndex;
             else if (val.includes('oco 1') || val.includes('oco1')) colIndices.oco1 = colIndex;
             else if (val.includes('oco 2') || val.includes('oco2')) colIndices.oco2 = colIndex;
             else if (val.includes('preco') || val.includes('valor unitario')) colIndices.preco = colIndex;
@@ -155,7 +169,7 @@ function processarMatrizImportada(matrix) {
         }
         
         // Resetar para próxima tentativa se não encontrou o suficiente
-        colIndices = { especie: -1, plaqueta: -1, rodo: -1, comprimento: -1, oco1: -1, oco2: -1, preco: -1 };
+        colIndices = { especie: -1, plaqueta: -1, custodia: -1, rodo: -1, comprimento: -1, oco1: -1, oco2: -1, preco: -1, compGeo: -1, x1: -1, x2: -1, x3: -1, x4: -1, volumeGeo: -1 };
     }
 
     if (headerRowIndex === -1) {
@@ -199,11 +213,31 @@ function processarMatrizImportada(matrix) {
         if (!especieRaw && (colIndices.rodo === -1 || !row[colIndices.rodo])) continue;
 
         const plaqueta = colIndices.plaqueta !== -1 ? row[colIndices.plaqueta] : '';
+        const custodia = colIndices.custodia !== -1 ? row[colIndices.custodia] : '';
         const rodo = colIndices.rodo !== -1 ? parseNumV4(row[colIndices.rodo]) : 0;
         const comprimento = colIndices.comprimento !== -1 ? parseNumV4(row[colIndices.comprimento]) : 0;
         const oco1 = colIndices.oco1 !== -1 ? parseNumV4(row[colIndices.oco1]) : 0;
         const oco2 = colIndices.oco2 !== -1 ? parseNumV4(row[colIndices.oco2]) : 0;
         const preco = colIndices.preco !== -1 ? parseNumV4(row[colIndices.preco]) : 0;
+        const geo = window.ToraGeometry && typeof window.ToraGeometry.normalizarCamposGeoItem === 'function'
+            ? window.ToraGeometry.normalizarCamposGeoItem({
+                custodia,
+                compGeo: colIndices.compGeo !== -1 ? row[colIndices.compGeo] : 0,
+                x1: colIndices.x1 !== -1 ? row[colIndices.x1] : 0,
+                x2: colIndices.x2 !== -1 ? row[colIndices.x2] : 0,
+                x3: colIndices.x3 !== -1 ? row[colIndices.x3] : 0,
+                x4: colIndices.x4 !== -1 ? row[colIndices.x4] : 0,
+                volumeGeo: colIndices.volumeGeo !== -1 ? row[colIndices.volumeGeo] : 0
+            })
+            : {
+                custodia: String(custodia || '').trim(),
+                compGeo: colIndices.compGeo !== -1 ? parseNumV4(row[colIndices.compGeo]) : 0,
+                x1: colIndices.x1 !== -1 ? parseNumV4(row[colIndices.x1]) : 0,
+                x2: colIndices.x2 !== -1 ? parseNumV4(row[colIndices.x2]) : 0,
+                x3: colIndices.x3 !== -1 ? parseNumV4(row[colIndices.x3]) : 0,
+                x4: colIndices.x4 !== -1 ? parseNumV4(row[colIndices.x4]) : 0,
+                volumeGeo: colIndices.volumeGeo !== -1 ? parseNumV4(row[colIndices.volumeGeo]) : 0
+            };
 
         // Validação Mínima
         if (!especieRaw || rodo <= 0) {
@@ -275,6 +309,7 @@ function processarMatrizImportada(matrix) {
             especie: especieFinal,
             especieId: especieId,
             plaqueta: String(plaqueta || ''),
+            ...geo,
             comprimento: comprimento,
             diametro: rodo, // manter compatibilidade
             rodo: rodo,

@@ -129,17 +129,10 @@ if (!window.updateTableBody) {
 // IMPLEMENTAÇÕES CORRIGIDAS PARA ESPÉCIES E MODAIS
 // ====================================================================
 
-// ✅ Função corrigida para abrir lista de espécies
-function openSpeciesListModal() {
+// ✅ Fallback para abrir lista de espécies sem sobrescrever a implementação principal
+const siswebFallbackOpenSpeciesListModal = function() {
     console.log("🌿 Abrindo lista de espécies...");
-    
-    // Verificar se a implementação principal existe
-    if (window.openSpeciesListModal && typeof window.openSpeciesListModal === 'function') {
-        console.log("✅ Usando implementação principal de openSpeciesListModal");
-        return window.openSpeciesListModal();
-    }
-    
-    // Implementação básica se não houver a principal
+
     console.log("⚠️ Implementação principal não encontrada, usando fallback");
     
     try {
@@ -154,12 +147,29 @@ function openSpeciesListModal() {
             modal.innerHTML = `
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2>Lista de Espécies</h2>
+                        <h3 class="modal-title">🌳 Lista de Espécies</h3>
                         <span class="close" onclick="closeSpeciesListModal()">&times;</span>
                     </div>
                     <div class="modal-body">
-                        <p>Carregando espécies...</p>
-                        <div id="speciesListContainer"></div>
+                        <div style="margin-bottom: 15px;">
+                            <input type="text" id="speciesListFilter" placeholder="🔍 Filtrar por espécie ou nome científico...">
+                        </div>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Nome Científico</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="speciesListTable">
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; padding: 20px;">Carregando espécies...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             `;
@@ -173,19 +183,12 @@ function openSpeciesListModal() {
         console.error("❌ Erro ao abrir modal de espécies:", error);
         alert('Erro ao abrir lista de espécies. Recarregue a página.');
     }
-}
+};
 
-// ✅ Função corrigida para abrir novo modal de espécie
-function openNewSpeciesModal() {
+// ✅ Fallback para abrir novo modal de espécie sem sobrescrever a implementação principal
+const siswebFallbackOpenNewSpeciesModal = function() {
     console.log("🌿 Abrindo modal para nova espécie...");
-    
-    // Verificar se a implementação principal existe
-    if (window.openNewSpeciesModal && typeof window.openNewSpeciesModal === 'function') {
-        console.log("✅ Usando implementação principal de openNewSpeciesModal");
-        return window.openNewSpeciesModal();
-    }
-    
-    // Implementação básica se não houver a principal
+
     console.log("⚠️ Implementação principal não encontrada, usando fallback");
     
     try {
@@ -198,23 +201,25 @@ function openNewSpeciesModal() {
             modal.id = 'speciesModal';
             modal.className = 'modal';
             modal.innerHTML = `
-                <div class="modal-content">
-                    <div class="modal-header">
+                <div class="modal-content species-standard-modal-content">
+                    <div class="modal-header species-standard-header">
                         <h2 id="speciesModalTitle">Nova Espécie</h2>
                         <span class="close" onclick="closeSpeciesModal()">&times;</span>
                     </div>
                     <div class="modal-body">
-                        <form id="speciesForm">
+                        <form id="speciesForm" class="species-standard-form">
                             <input type="hidden" id="speciesId">
-                            <div class="form-group">
-                                <label for="speciesName">Nome da Espécie:</label>
-                                <input type="text" id="speciesName" required>
+                            <div class="form-group species-standard-field">
+                                <label for="speciesName" class="species-standard-label">Nome da Espécie:</label>
+                                <input type="text" id="speciesName" class="species-standard-input" required>
+                                <div id="speciesNameSuggestionsReserve" class="species-name-suggestions-reserve" aria-hidden="true"></div>
+                                <div id="speciesNameDuplicateHint" class="species-duplicate-hint" aria-live="polite"></div>
                             </div>
-                            <div class="form-group">
-                                <label for="speciesDescription">Descrição:</label>
-                                <textarea id="speciesDescription"></textarea>
+                            <div class="form-group species-standard-field">
+                                <label for="speciesDescription" class="species-standard-label">Nome Científico:</label>
+                                <textarea id="speciesDescription" class="species-standard-textarea"></textarea>
                             </div>
-                            <div class="form-actions">
+                            <div class="form-actions species-standard-actions">
                                 <button type="submit">Salvar</button>
                                 <button type="button" onclick="closeSpeciesModal()">Cancelar</button>
                             </div>
@@ -236,6 +241,10 @@ function openNewSpeciesModal() {
         // Atualizar título
         const title = document.getElementById('speciesModalTitle');
         if (title) title.textContent = 'Nova Espécie';
+
+        if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.enhance === 'function') {
+            window.SiswebSpeciesModal.enhance({ modal });
+        }
         
         modal.style.display = 'block';
         
@@ -251,33 +260,33 @@ function openNewSpeciesModal() {
         console.error("❌ Erro ao abrir modal de nova espécie:", error);
         alert('Erro ao abrir modal de nova espécie. Recarregue a página.');
     }
-}
+};
 
 // ✅ Funções auxiliares para fechar modais
-function closeSpeciesListModal() {
+const siswebFallbackCloseSpeciesListModal = function() {
     const modal = document.getElementById('speciesListModal');
     if (modal) {
         modal.style.display = 'none';
         console.log("✅ Modal de lista de espécies fechado");
     }
-}
+};
 
-function closeSpeciesModal() {
+const siswebFallbackCloseSpeciesModal = function() {
     const modal = document.getElementById('speciesModal');
     if (modal) {
         modal.style.display = 'none';
         console.log("✅ Modal de espécie fechado");
     }
-}
+};
 
 // Aguardar carregamento das funções do arquivo principal
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
-        // ✅ EXPOR FUNÇÕES DE ESPÉCIES CORRIGIDAS GLOBALMENTE
-        window.openSpeciesListModal = openSpeciesListModal;
-        window.openNewSpeciesModal = openNewSpeciesModal;
-        window.closeSpeciesListModal = closeSpeciesListModal;
-        window.closeSpeciesModal = closeSpeciesModal;
+        // ✅ Expor apenas fallbacks ausentes, preservando implementações reais dos módulos.
+        if (typeof window.openSpeciesListModal !== 'function') window.openSpeciesListModal = siswebFallbackOpenSpeciesListModal;
+        if (typeof window.openNewSpeciesModal !== 'function') window.openNewSpeciesModal = siswebFallbackOpenNewSpeciesModal;
+        if (typeof window.closeSpeciesListModal !== 'function') window.closeSpeciesListModal = siswebFallbackCloseSpeciesListModal;
+        if (typeof window.closeSpeciesModal !== 'function') window.closeSpeciesModal = siswebFallbackCloseSpeciesModal;
         
         console.log("✅ Funções de espécies expostas globalmente");
         
@@ -301,4 +310,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 100);
 });
 
-console.log("✅ global-functions-fix.js carregado"); 
+console.log("✅ global-functions-fix.js carregado");

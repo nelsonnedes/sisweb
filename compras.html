@@ -8,21 +8,7 @@
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
-    <script src="menu-component.js?v=20260326"></script>
-    <script>
-        (function(){
-            try {
-                const raw = localStorage.getItem('company_info');
-                if (raw) {
-                    const obj = JSON.parse(raw);
-                    window.appTenantId = String(obj.id || obj.companyId || obj.slug || obj.nome || obj.name || 'default').replace(/\s+/g,'_').toLowerCase();
-                    if (window.firebaseService && typeof window.firebaseService.setTenantId === 'function') {
-                        window.firebaseService.setTenantId(window.appTenantId);
-                    }
-                }
-            } catch(_) {}
-        })();
-    </script>
+    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
     <style>
         * {
             margin: 0;
@@ -85,6 +71,139 @@
 
         .tab-content.active {
             display: block;
+        }
+
+        .purchase-suppliers-panel {
+            display: grid;
+            gap: 18px;
+        }
+
+        .purchase-suppliers-header {
+            align-items: center;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            gap: 14px;
+            justify-content: space-between;
+            padding-bottom: 14px;
+        }
+
+        .purchase-suppliers-header h2 {
+            margin-bottom: 4px;
+            text-align: left;
+        }
+
+        .purchase-suppliers-header p {
+            color: #64748b;
+            line-height: 1.45;
+            margin: 0;
+        }
+
+        .purchase-suppliers-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .purchase-suppliers-summary {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .purchase-suppliers-stat {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .purchase-suppliers-stat span {
+            color: #64748b;
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .purchase-suppliers-stat strong {
+            color: #0f172a;
+            display: block;
+            font-size: 20px;
+            line-height: 1.2;
+            overflow-wrap: anywhere;
+        }
+
+        .purchase-suppliers-toolbar {
+            align-items: end;
+            display: grid;
+            gap: 12px;
+            grid-template-columns: minmax(220px, 1fr);
+        }
+
+        .purchase-suppliers-search {
+            position: relative;
+        }
+
+        .purchase-suppliers-search i {
+            color: #94a3b8;
+            left: 12px;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .purchase-suppliers-search input {
+            padding-left: 38px;
+        }
+
+        .purchase-supplier-form {
+            border: 1px solid #dbe4ef;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .purchase-supplier-form[hidden] {
+            display: none;
+        }
+
+        .purchase-supplier-form h3 {
+            color: #2c3e50;
+            margin-bottom: 14px;
+        }
+
+        .purchase-supplier-form-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 8px;
+        }
+
+        .purchase-suppliers-empty {
+            color: #64748b;
+            padding: 22px;
+            text-align: center;
+        }
+
+        .purchase-suppliers-table td {
+            vertical-align: middle;
+        }
+
+        .purchase-suppliers-name-cell strong {
+            color: #0f172a;
+            display: block;
+        }
+
+        .purchase-suppliers-name-cell small {
+            color: #64748b;
+            display: block;
+            margin-top: 3px;
+        }
+
+        .purchase-suppliers-actions-cell .commerce-actions-wrap {
+            justify-content: center;
         }
 
         .form-row {
@@ -250,8 +369,29 @@
             margin-top: 10px;
         }
 
+        #listaPedidosTable th.atualizado-col,
+        #listaPedidosTable td.atualizado-cell {
+            min-width: 112px;
+            white-space: nowrap;
+        }
+
+        #listaPedidosTable th.actions-col,
+        #listaPedidosTable td.acoes-cell {
+            width: 144px;
+            min-width: 144px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
         #listaPedidosModal #pedidosTable td:last-child {
             white-space: nowrap;
+        }
+        #listaPedidosModal .acoes-buttons {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
         }
         #listaPedidosModal .pedido-numero-cell,
         #listaPedidosModal .pedido-numero-head {
@@ -486,6 +626,26 @@
                 flex-direction: column;
             }
 
+            .purchase-suppliers-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .purchase-suppliers-actions,
+            .purchase-supplier-form-actions {
+                justify-content: stretch;
+            }
+
+            .purchase-suppliers-actions button,
+            .purchase-supplier-form-actions button {
+                width: 100%;
+            }
+
+            .purchase-suppliers-summary,
+            .purchase-suppliers-toolbar {
+                grid-template-columns: 1fr;
+            }
+
             .modal-content {
                 width: 95%;
                 margin: 5% auto;
@@ -638,6 +798,7 @@
         #listaPedidosTable th:last-child { text-align: center; }
         /* tbody#pedidosTable td:nth-child(6) { display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; } */
     </style>
+    <link rel="stylesheet" href="commerce-responsive.css?v=2026-06-07-print-context-v13">
 </head>
 <body>
     <div class="container">
@@ -646,16 +807,16 @@
         <h1>Sistema de Compras</h1>
 
         <div class="tabs">
-            <button class="tab active" onclick="showTab('pedidos')">
+            <button type="button" class="tab active" onclick="showTab('pedidos')">
                 <i class="fas fa-shopping-cart"></i> Pedidos de Compras
             </button>
-            <button class="tab" onclick="showTab('clientes')">
+            <button type="button" class="tab" onclick="showTab('clientes')">
                 <i class="fas fa-truck"></i> Fornecedores
             </button>
-            <button class="tab" onclick="showTab('produtos')">
+            <button type="button" class="tab" onclick="showTab('produtos')">
                 <i class="fas fa-box"></i> Produtos
             </button>
-            <button class="tab" onclick="showTab('relatorios')">
+            <button type="button" class="tab" onclick="showTab('relatorios')">
                 <i class="fas fa-chart-bar"></i> Relatórios
             </button>
         </div>
@@ -663,10 +824,10 @@
         <!-- Tab Pedidos de Venda -->
         <div id="pedidos" class="tab-content active">
             <div class="action-buttons">
-                <button onclick="novoPedido()" class="btn-primary">
+                <button type="button" onclick="novoPedido()" class="btn-primary">
                     <i class="fas fa-plus"></i> Novo Pedido
                 </button>
-                <button onclick="listarPedidos()" class="btn-primary">
+                <button type="button" onclick="listarPedidos()" class="btn-primary">
                     <i class="fas fa-list"></i> Listar Pedidos
                 </button>
             </div>
@@ -787,15 +948,14 @@
                                 <option value="">Selecione um romaneio</option>
                             </select>
                         </div>
-                        <div class="form-group form-group-small">
-                            <label>&nbsp;</label>
-                            <button type="button" onclick="adicionarItensRomaneio()" class="btn-success">
-                                <i class="fas fa-plus"></i> Carregar Items
+                        <div class="form-group romaneio-actions">
+                            <button type="button" onclick="adicionarItensRomaneio()"
+                                class="btn-success romaneio-load-btn">
+                                <i class="fas fa-plus"></i> Carregar Itens
                             </button>
-                        </div>
-                        <div class="form-group" style="display: flex; align-items: center; padding-top: 25px;">
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
-                                <input type="checkbox" id="agruparItensRomaneio" style="width: auto;">
+                            <label class="commerce-check-option romaneio-group-option"
+                                for="agruparItensRomaneio">
+                                <input type="checkbox" id="agruparItensRomaneio">
                                 <span>Carregar apenas o Resumo (Agrupar por Espécie)</span>
                             </label>
                         </div>
@@ -846,8 +1006,8 @@
 
                 <h3>Carrinho de Itens</h3>
                 
-                <div class="table-responsive">
-                    <table class="table" id="carrinhoItensTable">
+                <div class="table-responsive mobile-cards commerce-cart-table-wrap">
+                    <table class="table commerce-cart-table" id="carrinhoItensTable">
                         <colgroup>
                             <col>
                             <col style="width: 120px;">
@@ -866,7 +1026,7 @@
                         </thead>
                         <tbody id="itensTable">
                             <tr>
-                                <td colspan="5" style="text-align: center;">Nenhum item adicionado</td>
+                                <td colspan="5" data-label="Mensagem" class="commerce-full-row" style="text-align: center;">Nenhum item adicionado</td>
                             </tr>
                         </tbody>
                     </table>
@@ -936,8 +1096,8 @@
                     </div>
 
                     <!-- Lista de Contas a Pagar -->
-                    <div id="contasPagarContainer" class="table-responsive">
-                        <table class="table" style="margin-top: 15px;">
+                    <div id="contasPagarContainer" class="table-responsive mobile-cards commerce-payment-table-wrap">
+                        <table class="table commerce-payment-table" style="margin-top: 15px;">
                             <thead>
                                 <tr>
                                     <th>Valor</th>
@@ -950,7 +1110,7 @@
                             </thead>
                             <tbody id="contasPagarTable">
                                 <tr>
-                                    <td colspan="6" style="text-align: center; color: #666;">Nenhuma conta adicionada</td>
+                                    <td colspan="6" data-label="Mensagem" class="commerce-full-row" style="text-align: center; color: #666;">Nenhuma conta adicionada</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -973,12 +1133,216 @@
 
         <!-- Tab Fornecedores -->
         <div id="clientes" class="tab-content">
-            <div class="action-buttons">
-                <button onclick="window.location.href='fornecedor.html'" class="btn-primary">
-                    <i class="fas fa-external-link-alt"></i> Gerenciar Fornecedores
-                </button>
-            </div>
-            <p>Use o cadastro de fornecedores para manter sua base atualizada.</p>
+            <section class="purchase-suppliers-panel" id="comprasFornecedoresPanel" data-native-module="fornecedores">
+                <div class="purchase-suppliers-header">
+                    <div>
+                        <h2><i class="fas fa-truck"></i> Fornecedores</h2>
+                        <p>Cadastro de fornecedores usado nos pedidos de compra.</p>
+                    </div>
+                    <div class="purchase-suppliers-actions">
+                        <button type="button" class="btn-secondary" onclick="comprasFornecedoresRecarregar()">
+                            <i class="fas fa-rotate"></i> Atualizar
+                        </button>
+                        <button type="button" class="btn-primary" onclick="comprasFornecedoresNovo()">
+                            <i class="fas fa-plus"></i> Novo Fornecedor
+                        </button>
+                    </div>
+                </div>
+
+                <div class="purchase-suppliers-summary" aria-label="Resumo de fornecedores">
+                    <div class="purchase-suppliers-stat">
+                        <span>Total</span>
+                        <strong id="comprasFornecedoresTotal">0</strong>
+                    </div>
+                    <div class="purchase-suppliers-stat">
+                        <span>Com documento</span>
+                        <strong id="comprasFornecedoresDocumentados">0</strong>
+                    </div>
+                    <div class="purchase-suppliers-stat">
+                        <span>Com telefone</span>
+                        <strong id="comprasFornecedoresContatos">0</strong>
+                    </div>
+                    <div class="purchase-suppliers-stat">
+                        <span>Cidades</span>
+                        <strong id="comprasFornecedoresCidades">0</strong>
+                    </div>
+                </div>
+
+                <form id="comprasFornecedorForm" class="purchase-supplier-form" hidden>
+                    <h3 id="comprasFornecedorFormTitle">Novo Fornecedor</h3>
+                    <input type="hidden" id="comprasFornecedorId">
+                    <div class="form-row">
+                        <div class="form-group form-group-large">
+                            <label for="comprasFornecedorName">Nome / Razão Social *</label>
+                            <input type="text" id="comprasFornecedorName" required autocomplete="organization">
+                        </div>
+                        <div class="form-group">
+                            <label for="comprasFornecedorDocumento">CNPJ / CPF</label>
+                            <input type="text" id="comprasFornecedorDocumento" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="comprasFornecedorTipoPessoa">Tipo de pessoa</label>
+                            <select id="comprasFornecedorTipoPessoa">
+                                <option value="">Não informado</option>
+                                <option value="juridica">Pessoa jurídica</option>
+                                <option value="fisica">Pessoa física</option>
+                                <option value="estrangeiro">Estrangeiro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="comprasFornecedorIndIEDest">Indicador IE</label>
+                            <select id="comprasFornecedorIndIEDest">
+                                <option value="">Não informado</option>
+                                <option value="1">Contribuinte ICMS</option>
+                                <option value="2">Contribuinte isento</option>
+                                <option value="9">Não contribuinte</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="comprasFornecedorInscricaoEstadual">Inscrição Estadual</label>
+                            <input type="text" id="comprasFornecedorInscricaoEstadual" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="comprasFornecedorInscricaoMunicipal">Inscrição Municipal</label>
+                            <input type="text" id="comprasFornecedorInscricaoMunicipal" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="comprasFornecedorSuframa">SUFRAMA</label>
+                            <input type="text" id="comprasFornecedorSuframa" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="comprasFornecedorPhone">Telefone</label>
+                            <input type="text" id="comprasFornecedorPhone" autocomplete="tel">
+                        </div>
+                        <div class="form-group">
+                            <label for="comprasFornecedorEmail">E-mail</label>
+                            <input type="email" id="comprasFornecedorEmail" autocomplete="email">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="comprasFornecedorCep">CEP</label>
+                            <input type="text" id="comprasFornecedorCep" autocomplete="postal-code">
+                        </div>
+                        <div class="form-group form-group-large">
+                            <label for="comprasFornecedorAddress">Endereço</label>
+                            <input type="text" id="comprasFornecedorAddress" autocomplete="street-address">
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label for="comprasFornecedorNumber">Número</label>
+                            <input type="text" id="comprasFornecedorNumber" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="comprasFornecedorNeighborhood">Bairro</label>
+                            <input type="text" id="comprasFornecedorNeighborhood" autocomplete="address-level3">
+                        </div>
+                        <div class="form-group">
+                            <label for="comprasFornecedorComplement">Complemento</label>
+                            <input type="text" id="comprasFornecedorComplement" autocomplete="address-line2">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="comprasFornecedorState">Estado</label>
+                            <select id="comprasFornecedorState">
+                                <option value="">Selecione</option>
+                                <option value="AC">Acre</option>
+                                <option value="AL">Alagoas</option>
+                                <option value="AP">Amapá</option>
+                                <option value="AM">Amazonas</option>
+                                <option value="BA">Bahia</option>
+                                <option value="CE">Ceará</option>
+                                <option value="DF">Distrito Federal</option>
+                                <option value="ES">Espírito Santo</option>
+                                <option value="GO">Goiás</option>
+                                <option value="MA">Maranhão</option>
+                                <option value="MT">Mato Grosso</option>
+                                <option value="MS">Mato Grosso do Sul</option>
+                                <option value="MG">Minas Gerais</option>
+                                <option value="PA">Pará</option>
+                                <option value="PB">Paraíba</option>
+                                <option value="PR">Paraná</option>
+                                <option value="PE">Pernambuco</option>
+                                <option value="PI">Piauí</option>
+                                <option value="RJ">Rio de Janeiro</option>
+                                <option value="RN">Rio Grande do Norte</option>
+                                <option value="RS">Rio Grande do Sul</option>
+                                <option value="RO">Rondônia</option>
+                                <option value="RR">Roraima</option>
+                                <option value="SC">Santa Catarina</option>
+                                <option value="SP">São Paulo</option>
+                                <option value="SE">Sergipe</option>
+                                <option value="TO">Tocantins</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="comprasFornecedorCity">Cidade</label>
+                            <select id="comprasFornecedorCity">
+                                <option value="">Selecione primeiro o estado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="comprasFornecedorMunicipalityCode">Código IBGE do município</label>
+                            <input type="text" id="comprasFornecedorMunicipalityCode" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="comprasFornecedorCountryCode">Código do país</label>
+                            <input type="text" id="comprasFornecedorCountryCode" value="1058" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="comprasFornecedorCountryName">País</label>
+                            <input type="text" id="comprasFornecedorCountryName" value="Brasil" autocomplete="country-name">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="comprasFornecedorObs">Observações</label>
+                        <textarea id="comprasFornecedorObs" rows="2"></textarea>
+                    </div>
+                    <div class="purchase-supplier-form-actions">
+                        <button type="button" class="btn-secondary" onclick="comprasFornecedoresCancelar()">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" id="comprasFornecedorSaveBtn" class="btn-success">
+                            <i class="fas fa-save"></i> Salvar Fornecedor
+                        </button>
+                    </div>
+                </form>
+
+                <div class="purchase-suppliers-toolbar">
+                    <div class="form-group purchase-suppliers-search">
+                        <label for="comprasFornecedoresBusca">Buscar</label>
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="comprasFornecedoresBusca" placeholder="Nome, documento, telefone ou cidade">
+                    </div>
+                </div>
+
+                <div class="table-responsive mobile-cards commerce-orders-table-wrap purchase-suppliers-table-wrap">
+                    <table class="table commerce-orders-table purchase-suppliers-table" id="comprasFornecedoresTable">
+                        <thead>
+                            <tr>
+                                <th>Fornecedor</th>
+                                <th>Documento</th>
+                                <th>Contato</th>
+                                <th>Localização</th>
+                                <th class="actions-col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comprasFornecedoresTableBody">
+                            <tr>
+                                <td class="purchase-suppliers-empty" colspan="5">Carregando fornecedores...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </div>
 
         <!-- Tab Produtos -->
@@ -993,11 +1357,11 @@
             </div>
 
             <div id="produtosList" style="display: none;">
-                <div class="search-box">
+                <div class="search-box commerce-filters-row">
                     <input type="text" id="searchProdutos" placeholder="Pesquisar produtos..." onkeyup="filtrarProdutos()">
                 </div>
-                <div class="table-responsive">
-                    <table class="table">
+                <div class="table-responsive mobile-cards commerce-orders-table-wrap">
+                    <table class="table commerce-orders-table">
                         <thead>
                             <tr>
                                 <th>Código</th>
@@ -1015,22 +1379,22 @@
 
         <!-- Tab Relatórios -->
         <div id="relatorios" class="tab-content">
-            <div class="form-row">
-                <div class="form-group">
+            <div class="form-row commerce-filters-row relatorio-filtros">
+                <div class="form-group commerce-filter-field">
                     <label for="periodoInicio">Período - Início:</label>
                     <input type="date" id="periodoInicio" autocomplete="off">
                 </div>
-                <div class="form-group">
+                <div class="form-group commerce-filter-field">
                     <label for="periodoFim">Período - Fim:</label>
                     <input type="date" id="periodoFim" autocomplete="off">
                 </div>
-                <div class="form-group">
+                <div class="form-group commerce-filter-field">
                     <label for="relFornecedor">Fornecedor:</label>
                     <select id="relFornecedor">
                         <option value="">Todos</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group commerce-filter-field">
                     <label for="relAgrupamento">Agrupar por:</label>
                     <select id="relAgrupamento">
                         <option value="nenhum">Nenhum</option>
@@ -1039,7 +1403,7 @@
                         <option value="fornecedor_especie">Fornecedor + Espécie</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group commerce-filter-field">
                     <label for="relStatus">Status:</label>
                     <select id="relStatus">
                         <option value="">Todos</option>
@@ -1049,28 +1413,28 @@
                         <option value="cancelado">Cancelado</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group commerce-filter-action relatorio-actions">
                     <label>&nbsp;</label>
-                    <button onclick="gerarRelatorioCompras()" class="btn-primary">
+                    <button type="button" onclick="gerarRelatorioCompras()" class="btn-primary">
                         <i class="fas fa-chart-bar"></i> Gerar Relatório de Compras
                     </button>
                 </div>
-                <div class="form-group">
+                <div class="form-group commerce-filter-action relatorio-actions">
                     <label>&nbsp;</label>
-                    <button onclick="exportarRelatorioComprasCSV()" class="btn-secondary">
+                    <button type="button" onclick="exportarRelatorioComprasCSV()" class="btn-secondary">
                         <i class="fas fa-file-export"></i> Exportar CSV
                     </button>
                 </div>
-                <div class="form-group">
+                <div class="form-group commerce-filter-action relatorio-actions">
                     <label>&nbsp;</label>
-                    <button onclick="exportarRelatorioComprasPDF()" class="btn-secondary">
+                    <button type="button" onclick="exportarRelatorioComprasPDF()" class="btn-secondary">
                         <i class="fas fa-file-pdf"></i> Exportar PDF
                     </button>
                 </div>
-                <div class="form-group">
+                <div class="form-group commerce-filter-action relatorio-actions">
                     <label>&nbsp;</label>
-                    <button onclick="abrirCustomizarColunasCompras()" class="btn-secondary" title="Configurar colunas">
-                        <i class="fas fa-list"></i>
+                    <button type="button" onclick="abrirCustomizarColunasCompras()" class="btn-secondary" title="Configurar colunas">
+                        <i class="fas fa-list"></i> Colunas
                     </button>
                 </div>
             </div>
@@ -1091,9 +1455,9 @@
                         <span id="relPrecoMedioM3">R$ 0,00</span>
                     </div>
                 </div>
-                <div class="table-responsive" id="relComprasTabela" style="margin-top: 12px; display: none;"></div>
-                <div id="relComprasPedidos" class="table-responsive" style="margin-top: 12px; display: none;">
-                    <table class="table" id="relComprasPedidosTable">
+                <div class="table-responsive mobile-cards commerce-report-table-wrap" id="relComprasTabela" style="margin-top: 12px; display: none;"></div>
+                <div id="relComprasPedidos" class="table-responsive mobile-cards commerce-orders-table-wrap commerce-report-table-wrap" style="margin-top: 12px; display: none;">
+                    <table class="table commerce-orders-table commerce-report-table" id="relComprasPedidosTable">
                         <thead>
                             <tr>
                                 <th data-col="numero">Número</th>
@@ -1133,9 +1497,9 @@
                 <div class="modal-body">
                     <div id="comprasPrintColumnsList" class="columns-list"></div>
                 </div>
-                <div class="action-buttons">
-                    <button class="btn-success" onclick="aplicarCustomizacaoColunasCompras()"><i class="fas fa-save"></i> Salvar</button>
-                    <button class="btn-danger" onclick="fecharModal('customizarColunasComprasModal')"><i class="fas fa-times"></i> Fechar</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn-success" onclick="aplicarCustomizacaoColunasCompras()"><i class="fas fa-save"></i> Salvar</button>
+                    <button type="button" class="btn-danger" onclick="fecharModal('customizarColunasComprasModal')"><i class="fas fa-times"></i> Fechar</button>
                 </div>
             </div>
         </div>
@@ -1150,23 +1514,23 @@
                 <span class="close" onclick="fecharModal('listaPedidosModal')">&times;</span>
             </div>
             <div class="modal-body">
-                <div class="search-box">
+                <div class="search-box commerce-filters-row">
                     <input type="text" id="searchPedidos" placeholder="Pesquisar pedidos..." onkeyup="filtrarPedidos()">
-                    <div class="inline-field">
+                    <div class="inline-field commerce-filter-field">
                         <label for="filtroEspecie">Espécie</label>
                         <select id="filtroEspecie" onchange="filtrarPedidos()">
                             <option value="">Todas</option>
                         </select>
                     </div>
                 </div>
-                <div class="form-row" style="margin-bottom: 10px;">
-                    <div class="form-group">
+                <div class="form-row commerce-filters-row" style="margin-bottom: 10px;">
+                    <div class="form-group commerce-filter-field">
                         <label for="filtroFornecedor">Fornecedor:</label>
                         <select id="filtroFornecedor">
                             <option value="">Todos</option>
                         </select>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group commerce-filter-field">
                         <label for="filtroStatus">Status:</label>
                         <select id="filtroStatus">
                             <option value="">Todos</option>
@@ -1177,21 +1541,21 @@
                         </select>
                     </div>
                 </div>
-                <div class="form-row date-filter-row">
-                    <div class="form-group">
+                <div class="form-row date-filter-row commerce-filters-row">
+                    <div class="form-group commerce-filter-field">
                         <label for="filtroInicio">Início:</label>
                         <input type="date" id="filtroInicio" onchange="filtrarPedidos()">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group commerce-filter-field">
                         <label for="filtroFim">Fim:</label>
                         <input type="date" id="filtroFim" onchange="filtrarPedidos()">
                     </div>
-                    <button type="button" class="btn-primary btn-print-selected" onclick="imprimirPedidosSelecionados()">
+                    <button type="button" class="btn-primary btn-print-selected commerce-filter-action" onclick="imprimirPedidosSelecionados()">
                         <i class="fas fa-print"></i> Imprimir <span id="pedidosPrintSelectedCount">(0)</span>
                     </button>
                 </div>
-                <div class="table-responsive">
-                    <table class="table" id="listaPedidosTable">
+                <div class="table-responsive mobile-cards commerce-orders-table-wrap">
+                    <table class="table commerce-orders-table" id="listaPedidosTable">
                         <colgroup>
                             <col style="width: 120px;">
                             <col style="width: 120px;">
@@ -1213,8 +1577,8 @@
                                 <th>Fornecedor</th>
                                 <th>Total</th>
                                 <th>Status</th>
-                                <th>Atualizado</th>
-                                <th>Ações</th>
+                                <th class="atualizado-col">Atualizado</th>
+                                <th class="actions-col">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="pedidosTable"></tbody>
@@ -1291,26 +1655,26 @@
             
             <div class="modal-body">
                 <!-- Cabeçalho do Pedido -->
-                <div class="pedido-header" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                        <div>
+                <div class="pedido-header commerce-detail-summary" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <div class="pedido-detail-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div class="pedido-detail-field" style="min-width: 0;">
                             <label style="font-weight: bold; color: #6c757d;">Número:</label>
-                            <div id="viewPedidoNumero" style="font-size: 1.2em; color: #2c3e50;"></div>
+                            <div id="viewPedidoNumero" class="pedido-detail-value commerce-card-value commerce-card-number" style="font-size: 1.2em; color: #2c3e50; min-width: 0; overflow-wrap: anywhere;"></div>
                         </div>
-                        <div>
+                        <div class="pedido-detail-field" style="min-width: 0;">
                             <label style="font-weight: bold; color: #6c757d;">Data:</label>
-                            <div id="viewPedidoData" style="font-size: 1.2em; color: #2c3e50;"></div>
+                            <div id="viewPedidoData" class="pedido-detail-value commerce-card-value commerce-card-number" style="font-size: 1.2em; color: #2c3e50; min-width: 0; overflow-wrap: anywhere;"></div>
                         </div>
-                        <div>
+                        <div class="pedido-detail-field" style="min-width: 0;">
                             <label style="font-weight: bold; color: #6c757d;">Status:</label>
-                            <div id="viewPedidoStatus"></div>
+                            <div id="viewPedidoStatus" class="pedido-detail-value commerce-card-value" style="min-width: 0; overflow-wrap: anywhere;"></div>
                         </div>
                     </div>
                     
-                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                    <div class="pedido-detail-field pedido-detail-party" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6; min-width: 0;">
                         <label style="font-weight: bold; color: #6c757d;">Fornecedor:</label>
-                        <div id="viewPedidoFornecedor" style="font-size: 1.1em; color: #2c3e50;"></div>
-                        <div id="viewPedidoFornecedorDetalhes" style="font-size: 0.9em; color: #6c757d; margin-top: 5px;"></div>
+                        <div id="viewPedidoFornecedor" class="pedido-detail-value commerce-card-value commerce-card-title" style="font-size: 1.1em; color: #2c3e50; min-width: 0; overflow-wrap: anywhere;"></div>
+                        <div id="viewPedidoFornecedorDetalhes" class="pedido-detail-value commerce-card-value" style="font-size: 0.9em; color: #6c757d; margin-top: 5px; min-width: 0; overflow-wrap: anywhere;"></div>
                     </div>
                 </div>
                 
@@ -1319,8 +1683,8 @@
                     <h3 style="color: #2c3e50; margin-bottom: 15px;">
                         <i class="fas fa-boxes"></i> Itens do Pedido
                     </h3>
-                    <div class="table-responsive">
-                        <table class="table">
+                    <div class="table-responsive mobile-cards commerce-detail-table-wrap">
+                        <table class="table commerce-detail-table">
                             <thead>
                                 <tr>
                                     <th>Produto</th>
@@ -1336,22 +1700,22 @@
                 </div>
                 
                 <!-- Totais -->
-                <div class="pedido-totais" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <div class="pedido-totais commerce-detail-totals" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div class="summary-row pedido-total-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                         <span>Subtotal:</span>
-                        <span id="viewPedidoSubtotal" style="font-weight: bold;"></span>
+                        <span id="viewPedidoSubtotal" class="commerce-card-value commerce-card-money" style="font-weight: bold; white-space: nowrap; text-align: right;"></span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <div class="summary-row pedido-total-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                         <span>Total Geral (Qtd.):</span>
-                        <span id="viewPedidoTotalQtd"></span>
+                        <span id="viewPedidoTotalQtd" class="commerce-card-value commerce-card-number" style="white-space: nowrap; text-align: right;"></span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <div class="summary-row pedido-total-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                         <span>Desconto:</span>
-                        <span id="viewPedidoDesconto" style="color: #e74c3c;"></span>
+                        <span id="viewPedidoDesconto" class="commerce-card-value commerce-card-money" style="color: #e74c3c; white-space: nowrap; text-align: right;"></span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 2px solid #dee2e6;">
+                    <div class="summary-row pedido-total-row pedido-total-final" style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 2px solid #dee2e6;">
                         <span style="font-size: 1.2em; font-weight: bold;">Total Geral:</span>
-                        <span id="viewPedidoTotal" style="font-size: 1.2em; font-weight: bold; color: #28a745;"></span>
+                        <span id="viewPedidoTotal" class="commerce-card-value commerce-card-money commerce-card-strong" style="font-size: 1.2em; font-weight: bold; color: #28a745; white-space: nowrap; text-align: right;"></span>
                     </div>
                 </div>
                 
@@ -1360,8 +1724,8 @@
                     <h3 style="color: #2c3e50; margin-bottom: 15px;">
                         <i class="fas fa-credit-card"></i> Forma de Pagamento
                     </h3>
-                    <div class="table-responsive">
-                        <table class="table">
+                    <div class="table-responsive mobile-cards commerce-detail-table-wrap">
+                        <table class="table commerce-detail-table">
                             <thead>
                                 <tr>
                                     <th>Valor</th>
@@ -1378,10 +1742,10 @@
                 </div>
                 
                 <!-- Metadados -->
-                <div class="pedido-meta" style="font-size: 0.9em; color: #6c757d; padding-top: 15px; border-top: 1px solid #dee2e6;">
-                    <div>Criado em: <span id="viewPedidoCreated"></span></div>
-                    <div id="viewPedidoUpdatedContainer" style="margin-top: 5px; display: none;">
-                        Última atualização: <span id="viewPedidoUpdated"></span>
+                <div class="pedido-meta" style="font-size: 0.9em; color: #6c757d; padding-top: 15px; border-top: 1px solid #dee2e6; min-width: 0; overflow-wrap: anywhere;">
+                    <div class="pedido-meta-row">Criado em: <span id="viewPedidoCreated" class="commerce-card-value commerce-card-number"></span></div>
+                    <div id="viewPedidoUpdatedContainer" class="pedido-meta-row" style="margin-top: 5px; display: none;">
+                        Última atualização: <span id="viewPedidoUpdated" class="commerce-card-value commerce-card-number"></span>
                     </div>
                 </div>
             </div>
@@ -1429,9 +1793,61 @@
                     </div>
                 </div>
                 <div class="form-row">
+                    <div class="form-group">
+                        <label for="fornTipoPessoa">Tipo de pessoa</label>
+                        <select id="fornTipoPessoa">
+                            <option value="">Não informado</option>
+                            <option value="juridica">Pessoa jurídica</option>
+                            <option value="fisica">Pessoa física</option>
+                            <option value="estrangeiro">Estrangeiro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fornIndIEDest">Indicador IE</label>
+                        <select id="fornIndIEDest">
+                            <option value="">Não informado</option>
+                            <option value="1">Contribuinte ICMS</option>
+                            <option value="2">Contribuinte isento</option>
+                            <option value="9">Não contribuinte</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fornInscricaoEstadual">Inscrição Estadual</label>
+                        <input type="text" id="fornInscricaoEstadual" placeholder="IE / ISENTO">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fornInscricaoMunicipal">Inscrição Municipal</label>
+                        <input type="text" id="fornInscricaoMunicipal" placeholder="Opcional">
+                    </div>
+                    <div class="form-group">
+                        <label for="fornSuframa">SUFRAMA</label>
+                        <input type="text" id="fornSuframa" placeholder="Opcional">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fornCep">CEP</label>
+                        <input type="text" id="fornCep" placeholder="00000-000">
+                    </div>
                     <div class="form-group form-group-large">
                         <label for="fornEndereco">Endereço</label>
-                        <input type="text" id="fornEndereco" placeholder="Rua, nº, bairro">
+                        <input type="text" id="fornEndereco" placeholder="Rua, Avenida">
+                    </div>
+                    <div class="form-group">
+                        <label for="fornNumero">Número</label>
+                        <input type="text" id="fornNumero" placeholder="Nº">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fornBairro">Bairro</label>
+                        <input type="text" id="fornBairro" placeholder="Bairro">
+                    </div>
+                    <div class="form-group">
+                        <label for="fornComplemento">Complemento</label>
+                        <input type="text" id="fornComplemento" placeholder="Sala, lote, referência">
                     </div>
                 </div>
                 <div class="form-row">
@@ -1475,6 +1891,20 @@
                         </select>
                     </div>
                 </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fornCodigoMunicipio">Código IBGE do município</label>
+                        <input type="text" id="fornCodigoMunicipio" placeholder="Ex: 1501402">
+                    </div>
+                    <div class="form-group">
+                        <label for="fornPaisCodigo">Código do país</label>
+                        <input type="text" id="fornPaisCodigo" value="1058" placeholder="1058">
+                    </div>
+                    <div class="form-group">
+                        <label for="fornPais">País</label>
+                        <input type="text" id="fornPais" value="Brasil" placeholder="Brasil">
+                    </div>
+                </div>
                 <div class="action-buttons">
                     <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
                     <button type="button" onclick="fecharModalFornecedor()" class="btn btn-danger"><i class="fas fa-times"></i> Cancelar</button>
@@ -1502,8 +1932,38 @@
                         <input type="text" id="clientCnpj" placeholder="00.000.000/0000-00">
                     </div>
                     <div class="form-group">
+                        <label for="clientPersonType">Tipo de pessoa:</label>
+                        <select id="clientPersonType">
+                            <option value="">Não informado</option>
+                            <option value="juridica">Pessoa jurídica</option>
+                            <option value="fisica">Pessoa física</option>
+                            <option value="estrangeiro">Estrangeiro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientIndIEDest">Indicador IE:</label>
+                        <select id="clientIndIEDest">
+                            <option value="">Não informado</option>
+                            <option value="1">Contribuinte ICMS</option>
+                            <option value="2">Contribuinte isento</option>
+                            <option value="9">Não contribuinte</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="clientStateRegistration">Inscrição Estadual:</label>
                         <input type="text" id="clientStateRegistration" placeholder="000.000.000.000">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientMunicipalRegistration">Inscrição Municipal:</label>
+                        <input type="text" id="clientMunicipalRegistration" placeholder="Opcional">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientSuframa">SUFRAMA:</label>
+                        <input type="text" id="clientSuframa" placeholder="Opcional">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientCep">CEP:</label>
+                        <input type="text" id="clientCep" placeholder="00000-000">
                     </div>
                     <div class="form-group">
                         <label for="clientAddress">Endereço:</label>
@@ -1518,8 +1978,12 @@
                         <input type="text" id="clientNeighborhood" placeholder="Nome do bairro">
                     </div>
                     <div class="form-group">
+                        <label for="clientComplement">Complemento:</label>
+                        <input type="text" id="clientComplement" placeholder="Sala, lote, referência">
+                    </div>
+                    <div class="form-group">
                         <label for="clientState">Estado:</label>
-                        <select id="clientState" required onchange="carregarCidadesPorEstado(this.value)">
+                        <select id="clientState" onchange="carregarCidadesPorEstado(this.value)">
                             <option value="">Selecione o estado</option>
                             <option value="AC">Acre</option>
                             <option value="AL">Alagoas</option>
@@ -1552,9 +2016,21 @@
                     </div>
                     <div class="form-group">
                         <label for="clientCity">Cidade:</label>
-                        <select id="clientCity" required>
+                        <select id="clientCity">
                             <option value="">Selecione primeiro o estado</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientMunicipalityCode">Código IBGE do município:</label>
+                        <input type="text" id="clientMunicipalityCode" placeholder="Ex: 1501402">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientCountryCode">Código do país:</label>
+                        <input type="text" id="clientCountryCode" value="1058" placeholder="1058">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientCountryName">País:</label>
+                        <input type="text" id="clientCountryName" value="Brasil" placeholder="Brasil">
                     </div>
                     <div class="form-group">
                         <label for="clientPhone">Telefone:</label>
@@ -1588,22 +2064,35 @@
         </div>
     </div>
 
-    <script src="auth.js"></script>
-    <script type="module">
-        import * as firebaseSvc from './firebaseService.js';
-        window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
-        console.log("✅ firebaseService carregado e unificado no compras.html");
+    <script src="auth.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
+    <script>
+        window.__siswebFirebaseServiceReady = (async function () {
+            const firebaseSvc = await import('./firebaseService.js?v=2026-06-12-tenant-auth-guard-v1');
+            const existingFirebaseService = window.firebaseService || {};
+            window.firebaseService = {
+                ...existingFirebaseService,
+                ...firebaseSvc,
+                removeFromFirebase: firebaseSvc.removeFromFirebase || existingFirebaseService.removeFromFirebase,
+                serverTimestamp: firebaseSvc.getServerTimestamp || existingFirebaseService.serverTimestamp,
+                authService: firebaseSvc.authService || existingFirebaseService.authService,
+                getCurrentTenantId: firebaseSvc.getCurrentTenantId || firebaseSvc.getTenantId || existingFirebaseService.getCurrentTenantId,
+                resolveAuthenticatedTenant: firebaseSvc.resolveAuthenticatedTenant || existingFirebaseService.resolveAuthenticatedTenant
+            };
+            console.log("✅ firebaseService carregado e unificado no compras.html");
+            return window.firebaseService;
+        })();
     </script>
     <!-- Carregar gerenciador unificado de espécies para popular o select -->
-    <script src="species-manager.js"></script>
+    <script src="species-manager.js?v=20260520a"></script>
     <!-- Carregar gerenciador de cidades -->
-    <script src="cities.js"></script>
-    <script src="client-modal-handler.js"></script>
-    <script src="romaneios-client-save-fix.js"></script>
-    <script src="ui-config.js"></script>
+    <script src="cities.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
+    <script src="client-modal-handler.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
+    <script src="romaneios-client-save-fix.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
+    <script src="ui-config.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
+    <script src="commerce-responsive.js?v=2026-06-07-print-context-v13"></script>
+    <script src="commerce-pdf-share.js?v=2026-06-23-logo-print-dataurl-v1"></script>
     <!-- Carregar módulo de Compras -->
-    <script src="compras.js"></script>
-</script>
+    <script src="compras.js?v=2026-06-23-cadastro-fiscal-nfe-v1"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

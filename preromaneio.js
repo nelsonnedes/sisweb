@@ -7,13 +7,54 @@
 let currentTab = 'PCT'; // PCT, TL, PES, TORA
 let romaneioItens = [];
 let romaneioId = null;
+let preRomaneioEmEdicao = null;
 let clienteSelecionado = null;
 let fornecedorSelecionado = null; // Para Tora
 let itemEmEdicaoIndex = -1; // -1 = nenhum item em edição
 
 // Paginação da Tabela Principal
-const ITENS_POR_PAGINA = 5;
+const ITENS_POR_PAGINA_INICIAL = 5;
+const OPCOES_ITENS_POR_PAGINA = [10, 20, 25, 50, 100];
+const CHAVE_STORAGE_ITENS_POR_PAGINA = 'preromaneio_items_per_page';
+let itensPorPagina = ITENS_POR_PAGINA_INICIAL;
 let paginaAtual = 1;
+try {
+    const savedItemsPerPage = parseInt(localStorage.getItem(CHAVE_STORAGE_ITENS_POR_PAGINA) || '', 10);
+    if (OPCOES_ITENS_POR_PAGINA.includes(savedItemsPerPage)) itensPorPagina = savedItemsPerPage;
+} catch (_) {}
+
+const PREROMANEIO_SORT_COLUMNS_SERRADOS = [
+    { key: 'especie' },
+    { key: 'comprimento', type: 'number' },
+    { key: 'espessura', type: 'number' },
+    { key: 'largura', type: 'number' },
+    { key: 'quantidade', type: 'number' },
+    { key: 'pecas', type: 'number' },
+    { key: 'volume', type: 'number' },
+    { key: 'preco', type: 'number' },
+    { key: 'total', type: 'number' },
+    { key: 'acoes', sortable: false }
+];
+
+const PREROMANEIO_SORT_COLUMNS_TORAS = [
+    { key: 'plaqueta', accessor: (item) => item.placa || item.plaqueta || '' },
+    { key: 'custodia', accessor: (item) => normalizarCamposGeoTora(item).custodia || '' },
+    { key: 'especie' },
+    { key: 'rodo', type: 'number' },
+    { key: 'comprimento', type: 'number' },
+    { key: 'ocos', accessor: (item) => `${item.oco1 || 0}/${item.oco2 || 0}` },
+    { key: 'desconto', type: 'number' },
+    { key: 'volume', type: 'number' },
+    { key: 'compGeo', type: 'number', accessor: (item) => normalizarCamposGeoTora(item).compGeo || 0 },
+    { key: 'x1', type: 'number', accessor: (item) => normalizarCamposGeoTora(item).x1 || 0 },
+    { key: 'x2', type: 'number', accessor: (item) => normalizarCamposGeoTora(item).x2 || 0 },
+    { key: 'x3', type: 'number', accessor: (item) => normalizarCamposGeoTora(item).x3 || 0 },
+    { key: 'x4', type: 'number', accessor: (item) => normalizarCamposGeoTora(item).x4 || 0 },
+    { key: 'volumeGeo', type: 'number', accessor: (item) => normalizarCamposGeoTora(item).volumeGeo || 0 },
+    { key: 'preco', type: 'number' },
+    { key: 'total', type: 'number' },
+    { key: 'acoes', sortable: false }
+];
 
 function resolveTenantId() {
     try {
@@ -71,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (oco2Tora) oco2Tora.addEventListener('input', atualizarDescontoOcoTora);
     if (compTora) compTora.addEventListener('input', atualizarDescontoOcoTora);
     atualizarDescontoOcoTora();
+    configurarCamposGeoTora();
     setupEnterNavigation();
 });
 
@@ -104,6 +146,11 @@ function setupFieldFormatting() {
         formatNumberFixed(document.getElementById('compTora'), 2);
         formatNumberFixed(document.getElementById('oco1Tora'), 2);
         formatNumberFixed(document.getElementById('oco2Tora'), 2);
+        formatNumberFixed(document.getElementById('compGeoTora'), 2);
+        formatNumberFixed(document.getElementById('x1Tora'), 2);
+        formatNumberFixed(document.getElementById('x2Tora'), 2);
+        formatNumberFixed(document.getElementById('x3Tora'), 2);
+        formatNumberFixed(document.getElementById('x4Tora'), 2);
     } catch (_) {}
 }
 
@@ -183,6 +230,82 @@ function calcularDescontoOcoSafe(oco1, oco2, comprimento) {
     return calcularDescontoOcoLocal(oco1, oco2, comprimento);
 }
 
+function normalizarCamposGeoTora(item = {}) {
+    if (window.ToraGeometry && typeof window.ToraGeometry.normalizarCamposGeoItem === 'function') {
+        return window.ToraGeometry.normalizarCamposGeoItem(item);
+    }
+    return {
+        custodia: item.custodia || '',
+        compGeo: parseFloat(item.compGeo || 0) || 0,
+        x1: parseFloat(item.x1 || 0) || 0,
+        x2: parseFloat(item.x2 || 0) || 0,
+        x3: parseFloat(item.x3 || 0) || 0,
+        x4: parseFloat(item.x4 || 0) || 0,
+        volumeGeo: parseFloat(item.volumeGeo || 0) || 0
+    };
+}
+
+function lerCamposGeoTora() {
+    return normalizarCamposGeoTora({
+        custodia: document.getElementById('custodiaTora')?.value || '',
+        compGeo: document.getElementById('compGeoTora')?.value || 0,
+        x1: document.getElementById('x1Tora')?.value || 0,
+        x2: document.getElementById('x2Tora')?.value || 0,
+        x3: document.getElementById('x3Tora')?.value || 0,
+        x4: document.getElementById('x4Tora')?.value || 0,
+        volumeGeo: document.getElementById('volumeGeoTora')?.value || 0
+    });
+}
+
+function aplicarCamposGeoTora(item = {}) {
+    const geo = normalizarCamposGeoTora(item);
+    const set = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value || '';
+    };
+    set('custodiaTora', geo.custodia);
+    set('compGeoTora', geo.compGeo);
+    set('x1Tora', geo.x1);
+    set('x2Tora', geo.x2);
+    set('x3Tora', geo.x3);
+    set('x4Tora', geo.x4);
+    const volumeEl = document.getElementById('volumeGeoTora');
+    if (volumeEl) volumeEl.value = geo.volumeGeo ? geo.volumeGeo.toFixed(3) : '0.000';
+}
+
+function limparCamposGeoTora() {
+    aplicarCamposGeoTora({});
+}
+
+function configurarCamposGeoTora() {
+    if (window.ToraGeometry && typeof window.ToraGeometry.bindVolumeInputs === 'function') {
+        window.ToraGeometry.bindVolumeInputs({
+            compGeo: 'compGeoTora',
+            x1: 'x1Tora',
+            x2: 'x2Tora',
+            x3: 'x3Tora',
+            x4: 'x4Tora',
+            volumeGeo: 'volumeGeoTora'
+        });
+    }
+}
+
+function formatGeoCm(value) {
+    if (window.ToraGeometry && typeof window.ToraGeometry.formatarMedidaCm === 'function') {
+        return window.ToraGeometry.formatarMedidaCm(value);
+    }
+    const n = parseFloat(value || 0);
+    return n ? n.toFixed(2).replace('.', ',') : '-';
+}
+
+function formatGeoVolume(value) {
+    if (window.ToraGeometry && typeof window.ToraGeometry.formatarVolumeGeo === 'function') {
+        return window.ToraGeometry.formatarVolumeGeo(value);
+    }
+    const n = parseFloat(value || 0);
+    return n ? n.toFixed(3).replace('.', ',') : '-';
+}
+
 function atualizarDescontoOcoTora() {
     const oco1 = parseFloat(document.getElementById('oco1Tora')?.value || 0);
     const oco2 = parseFloat(document.getElementById('oco2Tora')?.value || 0);
@@ -198,7 +321,7 @@ function setupEnterNavigation() {
 
     const serradosOrder = ['especieInput', 'espessura', 'largura', 'price', 'comprimento', 'quantidade', 'pecasPorPacote'];
     const tlOrder = ['especieInput', 'espessura', 'largura', 'price', 'comprimento', 'quantidade'];
-    const toraOrder = ['placaTora', 'especieToraInput', 'rodoTora', 'compTora', 'oco1Tora', 'oco2Tora', 'precoTora'];
+    const toraOrder = ['placaTora', 'custodiaTora', 'especieToraInput', 'rodoTora', 'compTora', 'oco1Tora', 'oco2Tora', 'compGeoTora', 'x1Tora', 'x2Tora', 'x3Tora', 'x4Tora', 'precoTora'];
 
     const addAndFocus = () => {
         if (currentTab === 'TORA') {
@@ -283,11 +406,13 @@ function mudarAba(tab) {
         itemEmEdicaoIndex = -1;
         if (!window.__LOADING_PREROMANEIO) {
             romaneioId = null;
+            preRomaneioEmEdicao = null;
         }
     }
 
     if (tab !== currentTab && !window.__LOADING_PREROMANEIO) {
         romaneioId = null;
+        preRomaneioEmEdicao = null;
         itemEmEdicaoIndex = -1;
     }
 
@@ -439,6 +564,7 @@ function adicionarItemTora() {
     try {
         const placa = document.getElementById('placaTora').value;
         const especie = document.getElementById('especieToraInput').value;
+        const geo = lerCamposGeoTora();
         const rodo = parseFloat(document.getElementById('rodoTora').value || 0);
         const comp = parseFloat(document.getElementById('compTora').value || 0);
         const oco1 = parseFloat(document.getElementById('oco1Tora').value || 0);
@@ -468,6 +594,8 @@ function adicionarItemTora() {
             id: Date.now(),
             tipo: 'TORA',
             placa,
+            plaqueta: placa,
+            ...geo,
             especie,
             rodo,
             comprimento: comp,
@@ -502,6 +630,28 @@ function adicionarItemTora() {
     }
 }
 
+function getPreRomaneioTableSortConfig() {
+    const isTora = currentTab === 'TORA';
+    return {
+        tableSelector: isTora ? '#tabela-toras' : '#tabela-serrados',
+        minWidth: isTora ? '1500px' : '1100px',
+        columns: isTora ? PREROMANEIO_SORT_COLUMNS_TORAS : PREROMANEIO_SORT_COLUMNS_SERRADOS,
+        getItems: () => romaneioItens,
+        setPage: (page) => { paginaAtual = page; },
+        render: () => renderizarTabela()
+    };
+}
+
+function configurarTabelaPreRomaneioOrdenavel() {
+    if (!window.RomaneioTableEnhancements) return;
+    window.RomaneioTableEnhancements.bindSortableHeaders(getPreRomaneioTableSortConfig());
+}
+
+function aplicarOrdenacaoTabelaPreRomaneio() {
+    if (!window.RomaneioTableEnhancements) return;
+    window.RomaneioTableEnhancements.applySortFromTable(getPreRomaneioTableSortConfig());
+}
+
 /**
  * Renderização da Tabela com Paginação
  */
@@ -511,23 +661,26 @@ function renderizarTabela() {
     
     if (!tbody) return;
     tbody.innerHTML = '';
+    configurarTabelaPreRomaneioOrdenavel();
     
     if (romaneioItens.length === 0) {
-        const cols = isTora ? 10 : 10;
+        const cols = isTora ? 17 : 10;
         tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center" style="padding: 20px; color: #999;">Nenhum item adicionado.</td></tr>`;
         renderizarPaginacao(0);
         return;
     }
+
+    aplicarOrdenacaoTabelaPreRomaneio();
     
     // Paginação
     const totalItens = romaneioItens.length;
-    const totalPaginas = Math.ceil(totalItens / ITENS_POR_PAGINA);
+    const totalPaginas = Math.max(1, Math.ceil(totalItens / itensPorPagina));
     
     if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
     if (paginaAtual < 1) paginaAtual = 1;
     
-    const inicio = (paginaAtual - 1) * ITENS_POR_PAGINA;
-    const fim = inicio + ITENS_POR_PAGINA;
+    const inicio = (paginaAtual - 1) * itensPorPagina;
+    const fim = inicio + itensPorPagina;
     const itensPagina = romaneioItens.slice(inicio, fim);
     
     itensPagina.forEach((item, idx) => {
@@ -538,14 +691,22 @@ function renderizarTabela() {
         if (isTora) {
             const volDec = 3;
             const descontoValor = parseFloat(item.desconto) || 0;
+            const geo = normalizarCamposGeoTora(item);
             tr.innerHTML = `
-                <td>${item.placa || '-'}</td>
+                <td>${item.placa || item.plaqueta || '-'}</td>
+                <td>${geo.custodia || '-'}</td>
                 <td>${item.especie}</td>
                 <td class="text-center">${item.rodo}</td>
                 <td class="text-center">${item.comprimento}</td>
                 <td class="text-center">${item.oco1}/${item.oco2}</td>
                 <td class="text-center">${descontoValor.toFixed(volDec).replace('.', ',')}</td>
                 <td class="text-right">${item.volume.toFixed(volDec)}</td>
+                <td class="text-center">${formatGeoCm(geo.compGeo)}</td>
+                <td class="text-center">${formatGeoCm(geo.x1)}</td>
+                <td class="text-center">${formatGeoCm(geo.x2)}</td>
+                <td class="text-center">${formatGeoCm(geo.x3)}</td>
+                <td class="text-center">${formatGeoCm(geo.x4)}</td>
+                <td class="text-right">${formatGeoVolume(geo.volumeGeo)}</td>
                 <td class="text-right">${formatMoney(item.preco)}</td>
                 <td class="text-right">${formatMoney(item.total)}</td>
                 <td class="text-center">
@@ -581,10 +742,10 @@ function renderizarTabela() {
         tbody.appendChild(tr);
     });
     
-    renderizarPaginacao(totalPaginas);
+    renderizarPaginacao(totalItens);
 }
 
-function renderizarPaginacao(totalPaginas) {
+function renderizarPaginacao(totalItens) {
     // Tentar encontrar container de paginação em ambos os contextos
     let container = null;
     if (currentTab === 'TORA') {
@@ -614,33 +775,143 @@ function renderizarPaginacao(totalPaginas) {
     
     if (!container) return;
     container.innerHTML = '';
+    container.style.display = 'flex';
+    container.style.justifyContent = 'space-between';
+    container.style.alignItems = 'center';
+    container.style.gap = '10px';
+    container.style.flexWrap = 'wrap';
     
-    if (totalPaginas <= 1) return;
-    
-    // Botão Anterior
-    const btnPrev = document.createElement('button');
-    btnPrev.className = 'pagination-btn';
-    btnPrev.innerHTML = '<i class="fas fa-chevron-left"></i>';
-    btnPrev.disabled = paginaAtual === 1;
-    btnPrev.onclick = () => { paginaAtual--; renderizarTabela(); };
-    container.appendChild(btnPrev);
-    
-    // Números
-    for (let i = 1; i <= totalPaginas; i++) {
+    const totalPaginas = Math.max(1, Math.ceil(totalItens / itensPorPagina));
+    if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
+    if (paginaAtual < 1) paginaAtual = 1;
+
+    const inicio = totalItens === 0 ? 0 : ((paginaAtual - 1) * itensPorPagina) + 1;
+    const fim = totalItens === 0 ? 0 : Math.min(paginaAtual * itensPorPagina, totalItens);
+
+    const resumo = document.createElement('div');
+    resumo.style.fontSize = '12px';
+    resumo.style.color = '#475569';
+    resumo.style.flex = '1 1 320px';
+    resumo.style.maxWidth = '33.333%';
+    resumo.style.minWidth = '220px';
+    resumo.style.textAlign = 'left';
+    resumo.textContent = `Mostrando ${inicio} a ${fim} de ${totalItens} itens`;
+    container.appendChild(resumo);
+
+    const right = document.createElement('div');
+    right.style.display = 'flex';
+    right.style.alignItems = 'center';
+    right.style.gap = '10px';
+    right.style.justifyContent = 'flex-end';
+    right.style.flex = '1 1 320px';
+    right.style.maxWidth = '33.333%';
+    right.style.minWidth = '220px';
+    container.appendChild(right);
+
+    const center = document.createElement('div');
+    center.style.display = 'flex';
+    center.style.justifyContent = 'center';
+    center.style.flex = '1 1 320px';
+    center.style.maxWidth = '33.333%';
+    center.style.minWidth = '220px';
+    container.insertBefore(center, right);
+
+    const nav = document.createElement('div');
+    nav.style.display = 'flex';
+    nav.style.alignItems = 'center';
+    nav.style.gap = '6px';
+    center.appendChild(nav);
+
+    const addBtn = (label, pagina, disabled = false, active = false) => {
         const btn = document.createElement('button');
-        btn.className = `pagination-btn ${i === paginaAtual ? 'active' : ''}`;
-        btn.textContent = i;
-        btn.onclick = () => { paginaAtual = i; renderizarTabela(); };
-        container.appendChild(btn);
+        btn.className = `pagination-btn ${active ? 'active' : ''}`;
+        btn.textContent = label;
+        btn.disabled = disabled;
+        btn.onclick = () => {
+            paginaAtual = pagina;
+            renderizarTabela();
+        };
+        nav.appendChild(btn);
+    };
+
+    if (totalPaginas > 1) {
+        addBtn('<<<', 1, paginaAtual === 1);
+        addBtn('<', paginaAtual - 1, paginaAtual === 1);
+
+        const startPage = Math.max(1, paginaAtual - 2);
+        const endPage = Math.min(totalPaginas, paginaAtual + 2);
+
+        if (startPage > 1) {
+            addBtn('1', 1, false, paginaAtual === 1);
+            if (startPage > 2) {
+                const span = document.createElement('span');
+                span.textContent = '...';
+                nav.appendChild(span);
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            addBtn(String(i), i, false, i === paginaAtual);
+        }
+
+        if (endPage < totalPaginas) {
+            if (endPage < totalPaginas - 1) {
+                const span = document.createElement('span');
+                span.textContent = '...';
+                nav.appendChild(span);
+            }
+            addBtn(String(totalPaginas), totalPaginas, false, paginaAtual === totalPaginas);
+        }
+
+        addBtn('>', paginaAtual + 1, paginaAtual === totalPaginas);
+        addBtn('>>>', totalPaginas, paginaAtual === totalPaginas);
     }
-    
-    // Botão Próximo
-    const btnNext = document.createElement('button');
-    btnNext.className = 'pagination-btn';
-    btnNext.innerHTML = '<i class="fas fa-chevron-right"></i>';
-    btnNext.disabled = paginaAtual === totalPaginas;
-    btnNext.onclick = () => { paginaAtual++; renderizarTabela(); };
-    container.appendChild(btnNext);
+
+    const perPageWrap = document.createElement('div');
+    perPageWrap.style.display = 'flex';
+    perPageWrap.style.alignItems = 'center';
+    perPageWrap.style.gap = '6px';
+    perPageWrap.style.whiteSpace = 'nowrap';
+
+    const perPageLabel = document.createElement('span');
+    perPageLabel.style.fontSize = '12px';
+    perPageLabel.style.color = '#475569';
+    perPageLabel.textContent = 'Itens por página:';
+
+    const perPageSelect = document.createElement('select');
+    perPageSelect.style.padding = '4px 8px';
+    perPageSelect.style.border = '1px solid #d0d7de';
+    perPageSelect.style.borderRadius = '4px';
+    perPageSelect.style.fontSize = '12px';
+
+    if (itensPorPagina === ITENS_POR_PAGINA_INICIAL) {
+        const hiddenOption = document.createElement('option');
+        hiddenOption.value = String(ITENS_POR_PAGINA_INICIAL);
+        hiddenOption.textContent = String(ITENS_POR_PAGINA_INICIAL);
+        hiddenOption.hidden = true;
+        perPageSelect.appendChild(hiddenOption);
+    }
+
+    OPCOES_ITENS_POR_PAGINA.forEach((value) => {
+        const option = document.createElement('option');
+        option.value = String(value);
+        option.textContent = String(value);
+        perPageSelect.appendChild(option);
+    });
+
+    perPageSelect.value = String(itensPorPagina);
+    perPageSelect.onchange = () => {
+        const parsed = parseInt(perPageSelect.value, 10);
+        if (!OPCOES_ITENS_POR_PAGINA.includes(parsed)) return;
+        itensPorPagina = parsed;
+        paginaAtual = 1;
+        try { localStorage.setItem(CHAVE_STORAGE_ITENS_POR_PAGINA, String(parsed)); } catch (_) {}
+        renderizarTabela();
+    };
+
+    perPageWrap.appendChild(perPageLabel);
+    perPageWrap.appendChild(perPageSelect);
+    right.appendChild(perPageWrap);
 }
 
 function editarItem(index) {
@@ -651,7 +922,8 @@ function editarItem(index) {
     
     // Preencher campos baseado no tipo
     if (item.tipo === 'TORA') {
-        document.getElementById('placaTora').value = item.placa;
+        document.getElementById('placaTora').value = item.placa || item.plaqueta || '';
+        aplicarCamposGeoTora(item);
         document.getElementById('especieToraInput').value = item.especie;
         document.getElementById('rodoTora').value = item.rodo;
         document.getElementById('compTora').value = item.comprimento;
@@ -797,6 +1069,7 @@ function limparFormularioTora(tudo = true) {
     document.getElementById('oco1Tora').value = '0';
     document.getElementById('oco2Tora').value = '0';
     document.getElementById('descTora').value = '0,000';
+    limparCamposGeoTora();
     document.getElementById('placaTora').focus();
     
     if (itemEmEdicaoIndex === -1) {
@@ -918,6 +1191,12 @@ async function salvarPreRomaneio() {
         }
     } catch (_) {}
 
+    const nowIso = new Date().toISOString();
+    const createdIso = (
+        preRomaneioEmEdicao &&
+        (preRomaneioEmEdicao.criadoEm || preRomaneioEmEdicao.createdAt || preRomaneioEmEdicao.dataCriacao)
+    ) || nowIso;
+
     const payload = {
         id: romaneioId || Date.now().toString(), // ID único
         data,
@@ -929,9 +1208,13 @@ async function salvarPreRomaneio() {
         itens: itensToSave,
         totais: {
             volume: parseFloat(document.getElementById('totalVolume').textContent),
+            volumeGeo: parseFloat(romaneioItens.reduce((acc, it) => acc + (normalizarCamposGeoTora(it).volumeGeo || 0), 0).toFixed(3)),
             valor: parseFloat(document.getElementById('totalValor').textContent.replace('R$', '').replace(/\./g,'').replace(',', '.'))
         },
-        criadoEm: new Date().toISOString()
+        criadoEm: createdIso,
+        createdAt: preRomaneioEmEdicao?.createdAt || createdIso,
+        updatedAt: nowIso,
+        atualizadoEm: nowIso
     };
     const saveLocalPreRomaneio = function(record) {
         try {
@@ -941,11 +1224,6 @@ async function salvarPreRomaneio() {
             const out = (base && typeof base === 'object' && !Array.isArray(base)) ? base : {};
             out[String(record.id)] = record;
             localStorage.setItem(nsKey, JSON.stringify(out));
-            const globalRaw = localStorage.getItem('preromaneios');
-            const globalObj = globalRaw ? JSON.parse(globalRaw) : {};
-            const globalOut = (globalObj && typeof globalObj === 'object' && !Array.isArray(globalObj)) ? globalObj : {};
-            globalOut[String(record.id)] = record;
-            localStorage.setItem('preromaneios', JSON.stringify(globalOut));
         } catch (_) {}
     };
     
@@ -971,6 +1249,7 @@ async function salvarPreRomaneio() {
                 renderizarTabela();
                 atualizarTotais();
                 romaneioId = null; 
+                preRomaneioEmEdicao = null;
                 document.getElementById('clienteInput').value = '';
                 document.getElementById('dataRomaneio').value = new Date().toISOString().split('T')[0];
                 limparFormularioSerrado(true);
@@ -993,6 +1272,7 @@ async function salvarPreRomaneio() {
 function loadPreRomaneioData(data) {
     console.log('Carregando dados:', data);
     romaneioId = data.id;
+    preRomaneioEmEdicao = data && typeof data === 'object' ? { ...data } : null;
     
     // Definir aba correta
     const tipo = data.tipo || 'PCT';
@@ -1053,6 +1333,9 @@ function loadPreRomaneioData(data) {
                 base.preco = parseNum(base.preco);
                 base.total = parseNum(base.total) || (base.volume * base.preco);
                 if (tipo === 'TORA') {
+                    Object.assign(base, normalizarCamposGeoTora(base));
+                    base.placa = base.placa || base.plaqueta || '';
+                    base.plaqueta = base.plaqueta || base.placa || '';
                     base.rodo = parseNum(base.rodo);
                     base.comprimento = parseNum(base.comprimento);
                     base.oco1 = parseNum(base.oco1);
@@ -1094,28 +1377,38 @@ async function showSpeciesSuggestions(input) {
     
     suggestionsDiv.innerHTML = '';
     
-    if (val.length < 1) {
+    const minChars = Number(input.dataset.speciesListMinChars || 3);
+    if (val.length < minChars) {
         suggestionsDiv.style.display = 'none';
         return;
     }
     
     let species = [];
     try {
-        const data = await window.firebaseService.loadFromFirebase('species');
-        species = Object.values(data || {});
+        if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.getAll === 'function') {
+            species = await window.SiswebSpeciesStore.getAll({ waitRemote: false, timeoutMs: 3000 });
+            if (!species.length) {
+                species = await window.SiswebSpeciesStore.getAll({ waitRemote: true, timeoutMs: 5000 });
+            }
+        } else if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+            const result = await window.firebaseService.loadFromFirebase('especies');
+            const data = result && result.data ? result.data : result;
+            species = Array.isArray(data) ? data : Object.values(data || {});
+        }
     } catch (e) {
         console.warn('Erro ao carregar espécies para autocomplete', e);
         return;
     }
     
-    const matches = species.filter(s => (s.name || '').toLowerCase().includes(val));
+    const getSpeciesName = (s) => (s.especie || s.nome || s.name || '').trim();
+    const matches = species.filter(s => getSpeciesName(s).toLowerCase().includes(val));
     
     if (matches.length > 0) {
         matches.forEach(s => {
             const div = document.createElement('div');
-            div.textContent = s.name;
+            div.textContent = getSpeciesName(s);
             div.onclick = () => {
-                input.value = s.name;
+                input.value = getSpeciesName(s);
                 // Preencher preço baseado na aba
                 const contentToras = document.getElementById('content-toras');
                 const isToras = contentToras && contentToras.style.display === 'block';

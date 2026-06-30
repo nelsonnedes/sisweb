@@ -196,7 +196,7 @@
         import * as firebaseSvc from './firebaseService.js';
         window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
     </script>
-    <script src="menu-component.js?v=20260326"></script>
+    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
     <script src="menu.js"></script>
     <script>
         let refreshTimer = null;
@@ -256,7 +256,7 @@
                 (window.appTenantId) ||
                 (details && (details.companyId || details.companyID || details.tenantId)) ||
                 (claims && (claims.companyId || claims.companyID || claims.tenantId)) ||
-                (company && (company.id || company.companyId || company.slug || company.nome || company.name)) ||
+                (company && (company.companyId || company.companyID || company.tenantId || company.id)) ||
                 ''
             );
         }

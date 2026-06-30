@@ -82,6 +82,14 @@ function waitForDatabaseAdapter(callback, timeout = 10000) {
 // Verificar se as variáveis já foram declaradas para evitar redeclarações
 window.itemsPerPage = window.itemsPerPage || 10;
 window.currentPage = window.currentPage || 1;
+const TORA_ITEMS_PER_PAGE_OPTIONS = [10, 20, 25, 50, 100];
+const TORA_ITEMS_PER_PAGE_STORAGE_KEY = 'romaneio_tora_items_per_page';
+try {
+    const savedItemsPerPage = parseInt(localStorage.getItem(TORA_ITEMS_PER_PAGE_STORAGE_KEY) || '', 10);
+    if (TORA_ITEMS_PER_PAGE_OPTIONS.includes(savedItemsPerPage)) {
+        window.itemsPerPage = savedItemsPerPage;
+    }
+} catch (_) {}
 window.selectedClient = window.selectedClient || null; // Para armazenar o cliente selecionado
 window.selectedSpecies = window.selectedSpecies || null; // Para armazenar a espécie selecionada
 window.fornecedores = window.fornecedores || [];
@@ -103,6 +111,55 @@ window.isAddingItem = window.isAddingItem || false;
 
 // Flag para controlar se a aplicação já foi inicializada
 window.romaneioToraInitialized = window.romaneioToraInitialized || false;
+
+const TORA_TABLE_SORT_COLUMNS = [
+    { key: 'plaqueta', accessor: (item) => item.plaqueta || item.placa || '' },
+    { key: 'custodia', accessor: (item) => normalizarCamposGeoTora(item).custodia || '' },
+    { key: 'especie' },
+    { key: 'rodo', type: 'number', accessor: (item) => item.rodo || item.diametro || 0 },
+    { key: 'comprimento', type: 'number' },
+    { key: 'oco1', type: 'number' },
+    { key: 'oco2', type: 'number' },
+    { key: 'desconto', type: 'number', accessor: (item) => {
+        const volumeLiquido = item.volumeSerraria || item.volumeLiquido || item.volume || 0;
+        return item.desconto || ((item.volumeBruto || item.volumeEstimado || 0) - volumeLiquido);
+    } },
+    { key: 'volumeLiquido', type: 'number', accessor: (item) => item.volumeSerraria || item.volumeLiquido || item.volume || 0 },
+    { key: 'compGeo', type: 'number', accessor: (item) => normalizarCamposGeoTora(item).compGeo || 0 },
+    { key: 'x1', type: 'number', accessor: (item) => normalizarCamposGeoTora(item).x1 || 0 },
+    { key: 'x2', type: 'number', accessor: (item) => normalizarCamposGeoTora(item).x2 || 0 },
+    { key: 'x3', type: 'number', accessor: (item) => normalizarCamposGeoTora(item).x3 || 0 },
+    { key: 'x4', type: 'number', accessor: (item) => normalizarCamposGeoTora(item).x4 || 0 },
+    { key: 'volumeGeo', type: 'number', accessor: (item) => normalizarCamposGeoTora(item).volumeGeo || 0 },
+    { key: 'preco', type: 'number', accessor: (item) => item.preco || item.precoUnitario || 0 },
+    { key: 'valorTotal', type: 'number', accessor: (item) => {
+        const volumeLiquido = parseFloat(item.volumeSerraria || item.volumeLiquido || item.volume || 0) || 0;
+        const preco = parseFloat(item.preco || item.precoUnitario || 0) || 0;
+        return item.valorTotal || item.valor || (volumeLiquido * preco);
+    } },
+    { key: 'acoes', sortable: false }
+];
+
+function getToraTableSortConfig() {
+    return {
+        tableSelector: '#romaneioTable',
+        minWidth: '1500px',
+        columns: TORA_TABLE_SORT_COLUMNS,
+        getItems: () => window.romaneioItems || [],
+        setPage: (page) => { window.currentPage = page; },
+        render: () => updateTableBody()
+    };
+}
+
+function configurarTabelaToraOrdenavel() {
+    if (!window.RomaneioTableEnhancements) return;
+    window.RomaneioTableEnhancements.bindSortableHeaders(getToraTableSortConfig());
+}
+
+function aplicarOrdenacaoTabelaTora() {
+    if (!window.RomaneioTableEnhancements) return;
+    window.RomaneioTableEnhancements.applySortFromTable(getToraTableSortConfig());
+}
 
 // Função para garantir que o campo de preço tenha formatação de moeda
 function setupPriceFormatting() {
@@ -334,6 +391,8 @@ async function syncDataWithFirebase(dataType, forceSync = false, downloadOnly = 
     console.log(`🔄 Iniciando sincronização de ${dataType} (DownloadOnly: ${downloadOnly})...`);
     
     try {
+        const canonicalSyncKey = getCanonicalDataKey(dataType);
+        const isRomaneioSync = /^romaneios\/(tora|pct|tl|pes)(\/|$)/.test(String(canonicalSyncKey || ''));
         // Verificar se o Firebase está disponível
         const firebaseAvailable = window.firebaseService && window.firebaseService.isFirebaseOperational && window.firebaseService.isFirebaseOperational();
         
@@ -375,8 +434,12 @@ async function syncDataWithFirebase(dataType, forceSync = false, downloadOnly = 
             
             if (localData.length < initialLength) {
                 console.log(`🧹 Limpeza realizada: ${initialLength - localData.length} itens corrompidos removidos do localData`);
-                // Atualizar localStorage imediatamente para evitar recorrência
-                await saveData(dataType, localData);
+                if (!isRomaneioSync) {
+                    // Atualizar localStorage imediatamente para evitar recorrência em cadastros não-romaneio.
+                    await saveData(dataType, localData);
+                } else {
+                    console.warn(`⚠️ ${canonicalSyncKey}: limpeza local não será persistida automaticamente em romaneios.`);
+                }
             }
         }
         
@@ -386,7 +449,7 @@ async function syncDataWithFirebase(dataType, forceSync = false, downloadOnly = 
         let firebaseData = [];
         try {
             // ✅ CORREÇÃO: Usar caminho compatível com tenância (companies/{id}/...)
-            // O firebaseService unificado já trata 'species' ou 'romaneiosTora' adicionando o prefixo correto
+            // O firebaseService unificado trata 'especies' ou 'romaneiosTora' adicionando o prefixo correto.
             const firebaseResult = await window.firebaseService.getFromFirebase(dataType);
             if (firebaseResult.success && firebaseResult.data) {
                 firebaseData = Array.isArray(firebaseResult.data) ? firebaseResult.data : [];
@@ -418,37 +481,22 @@ async function syncDataWithFirebase(dataType, forceSync = false, downloadOnly = 
         }
         
         if (downloadOnly) {
-            // ✅ MODO DOWNLOAD ONLY: Priorizar Firebase e limpar Local se Firebase vazio
+            // ✅ MODO DOWNLOAD ONLY: Priorizar Firebase sem regravar coleção em produção.
             console.log("⬇️ Modo Download Only ativado");
             
             if (firebaseData.length > 0) {
-                // Firebase tem dados, usar Firebase
                 mergedData = firebaseData;
-                needsSync = true; // Salvar no LocalStorage
                 console.log(`⬇️ Usando ${firebaseData.length} itens do Firebase (sobrescrevendo local)`);
             } else {
-                // Firebase vazio
                 if (localData.length > 0) {
-                    // Local tem dados, mas Firebase está vazio
-                    // ✅ PROTEÇÃO: Se downloadOnly for true (start), mas Firebase vazio, NÃO LIMPAR LOCAL.
-                    // Isso pode ser falha de conexão.
-                    console.warn(`⚠️ Modo DownloadOnly: Firebase vazio mas Local tem ${localData.length} itens. PROTEÇÃO ATIVADA: Mantendo local.`);
+                    console.warn(`⚠️ Modo DownloadOnly: Firebase vazio mas Local tem ${localData.length} itens. Não será feito upload automático.`);
                     mergedData = localData;
-                    needsSync = true; // Tentar subir para o Firebase
                 } else {
-                    // Ambos vazios
                     mergedData = [];
-                    needsSync = false;
                 }
             }
-            
-            // Salvar no localStorage se necessário
-            if (needsSync) {
-                await saveData(dataType, mergedData);
-                console.log(`✅ Dados locais atualizados com a versão do servidor`);
-            }
-            
-            return { success: true, source: 'server', synced: needsSync, count: mergedData.length };
+
+            return { success: true, source: firebaseData.length > 0 ? 'server' : 'local-readonly', synced: false, count: mergedData.length };
         }
         
         // Lógica Padrão (Bidirecional) - Mantida para chamadas manuais ou saves explícitos
@@ -458,6 +506,10 @@ async function syncDataWithFirebase(dataType, forceSync = false, downloadOnly = 
             needsSync = true;
             console.log(`⬇️ Baixando ${firebaseData.length} itens do Firebase para localStorage`);
         } else if (localData.length > 0 && firebaseData.length === 0) {
+            if (isRomaneioSync) {
+                console.warn(`⚠️ ${canonicalSyncKey}: dados locais ignorados porque romaneios não podem ser promovidos automaticamente ao Firebase.`);
+                return { success: true, source: 'local-ignored', synced: false, count: firebaseData.length };
+            }
             // ✅ CORREÇÃO GHOST DATA - PROTEÇÃO CONTRA PERDA
             // Se o Firebase estiver vazio mas o Local tiver dados, NÃO assumir deleção.
             // Pode ser um erro de conexão ou leitura do Firebase.
@@ -479,6 +531,10 @@ async function syncDataWithFirebase(dataType, forceSync = false, downloadOnly = 
         
         // Salvar dados mesclados se necessário
         if (needsSync || forceSync) {
+            if (isRomaneioSync && !forceSync) {
+                console.warn(`⚠️ ${canonicalSyncKey}: sincronização automática de coleção inteira bloqueada.`);
+                return { success: true, source: 'readonly', synced: false, count: mergedData.length };
+            }
             // ✅ CORREÇÃO: Garantir que todos os romaneios tenham o campo 'numero' antes de salvar
             if (dataType === 'romaneiosTora' && Array.isArray(mergedData)) {
                 mergedData = mergedData.map(item => {
@@ -639,7 +695,7 @@ async function initDataSync() {
             console.log(`👤 Usuário autenticado (${userLabel}): ${user.uid}`);
 
             // ✅ SINCRONIZAR APENAS AS CHAVES NECESSÁRIAS
-            const dataTypes = ['species', 'romaneiosTora'];
+            const dataTypes = ['especies', 'romaneiosTora'];
 
             for (const dataType of dataTypes) {
                 try {
@@ -692,7 +748,16 @@ async function saveClient(event) {
         const bairro = document.getElementById('fornecedorNeighborhood')?.value?.trim() || '';
         const obs = document.getElementById('fornecedorObs')?.value?.trim() || '';
         const cnpj = document.getElementById('fornecedorCnpj')?.value?.trim() || '';
+        const tipoPessoa = document.getElementById('fornecedorPersonType')?.value?.trim() || '';
+        const indIEDest = document.getElementById('fornecedorIndIEDest')?.value?.trim() || '';
         const ie = document.getElementById('fornecedorStateRegistration')?.value?.trim() || '';
+        const inscricaoMunicipal = document.getElementById('fornecedorMunicipalRegistration')?.value?.trim() || '';
+        const suframa = document.getElementById('fornecedorSuframa')?.value?.trim() || '';
+        const cep = document.getElementById('fornecedorCep')?.value?.trim() || '';
+        const complemento = document.getElementById('fornecedorComplement')?.value?.trim() || '';
+        const codigoMunicipio = document.getElementById('fornecedorMunicipalityCode')?.value?.trim() || '';
+        const paisCodigo = document.getElementById('fornecedorCountryCode')?.value?.trim() || '1058';
+        const pais = document.getElementById('fornecedorCountryName')?.value?.trim() || 'Brasil';
         const fornecedor = {
             id: idExistente || generateUniqueId('FORN'),
             nome,
@@ -704,10 +769,37 @@ async function saveClient(event) {
             endereco, address: endereco,
             numero, number: numero,
             bairro, neighborhood: bairro,
+            complemento, complement: complemento,
             observacoes: obs, obs,
             cnpj,
+            documento: cnpj,
+            document: cnpj,
+            tipoPessoa,
+            personType: tipoPessoa,
+            fiscalPersonType: tipoPessoa,
             inscricaoEstadual: ie,
             stateRegistration: ie,
+            ie,
+            indIEDest,
+            indicadorInscricaoEstadual: indIEDest,
+            ieIndicator: indIEDest,
+            inscricaoMunicipal,
+            municipalRegistration: inscricaoMunicipal,
+            suframa,
+            cep,
+            postalCode: cep,
+            codigoMunicipio,
+            municipioCodigo: codigoMunicipio,
+            municipalityCode: codigoMunicipio,
+            cMun: codigoMunicipio,
+            ibgeCode: codigoMunicipio,
+            paisCodigo,
+            countryCode: paisCodigo,
+            cPais: paisCodigo,
+            pais,
+            country: pais,
+            countryName: pais,
+            xPais: pais,
             updated: new Date().toISOString(),
             created: idExistente ? undefined : new Date().toISOString()
         };
@@ -750,15 +842,22 @@ async function carregarClientes() { return []; }
 // ✅ CORREÇÃO: Carrega as espécies do Firebase Realtime Database
 async function carregarEspecies() {
     try {
-        console.log("🌿 === CARREGANDO ESPÉCIES DO FIREBASE ===");
+        console.log("🌿 === CARREGANDO ESPÉCIES ===");
         
         let especies = [];
+
+        if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.getAll === 'function') {
+            especies = await window.SiswebSpeciesStore.getAll({ waitRemote: true, timeoutMs: 5000 });
+            window.species = especies;
+            console.info(`[Species] Tora: ${especies.length} especies carregadas via store compartilhado.`);
+            return especies;
+        }
         
         // ✅ PRIORIDADE 100% FIREBASE
         if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
             try {
-                console.log("🔥 Carregando espécies da coleção 'species'...");
-                const result = await window.firebaseService.loadFromFirebase('species');
+                console.log("🔥 Carregando espécies da coleção 'especies'...");
+                const result = await window.firebaseService.loadFromFirebase('especies');
                 console.log("✅ loadFromFirebase resultado:", result);
                 
                 if (result && result.success && result.data) {
@@ -785,9 +884,19 @@ async function carregarEspecies() {
                         if (!specie.id) {
                             specie.id = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                         }
-                        specie.nome = String(specie.nome || specie.name || 'Sem nome');
-                        specie.descricao = String(specie.descricao || specie.description || '');
-                        return specie;
+                        const nome = window.SiswebSpecies && window.SiswebSpecies.getDisplayName
+                            ? window.SiswebSpecies.getDisplayName(specie)
+                            : String(specie.especie || specie.nome || specie.name || 'Sem nome');
+                        const nomeCientifico = window.SiswebSpecies && window.SiswebSpecies.getScientificName
+                            ? window.SiswebSpecies.getScientificName(specie)
+                            : String(specie.nomeCientifico || specie.descricao || specie.description || '');
+                        return {
+                            ...specie,
+                            especie: nome,
+                            nome,
+                            name: nome,
+                            nomeCientifico
+                        };
                     });
                     
                     console.log(`✅ ${especies.length} espécies carregadas e validadas do Firebase`);
@@ -801,7 +910,7 @@ async function carregarEspecies() {
                 // ✅ FALLBACK PARA CACHE LOCAL APENAS EM CASO DE ERRO
                 try {
                     console.log("🔄 Tentando cache local para espécies...");
-                    const storageKey = getStorageKey('species');
+                    const storageKey = getStorageKey('especies');
                     const localData = localStorage.getItem(storageKey);
                     
                     if (localData) {
@@ -829,7 +938,7 @@ async function carregarEspecies() {
             // ✅ ÚLTIMO RECURSO: CACHE LOCAL
             try {
                 console.log("🔄 Usando cache local como último recurso para espécies...");
-                const storageKey = getStorageKey('species');
+                const storageKey = getStorageKey('especies');
                 const localData = localStorage.getItem(storageKey);
                 
                 if (localData) {
@@ -865,7 +974,7 @@ async function carregarEspecies() {
         // ✅ ATUALIZAR CACHE LOCAL PARA PRÓXIMAS CONSULTAS
         if (especies.length > 0) {
             try {
-                const storageKey = getStorageKey('species');
+                const storageKey = getStorageKey('especies');
                 persistLocalValue(storageKey, especies);
                 
                 // Limpar cache legado
@@ -887,6 +996,106 @@ async function carregarEspecies() {
     }
 }
 
+async function openSpeciesListModalFallback() {
+    let modal = document.getElementById('speciesListModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'speciesListModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">🌳 Lista de Espécies</h3>
+                    <span class="close-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div style="margin-bottom: 15px;">
+                        <input type="text" id="speciesListFilter" placeholder="🔍 Filtrar por espécie ou nome científico...">
+                    </div>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Nome Científico</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="speciesListTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="back-button close-modal-btn">Fechar</button>
+                    <button type="button" class="btn-save" onclick="openNewSpeciesModal()">Nova Espécie</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.querySelector('.close-modal').onclick = () => { modal.style.display = 'none'; };
+        modal.querySelector('.close-modal-btn').onclick = () => { modal.style.display = 'none'; };
+    }
+
+    const tbody = modal.querySelector('#speciesListTable');
+    const filterInput = modal.querySelector('#speciesListFilter');
+    const render = async () => {
+        const term = String((filterInput && filterInput.value) || '').toLowerCase();
+        const list = await carregarEspecies();
+        const filtered = (list || []).filter((specie) => {
+            const name = window.SiswebSpecies && window.SiswebSpecies.getDisplayName
+                ? window.SiswebSpecies.getDisplayName(specie)
+                : String(specie.especie || specie.nome || specie.name || '');
+            const scientific = window.SiswebSpecies && window.SiswebSpecies.getScientificName
+                ? window.SiswebSpecies.getScientificName(specie)
+                : String(specie.nomeCientifico || specie.scientificName || specie.descricao || specie.description || '');
+            return !term || name.toLowerCase().includes(term) || scientific.toLowerCase().includes(term);
+        }).slice(0, 50);
+
+        tbody.innerHTML = filtered.length
+            ? ''
+            : '<tr><td colspan="3" style="text-align:center; padding:20px;">Nenhuma espécie encontrada.</td></tr>';
+        filtered.forEach((specie) => {
+            const name = window.SiswebSpecies && window.SiswebSpecies.getDisplayName
+                ? window.SiswebSpecies.getDisplayName(specie)
+                : String(specie.especie || specie.nome || specie.name || '');
+            const scientific = window.SiswebSpecies && window.SiswebSpecies.getScientificName
+                ? window.SiswebSpecies.getScientificName(specie)
+                : String(specie.nomeCientifico || specie.scientificName || specie.descricao || specie.description || '');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${name}</td>
+                <td>${scientific}</td>
+                <td style="text-align:center;">
+                    <button type="button" class="client-action-button" title="Selecionar espécie">
+                        <i class="fas fa-check"></i>
+                    </button>
+                </td>
+            `;
+            row.querySelector('button').onclick = () => {
+                const input = document.getElementById('especieInput');
+                if (input) input.value = name;
+                window.selectedSpecies = specie;
+                modal.style.display = 'none';
+            };
+            tbody.appendChild(row);
+        });
+    };
+
+    if (filterInput && !filterInput.__speciesFallbackBound) {
+        filterInput.addEventListener('input', render);
+        filterInput.__speciesFallbackBound = true;
+    }
+
+    modal.style.display = 'block';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px;">Carregando espécies...</td></tr>';
+    await render();
+    if (filterInput) setTimeout(() => filterInput.focus(), 80);
+}
+
+if (typeof window.openSpeciesListModal !== 'function') {
+    window.openSpeciesListModal = openSpeciesListModalFallback;
+}
+
 /**
  * Funções para autocompletar espécie
  */
@@ -897,9 +1106,14 @@ function showSpeciesSuggestions(input) {
     if (input && input.dataset && input.dataset.suppressSuggestions === 'true') {
         return;
     }
+    if (window.SiswebSpeciesModal
+        && typeof window.SiswebSpeciesModal.openSpeciesListModalFromField === 'function'
+        && window.SiswebSpeciesModal.openSpeciesListModalFromField(input, { minChars: 3 })) {
+        return;
+    }
     const value = (input.value || '').toLowerCase();
     // Padronização: abrir modal de espécies quando o usuário realmente está buscando
-    if (value.length > 2) {
+    if (document.activeElement === input && value.length > 2) {
         try { openSpeciesListModal(); } catch(e) { console.warn('⚠️ Falha ao abrir modal de espécies:', e?.message || e); }
         return;
     }
@@ -980,6 +1194,80 @@ function formatarVolume(volume) {
     if (isNaN(volume)) return "0,000 m³";
     return volume.toFixed(3).replace('.', ',') + " m³";
 }
+
+function normalizarCamposGeoTora(item = {}) {
+    if (window.ToraGeometry && typeof window.ToraGeometry.normalizarCamposGeoItem === 'function') {
+        return window.ToraGeometry.normalizarCamposGeoItem(item);
+    }
+    return {
+        custodia: item.custodia || '',
+        compGeo: parseFloat(item.compGeo || 0) || 0,
+        x1: parseFloat(item.x1 || 0) || 0,
+        x2: parseFloat(item.x2 || 0) || 0,
+        x3: parseFloat(item.x3 || 0) || 0,
+        x4: parseFloat(item.x4 || 0) || 0,
+        volumeGeo: parseFloat(item.volumeGeo || 0) || 0
+    };
+}
+
+function lerCamposGeoFormulario() {
+    return normalizarCamposGeoTora({
+        custodia: document.getElementById('custodia')?.value || '',
+        compGeo: document.getElementById('compGeo')?.value || 0,
+        x1: document.getElementById('x1')?.value || 0,
+        x2: document.getElementById('x2')?.value || 0,
+        x3: document.getElementById('x3')?.value || 0,
+        x4: document.getElementById('x4')?.value || 0,
+        volumeGeo: document.getElementById('volumeGeo')?.value || 0
+    });
+}
+
+function aplicarCamposGeoFormulario(item = {}) {
+    const geo = normalizarCamposGeoTora(item);
+    const set = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value || '';
+    };
+    set('custodia', geo.custodia);
+    set('compGeo', geo.compGeo);
+    set('x1', geo.x1);
+    set('x2', geo.x2);
+    set('x3', geo.x3);
+    set('x4', geo.x4);
+    const volumeEl = document.getElementById('volumeGeo');
+    if (volumeEl) volumeEl.value = geo.volumeGeo ? geo.volumeGeo.toFixed(3) : '0.000';
+}
+
+function configurarCamposGeoFormulario() {
+    if (window.ToraGeometry && typeof window.ToraGeometry.bindVolumeInputs === 'function') {
+        window.ToraGeometry.bindVolumeInputs({
+            compGeo: 'compGeo',
+            x1: 'x1',
+            x2: 'x2',
+            x3: 'x3',
+            x4: 'x4',
+            volumeGeo: 'volumeGeo'
+        });
+    }
+}
+
+function formatarMedidaGeo(value) {
+    if (window.ToraGeometry && typeof window.ToraGeometry.formatarMedidaCm === 'function') {
+        return window.ToraGeometry.formatarMedidaCm(value);
+    }
+    const n = parseFloat(value || 0);
+    return n ? n.toFixed(2).replace('.', ',') : '-';
+}
+
+function formatarVolumeGeo(value) {
+    if (window.ToraGeometry && typeof window.ToraGeometry.formatarVolumeGeo === 'function') {
+        return window.ToraGeometry.formatarVolumeGeo(value);
+    }
+    const n = parseFloat(value || 0);
+    return n ? n.toFixed(3).replace('.', ',') : '-';
+}
+
+document.addEventListener('DOMContentLoaded', configurarCamposGeoFormulario);
 
 /**
  * Editar um item do romaneio
@@ -1074,7 +1362,8 @@ function editarItem(index) {
         const especieInputPre = document.getElementById('especieInput');
         if (especieInputPre) { especieInputPre.dataset.suppressSuggestions = 'true'; }
         preencherCampo('especieInput', item.especie || '', 'Espécie', false);
-        preencherCampo('plaqueta', item.plaqueta || '', 'Plaqueta');
+        preencherCampo('plaqueta', item.plaqueta || item.placa || '', 'Plaqueta');
+        aplicarCamposGeoFormulario(item);
         preencherCampo('rodo', item.rodo || item.diametro || '', 'Rodo/Diâmetro');
         preencherCampo('comprimento', item.comprimento || '', 'Comprimento');
         preencherCampo('oco1', item.oco1 || '', 'Oco 1');
@@ -1196,9 +1485,33 @@ function editarItem(index) {
 }
 
 // Função para obter dados do armazenamento - MIGRADA PARA FIREBASE
+function getCanonicalDataKey(key) {
+    const value = String(key || '');
+    const map = {
+        romaneiosTora: 'romaneios/tora',
+        romaneiosPct: 'romaneios/pct',
+        romaneiosPCT: 'romaneios/pct',
+        romaneiosTl: 'romaneios/tl',
+        romaneiosTL: 'romaneios/tl',
+        romaneiosPes: 'romaneios/pes',
+        romaneiosPES: 'romaneios/pes'
+    };
+    return map[value] || value;
+}
+
+function getRomaneioTypeFromKey(key) {
+    const value = String(key || '').toLowerCase();
+    if (value.includes('/tora') || value.includes('tora')) return 'TORA';
+    if (value.includes('/pct') || value.includes('pct')) return 'PCT';
+    if (value.includes('/tl') || value.includes('tl')) return 'TL';
+    if (value.includes('/pes') || value.includes('pes')) return 'PES';
+    return '';
+}
+
 async function getData(key) {
     try {
-        console.log(`📂 Carregando dados de ${key} via DatabaseAdapter...`);
+        const canonicalKey = getCanonicalDataKey(key);
+        console.log(`📂 Carregando dados de ${canonicalKey} via DatabaseAdapter...`);
         
         // ✅ VALIDAÇÃO DA CHAVE
         if (!key || typeof key !== 'string') {
@@ -1212,20 +1525,24 @@ async function getData(key) {
                 console.log(`🔄 Carregando ${key} via FirebaseService...`);
                 let options = {};
                 // BLAZE OPTIMIZATION: limit massive loads for better performance
-                if (key === 'romaneiosTora' || key === 'romaneiosPct') {
+                if (canonicalKey === 'romaneios/tora' || canonicalKey === 'romaneios/pct') {
                     options = { limitToLast: 50, orderByChild: 'timestamp' };
-                    console.log(`⚡ Aplicação de Paginação (BLAZE LIMIT B): ${key}`);
+                    console.log(`⚡ Aplicação de Paginação (BLAZE LIMIT B): ${canonicalKey}`);
                 }
 
-                const resultData = await window.firebaseService.loadData(key, options);
+                const resultData = await window.firebaseService.loadData(canonicalKey, options);
                 
                 if (resultData !== null && resultData !== undefined && resultData.success) {
                     let data = resultData.data;
-                    console.log(`✅ ${key} carregado via FirebaseService:`, Array.isArray(data) ? `${data.length} itens` : 'dados válidos');
+                    console.log(`✅ ${canonicalKey} carregado via FirebaseService:`, Array.isArray(data) ? `${data.length} itens` : 'dados válidos');
+                    const tipoRomaneio = getRomaneioTypeFromKey(canonicalKey);
+                    if (tipoRomaneio && window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function') {
+                        return window.RomaneioDataUtils.normalizeRomaneioCollection(data, { type: tipoRomaneio });
+                    }
                     
                     // ✅ CONVERTER OBJETO FIREBASE PARA ARRAY SE NECESSÁRIO
                     if (data && typeof data === 'object' && !Array.isArray(data)) {
-                        console.log(`🔄 Convertendo objeto Firebase para array (${key})...`);
+                        console.log(`🔄 Convertendo objeto Firebase para array (${canonicalKey})...`);
                         const convertedArray = Object.keys(data).map(firebaseKey => {
                             const item = data[firebaseKey];
                             if (Array.isArray(item) && item.length > 0) {
@@ -1236,11 +1553,11 @@ async function getData(key) {
                             return null;
                         }).filter(Boolean);
                         
-                        console.log(`✅ ${key} convertido para array com ${convertedArray.length} itens`);
+                        console.log(`✅ ${canonicalKey} convertido para array com ${convertedArray.length} itens`);
                         return convertedArray;
                     }
                     else if (Array.isArray(data)) {
-                        console.log(`✅ ${key} retornado como array com ${data.length} itens`);
+                        console.log(`✅ ${canonicalKey} retornado como array com ${data.length} itens`);
                         return data.map(item => {
                             if (item && typeof item === 'object' && item['0'] === 'r' && item['1'] === 'o') {
                                 if (!item.itens && !item.cliente && !item.fornecedor) return null;
@@ -1251,29 +1568,23 @@ async function getData(key) {
                             return item;
                         }).filter(item => item && (item.id || item.firebaseKey));
                     } else {
-                        console.warn(`⚠️ ${key} tem tipo inesperado: ${typeof data}, convertendo para array`);
+                        console.warn(`⚠️ ${canonicalKey} tem tipo inesperado: ${typeof data}, convertendo para array`);
                         return [data];
                     }
                 } else if (resultData === null) {
-                    console.log(`⚠️ ${key} está vazio no storage`);
+                    console.log(`⚠️ ${canonicalKey} está vazio no storage`);
                     return [];
                 } else {
-                    console.warn(`⚠️ ${key} não encontrado ou dados inválidos`);
+                    console.warn(`⚠️ ${canonicalKey} não encontrado ou dados inválidos`);
                     return [];
                 }
             } catch (error) {
-                console.error(`❌ Erro ao carregar ${key} via FirebaseService:`, error);
+                console.error(`❌ Erro ao carregar ${canonicalKey} via FirebaseService:`, error);
                 return [];
             }
         } else {
-            console.error(`❌ FirebaseService indisponível para ${key}.`);
-            // Fallback mode
-            try {
-                const localData = localStorage.getItem(`sisweb_company_${window.appTenantId}__${key}`) || localStorage.getItem(`sisweb_${key}`);
-                return localData ? JSON.parse(localData) : [];
-            } catch (e) {
-                return [];
-            }
+            console.error(`❌ FirebaseService indisponível para ${canonicalKey}.`);
+            return [];
         }
         
     } catch (error) {
@@ -1285,7 +1596,8 @@ async function getData(key) {
 
 // Função para salvar dados no armazenamento - MIGRADA PARA FIREBASE
 async function saveData(key, data) {
-    console.log(`💾 Salvando ${key} via DatabaseAdapter...`);
+    const canonicalKey = getCanonicalDataKey(key);
+    console.log(`💾 Salvando ${canonicalKey} via DatabaseAdapter...`);
     
     try {
         // ✅ VALIDAÇÃO INICIAL
@@ -1302,7 +1614,7 @@ async function saveData(key, data) {
         if (window.databaseAdapter && typeof window.databaseAdapter.saveData === 'function') {
             try {
                 console.log(`🔄 Salvando ${key} via DatabaseAdapter...`);
-                const result = await window.databaseAdapter.saveData(key, data);
+                const result = await window.databaseAdapter.saveData(canonicalKey, data);
                 
                 if (result && result.success) {
                     console.log(`✅ ${key} salvo via DatabaseAdapter com sucesso`);
@@ -1342,6 +1654,7 @@ function adicionarItem() {
         // ✅ COLETAR DADOS DO FORMULÁRIO
         const especie = document.getElementById('especieInput')?.value?.trim() || '';
         const plaqueta = document.getElementById('plaqueta')?.value?.trim() || '';
+        const geo = lerCamposGeoFormulario();
         const comprimento = parseFloat(document.getElementById('comprimento')?.value) || 0;
         const rodo = parseFloat(document.getElementById('rodo')?.value) || 0;
         const oco1 = parseFloat(document.getElementById('oco1')?.value) || 0;
@@ -1386,6 +1699,7 @@ function adicionarItem() {
             id: Date.now() + Math.random(),
             especie: especie,
             plaqueta: plaqueta,
+            ...geo,
             comprimento: comprimento,
             diametro: rodo,
             rodo: rodo,
@@ -1460,10 +1774,10 @@ function adicionarItem() {
  * Limpar campos do formulário de item
  */
 function limparCamposItem() {
-    const campos = ['especieInput', 'plaqueta', 'comprimento', 'rodo', 'oco1', 'oco2', 'preco'];
+    const campos = ['especieInput', 'plaqueta', 'custodia', 'comprimento', 'rodo', 'oco1', 'oco2', 'preco', 'compGeo', 'x1', 'x2', 'x3', 'x4', 'volumeGeo'];
     campos.forEach(campoId => {
         const campo = document.getElementById(campoId);
-        if (campo) campo.value = '';
+        if (campo) campo.value = campoId === 'volumeGeo' ? '0.000' : '';
     });
     
     // Focar no primeiro campo
@@ -1479,17 +1793,6 @@ function limparCamposItem() {
 function formatarMoedaBrasil(valor) {
     if (!valor || isNaN(valor)) return '';
     return valor.toFixed(2);
-}
-
-/**
- * Função auxiliar para fazer parsing de valores de moeda
- * @param {string} valor - String com valor monetário
- * @returns {number} - Valor numérico
- */
-function parseCurrencyValue(valor) {
-    if (!valor) return 0;
-    // Remove símbolos de moeda e converte vírgula para ponto
-    return parseFloat(valor.toString().replace(/[R$\s]/g, '').replace(',', '.')) || 0;
 }
 
 /**
@@ -1764,6 +2067,8 @@ function updateTableBody(tbody) {
             console.error("❌ Elemento tbody não encontrado na tabela");
             return;
         }
+
+        configurarTabelaToraOrdenavel();
         
         // Limpar conteúdo atual
         tbody.innerHTML = '';
@@ -1774,7 +2079,7 @@ function updateTableBody(tbody) {
             window.currentPage = 1;
             
             const emptyRow = tbody.insertRow();
-            emptyRow.innerHTML = '<td colspan="12" class="text-center text-muted">Nenhum item adicionado</td>';
+            emptyRow.innerHTML = '<td colspan="18" class="text-center text-muted">Nenhum item adicionado</td>';
             console.log("ℹ️ Tabela vazia - nenhum item encontrado");
             // Atualizar resumo mesmo quando vazio
             renderizarResumoRomaneio();
@@ -1787,6 +2092,7 @@ function updateTableBody(tbody) {
         }
         
         console.log(`📊 Renderizando ${window.romaneioItems.length} itens na tabela`);
+        aplicarOrdenacaoTabelaTora();
         
         // Paginação
         const itemsPerPage = window.itemsPerPage || 10;
@@ -1799,12 +2105,13 @@ function updateTableBody(tbody) {
         itemsToShow.forEach((item, index) => {
             const globalIndex = startIndex + index;
             const row = tbody.insertRow();
+            const geo = normalizarCamposGeoTora(item);
             
             // ✅ CORRIGIR OBTENÇÃO DO PREÇO - considerar ambos os campos
             const precoValue = item.preco || item.precoUnitario || 0;
             
             // ✅ CORRIGIR OBTENÇÃO DO VOLUME LÍQUIDO - considerar ambos os campos
-            const volumeLiquido = item.volumeSerraria || item.volumeLiquido || 0;
+            const volumeLiquido = item.volumeSerraria || item.volumeLiquido || item.volume || 0;
             
             // Formatar valores para exibição
             const volumeBrutoFormatted = formatarVolume(item.volumeBruto || item.volumeEstimado || 0);
@@ -1823,9 +2130,10 @@ function updateTableBody(tbody) {
                 'R$ 0,00';
             
             // Ordem das colunas conforme cabeçalho (sem M³ Bruto):
-            // Plaqueta | Espécie | Rodo | Comprimento | Oco 1 | Oco 2 | Desconto | M³ Líquido | Preço | Valor | Ações
+            // Plaqueta | Custódia | Espécie | Rodo | Comprimento | Oco 1 | Oco 2 | Desconto | M³ Líquido | Geo | Preço | Valor | Ações
             row.innerHTML = `
                 <td>${item.plaqueta || '-'}</td>
+                <td>${geo.custodia || '-'}</td>
                 <td>${item.especie || '-'}</td>
                 <td>${(item.rodo || item.diametro) ? (item.rodo || item.diametro) + ' cm' : '-'}</td>
                 <td>${item.comprimento ? item.comprimento + ' cm' : '-'}</td>
@@ -1833,6 +2141,12 @@ function updateTableBody(tbody) {
                 <td>${item.oco2 ? item.oco2 + ' cm' : '-'}</td>
                 <td>${descontoFormatted}</td>
                 <td>${volumeSerrariaFormatted}</td>
+                <td>${formatarMedidaGeo(geo.compGeo)}</td>
+                <td>${formatarMedidaGeo(geo.x1)}</td>
+                <td>${formatarMedidaGeo(geo.x2)}</td>
+                <td>${formatarMedidaGeo(geo.x3)}</td>
+                <td>${formatarMedidaGeo(geo.x4)}</td>
+                <td>${formatarVolumeGeo(geo.volumeGeo)}</td>
                 <td>${precoFormatted}</td>
                 <td>${valorTotalFormatted}</td>
                 <td style="text-align: center; white-space: nowrap; min-width: 140px;">
@@ -1857,7 +2171,7 @@ function updateTableBody(tbody) {
     } catch (error) {
         console.error("❌ Erro ao atualizar tabela:", error);
         if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="11" class="text-center text-danger">Erro ao carregar itens</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="18" class="text-center text-danger">Erro ao carregar itens</td></tr>';
         }
     }
 }
@@ -1867,28 +2181,15 @@ function updatePagination() {
     console.log("🔄 Atualizando paginação...");
     
     try {
-        // Referência ao container de paginação
         const paginacaoElement = document.getElementById('romaneioTablePagination');
         if (!paginacaoElement) {
             console.error('❌ Elemento de paginação não encontrado');
             return;
         }
         
-        // ✅ USAR ITENS GLOBAIS CORRETAMENTE
         const itens = window.romaneioItems || [];
         const itemsPerPage = window.itemsPerPage || 10;
-        
-        // Se não houver itens suficientes para paginação, ocultar
-        if (itens.length <= itemsPerPage) {
-            paginacaoElement.innerHTML = '';
-            return;
-        }
-        
-        // Limpar a paginação
-        paginacaoElement.innerHTML = '';
-        
-        // Calcular número total de páginas
-        const totalPages = Math.ceil(itens.length / itemsPerPage);
+        const totalPages = Math.max(1, Math.ceil(itens.length / itemsPerPage));
         
         // ✅ VALIDAR currentPage
         if (window.currentPage > totalPages) {
@@ -1897,6 +2198,51 @@ function updatePagination() {
         if (window.currentPage < 1) {
             window.currentPage = 1;
         }
+
+        paginacaoElement.innerHTML = '';
+        paginacaoElement.classList.add('pagination-controls');
+        paginacaoElement.style.display = 'flex';
+        paginacaoElement.style.justifyContent = 'space-between';
+        paginacaoElement.style.alignItems = 'center';
+        paginacaoElement.style.gap = '10px';
+        paginacaoElement.style.flexWrap = 'wrap';
+
+        const from = itens.length === 0 ? 0 : ((window.currentPage - 1) * itemsPerPage) + 1;
+        const to = itens.length === 0 ? 0 : Math.min(window.currentPage * itemsPerPage, itens.length);
+
+        const left = document.createElement('div');
+        left.style.fontSize = '12px';
+        left.style.color = '#475569';
+        left.style.flex = '1 1 320px';
+        left.style.maxWidth = '33.333%';
+        left.style.minWidth = '220px';
+        left.style.textAlign = 'left';
+        left.textContent = `Mostrando ${from} a ${to} de ${itens.length} itens`;
+        paginacaoElement.appendChild(left);
+
+        const right = document.createElement('div');
+        right.style.display = 'flex';
+        right.style.alignItems = 'center';
+        right.style.gap = '10px';
+        right.style.justifyContent = 'flex-end';
+        right.style.flex = '1 1 320px';
+        right.style.maxWidth = '33.333%';
+        right.style.minWidth = '220px';
+        paginacaoElement.appendChild(right);
+
+        const center = document.createElement('div');
+        center.style.display = 'flex';
+        center.style.justifyContent = 'center';
+        center.style.flex = '1 1 320px';
+        center.style.maxWidth = '33.333%';
+        center.style.minWidth = '220px';
+        paginacaoElement.insertBefore(center, right);
+
+        const nav = document.createElement('div');
+        nav.style.display = 'flex';
+        nav.style.alignItems = 'center';
+        nav.style.gap = '6px';
+        center.appendChild(nav);
         
         const createBtn = (text, page, isActive = false, isDisabled = false) => {
             const button = document.createElement('button');
@@ -1910,39 +2256,85 @@ function updatePagination() {
             }
             return button;
         };
-        
-        // Botões iniciais
-        paginacaoElement.appendChild(createBtn('<<<', 1, false, window.currentPage === 1));
-        paginacaoElement.appendChild(createBtn('<', window.currentPage - 1, false, window.currentPage === 1));
-        
-        const startPage = Math.max(1, window.currentPage - 2);
-        const endPage = Math.min(totalPages, window.currentPage + 2);
 
-        if (startPage > 1) {
-            paginacaoElement.appendChild(createBtn('1', 1, window.currentPage === 1));
-            if (startPage > 2) {
-                const span = document.createElement('span');
-                span.textContent = '...';
-                paginacaoElement.appendChild(span);
+        if (totalPages > 1) {
+            nav.appendChild(createBtn('<<<', 1, false, window.currentPage === 1));
+            nav.appendChild(createBtn('<', window.currentPage - 1, false, window.currentPage === 1));
+
+            const startPage = Math.max(1, window.currentPage - 2);
+            const endPage = Math.min(totalPages, window.currentPage + 2);
+
+            if (startPage > 1) {
+                nav.appendChild(createBtn('1', 1, window.currentPage === 1));
+                if (startPage > 2) {
+                    const span = document.createElement('span');
+                    span.textContent = '...';
+                    nav.appendChild(span);
+                }
             }
-        }
 
-        for (let i = startPage; i <= endPage; i++) {
-            paginacaoElement.appendChild(createBtn(String(i), i, i === window.currentPage));
-        }
-
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) {
-                const span = document.createElement('span');
-                span.textContent = '...';
-                paginacaoElement.appendChild(span);
+            for (let i = startPage; i <= endPage; i++) {
+                nav.appendChild(createBtn(String(i), i, i === window.currentPage));
             }
-            paginacaoElement.appendChild(createBtn(String(totalPages), totalPages, window.currentPage === totalPages));
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const span = document.createElement('span');
+                    span.textContent = '...';
+                    nav.appendChild(span);
+                }
+                nav.appendChild(createBtn(String(totalPages), totalPages, window.currentPage === totalPages));
+            }
+
+            nav.appendChild(createBtn('>', window.currentPage + 1, false, window.currentPage === totalPages));
+            nav.appendChild(createBtn('>>>', totalPages, false, window.currentPage === totalPages));
         }
-        
-        // Botões finais
-        paginacaoElement.appendChild(createBtn('>', window.currentPage + 1, false, window.currentPage === totalPages));
-        paginacaoElement.appendChild(createBtn('>>>', totalPages, false, window.currentPage === totalPages));
+
+        const perPageWrap = document.createElement('div');
+        perPageWrap.style.display = 'flex';
+        perPageWrap.style.alignItems = 'center';
+        perPageWrap.style.gap = '6px';
+        perPageWrap.style.whiteSpace = 'nowrap';
+
+        const perPageLabel = document.createElement('span');
+        perPageLabel.style.fontSize = '12px';
+        perPageLabel.style.color = '#475569';
+        perPageLabel.textContent = 'Itens por página:';
+
+        const perPageSelect = document.createElement('select');
+        perPageSelect.style.padding = '4px 8px';
+        perPageSelect.style.border = '1px solid #d0d7de';
+        perPageSelect.style.borderRadius = '4px';
+        perPageSelect.style.fontSize = '12px';
+
+        if (!TORA_ITEMS_PER_PAGE_OPTIONS.includes(itemsPerPage)) {
+            const hiddenOption = document.createElement('option');
+            hiddenOption.value = String(itemsPerPage);
+            hiddenOption.textContent = String(itemsPerPage);
+            hiddenOption.hidden = true;
+            perPageSelect.appendChild(hiddenOption);
+        }
+
+        TORA_ITEMS_PER_PAGE_OPTIONS.forEach((value) => {
+            const option = document.createElement('option');
+            option.value = String(value);
+            option.textContent = String(value);
+            perPageSelect.appendChild(option);
+        });
+
+        perPageSelect.value = String(itemsPerPage);
+        perPageSelect.onchange = () => {
+            const parsed = parseInt(perPageSelect.value, 10);
+            if (!TORA_ITEMS_PER_PAGE_OPTIONS.includes(parsed)) return;
+            window.itemsPerPage = parsed;
+            window.currentPage = 1;
+            try { localStorage.setItem(TORA_ITEMS_PER_PAGE_STORAGE_KEY, String(parsed)); } catch (_) {}
+            updateTableBody();
+        };
+
+        perPageWrap.appendChild(perPageLabel);
+        perPageWrap.appendChild(perPageSelect);
+        right.appendChild(perPageWrap);
         
         console.log("✅ Paginação atualizada com sucesso");
         
@@ -1965,6 +2357,7 @@ function renderizarResumoRomaneio() {
     
     // Totais Gerais
     let volTotal = 0;
+    let geoTotal = 0;
     let valTotal = 0;
     
     // Calcular Médias por Espécie
@@ -1972,11 +2365,12 @@ function renderizarResumoRomaneio() {
     
     itens.forEach(item => {
         // Totais
-        const volLiq = parseFloat(item.volumeLiquido || item.volumeSerraria || 0);
+        const volLiq = parseFloat(item.volumeLiquido || item.volumeSerraria || item.volume || 0);
         const preco = parseFloat(item.preco || item.precoUnitario || 0);
         const valor = parseFloat(item.valor || item.valorTotal || (volLiq * preco) || 0);
         
         volTotal += volLiq;
+        geoTotal += normalizarCamposGeoTora(item).volumeGeo || 0;
         valTotal += valor;
         
         // Estatísticas
@@ -2019,6 +2413,10 @@ function renderizarResumoRomaneio() {
                 <div class="text-center">
                     <div style="font-size: 14px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px;">Volume Total</div>
                     <div style="font-size: 24px; font-weight: bold; color: #2c3e50;">${formatNumber(volTotal, 3)} m³</div>
+                </div>
+                <div class="text-center">
+                    <div style="font-size: 14px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px;">Volume Geo.</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #2c3e50;">${formatNumber(geoTotal, 3)} m³</div>
                 </div>
                 <div class="text-center">
                     <div style="font-size: 14px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px;">Valor Total</div>

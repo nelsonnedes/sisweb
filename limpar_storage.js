@@ -132,28 +132,30 @@ function limparClientesInvalidos() {
 
 // Função para limpar espécies inválidas ou duplicadas
 function limparEspeciesInvalidas() {
-    const species = getData('species') || [];
+    const species = getData('especies') || [];
     
     // Filtrar espécies inválidas
     const especiesValidas = species.filter(specie => {
-        return specie && specie.nome && 
-               specie.nome !== 'undefined' && 
-               specie.nome !== undefined;
+        const nome = specie.especie || specie.nome || specie.name;
+        return specie && nome &&
+               nome !== 'undefined' &&
+               nome !== undefined;
     });
     
     // Remover duplicatas pelo nome
     const nomesVistos = {};
     const especiesSemDuplicatas = especiesValidas.filter(specie => {
-        if (nomesVistos[specie.nome]) {
+        const nome = specie.especie || specie.nome || specie.name;
+        if (nomesVistos[nome]) {
             return false;
         }
-        nomesVistos[specie.nome] = true;
+        nomesVistos[nome] = true;
         return true;
     });
     
     const removidos = species.length - especiesSemDuplicatas.length;
     
-    if (removidos > 0 && saveData('species', especiesSemDuplicatas)) {
+    if (removidos > 0 && saveData('especies', especiesSemDuplicatas)) {
         console.log(`Removidas ${removidos} espécies inválidas ou duplicadas`);
     } else {
         console.log('Não foram encontradas espécies inválidas ou duplicadas');

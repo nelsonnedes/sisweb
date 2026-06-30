@@ -16,13 +16,16 @@ import {
     onAuthStateChanged,
     setPersistence,
     browserSessionPersistence,
+    browserLocalPersistence,
     sendPasswordResetEmail,
     EmailAuthProvider,
     reauthenticateWithCredential,
-    updatePassword as firebaseUpdatePassword
+    updatePassword as firebaseUpdatePassword,
+    updateProfile as firebaseUpdateProfile,
+    updateCurrentUser
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-functions.js";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
 
 // Configuração do Firebase
 const firebaseConfig = {
@@ -43,6 +46,7 @@ console.log('🌐 Database URL:', firebaseConfig.databaseURL);
 let app, auth, db, storage;
 let firebaseInitError = null;
 let _connectionMonitoringConfigured = false;
+let authPersistenceReady = Promise.resolve();
 
 try {
     console.log("🔥 Inicializando Firebase");
@@ -60,8 +64,13 @@ try {
     // Inicializar serviços
     auth = getAuth(app);
     try {
-        setPersistence(auth, browserSessionPersistence)
-            .then(() => console.log("🔒 Persistência de autenticação definida para SESSION"))
+        const useDurableAuth = typeof window !== 'undefined' && (
+            (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+            || window.navigator.standalone === true
+        );
+        const selectedPersistence = useDurableAuth ? browserLocalPersistence : browserSessionPersistence;
+        authPersistenceReady = setPersistence(auth, selectedPersistence)
+            .then(() => console.log(`🔒 Persistência de autenticação definida para ${useDurableAuth ? 'LOCAL_PWA' : 'SESSION'}`))
             .catch(e => console.warn("⚠️ Falha ao definir persistência de autenticação:", e && e.message || e));
     } catch (_) {}
     db = getDatabase(app);
@@ -75,6 +84,7 @@ try {
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 console.log("🔐 Auth ativo:", user.uid);
+                try { window.firebaseAuthUser = user; } catch (_) {}
                 let isSuperAdmin = false;
                 try {
                     const tokenResult = await user.getIdTokenResult(true);
@@ -124,6 +134,7 @@ try {
                     } catch (_) {}
                 }
             } else {
+                try { window.firebaseAuthUser = null; } catch (_) {}
                 if (window.ENABLE_ANON_AUTH === true) {
                     console.log("🔐 Nenhum usuário autenticado. Tentando login anônimo…");
                     signInAnonymously(auth)
@@ -162,19 +173,27 @@ function setupConnectionMonitoring() {
     _connectionMonitoringConfigured = true;
     console.log("🔄 Configurando monitoramento de conexão Firebase");
 
+    const notifyConnectionChange = (isConnected, source = 'firebaseService') => {
+        try {
+            window.firebaseConnected = isConnected;
+            window._FIREBASE_CONNECTED = isConnected;
+            window.dispatchEvent(new CustomEvent('sisweb:firebase-connection', {
+                detail: { connected: isConnected, source }
+            }));
+        } catch (_) {}
+    };
+
     try {
         // Se existir um manager global, delegar eventos a ele para evitar duplicações
         if (window.getFirebaseManager) {
             const manager = window.getFirebaseManager();
             manager.on('connected', () => {
-                window.firebaseConnected = true;
-                window._FIREBASE_CONNECTED = true;
                 console.log('✅ Firebase conectado (via manager)');
+                notifyConnectionChange(true, 'firebaseManager');
             });
             manager.on('disconnected', () => {
-                window.firebaseConnected = false;
-                window._FIREBASE_CONNECTED = false;
                 console.log('⚠️ Firebase offline (via manager)');
+                notifyConnectionChange(false, 'firebaseManager');
             });
             return; // Evitar listeners duplicados abaixo
         }
@@ -189,45 +208,300 @@ function setupConnectionMonitoring() {
             const isConnected = snap.val() === true;
             if (isConnected) {
                 console.log("✅ Firebase conectado com sucesso!");
-                window.firebaseConnected = true;
             } else {
                 console.log("⚠️ Firebase offline");
-                window.firebaseConnected = false;
             }
-            window._FIREBASE_CONNECTED = isConnected;
+            notifyConnectionChange(isConnected, 'rtdb-info-connected');
         }, (error) => {
             console.error("❌ Erro no monitoramento de conexão:", error);
-            window._FIREBASE_CONNECTED = false;
+            notifyConnectionChange(false, 'rtdb-info-connected-error');
         });
     } catch (err) {
         console.error('❌ Erro configurando connectedRef:', err);
     }
 }
 
+const RESERVED_TENANT_CONTEXT_KEYS = new Set([
+    'users',
+    'companies',
+    'roles',
+    'subscriptionrequests',
+    'subscriptionaudit',
+    'subscriptionextensionrequests',
+    'subscriptionproofhashes',
+    'system',
+    '__no_tenant__'
+]);
+
+function normalizeTenantContextValue(value) {
+    const raw = value ? String(value).trim() : '';
+    if (!raw) return null;
+    if (raw.includes('/')) return null;
+    if (RESERVED_TENANT_CONTEXT_KEYS.has(raw.toLowerCase())) return null;
+    return raw;
+}
+
+function readJsonStorageSafe(key) {
+    try {
+        if (typeof localStorage === 'undefined') return null;
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function getUserLikeTenant(value) {
+    const source = value && typeof value === 'object' ? value : {};
+    return normalizeTenantContextValue(
+        source.companyId
+        || source.companyID
+        || source.tenantId
+        || source.empresaId
+        || (source.claims && (source.claims.companyId || source.claims.companyID || source.claims.tenantId))
+    );
+}
+
+function getStoredUserTenant() {
+    const current = readJsonStorageSafe('currentUser');
+    const persistent = readJsonStorageSafe('persistentUser');
+    return getUserLikeTenant(current) || getUserLikeTenant(persistent);
+}
+
+function getStoredCompanyTenant() {
+    const companyInfo = readJsonStorageSafe('company_info');
+    return normalizeTenantContextValue(companyInfo && (
+        companyInfo.companyId
+        || companyInfo.companyID
+        || companyInfo.tenantId
+        || companyInfo.id
+    ));
+}
+
+function persistTenantContext(tenantId, source = {}) {
+    const tenant = normalizeTenantContextValue(tenantId);
+    if (!tenant || typeof window === 'undefined') return null;
+    window.appTenantId = tenant;
+    try {
+        const previous = readJsonStorageSafe('company_info') || {};
+        const previousTenant = normalizeTenantContextValue(previous.companyId || previous.companyID || previous.tenantId || previous.id);
+        const safePrevious = previousTenant && previousTenant !== tenant ? {} : previous;
+        const next = {
+            ...safePrevious,
+            ...(source && typeof source === 'object' ? source : {}),
+            id: tenant,
+            companyId: tenant,
+            tenantId: tenant
+        };
+        localStorage.setItem('company_info', JSON.stringify(next));
+        window.companyInfo = next;
+    } catch (_) {}
+    return tenant;
+}
+
+function clearTenantContext() {
+    if (typeof window === 'undefined') return;
+    try { window.appTenantId = null; } catch (_) {}
+    try { window.companyInfo = null; } catch (_) {}
+    try { localStorage.removeItem('company_info'); } catch (_) {}
+}
+
+async function waitForAuthCurrentUser(timeoutMs = 2500) {
+    try { await authPersistenceReady; } catch (_) {}
+    if (auth && auth.currentUser) return auth.currentUser;
+    const existingWindowUser = getWindowFirebaseAuthUser();
+    if (existingWindowUser) return existingWindowUser;
+    return new Promise((resolve) => {
+        let done = false;
+        let unsubscribe = null;
+        const finish = (user) => {
+            if (done) return;
+            done = true;
+            try { if (unsubscribe) unsubscribe(); } catch (_) {}
+            resolve(user || getWindowFirebaseAuthUser() || null);
+        };
+        try {
+            unsubscribe = onAuthStateChanged(auth, finish, () => finish(null));
+            setTimeout(() => finish(auth && auth.currentUser ? auth.currentUser : getWindowFirebaseAuthUser()), Math.max(300, Number(timeoutMs) || 2500));
+        } catch (_) {
+            finish(auth && auth.currentUser ? auth.currentUser : getWindowFirebaseAuthUser());
+        }
+    });
+}
+
+async function primeCallableAuthSession(timeoutMs = 4500) {
+    const user = await waitForAuthCurrentUser(timeoutMs);
+    if (user && auth && !auth.currentUser && typeof updateCurrentUser === 'function') {
+        try { await updateCurrentUser(auth, user); } catch (_) {}
+    }
+    if (user && typeof user.getIdTokenResult === 'function') {
+        try { await user.getIdTokenResult(false); } catch (_) {}
+    }
+    return (auth && auth.currentUser) || user || null;
+}
+
+function isCallableUnauthenticatedError(error) {
+    const code = String(error && error.code ? error.code : '').toLowerCase();
+    const message = String(error && error.message ? error.message : error || '').toLowerCase();
+    return code.includes('unauthenticated')
+        || code.includes('permission-denied')
+        || message.includes('unauthenticated')
+        || message.includes('permission denied')
+        || message.includes('status of 401')
+        || message.includes('status 401')
+        || message.includes('401');
+}
+
+function unwrapCallableResult(result) {
+    return result && Object.prototype.hasOwnProperty.call(result, 'data') ? result.data : null;
+}
+
+function requiresAuthenticatedCallable(functionName) {
+    return /^nf_/.test(String(functionName || '').trim());
+}
+
+async function getCallableIdToken(user, forceRefresh = false) {
+    if (!user) return '';
+    if (typeof user.getIdToken === 'function') {
+        const token = await user.getIdToken(forceRefresh === true);
+        return token ? String(token) : '';
+    }
+    if (typeof user.getIdTokenResult === 'function') {
+        const result = await user.getIdTokenResult(forceRefresh === true);
+        return result && result.token ? String(result.token) : '';
+    }
+    return '';
+}
+
+function getCallableHttpEndpoint(functionName) {
+    const projectId = (app && app.options && app.options.projectId) || firebaseConfig.projectId || 'sisweb-7ce82';
+    const region = 'us-central1';
+    return `https://${region}-${projectId}.cloudfunctions.net/${encodeURIComponent(functionName)}`;
+}
+
+function buildCallableHttpError(functionName, response, body) {
+    const error = body && body.error && typeof body.error === 'object' ? body.error : {};
+    const message = String(error.message || body && body.message || response && response.statusText || '').trim();
+    const status = String(error.status || error.code || response && response.status || '').trim();
+    const suffix = status ? ` (${status})` : '';
+    return new Error(message || `Falha ao executar a Function ${functionName}${suffix}.`);
+}
+
+async function callFunctionWithExplicitAuth(functionName, payload, user, options = {}) {
+    const token = await getCallableIdToken(user, options.forceRefresh === true);
+    if (!token) {
+        throw new Error('Sessão autenticada não encontrada. Faça login novamente para continuar.');
+    }
+    const response = await fetch(getCallableHttpEndpoint(functionName), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ data: payload && typeof payload === 'object' ? payload : {} })
+    });
+    const text = await response.text();
+    let body = null;
+    try { body = text ? JSON.parse(text) : null; } catch (_) { body = { message: text }; }
+    if (!response.ok || body && body.error) {
+        throw buildCallableHttpError(functionName, response, body || {});
+    }
+    if (body && Object.prototype.hasOwnProperty.call(body, 'result')) return body.result;
+    if (body && Object.prototype.hasOwnProperty.call(body, 'data')) return body.data;
+    return body;
+}
+
+async function resolveAuthenticatedTenant(options = {}) {
+    const allowCached = options.allowCached !== false;
+    const timeoutMs = Number(options.timeoutMs || 2500);
+    const forceRefresh = options.forceRefresh === true;
+    try {
+        const user = await waitForAuthCurrentUser(timeoutMs);
+        if (user) {
+            let claims = {};
+            try {
+                const tokenResult = await user.getIdTokenResult(forceRefresh);
+                claims = tokenResult && tokenResult.claims ? tokenResult.claims : {};
+            } catch (_) {}
+
+            const superAdmin = claims.superadmin === true
+                || (user.uid && typeof SUPERADMIN_UID_LOCAL_ALLOWLIST !== 'undefined' && SUPERADMIN_UID_LOCAL_ALLOWLIST.has(String(user.uid)))
+                || (typeof window !== 'undefined' && typeof window.isSuperAdminUid === 'function' && window.isSuperAdminUid(user.uid));
+
+            if (superAdmin) {
+                clearTenantContext();
+                return { success: true, authenticated: true, superAdmin: true, companyId: null, user };
+            }
+
+            let companyId = normalizeTenantContextValue(claims.companyId || claims.companyID || claims.tenantId);
+            if (!companyId && user.uid) {
+                try {
+                    const profileSnap = await get(child(ref(db), `users/${user.uid}`));
+                    const profile = profileSnap.exists() ? profileSnap.val() : null;
+                    companyId = getUserLikeTenant(profile);
+                } catch (_) {}
+            }
+
+            if (companyId) {
+                persistTenantContext(companyId);
+                return { success: true, authenticated: true, superAdmin: false, companyId, user };
+            }
+
+            clearTenantContext();
+            return {
+                success: false,
+                authenticated: true,
+                superAdmin: false,
+                companyId: null,
+                user,
+                code: 'missing-companyId',
+                error: 'Usuário autenticado sem companyId válido.'
+            };
+        }
+
+        const firebaseOffline = typeof window !== 'undefined' && (
+            window._FIREBASE_CONNECTED === false
+            || window.firebaseConnected === false
+            || (typeof navigator !== 'undefined' && navigator.onLine === false)
+        );
+        if (allowCached && firebaseOffline) {
+            const sessionFlag = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('userAuthenticated') === 'true';
+            const durableSession = readJsonStorageSafe('siswebAuthSession');
+            const durableValid = durableSession
+                && durableSession.authenticated === true
+                && (!durableSession.expiresAt || Number(durableSession.expiresAt) > Date.now());
+            const cachedTenant = normalizeTenantContextValue((durableSession && durableSession.companyId) || getStoredUserTenant());
+            if ((sessionFlag || durableValid) && cachedTenant) {
+                persistTenantContext(cachedTenant);
+                return { success: true, authenticated: false, cached: true, superAdmin: false, companyId: cachedTenant, user: null };
+            }
+        }
+
+        clearTenantContext();
+        return {
+            success: false,
+            authenticated: false,
+            companyId: null,
+            code: firebaseOffline ? 'unauthenticated' : 'firebase-auth-required',
+            error: firebaseOffline ? 'Usuário não autenticado.' : 'Firebase online exige sessão autenticada para definir tenant operacional.'
+        };
+    } catch (error) {
+        return {
+            success: false,
+            authenticated: false,
+            companyId: null,
+            code: 'tenant-resolution-error',
+            error: error && error.message ? error.message : String(error)
+        };
+    }
+}
+
 function getTenantId() {
     try {
-        const blocked = new Set([
-            'users',
-            'companies',
-            'roles',
-            'subscriptionrequests',
-            'subscriptionaudit',
-            'subscriptionextensionrequests',
-            'subscriptionproofhashes',
-            'system',
-            '__no_tenant__'
-        ]);
-        const normalizeTenant = (value) => {
-            const raw = value ? String(value).trim() : '';
-            if (!raw) return null;
-            if (raw.includes('/')) return null;
-            if (blocked.has(raw.toLowerCase())) return null;
-            return raw;
-        };
         const isSessionSuperAdmin = () => {
             try {
-                const current = JSON.parse(localStorage.getItem('currentUser') || 'null') || {};
-                const persistent = JSON.parse(localStorage.getItem('persistentUser') || 'null') || {};
+                const current = readJsonStorageSafe('currentUser') || {};
+                const persistent = readJsonStorageSafe('persistentUser') || {};
                 return !!(
                     current.superadmin === true
                     || (current.claims && current.claims.superadmin === true)
@@ -239,29 +513,21 @@ function getTenantId() {
             }
         };
         if (typeof window !== 'undefined') {
-            const fromRuntime = normalizeTenant(window.appTenantId);
-            if (fromRuntime) return fromRuntime;
+            const fromUserStorage = getStoredUserTenant();
+            const fromRuntime = normalizeTenantContextValue(window.appTenantId);
+            if (fromRuntime) {
+                if (!fromUserStorage || fromUserStorage === fromRuntime) return fromRuntime;
+                window.appTenantId = null;
+            }
             try {
-                const currentRaw = localStorage.getItem('currentUser');
-                const persistentRaw = localStorage.getItem('persistentUser');
-                const current = currentRaw ? JSON.parse(currentRaw) : null;
-                const persistent = persistentRaw ? JSON.parse(persistentRaw) : null;
-                const fromUser = normalizeTenant((current && (current.companyId || current.companyID || current.tenantId || (current.claims && (current.claims.companyId || current.claims.companyID || current.claims.tenantId)))) || (persistent && (persistent.companyId || persistent.companyID || persistent.tenantId || (persistent.claims && (persistent.claims.companyId || persistent.claims.companyID || persistent.claims.tenantId)))));
+                const fromUser = fromUserStorage;
                 if (fromUser) {
-                    window.appTenantId = fromUser;
-                    try {
-                        const cachedCompanyRaw = localStorage.getItem('company_info');
-                        const nextCompanyInfo = cachedCompanyRaw ? JSON.parse(cachedCompanyRaw) : {};
-                        const mergedCompanyInfo = { ...(nextCompanyInfo || {}), companyId: fromUser, id: (nextCompanyInfo && nextCompanyInfo.id) || fromUser };
-                        localStorage.setItem('company_info', JSON.stringify(mergedCompanyInfo));
-                    } catch (_) {}
+                    persistTenantContext(fromUser);
                     return fromUser;
                 }
             } catch (_) {}
             try {
-                const companyRaw = localStorage.getItem('company_info');
-                const companyInfo = companyRaw ? JSON.parse(companyRaw) : null;
-                const fromCompany = normalizeTenant(companyInfo && (companyInfo.companyId || companyInfo.id || companyInfo.tenantId));
+                const fromCompany = getStoredCompanyTenant();
                 if (fromCompany) {
                     if (fromCompany === 'sisweb_admin_core' && !isSessionSuperAdmin()) return null;
                     window.appTenantId = fromCompany;
@@ -347,6 +613,16 @@ function getCurrentUid() {
         const winUser = (typeof window !== 'undefined' && window.firebaseAuthUser) ? window.firebaseAuthUser : null;
         return winUser && winUser.uid ? String(winUser.uid) : null;
     } catch (_) { return null; }
+}
+
+function getWindowFirebaseAuthUser() {
+    try {
+        if (typeof window === 'undefined') return null;
+        const user = window.firebaseAuthUser || window.currentUser || null;
+        return user && user.uid && (typeof user.getIdToken === 'function' || typeof user.getIdTokenResult === 'function') ? user : null;
+    } catch (_) {
+        return null;
+    }
 }
 
 function resolveSubscriptionStatusForWriteGuard(userDetails) {
@@ -459,7 +735,9 @@ function denyReadOnlyWrite(path, status) {
 
 function getNamespacedPath(path) {
     try {
-        if (!path || /^companies\//.test(path) || /^users\//.test(path)) return path;
+        if (!path) return path;
+        const isGlobal = /^users(\/|$)|^subscriptionRequests(\/|$)|^companies(\/|$)|^roles(\/|$)|^system(\/|$)|^subscriptionAudit(\/|$)|^subscriptionExtensionRequests(\/|$)|^subscriptionProofHashes(\/|$)|^subscriptionPayments(\/|$)|^subscriptionSettings(\/|$)/.test(String(path));
+        if (isGlobal) return path;
         const t = getTenantId();
         if (t) return `companies/${t}/${path}`;
         return `companies/__no_tenant__/${path}`;
@@ -487,11 +765,13 @@ function namespaceUpdates(updatesObj) {
                 .replace(/^romaneios_tora(\/|$)/, 'romaneios/tora$1')
                 .replace(/^romaneiosPes(\/|$)/, 'romaneios/pes$1')
                 .replace(/^romaneios_pes(\/|$)/, 'romaneios/pes$1')
+                .replace(/^data\/species(\/|$)/, 'especies$1')
+                .replace(/^species(\/|$)/, 'especies$1')
+                .replace(/^especiesPct(\/|$)/, 'especies$1')
                 .replace(/^pedidosVenda(\/|$)/, 'vendas/pedidos$1')
                 .replace(/^carregoPagamentos(\/|$)/, 'vendas/pagamentos_carrego$1');
-            const nsKey = /^companies\//.test(ck) || /^users\//.test(ck)
-                ? key
-                : `companies/${t}/${ck}`;
+            const isGlobal = /^users(\/|$)|^subscriptionRequests(\/|$)|^companies(\/|$)|^roles(\/|$)|^system(\/|$)|^subscriptionAudit(\/|$)|^subscriptionExtensionRequests(\/|$)|^subscriptionProofHashes(\/|$)|^subscriptionPayments(\/|$)|^subscriptionSettings(\/|$)/.test(ck);
+            const nsKey = isGlobal ? ck : `companies/${t}/${ck}`;
             out[nsKey] = v;
         }
         return out;
@@ -616,7 +896,12 @@ async function loadFromFirebase(path) {
             'romaneiosPes': ['romaneios/pes', 'romaneios_pes'],
             // Financas
             'contasPagar': ['financas/pagar'],
-            'contasReceber': ['financas/receber']
+            'contasReceber': ['financas/receber'],
+            // Especies: caminho canonico de cadastro
+            'species': ['especies'],
+            'especies': ['especies'],
+            'especiesPct': ['especies'],
+            'data/species': ['especies']
         };
 
         function toSnake(key) {
@@ -638,6 +923,16 @@ async function loadFromFirebase(path) {
             const candidates = [];
             const seen = new Set();
             const pushUnique = (p) => { if (p && !seen.has(p)) { seen.add(p); candidates.push(p); } };
+
+            if (/^(species|especies|especiesPct|data\/species)(\/|$)/.test(String(input || ''))) {
+                const rest = String(input || '')
+                    .replace(/^data\/species\/?/, '')
+                    .replace(/^species\/?/, '')
+                    .replace(/^especiesPct\/?/, '')
+                    .replace(/^especies\/?/, '');
+                pushUnique(rest ? `especies/${rest}` : 'especies');
+                return candidates;
+            }
             
             // Original
             pushUnique(input);
@@ -658,7 +953,7 @@ async function loadFromFirebase(path) {
             if (snake.startsWith('romaneios_')) {
                 pushUnique(`romaneios/${snake.replace('romaneios_', '')}`);
             }
-            
+
             return candidates;
         }
         
@@ -669,7 +964,7 @@ async function loadFromFirebase(path) {
             if (!clean || /^companies\//.test(clean) || /^users\//.test(clean)) return clean;
             return `companies/${tenantId}/${clean}`;
         }) : [];
-        const isGlobalPath = /^users(\/|$)|^subscriptionRequests(\/|$)|^companies(\/|$)|^roles(\/|$)|^system(\/|$)|^subscriptionAudit(\/|$)|^subscriptionExtensionRequests(\/|$)|^subscriptionProofHashes(\/|$)/.test(String(path || ''));
+        const isGlobalPath = /^users(\/|$)|^subscriptionRequests(\/|$)|^companies(\/|$)|^roles(\/|$)|^system(\/|$)|^subscriptionAudit(\/|$)|^subscriptionExtensionRequests(\/|$)|^subscriptionProofHashes(\/|$)|^subscriptionPayments(\/|$)|^subscriptionSettings(\/|$)/.test(String(path || ''));
         
         // CORREÇÃO: se não for path global e !tenantId, não permitir ler da raiz absoluta!
         const finalCandidates = tenantId 
@@ -777,7 +1072,9 @@ async function loadFromFirebase(path) {
             'estoqueComprasMov',
             'vendas/pagamentos_carrego',
             'carregoPagamentos',           // alias camelCase usado em alguns módulos
-            'vendas_pagamentos_carrego'    // alias snake_case
+            'vendas_pagamentos_carrego',    // alias snake_case
+            'system/operationalAlerts/firebaseBilling',
+            'system/deployHealth/firebase'
         ]);
         if (OPTIONAL_EMPTY_PATHS.has(path)) {
             console.log(`ℹ️ '${path}' está vazio no Firebase (comportamento esperado — nenhum dado cadastrado ainda).`);
@@ -983,6 +1280,36 @@ async function getAll(path) {
 async function saveToFirebase(path, key, data, options) {
     try {
         console.log(`🔥 Salvando dados em: ${path}${key ? `/${key}` : ' (substituindo todos os dados)'}`);
+
+        const isSpeciesPath = /^(species|especies|especiesPct|data\/species)(\/|$)/.test(String(path || ''));
+        const normalizeSpeciesItem = (item) => {
+            if (!item || typeof item !== 'object') return item;
+            const name = String(item.especie || item.nome || item.name || item.nomeComum || item.commonName || '').trim();
+            const scientificName = String(item.nomeCientifico || item.scientificName || item.scientific || item.descricao || item.description || item.decription || item.desc || '').trim();
+            const excluded = new Set(['key', 'firebaseKey', 'nome', 'name', 'nomeComum', 'commonName', 'description', 'descricao', 'decription', 'desc', 'scientificName', 'scientific', 'nomeCientífico']);
+            const clean = {};
+            Object.keys(item).forEach((field) => {
+                if (field.startsWith('__') || excluded.has(field)) return;
+                if (item[field] !== undefined) clean[field] = item[field];
+            });
+            clean.id = item.id || item.key || item.firebaseKey || clean.id;
+            clean.especie = name;
+            clean.nomeCientifico = scientificName;
+            clean.ativo = item.ativo !== false;
+            clean.createdAt = item.createdAt || item.created || clean.createdAt || new Date().toISOString();
+            clean.updatedAt = item.updatedAt || item.updated || new Date().toISOString();
+            return clean;
+        };
+        if (isSpeciesPath && data) {
+            if (Array.isArray(data)) {
+                data = data.map(normalizeSpeciesItem);
+            } else if (typeof data === 'object') {
+                const looksLikeMap = !data.nome && !data.name && Object.values(data).some(value => value && typeof value === 'object');
+                data = looksLikeMap
+                    ? Object.fromEntries(Object.entries(data).map(([itemId, item]) => [itemId, normalizeSpeciesItem({ id: itemId, ...item })]))
+                    : normalizeSpeciesItem(data);
+            }
+        }
         
         // ✅ SANITIZAÇÃO DE SEGURANÇA (CRÍTICO)
         // Garante que a regra .validate "newData.hasChild('numero')" seja satisfeita
@@ -1036,6 +1363,10 @@ async function saveToFirebase(path, key, data, options) {
             'romaneiosTL': ['romaneios/tl', 'romaneios_tl', 'romaneioTL', 'romaneiosTl'],
             'romaneiosPct': ['romaneios/pct'],
             'romaneiosTora': ['romaneios/tora', 'romaneios_tora', 'romaneioTora'],
+            'species': ['especies'],
+            'especies': ['especies'],
+            'especiesPct': ['especies'],
+            'data/species': ['especies'],
         };
 
         function toSnake(key) {
@@ -1057,6 +1388,16 @@ async function saveToFirebase(path, key, data, options) {
             const candidates = [];
             const seen = new Set();
             const pushUnique = (p) => { if (p && !seen.has(p)) { seen.add(p); candidates.push(p); } };
+
+            if (/^(species|especies|especiesPct|data\/species)(\/|$)/.test(String(input || ''))) {
+                const rest = String(input || '')
+                    .replace(/^data\/species\/?/, '')
+                    .replace(/^species\/?/, '')
+                    .replace(/^especiesPct\/?/, '')
+                    .replace(/^especies\/?/, '');
+                pushUnique(rest ? `especies/${rest}` : 'especies');
+                return candidates;
+            }
             
             pushUnique(input);
             const aliases = PATH_ALIASES[input];
@@ -1091,6 +1432,14 @@ async function saveToFirebase(path, key, data, options) {
         } else if (String(path || '').toLowerCase() === 'clients' || candidates.some(c => String(c || '').toLowerCase() === 'clients')) {
             writePath = 'clients';
             console.log(`✅ Caminho canônico de escrita (clients) definido: ${writePath}`);
+        } else if (/^(species|especies|especiesPct|data\/species)(\/|$)/.test(String(path || '')) || candidates.some(c => /^(species|especies|especiesPct|data\/species)(\/|$)/.test(String(c || '')))) {
+            const rest = String(path || '')
+                .replace(/^data\/species\/?/, '')
+                .replace(/^species\/?/, '')
+                .replace(/^especiesPct\/?/, '')
+                .replace(/^especies\/?/, '');
+            writePath = rest && rest !== path ? `especies/${rest}` : 'especies';
+            console.log(`✅ Caminho canônico de escrita (especies) definido: ${writePath}`);
         } else if (path === 'pedidosVenda' || candidates.includes('pedidosVenda')) {
             writePath = 'vendas/pedidos';
             console.log(`✅ Caminho de escrita (pedidosVenda) definido: ${writePath}`);
@@ -1162,7 +1511,7 @@ async function saveToFirebase(path, key, data, options) {
         
         if (key === null || key === undefined) {
             // Se key é null, avaliar substituição completa vs. salvamento por registro
-            const perRecordNames = new Set(['romaneiosPct', 'contasReceber', 'contasPagar']);
+            const perRecordNames = new Set(['romaneiosPct', 'contasReceber', 'contasPagar', 'especies']);
             const lastSegment = (writePath || '').split('/').pop();
             if (Array.isArray(data) && perRecordNames.has(lastSegment)) {
                 // ✅ Evitar sobrescrever coleção inteira: salvar item a item
@@ -1338,6 +1687,31 @@ async function syncMyAdminClaims() {
     }
 }
 
+function getCallableErrorMessage(functionName, error) {
+    const rawCode = String((error && error.code) || '').toLowerCase();
+    const rawMessage = String((error && error.message) || error || '').trim();
+    const detailsMessage = error && error.details && typeof error.details === 'object'
+        ? String(error.details.message || error.details.error || '').trim()
+        : '';
+    const sourceMessage = detailsMessage || rawMessage;
+    if (rawCode.includes('unauthenticated')) {
+        return 'Sessão expirada. Entre novamente no Sisweb para executar esta ação administrativa.';
+    }
+    if (rawCode.includes('permission-denied')) {
+        return 'Permissão insuficiente para executar esta ação. Confirme se o usuário atual é SuperAdmin.';
+    }
+    if (rawCode.includes('not-found')) {
+        return sourceMessage || 'Registro necessário não foi encontrado para concluir a ação.';
+    }
+    if (rawCode.includes('failed-precondition') || rawCode.includes('invalid-argument')) {
+        return sourceMessage || 'A ação não pode ser concluída com os dados atuais.';
+    }
+    if (rawCode.includes('internal') || /\\binternal\\b/i.test(rawMessage)) {
+        return `Erro interno na Function ${functionName}. A ação não foi confirmada; confira os logs da Function e tente novamente.`;
+    }
+    return sourceMessage || `Falha ao executar a Function ${functionName}.`;
+}
+
 async function callAdminCallableWithRetry(functionName, payload) {
     const functions = getFunctions(app);
     const data = payload && typeof payload === 'object' ? payload : {};
@@ -1357,7 +1731,7 @@ async function callAdminCallableWithRetry(functionName, payload) {
             return { success: false, error: `Função administrativa indisponível (${functionName}). Verifique deploy das Cloud Functions e CORS.` };
         }
         if (!maybePermDenied) {
-            return { success: false, error: firstError && firstError.message ? firstError.message : String(firstError) };
+            return { success: false, error: getCallableErrorMessage(functionName, firstError) };
         }
         try {
             if (auth && auth.currentUser && typeof auth.currentUser.getIdTokenResult === 'function') {
@@ -1375,7 +1749,7 @@ async function callAdminCallableWithRetry(functionName, payload) {
         try {
             return await run();
         } catch (secondError) {
-            return { success: false, error: secondError && secondError.message ? secondError.message : String(secondError) };
+            return { success: false, error: getCallableErrorMessage(functionName, secondError) };
         }
     }
 }
@@ -1506,6 +1880,30 @@ async function createPixPayment(payload) {
     }
 }
 
+async function processPaymentBrick(payload) {
+    try {
+        const data = payload && typeof payload === 'object' ? payload : {};
+        const functions = getFunctions(app);
+        const callable = httpsCallable(functions, 'processPaymentBrick');
+        const result = await callable(data);
+        return { success: true, data: result && result.data ? result.data : null };
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function createPaymentPreference(payload) {
+    try {
+        const data = payload && typeof payload === 'object' ? payload : {};
+        const functions = getFunctions(app);
+        const callable = httpsCallable(functions, 'createPaymentPreference');
+        const result = await callable(data);
+        return { success: true, data: result && result.data ? result.data : null };
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
 async function revalidatePixPayment(payload) {
     try {
         const data = payload && typeof payload === 'object' ? payload : {};
@@ -1527,6 +1925,99 @@ async function activateFreeTrial() {
     } catch (error) {
         return { success: false, error: error && error.message ? error.message : String(error) };
     }
+}
+
+async function callFunction(functionName, payload = {}) {
+    const safeName = String(functionName || '').trim();
+    if (!safeName) throw new Error('Nome da Cloud Function não informado.');
+    const functions = getFunctions(app);
+    const callable = httpsCallable(functions, safeName);
+    const safePayload = payload && typeof payload === 'object' ? payload : {};
+    const currentUser = await primeCallableAuthSession(4500);
+    const needsAuth = requiresAuthenticatedCallable(safeName);
+    if (needsAuth && !currentUser) {
+        throw new Error('Sessão autenticada não encontrada. Faça login novamente para continuar.');
+    }
+    if (needsAuth && currentUser) {
+        try {
+            await getCallableIdToken(currentUser, true);
+            const result = await callable(safePayload);
+            return unwrapCallableResult(result);
+        } catch (error) {
+            if (!isCallableUnauthenticatedError(error)) throw error;
+            await getCallableIdToken(currentUser, true);
+            const retried = await callable(safePayload);
+            return unwrapCallableResult(retried);
+        }
+    }
+    try {
+        const result = await callable(safePayload);
+        return unwrapCallableResult(result);
+    } catch (error) {
+        if (currentUser && isCallableUnauthenticatedError(error) && typeof currentUser.getIdTokenResult === 'function') {
+            try {
+                await currentUser.getIdTokenResult(true);
+                const retried = await callable(safePayload);
+                return unwrapCallableResult(retried);
+            } catch (_) {}
+        }
+        throw error;
+    }
+}
+
+async function callSupportFunction(functionName, payload = {}) {
+    try {
+        const data = await callFunction(functionName, payload && typeof payload === 'object' ? payload : {});
+        return { success: true, data };
+    } catch (error) {
+        const rawMessage = String(error && error.message ? error.message : error || '');
+        const lower = rawMessage.toLowerCase();
+        if (lower.includes('not found') || lower.includes('404')) {
+            return { success: false, error: `Cloud Function '${functionName}' não encontrada. Faça deploy das Functions para habilitar tickets de suporte.` };
+        }
+        if (lower.includes('cors') || lower.includes('failed to fetch') || lower.includes('network')) {
+            return { success: false, error: `Falha de rede/CORS ao chamar '${functionName}'. Verifique deploy e conexão.` };
+        }
+        return { success: false, error: rawMessage || `Falha ao chamar '${functionName}'.` };
+    }
+}
+
+async function createSupportTicket(payload) {
+    return callSupportFunction('createSupportTicket', payload);
+}
+
+async function sendPublicSupportEmail(payload) {
+    return callSupportFunction('sendPublicSupportEmail', payload);
+}
+
+async function addSupportTicketMessage(ticketId, message, options = {}) {
+    return callSupportFunction('addSupportTicketMessage', {
+        ...(options && typeof options === 'object' ? options : {}),
+        ticketId,
+        message
+    });
+}
+
+async function listMySupportTickets(options = {}) {
+    return callSupportFunction('listMySupportTickets', options);
+}
+
+async function getSupportTicket(ticketId, options = {}) {
+    return callSupportFunction('getSupportTicket', {
+        ...(options && typeof options === 'object' ? options : {}),
+        ticketId
+    });
+}
+
+async function updateSupportTicketStatus(ticketId, payload = {}) {
+    return callSupportFunction('updateSupportTicketStatus', {
+        ...(payload && typeof payload === 'object' ? payload : {}),
+        ticketId
+    });
+}
+
+async function listSupportTicketsAdmin(filters = {}) {
+    return callSupportFunction('listSupportTicketsAdmin', filters);
 }
 
 async function uploadSubscriptionProof(file, options = {}) {
@@ -1566,10 +2057,227 @@ async function uploadSubscriptionProof(file, options = {}) {
     }
 }
 
+async function uploadFile(path, file, options = {}) {
+    try {
+        if (!file) throw new Error('Arquivo não informado.');
+        const safePath = String(path || '').replace(/^\/+/, '').trim();
+        if (!safePath || safePath.includes('..') || safePath.includes('//')) {
+            throw new Error('Caminho de Storage inválido.');
+        }
+        const metadata = {};
+        const contentType = String(options.contentType || file.type || '').trim();
+        if (contentType) metadata.contentType = contentType;
+        if (options.customMetadata && typeof options.customMetadata === 'object') {
+            metadata.customMetadata = options.customMetadata;
+        }
+        const fileRef = storageRef(storage, safePath);
+        const snapshot = await uploadBytes(fileRef, file, metadata);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        return {
+            success: true,
+            path: safePath,
+            storagePath: safePath,
+            downloadURL,
+            url: downloadURL,
+            name: String(file.name || '').trim(),
+            contentType,
+            size: Number(file.size || 0)
+        };
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function getStorageDownloadURL(pathOrUrl) {
+    const raw = String(pathOrUrl || '').trim();
+    if (!raw) return '';
+    if (/^(https?:|data:|blob:|file:)/i.test(raw)) return raw;
+    const safePath = raw.replace(/^\/+/, '');
+    if (safePath.includes('..') || safePath.includes('//')) throw new Error('Caminho de Storage inválido.');
+    const fileRef = storageRef(storage, safePath);
+    return await getDownloadURL(fileRef);
+}
+
+function inferStorageImageType(pathOrUrl) {
+    const raw = String(pathOrUrl || '').split('?')[0].toLowerCase();
+    if (raw.endsWith('.jpg') || raw.endsWith('.jpeg')) return 'image/jpeg';
+    if (raw.endsWith('.webp')) return 'image/webp';
+    if (raw.endsWith('.gif')) return 'image/gif';
+    if (raw.endsWith('.svg')) return 'image/svg+xml';
+    return 'image/png';
+}
+
+function bytesToBase64(bytes) {
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
+}
+
+function extractFirebaseStoragePathFromUrl(pathOrUrl) {
+    const raw = String(pathOrUrl || '').trim();
+    if (!raw) return '';
+    if (/^gs:\/\//i.test(raw)) {
+        return raw.replace(/^gs:\/\/[^/]+\//i, '').replace(/^\/+/, '');
+    }
+    if (!/^https?:\/\//i.test(raw)) return '';
+    try {
+        const url = new URL(raw, typeof window !== 'undefined' && window.location ? window.location.origin : undefined);
+        const host = String(url.hostname || '').toLowerCase();
+        const isStorageHost = host.includes('firebasestorage.googleapis.com') || host.endsWith('.firebasestorage.app');
+        if (!isStorageHost) return '';
+        const marker = '/o/';
+        const index = url.pathname.indexOf(marker);
+        if (index < 0) return '';
+        return decodeURIComponent(url.pathname.slice(index + marker.length)).replace(/^\/+/, '');
+    } catch (_) {
+        return '';
+    }
+}
+
+async function getStorageDataURL(pathOrUrl, maxBytes = 2 * 1024 * 1024) {
+    const raw = String(pathOrUrl || '').trim();
+    if (!raw) return '';
+    if (/^data:image\//i.test(raw)) return raw;
+    const storagePathFromUrl = extractFirebaseStoragePathFromUrl(raw);
+    if (/^https?:\/\//i.test(raw) && !storagePathFromUrl) {
+        const response = await fetch(raw, { mode: 'cors' });
+        if (!response.ok) throw new Error(`Falha ao baixar imagem do Storage (${response.status}).`);
+        const blob = await response.blob();
+        if (!String(blob.type || '').startsWith('image/')) throw new Error('Arquivo do Storage não é uma imagem.');
+        if (blob.size > maxBytes) throw new Error('Imagem do Storage excede 2MB.');
+        return await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = () => reject(new Error('Falha ao converter imagem para DataURL.'));
+            reader.readAsDataURL(blob);
+        });
+    }
+    const safePath = (storagePathFromUrl || raw).replace(/^\/+/, '');
+    if (safePath.includes('..') || safePath.includes('//')) throw new Error('Caminho de Storage inválido.');
+    const isTenantLogoPath = /^companies\/[^/]+\/profile\/logo\/[^/]+$/i.test(safePath);
+    if (isTenantLogoPath) {
+        try {
+            const result = await callFunction('getCompanyLogoDataUrl', {
+                storagePath: safePath,
+                maxBytes: Math.min(Number(maxBytes || 0) || (2 * 1024 * 1024), 2 * 1024 * 1024)
+            });
+            const payload = result && result.success !== false ? (result.data || result) : null;
+            const dataUrl = String(payload && (payload.dataUrl || payload.logoDataUrl || payload.logo || '') || '').trim();
+            if (/^data:image\/(png|jpe?g|webp);base64,/i.test(dataUrl)) return dataUrl;
+            throw new Error((result && result.error) || 'Logo não retornou DataURL válido.');
+        } catch (error) {
+            throw new Error(`Logo da empresa indisponível pelo backend: ${error && error.message ? error.message : String(error)}`);
+        }
+    }
+    const bytes = await getBytes(storageRef(storage, safePath), maxBytes);
+    return `data:${inferStorageImageType(safePath)};base64,${bytesToBase64(bytes)}`;
+}
+
+async function deleteStorageFile(pathOrUrl) {
+    try {
+        const raw = String(pathOrUrl || '').trim();
+        if (!raw) throw new Error('Caminho de Storage não informado.');
+        if (/^https?:\/\//i.test(raw)) throw new Error('Remoção exige caminho do Storage, não URL pública.');
+        const safePath = raw.replace(/^\/+/, '');
+        if (safePath.includes('..') || safePath.includes('//')) throw new Error('Caminho de Storage inválido.');
+        await deleteObject(storageRef(storage, safePath));
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function uploadCompanyLogo(file, companyId, options = {}) {
+    try {
+        if (!file) throw new Error('Arquivo de logo não informado.');
+        const tenant = sanitizeReportCompanyId(companyId || options.companyId || getTenantId());
+        if (!tenant) throw new Error('companyId inválido para upload da logo.');
+        const contentType = String(file.type || options.contentType || '').trim();
+        if (!contentType.startsWith('image/')) throw new Error('A logo precisa ser uma imagem.');
+        const maxSize = Number(options.maxSize || (2 * 1024 * 1024));
+        if (Number(file.size || 0) > maxSize) throw new Error('A logo deve ter no máximo 2MB para cumprir as regras do Storage.');
+        const safeName = String(file.name || 'logo.png').replace(/[^\w.\-]+/g, '_').slice(0, 90) || 'logo.png';
+        const path = `companies/${tenant}/profile/logo/current`;
+        const logoPrefix = `companies/${tenant}/profile/logo/`;
+        const previousRaw = String(
+            options.previousStoragePath
+            || options.previousPath
+            || options.logoStoragePath
+            || options.logoPath
+            || options.previousLogoUrl
+            || options.logoUrl
+            || ''
+        ).trim();
+        const previousPath = (extractFirebaseStoragePathFromUrl(previousRaw) || previousRaw).replace(/^\/+/, '');
+        const upload = await uploadFile(path, file, {
+            contentType,
+            customMetadata: {
+                companyId: tenant,
+                module: 'company-profile',
+                kind: 'logo',
+                uploadedAt: new Date().toISOString()
+            }
+        });
+        if (!upload || upload.success === false) {
+            throw new Error((upload && upload.error) || 'Falha no upload da logo.');
+        }
+        let cleanup = { attempted: false, success: false, path: '' };
+        if (
+            previousPath &&
+            previousPath !== path &&
+            previousPath.startsWith(logoPrefix) &&
+            !previousPath.includes('..') &&
+            !previousPath.includes('//')
+        ) {
+            cleanup = { attempted: true, success: false, path: previousPath };
+            try {
+                const deleted = await deleteStorageFile(previousPath);
+                cleanup.success = !!(deleted && deleted.success);
+                if (!cleanup.success && deleted && deleted.error) {
+                    cleanup.error = deleted.error;
+                    console.warn('⚠️ Logo anterior não removida do Storage:', deleted.error);
+                }
+            } catch (cleanupError) {
+                cleanup.error = cleanupError && cleanupError.message ? cleanupError.message : String(cleanupError);
+                console.warn('⚠️ Logo anterior não removida do Storage:', cleanup.error);
+            }
+        }
+        return {
+            success: true,
+            data: {
+                path,
+                storagePath: path,
+                downloadURL: upload.downloadURL,
+                url: upload.downloadURL,
+                name: safeName,
+                contentType,
+                size: Number(file.size || 0),
+                updatedAt: new Date().toISOString(),
+                replacedStoragePath: cleanup.success ? cleanup.path : '',
+                cleanup
+            }
+        };
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
 async function extendSubscriptionAccess(targetUid, extraDays) {
     try {
         if (!targetUid) throw new Error('targetUid é obrigatório');
         return await callAdminCallableWithRetry('extendSubscriptionAccess', { targetUid, extraDays });
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function grantAdminFreeTrial(payload) {
+    try {
+        const data = payload && typeof payload === 'object' ? payload : {};
+        return await callAdminCallableWithRetry('grantAdminFreeTrial', data);
     } catch (error) {
         return { success: false, error: error && error.message ? error.message : String(error) };
     }
@@ -1722,8 +2430,487 @@ async function getCampaignConfigAudit() {
     }
 }
 
+async function listPromoCodesAdmin(payload = {}) {
+    try {
+        const data = payload && typeof payload === 'object' ? payload : {};
+        return await callAdminCallableWithRetry('listPromoCodesAdmin', data);
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function getPromoCodeAdmin(payload = {}) {
+    try {
+        const data = payload && typeof payload === 'object' ? payload : {};
+        return await callAdminCallableWithRetry('getPromoCodeAdmin', data);
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function upsertPromoCodeAdmin(payload = {}) {
+    try {
+        const data = payload && typeof payload === 'object' ? payload : {};
+        return await callAdminCallableWithRetry('upsertPromoCodeAdmin', data);
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function archivePromoCodeAdmin(payload = {}) {
+    try {
+        const data = payload && typeof payload === 'object' ? payload : {};
+        return await callAdminCallableWithRetry('archivePromoCodeAdmin', data);
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function validatePromoCode(payload) {
+    try {
+        const data = payload && typeof payload === 'object' ? payload : {};
+        const functions = getFunctions(app);
+        const callable = httpsCallable(functions, 'validatePromoCode');
+        const result = await callable(data);
+        return { success: true, data: result && result.data ? result.data : null };
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+const REPORT_COMPANY_BLOCKED_IDS = new Set([
+    'users',
+    'companies',
+    'roles',
+    'subscriptionrequests',
+    'subscriptionaudit',
+    'subscriptionextensionrequests',
+    'subscriptionproofhashes',
+    'subscriptionpayments',
+    'subscriptionsettings',
+    'system',
+    '__no_tenant__'
+]);
+
+const REPORT_COMPANY_DEFAULTS = {
+    nome: "Empresa não informada",
+    name: "Empresa não informada",
+    cnpj: "-",
+    taxId: "-",
+    endereco: "-",
+    address: "-",
+    cidade: "-",
+    city: "-",
+    estado: "-",
+    state: "-",
+    telefone: "-",
+    phone: "-",
+    email: "-",
+    logo: "",
+    logoUrl: "",
+    logoSvg: true
+};
+
+function firstReportValue(...values) {
+    for (const value of values) {
+        if (value === null || value === undefined) continue;
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (trimmed) return trimmed;
+            continue;
+        }
+        if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+    }
+    return '';
+}
+
+function sanitizeReportCompanyId(value) {
+    const raw = firstReportValue(value);
+    if (!raw) return '';
+    if (raw.length > 128) return '';
+    if (/[\/.#$\[\]\s]/.test(raw)) return '';
+    if (REPORT_COMPANY_BLOCKED_IDS.has(raw.toLowerCase())) return '';
+    return raw;
+}
+
+function readReportJsonStorage(key) {
+    try {
+        if (typeof localStorage === 'undefined') return null;
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function getReportCompanyIdFromClaims(claims) {
+    if (!claims || typeof claims !== 'object') return '';
+    return sanitizeReportCompanyId(claims.companyId || claims.companyID || claims.tenantId);
+}
+
+function getReportCompanyIdFromUserObject(user) {
+    if (!user || typeof user !== 'object') return '';
+    return sanitizeReportCompanyId(
+        user.companyId
+        || user.companyID
+        || user.tenantId
+        || getReportCompanyIdFromClaims(user.claims)
+    );
+}
+
+function getReportCompanyIdFromCompanyObject(company) {
+    if (!company || typeof company !== 'object') return '';
+    return sanitizeReportCompanyId(company.companyId || company.companyID || company.tenantId || company.id);
+}
+
+function getReportCurrentUid() {
+    try {
+        if (auth && auth.currentUser && auth.currentUser.uid) return String(auth.currentUser.uid);
+    } catch (_) {}
+    try {
+        const current = readReportJsonStorage('currentUser') || {};
+        const persistent = readReportJsonStorage('persistentUser') || {};
+        return firstReportValue(current.uid, current.userId, current.authUid, persistent.uid, persistent.userId, persistent.authUid);
+    } catch (_) {
+        return '';
+    }
+}
+
+function unwrapReportFirebaseResult(result) {
+    if (!result) return null;
+    if (typeof result !== 'object') return result;
+    if (Object.prototype.hasOwnProperty.call(result, 'success') && Object.prototype.hasOwnProperty.call(result, 'data')) {
+        return result.success === false ? null : result.data;
+    }
+    if (Object.prototype.hasOwnProperty.call(result, 'data') && Object.keys(result).length <= 2) {
+        return result.data;
+    }
+    return result;
+}
+
+function normalizeReportLogo(value) {
+    let candidate = value;
+    if (candidate && typeof candidate === 'object') {
+        candidate = candidate.url || candidate.downloadURL || candidate.logoUrl || candidate.logoURL || candidate.storagePath || candidate.logoStoragePath || candidate.path || candidate.base64 || candidate.data || candidate.value || '';
+    }
+    const s = firstReportValue(candidate);
+    if (!s) return '';
+    if (s.startsWith('data:') || s.startsWith('blob:') || s.startsWith('file:')) return s;
+    if (/^https?:\/\//i.test(s)) return s;
+    if (/^[A-Za-z0-9+/=]+$/.test(s) && s.length > 80) return `data:image/png;base64,${s}`;
+    if (/^(\.\/|\.\.\/|\/)/.test(s) || /\.(png|jpg|jpeg|webp|svg)$/i.test(s)) return s;
+    return s;
+}
+
+function normalizeReportAddressValue(value) {
+    if (!value || typeof value !== 'object') return firstReportValue(value);
+    return [
+        firstReportValue(value.logradouro, value.rua, value.street, value.endereco, value.address),
+        firstReportValue(value.numero, value.number),
+        firstReportValue(value.bairro, value.district),
+        firstReportValue(value.complemento, value.complement)
+    ].filter(Boolean).join(', ');
+}
+
+function normalizeCompanyProfileForReport(raw = {}, companyId = '', options = {}) {
+    const includeDefaults = options.includeDefaults !== false;
+    const source = raw && typeof raw === 'object' ? raw : {};
+    const addressObject = source.endereco && typeof source.endereco === 'object'
+        ? source.endereco
+        : (source.address && typeof source.address === 'object' ? source.address : {});
+    const resolvedId = sanitizeReportCompanyId(
+        source.companyId
+        || source.companyID
+        || source.tenantId
+        || source.id
+        || companyId
+    );
+    const name = firstReportValue(source.nome, source.name, source.razaoSocial, source.fantasia, source.companyName);
+    const cnpj = firstReportValue(source.cnpj, source.taxId, source.cpfCnpj, source.documento);
+    const address = firstReportValue(
+        normalizeReportAddressValue(source.endereco),
+        normalizeReportAddressValue(source.address)
+    );
+    const city = firstReportValue(source.cidade, source.city, source.municipio, addressObject.cidade, addressObject.city, addressObject.municipio);
+    const state = firstReportValue(source.estado, source.state, source.uf, addressObject.estado, addressObject.state, addressObject.uf);
+    const phone = firstReportValue(source.telefone, source.phone, source.celular, source.whatsapp);
+    const email = firstReportValue(source.email, source.emailContato, source.contactEmail);
+    const responsibleName = firstReportValue(source.responsibleName, source.responsavel, source.nomeResponsavel, source.owner);
+    const number = firstReportValue(source.numero, source.number, addressObject.numero, addressObject.number);
+    const neighborhood = firstReportValue(source.bairro, source.neighborhood, source.district, addressObject.bairro, addressObject.neighborhood, addressObject.district);
+    const complement = firstReportValue(source.complemento, source.complement, addressObject.complemento, addressObject.complement);
+    const logoStoragePath = firstReportValue(source.logoStoragePath, source.logoPath, source.storagePath, source.logoRef);
+    const logo = normalizeReportLogo(source.logoUrl || source.logoURL || source.logoDownloadURL || source.logo || logoStoragePath || source.logoBase64 || source.logoData);
+
+    const normalized = includeDefaults ? { ...REPORT_COMPANY_DEFAULTS } : {};
+    if (resolvedId) {
+        normalized.id = resolvedId;
+        normalized.companyId = resolvedId;
+        normalized.tenantId = resolvedId;
+    }
+    if (name) {
+        normalized.nome = name;
+        normalized.name = name;
+    }
+    if (cnpj) {
+        normalized.cnpj = cnpj;
+        normalized.taxId = cnpj;
+    }
+    if (address) {
+        normalized.endereco = address;
+        normalized.address = address;
+    }
+    if (city) {
+        normalized.cidade = city;
+        normalized.city = city;
+    }
+    if (state) {
+        normalized.estado = state;
+        normalized.state = state;
+        normalized.uf = state;
+    }
+    if (phone) {
+        normalized.telefone = phone;
+        normalized.phone = phone;
+    }
+    if (email) normalized.email = email;
+    if (responsibleName) {
+        normalized.responsavel = responsibleName;
+        normalized.responsibleName = responsibleName;
+    }
+    if (number) {
+        normalized.numero = number;
+        normalized.number = number;
+    }
+    if (neighborhood) {
+        normalized.bairro = neighborhood;
+        normalized.neighborhood = neighborhood;
+    }
+    if (complement) {
+        normalized.complemento = complement;
+        normalized.complement = complement;
+    }
+    if (logo) {
+        normalized.logo = logo;
+        normalized.logoUrl = logo;
+        normalized.logoSvg = false;
+    }
+    if (logoStoragePath) {
+        normalized.logoStoragePath = logoStoragePath;
+        normalized.logoPath = logoStoragePath;
+    }
+    const logoFileName = firstReportValue(source.logoFileName, source.logoName);
+    const logoContentType = firstReportValue(source.logoContentType, source.logoMimeType);
+    const logoSize = firstReportValue(source.logoSize);
+    const logoUpdatedAt = firstReportValue(source.logoUpdatedAt);
+    if (logoFileName) normalized.logoFileName = logoFileName;
+    if (logoContentType) normalized.logoContentType = logoContentType;
+    if (logoSize) normalized.logoSize = logoSize;
+    if (logoUpdatedAt) normalized.logoUpdatedAt = logoUpdatedAt;
+
+    const inscricaoEstadual = firstReportValue(source.inscricaoEstadual, source.ie, source.stateRegistration);
+    const cep = firstReportValue(source.cep, source.zip, source.postalCode, addressObject.cep, addressObject.zip, addressObject.postalCode);
+    if (inscricaoEstadual) {
+        normalized.inscricaoEstadual = inscricaoEstadual;
+        normalized.ie = inscricaoEstadual;
+    }
+    if (cep) {
+        normalized.cep = cep;
+        normalized.zip = cep;
+    }
+
+    return normalized;
+}
+
+function hasReportCompanyIdentity(data) {
+    if (!data || typeof data !== 'object') return false;
+    const normalized = normalizeCompanyProfileForReport(data, '', { includeDefaults: false });
+    const name = normalized.nome || normalized.name || '';
+    const cnpj = normalized.cnpj || normalized.taxId || '';
+    const address = normalized.endereco || normalized.address || '';
+    const phone = normalized.telefone || normalized.phone || '';
+    return !!(
+        (name && name !== REPORT_COMPANY_DEFAULTS.nome)
+        || (cnpj && cnpj !== '-')
+        || (address && address !== '-')
+        || (phone && phone !== '-')
+        || normalized.email
+        || normalized.logo
+    );
+}
+
+function mergeReportCompanyData(target, source, companyId, override = false) {
+    if (!source || typeof source !== 'object') return target;
+    const normalized = normalizeCompanyProfileForReport(source, companyId, { includeDefaults: false });
+    Object.entries(normalized).forEach(([key, value]) => {
+        if (value === null || value === undefined || value === '') return;
+        if (override || target[key] === undefined || target[key] === null || target[key] === '' || target[key] === '-') {
+            target[key] = value;
+        }
+    });
+    return target;
+}
+
+async function resolveReportCompanyId(options = {}) {
+    const explicit = sanitizeReportCompanyId(options.companyId || options.companyID || options.tenantId);
+    if (explicit) {
+        setTenantId(explicit);
+        return explicit;
+    }
+
+    try {
+        if (auth && auth.currentUser && typeof auth.currentUser.getIdTokenResult === 'function') {
+            const token = await auth.currentUser.getIdTokenResult();
+            const fromClaims = getReportCompanyIdFromClaims(token && token.claims);
+            if (fromClaims) {
+                setTenantId(fromClaims);
+                return fromClaims;
+            }
+        }
+    } catch (_) {}
+
+    const current = readReportJsonStorage('currentUser') || {};
+    const persistent = readReportJsonStorage('persistentUser') || {};
+    const fromStoredUser = getReportCompanyIdFromUserObject(current) || getReportCompanyIdFromUserObject(persistent);
+    if (fromStoredUser) {
+        setTenantId(fromStoredUser);
+        return fromStoredUser;
+    }
+
+    const uid = getReportCurrentUid();
+    if (uid) {
+        try {
+            const userRecord = unwrapReportFirebaseResult(await loadFromFirebase(`users/${uid}`));
+            const fromUserRecord = getReportCompanyIdFromUserObject(userRecord);
+            if (fromUserRecord) {
+                setTenantId(fromUserRecord);
+                return fromUserRecord;
+            }
+        } catch (_) {}
+    }
+
+    try {
+        const fromRuntime = sanitizeReportCompanyId(getTenantId());
+        if (fromRuntime) {
+            setTenantId(fromRuntime);
+            return fromRuntime;
+        }
+    } catch (_) {}
+
+    try {
+        if (typeof window !== 'undefined') {
+            const fromWindow = sanitizeReportCompanyId(window.appTenantId);
+            if (fromWindow) {
+                setTenantId(fromWindow);
+                return fromWindow;
+            }
+        }
+    } catch (_) {}
+
+    const companyInfo = readReportJsonStorage('company_info') || {};
+    const fromCompanyInfo = getReportCompanyIdFromCompanyObject(companyInfo);
+    if (fromCompanyInfo) {
+        setTenantId(fromCompanyInfo);
+        return fromCompanyInfo;
+    }
+
+    return '';
+}
+
+async function loadReportCompanyNode(path, warnings) {
+    try {
+        const result = await loadFromFirebase(path);
+        const data = unwrapReportFirebaseResult(result);
+        return data && typeof data === 'object' ? data : null;
+    } catch (error) {
+        if (warnings) warnings.push(`${path}: ${error && error.message ? error.message : String(error)}`);
+        return null;
+    }
+}
+
+async function getCompanyProfileForReport(options = {}) {
+    const warnings = [];
+    const companyId = await resolveReportCompanyId(options);
+    let companyData = {};
+    let source = '';
+
+    if (companyId) {
+        const profileData = await loadReportCompanyNode(`companies/${companyId}/profile`, warnings);
+        if (hasReportCompanyIdentity(profileData)) {
+            mergeReportCompanyData(companyData, profileData, companyId, true);
+            source = source || 'firebase:profile';
+        }
+
+        const rootData = await loadReportCompanyNode(`companies/${companyId}`, warnings);
+        if (hasReportCompanyIdentity(rootData)) {
+            mergeReportCompanyData(companyData, rootData, companyId, false);
+            source = source || 'firebase:root';
+        }
+    }
+
+    const localCompany = readReportJsonStorage('company_info') || {};
+    const localCompanyId = getReportCompanyIdFromCompanyObject(localCompany);
+    const localMatchesTenant = !companyId || !localCompanyId || localCompanyId === companyId;
+    if (localMatchesTenant && hasReportCompanyIdentity(localCompany)) {
+        mergeReportCompanyData(companyData, localCompany, companyId || localCompanyId, false);
+        source = source || 'localStorage:company_info';
+    } else if (!localMatchesTenant) {
+        warnings.push('company_info ignorado por pertencer a outro companyId');
+    }
+
+    const normalized = normalizeCompanyProfileForReport(companyData, companyId || localCompanyId, { includeDefaults: true });
+    if (companyId) {
+        normalized.id = companyId;
+        normalized.companyId = companyId;
+        normalized.tenantId = companyId;
+    }
+
+    try {
+        const logoPath = normalized.logoStoragePath || normalized.logoPath || '';
+        const logoValue = String(normalized.logo || '').trim();
+        if (logoPath && (!logoValue || !/^https?:\/\//i.test(logoValue))) {
+            const logoUrl = await getStorageDownloadURL(logoPath);
+            if (logoUrl) {
+                normalized.logo = logoUrl;
+                normalized.logoUrl = logoUrl;
+                normalized.logoSvg = false;
+            }
+        }
+    } catch (error) {
+        warnings.push(`logoStoragePath: ${error && error.message ? error.message : String(error)}`);
+    }
+
+    try {
+        if (typeof localStorage !== 'undefined' && hasReportCompanyIdentity(normalized)) {
+            const existing = readReportJsonStorage('company_info') || {};
+            const existingId = getReportCompanyIdFromCompanyObject(existing);
+            const cachePayload = { ...existing, ...normalized };
+            if (cachePayload.logo && String(cachePayload.logo).startsWith('data:')) {
+                delete cachePayload.logo;
+                delete cachePayload.logoUrl;
+            }
+            delete cachePayload.logoBase64;
+            delete cachePayload.logoData;
+            if (!existingId || !companyId || existingId === companyId) {
+                localStorage.setItem('company_info', JSON.stringify(cachePayload));
+            } else if (companyId) {
+                localStorage.setItem('company_info', JSON.stringify(cachePayload));
+            }
+        }
+    } catch (_) {}
+
+    return {
+        success: true,
+        companyId: normalized.companyId || companyId || '',
+        source: source || 'defaults',
+        warnings,
+        data: normalized
+    };
+}
+
 // Expor serviços e funções globalmente
 window.firebaseService = {
+    auth,
     // Funções de autenticação
     authService: {
         getAuth: () => auth,
@@ -1734,6 +2921,7 @@ window.firebaseService = {
         onAuthStateChanged: onAuthStateChanged,
         setPersistence: setPersistence,
         browserSessionPersistence: browserSessionPersistence,
+        browserLocalPersistence: browserLocalPersistence,
         sendPasswordResetEmail: sendPasswordResetEmail,
         getCurrentUser: () => authService.getCurrentUser(),
         getCredential: (email, password) => authService.getCredential(email, password),
@@ -1756,12 +2944,35 @@ window.firebaseService = {
     },
     // Funções utilitárias
     isFirebaseOperational: isFirebaseOperational,
+    authPersistenceReady: authPersistenceReady,
     loadFromFirebase: loadFromFirebase,
     saveToFirebase: saveToFirebase,
     updatePaths: updatePaths,
     getTenantId: getTenantId,
     setTenantId: setTenantId,
+    resolveAuthenticatedTenant: resolveAuthenticatedTenant,
     getCurrentUid: getCurrentUid,
+    callFunction: callFunction,
+    uploadFile: uploadFile,
+    extractFirebaseStoragePathFromUrl: extractFirebaseStoragePathFromUrl,
+    extractStoragePathFromUrl: extractFirebaseStoragePathFromUrl,
+    getDownloadURL: getStorageDownloadURL,
+    getStorageDownloadURL: getStorageDownloadURL,
+    getStorageDataURL: getStorageDataURL,
+    uploadCompanyLogo: uploadCompanyLogo,
+    storage: {
+        upload: async (path, file, options = {}) => {
+            const result = await uploadFile(path, file, options);
+            if (!result || result.success === false) throw new Error((result && result.error) || 'Falha no upload');
+            return result.downloadURL || result.url;
+        },
+        getDownloadURL: getStorageDownloadURL,
+        getDataURL: getStorageDataURL,
+        delete: deleteStorageFile
+    },
+    resolveReportCompanyId: resolveReportCompanyId,
+    normalizeCompanyProfileForReport: normalizeCompanyProfileForReport,
+    getCompanyProfileForReport: getCompanyProfileForReport,
     getNamespacedPath: getNamespacedPath,
     namespaceUpdates: namespaceUpdates,
     createCompanyOnboarding: createCompanyOnboarding,
@@ -1776,9 +2987,12 @@ window.firebaseService = {
     upsertSubscriptionSettings: upsertSubscriptionSettings,
     submitSubscriptionRequest: submitSubscriptionRequest,
     createPixPayment: createPixPayment,
+    createPaymentPreference: createPaymentPreference,
     revalidatePixPayment: revalidatePixPayment,
+    processPaymentBrick: processPaymentBrick,
     activateFreeTrial: activateFreeTrial,
     extendSubscriptionAccess: extendSubscriptionAccess,
+    grantAdminFreeTrial: grantAdminFreeTrial,
     requestSubscriptionExtension: requestSubscriptionExtension,
     getOpenExtensionRequests: getOpenExtensionRequests,
     reviewSubscriptionExtensionRequest: reviewSubscriptionExtensionRequest,
@@ -1787,8 +3001,19 @@ window.firebaseService = {
     confirmSubscriptionApproval: confirmSubscriptionApproval,
     updateSubscriptionFinancialEvent: updateSubscriptionFinancialEvent,
     deleteSubscriptionManagedData: deleteSubscriptionManagedData,
+    createSupportTicket: createSupportTicket,
+    addSupportTicketMessage: addSupportTicketMessage,
+    listMySupportTickets: listMySupportTickets,
+    getSupportTicket: getSupportTicket,
+    updateSupportTicketStatus: updateSupportTicketStatus,
+    listSupportTicketsAdmin: listSupportTicketsAdmin,
     getCampaignExecutiveSummary: getCampaignExecutiveSummary,
     getCampaignConfigAudit: getCampaignConfigAudit,
+    listPromoCodesAdmin: listPromoCodesAdmin,
+    getPromoCodeAdmin: getPromoCodeAdmin,
+    upsertPromoCodeAdmin: upsertPromoCodeAdmin,
+    archivePromoCodeAdmin: archivePromoCodeAdmin,
+    validatePromoCode: validatePromoCode,
     getAll: getAll
 };
 
@@ -2120,21 +3345,115 @@ function updateFirebase(path, data) {
     return saveToFirebase(path, null, data);
 }
 
+function normalizeProfileText(value, maxLength = 180) {
+    const raw = String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
+    return raw.slice(0, maxLength);
+}
+
+function normalizeMyUserProfilePatch(payload) {
+    const source = payload && typeof payload === 'object' ? payload : {};
+    const hasOwn = (key) => Object.prototype.hasOwnProperty.call(source, key);
+    const patch = {};
+
+    if (hasOwn('displayName')) {
+        const displayName = normalizeProfileText(source.displayName, 180);
+        patch.displayName = displayName;
+        patch.name = displayName;
+    }
+    if (hasOwn('username')) {
+        patch.username = normalizeProfileText(source.username, 80);
+    }
+    if (hasOwn('phone')) {
+        const phone = normalizeProfileText(source.phone, 40);
+        patch.phone = phone;
+        patch.telefone = phone;
+    }
+    if (hasOwn('whatsapp')) {
+        patch.whatsapp = normalizeProfileText(source.whatsapp, 40);
+    }
+    if (hasOwn('photoURL')) {
+        const photoURL = normalizeProfileText(source.photoURL, 2048);
+        patch.photoURL = photoURL || null;
+    }
+
+    const now = new Date().toISOString();
+    patch.updatedAt = now;
+    patch.lastUpdated = now;
+    patch.profileUpdatedAt = now;
+    return patch;
+}
+
+async function updateMyUserProfile(payload) {
+    try {
+        await authPersistenceReady;
+        const currentUser = auth && auth.currentUser ? auth.currentUser : await authService.getCurrentUser();
+        if (!currentUser || !currentUser.uid) {
+            return { success: false, error: 'Usuário autenticado não encontrado para atualizar o perfil.' };
+        }
+
+        const patch = normalizeMyUserProfilePatch(payload);
+        const editableKeys = Object.keys(patch).filter((key) => !['updatedAt', 'lastUpdated', 'profileUpdatedAt'].includes(key));
+        if (!editableKeys.length) {
+            return { success: false, error: 'Nenhum campo de perfil informado para atualizar.' };
+        }
+
+        const authPatch = {};
+        if (Object.prototype.hasOwnProperty.call(patch, 'displayName')) {
+            authPatch.displayName = patch.displayName;
+        }
+        if (Object.prototype.hasOwnProperty.call(patch, 'photoURL')) {
+            authPatch.photoURL = patch.photoURL || null;
+        }
+        const result = await callFunction('updateMyUserProfile', patch);
+        try {
+            if (Object.keys(authPatch).length) {
+                await firebaseUpdateProfile(currentUser, authPatch);
+            }
+        } catch (authProfileError) {
+            console.warn('⚠️ Perfil salvo no servidor, mas o cache do Firebase Auth não atualizou localmente:', authProfileError);
+        }
+        const data = result && typeof result === 'object' && result.profile
+            ? result.profile
+            : patch;
+        return { success: true, uid: currentUser.uid, data, source: 'function' };
+    } catch (error) {
+        console.error('❌ Erro ao atualizar perfil do usuário:', error);
+        const rawMessage = String(error && error.message ? error.message : error || '');
+        const lower = rawMessage.toLowerCase();
+        if (lower.includes('not found') || lower.includes('404')) {
+            return { success: false, error: "Cloud Function 'updateMyUserProfile' não encontrada. Publique as Functions antes de salvar o perfil." };
+        }
+        if (lower.includes('permission') || lower.includes('permission_denied')) {
+            return { success: false, error: 'Sem permissão para atualizar o perfil. Entre novamente e tente outra vez; se persistir, revise as claims do usuário.' };
+        }
+        if (lower.includes('cors') || lower.includes('failed to fetch') || lower.includes('network')) {
+            return { success: false, error: "Falha de rede/CORS ao chamar 'updateMyUserProfile'. Verifique deploy e conexão." };
+        }
+        return { success: false, error: rawMessage || 'Falha ao atualizar perfil do usuário.' };
+    }
+}
+
 // ✅ SERVIÇO DE AUTENTICAÇÃO SIMPLIFICADO
 export const authService = {
     // Login com email/senha
     async login(email, password) {
         try {
-            console.log("🔑 Tentando login com email:", email);
+            const normalizedEmail = String(email || '').trim().toLowerCase();
+            const rawPassword = typeof password === 'string' ? password : String(password || '');
+            console.log("🔑 Tentando login com email:", normalizedEmail);
             console.log("🌐 Usando Database URL:", firebaseConfig.databaseURL);
             console.log("🔑 Usando API Key:", firebaseConfig.apiKey.substring(0, 10) + "...");
+            if (!normalizedEmail || !rawPassword) {
+                return { success: false, error: "Email e senha são obrigatórios." };
+            }
             
             const status = isFirebaseOperational();
             if (!status.operational) {
                 throw new Error("Firebase não operacional para login");
             }
+            await authPersistenceReady;
             
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, rawPassword);
             const user = userCredential.user;
             
             // ✅ FORÇAR CARREGAMENTO DE CLAIMS ANTES DE RETORNAR
@@ -2166,7 +3485,7 @@ export const authService = {
                 console.log("🏢 Login: CompanyId detectado e persistido:", tenant);
             }
 
-            console.log("✅ Login bem-sucedido para:", email);
+            console.log("✅ Login bem-sucedido para:", normalizedEmail);
             return { success: true, user };
             
         } catch (error) {
@@ -2183,6 +3502,8 @@ export const authService = {
                     databaseURL: firebaseConfig.databaseURL,
                     authDomain: firebaseConfig.authDomain
                 });
+            } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') {
+                userFriendlyMessage = "Email ou senha inválidos. Confira se não há espaços no email e tente novamente.";
             } else if (error.code === 'auth/user-not-found') {
                 userFriendlyMessage = "Usuário não encontrado. Verifique o email digitado.";
             } else if (error.code === 'auth/wrong-password') {
@@ -2201,6 +3522,18 @@ export const authService = {
     async logout() {
         try {
             await signOut(auth);
+            try {
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('persistentUser');
+                localStorage.removeItem('auth');
+                localStorage.removeItem('siswebAuthSession');
+            } catch (_) {}
+            try { sessionStorage.clear(); } catch (_) {}
+            clearTenantContext();
+            try { window.firebaseAuthUser = null; } catch (_) {}
+            try { window.currentUser = null; } catch (_) {}
+            try { window.__SESSION_SUPERADMIN = false; } catch (_) {}
+            try { window.__SESSION_SUPERADMIN_UID = ''; } catch (_) {}
             console.log("✅ Logout realizado com sucesso");
             return { success: true };
         } catch (error) {
@@ -2233,10 +3566,12 @@ export const authService = {
     },
 
     getCredential(email, password) {
-        if (!email || !password) {
+        const normalizedEmail = String(email || '').trim().toLowerCase();
+        const rawPassword = typeof password === 'string' ? password : String(password || '');
+        if (!normalizedEmail || !rawPassword) {
             throw new Error('Email e senha são obrigatórios para criar credencial.');
         }
-        return EmailAuthProvider.credential(String(email), String(password));
+        return EmailAuthProvider.credential(normalizedEmail, rawPassword);
     },
 
     async reauthenticate(credential) {
@@ -2260,7 +3595,9 @@ export const authService = {
     // Registrar novo usuário
     async register(email, password, username) {
         try {
-            console.log("🔐 Registrando novo usuário:", email);
+            const normalizedEmail = String(email || '').trim().toLowerCase();
+            const rawPassword = typeof password === 'string' ? password : String(password || '');
+            console.log("🔐 Registrando novo usuário:", normalizedEmail);
             console.log("🌐 Usando Database URL:", firebaseConfig.databaseURL);
             console.log("🔑 Usando API Key:", firebaseConfig.apiKey.substring(0, 10) + "...");
             
@@ -2268,15 +3605,29 @@ export const authService = {
             if (!status.operational) {
                 throw new Error("Firebase não operacional para registro");
             }
+            await authPersistenceReady;
             
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, rawPassword);
             const user = userCredential.user;
+            const normalizedUsername = normalizeProfileText(username || normalizedEmail.split('@')[0], 80);
+            const createdAt = new Date().toISOString();
+            try {
+                await firebaseUpdateProfile(user, { displayName: normalizedUsername });
+            } catch (profileError) {
+                console.warn('⚠️ Registro: falha ao preencher displayName no Auth:', profileError && profileError.message ? profileError.message : profileError);
+            }
             
             // Salvar dados adicionais do usuário
             await saveToFirebase(`users/${user.uid}`, null, {
-                username: username || email.split('@')[0],
-                email: email,
-                createdAt: new Date().toISOString()
+                username: normalizedUsername,
+                displayName: normalizedUsername,
+                name: normalizedUsername,
+                email: normalizedEmail,
+                phone: '',
+                telefone: '',
+                createdAt,
+                updatedAt: createdAt,
+                profileUpdatedAt: createdAt
             });
             
             console.log("✅ Usuário registrado com sucesso:", user.uid);
@@ -2359,12 +3710,24 @@ export {
     deleteFromFirebase as removeFromFirebase,
     getFromFirebase,
     updateFirebase,
+    callFunction,
+    updateMyUserProfile,
     updatePaths,
     getServerTimestamp,
     getTenantId,
     getTenantId as getCurrentTenantId,
     setTenantId,
+    resolveAuthenticatedTenant,
     getCurrentUid,
+    uploadFile,
+    extractFirebaseStoragePathFromUrl,
+    getStorageDownloadURL,
+    getStorageDataURL,
+    deleteStorageFile,
+    uploadCompanyLogo,
+    resolveReportCompanyId,
+    normalizeCompanyProfileForReport,
+    getCompanyProfileForReport,
     subscribe,
     createCompanyOnboarding,
     setCompanyClaim,
@@ -2385,6 +3748,7 @@ export {
     activateFreeTrial,
     uploadSubscriptionProof,
     extendSubscriptionAccess,
+    grantAdminFreeTrial,
     requestSubscriptionExtension,
     grantReadOnlyGrace,
     saveUiCache,
@@ -2396,12 +3760,24 @@ export {
     confirmSubscriptionApproval,
     updateSubscriptionFinancialEvent,
     deleteSubscriptionManagedData,
+    createSupportTicket,
+    sendPublicSupportEmail,
+    addSupportTicketMessage,
+    listMySupportTickets,
+    getSupportTicket,
+    updateSupportTicketStatus,
+    listSupportTicketsAdmin,
     getCampaignExecutiveSummary,
     getCampaignConfigAudit,
+    listPromoCodesAdmin,
+    getPromoCodeAdmin,
+    upsertPromoCodeAdmin,
+    archivePromoCodeAdmin,
     getAll,
     migrateFromIndexedDB,
     db,
     auth,
+    authPersistenceReady,
     app
 };
 
@@ -2440,18 +3816,30 @@ function subscribe(path, callback) {
     }
 }
 
+async function sendSubscriptionEmail(payload) {
+    try {
+        const data = payload && typeof payload === 'object' ? payload : {};
+        return await callAdminCallableWithRetry('sendSubscriptionEmail', data);
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
 // No final do arquivo, adicionar exportação global para window.firebaseService
 const initializeGlobalFirebaseService = () => {
     const globalService = {
+        auth,
         loadFromFirebase,
         saveToFirebase,
         removeFromFirebase: deleteFromFirebase,
         getFromFirebase,
         updateFirebase,
+        updateMyUserProfile,
         updatePaths,
         serverTimestamp: getServerTimestamp,
         subscribe,
         authService,
+        authPersistenceReady,
         getCurrentUser: (...args) => authService.getCurrentUser(...args),
         getCredential: (...args) => authService.getCredential(...args),
         reauthenticate: (...args) => authService.reauthenticate(...args),
@@ -2459,7 +3847,30 @@ const initializeGlobalFirebaseService = () => {
         isFirebaseOperational,
         getCurrentTenantId: getTenantId,
         setTenantId,
+        resolveAuthenticatedTenant,
         getCurrentUid,
+        callFunction,
+        uploadFile,
+        extractFirebaseStoragePathFromUrl,
+        extractStoragePathFromUrl: extractFirebaseStoragePathFromUrl,
+        getDownloadURL: getStorageDownloadURL,
+        getStorageDownloadURL,
+        getStorageDataURL,
+        deleteStorageFile,
+        uploadCompanyLogo,
+        storage: {
+            upload: async (path, file, options = {}) => {
+                const result = await uploadFile(path, file, options);
+                if (!result || result.success === false) throw new Error((result && result.error) || 'Falha no upload');
+                return result.downloadURL || result.url;
+            },
+            getDownloadURL: getStorageDownloadURL,
+            getDataURL: getStorageDataURL,
+            delete: deleteStorageFile
+        },
+        resolveReportCompanyId,
+        normalizeCompanyProfileForReport,
+        getCompanyProfileForReport,
         setUserAccessStatus,
         syncMyAdminClaims,
         auditAdminClaimsInconsistencies,
@@ -2475,6 +3886,7 @@ const initializeGlobalFirebaseService = () => {
         revalidatePixPayment,
         uploadSubscriptionProof,
         extendSubscriptionAccess,
+        grantAdminFreeTrial,
         requestSubscriptionExtension,
         grantReadOnlyGrace,
         saveUiCache,
@@ -2486,8 +3898,20 @@ const initializeGlobalFirebaseService = () => {
         confirmSubscriptionApproval,
         updateSubscriptionFinancialEvent,
         deleteSubscriptionManagedData,
+        createSupportTicket,
+        sendPublicSupportEmail,
+        addSupportTicketMessage,
+        listMySupportTickets,
+        getSupportTicket,
+        updateSupportTicketStatus,
+        listSupportTicketsAdmin,
+        sendSubscriptionEmail,
         getCampaignExecutiveSummary,
         getCampaignConfigAudit,
+        listPromoCodesAdmin,
+        getPromoCodeAdmin,
+        upsertPromoCodeAdmin,
+        archivePromoCodeAdmin,
         getAll,
         migrateDataToFirebase,
         migrateFromIndexedDB,

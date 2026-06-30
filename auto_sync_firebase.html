@@ -206,13 +206,13 @@
                 if (window.appTenantId) return String(window.appTenantId);
                 if (window.companyInfo) {
                     const raw = window.companyInfo;
-                    const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                    const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                     if (id) return String(id);
                 }
                 const stored = localStorage.getItem('company_info');
                 if (stored) {
                     const obj = JSON.parse(stored);
-                    const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                    const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                     if (id) return String(id);
                 }
             } catch (_) {}
@@ -275,7 +275,7 @@
             }
             
             // Verificar espécies
-            const especies = readLocalStorageValue('especies') || readLocalStorageValue('species');
+            const especies = readLocalStorageValue('especies');
             if (especies) {
                 try {
                     const parsed = JSON.parse(especies);
@@ -408,7 +408,7 @@
             log('🌳 Sincronizando espécies...');
             updateProgress(30);
             
-            const data = await downloadFromFirebase('especies', ['species', 'especiesList']);
+            const data = await downloadFromFirebase('especies');
             
             if (data) {
                 writeLocalStorageValue('especies', data);
@@ -425,19 +425,10 @@
         async function syncRomaneios() {
             log('📋 Sincronizando romaneios...');
             updateProgress(70);
-            
-            const data = await downloadFromFirebase('romaneiosPct', ['romaneios', 'romaneiosTL', 'romaneiosTora']);
-            
-            if (data) {
-                writeLocalStorageValue('romaneiosPct', data);
-                const count = Array.isArray(data) ? data.length : 1;
-                log(`✅ ${count} romaneios sincronizados`);
-                updateProgress(85);
-                return count;
-            } else {
-                log('❌ Falha ao sincronizar romaneios');
-                return 0;
-            }
+
+            log('⛔ Sincronização local de romaneios desativada. Use apenas companies/{companyId}/romaneios/{pct,tl,pes,tora}.');
+            updateProgress(85);
+            return 0;
         }
         
         async function verificarEstado() {

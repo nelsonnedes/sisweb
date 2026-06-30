@@ -10,7 +10,8 @@
     <title>Meu Perfil - Sistema</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <script src="menu-component.js?v=20260326"></script>
+    <script src="auth.js?v=2026-06-11-profile-admin-v1"></script>
+    <script src="menu-component.js?v=2026-06-11-profile-admin-v1"></script>
     <!-- Adicionar fontes do Google para melhorar a tipografia -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -406,6 +407,45 @@
             .profile-grid {
                 grid-template-columns: 1fr;
                 gap: 20px;
+                width: 100%;
+                max-width: 100%;
+                min-width: 0;
+                overflow: hidden;
+            }
+
+            .profile-card {
+                width: 100%;
+                max-width: 100%;
+                min-width: 0;
+                padding: 20px;
+                overflow: hidden;
+            }
+
+            .card-header {
+                display: grid;
+                grid-template-columns: 1fr;
+                align-items: stretch;
+                gap: 12px;
+            }
+
+            .card-title,
+            .info-item,
+            .info-value {
+                min-width: 0;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+
+            .info-item {
+                display: grid;
+                grid-template-columns: 1fr;
+                align-items: start;
+                gap: 4px;
+            }
+
+            .edit-btn {
+                width: 100%;
+                justify-content: center;
             }
 
             .profile-header {
@@ -443,7 +483,9 @@
             border-radius: 16px;
             padding: 30px;
             width: 90%;
-            max-width: 500px;
+            max-width: 640px;
+            max-height: min(92vh, 780px);
+            overflow-y: auto;
             box-shadow: 0 20px 50px rgba(0,0,0,0.3);
         }
 
@@ -472,6 +514,51 @@
 
         .modal-close:hover {
             color: #374151;
+        }
+
+        .form-input[readonly] {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            color: #475569;
+            cursor: default;
+        }
+
+        .reference-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            padding: 14px;
+            margin: 8px 0 18px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        .form-hint {
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.45;
+            margin-top: -8px;
+            margin-bottom: 16px;
+        }
+
+        .info-value code {
+            padding: 2px 6px;
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: #334155;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .reference-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal {
+                width: calc(100% - 24px);
+                padding: 22px;
+            }
         }
     </style>
 </head>
@@ -536,6 +623,18 @@
                 <div class="info-item">
                     <span class="info-label">Telefone</span>
                     <span class="info-value" id="userPhone">Não informado</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">UID</span>
+                    <span class="info-value" id="profileUid"><code>Carregando...</code></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Perfil</span>
+                    <span class="info-value" id="userRole">Carregando...</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Empresa</span>
+                    <span class="info-value" id="userCompany">Carregando...</span>
                 </div>
             </div>
 
@@ -659,6 +758,27 @@
                     <label for="editPhone">Telefone</label>
                     <input type="tel" id="editPhone" class="form-input" placeholder="(00) 00000-0000">
                 </div>
+                <div class="reference-grid">
+                    <div class="form-group">
+                        <label for="editEmail">E-mail da Conta</label>
+                        <input type="email" id="editEmail" class="form-input" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="editUid">UID</label>
+                        <input type="text" id="editUid" class="form-input" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCompany">Empresa</label>
+                        <input type="text" id="editCompany" class="form-input" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="editRole">Perfil</label>
+                        <input type="text" id="editRole" class="form-input" readonly>
+                    </div>
+                </div>
+                <div class="form-hint">
+                    E-mail, UID, empresa, papel administrativo e status comercial sao dados de seguranca. Para alterar esses campos, use o painel administrativo adequado.
+                </div>
                 
                 <div class="action-buttons">
                     <button type="button" class="btn-secondary" onclick="closeEditPersonalInfo()">
@@ -678,13 +798,12 @@
     </div>
 
     <!-- Scripts -->
-    <script src="auth.js"></script>
     <script type="module">
-        import * as svc from './firebaseService.js';
+        import * as svc from './firebaseService.js?v=2026-06-11-profile-admin-v1';
         if (!window.firebaseService) {
             window.firebaseService = svc;
         } else {
-            window.firebaseService = { ...svc, ...window.firebaseService };
+            window.firebaseService = { ...window.firebaseService, ...svc };
         }
         window.authService = svc.authService;
         console.log("✅ firebaseService carregado no user-profile.html");
@@ -692,6 +811,100 @@
 
     <script>
         let currentUserData = null;
+        const USER_PROFILE_ASSET_VERSION = '2026-06-11-profile-admin-v1';
+
+        function cleanProfileText(value) {
+            return String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
+        }
+
+        function safeProfileEmail(user) {
+            return cleanProfileText(user && user.email).toLowerCase();
+        }
+
+        function readProfileJsonStorage(key, fallback) {
+            try {
+                const raw = localStorage.getItem(key);
+                return raw ? JSON.parse(raw) : fallback;
+            } catch (_) {
+                return fallback;
+            }
+        }
+
+        function fallbackNameFromUser(user) {
+            const data = user || {};
+            const email = safeProfileEmail(data);
+            return cleanProfileText(data.displayName || data.name || data.username || (email ? email.split('@')[0] : 'Usuario'));
+        }
+
+        function isCurrentProfileSuperAdmin(user) {
+            const data = user || {};
+            const uid = cleanProfileText(data.uid || data.id || data.userId);
+            try {
+                if (window.isSuperAdminUid && window.isSuperAdminUid(uid)) return true;
+            } catch (_) {}
+            return data.superadmin === true
+                || data.role === 'superadmin'
+                || (data.claims && data.claims.superadmin === true)
+                || uid === 'HfrQ6ObQq2aSEoeEE4Ng9jpAolB3';
+        }
+
+        function roleLabelForProfile(user) {
+            const data = user || {};
+            if (isCurrentProfileSuperAdmin(data)) return 'SuperAdmin';
+            const raw = cleanProfileText(data.role || data.profileRole || data.tipoUsuario || data.userType);
+            if (!raw) return 'Usuario';
+            if (raw === 'admin') return 'Administrador';
+            if (raw === 'manager') return 'Gestor';
+            return raw;
+        }
+
+        function companyLabelForProfile(user) {
+            const data = user || {};
+            return cleanProfileText(data.companyName || data.company || data.razaoSocial || data.fantasyName || data.companyId || data.companyID || data.tenantId) || 'Nao vinculada';
+        }
+
+        function dateLabelForProfile(value) {
+            try {
+                if (!value) return 'Nao informado';
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) return 'Nao informado';
+                return date.toLocaleDateString('pt-BR');
+            } catch (_) {
+                return 'Nao informado';
+            }
+        }
+
+        function getCachedUserByEmail(email) {
+            try {
+                const users = readProfileJsonStorage('users', []);
+                if (!Array.isArray(users) || !email) return {};
+                return users.find(u => String(u.email || '').toLowerCase() === String(email || '').toLowerCase()) || {};
+            } catch (_) {
+                return {};
+            }
+        }
+
+        function mergeProfileData(authUser, remoteData, localData) {
+            const authPlain = authUser ? {
+                uid: authUser.uid || '',
+                email: authUser.email || '',
+                displayName: authUser.displayName || '',
+                phone: authUser.phoneNumber || '',
+                photoURL: authUser.photoURL || ''
+            } : {};
+            const merged = {
+                ...(localData || {}),
+                ...(remoteData || {}),
+                ...authPlain
+            };
+            merged.email = authPlain.email || merged.email || '';
+            merged.uid = authPlain.uid || merged.uid || merged.id || merged.userId || '';
+            merged.displayName = cleanProfileText(merged.displayName || merged.name || merged.username || authPlain.displayName || '');
+            merged.username = cleanProfileText(merged.username || merged.displayName || (merged.email ? merged.email.split('@')[0] : ''));
+            merged.phone = cleanProfileText(merged.phone || merged.telefone || merged.whatsapp || authPlain.phone || '');
+            merged.photoURL = cleanProfileText(merged.photoURL || authPlain.photoURL || '');
+            return merged;
+        }
 
         document.addEventListener('DOMContentLoaded', async function() {
             await loadUserProfile(true);
@@ -710,30 +923,32 @@
                     return;
                 }
                 
+                const profileName = fallbackNameFromUser(currentUserData);
+                const profileEmail = safeProfileEmail(currentUserData);
+
                 // Preencher informações no cabeçalho
-                document.getElementById('profileName').textContent = 
-                    currentUserData.displayName || currentUserData.username || currentUserData.email.split('@')[0];
+                document.getElementById('profileName').textContent = profileName;
                 document.getElementById('profileEmail').textContent = currentUserData.email || 'Email não disponível';
                 
                 // Preencher informações da conta
-                document.getElementById('displayName').textContent = 
-                    currentUserData.displayName || currentUserData.username || currentUserData.email.split('@')[0];
-                document.getElementById('username').textContent = 
-                    currentUserData.username || currentUserData.email.split('@')[0];
+                document.getElementById('displayName').textContent = profileName;
+                document.getElementById('username').textContent = currentUserData.username || (profileEmail ? profileEmail.split('@')[0] : 'Nao informado');
                 document.getElementById('userEmail').textContent = currentUserData.email || 'Email não disponível';
                 document.getElementById('userPhone').textContent = currentUserData.phone || 'Não informado';
+                const uidLabel = cleanProfileText(currentUserData.uid || currentUserData.id || currentUserData.userId);
+                document.getElementById('profileUid').innerHTML = uidLabel ? '<code>' + uidLabel + '</code>' : '<code>Nao informado</code>';
+                document.getElementById('userRole').textContent = roleLabelForProfile(currentUserData);
+                document.getElementById('userCompany').textContent = companyLabelForProfile(currentUserData);
                 
                 // Status da conta
                 updateAccountStatus();
                 
                 // Data de criação da conta
-                const memberSince = currentUserData.createdAt ? new Date(currentUserData.createdAt) : 
-                                    currentUserData.trialStart ? new Date(currentUserData.trialStart) : 
-                                    new Date();
-                document.getElementById('memberSince').textContent = memberSince.toLocaleDateString('pt-BR');
+                const memberSinceValue = currentUserData.createdAt || currentUserData.created || currentUserData.trialStart || currentUserData.metadata?.creationTime;
+                document.getElementById('memberSince').textContent = dateLabelForProfile(memberSinceValue);
                 
                 // Último acesso
-                document.getElementById('lastAccess').textContent = new Date().toLocaleDateString('pt-BR');
+                document.getElementById('lastAccess').textContent = dateLabelForProfile(currentUserData.lastLoginAt || currentUserData.lastAccess || currentUserData.lastLogin || currentUserData.metadata?.lastSignInTime) || new Date().toLocaleDateString('pt-BR');
                 
                 console.log("✅ Perfil do usuário carregado com sucesso");
                 if (showFeedback) {
@@ -799,9 +1014,12 @@
                         if (uploadRes.success) {
                             const downloadURL = uploadRes.data.downloadURL;
                             
-                            // 1. Atualizar no Rtdb
-                            if (typeof window.firebaseService.updateFirebase === 'function') {
-                                await window.firebaseService.updateFirebase(`users/${uid}`, { photoURL: downloadURL });
+                            // 1. Atualizar no RTDB sem substituir dados sensiveis do usuario
+                            if (typeof window.firebaseService.updateMyUserProfile === 'function') {
+                                const photoUpdate = await window.firebaseService.updateMyUserProfile({ photoURL: downloadURL });
+                                if (!photoUpdate || photoUpdate.success === false) {
+                                    throw new Error((photoUpdate && photoUpdate.error) || 'Falha ao salvar a foto no perfil.');
+                                }
                             }
                             // 2. Cachear no localStorage
                             localStorage.setItem('userPhoto', downloadURL);
@@ -846,12 +1064,24 @@
 
         function updateAccountStatus() {
             const statusElement = document.getElementById('accountStatus');
-                let statusText = 'Usuário Ativo';
+                let statusText = 'Usuario Ativo';
             let statusClass = '';
-            
-            if (currentUserData.subscription && currentUserData.subscription.active) {
+
+            if (isCurrentProfileSuperAdmin(currentUserData)) {
+                statusText = 'SuperAdmin';
+                statusClass = '';
+            } else if (currentUserData.accountStatus === 'blocked' || currentUserData.blocked === true) {
+                statusText = 'Conta Bloqueada';
+                statusClass = 'expired';
+            } else if (currentUserData.subscription && currentUserData.subscription.active) {
                 statusText = `Assinatura ${currentUserData.subscription.type === 'annual' ? 'Anual' : 'Mensal'} Ativa`;
                 statusClass = '';
+            } else if (currentUserData.subscriptionStatus === 'active') {
+                statusText = 'Assinatura Ativa';
+                statusClass = '';
+            } else if (currentUserData.subscriptionStatus === 'pending' || currentUserData.subscriptionStatus === 'pending_grace') {
+                statusText = 'Pagamento Pendente';
+                statusClass = 'trial';
             } else if (currentUserData.trialStart) {
                 const trialStartDate = new Date(currentUserData.trialStart);
                     const currentDate = new Date();
@@ -976,9 +1206,13 @@
 
         function openEditPersonalInfo() {
             // Preencher campos do modal com dados atuais
-            document.getElementById('editDisplayName').value = currentUserData.displayName || currentUserData.username || '';
+            document.getElementById('editDisplayName').value = fallbackNameFromUser(currentUserData);
             document.getElementById('editUsername').value = currentUserData.username || '';
             document.getElementById('editPhone').value = currentUserData.phone || '';
+            document.getElementById('editEmail').value = currentUserData.email || '';
+            document.getElementById('editUid').value = currentUserData.uid || currentUserData.id || currentUserData.userId || '';
+            document.getElementById('editCompany').value = companyLabelForProfile(currentUserData);
+            document.getElementById('editRole').value = roleLabelForProfile(currentUserData);
             
             // Atualizar preview da foto
             const savedPhoto = localStorage.getItem('userPhoto');
@@ -1027,38 +1261,39 @@
                 
                 // Obter dados atuais do usuário
                 const currentData = await getCurrentUserDetails() || {};
-                
-                // Atualizar dados localmente com merge dos dados existentes
+                const lastUpdated = new Date().toISOString();
+                const patch = {
+                    displayName,
+                    username,
+                    phone
+                };
+
+                if (!window.firebaseService || typeof window.firebaseService.updateMyUserProfile !== 'function') {
+                    throw new Error('Servico seguro de perfil indisponivel. Recarregue a pagina e tente novamente.');
+                }
+
+                const remoteUpdate = await window.firebaseService.updateMyUserProfile(patch);
+                if (!remoteUpdate || remoteUpdate.success === false) {
+                    throw new Error((remoteUpdate && remoteUpdate.error) || 'Nao foi possivel atualizar o perfil no Firebase.');
+                }
+
+                // Atualizar dados localmente com merge dos dados existentes somente apos o Firebase confirmar
                 const updatedData = {
                     ...currentData,
                     displayName: displayName,
+                    name: displayName,
                     username: username,
                     phone: phone,
-                    lastUpdated: new Date().toISOString()
+                    telefone: phone,
+                    lastUpdated,
+                    updatedAt: lastUpdated,
+                    profileUpdatedAt: lastUpdated
                 };
                 
                 // Salvar nos diferentes locais de armazenamento
                 localStorage.setItem('currentUser', JSON.stringify(updatedData));
                 localStorage.setItem('persistentUser', JSON.stringify(updatedData));
                 await persistUserProfileData(updatedData);
-
-                // Sincronizar com o Firebase Realtime Database
-                try {
-                    if (window.firebaseService && typeof window.firebaseService.getCurrentUid === 'function' && typeof window.firebaseService.updateFirebase === 'function') {
-                        const uid = window.firebaseService.getCurrentUid();
-                        if (uid) {
-                            console.log("🔄 Sincronizando perfil com Firebase...");
-                            await window.firebaseService.updateFirebase(`users/${uid}`, {
-                                displayName: displayName,
-                                username: username,
-                                phone: phone,
-                                lastUpdated: updatedData.lastUpdated
-                            });
-                        }
-                    }
-                } catch (fbErr) {
-                    console.warn("⚠️ Erro ao sincronizar com Firebase, dados salvos localmente:", fbErr);
-                }
                 
                 // Atualizar dados globais
                 currentUserData = updatedData;
@@ -1080,7 +1315,7 @@
                 
             } catch (error) {
                 console.error("❌ Erro ao atualizar informações:", error);
-                showMessage('error', 'Erro ao atualizar informações. Tente novamente.', messageEl);
+                showMessage('error', error && error.message ? error.message : 'Erro ao atualizar informações. Tente novamente.', messageEl);
             } finally {
                 spinner.style.display = 'none';
             }
@@ -1117,26 +1352,34 @@
                 if (authSvc && authSvc.getCurrentUser) {
                     const user = await authSvc.getCurrentUser();
                     if (user) {
-                        const localData = getUserFromLocalStorage(user.email);
-                        const merged = {
-                            ...user,
-                            ...localData,
-                            email: user.email || localData.email || '',
-                            displayName: localData.displayName || user.displayName || '',
-                            username: localData.username || user.username || user.displayName || (user.email ? user.email.split('@')[0] : ''),
-                            phone: localData.phone || user.phone || user.phoneNumber || ''
+                        let remoteData = {};
+                        try {
+                            if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+                                const result = await window.firebaseService.loadFromFirebase(`users/${user.uid}`);
+                                if (result && result.success !== false && result.data && typeof result.data === 'object') {
+                                    remoteData = result.data;
+                                }
+                            }
+                        } catch (remoteError) {
+                            console.warn('⚠️ Perfil remoto indisponivel, usando dados locais:', remoteError && remoteError.message ? remoteError.message : remoteError);
+                        }
+                        const localData = {
+                            ...getCachedUserByEmail(user.email),
+                            ...readProfileJsonStorage('currentUser', {}),
+                            ...readProfileJsonStorage('persistentUser', {})
                         };
+                        const merged = mergeProfileData(user, remoteData, localData);
                         console.log("✅ Usuário obtido do Firebase Auth");
                         return merged;
                     }
                 }
                 
                 // Fallback para localStorage - prioriza persistentUser
-                const persistentUser = JSON.parse(localStorage.getItem('persistentUser') || '{}');
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const persistentUser = readProfileJsonStorage('persistentUser', {});
+                const currentUser = readProfileJsonStorage('currentUser', {});
                 
                 // Combinar dados, priorizando persistentUser
-                const combinedData = { ...currentUser, ...persistentUser };
+                const combinedData = mergeProfileData(null, {}, { ...currentUser, ...persistentUser });
                 
                 if (combinedData.email || combinedData.username) {
                     console.log("✅ Usuário obtido do localStorage");
@@ -1152,17 +1395,6 @@
             }
         }
 
-        function getUserFromLocalStorage(email) {
-            try {
-                const users = JSON.parse(localStorage.getItem('users') || '[]');
-                if (!Array.isArray(users) || !email) return {};
-                const found = users.find(u => String(u.email || '').toLowerCase() === String(email || '').toLowerCase());
-                return found || {};
-            } catch (_) {
-                return {};
-            }
-        }
-
         async function persistUserProfileData(updatedData) {
             try {
                 const email = String(updatedData.email || '').toLowerCase();
@@ -1174,25 +1406,25 @@
                     else users.push({ ...updatedData, updatedAt: new Date().toISOString() });
                     localStorage.setItem('users', JSON.stringify(users));
                 }
-                if (window.firebaseService && typeof window.firebaseService.getCurrentUid === 'function' && typeof window.firebaseService.updateFirebase === 'function') {
-                    const uid = window.firebaseService.getCurrentUid();
-                    if (uid) {
-                        await window.firebaseService.updateFirebase(`users/${uid}`, {
-                            displayName: updatedData.displayName || '',
-                            username: updatedData.username || '',
-                            phone: updatedData.phone || '',
-                            updatedAt: new Date().toISOString()
-                        });
-                    }
-                }
             } catch (e) {
-                console.warn('⚠️ Falha ao sincronizar perfil:', e);
+                console.warn('⚠️ Falha ao atualizar cache local do perfil:', e);
             }
         }
 
-        function removeUserPhoto() {
+        async function removeUserPhoto() {
             // Remover do localStorage
             localStorage.removeItem('userPhoto');
+            try {
+                if (window.firebaseService && typeof window.firebaseService.updateMyUserProfile === 'function') {
+                    const result = await window.firebaseService.updateMyUserProfile({ photoURL: null });
+                    if (!result || result.success === false) {
+                        throw new Error((result && result.error) || 'Falha ao remover foto do perfil.');
+                    }
+                }
+                if (currentUserData) currentUserData.photoURL = '';
+            } catch (error) {
+                console.warn('⚠️ Falha ao remover foto remota:', error && error.message ? error.message : error);
+            }
             
             // Atualizar exibição
             loadUserPhoto();
@@ -1228,6 +1460,10 @@
                 globalMessage.style.backgroundColor = '#ecfdf5';
                 globalMessage.style.color = '#065f46';
                 globalMessage.style.border = '1px solid #a7f3d0';
+            } else if (type === 'info') {
+                globalMessage.style.backgroundColor = '#eff6ff';
+                globalMessage.style.color = '#1d4ed8';
+                globalMessage.style.border = '1px solid #bfdbfe';
             } else if (type === 'error') {
                 globalMessage.style.backgroundColor = '#fef2f2';
                 globalMessage.style.color = '#991b1b';

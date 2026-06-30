@@ -4,9 +4,48 @@ const PreRomaneioSelector = (function() {
         return v || null;
     }
 
+    function getFirebaseDataService() {
+        return window.firebaseServiceTL || window.firebaseService || window.FirebaseService || null;
+    }
+
+    function hasFirebaseDataService() {
+        const svc = getFirebaseDataService();
+        if (window.firebase && typeof window.firebase.database === 'function') return true;
+        return !!(
+            (svc && typeof svc.loadFromFirebase === 'function') ||
+            (svc && typeof svc.loadData === 'function')
+        );
+    }
+
+    async function waitForFirebaseDataService(totalMs = 10000) {
+        const start = Date.now();
+        while (!hasFirebaseDataService() && (Date.now() - start) < totalMs) {
+            await new Promise((r) => setTimeout(r, 250));
+        }
+        return hasFirebaseDataService();
+    }
+
+    function isPreRomaneioDebugEnabled() {
+        try {
+            return new URLSearchParams(window.location.search || '').has('codexPreDebug');
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function getPayloadSummary(payload) {
+        if (!payload) return { kind: String(payload), count: 0, keys: [] };
+        if (Array.isArray(payload)) return { kind: 'array', count: payload.length, keys: [] };
+        if (typeof payload === 'object') {
+            const keys = Object.keys(payload);
+            return { kind: 'object', count: keys.length, keys: keys.slice(0, 12) };
+        }
+        return { kind: typeof payload, count: 0, keys: [] };
+    }
+
     function resolveTenantId() {
         try {
-            const svc = window.firebaseServiceTL || window.firebaseService || window.FirebaseService;
+            const svc = getFirebaseDataService();
             if (svc && typeof svc.getCurrentTenantId === 'function') {
                 const t = svc.getCurrentTenantId();
                 if (t) return normalizeTenant(t);
@@ -33,7 +72,7 @@ const PreRomaneioSelector = (function() {
         try {
             const b = String(base || '');
             if (!b) return keys;
-            const svc = window.firebaseServiceTL || window.firebaseService || window.FirebaseService;
+            const svc = getFirebaseDataService();
             if (svc && typeof svc.getNamespacedPath === 'function') {
                 const ns = svc.getNamespacedPath(b);
                 if (ns) {
@@ -64,7 +103,7 @@ const PreRomaneioSelector = (function() {
 
     async function hydrateTenantContext() {
         let tenant = resolveTenantId();
-        const svc = window.firebaseServiceTL || window.firebaseService || window.FirebaseService;
+        const svc = getFirebaseDataService();
         if (tenant) {
             try { if (svc && typeof svc.setTenantId === 'function') svc.setTenantId(tenant); } catch (_) {}
             return tenant;
@@ -195,43 +234,10 @@ const PreRomaneioSelector = (function() {
         return payload;
     }
 
-    function parseLocalJson(key) {
-        try {
-            const raw = localStorage.getItem(key);
-            if (!raw) return null;
-            return JSON.parse(raw);
-        } catch (_) {
-            return null;
-        }
-    }
-
-    async function loadLegacyGlobalPreromaneios(tenant) {
-        const targetTenant = normalizeTenant(tenant);
-        const out = [];
-        const pushAll = (data) => {
-            if (!data) return;
-            if (Array.isArray(data)) out.push(...data);
-            else if (typeof data === 'object') out.push(...Object.values(data));
-        };
-        pushAll(parseLocalJson('preromaneios'));
-        try {
-            if (window.firebase && typeof window.firebase.database === 'function') {
-                const snap = await window.firebase.database().ref('preromaneios').once('value');
-                const payload = snap && typeof snap.val === 'function' ? snap.val() : null;
-                pushAll(payload);
-            }
-        } catch (_) {}
-        if (!targetTenant) return out;
-        return out.filter((pr) => {
-            const cid = pr && (pr.companyId || pr.companyID || pr.tenantId || (pr.empresa && (pr.empresa.id || pr.empresa.companyId)));
-            if (!cid) return false;
-            return normalizeTenant(cid) === targetTenant;
-        });
-    }
-
     async function carregarPreromaneios() {
         const tenant = await waitForTenantContext();
         if (!tenant) return null;
+        await waitForFirebaseDataService();
         try {
             if (window.firebase && typeof window.firebase.database === 'function') {
                 const snap = await window.firebase.database().ref(`companies/${tenant}/preromaneios`).once('value');
@@ -252,18 +258,139 @@ const PreRomaneioSelector = (function() {
         }
         const local = readLocalObject('preromaneios');
         if (hasRecords(local)) return withTenantCompanyId(local, tenant);
-        const legacy = await loadLegacyGlobalPreromaneios(tenant);
-        if (hasRecords(legacy)) return withTenantCompanyId(legacy, tenant);
         return null;
     }
 
     function normalizarLista(data) {
         if (!data) return [];
-        if (Array.isArray(data)) return data.filter(Boolean);
-        if (typeof data === 'object') {
-            return Object.keys(data).map(k => ({ id: k, ...data[k] })).filter(Boolean);
-        }
-        return [];
+        const isTechnicalKey = (key) => {
+            const value = String(key ?? '').trim();
+            if (!value) return false;
+            if (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.isTechnicalKey === 'function') {
+                return window.RomaneioDataUtils.isTechnicalKey(value);
+            }
+            return value.startsWith('_');
+        };
+        const nonRecordKeys = new Set([
+            'cliente',
+            'fornecedor',
+            'empresa',
+            'itens',
+            'items',
+            'romaneioitens',
+            'romaneioitems',
+            'toraitens',
+            'toraitems',
+            'totais',
+            'total',
+            'metadata',
+            '_metadata'
+        ]);
+        const keyToLower = (key) => String(key || '').trim().toLowerCase();
+        const isRecordKey = (key) => {
+            const k = String(key || '').trim();
+            if (!k || isTechnicalKey(k) || nonRecordKeys.has(keyToLower(k))) return false;
+            return /^\d{8,}$/.test(k) || /^pre[-_]?romaneio/i.test(k) || /^pr[-_]/i.test(k);
+        };
+        const getTipoFromRecord = (item, fallback = '') => normalizeTipo(
+            item?.tipo ||
+            item?.tipoRomaneio ||
+            item?.romaneioTipo ||
+            item?.categoria ||
+            item?.modulo ||
+            fallback
+        );
+        const hasRecordShape = (item, key = '', fallbackTipo = '') => {
+            if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+            if (isTechnicalKey(key) || isTechnicalKey(item.id) || isTechnicalKey(item.key) || isTechnicalKey(item.firebaseKey)) return false;
+            if (nonRecordKeys.has(keyToLower(key))) return false;
+
+            const itemKeys = Object.keys(item);
+            const clientOnlyKeys = new Set(['id', 'key', 'firebaseKey', 'nome', 'name', 'numero', 'documento', 'telefone', 'email']);
+            const looksLikeClientOnly = itemKeys.length > 0 && itemKeys.every(k => clientOnlyKeys.has(k));
+            const tipo = getTipoFromRecord(item, fallbackTipo);
+            const itens = extrairItens(item);
+            const hasItems = itens.length > 0 || !!(item.itens || item.items || item.romaneioItens || item.romaneioItems || item.toraItens || item.toraItems);
+            const hasDate = !!(item.data || item.dataEmissao || item.date || item.dataHora || item.dataCriacao || item.criadoEm || item.createdAt || item.updatedAt || item.atualizadoEm);
+            const hasParty = !!(item.cliente || item.clienteNome || item.fornecedor || item.fornecedorNome || item.responsavel || item.nomeCliente);
+            const hasTotals = !!(item.totais || item.totalVolume || item.volumeTotal || item.volume || item.totalValor || item.valorTotal || item.valor);
+            const hasIdentity = !!(item.id || item.numero || item.key || item.firebaseKey || isRecordKey(key));
+
+            if (looksLikeClientOnly && !tipo && !hasItems && !hasDate && !hasTotals) return false;
+            if (hasItems || tipo) return true;
+            if (hasDate && (hasParty || hasTotals || hasIdentity)) return true;
+            if (isRecordKey(key) && (hasParty || hasTotals)) return true;
+            return false;
+        };
+        const normalizeRecord = (key, item, fallbackTipo = '') => {
+            if (!hasRecordShape(item, key, fallbackTipo)) return null;
+            const record = { ...item };
+            const rawId = record.id || record.key || record.firebaseKey || record.numero || (isRecordKey(key) ? key : '');
+            if (!rawId) return null;
+            record.id = String(rawId);
+            if (!record.numero) record.numero = String(rawId);
+            const tipo = getTipoFromRecord(record, fallbackTipo);
+            if (tipo && !record.tipo) record.tipo = tipo;
+            return record;
+        };
+        const shouldScanChild = (key, value) => {
+            if (!value || typeof value !== 'object') return false;
+            if (isTechnicalKey(key) || nonRecordKeys.has(keyToLower(key))) return false;
+            return true;
+        };
+        const records = [];
+        const collect = (node, key = '', fallbackTipo = '', depth = 0) => {
+            if (!node || depth > 4) return;
+            if (Array.isArray(node)) {
+                node.forEach((item, index) => {
+                    const record = normalizeRecord(String(index), item, fallbackTipo);
+                    if (record) records.push(record);
+                });
+                return;
+            }
+            if (typeof node !== 'object') return;
+
+            const keyTipo = normalizeTipo(key);
+            const effectiveTipo = fallbackTipo || keyTipo || '';
+            const rootRecord = normalizeRecord(key, node, effectiveTipo);
+            if (rootRecord) records.push(rootRecord);
+
+            Object.entries(node).forEach(([childKey, childValue]) => {
+                if (!shouldScanChild(childKey, childValue)) return;
+                const childTipo = normalizeTipo(childKey) || effectiveTipo;
+                const childRecord = normalizeRecord(childKey, childValue, childTipo);
+                if (childRecord) {
+                    records.push(childRecord);
+                } else {
+                    collect(childValue, childKey, childTipo, depth + 1);
+                }
+            });
+        };
+
+        collect(data);
+
+        const byId = new Map();
+        records.forEach((record) => {
+            const id = String(record.id || record.key || record.firebaseKey || record.numero || '').trim();
+            if (!id || isTechnicalKey(id)) return;
+            const existing = byId.get(id);
+            if (!existing) {
+                byId.set(id, { ...record, id });
+                return;
+            }
+            const existingTs = getPreRomaneioRecencyTimestamp(existing);
+            const recordTs = getPreRomaneioRecencyTimestamp(record);
+            const preferRecord = recordTs > existingTs || (
+                recordTs === existingTs &&
+                Object.keys(record).length + extrairItens(record).length >= Object.keys(existing).length + extrairItens(existing).length
+            );
+            const merged = preferRecord ? { ...existing, ...record, id } : { ...record, ...existing, id };
+            merged.companyId = merged.companyId || existing.companyId || record.companyId;
+            merged.companyID = merged.companyID || existing.companyID || record.companyID;
+            merged.tenantId = merged.tenantId || existing.tenantId || record.tenantId;
+            byId.set(id, merged);
+        });
+        return Array.from(byId.values());
     }
 
     function extrairItens(pr) {
@@ -284,12 +411,56 @@ const PreRomaneioSelector = (function() {
     function formatarData(d) {
         if (!d) return '';
         try {
+            const raw = String(d).trim();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+                const [ano, mes, dia] = raw.split('-');
+                return `${dia}/${mes}/${ano}`;
+            }
             const dt = new Date(d);
             if (isNaN(dt.getTime())) return String(d);
             return dt.toLocaleDateString('pt-BR');
         } catch (_) {
             return String(d);
         }
+    }
+
+    function parseDateCandidate(value) {
+        if (!value) return 0;
+        if (typeof value === 'number' && isFinite(value)) return value;
+        if (value instanceof Date) {
+            const t = value.getTime();
+            return isNaN(t) ? 0 : t;
+        }
+        const t = Date.parse(value);
+        return isNaN(t) ? 0 : t;
+    }
+
+    function getPreRomaneioRecencyTimestamp(pr) {
+        if (!pr || typeof pr !== 'object') return 0;
+        const candidates = [
+            pr?._metadata?.lastUpdated,
+            pr.updatedAt,
+            pr.atualizadoEm,
+            pr.updated,
+            pr.lastModified,
+            pr.modifiedAt,
+            pr.createdAt,
+            pr.criadoEm,
+            pr.created,
+            pr.dataEmissao,
+            pr.data,
+            pr.date,
+            pr.dataHora,
+            pr.dataCriacao,
+            pr.timestamp
+        ];
+        for (const candidate of candidates) {
+            const ts = parseDateCandidate(candidate);
+            if (ts) return ts;
+        }
+        const id = String(pr.id || pr.key || pr.firebaseKey || pr.numero || '');
+        const match = id.match(/(\d{10,})/);
+        return match ? Number(match[1]) || 0 : 0;
     }
 
     function nomeCliente(pr) {
@@ -327,7 +498,7 @@ const PreRomaneioSelector = (function() {
     }
 
     function montarOpcao(pr) {
-        const data = formatarData(pr?.data || pr?.updatedAt || pr?.updated || pr?.created || pr?.timestamp);
+        const data = formatarData(pr?.dataEmissao || pr?.data || pr?.date || pr?.updatedAt || pr?.atualizadoEm || pr?.updated || pr?.createdAt || pr?.criadoEm || pr?.created || pr?.timestamp);
         const nome = nomeCliente(pr);
         const volume = volumePreRomaneio(pr);
         const valor = valorPreRomaneio(pr);
@@ -362,6 +533,16 @@ const PreRomaneioSelector = (function() {
     async function init({ tipo, selectId, onLoadItems, onLoadMeta, buttonId, loadOnChange = true }) {
         const select = document.getElementById(selectId);
         if (!select) return;
+        if (!select.dataset.preRomaneioRefreshBound) {
+            select.dataset.preRomaneioRefreshBound = '1';
+            const refresh = () => {
+                setTimeout(() => {
+                    window.initPreRomaneioSelector({ tipo, selectId, onLoadItems, onLoadMeta, buttonId, loadOnChange });
+                }, 150);
+            };
+            window.addEventListener('firebaseReady', refresh);
+            window.addEventListener('tenantContextReady', refresh);
+        }
         const activeTenant = await waitForTenantContext();
         if (!activeTenant) {
             select.disabled = true;
@@ -382,15 +563,35 @@ const PreRomaneioSelector = (function() {
 
         const raw = await carregarPreromaneios();
         const targetTipo = normalizeTipo(tipo);
-        const lista = normalizarLista(raw).filter((pr) => {
+        const listaNormalizada = normalizarLista(raw);
+        const lista = listaNormalizada.filter((pr) => {
             const companyId = pr && (pr.companyId || pr.companyID || pr.tenantId || (pr.empresa && (pr.empresa.id || pr.empresa.companyId)));
             if (companyId && normalizeTenant(companyId) !== normalizeTenant(activeTenant)) return false;
-            const prTipo = normalizeTipo(pr && pr.tipo);
+            const prTipo = normalizeTipo(pr && (pr.tipo || pr.tipoRomaneio || pr.romaneioTipo || pr.categoria || pr.modulo));
             if (prTipo) return prTipo === targetTipo;
             const inferred = inferTipoFromItems(pr);
             return inferred === targetTipo;
         });
-        lista.sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0));
+        if (isPreRomaneioDebugEnabled()) {
+            const countByTipo = {};
+            listaNormalizada.forEach((pr) => {
+                const t = normalizeTipo(pr && (pr.tipo || pr.tipoRomaneio || pr.romaneioTipo || pr.categoria || pr.modulo)) || inferTipoFromItems(pr) || 'SEM_TIPO';
+                countByTipo[t] = (countByTipo[t] || 0) + 1;
+            });
+            console.info('[PreRomaneioSelector] resumo ' + JSON.stringify({
+                tipo: targetTipo,
+                activeTenant,
+                raw: getPayloadSummary(raw),
+                normalizados: listaNormalizada.length,
+                filtrados: lista.length,
+                countByTipo,
+                sampleIds: listaNormalizada.slice(0, 8).map(pr => ({
+                    id: pr.id || pr.numero || '',
+                    tipo: normalizeTipo(pr && (pr.tipo || pr.tipoRomaneio || pr.romaneioTipo || pr.categoria || pr.modulo)) || inferTipoFromItems(pr) || ''
+                }))
+            }));
+        }
+        lista.sort((a, b) => getPreRomaneioRecencyTimestamp(b) - getPreRomaneioRecencyTimestamp(a));
 
         const map = {};
         lista.forEach(pr => {

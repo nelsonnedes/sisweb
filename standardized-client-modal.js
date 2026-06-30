@@ -118,13 +118,13 @@ function resolveCompanyId() {
         if (window.appTenantId) return String(window.appTenantId);
         if (window.companyInfo) {
             const raw = window.companyInfo;
-            const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+            const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
             if (id) return String(id);
         }
         const stored = localStorage.getItem('company_info');
         if (stored) {
             const obj = JSON.parse(stored);
-            const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+            const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
             if (id) return String(id);
         }
     } catch (_) {}
@@ -1019,6 +1019,66 @@ function injectClientModalStyles() {
 }
 
 // ✅ FUNÇÃO PARA CARREGAR CLIENTES DO FIREBASE
+function normalizeClientModalRecord(client) {
+    const documento = client.documento || client.document || client.cnpj || client.cpf || 'CNPJ não informado';
+    const inscricaoEstadual = client.inscricaoEstadual || client.stateRegistration || client.ie || '';
+    const inscricaoMunicipal = client.inscricaoMunicipal || client.municipalRegistration || client.im || '';
+    const indIEDest = client.indIEDest || client.indicadorInscricaoEstadual || client.ieIndicator || '';
+    const codigoMunicipio = client.codigoMunicipio || client.municipioCodigo || client.municipalityCode || client.cMun || client.ibgeCode || '';
+    const paisCodigo = client.paisCodigo || client.countryCode || client.cPais || '1058';
+    const pais = client.pais || client.country || client.countryName || client.xPais || 'Brasil';
+    return {
+        ...client,
+        id: client.id || client.clientId || Date.now(),
+        nome: client.nome || client.name || client.clientName || 'Nome não informado',
+        name: client.nome || client.name || client.clientName || 'Nome não informado',
+        cidade: client.cidade || client.city || 'Cidade não informada',
+        city: client.cidade || client.city || '',
+        estado: client.estado || client.state || client.uf || 'Estado não informado',
+        state: client.estado || client.state || client.uf || '',
+        telefone: client.telefone || client.phone || client.tel || 'Telefone não informado',
+        phone: client.telefone || client.phone || client.tel || '',
+        email: client.email || client.mail || 'Email não informado',
+        cnpj: documento,
+        documento,
+        document: documento,
+        tipoPessoa: client.tipoPessoa || client.personType || client.fiscalPersonType || '',
+        personType: client.tipoPessoa || client.personType || client.fiscalPersonType || '',
+        inscricaoEstadual,
+        stateRegistration: inscricaoEstadual,
+        inscricaoMunicipal,
+        municipalRegistration: inscricaoMunicipal,
+        indIEDest,
+        indicadorInscricaoEstadual: indIEDest,
+        ieIndicator: indIEDest,
+        suframa: client.suframa || '',
+        cep: client.cep || client.postalCode || '',
+        postalCode: client.cep || client.postalCode || '',
+        endereco: client.endereco || client.address || 'Endereço não informado',
+        address: client.endereco || client.address || '',
+        numero: client.numero || client.number || '',
+        number: client.numero || client.number || '',
+        bairro: client.bairro || client.neighborhood || '',
+        neighborhood: client.bairro || client.neighborhood || '',
+        complemento: client.complemento || client.complement || '',
+        complement: client.complemento || client.complement || '',
+        codigoMunicipio,
+        municipioCodigo: codigoMunicipio,
+        municipalityCode: codigoMunicipio,
+        cMun: codigoMunicipio,
+        ibgeCode: codigoMunicipio,
+        paisCodigo,
+        countryCode: paisCodigo,
+        cPais: paisCodigo,
+        pais,
+        country: pais,
+        countryName: pais,
+        xPais: pais,
+        observacoes: client.observacoes || client.obs || client.notes || '',
+        obs: client.observacoes || client.obs || client.notes || ''
+    };
+}
+
 async function loadClientsFromFirebase() {
     console.log("🔥 Carregando clientes do Firebase...");
     
@@ -1047,30 +1107,10 @@ async function loadClientsFromFirebase() {
         
         // Normalizar dados
         if (Array.isArray(clients)) {
-            clientModalState.clients = clients.map(client => ({
-                id: client.id || client.clientId || Date.now(),
-                nome: client.nome || client.name || client.clientName || 'Nome não informado',
-                cidade: client.cidade || client.city || 'Cidade não informada',
-                estado: client.estado || client.state || client.uf || 'Estado não informado',
-                telefone: client.telefone || client.phone || client.tel || 'Telefone não informado',
-                email: client.email || client.mail || 'Email não informado',
-                cnpj: client.cnpj || client.cpf || client.documento || 'CNPJ não informado',
-                endereco: client.endereco || client.address || 'Endereço não informado',
-                observacoes: client.observacoes || client.obs || client.notes || ''
-            }));
+            clientModalState.clients = clients.map(normalizeClientModalRecord);
         } else {
             console.warn("⚠️ Dados não são um array, convertendo objeto para array");
-            clientModalState.clients = Object.values(clients || {}).map(client => ({
-                id: client.id || client.clientId || Date.now(),
-                nome: client.nome || client.name || client.clientName || 'Nome não informado',
-                cidade: client.cidade || client.city || 'Cidade não informada',
-                estado: client.estado || client.state || client.uf || 'Estado não informado',
-                telefone: client.telefone || client.phone || client.tel || 'Telefone não informado',
-                email: client.email || client.mail || 'Email não informado',
-                cnpj: client.cnpj || client.cpf || client.documento || 'CNPJ não informado',
-                endereco: client.endereco || client.address || 'Endereço não informado',
-                observacoes: client.observacoes || client.obs || client.notes || ''
-            }));
+            clientModalState.clients = Object.values(clients || {}).map(normalizeClientModalRecord);
         }
         
         // Filtrar clientes válidos
@@ -2000,13 +2040,25 @@ function fillEditFields(client, modal = null) {
     const fieldMappings = [
         { selectors: ['#clientId', '[name="clientId"]'], value: client.id },
         { selectors: ['#clientName', '[name="clientName"]'], value: client.nome },
+        { selectors: ['#clientCnpj', '[name="clientCnpj"]'], value: client.documento || client.document || client.cnpj || client.cpf },
+        { selectors: ['#clientPersonType', '[name="clientPersonType"]'], value: client.tipoPessoa || client.personType || client.fiscalPersonType },
+        { selectors: ['#clientIndIEDest', '[name="clientIndIEDest"]'], value: client.indIEDest || client.indicadorInscricaoEstadual || client.ieIndicator },
+        { selectors: ['#clientStateRegistration', '[name="clientStateRegistration"]'], value: client.inscricaoEstadual || client.stateRegistration || client.ie },
+        { selectors: ['#clientMunicipalRegistration', '[name="clientMunicipalRegistration"]'], value: client.inscricaoMunicipal || client.municipalRegistration },
+        { selectors: ['#clientSuframa', '[name="clientSuframa"]'], value: client.suframa },
+        { selectors: ['#clientCep', '[name="clientCep"]'], value: client.cep || client.postalCode },
         { selectors: ['#clientPhone', '[name="clientPhone"]'], value: client.telefone },
         { selectors: ['#clientEmail', '[name="clientEmail"]'], value: client.email },
         { selectors: ['#clientAddress', '[name="clientAddress"]'], value: client.endereco },
+        { selectors: ['#clientNumber', '[name="clientNumber"]'], value: client.numero || client.number },
+        { selectors: ['#clientNeighborhood', '[name="clientNeighborhood"]'], value: client.bairro || client.neighborhood },
+        { selectors: ['#clientComplement', '[name="clientComplement"]'], value: client.complemento || client.complement },
         { selectors: ['#clientObs', '[name="clientObs"]'], value: client.observacoes },
         { selectors: ['#clientState', '[name="clientState"]'], value: client.estado },
         { selectors: ['#clientCity', '[name="clientCity"]'], value: client.cidade },
-        { selectors: ['#clientCnpj', '[name="clientCnpj"]'], value: client.cnpj }
+        { selectors: ['#clientMunicipalityCode', '[name="clientMunicipalityCode"]'], value: client.codigoMunicipio || client.municipioCodigo || client.municipalityCode || client.cMun || client.ibgeCode },
+        { selectors: ['#clientCountryCode', '[name="clientCountryCode"]'], value: client.paisCodigo || client.countryCode || client.cPais || '1058' },
+        { selectors: ['#clientCountryName', '[name="clientCountryName"]'], value: client.pais || client.country || client.countryName || client.xPais || 'Brasil' }
     ];
     
     let fieldsFound = 0;

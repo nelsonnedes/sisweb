@@ -231,25 +231,43 @@ class NotificationSystem {
      * Cria elemento HTML da notificação
      */
     createNotification(id, message, type, config) {
+        const allowedTypes = Object.values(NOTIFICATION_TYPES);
+        const safeType = allowedTypes.includes(type) ? type : NOTIFICATION_TYPES.INFO;
         const notification = document.createElement('div');
         notification.id = id;
-        notification.className = `notification notification-${type}`;
-        notification.style.cssText = this.getNotificationStyles(type);
+        notification.className = `notification notification-${safeType}`;
+        notification.style.cssText = this.getNotificationStyles(safeType);
 
         // Ícone baseado no tipo
-        const icon = this.getIcon(type);
+        const icon = this.getIcon(safeType);
         
-        // Barra de progresso se necessário
-        const progressBar = config.showProgress ? this.createProgressBar(config.duration) : '';
+        const content = document.createElement('div');
+        content.className = 'notification-content';
 
-        notification.innerHTML = `
-            <div class="notification-content">
-                <div class="notification-icon">${icon}</div>
-                <div class="notification-message">${message}</div>
-                <button class="notification-close" onclick="notificationSystem.hide('${id}')">&times;</button>
-            </div>
-            ${progressBar}
-        `;
+        const iconEl = document.createElement('div');
+        iconEl.className = 'notification-icon';
+        iconEl.textContent = icon;
+
+        const messageEl = document.createElement('div');
+        messageEl.className = 'notification-message';
+        messageEl.textContent = String(message == null ? '' : message);
+
+        const closeButton = document.createElement('button');
+        closeButton.className = 'notification-close';
+        closeButton.type = 'button';
+        closeButton.setAttribute('aria-label', 'Fechar notificação');
+        closeButton.textContent = '×';
+        closeButton.onclick = () => this.hide(id);
+
+        content.appendChild(iconEl);
+        content.appendChild(messageEl);
+        content.appendChild(closeButton);
+        notification.appendChild(content);
+
+        // Barra de progresso se necessário
+        if (config.showProgress) {
+            notification.insertAdjacentHTML('beforeend', this.createProgressBar(config.duration));
+        }
 
         // Torna o elemento interativo
         notification.style.pointerEvents = 'auto';

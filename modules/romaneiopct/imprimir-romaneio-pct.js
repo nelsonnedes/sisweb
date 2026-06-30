@@ -38,7 +38,7 @@ function normalizeCompanyData(company = {}) {
     const src = (company && typeof company === 'object') ? company : {};
     const addressParts = [src.endereco, src.logradouro, src.numero, src.bairro].filter(Boolean).join(', ');
     return {
-        id: src.id || src.companyId || src.companyID || src.tenantId || src.slug || '',
+        id: src.companyId || src.companyID || src.tenantId || src.id || '',
         name: src.name || src.nome || src.razaoSocial || src.fantasia || src.companyName || src.empresaNome || '',
         cnpj: src.cnpj || src.cnpjCpf || src.cpfCnpj || src.documento || src.document || '',
         address: src.address || src.endereco || addressParts || src.companyAddress || src.empresaEndereco || '',
@@ -61,13 +61,13 @@ function resolveCompanyId() {
         if (window.appTenantId) return String(window.appTenantId);
         if (window.companyInfo) {
             const raw = window.companyInfo;
-            const id = raw.id || raw.companyId || raw.companyID || raw.tenantId || raw.slug;
+            const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
             if (isLikelyCompanyId(id)) return String(id);
         }
         const stored = localStorage.getItem('company_info');
         if (stored) {
             const obj = JSON.parse(stored);
-            const id = obj && (obj.id || obj.companyId || obj.companyID || obj.tenantId || obj.slug);
+            const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
             if (isLikelyCompanyId(id)) return String(id);
         }
     } catch (_) {}
@@ -106,73 +106,44 @@ function readLocalStorageValue(key) {
 }
 
 // ============================================================================
-// CARREGAMENTO DE DADOS (MESCLAR Firebase + localStorage)
+// CARREGAMENTO DE DADOS DE IMPRESSAO (somente companies/{companyId}/romaneios/pct)
 // ============================================================================
 
 async function carregarRomaneiosMergedPct() {
     try {
-        // Coletar dados do Firebase
-        let firebaseRomaneios = [];
+        let romaneios = [];
         if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
             try {
                 const res = await window.firebaseService.loadFromFirebase('romaneios/pct');
                 const data = res && res.success ? res.data : null;
-                if (Array.isArray(data)) {
-                    firebaseRomaneios = data;
+                if (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function') {
+                    romaneios = window.RomaneioDataUtils.normalizeRomaneioCollection(data, { type: 'PCT' });
+                    window.RomaneioDataUtils.sortRomaneiosByRecency(romaneios);
+                } else if (Array.isArray(data)) {
+                    romaneios = data.filter(r => r && (r.id || r.numero || r.cliente));
                 } else if (data && typeof data === 'object') {
-                    firebaseRomaneios = Object.values(data);
+                    romaneios = Object.entries(data)
+                        .map(([key, value]) => ({ id: value && value.id || key, firebaseKey: key, ...(value || {}) }))
+                        .filter(r => r && (r.id || r.numero || r.cliente));
                 }
             } catch (e) {
                 console.warn('PCT: Falha ao carregar romaneios do Firebase para impressão:', e);
             }
         }
 
-        // Coletar dados do localStorage
-        let localRomaneios = [];
-        try {
-            const raw = readLocalStorageValue('romaneiosPct');
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed)) {
-                    localRomaneios = parsed;
-                } else if (parsed && typeof parsed === 'object') {
-                    localRomaneios = Object.values(parsed);
-                }
-            }
-        } catch (e) {
-            console.warn('PCT: Falha ao carregar romaneios do localStorage para impressão:', e);
-        }
-
-        // Filtrar registros válidos
-        firebaseRomaneios = (firebaseRomaneios || []).filter(r => r && (r.id || r.numero || r.cliente));
-        localRomaneios = (localRomaneios || []).filter(r => r && (r.id || r.numero || r.cliente));
-
-        // Deduplicar priorizando local (recém-salvos)
-        const idSet = new Set(localRomaneios.map(r => String(r.id)).filter(Boolean));
-        const numeroSet = new Set(localRomaneios.map(r => String(r.numero)).filter(Boolean));
-
-        const merged = [
-            ...localRomaneios,
-            ...firebaseRomaneios.filter(r => {
-                const idKey = String(r.id || '');
-                const numKey = String(r.numero || '');
-                return (!idKey || !idSet.has(idKey)) && (!numKey || !numeroSet.has(numKey));
-            })
-        ];
-
         // Logs diagnósticos em caso de falha de busca
-        if (!merged || merged.length === 0) {
-            console.warn('PCT: Nenhum romaneio encontrado nas fontes para impressão.');
+        if (!romaneios || romaneios.length === 0) {
+            console.warn('PCT: Nenhum romaneio encontrado em companies/{companyId}/romaneios/pct para impressão.');
         } else {
-            const sampleIds = merged.slice(0, 5).map(r => String(r.id));
-            const sampleNums = merged.slice(0, 5).map(r => String(r.numero));
+            const sampleIds = romaneios.slice(0, 5).map(r => String(r.id));
+            const sampleNums = romaneios.slice(0, 5).map(r => String(r.numero));
             console.log('PCT: Amostra de IDs disponíveis para impressão:', sampleIds);
             console.log('PCT: Amostra de números disponíveis para impressão:', sampleNums);
         }
 
-        return merged;
+        return romaneios;
     } catch (err) {
-        console.error('PCT: Erro inesperado ao mesclar dados para impressão:', err);
+        console.error('PCT: Erro inesperado ao carregar dados para impressão:', err);
         return [];
     }
 }
@@ -182,6 +153,9 @@ async function carregarRomaneiosMergedPct() {
 // ============================================================================
 
 async function imprimirRomaneio(index, tipo = 'completo', romaneioId = null) {
+    tipo = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizePrintMode === 'function'
+        ? window.RomaneioDataUtils.normalizePrintMode(tipo)
+        : String(tipo || 'completo').replace(/-/g, '_').toLowerCase();
     console.log('🖨️ === FUNÇÃO IMPRIMIROMANEIO EXECUTADA ===');
     console.log('📋 Parâmetros recebidos:', { index, tipo, romaneioId });
     try {
@@ -275,6 +249,14 @@ async function imprimirRomaneio(index, tipo = 'completo', romaneioId = null) {
             console.warn(`Tipo de impressão inválido: ${tipo}. Usando 'completo' como padrão.`);
             tipo = 'completo';
         }
+
+        try {
+            if (window.RomaneioPrintConfig && typeof window.RomaneioPrintConfig.ensureLoaded === 'function') {
+                await window.RomaneioPrintConfig.ensureLoaded('PCT');
+            }
+        } catch (error) {
+            console.warn('PCT: configuração de colunas de impressão não carregada; usando padrão.', error);
+        }
         
         // ✅ CARREGAR DADOS DA EMPRESA
         const company = await getCompanyData();
@@ -285,6 +267,14 @@ async function imprimirRomaneio(index, tipo = 'completo', romaneioId = null) {
         // ✅ INSERIR CONTEÚDO NA JANELA DE IMPRESSÃO
         printWindow.document.write(printContent);
         printWindow.document.close();
+
+        try {
+            if (window.RomaneioPrintConfig && typeof window.RomaneioPrintConfig.applyToPrintDocument === 'function') {
+                window.RomaneioPrintConfig.applyToPrintDocument(printWindow.document, 'PCT');
+            }
+        } catch (error) {
+            console.warn('PCT: não foi possível aplicar configuração de colunas na impressão.', error);
+        }
         
         // Remover indicador de carregamento
         document.body.removeChild(loadingIndicator);
@@ -320,7 +310,27 @@ async function getCompanyData() {
         const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
         let selectedCompany = null;
 
-        if (tenantId && svc && typeof svc.loadFromFirebase === 'function') {
+        if (svc && typeof svc.getCompanyProfileForReport === 'function') {
+            try {
+                const centralResult = await svc.getCompanyProfileForReport({ companyId: tenantId });
+                const centralData = centralResult && centralResult.success !== false
+                    ? (centralResult.data || centralResult)
+                    : null;
+                if (centralData && typeof centralData === 'object') {
+                    selectedCompany = normalizeCompanyData(centralData);
+                    console.log('✅ Empresa PCT carregada pelo helper central de relatorios:', {
+                        id: selectedCompany.id || centralResult.companyId || tenantId || null,
+                        source: centralResult.source || 'central',
+                        name: selectedCompany.name || null,
+                        hasLogo: !!selectedCompany.logo
+                    });
+                }
+            } catch (error) {
+                console.warn('⚠️ PCT: Falha ao carregar empresa pelo helper central:', error);
+            }
+        }
+
+        if (!selectedCompany && tenantId && svc && typeof svc.loadFromFirebase === 'function') {
             try {
                 const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
                 const byPathData = byPath && byPath.success ? byPath.data : (byPath && byPath.data ? byPath.data : null);
@@ -334,23 +344,6 @@ async function getCompanyData() {
             }
         }
 
-        // ✅ USAR A MESMA FUNÇÃO getData DO SISTEMA
-        if (!selectedCompany) {
-            console.log("📊 Tentando carregar empresas cadastradas...");
-            const companiesRaw = await getData('companies');
-            const companies = Array.isArray(companiesRaw) ? companiesRaw : (companiesRaw && typeof companiesRaw === 'object' ? Object.values(companiesRaw) : []);
-            const normalizedCompanies = companies.map(normalizeCompanyData);
-            console.log(`📊 Resultado do carregamento: ${normalizedCompanies.length} empresas encontradas`);
-            if (tenantId) {
-                selectedCompany = normalizedCompanies.find(c => String(c.id || '') === String(tenantId)) || null;
-            } else if (normalizedCompanies.length === 1) {
-                selectedCompany = normalizedCompanies[0];
-            }
-            if (selectedCompany) {
-                console.log("✅ Empresa selecionada para impressão PCT:", { id: selectedCompany.id, name: selectedCompany.name });
-            }
-        }
-        
         const companyData = selectedCompany || {};
         if (selectedCompany) {
             console.log("✅ Dados da empresa carregados:");
@@ -566,50 +559,48 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
         volumeTotal += item.volumeM3;
     });
     
-    // ✅ PREPARAR DADOS BÁSICOS - CORRIGIR PROBLEMA DA DATA
-    let dataFormatada = 'Data não informada';
-    
-    // Tentar primeiro 'data' (campo usado na criação), depois 'timestamp' (compatibilidade)
-    if (romaneio.data) {
-        try {
-            const data = new Date(romaneio.data);
+    function formatarDataRomaneio(value) {
+        if (typeof value === 'number' && isFinite(value)) {
+            const data = new Date(value);
             if (!isNaN(data.getTime())) {
-                dataFormatada = data.toLocaleDateString('pt-BR', {
-                    year: 'numeric', month: '2-digit', day: '2-digit'
-                });
-            } else {
-                dataFormatada = romaneio.data; // Se não for uma data válida, usar o valor original
-            }
-        } catch (e) {
-            dataFormatada = romaneio.data; // Em caso de erro, usar o valor original
-        }
-    } else if (romaneio.timestamp) {
-        try {
-            const data = new Date(romaneio.timestamp);
-            if (!isNaN(data.getTime())) {
-                dataFormatada = data.toLocaleDateString('pt-BR', {
+                return data.toLocaleDateString('pt-BR', {
                     year: 'numeric', month: '2-digit', day: '2-digit'
                 });
             }
-        } catch (e) {
-            dataFormatada = 'Data não informada';
         }
+        const raw = String(value || '').trim();
+        if (!raw) return 'Data não informada';
+        const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+        const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (br) return raw;
+        try {
+            const data = new Date(raw);
+            if (!isNaN(data.getTime())) {
+                return data.toLocaleDateString('pt-BR', {
+                    year: 'numeric', month: '2-digit', day: '2-digit'
+                });
+            }
+        } catch (_) {}
+        return raw;
     }
+
+    const dataFormatada = formatarDataRomaneio(romaneio.dataEmissao || romaneio.data || romaneio.timestamp);
     
     const especies = [...new Set(itens.map(item => item.especie))].filter(Boolean);
     const ua = navigator.userAgent || '';
     const tipoNorm = String(tipo || '').replace(/-/g, '_').toLowerCase();
     const hideUnitCol = tipoNorm === 'sem_preco_unitario' || tipoNorm === 'sem_preco';
     const hideTotalCol = tipoNorm === 'sem_preco';
-    const tailColsVisible = 6 - (hideUnitCol ? 1 : 0) - (hideTotalCol ? 1 : 0);
+    const tailColsVisible = 7 - (hideUnitCol ? 1 : 0) - (hideTotalCol ? 1 : 0);
     const isEdge = /Edg\//i.test(ua);
     const isChrome = !isEdge && /Chrome\//i.test(ua);
     const pctCompCount = comprimentosColunas.length;
     const pctTranslateMm = isEdge ? 189 : (isChrome ? 190 : 189.5);
-    const pctCompColPx = pctCompCount >= 18 ? 20 : (pctCompCount >= 14 ? 22 : 24);
+    const pctCompColPx = pctCompCount >= 18 ? 16 : (pctCompCount >= 14 ? 18 : 20);
     const pctUnitColPx = pctCompCount >= 14 ? 40 : 44;
     const pctTotalColPx = pctCompCount >= 14 ? 46 : 50;
-    const pctScale = pctCompCount >= 18 ? 0.86 : (pctCompCount >= 14 ? 0.90 : 0.94);
+    const pctScale = pctCompCount >= 18 ? 0.82 : (pctCompCount >= 14 ? 0.86 : 0.90);
     const isPortraitNow = !!(window.matchMedia && window.matchMedia('(orientation: portrait)').matches);
     const baseRowsByComp = pctCompCount >= 20 ? 14 : (pctCompCount >= 17 ? 15 : (pctCompCount >= 14 ? 16 : 18));
     const orientationBonus = isPortraitNow ? 0 : 4;
@@ -618,21 +609,22 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
     const tableHeadHtml = `
                 <thead>
                     <tr>
-                        <th><span class="hdr-long">Espessura (cm)</span><span class="hdr-short">Esp. (cm)</span></th>
-                        <th><span class="hdr-long">Largura (cm)</span><span class="hdr-short">Larg. (cm)</span></th>
-                        <th>Espécie</th>
-                        <th colspan="${comprimentosColunas.length}"><span class="hdr-long">Comprimentos em Centímetros</span><span class="hdr-short">Compr. (cm)</span></th>
-                        <th class="col-qtd"><span class="hdr-long">Qtd. Peças</span><span class="hdr-short">Qtd.</span></th>
-                        <th class="col-ml"><span class="hdr-long">M. Linear</span><span class="hdr-short">M.Lin.</span></th>
-                        <th class="always-show-volume col-vm2"><span class="hdr-long">Volume (m²)</span><span class="hdr-short">Vol. (m²)</span></th>
-                        <th class="always-show-volume col-vm3"><span class="hdr-long">Volume (m³)</span><span class="hdr-short">Vol. (m³)</span></th>
-                        <th class="no-print-unit-price text-right col-unit"><span class="hdr-long">Preço Unitário</span><span class="hdr-short">Preço Unit.</span></th>
-                        <th class="no-print-price text-right col-total"><span class="hdr-long">Valor Total</span><span class="hdr-short">Valor Total</span></th>
+                        <th class="col-espessura-pct"><span class="hdr-long">Espessura (cm)</span><span class="hdr-short">Esp. (cm)</span></th>
+                        <th class="col-largura-pct"><span class="hdr-long">Largura (cm)</span><span class="hdr-short">Larg. (cm)</span></th>
+                        <th class="col-especie-pct">Espécie</th>
+                        <th colspan="${comprimentosColunas.length}" class="col-comp-group"><span class="hdr-long">Comprimentos em Centímetros</span><span class="hdr-short">Compr. (cm)</span></th>
+                        <th class="col-qtd">Qtd.</th>
+                        <th class="col-pes">Pés</th>
+                        <th class="always-show-volume col-vm3">m³</th>
+                        <th class="always-show-volume col-vm2">m²</th>
+                        <th class="col-ml">ml</th>
+                        <th class="no-print-unit-price text-right col-unit">Preço/m³</th>
+                        <th class="no-print-price text-right col-total">Valor</th>
                     </tr>
                     <tr>
-                        <th colspan="3"></th>
-                        ${comprimentosColunas.map(comp => `<th>${comp}</th>`).join('')}
-                        <th colspan="${tailColsVisible}"></th>
+                        <th colspan="3" class="pct-base-spacer"></th>
+                        ${comprimentosColunas.map(comp => `<th class="col-comp-dyn-pct">${comp}</th>`).join('')}
+                        <th colspan="${tailColsVisible}" class="pct-tail-spacer"></th>
                     </tr>
                 </thead>
     `;
@@ -659,16 +651,18 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                     --pct-scale: ${pctScale};
                     --pct-comp-col: ${pctCompColPx}px;
                     --pct-comp-col-base: ${pctCompColPx}px;
-                    --pct-qtd-col: 34px;
-                    --pct-ml-col: 42px;
-                    --pct-vm2-col: 44px;
-                    --pct-vm3-col: 44px;
+                    --pct-qtd-col: 28px;
+                    --pct-pes-col: 36px;
+                    --pct-vm3-col: 38px;
+                    --pct-vm2-col: 38px;
+                    --pct-ml-col: 34px;
                     --pct-unit-col: ${pctUnitColPx}px;
                     --pct-total-col: ${pctTotalColPx}px;
-                    --pct-qtd-col-base: 40px;
-                    --pct-ml-col-base: 52px;
-                    --pct-vm2-col-base: 56px;
-                    --pct-vm3-col-base: 56px;
+                    --pct-qtd-col-base: 34px;
+                    --pct-pes-col-base: 44px;
+                    --pct-vm3-col-base: 48px;
+                    --pct-vm2-col-base: 48px;
+                    --pct-ml-col-base: 42px;
                     --pct-unit-col-base: ${pctUnitColPx}px;
                     --pct-total-col-base: ${pctTotalColPx}px;
                     --pct-soft-border: #dde5ef;
@@ -792,7 +786,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                 }
                 
                 .items-table th, .items-table td {
-                    border: 1px solid #ddd;
+                    border: 1px solid #dcdcdc;
                     padding: 6px;
                     text-align: left;
                     font-size: 11px;
@@ -823,7 +817,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                 .items-table thead tr:nth-child(2) th {
                     background-color: #1b4670;
                     font-size: 10px;
-                    border: 1px solid #153554;
+                    border: 1px solid #dcdcdc;
                     padding: 4px 2px;
                 }
                 
@@ -869,7 +863,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                 }
                 
                 /* ✅ FORÇA LARGURA IGUAL PARA TODAS AS COLUNAS DE COMPRIMENTOS DYNAMICAS */
-                .items-table td:nth-child(n+4):not(:nth-last-child(-n+6)) {
+                .items-table td:nth-child(n+4):not(:nth-last-child(-n+7)) {
                     width: var(--pct-comp-col-base, 35px) !important;
                     min-width: var(--pct-comp-col-base, 35px) !important;
                     max-width: var(--pct-comp-col-base, 35px) !important;
@@ -882,6 +876,11 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                 .items-table td.col-qtd {
                     width: var(--pct-qtd-col-base, 40px);
                     min-width: var(--pct-qtd-col-base, 40px);
+                }
+                .items-table th.col-pes,
+                .items-table td.col-pes {
+                    width: var(--pct-pes-col-base, 44px);
+                    min-width: var(--pct-pes-col-base, 44px);
                 }
                 .items-table th.col-ml,
                 .items-table td.col-ml {
@@ -909,6 +908,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                     min-width: var(--pct-total-col-base, 58px);
                 }
                 .items-table thead tr:first-child th.col-qtd,
+                .items-table thead tr:first-child th.col-pes,
                 .items-table thead tr:first-child th.col-ml,
                 .items-table thead tr:first-child th.col-vm2,
                 .items-table thead tr:first-child th.col-vm3,
@@ -1040,6 +1040,13 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                 
                 @media print {
                         body { margin: 0; }
+                        #pct-cont-pagebreak {
+                            display: none !important;
+                        }
+                        #pct-continuacao-wrapper.has-continuacao {
+                            page-break-before: always !important;
+                            break-before: page !important;
+                        }
                         body[data-dense-table="1"] .header {
                             margin-bottom: 6px !important;
                             padding-bottom: 6px !important;
@@ -1310,18 +1317,18 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         }
                         
                         .conama-page-break { 
-                            page-break-before: always;
-                            break-before: page;
+                            page-break-before: always !important;
+                            break-before: page !important;
                             margin-top: 0;
                             min-height: 0;
                         }
                         
-                        /* ✅ CORREÇÃO CONAMA PAISAGEM: Melhorar paginação da seção CONAMA em paisagem */
+                        /* CONAMA deve ficar isolado em página própria também na paisagem. */
                         @media print and (orientation: landscape) {
                             .conama-page-break {
-                                page-break-before: auto !important; /* Em paisagem, quebra mais inteligente */
-                                break-before: auto !important;
-                                margin-top: 30px;
+                                page-break-before: always !important;
+                                break-before: page !important;
+                                margin-top: 0 !important;
                             }
                         }
                         
@@ -1340,8 +1347,10 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         @media print and (orientation: portrait) {
                             #pct-cont-pagebreak {
                                 display: none !important;
-                                page-break-before: auto !important;
-                                break-before: auto !important;
+                            }
+                            #pct-continuacao-wrapper.has-continuacao {
+                                page-break-before: always !important;
+                                break-before: page !important;
                             }
                             
                             /* ✅ COMPACTAÇÃO MÁXIMA DO CABEÇALHO PARA ECONOMIZAR ESPAÇO */
@@ -1483,7 +1492,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                             }
                             
                             /* 🚨 COLUNAS DE COMPRIMENTOS: COMPACTAÇÃO SEM PERDER LEGIBILIDADE */
-                            .items-table td:nth-child(n+4):not(:nth-last-child(-n+6)) {
+                            .items-table td:nth-child(n+4):not(:nth-last-child(-n+7)) {
                                 width: var(--pct-comp-col, 24px) !important;
                                 min-width: var(--pct-comp-col, 24px) !important;
                                 max-width: var(--pct-comp-col, 24px) !important;
@@ -1491,7 +1500,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                                 padding: 0px 1px !important;
                                 line-height: 1.1 !important;
                                 white-space: nowrap !important;
-                                overflow: visible !important;
+                                overflow: hidden !important;
                             }
                             
                             .items-table thead tr:nth-child(2) th {
@@ -1502,7 +1511,13 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                                 padding: 0px 1px !important;
                                 line-height: 1.1 !important;
                                 white-space: nowrap !important;
-                                overflow: visible !important;
+                                overflow: hidden !important;
+                            }
+                            .items-table td.col-pes,
+                            .items-table th.col-pes {
+                                width: var(--pct-pes-col, 36px) !important;
+                                min-width: var(--pct-pes-col, 36px) !important;
+                                max-width: var(--pct-pes-col, 36px) !important;
                             }
                             .items-table td.col-unit,
                             .items-table th.col-unit {
@@ -1542,7 +1557,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                                 min-width: var(--pct-vm3-col, 44px) !important;
                                 max-width: var(--pct-vm3-col, 44px) !important;
                             }
-                            .items-table thead tr:first-child th:nth-last-child(-n+6) {
+                            .items-table thead tr:first-child th:nth-last-child(-n+7) {
                                 white-space: normal !important;
                                 line-height: 1.05 !important;
                                 font-size: 6.7px !important;
@@ -1572,7 +1587,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                                 padding: 1px !important;
                                 line-height: 1.1 !important;
                                 vertical-align: middle !important;
-                                border: 0.5px solid #ddd !important;
+                                border: 0.5px solid #dcdcdc !important;
                             }
                             
                             /* ✅ MANTER NEGRITO NO RETRATO */
@@ -1609,8 +1624,12 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         }
                         
                         .resumo-conama {
-                            page-break-before: auto !important;
-                            break-before: auto !important;
+                            page-break-before: always !important;
+                            break-before: page !important;
+                            page-break-inside: avoid !important;
+                            break-inside: avoid !important;
+                            page-break-after: avoid !important;
+                            break-after: avoid !important;
                         }
                         
                         .resumo-titulo {
@@ -1631,8 +1650,15 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         
                         .resumo-conama th,
                         .resumo-conama td {
+                            font-size: 8.2px !important;
+                            line-height: 1.12 !important;
+                            padding: 2px 3px !important;
                             word-break: break-word !important;
                             white-space: normal !important;
+                        }
+                        .conama-page-break + div .resumo-conama {
+                            page-break-before: auto !important;
+                            break-before: auto !important;
                         }
                     }
                     
@@ -1659,6 +1685,8 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         .conama-page-break {
                             page-break-before: always !important;
                             break-before: page !important;
+                            margin: 0 !important;
+                            height: 0 !important;
                         }
                     }
                     
@@ -1670,6 +1698,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                             overflow: visible !important;
                         }
                         body[data-tight-landscape="1"] .items-table thead tr:first-child th.col-qtd,
+                        body[data-tight-landscape="1"] .items-table thead tr:first-child th.col-pes,
                         body[data-tight-landscape="1"] .items-table thead tr:first-child th.col-ml,
                         body[data-tight-landscape="1"] .items-table thead tr:first-child th.col-vm2,
                         body[data-tight-landscape="1"] .items-table thead tr:first-child th.col-vm3,
@@ -1738,9 +1767,9 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
 
                         var hasOverflow = contBody.children.length > 0;
                         contWrap.style.display = hasOverflow ? 'block' : 'none';
-                        var useContBreak = hasOverflow && !isPortrait;
-                        contPageBreak.className = useContBreak ? 'page-break' : '';
-                        contPageBreak.style.display = useContBreak ? 'block' : 'none';
+                        contWrap.classList.toggle('has-continuacao', hasOverflow);
+                        contPageBreak.className = '';
+                        contPageBreak.style.display = 'none';
 
                         var tfoot = mainTable.querySelector('tfoot') || contTable.querySelector('tfoot');
                         if (tfoot) {
@@ -1760,25 +1789,28 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         var mode = String(body.getAttribute('data-print-mode') || '').replace(/-/g, '_').toLowerCase();
                         var hideUnit = mode === 'sem_preco_unitario' || mode === 'sem_preco';
                         var hideTotal = mode === 'sem_preco';
-                        var tailVisible = 6 - (hideUnit ? 1 : 0) - (hideTotal ? 1 : 0);
+                        var tailVisible = 7 - (hideUnit ? 1 : 0) - (hideTotal ? 1 : 0);
                         var rowCount = parseInt(body.getAttribute('data-row-count') || '0', 10) || 0;
                         var compCount = parseInt(body.getAttribute('data-comp-count') || '0', 10) || 0;
-                        var compCol = compCount >= 18 ? 20 : (compCount >= 14 ? 22 : (compCount <= 8 ? 20 : 24));
-                        var qtdCol = compCount <= 8 ? 42 : 34;
-                        var mlCol = compCount <= 8 ? 50 : 42;
-                        var vm2Col = compCount <= 8 ? 52 : 44;
-                        var vm3Col = compCount <= 8 ? 52 : 44;
-                        var unitCol = compCount >= 14 ? 40 : (compCount <= 8 ? 58 : 44);
-                        var totalCol = compCount >= 14 ? 46 : (compCount <= 8 ? 66 : 50);
-                        var compColBase = compCount >= 20 ? 18 : (compCount >= 17 ? 20 : (compCount >= 14 ? 22 : (compCount >= 10 ? 26 : 30)));
-                        var qtdColBase = tailVisible <= 4 ? 46 : 40;
-                        var mlColBase = tailVisible <= 4 ? 62 : 52;
-                        var vm2ColBase = tailVisible <= 4 ? 64 : 56;
-                        var vm3ColBase = tailVisible <= 4 ? 64 : 56;
-                        var unitColBase = tailVisible <= 5 ? 64 : 56;
-                        var totalColBase = tailVisible <= 4 ? 78 : 64;
+                        var compCol = compCount >= 18 ? 16 : (compCount >= 14 ? 18 : (compCount <= 8 ? 20 : 22));
+                        var qtdCol = compCount <= 8 ? 34 : 28;
+                        var pesCol = compCount <= 8 ? 42 : 34;
+                        var mlCol = compCount <= 8 ? 42 : 34;
+                        var vm2Col = compCount <= 8 ? 46 : 38;
+                        var vm3Col = compCount <= 8 ? 46 : 38;
+                        var unitCol = compCount >= 14 ? 42 : (compCount <= 8 ? 52 : 44);
+                        var totalCol = compCount >= 14 ? 50 : (compCount <= 8 ? 60 : 52);
+                        var compColBase = compCount >= 20 ? 16 : (compCount >= 17 ? 18 : (compCount >= 14 ? 20 : (compCount >= 10 ? 24 : 28)));
+                        var qtdColBase = tailVisible <= 5 ? 38 : 34;
+                        var pesColBase = tailVisible <= 5 ? 48 : 44;
+                        var mlColBase = tailVisible <= 5 ? 46 : 42;
+                        var vm2ColBase = tailVisible <= 5 ? 52 : 48;
+                        var vm3ColBase = tailVisible <= 5 ? 52 : 48;
+                        var unitColBase = tailVisible <= 5 ? 58 : 52;
+                        var totalColBase = tailVisible <= 5 ? 66 : 58;
                         body.style.setProperty('--pct-comp-col-base', compColBase + 'px');
                         body.style.setProperty('--pct-qtd-col-base', qtdColBase + 'px');
+                        body.style.setProperty('--pct-pes-col-base', pesColBase + 'px');
                         body.style.setProperty('--pct-ml-col-base', mlColBase + 'px');
                         body.style.setProperty('--pct-vm2-col-base', vm2ColBase + 'px');
                         body.style.setProperty('--pct-vm3-col-base', vm3ColBase + 'px');
@@ -1786,6 +1818,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         body.style.setProperty('--pct-total-col-base', totalColBase + 'px');
                         body.style.setProperty('--pct-comp-col', compCol + 'px');
                         body.style.setProperty('--pct-qtd-col', qtdCol + 'px');
+                        body.style.setProperty('--pct-pes-col', pesCol + 'px');
                         body.style.setProperty('--pct-ml-col', mlCol + 'px');
                         body.style.setProperty('--pct-vm2-col', vm2Col + 'px');
                         body.style.setProperty('--pct-vm3-col', vm3Col + 'px');
@@ -1893,9 +1926,9 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
             // Adicionar à tabela
             let rowHtml = `
                 <tr data-row-index="${rowIndex}">
-                    <td class="center">${espessuraCm}</td>
-                    <td class="center">${larguraCm}</td>
-                    <td>${item.especie}</td>`;
+                    <td class="center col-espessura-pct">${espessuraCm}</td>
+                    <td class="center col-largura-pct">${larguraCm}</td>
+                    <td class="col-especie-pct">${item.especie}</td>`;
             
             // Adicionar colunas de comprimentos
             let totalPecasComprimentos = 0;
@@ -1905,7 +1938,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                 totalPecasComprimentos += qtd;
                 totaisPorComprimento[comp] += qtd;
                 
-                rowHtml += `<td class="center ${qtd > 0 ? 'has-value' : ''}">${qtd}</td>`;
+                rowHtml += `<td class="center col-comp-dyn-pct ${qtd > 0 ? 'has-value' : ''}">${qtd}</td>`;
             });
             
             // Usar valores reais calculados
@@ -1931,13 +1964,15 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
             
             // Volume em m² = largura(cm) × comprimento_médio(cm) × quantidade ÷ 10000
             const volumeM2 = (item.largura * comprimentoMedio * totalPecasComprimentos) / 10000;
+            const totalPesItem = volumeM3 * 35.314667;
             
             // ✅ COMPLETAR A LINHA COM INFORMAÇÕES DE TOTAIS (ALINHAMENTO À DIREITA VIA CSS)
             rowHtml += `
                     <td class="center col-qtd">${totalPecasComprimentos}</td>
-                    <td class="number col-ml">${metrosLineares.toFixed(2).replace('.', ',')} ml</td>
-                    <td class="number always-show-volume col-vm2">${volumeM2.toFixed(3).replace('.', ',')} m²</td>
-                    <td class="number always-show-volume col-vm3">${volumeM3.toFixed(3).replace('.', ',')} m³</td>
+                    <td class="number col-pes">${totalPesItem.toFixed(2).replace('.', ',')}</td>
+                    <td class="number always-show-volume col-vm3">${volumeM3.toFixed(3).replace('.', ',')}</td>
+                    <td class="number always-show-volume col-vm2">${volumeM2.toFixed(3).replace('.', ',')}</td>
+                    <td class="number col-ml">${metrosLineares.toFixed(2).replace('.', ',')}</td>
                     <td class="number no-print-unit-price text-right col-unit"><span class="currency-prefix">R$ </span><span class="currency-value">${item.valorUnitario.toFixed(2).replace('.', ',')}</span></td>
                     <td class="number no-print-price text-right col-total"><span class="currency-prefix">R$ </span><span class="currency-value">${item.valorTotal.toFixed(2).replace('.', ',')}</span></td>
                 </tr>
@@ -1949,6 +1984,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
         let totalMetrosLineares = 0;
         let totalVolumeM2 = 0;
         let valorTotalGeral = 0;
+        const totalPesGeral = totalVolumeM3 * 35.314667;
         
         itensAgrupados.forEach(item => {
             totalMetrosLineares += item.metrosLineares || 0;
@@ -1978,11 +2014,12 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                 </tbody>
                 <tfoot>
                     <tr class="total-geral-row">
-                        <td colspan="${3 + comprimentosColunas.length}" style="text-align: right;"><strong>Total Geral:</strong></td>
+                        <td colspan="${3 + comprimentosColunas.length}" class="pct-total-label" style="text-align: right;"><strong>Total Geral:</strong></td>
                         <td class="center col-qtd">${totalPecasGeral}</td>
-                        <td class="number col-ml">${totalMetrosLineares.toFixed(2).replace('.', ',')} ml</td>
-                        <td class="number always-show-volume col-vm2">${totalVolumeM2.toFixed(3).replace('.', ',')} m²</td>
-                        <td class="number always-show-volume col-vm3">${totalVolumeM3.toFixed(3).replace('.', ',')} m³</td>
+                        <td class="number col-pes">${totalPesGeral.toFixed(2).replace('.', ',')}</td>
+                        <td class="number always-show-volume col-vm3">${totalVolumeM3.toFixed(3).replace('.', ',')}</td>
+                        <td class="number always-show-volume col-vm2">${totalVolumeM2.toFixed(3).replace('.', ',')}</td>
+                        <td class="number col-ml">${totalMetrosLineares.toFixed(2).replace('.', ',')}</td>
                         <td class="number no-print-unit-price col-unit">-</td>
                         <td class="number no-print-price col-total"><span class="currency-prefix">R$ </span><span class="currency-value">${valorTotalGeral.toFixed(2).replace('.', ',')}</span></td>
                     </tr>
@@ -2022,44 +2059,82 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
 `;
     
     // ✅ GERAR CARDS DE RESUMO POR ESPÉCIE (ANTES DO TEMPLATE)
-    console.log('📊 Gerando cards de resumo por espécie...');
+    console.log('📊 Gerando resumo por dimensões e espécies...');
     const grouped = groupItemsByEspecie(itens);
-    let cardHtml = '';
-    
-    // Para todas as espécies, cada dimensão será um card separado
-    Object.values(grouped).forEach((especie, index) => {
-        // Para cada dimensão, criar um card separado
+    const resumoRows = [];
+    Object.values(grouped).forEach((especie) => {
         Object.entries(especie.dimensoes).forEach(([dimKey, dim]) => {
-            cardHtml += `
-                <div class="especie-card">
-                    <div class="especie-header">${especie.especie} - ${dimKey}</div>
-                    <div class="especie-body">`;
-            
-            // Ordenar comprimentos numericamente (do maior para o menor)
             const comprimentos = Object.entries(dim.comprimentos)
-                .sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
-            
+                .sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]));
+            const [espessura, largura] = String(dimKey).split('x');
             comprimentos.forEach(([comp, dados]) => {
-                // Formatar o comprimento sem casas decimais
-                const compFormatado = Math.round(parseFloat(comp));
-                
-                cardHtml += `
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 12px;">
-                        <span>${dimKey}X${compFormatado} ${dados.pecas} PEÇAS${dados.pacoteInfo ? ` - ${dados.pacoteInfo}` : ''}</span>
-                        <span>${dados.volume.toFixed(3).replace('.', ',')} m³</span>
-                    </div>
-                `;
+                const comprimento = parseFloat(comp) || 0;
+                resumoRows.push({
+                    especie: especie.especie,
+                    espessura: parseFloat(espessura) || 0,
+                    largura: parseFloat(largura) || 0,
+                    comprimento,
+                    pecas: dados.pecas || 0,
+                    metrosLineares: (comprimento / 100) * (dados.pecas || 0),
+                    volume: dados.volume || 0,
+                    observacao: dados.pacoteInfo || ''
+                });
             });
-            
-            cardHtml += `
-                    </div>
-                    <div class="especie-footer">
-                        TOTAL: ${dim.volume.toFixed(3).replace('.', ',')} m³ (${dim.pecas} peças)
-                    </div>
-                </div>
-            `;
         });
     });
+    resumoRows.sort((a, b) =>
+        String(a.especie).localeCompare(String(b.especie), 'pt-BR') ||
+        a.espessura - b.espessura ||
+        a.largura - b.largura ||
+        a.comprimento - b.comprimento
+    );
+    const resumoTotals = resumoRows.reduce((acc, row) => {
+        acc.pecas += row.pecas;
+        acc.metrosLineares += row.metrosLineares;
+        acc.volume += row.volume;
+        return acc;
+    }, { pecas: 0, metrosLineares: 0, volume: 0 });
+    let cardHtml = `
+        <table class="resumo-dimensoes-table">
+            <thead>
+                <tr>
+                    <th>Espécie</th>
+                    <th>Espessura</th>
+                    <th>Largura</th>
+                    <th>Comprimento</th>
+                    <th>Peças</th>
+                    <th>Metros Lineares</th>
+                    <th>Volume</th>
+                    <th>Observação/Pacote</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    resumoRows.forEach(row => {
+        cardHtml += `
+            <tr>
+                <td>${row.especie}</td>
+                <td class="number">${row.espessura.toLocaleString('pt-BR')} cm</td>
+                <td class="number">${row.largura.toLocaleString('pt-BR')} cm</td>
+                <td class="number">${row.comprimento.toLocaleString('pt-BR')} cm</td>
+                <td class="number">${row.pecas}</td>
+                <td class="number">${row.metrosLineares.toFixed(2).replace('.', ',')} m</td>
+                <td class="number">${row.volume.toFixed(3).replace('.', ',')} m³</td>
+                <td>${row.observacao}</td>
+            </tr>
+        `;
+    });
+    cardHtml += `
+                <tr class="total-geral-row">
+                    <td colspan="4"><strong>Total Geral</strong></td>
+                    <td class="number"><strong>${resumoTotals.pecas}</strong></td>
+                    <td class="number"><strong>${resumoTotals.metrosLineares.toFixed(2).replace('.', ',')} m</strong></td>
+                    <td class="number"><strong>${resumoTotals.volume.toFixed(3).replace('.', ',')} m³</strong></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    `;
     
     // Gerar footer dos totais
     let footerHtml = '';
@@ -2073,7 +2148,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
         `;
     });
     
-    console.log(`✅ Cards gerados: ${Object.values(grouped).length} espécies`);
+    console.log(`✅ Resumo por dimensões gerado: ${resumoRows.length} linhas`);
     
     // ✅ CONTINUAR TEMPLATE COM CARDS DE RESUMO
     printContent += `
@@ -2103,8 +2178,29 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         margin: 0 auto;
                         max-width: 100%;
                     }
+                    .resumo-dimensoes-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        table-layout: fixed;
+                        font-size: 11px;
+                    }
+                    .resumo-dimensoes-table th,
+                    .resumo-dimensoes-table td {
+                        border: 1px solid #d7dde3;
+                        padding: 6px 5px;
+                        vertical-align: middle;
+                    }
+                    .resumo-dimensoes-table th {
+                        background: #0d2339;
+                        color: #fff;
+                        text-align: center;
+                    }
+                    .resumo-dimensoes-table .number {
+                        text-align: right;
+                        white-space: nowrap;
+                    }
                     .especie-card {
-                        border: 1px solid #ddd;
+                        border: 1px solid #dcdcdc;
                         border-radius: 6px;
                         overflow: visible;
                         flex: 1 1 300px;
@@ -2298,9 +2394,6 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
     
     // ✅ GERAR TABELA CONAMA (ANTES DO TEMPLATE)
     console.log('📊 Gerando tabela CONAMA com classificação por dimensões...');
-    let totalVolumeConama = 0;
-    let categoriasConama = {};
-    let categoriaEspecies = {};
     
     // ✅ DEBUG: Mostrar algumas classificações de exemplo
     console.log('🔍 DEBUG: Exemplos de classificação CONAMA:');
@@ -2311,43 +2404,43 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
         console.log(`  - ${espessura}x${largura} cm → ${categoria}`);
     });
     
-    // Primeiro passo: somar volumes por categoria
     const resumoConama = agruparPorEspecieEConama(itens);
-    console.log('📋 Espécies processadas:', Object.keys(resumoConama));
-    
-    Object.keys(resumoConama).forEach(especieKey => {
-        const categorias = resumoConama[especieKey].categorias;
-        console.log(`📊 ${especieKey}: ${Object.keys(categorias).join(', ')}`);
-        
-        Object.keys(categorias).forEach(categoria => {
-            if (!categoriasConama[categoria]) {
-                categoriasConama[categoria] = 0;
-            }
-            categoriasConama[categoria] += categorias[categoria].volume;
-            if (!categoriaEspecies[categoria]) {
-                categoriaEspecies[categoria] = new Set();
-            }
-            categoriaEspecies[categoria].add(resumoConama[especieKey].especie || especieKey);
-            totalVolumeConama += categorias[categoria].volume;
-        });
+    const totalVolumeConama = resumoConama.reduce((acc, row) => acc + row.volume, 0);
+    const totaisCategoriaConama = {};
+    resumoConama.forEach(row => {
+        if (!totaisCategoriaConama[row.categoria]) totaisCategoriaConama[row.categoria] = 0;
+        totaisCategoriaConama[row.categoria] += row.volume;
     });
     
-    console.log('🏷️ Categorias CONAMA encontradas:', Object.keys(categoriasConama));
+    console.log('🏷️ Categorias CONAMA encontradas:', Object.keys(totaisCategoriaConama));
     
     // Segundo passo: gerar as linhas da tabela
     let conamaHtml = '';
-    Object.keys(categoriasConama).sort().forEach(categoria => {
-        const volume = categoriasConama[categoria];
-        const porcentagem = (volume / totalVolumeConama * 100).toFixed(2);
+    resumoConama.forEach(row => {
+        const porcentagem = totalVolumeConama > 0 ? (row.volume / totalVolumeConama * 100).toFixed(2) : '0,00';
         
-        console.log(`📊 ${categoria}: ${volume.toFixed(3)} m³ (${porcentagem}%)`);
+        console.log(`📊 ${row.categoria} / ${row.especie}: ${row.volume.toFixed(3)} m³ (${porcentagem}%)`);
         
         conamaHtml += `
             <tr>
-                <td>${categoria}</td>
-                <td class="number">${volume.toFixed(3).replace('.', ',')}</td>
+                <td>${row.categoria}</td>
+                <td>${row.especie}</td>
+                <td class="number">${row.volume.toFixed(3).replace('.', ',')}</td>
                 <td class="text-center">${porcentagem}%</td>
-                <td>${Array.from(categoriaEspecies[categoria] || []).sort().join(', ')}</td>
+                <td>${row.pecas} peça(s)</td>
+            </tr>
+        `;
+    });
+
+    Object.keys(totaisCategoriaConama).sort().forEach(categoria => {
+        const volume = totaisCategoriaConama[categoria];
+        const porcentagem = totalVolumeConama > 0 ? (volume / totalVolumeConama * 100).toFixed(2) : '0,00';
+        conamaHtml += `
+            <tr class="subtotal-row">
+                <td colspan="2"><strong>Total ${categoria}</strong></td>
+                <td class="number"><strong>${volume.toFixed(3).replace('.', ',')}</strong></td>
+                <td class="text-center"><strong>${porcentagem}%</strong></td>
+                <td></td>
             </tr>
         `;
     });
@@ -2355,14 +2448,14 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
     // Adicionar linha de total
     conamaHtml += `
         <tr class="total-geral-row">
-            <td><strong>TOTAL</strong></td>
+            <td colspan="2"><strong>TOTAL GERAL</strong></td>
             <td class="number"><strong>${totalVolumeConama.toFixed(3).replace('.', ',')}</strong></td>
             <td class="text-center"><strong>100%</strong></td>
             <td><strong>-</strong></td>
         </tr>
     `;
     
-    console.log(`✅ Tabela CONAMA gerada: ${Object.keys(categoriasConama).length} categorias (${totalVolumeConama.toFixed(3)} m³ total)`);
+    console.log(`✅ Tabela CONAMA gerada: ${Object.keys(totaisCategoriaConama).length} categorias (${totalVolumeConama.toFixed(3)} m³ total)`);
     
     // ✅ FINALIZAR TEMPLATE COM CONAMA
     printContent += `
@@ -2373,7 +2466,12 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                 <style>
                     .resumo-conama {
                         margin: 20px 0;
+                        page-break-before: always;
+                        break-before: page;
                         page-break-inside: avoid;
+                        break-inside: avoid;
+                        page-break-after: avoid;
+                        break-after: avoid;
                     }
                     .resumo-conama table {
                         width: 100%;
@@ -2381,7 +2479,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         margin-top: 15px;
                     }
                     .resumo-conama th, .resumo-conama td {
-                        border: 1px solid #ddd;
+                        border: 1px solid #dcdcdc;
                         padding: 8px;
                         text-align: left;
                     }
@@ -2402,6 +2500,29 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                     }
                     
                     @media print {
+                        .resumo-conama {
+                            page-break-before: always !important;
+                            break-before: page !important;
+                            page-break-inside: avoid !important;
+                            break-inside: avoid !important;
+                            margin: 0 !important;
+                        }
+                        .resumo-conama table {
+                            table-layout: fixed !important;
+                            margin-top: 6px !important;
+                        }
+                        .resumo-conama th,
+                        .resumo-conama td {
+                            font-size: 8.2px !important;
+                            line-height: 1.12 !important;
+                            padding: 2px 3px !important;
+                            word-break: break-word !important;
+                            white-space: normal !important;
+                        }
+                        .conama-page-break + div .resumo-conama {
+                            page-break-before: auto !important;
+                            break-before: auto !important;
+                        }
                         .resumo-conama th {
                             background-color: #000 !important;
                             color: #fff !important;
@@ -2417,9 +2538,10 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         <thead>
                             <tr>
                                 <th>Categoria CONAMA</th>
+                                <th>Espécie</th>
                                 <th class="number">Volume (m³)</th>
                                 <th class="text-center">Porcentagem</th>
-                                <th>Espécies</th>
+                                <th>Observação</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2578,7 +2700,7 @@ function agruparPorEspecieEConama(items) {
     const grupos = {};
     
     items.forEach(item => {
-        const especie = item.especie || 'Desconhecida';
+        const especie = String(item.especie || item.especieNome || 'Desconhecida').trim() || 'Desconhecida';
         const quantidade = parseInt(item.quantidade) || 0;
         const pecasPorPacote = parseInt(item.pecasPorPacote) || 1;
         const comprimento = parseFloat(item.comprimento) || 0;
@@ -2589,28 +2711,27 @@ function agruparPorEspecieEConama(items) {
         const volumeUnitario = (comprimento * largura * espessura) / 1000000;
         const volumeTotal = volumeUnitario * quantidade * pecasPorPacote;
         
-        if (!grupos[especie]) {
-            grupos[especie] = {
-                especie: especie,
-                categorias: {}
-            };
-        }
-        
         // ✅ CLASSIFICAÇÃO CONAMA CORRETA BASEADA NAS DIMENSÕES (espessura x largura)
         const categoria = classificarProdutoConama(espessura, largura);
+        const key = `${categoria}||${especie}`;
         
-        if (!grupos[especie].categorias[categoria]) {
-            grupos[especie].categorias[categoria] = {
+        if (!grupos[key]) {
+            grupos[key] = {
+                categoria,
+                especie,
                 volume: 0,
                 pecas: 0
             };
         }
         
-        grupos[especie].categorias[categoria].volume += volumeTotal;
-        grupos[especie].categorias[categoria].pecas += quantidade * pecasPorPacote;
+        grupos[key].volume += volumeTotal;
+        grupos[key].pecas += quantidade * pecasPorPacote;
     });
     
-    return grupos;
+    return Object.values(grupos).sort((a, b) =>
+        String(a.categoria).localeCompare(String(b.categoria), 'pt-BR') ||
+        String(a.especie).localeCompare(String(b.especie), 'pt-BR')
+    );
 }
 
 // ============================================================================
@@ -2720,7 +2841,7 @@ window.testarDadosImpressaoPCT = async function(romaneioId) {
     
     try {
         // Carregar romaneio
-        const romaneios = await getData('romaneios/pct') || [];
+        const romaneios = await carregarRomaneiosMergedPct();
         const romaneio = romaneios.find(r => r.id == romaneioId);
         
         if (!romaneio) {

@@ -22,19 +22,22 @@ const ToastManager = {
         const container = document.getElementById('toastContainer');
         if (!container) return;
 
+        const safeType = ['success', 'error', 'warning', 'info'].includes(type) ? type : 'info';
         const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
+        toast.className = `toast ${safeType}`;
         
         let icon = 'info-circle';
-        if (type === 'success') icon = 'check-circle';
-        if (type === 'error') icon = 'exclamation-circle';
-        if (type === 'warning') icon = 'exclamation-triangle';
+        if (safeType === 'success') icon = 'check-circle';
+        if (safeType === 'error') icon = 'exclamation-circle';
+        if (safeType === 'warning') icon = 'exclamation-triangle';
+        const safeTitle = escapeHtml(safeType.charAt(0).toUpperCase() + safeType.slice(1));
+        const safeMessage = escapeHtml(message);
 
         toast.innerHTML = `
             <div class="toast-icon"><i class="fas fa-${icon}"></i></div>
             <div class="toast-content">
-                <div class="toast-title">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
-                <div class="toast-message">${message}</div>
+                <div class="toast-title">${safeTitle}</div>
+                <div class="toast-message">${safeMessage}</div>
             </div>
             <button class="toast-close">&times;</button>
         `;
@@ -73,6 +76,25 @@ function getCompanyKey(key) {
     return key;
 }
 
+function getCanonicalBusinessKey(key) {
+    const aliases = {
+        romaneiosTora: 'romaneios/tora',
+        romaneiosPct: 'romaneios/pct',
+        romaneiosPCT: 'romaneios/pct',
+        romaneiosTL: 'romaneios/tl',
+        romaneiosTl: 'romaneios/tl',
+        romaneios_tl: 'romaneios/tl',
+        romaneiosPes: 'romaneios/pes',
+        romaneiosPES: 'romaneios/pes',
+        romaneios_pes: 'romaneios/pes'
+    };
+    return aliases[key] || key;
+}
+
+function isRomaneioBusinessKey(key) {
+    return /^romaneios\/(tora|pct|tl|pes)(\/|$)/.test(getCanonicalBusinessKey(key));
+}
+
 function persistLocalValue(storageKey, data) {
     try {
         if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {
@@ -83,8 +105,267 @@ function persistLocalValue(storageKey, data) {
     return true;
 }
 
+function aguardarFirebaseServiceCompras(timeoutMs = 8000) {
+    return new Promise(async (resolve) => {
+        const startedAt = Date.now();
+        try {
+            if (window.__siswebFirebaseServiceReady && typeof window.__siswebFirebaseServiceReady.then === 'function') {
+                await window.__siswebFirebaseServiceReady;
+            }
+        } catch (error) {
+            console.warn('⚠️ Compras: falha aguardando firebaseServiceReady:', error && error.message ? error.message : error);
+        }
+        const check = () => {
+            const svc = window.firebaseService || window.FirebaseService;
+            if (svc && typeof svc.loadFromFirebase === 'function' && typeof svc.resolveAuthenticatedTenant === 'function') {
+                resolve(svc);
+                return;
+            }
+            if ((Date.now() - startedAt) >= timeoutMs) {
+                resolve(svc || null);
+                return;
+            }
+            setTimeout(check, 100);
+        };
+        check();
+    });
+}
+
+function obterTenantServicoCompras() {
+    try {
+        const svc = window.firebaseService || window.FirebaseService;
+        if (svc && typeof svc.getCurrentTenantId === 'function') {
+            const t = svc.getCurrentTenantId();
+            if (t) return String(t);
+        }
+        if (svc && typeof svc.getTenantId === 'function') {
+            const t = svc.getTenantId();
+            if (t) return String(t);
+        }
+    } catch (_) {}
+    try {
+        if (window.appTenantId) return String(window.appTenantId);
+    } catch (_) {}
+    return '';
+}
+
+function limparContextoEmpresaComprasInseguro() {
+    try { window.appTenantId = null; } catch (_) {}
+    try { window.companyInfo = null; } catch (_) {}
+    try { localStorage.removeItem('company_info'); } catch (_) {}
+    try {
+        const svc = window.firebaseService || window.FirebaseService;
+        if (svc && typeof svc.setTenantId === 'function') svc.setTenantId(null);
+    } catch (_) {}
+}
+
+function isFirebaseOfflineModeCompras() {
+    try {
+        if (window._FIREBASE_CONNECTED === false || window.firebaseConnected === false) return true;
+    } catch (_) {}
+    try {
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) return true;
+    } catch (_) {}
+    return false;
+}
+
+function buildOperationalLoginUrlCompras() {
+    try {
+        const target = `${window.location.pathname.split('/').pop() || 'compras.html'}${window.location.search || ''}${window.location.hash || ''}`;
+        return `login.html?reason=tenant_required&redirect=${encodeURIComponent(target)}`;
+    } catch (_) {
+        return 'login.html?reason=tenant_required&redirect=compras.html';
+    }
+}
+
+function ensureOperationalAccessStylesCompras() {
+    if (document.getElementById('siswebOperationalAccessStateStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'siswebOperationalAccessStateStyles';
+    style.textContent = `
+        .sisweb-operational-state {
+            display: grid;
+            grid-template-columns: 48px minmax(0, 1fr);
+            gap: 16px;
+            align-items: start;
+            margin: 16px 0 20px;
+            padding: 18px;
+            border: 1px solid #dbe4ef;
+            border-left: 4px solid #2563eb;
+            border-radius: 8px;
+            background: #f8fafc;
+            color: #1f2937;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        }
+        .sisweb-operational-state-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #e0ecff;
+            color: #1d4ed8;
+            font-size: 20px;
+        }
+        .sisweb-operational-state h2 {
+            margin: 0 0 6px;
+            font-size: 1.05rem;
+            line-height: 1.3;
+            color: #111827;
+        }
+        .sisweb-operational-state p {
+            margin: 0 0 8px;
+            color: #4b5563;
+            line-height: 1.45;
+        }
+        .sisweb-operational-state-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .sisweb-operational-state-actions a {
+            text-decoration: none;
+        }
+        @media (max-width: 640px) {
+            .sisweb-operational-state {
+                grid-template-columns: 1fr;
+                padding: 16px;
+            }
+            .sisweb-operational-state-actions a,
+            .sisweb-operational-state-actions button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function setOperationalActionsDisabledCompras(disabled) {
+    document.querySelectorAll('#pedidos > .action-buttons button').forEach((button) => {
+        button.disabled = !!disabled;
+        if (disabled) {
+            button.dataset.siswebOperationalLocked = 'true';
+            button.title = 'Entre novamente com uma empresa ativa para usar Compras.';
+        } else if (button.dataset.siswebOperationalLocked === 'true') {
+            button.removeAttribute('disabled');
+            button.removeAttribute('title');
+            delete button.dataset.siswebOperationalLocked;
+        }
+    });
+}
+
+function renderOperationalAccessStateCompras(contexto = {}) {
+    ensureOperationalAccessStylesCompras();
+    window.__siswebComprasOperationalReady = false;
+    window.__siswebComprasLastContext = contexto || {};
+    setOperationalActionsDisabledCompras(true);
+    const form = document.getElementById('pedidoForm');
+    if (form) form.style.display = 'none';
+
+    const container = document.getElementById('pedidos');
+    if (!container) return;
+    let panel = document.getElementById('comprasOperationalAccessState');
+    if (!panel) {
+        panel = document.createElement('section');
+        panel.id = 'comprasOperationalAccessState';
+        panel.className = 'sisweb-operational-state';
+        panel.setAttribute('role', 'status');
+        panel.setAttribute('aria-live', 'polite');
+        const afterActions = container.querySelector('.action-buttons');
+        if (afterActions && afterActions.nextSibling) container.insertBefore(panel, afterActions.nextSibling);
+        else container.prepend(panel);
+    }
+
+    const isSuperAdmin = contexto && contexto.superAdmin === true;
+    const title = isSuperAdmin ? 'Conta SuperAdmin sem empresa operacional' : 'Compras indisponivel nesta sessao';
+    const message = isSuperAdmin
+        ? 'Use um usuario vinculado a uma empresa para trabalhar com pedidos de compra. O painel administrativo continua disponivel.'
+        : 'Nao foi possivel confirmar uma empresa ativa para carregar pedidos, fornecedores e financeiro com seguranca.';
+    const detail = contexto && contexto.error
+        ? `<p>${escapeHtml(contexto.error)}</p>`
+        : '<p>Entre novamente para renovar a sessao e evitar leitura de dados de outra empresa.</p>';
+    const secondaryHref = isSuperAdmin ? 'admin.html?tab=dashboard' : 'index.html';
+    const secondaryText = isSuperAdmin ? 'Abrir Admin' : 'Ir para inicio';
+
+    panel.innerHTML = `
+        <div class="sisweb-operational-state-icon" aria-hidden="true"><i class="fas fa-lock"></i></div>
+        <div>
+            <h2>${escapeHtml(title)}</h2>
+            <p>${escapeHtml(message)}</p>
+            ${detail}
+            <div class="sisweb-operational-state-actions">
+                <a class="btn-primary" href="${escapeHtml(buildOperationalLoginUrlCompras())}">
+                    <i class="fas fa-right-to-bracket"></i> Entrar novamente
+                </a>
+                <a class="btn-secondary" href="${escapeHtml(secondaryHref)}">
+                    <i class="fas fa-arrow-left"></i> ${escapeHtml(secondaryText)}
+                </a>
+            </div>
+        </div>
+    `;
+}
+
+function clearOperationalAccessStateCompras() {
+    window.__siswebComprasOperationalReady = true;
+    window.__siswebComprasLastContext = null;
+    setOperationalActionsDisabledCompras(false);
+    const panel = document.getElementById('comprasOperationalAccessState');
+    if (panel) panel.remove();
+}
+
+function guardOperationalAccessCompras() {
+    if (window.__siswebComprasOperationalReady === true) return true;
+    renderOperationalAccessStateCompras(window.__siswebComprasLastContext || { error: 'Empresa da sessao nao identificada.' });
+    ToastManager.warning('Entre novamente com uma empresa ativa para usar Compras.');
+    return false;
+}
+
+async function garantirContextoEmpresaCompras() {
+    const svc = await aguardarFirebaseServiceCompras();
+    try {
+        if (svc && svc.authPersistenceReady) await svc.authPersistenceReady;
+    } catch (_) {}
+
+    if (svc && typeof svc.resolveAuthenticatedTenant === 'function') {
+        const isOffline = isFirebaseOfflineModeCompras();
+        const resolved = await svc.resolveAuthenticatedTenant({ timeoutMs: 4500, allowCached: isOffline });
+        if (resolved && resolved.success && resolved.companyId) return resolved;
+        if (resolved && resolved.success && resolved.superAdmin) {
+            limparContextoEmpresaComprasInseguro();
+            return resolved;
+        }
+    }
+
+    if (typeof window.checkAuth === 'function') {
+        try {
+            const ok = await window.checkAuth();
+            if (!ok) {
+                limparContextoEmpresaComprasInseguro();
+                return { success: false, code: 'auth-redirected', error: 'Autenticação não confirmada.' };
+            }
+        } catch (_) {}
+    }
+
+    if (svc && typeof svc.resolveAuthenticatedTenant === 'function') {
+        const isOffline = isFirebaseOfflineModeCompras();
+        const retried = await svc.resolveAuthenticatedTenant({ timeoutMs: 2500, allowCached: isOffline });
+        if (retried && retried.success) return retried;
+    }
+
+    const tenant = obterTenantServicoCompras();
+    if (tenant && isFirebaseOfflineModeCompras()) return { success: true, companyId: tenant, fallback: true, offline: true };
+
+    limparContextoEmpresaComprasInseguro();
+    return { success: false, code: 'missing-company-context', error: 'Empresa da sessão não identificada.' };
+}
+
 // Carregar dados (Firebase > LocalStorage)
 async function getData(key) {
+    const requestedKey = key;
+    key = getCanonicalBusinessKey(key);
     try {
         if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
             const result = await window.firebaseService.loadFromFirebase(key);
@@ -146,6 +427,11 @@ async function getData(key) {
     } catch (e) {
         console.warn(`[getData] Erro ao carregar ${key} do Firebase:`, e);
     }
+
+    if (isRomaneioBusinessKey(requestedKey)) {
+        console.warn(`[getData] Romaneios devem ser carregados apenas de companies/{companyId}/${key}.`);
+        return [];
+    }
     
     // Fallback LocalStorage
     try {
@@ -180,6 +466,14 @@ async function getData(key) {
                 if (item && typeof item === 'object' && (item['0'] === 'r' && item['1'] === 'o')) return false;
                 return item && (item.id || item.firebaseKey);
             });
+        }
+        if (data && typeof data === 'object') {
+            return Object.keys(data).map(k => {
+                const item = data[k];
+                if (item && typeof item === 'object' && (item['0'] === 'r' && item['1'] === 'o')) return null;
+                if (item && typeof item === 'object') return { ...item, id: item.id || k, firebaseKey: item.firebaseKey || k };
+                return null;
+            }).filter(Boolean);
         }
         return [];
     } catch (e) {
@@ -217,6 +511,30 @@ const parseCurrency = (val) => {
     if (!val) return 0;
     return parseFloat(String(val).replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;
 };
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function escapeJsString(value) {
+    return String(value ?? '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\r?\n/g, ' ');
+}
+
+function refreshCommerceResponsiveTables() {
+    try {
+        if (window.SiswebCommerceResponsive && typeof window.SiswebCommerceResponsive.enhanceAll === 'function') {
+            window.SiswebCommerceResponsive.enhanceAll();
+        }
+    } catch (_) {}
+}
 
 // Helpers de Data e Formatação Input
 function addDaysISO(dateISO, days) {
@@ -260,11 +578,24 @@ let pedidoEmEdicao = null;
 let itensPedido = [];
 let contasPagar = [];
 let autoRedistribuirEnabled = true; // ✅ Igual Vendas: controla redistribuição automática ao alterar totais
+let comprasFornecedoresEditingId = null;
+let comprasFornecedoresFiltered = [];
 let pedidosListPage = 1;
 const pedidosListItemsPerPage = 10;
 let pedidosListFiltered = [];
 let pedidosSelecionados = new Set();
 let produtoEmEdicaoId = null;
+let comprasRelatorioAtual = [];
+let comprasRelatorioModoAtual = 'pedidos';
+const comprasRelatorioColunasPadrao = [
+    { key: 'numero', label: 'Número' },
+    { key: 'data', label: 'Data' },
+    { key: 'fornecedor', label: 'Fornecedor' },
+    { key: 'total', label: 'Total' },
+    { key: 'status', label: 'Status' },
+    { key: 'acoes', label: 'Ações' }
+];
+let comprasRelatorioColunasVisiveis = new Set(comprasRelatorioColunasPadrao.map(c => c.key));
 
 // Estado para controle de edição inline (igual Vendas)
 let parcelaEditandoId = null;
@@ -290,10 +621,12 @@ function showTab(tabId) {
     
     // Callbacks específicos
     if (tabId === 'pedidos') listarPedidos();
-    if (tabId === 'clientes') window.location.href = 'fornecedor.html'; // Redireciona para gestão
+    if (tabId === 'clientes') carregarFornecedoresAbaCompra(false);
+    if (tabId === 'relatorios') prepararRelatoriosCompras();
 }
 
 function novoPedido(gerarNumero = true) {
+    if (!guardOperationalAccessCompras()) return;
     pedidoEmEdicao = null;
     itensPedido = [];
     contasPagar = [];
@@ -340,13 +673,13 @@ function atualizarSelectProdutos() {
     }
 
     // Garantir que ordenação e exibição tratem nomes alternativos (name/nome)
-    window.produtos.sort((a,b) => (a.nome || a.name || '').localeCompare(b.nome || b.name || '')).forEach(p => {
+    window.produtos.sort((a,b) => (a.especie || a.nome || a.name || '').localeCompare(b.especie || b.nome || b.name || '')).forEach(p => {
         const opt = document.createElement('option');
         opt.value = p.id;
         
         // Compatibilidade: species usa 'price', produtos usa 'preco'
         const nomeCientifico = p.nomeCientifico || '';
-        const nomeComum = p.nomeComum || p.nome || p.name || 'Produto sem nome';
+        const nomeComum = p.especie || p.nomeComum || p.nome || p.name || 'Produto sem nome';
         const texto = nomeCientifico ? `${nomeCientifico} - ${nomeComum}` : nomeComum;
         
         const preco = p.preco || p.price || 0;
@@ -358,7 +691,7 @@ function atualizarSelectProdutos() {
 }
 
 function getProdutoNomeCadastro(produto) {
-    return String(produto?.nomeComum || produto?.nome || produto?.name || produto?.nomeCientifico || '').trim();
+    return String(produto?.especie || produto?.nomeComum || produto?.nome || produto?.name || produto?.nomeCientifico || '').trim();
 }
 
 function getProdutoPrecoCadastro(produto) {
@@ -386,7 +719,7 @@ function ensureCodigoProdutoUnico(baseCodigo, currentId = null) {
 
 async function persistProdutosCatalog(lista) {
     window.produtos = Array.isArray(lista) ? lista : [];
-    await saveData('species', window.produtos);
+    await saveData('produtos', window.produtos);
     atualizarSelectProdutos();
 }
 
@@ -425,22 +758,26 @@ function renderProdutosCadastroTable() {
         return nome.includes(termo) || codigo.includes(termo);
     });
     if (lista.length === 0) {
-        table.innerHTML = '<tr><td colspan="5" class="text-center">Nenhum produto cadastrado.</td></tr>';
+        table.innerHTML = '<tr><td colspan="5" data-label="Mensagem" class="text-center commerce-full-row">Nenhum produto cadastrado.</td></tr>';
+        refreshCommerceResponsiveTables();
         return;
     }
     const ordered = lista.slice().sort((a, b) => getProdutoNomeCadastro(a).localeCompare(getProdutoNomeCadastro(b)));
     table.innerHTML = ordered.map(produto => `
         <tr>
-            <td>${String(produto.codigo || '-')}</td>
-            <td>${getProdutoNomeCadastro(produto) || '-'}</td>
-            <td>${formatCurrency(getProdutoPrecoCadastro(produto))}</td>
-            <td>${formatNumber(getProdutoEstoqueCadastro(produto), 3)}</td>
-            <td>
-                <button onclick="editarProdutoCadastro('${String(produto.id || '').replace(/'/g, "\\'")}')" class="btn-primary btn-small"><i class="fas fa-edit"></i></button>
-                <button onclick="excluirProdutoCadastro('${String(produto.id || '').replace(/'/g, "\\'")}')" class="btn-danger btn-small"><i class="fas fa-trash"></i></button>
+            <td data-label="Código"><span class="commerce-card-value commerce-card-number">${escapeHtml(String(produto.codigo || '-'))}</span></td>
+            <td data-label="Nome"><span class="commerce-card-value commerce-card-title">${escapeHtml(getProdutoNomeCadastro(produto) || '-')}</span></td>
+            <td data-label="Preço"><span class="commerce-card-value commerce-card-money">${escapeHtml(formatCurrency(getProdutoPrecoCadastro(produto)))}</span></td>
+            <td data-label="Estoque"><span class="commerce-card-value commerce-card-number">${escapeHtml(formatNumber(getProdutoEstoqueCadastro(produto), 3))}</span></td>
+            <td data-label="Ações" class="commerce-actions-cell">
+                <div class="acoes-buttons commerce-actions-wrap">
+                <button type="button" onclick="editarProdutoCadastro('${String(produto.id || '').replace(/'/g, "\\'")}')" class="btn-primary btn-small" title="Editar" aria-label="Editar produto"><i class="fas fa-edit"></i></button>
+                <button type="button" onclick="excluirProdutoCadastro('${String(produto.id || '').replace(/'/g, "\\'")}')" class="btn-danger btn-small" title="Excluir" aria-label="Excluir produto"><i class="fas fa-trash"></i></button>
+                </div>
             </td>
         </tr>
     `).join('');
+    refreshCommerceResponsiveTables();
 }
 
 window.novoProduto = function() {
@@ -636,23 +973,25 @@ function renderizarItensPedido() {
     tbody.innerHTML = '';
     
     if (itensPedido.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhum item adicionado</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" data-label="Mensagem" class="commerce-full-row" style="text-align: center;">Nenhum item adicionado</td></tr>';
+        refreshCommerceResponsiveTables();
         return;
     }
     
     itensPedido.forEach((item, index) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${item.produtoNome}</td>
-            <td>${formatNumber(item.quantidade)} ${item.unidade || ''}</td>
-            <td>${formatCurrency(item.precoUnitario)}</td>
-            <td>${formatCurrency(item.total)}</td>
-            <td>
-                <button onclick="removerItem(${index})" class="btn-danger btn-small"><i class="fas fa-trash"></i></button>
+            <td data-label="Produto"><span class="commerce-card-value commerce-card-title">${escapeHtml(item.produtoNome || '-')}</span></td>
+            <td data-label="Quantidade"><span class="commerce-card-value commerce-card-number">${escapeHtml(formatNumber(item.quantidade))} ${escapeHtml(item.unidade || '')}</span></td>
+            <td data-label="Preço Unit."><span class="commerce-card-value commerce-card-money">${escapeHtml(formatCurrency(item.precoUnitario))}</span></td>
+            <td data-label="Total"><span class="commerce-card-value commerce-card-money commerce-card-strong">${escapeHtml(formatCurrency(item.total))}</span></td>
+            <td data-label="Ações" class="commerce-actions-cell">
+                <button type="button" onclick="removerItem(${index})" class="btn-danger btn-small" title="Remover" aria-label="Remover item"><i class="fas fa-trash"></i></button>
             </td>
         `;
         tbody.appendChild(tr);
     });
+    refreshCommerceResponsiveTables();
 }
 
 function removerItem(index) {
@@ -879,8 +1218,9 @@ function renderizarContasPagar() {
     });
 
     if (contasPagar.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666;">Nenhuma conta adicionada</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" data-label="Mensagem" class="commerce-full-row" style="text-align: center; color: #666;">Nenhuma conta adicionada</td></tr>';
         atualizarTotalContasPagar();
+        refreshCommerceResponsiveTables();
         return;
     }
 
@@ -900,7 +1240,7 @@ function renderizarContasPagar() {
 
         html += `
             <tr>
-                <td>
+                <td data-label="Valor">
                     <input type="text" 
                            id="conta-valor-${safeId}"
                            value="${displayValor}" 
@@ -909,7 +1249,7 @@ function renderizarContasPagar() {
                            onblur="onParcelaValorBlur('${safeId}', this.value)"
                            style="width: 120px;">
                 </td>
-                <td>
+                <td data-label="Dias">
                     <input type="number"
                            id="conta-dias-${safeId}"
                            value="${conta.dias}"
@@ -918,7 +1258,7 @@ function renderizarContasPagar() {
                            onchange="atualizarDiasContaPagar('${safeId}', this.value)"
                            style="width: 90px;">
                 </td>
-                <td>
+                <td data-label="Vencimento">
                     <input type="date" 
                            id="conta-venc-${safeId}"
                            value="${displayData}" 
@@ -926,7 +1266,7 @@ function renderizarContasPagar() {
                            onblur="onParcelaDateBlur('${safeId}', this)"
                            style="width: 140px;">
                 </td>
-                <td>
+                <td data-label="Tipo">
                     <select onchange="atualizarTipoConta('${safeId}', this.value)" id="conta-tipo-${safeId}" style="width: 120px;">
                         <option value="pagar" ${conta.tipo === 'pagar' ? 'selected' : ''}>Pagar</option>
                         <option value="a_vista" ${conta.tipo === 'a_vista' ? 'selected' : ''}>À Vista</option>
@@ -939,7 +1279,7 @@ function renderizarContasPagar() {
                         <option value="permuta" ${conta.tipo === 'permuta' ? 'selected' : ''}>Permuta</option>
                     </select>
                 </td>
-                <td>
+                <td data-label="Observação">
                     <input type="text" 
                            id="conta-obs-${safeId}"
                            value="${conta.observacao || ''}" 
@@ -947,8 +1287,8 @@ function renderizarContasPagar() {
                            placeholder="Observação"
                            style="width: 100%;">
                 </td>
-                <td>
-                    <button type="button" onclick="removerConta('${safeId}')" class="btn-danger btn-small" title="Remover">
+                <td data-label="Ações" class="commerce-actions-cell">
+                    <button type="button" onclick="removerConta('${safeId}')" class="btn-danger btn-small" title="Remover" aria-label="Remover parcela">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -958,6 +1298,7 @@ function renderizarContasPagar() {
 
     tbody.innerHTML = html;
     atualizarTotalContasPagar();
+    refreshCommerceResponsiveTables();
 
     // ✅ Restaurar foco após re-render (igual Vendas)
     if (activeId) {
@@ -1350,6 +1691,39 @@ function comparePedidosCompraByRecencyDesc(a, b) {
     return ib.localeCompare(ia);
 }
 
+function getRomaneioRecencyTimestampCompra(romaneio) {
+    if (!romaneio || typeof romaneio !== 'object') return 0;
+    const candidates = [
+        romaneio?._metadata?.lastUpdated,
+        romaneio.updatedAt,
+        romaneio.updated,
+        romaneio.lastModified,
+        romaneio.dataEmissao,
+        romaneio.data,
+        romaneio.dataHora,
+        romaneio.dataCriacao,
+        romaneio.createdAt,
+        romaneio.created,
+        romaneio.timestamp
+    ];
+    for (const candidate of candidates) {
+        const ts = toTimestamp(candidate);
+        if (ts) return ts;
+    }
+    const id = String(romaneio.id || romaneio.romaneioId || romaneio.firebaseKey || romaneio.key || romaneio.numero || romaneio.numeroRomaneio || '');
+    const match = id.match(/(\d{10,})/);
+    return match ? Number(match[1]) || 0 : 0;
+}
+
+function compareRomaneiosCompraByRecencyDesc(a, b) {
+    const tb = getRomaneioRecencyTimestampCompra(b);
+    const ta = getRomaneioRecencyTimestampCompra(a);
+    if (tb !== ta) return tb - ta;
+    const ib = String(b && (b.numero || b.numeroRomaneio || b.id || b.firebaseKey) || '');
+    const ia = String(a && (a.numero || a.numeroRomaneio || a.id || a.firebaseKey) || '');
+    return ib.localeCompare(ia, 'pt-BR', { numeric: true, sensitivity: 'base' });
+}
+
 // --- Persistência ---
 
 
@@ -1382,6 +1756,124 @@ function getTipoContaLabel(tipo) {
         'permuta': 'Permuta'
     };
     return labels[tipo] || tipo;
+}
+
+function getPedidoCompraRef(pedidoOuId) {
+    if (pedidoOuId && typeof pedidoOuId === 'object') {
+        return {
+            id: String(pedidoOuId.id || pedidoOuId.firebaseKey || ''),
+            numero: String(pedidoOuId.numero || pedidoOuId.pedidoNumero || '')
+        };
+    }
+    return { id: String(pedidoOuId || ''), numero: '' };
+}
+
+function normalizePedidoCompraNumero(value) {
+    return String(value || '').trim().replace(/^0+(\d)/, '$1');
+}
+
+function isContaPagarComPagamento(conta) {
+    const st = String(conta && conta.status ? conta.status : '').toLowerCase();
+    const pagamentos = conta && (conta.pagamentos || conta.baixas || conta.recebimentos || conta.lancamentos);
+    const hasPagamento = Array.isArray(pagamentos) && pagamentos.length > 0;
+    const valorOriginal = typeof (conta && conta.valorOriginal) === 'number'
+        ? conta.valorOriginal
+        : parseFloat((conta && conta.valorOriginal) || '');
+    const valorRestante = typeof (conta && conta.valorRestante) === 'number'
+        ? conta.valorRestante
+        : parseFloat((conta && conta.valorRestante) || '');
+    const parcial = !isNaN(valorOriginal) && !isNaN(valorRestante) && valorRestante < valorOriginal;
+    return st === 'pago' || st === 'parcial' || hasPagamento || parcial;
+}
+
+function isContaPagarLike(value) {
+    if (!value || typeof value !== 'object') return false;
+    return value.origemId || value.pedidoNumero || value.dataVencimento || value.vencimento || value.valor !== undefined || value.valorOriginal !== undefined || value.descricao;
+}
+
+function flattenContasPagarData(data) {
+    const out = [];
+    const seen = new Set();
+    const walk = (node, path = []) => {
+        if (!node || typeof node !== 'object') return;
+        if (Array.isArray(node)) {
+            node.forEach((item, idx) => walk(item, path.concat(String(idx))));
+            return;
+        }
+        if (isContaPagarLike(node)) {
+            const fallbackId = path.length ? path[path.length - 1] : '';
+            const item = { ...node, id: node.id || node.firebaseKey || fallbackId, firebaseKey: node.firebaseKey || fallbackId };
+            const key = String(item.id || `${item.origemId || ''}|${item.pedidoNumero || ''}|${item.descricao || ''}|${item.vencimento || item.dataVencimento || ''}`);
+            if (!seen.has(key)) {
+                seen.add(key);
+                out.push(item);
+            }
+            return;
+        }
+        Object.entries(node).forEach(([key, value]) => walk(value, path.concat(String(key))));
+    };
+    walk(data);
+    return out;
+}
+
+function contaPagarPertenceAoPedidoCompra(conta, pedidoOuId) {
+    const ref = getPedidoCompraRef(pedidoOuId);
+    if (!conta || typeof conta !== 'object') return false;
+    const pedidoId = ref.id;
+    const pedidoNumero = ref.numero;
+    if (pedidoId && String(conta.origemId || '') === pedidoId) return true;
+    if (pedidoId && String(conta.id || '').startsWith(`CP-${pedidoId}-`)) return true;
+    if (pedidoNumero && String(conta.pedidoNumero || '') === pedidoNumero) return true;
+    if (pedidoNumero) {
+        const desc = String(conta.descricao || conta.observacoes || '');
+        const numeroNorm = normalizePedidoCompraNumero(pedidoNumero);
+        if (desc.includes(`Compra ${pedidoNumero}`) || desc.includes(`Pedido ${pedidoNumero}`)) return true;
+        if (numeroNorm && (desc.includes(`Compra ${numeroNorm}`) || desc.includes(`Pedido ${numeroNorm}`))) return true;
+    }
+    return false;
+}
+
+async function carregarContasPagarVinculadasPedidoCompra(pedidoOuId) {
+    const vinculadas = [];
+    if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+        try {
+            const res = await window.firebaseService.loadFromFirebase('financas/pagar');
+            if (res && res.success && res.data) {
+                vinculadas.push(...flattenContasPagarData(res.data).filter(c => contaPagarPertenceAoPedidoCompra(c, pedidoOuId)));
+            }
+        } catch (_) {}
+    }
+    if (vinculadas.length === 0) {
+        try {
+            const local = await getData('financas/pagar') || [];
+            vinculadas.push(...flattenContasPagarData(local).filter(c => contaPagarPertenceAoPedidoCompra(c, pedidoOuId)));
+        } catch (_) {}
+    }
+    const seen = new Set();
+    return vinculadas.filter(c => {
+        const id = String(c && c.id ? c.id : '');
+        const key = id || `${c && c.origemId || ''}|${c && c.pedidoNumero || ''}|${c && c.descricao || ''}|${c && (c.vencimento || c.dataVencimento) || ''}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
+function montarUpdatesRemocaoContasPagarCompra(lista) {
+    const updates = {};
+    (lista || []).forEach(c => {
+        if (!c || !c.id) return;
+        const id = String(c.id);
+        const mk = toMonthKey(c.dataVencimento || c.vencimento);
+        updates[`financas/pagar/${mk}/${id}`] = null;
+        updates[`financas/pagar/${id}`] = null;
+    });
+    return updates;
+}
+
+function persistirComprasCacheLocal(lista) {
+    try { persistLocalValue(getCompanyKey('pedidosCompra'), lista); } catch (_) {}
+    try { persistLocalValue(getCompanyKey('compras'), lista); } catch (_) {}
 }
 
 async function salvarPedido(event) {
@@ -1428,49 +1920,18 @@ async function salvarPedido(event) {
         updates[`pedidosCompra/${pedido.id}`] = pedido;
         
         // 2. Gerenciar Contas a Pagar (Financeiro)
-        // Se estiver editando, tentar remover contas antigas para evitar duplicidade
-        let vinculadas = [];
-        try {
-            const contasAll = await getData('financas/pagar') || [];
-            vinculadas = (contasAll || []).filter(c => String(c && c.origemId) === String(pedido.id));
-        } catch (_) {}
-
-        if (vinculadas.length > 0) {
-            const temPagamento = vinculadas.some(c => {
-                const st = String(c && c.status ? c.status : '').toLowerCase();
-                return st === 'pago' || st === 'parcial';
-            });
-            if (temPagamento && pedidoEmEdicao) {
-                throw new Error('Este pedido possui pagamentos realizados. Cancele os pagamentos antes de salvar.');
-            }
-            vinculadas.forEach(c => {
-                const oldId = c && c.id ? c.id : null;
-                if (!oldId) return;
-                const oldMk = toMonthKey(c.vencimento || c.dataVencimento);
-                updates[`financas/pagar/${oldMk}/${oldId}`] = null;
-                updates[`financas/pagar/${oldId}`] = null;
-            });
-            
-            // ✅ CORREÇÃO CRÍTICA: Se a data de vencimento foi alterada, o 'oldMk' pode estar errado
-            // Devemos buscar TODAS as contas vinculadas a este pedido no banco para garantir remoção
-            // Mas em um update atômico não podemos ler.
-            // Solução: O 'pedidoEmEdicao' contém os dados CARREGADOS (antigos).
-            // Então 'c.vencimento' aqui é a data ANTIGA. Isso deve funcionar para remover do mês antigo.
-            // PORÉM, se o usuário editou a data na interface, o objeto 'contasPagar' (global) já tem a NOVA data.
-            // O 'pedidoEmEdicao' é uma cópia feita no início da edição? Sim, em editarPedido: `pedidoEmEdicao = pedido;`
-            // Mas atenção: `pedido` é uma referência ao objeto em `window.compras`.
-            // Se `window.compras` for mutado durante a edição (ex: onParcelaDateBlur), `pedidoEmEdicao` também muda?
-            // Não, `pedidoEmEdicao` é atribuído por referência.
-            // Se `contasPagar` (global da edição) é modificado, ele NÃO altera `pedidoEmEdicao.contasPagar` automaticamente
-            // a menos que `pedidoEmEdicao.contasPagar` aponte para o mesmo array.
-            // Em editarPedido: `contasPagar = [...pedido.contasPagar];` (Cópia rasa do array)
-            // Então `pedidoEmEdicao.contasPagar` PRESERVA os dados originais (vencimentos antigos).
-            // LOGO, `oldMk` deve estar correto (baseado na data original).
-            
-            // MAS, se o pedido foi salvo anteriormente com uma estrutura de ID diferente ou mês diferente?
-            // Vamos garantir removendo também pelo ID que estamos usando agora, caso seja o mesmo?
-            // Se o ID for preservado, ok.
+        const vinculadas = pedidoEmEdicao
+            ? await carregarContasPagarVinculadasPedidoCompra({
+                id: pedido.id,
+                numero: pedido.numero || (pedidoEmEdicao && pedidoEmEdicao.numero) || ''
+            })
+            : [];
+        const temPagamento = vinculadas.some(c => isContaPagarComPagamento(c));
+        if (temPagamento && pedidoEmEdicao) {
+            throw new Error('Este pedido possui pagamentos realizados. Cancele os pagamentos antes de salvar.');
         }
+
+        Object.assign(updates, montarUpdatesRemocaoContasPagarCompra(vinculadas));
         
         // Adicionar novas contas
         // Usar o array global `contasPagar` que reflete o estado atual da UI (editado)
@@ -1543,30 +2004,42 @@ async function salvarPedido(event) {
         
         // 3. Executar atualização no Firebase
         let savedToFirebase = false;
+        const hasFinanceMutation = Object.keys(updates).some(k => String(k).startsWith('financas/pagar/'));
         if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
             console.log('📦 Enviando updatePaths para Firebase:', Object.keys(updates).length, 'caminhos');
             const res = await window.firebaseService.updatePaths(updates);
-            if (res.success) {
+            if (res && res.success) {
                 savedToFirebase = true;
                 console.log('✅ Pedido e financeiro salvos com sucesso via updatePaths');
             } else {
-                console.warn('⚠️ updatePaths falhou, tentando fallback...', res.error);
-                ToastManager.warning('Erro ao salvar no servidor. Tentando salvar localmente.');
+                console.warn('⚠️ updatePaths falhou no salvamento de compras:', res.error);
             }
         } else {
             console.warn('Firebase Service não disponível.');
         }
-        
-        // 4. Atualizar cache local e fallback
-        const index = window.compras.findIndex(p => p.id === pedido.id);
-        if (index >= 0) {
-            window.compras[index] = pedido;
-        } else {
-            window.compras.push(pedido);
+
+        if (!savedToFirebase && hasFinanceMutation) {
+            throw new Error('Não foi possível sincronizar o financeiro do pedido de compra. Nenhuma alteração foi concluída.');
         }
         
-        // Salvar em 'compras' (legado/backup)
-        await saveData('compras', window.compras);
+        // 4. Atualizar cache local e fallback sem financeiro
+        const nextCompras = Array.isArray(window.compras) ? window.compras.slice() : [];
+        const index = nextCompras.findIndex(p => getPedidoCompraId(p) === String(pedido.id));
+        if (index >= 0) {
+            nextCompras[index] = pedido;
+        } else {
+            nextCompras.push(pedido);
+        }
+
+        if (!savedToFirebase) {
+            const savedFallback = await saveData('pedidosCompra', nextCompras);
+            if (!savedFallback) {
+                throw new Error('Não foi possível salvar o pedido de compra no servidor.');
+            }
+        }
+
+        window.compras = nextCompras;
+        persistirComprasCacheLocal(window.compras);
         
         ToastManager.success('Pedido salvo com sucesso!');
         document.getElementById('pedidoForm').style.display = 'none';
@@ -1584,6 +2057,7 @@ async function salvarPedido(event) {
 
 
 async function listarPedidos() {
+    if (!guardOperationalAccessCompras()) return;
     LoadingManager.show('Carregando pedidos...');
     const tbody = document.getElementById('pedidosTable');
     pedidosSelecionados.clear();
@@ -1638,14 +2112,20 @@ function prepararFiltrosPedidosCompras() {
         especieSelect.dataset.bound = '1';
     }
 
-    if (fornecedorSelect && fornecedorSelect.options.length <= 1) {
+    if (fornecedorSelect) {
+        const selected = fornecedorSelect.value;
+        fornecedorSelect.innerHTML = '<option value="">Todos</option>';
         const fornecedores = Array.isArray(window.fornecedores) ? window.fornecedores : [];
-        fornecedores.forEach(f => {
-            const opt = document.createElement('option');
-            opt.value = String(f.id || f.nome || f.name || '');
-            opt.textContent = f.nome || f.name || 'Fornecedor';
-            fornecedorSelect.appendChild(opt);
-        });
+        fornecedores
+            .slice()
+            .sort((a, b) => comprasFornecedoresNome(a).localeCompare(comprasFornecedoresNome(b), 'pt-BR'))
+            .forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = String(f.id || f.nome || f.name || '');
+                opt.textContent = comprasFornecedoresNome(f) || 'Fornecedor';
+                fornecedorSelect.appendChild(opt);
+            });
+        if (selected) fornecedorSelect.value = selected;
     }
 
     if (especieSelect && especieSelect.options.length <= 1) {
@@ -1731,13 +2211,14 @@ function renderListaPedidosCompras() {
     if (!tbody) return;
     pedidosListFiltered = aplicarFiltrosPedidosCompras();
     pedidosSelecionados = new Set(Array.from(pedidosSelecionados).filter(id =>
-        pedidosListFiltered.some(p => String(p.id) === String(id))
+        pedidosListFiltered.some(p => getPedidoCompraId(p) === String(id))
     ));
 
     if (pedidosListFiltered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Nenhum pedido encontrado</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" data-label="Mensagem" class="commerce-full-row" style="text-align: center;">Nenhum pedido encontrado</td></tr>';
         atualizarCabecalhoSelecaoPedidos();
         renderPedidosPagination(0);
+        refreshCommerceResponsiveTables();
         return;
     }
 
@@ -1752,22 +2233,26 @@ function renderListaPedidosCompras() {
     paginated.forEach(p => {
         const tr = document.createElement('tr');
         const atualizadoEm = (toValidDate(p.updatedAt) || toValidDate(p.updated)) ? (toValidDate(p.updatedAt) || toValidDate(p.updated)).toLocaleDateString('pt-BR') : '-';
+        const status = String(p.status || 'pendente');
+        const safeId = escapeJsString(p.id || p.firebaseKey || '');
         tr.innerHTML = `
-            <td>
+            <td data-label="Número">
                 <label class="pedido-numero-cell">
-                    <input type="checkbox" class="pedido-select-item" ${pedidosSelecionados.has(String(p.id)) ? 'checked' : ''} onchange="toggleSelecionarPedido('${p.id}', this.checked)">
-                    <span>${p.numero}</span>
+                    <input type="checkbox" class="pedido-select-item" ${pedidosSelecionados.has(getPedidoCompraId(p)) ? 'checked' : ''} onchange="toggleSelecionarPedido('${safeId}', this.checked)">
+                    <span class="commerce-card-value commerce-card-number">${escapeHtml(p.numero || '-')}</span>
                 </label>
             </td>
-            <td>${formatDate(p.data)}</td>
-            <td>${p.fornecedor?.nome || '-'}</td>
-            <td>${formatCurrency(p.total)}</td>
-            <td><span class="status-badge status-${p.status}">${p.status}</span></td>
-            <td>${atualizadoEm}</td>
-            <td style="text-align: center;">
-                <button onclick="editarPedido('${p.id}')" class="btn-primary btn-small" title="Editar"><i class="fas fa-edit"></i></button>
-                <button onclick="visualizarPedido('${p.id}')" class="btn-primary btn-small" title="Visualizar"><i class="fas fa-eye"></i></button>
-                <button onclick="excluirPedido('${p.id}')" class="btn-danger btn-small" title="Excluir"><i class="fas fa-trash"></i></button>
+            <td data-label="Data"><span class="commerce-card-value commerce-card-number">${escapeHtml(formatDate(p.data))}</span></td>
+            <td data-label="Fornecedor"><span class="commerce-card-value commerce-card-title">${escapeHtml(p.fornecedor?.nome || p.fornecedor?.name || '-')}</span></td>
+            <td data-label="Total"><span class="commerce-card-value commerce-card-money">${escapeHtml(formatCurrency(getPedidoCompraTotal(p)))}</span></td>
+            <td data-label="Status"><span class="commerce-card-value"><span class="status-badge status-${escapeHtml(status)}">${escapeHtml(getStatusLabel(status))}</span></span></td>
+            <td data-label="Atualizado" class="atualizado-cell"><span class="commerce-card-value commerce-card-number">${escapeHtml(atualizadoEm)}</span></td>
+            <td data-label="Ações" class="acoes-cell">
+                <div class="acoes-buttons commerce-actions-wrap">
+                    <button type="button" onclick="editarPedido('${safeId}')" class="btn-primary btn-small" title="Editar" aria-label="Editar pedido"><i class="fas fa-edit"></i></button>
+                    <button type="button" onclick="visualizarPedido('${safeId}')" class="btn-primary btn-small" title="Visualizar" aria-label="Visualizar pedido"><i class="fas fa-eye"></i></button>
+                    <button type="button" onclick="excluirPedido('${safeId}')" class="btn-danger btn-small" title="Excluir" aria-label="Excluir pedido"><i class="fas fa-trash"></i></button>
+                </div>
             </td>
         `;
         tbody.appendChild(tr);
@@ -1775,6 +2260,7 @@ function renderListaPedidosCompras() {
 
     atualizarCabecalhoSelecaoPedidos();
     renderPedidosPagination(pedidosListFiltered.length);
+    refreshCommerceResponsiveTables();
 }
 
 function atualizarCabecalhoSelecaoPedidos() {
@@ -1790,7 +2276,7 @@ function atualizarCabecalhoSelecaoPedidos() {
         atualizarContadorImpressaoPedidos();
         return;
     }
-    const selecionados = pedidosListFiltered.filter(p => pedidosSelecionados.has(String(p.id))).length;
+    const selecionados = pedidosListFiltered.filter(p => pedidosSelecionados.has(getPedidoCompraId(p))).length;
     chk.checked = selecionados === total;
     chk.indeterminate = selecionados > 0 && selecionados < total;
     atualizarContadorImpressaoPedidos();
@@ -1800,7 +2286,7 @@ function atualizarContadorImpressaoPedidos() {
     const countEl = document.getElementById('pedidosPrintSelectedCount');
     if (!countEl) return;
     const printBtn = countEl.closest('button');
-    const selecionados = pedidosListFiltered.filter(p => pedidosSelecionados.has(String(p.id))).length;
+    const selecionados = pedidosListFiltered.filter(p => pedidosSelecionados.has(getPedidoCompraId(p))).length;
     countEl.textContent = `(${selecionados})`;
     if (printBtn) {
         printBtn.disabled = selecionados === 0;
@@ -1817,25 +2303,168 @@ function toggleSelecionarPedido(pedidoId, checked) {
 
 function toggleSelecionarTodosPedidos(checked) {
     if (checked) {
-        pedidosListFiltered.forEach(p => pedidosSelecionados.add(String(p.id)));
+        pedidosListFiltered.forEach(p => pedidosSelecionados.add(getPedidoCompraId(p)));
     } else {
-        pedidosListFiltered.forEach(p => pedidosSelecionados.delete(String(p.id)));
+        pedidosListFiltered.forEach(p => pedidosSelecionados.delete(getPedidoCompraId(p)));
     }
     renderListaPedidosCompras();
 }
 
+function getPedidoCompraId(pedido) {
+    return String(pedido && (pedido.id || pedido.firebaseKey || '') || '');
+}
+
+function getPedidosCompraSelecionadosParaImpressao() {
+    return pedidosListFiltered.filter(p => pedidosSelecionados.has(getPedidoCompraId(p)));
+}
+
+function isCommercePwaPrintContext() {
+    try {
+        const standalone = (window.matchMedia && (
+            window.matchMedia('(display-mode: standalone)').matches ||
+            window.matchMedia('(display-mode: fullscreen)').matches ||
+            window.matchMedia('(display-mode: minimal-ui)').matches
+        )) || window.navigator.standalone === true;
+        const smallTouchScreen = window.matchMedia
+            && window.matchMedia('(pointer: coarse)').matches
+            && window.innerWidth <= 768;
+        return !!(standalone || smallTouchScreen);
+    } catch (_) {
+        return window.navigator.standalone === true;
+    }
+}
+
+function notificarEntregaPdfPedido(result) {
+    if (!result || result.mode === 'cancelled') return;
+    const msg = result.mode === 'share'
+        ? 'PDF pronto para compartilhar ou imprimir pelo aparelho.'
+        : `PDF gerado: ${result.fileName}`;
+    ToastManager.success(msg);
+}
+
+async function exportarPedidosCompraPdf(pedidosParaImprimir) {
+    if (!window.SiswebCommercePdf || typeof window.SiswebCommercePdf.exportOrdersPdf !== 'function') {
+        throw new Error('Gerador de PDF indisponivel.');
+    }
+    const pedidos = Array.isArray(pedidosParaImprimir) ? pedidosParaImprimir.filter(Boolean) : [];
+    if (!pedidos.length) throw new Error('Nenhum pedido selecionado para PDF.');
+
+    const dadosEmpresa = await obterDadosEmpresa();
+    const pedidoUnico = pedidos.length === 1 ? pedidos[0] : null;
+    const fileBase = pedidoUnico
+        ? `pedido-compra-${pedidoUnico.numero || getPedidoCompraId(pedidoUnico) || 'selecionado'}`
+        : `pedidos-compra-${pedidos.length}`;
+
+    return window.SiswebCommercePdf.exportOrdersPdf({
+        company: dadosEmpresa,
+        orders: pedidos,
+        documentTitle: pedidoUnico ? 'Pedido de Compra' : 'Pedidos de Compra',
+        orderTitle: 'Pedido de Compra',
+        partyLabel: 'Fornecedor',
+        paymentTitle: 'Forma de pagamento',
+        fileName: `${fileBase}.pdf`,
+        shareText: 'PDF de pedido de compra gerado pelo Sisweb.',
+        formatDate,
+        formatCurrency,
+        formatNumber,
+        getStatusLabel,
+        getPaymentTypeLabel: getTipoContaLabel,
+        getPartyName: (pedido) => pedido.fornecedor
+            ? (pedido.fornecedor.nome || pedido.fornecedor.name || 'Fornecedor nao informado')
+            : 'Fornecedor nao informado',
+        getPayments: (pedido) => pedido.contasPagar || [],
+        getSubtotal: (pedido) => pedido.subtotal,
+        getDiscount: (pedido) => pedido.desconto,
+        getTotal: (pedido) => typeof getPedidoCompraTotal === 'function'
+            ? getPedidoCompraTotal(pedido)
+            : pedido.total
+    });
+}
+
 async function imprimirPedidosSelecionados() {
-    const ids = pedidosListFiltered
-        .filter(p => pedidosSelecionados.has(String(p.id)))
-        .map(p => String(p.id));
-    if (ids.length === 0) {
+    const pedidosParaImprimir = getPedidosCompraSelecionadosParaImpressao();
+    if (pedidosParaImprimir.length === 0) {
         ToastManager.warning('Selecione ao menos um pedido para imprimir.');
         return;
     }
-    for (const id of ids) {
-        await imprimirPedido(id);
-        await new Promise(resolve => setTimeout(resolve, 250));
+    try {
+        if (isCommercePwaPrintContext()) {
+            LoadingManager.show('Gerando PDF dos pedidos...');
+            const result = await exportarPedidosCompraPdf(pedidosParaImprimir);
+            notificarEntregaPdfPedido(result);
+            return;
+        }
+
+        await imprimirPedidosCompraSelecionadosDesktop(pedidosParaImprimir);
+    } catch (error) {
+        console.error('Erro ao imprimir pedidos selecionados:', error);
+        ToastManager.error('Erro ao imprimir: ' + error.message);
+    } finally {
+        LoadingManager.hide();
     }
+}
+
+async function imprimirPedidosCompraSelecionadosDesktop(pedidosParaImprimir) {
+    const pedidos = Array.isArray(pedidosParaImprimir) ? pedidosParaImprimir.filter(Boolean) : [];
+    if (!pedidos.length) return;
+
+    if (pedidos.length === 1) {
+        await imprimirPedido(getPedidoCompraId(pedidos[0]));
+        return;
+    }
+
+    LoadingManager.show('Preparando impressão...');
+    const documentos = [];
+    for (const pedido of pedidos) {
+        documentos.push(await gerarHTMLImpressaoPedidoCompra(pedido));
+    }
+    const html = montarHTMLImpressaoLotePedidos(documentos, 'Pedidos de Compra');
+    if (window.SiswebCommercePdf && typeof window.SiswebCommercePdf.printHtmlDocument === 'function') {
+        window.SiswebCommercePdf.printHtmlDocument({
+            html,
+            windowFeatures: 'width=900,height=700'
+        });
+    } else {
+        const janela = window.open('', '_blank', 'width=900,height=700');
+        if (janela) {
+            janela.document.write(html);
+            janela.document.close();
+            janela.onload = function() {
+                setTimeout(() => janela.print(), 250);
+            };
+        } else {
+            window.print();
+        }
+    }
+}
+
+function montarHTMLImpressaoLotePedidos(documentos, title = 'Pedidos') {
+    const lista = Array.isArray(documentos) ? documentos.filter(Boolean) : [];
+    const primeiro = lista[0] || '';
+    const styleMatch = primeiro.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+    const styles = styleMatch ? styleMatch[1] : 'body{font-family:Arial,sans-serif;padding:20px;color:#111827}';
+    const mains = lista.map((html, index) => {
+        const match = String(html || '').match(/<main\b[^>]*class="([^"]*)"[^>]*>([\s\S]*?)<\/main>/i);
+        const bodyMatch = String(html || '').match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        const content = match ? match[2] : (bodyMatch ? bodyMatch[1] : String(html || ''));
+        const className = match ? match[1] : 'sisweb-print-page';
+        const breakClass = index < lista.length - 1 ? ' sisweb-print-batch-page' : '';
+        return `<main class="${className}${breakClass}">${content}</main>`;
+    }).join('\n');
+    return `<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <style>${styles}
+        .sisweb-print-batch-page { break-after: page; page-break-after: always; margin-bottom: 18px; }
+    </style>
+</head>
+<body class="sisweb-commerce-print">
+    ${mains}
+</body>
+</html>`;
 }
 
 function renderPedidosPagination(totalItems) {
@@ -1897,36 +2526,53 @@ function goToPedidosPage(page) {
 // --- Funções de Visualização e Impressão (Novas) ---
 
 async function visualizarPedido(id) {
-    const pedido = window.compras.find(p => p.id === id);
+    const pedido = window.compras.find(p => getPedidoCompraId(p) === String(id));
     if (!pedido) return;
     
     window.pedidoVisualizando = id;
     
     // Preencher dados do cabeçalho
-    document.getElementById('viewPedidoNumero').textContent = pedido.numero;
+    document.getElementById('viewPedidoNumero').textContent = pedido.numero || '-';
     document.getElementById('viewPedidoData').textContent = formatDate(pedido.data);
-    
-    const statusLabel = pedido.status.charAt(0).toUpperCase() + pedido.status.slice(1);
-    document.getElementById('viewPedidoStatus').innerHTML = 
-        `<span class="status-badge status-${pedido.status}">${statusLabel}</span>`;
-    
-    document.getElementById('viewPedidoFornecedor').textContent = pedido.fornecedor?.nome || 'Fornecedor não informado';
+
+    const status = String(pedido.status || 'pendente');
+    const statusLabel = getStatusLabel(status);
+    document.getElementById('viewPedidoStatus').innerHTML =
+        `<span class="status-badge status-${escapeHtml(status)}">${escapeHtml(statusLabel)}</span>`;
+
+    const fornecedor = pedido.fornecedor || {};
+    document.getElementById('viewPedidoFornecedor').textContent = fornecedor.nome || fornecedor.name || 'Fornecedor não informado';
+    const fornecedorDetalhes = [
+        fornecedor.documento || fornecedor.document || fornecedor.cnpj || fornecedor.cpf,
+        fornecedor.telefone || fornecedor.phone,
+        fornecedor.email,
+        [fornecedor.cidade || fornecedor.city, fornecedor.estado || fornecedor.uf].filter(Boolean).join(' / ')
+    ].filter(Boolean).join(' • ');
+    const fornecedorDetalhesEl = document.getElementById('viewPedidoFornecedorDetalhes');
+    if (fornecedorDetalhesEl) fornecedorDetalhesEl.textContent = fornecedorDetalhes;
     
     // Tabela de Itens
     const tbodyItens = document.getElementById('viewPedidoItensTable');
-    tbodyItens.innerHTML = (pedido.itens || []).map(item => `
-        <tr>
-            <td>${item.produtoNome}</td>
-            <td style="text-align: center;">${formatNumber(item.quantidade)} ${item.unidade || ''}</td>
-            <td style="text-align: right;">${formatCurrency(item.precoUnitario)}</td>
-            <td style="text-align: right; font-weight: bold;">${formatCurrency(item.total)}</td>
-        </tr>
-    `).join('');
+    const itensVisualizacao = Array.isArray(pedido.itens) ? pedido.itens : [];
+    if (itensVisualizacao.length > 0) {
+        tbodyItens.innerHTML = itensVisualizacao.map(item => `
+            <tr>
+                <td data-label="Produto"><span class="commerce-card-value commerce-card-title">${escapeHtml(item.produtoNome || item.produto || item.nome || '-')}</span></td>
+                <td data-label="Quantidade"><span class="commerce-card-value commerce-card-number">${escapeHtml(formatNumber(item.quantidade))} ${escapeHtml(item.unidade || '')}</span></td>
+                <td data-label="Preço Unit."><span class="commerce-card-value commerce-card-money">${escapeHtml(formatCurrency(item.precoUnitario))}</span></td>
+                <td data-label="Total"><span class="commerce-card-value commerce-card-money commerce-card-strong">${escapeHtml(formatCurrency(item.total))}</span></td>
+            </tr>
+        `).join('');
+    } else {
+        tbodyItens.innerHTML = '<tr><td colspan="4" data-label="Mensagem" class="commerce-full-row" style="text-align: center;">Sem itens no pedido</td></tr>';
+    }
     
     // Totais
     document.getElementById('viewPedidoSubtotal').textContent = formatCurrency(pedido.subtotal);
     document.getElementById('viewPedidoDesconto').textContent = formatCurrency(pedido.desconto);
     document.getElementById('viewPedidoTotal').textContent = formatCurrency(pedido.total);
+    const viewTotalQtdEl = document.getElementById('viewPedidoTotalQtd');
+    if (viewTotalQtdEl) viewTotalQtdEl.textContent = formatNumber(getPedidoCompraTotalQuantidade(pedido), 3);
     
     // Contas a Pagar
     const tbodyPagamento = document.getElementById('viewPedidoPagamentoTable');
@@ -1943,18 +2589,507 @@ async function visualizarPedido(id) {
     if (contas.length > 0) {
         tbodyPagamento.innerHTML = contas.map(conta => `
             <tr>
-                <td>${formatCurrency(typeof conta.valor === 'number' ? conta.valor : parseCurrency(conta.valor))}</td>
-                <td>${formatDate(conta.vencimento)}</td>
-                <td>${getTipoContaLabel(conta.tipo || conta.tipoPagamento)}</td>
-                <td>${conta.observacao || conta.descricao || '-'}</td>
-                <td><span class="status-badge status-${conta.status || 'pendente'}">${conta.status || 'pendente'}</span></td>
+                <td data-label="Valor"><span class="commerce-card-value commerce-card-money">${escapeHtml(formatCurrency(typeof conta.valor === 'number' ? conta.valor : parseCurrency(conta.valor)))}</span></td>
+                <td data-label="Vencimento"><span class="commerce-card-value commerce-card-number">${escapeHtml(formatDate(conta.vencimento))}</span></td>
+                <td data-label="Tipo"><span class="commerce-card-value">${escapeHtml(getTipoContaLabel(conta.tipo || conta.tipoPagamento))}</span></td>
+                <td data-label="Observação"><span class="commerce-card-value">${escapeHtml(conta.observacao || conta.descricao || '-')}</span></td>
+                <td data-label="Status"><span class="commerce-card-value"><span class="status-badge status-${escapeHtml(conta.status || 'pendente')}">${escapeHtml(getStatusLabel(conta.status || 'pendente'))}</span></span></td>
             </tr>
         `).join('');
     } else {
-        tbodyPagamento.innerHTML = '<tr><td colspan="5" style="text-align: center;">Sem informações de pagamento</td></tr>';
+        tbodyPagamento.innerHTML = '<tr><td colspan="5" data-label="Mensagem" class="commerce-full-row" style="text-align: center;">Sem informações de pagamento</td></tr>';
     }
+
+    const createdEl = document.getElementById('viewPedidoCreated');
+    const updatedEl = document.getElementById('viewPedidoUpdated');
+    const updatedContainer = document.getElementById('viewPedidoUpdatedContainer');
+    const createdDate = toValidDate(pedido.createdAt || pedido.created || pedido.data);
+    const updatedDate = toValidDate(pedido.updatedAt || pedido.updated);
+    if (createdEl) createdEl.textContent = createdDate ? createdDate.toLocaleString('pt-BR') : '-';
+    if (updatedEl) updatedEl.textContent = updatedDate ? updatedDate.toLocaleString('pt-BR') : '-';
+    if (updatedContainer) updatedContainer.style.display = updatedDate ? 'block' : 'none';
     
     document.getElementById('visualizarPedidoModal').style.display = 'block';
+    refreshCommerceResponsiveTables();
+}
+
+function prepararRelatoriosCompras() {
+    carregarEstadoColunasRelatorioCompras();
+    const fornecedorEl = document.getElementById('relFornecedor');
+    if (fornecedorEl) {
+        const selected = fornecedorEl.value;
+        fornecedorEl.innerHTML = '<option value="">Todos</option>';
+        const fornecedores = Array.isArray(window.fornecedores) ? window.fornecedores : [];
+        fornecedores
+            .slice()
+            .sort((a, b) => String(a.nome || a.name || '').localeCompare(String(b.nome || b.name || ''), 'pt-BR'))
+            .forEach((fornecedor) => {
+                const opt = document.createElement('option');
+                opt.value = String(fornecedor.id || fornecedor.nome || fornecedor.name || '');
+                opt.textContent = fornecedor.nome || fornecedor.name || 'Fornecedor';
+                fornecedorEl.appendChild(opt);
+            });
+        if (selected) fornecedorEl.value = selected;
+    }
+    aplicarColunasRelatorioCompras();
+}
+
+function carregarEstadoColunasRelatorioCompras() {
+    try {
+        const raw = localStorage.getItem(getCompanyKey('relatorioComprasColunasVisiveis'));
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed) || parsed.length === 0) return;
+        const allowed = new Set(comprasRelatorioColunasPadrao.map(c => c.key));
+        comprasRelatorioColunasVisiveis = new Set(parsed.filter(key => allowed.has(key)));
+        if (comprasRelatorioColunasVisiveis.size === 0) {
+            comprasRelatorioColunasVisiveis = new Set(comprasRelatorioColunasPadrao.map(c => c.key));
+        }
+    } catch (_) {}
+}
+
+function salvarEstadoColunasRelatorioCompras() {
+    try {
+        localStorage.setItem(
+            getCompanyKey('relatorioComprasColunasVisiveis'),
+            JSON.stringify(Array.from(comprasRelatorioColunasVisiveis))
+        );
+    } catch (_) {}
+}
+
+async function carregarPedidosComprasParaRelatorio() {
+    let pedidos = Array.isArray(window.compras) ? window.compras.slice() : [];
+    if (pedidos.length === 0) {
+        pedidos = await getData('pedidosCompra') || [];
+        if (!Array.isArray(pedidos) || pedidos.length === 0) {
+            pedidos = await getData('compras') || [];
+        }
+        window.compras = Array.isArray(pedidos) ? pedidos : [];
+    }
+
+    const byId = new Map();
+    (Array.isArray(window.compras) ? window.compras : []).forEach((pedido) => {
+        if (!pedido || typeof pedido !== 'object') return;
+        const key = String(pedido.id || pedido.firebaseKey || pedido.numero || '');
+        if (!key) return;
+        const current = byId.get(key);
+        if (!current || getPedidoRecencyTimestampCompra(pedido) >= getPedidoRecencyTimestampCompra(current)) {
+            byId.set(key, pedido);
+        }
+    });
+    return Array.from(byId.values()).sort(comparePedidosCompraByRecencyDesc);
+}
+
+function filtrarPedidosRelatorioCompras(pedidos) {
+    const inicioVal = String(document.getElementById('periodoInicio')?.value || '').trim();
+    const fimVal = String(document.getElementById('periodoFim')?.value || '').trim();
+    const fornecedorFiltro = String(document.getElementById('relFornecedor')?.value || '').trim();
+    const statusFiltro = String(document.getElementById('relStatus')?.value || '').trim();
+    const inicioDate = inicioVal ? new Date(`${inicioVal}T00:00:00`) : null;
+    const fimDate = fimVal ? new Date(`${fimVal}T23:59:59`) : null;
+
+    return (Array.isArray(pedidos) ? pedidos : []).filter((pedido) => {
+        if (!pedido || typeof pedido !== 'object') return false;
+        if (inicioDate || fimDate) {
+            const dataPedido = toValidDate(pedido.data || pedido.createdAt || pedido.created);
+            if (!dataPedido) return false;
+            if (inicioDate && dataPedido < inicioDate) return false;
+            if (fimDate && dataPedido > fimDate) return false;
+        }
+        if (fornecedorFiltro) {
+            const fornecedorId = String(pedido.fornecedor?.id || pedido.fornecedorId || '');
+            const fornecedorNome = String(pedido.fornecedor?.nome || pedido.fornecedor?.name || '');
+            if (fornecedorId !== fornecedorFiltro && fornecedorNome !== fornecedorFiltro) return false;
+        }
+        if (statusFiltro && String(pedido.status || '') !== statusFiltro) return false;
+        return true;
+    });
+}
+
+function getItemEspecieCompra(item) {
+    const raw = item && (item.especie || item.especieNome || item.produtoNome || item.produto || item.nome);
+    const value = String(raw || '').trim();
+    return value || 'Sem espécie/produto';
+}
+
+function getItemVolumeCompra(item) {
+    if (!item || typeof item !== 'object') return 0;
+    const candidates = [item.volume, item.volumeTotal, item.totalVolume, item.m3, item.totalM3];
+    for (const candidate of candidates) {
+        const n = Number(typeof candidate === 'string' ? candidate.replace(',', '.') : candidate);
+        if (Number.isFinite(n) && n > 0) return n;
+    }
+    const unidade = String(item.unidade || '').toLowerCase();
+    if (unidade.includes('m3') || unidade.includes('m³') || unidade.includes('metro')) {
+        return Number(item.quantidade || 0) || 0;
+    }
+    return 0;
+}
+
+function getPedidoCompraVolumeTotal(pedido) {
+    return (Array.isArray(pedido?.itens) ? pedido.itens : []).reduce((total, item) => total + getItemVolumeCompra(item), 0);
+}
+
+function getPedidoCompraTotal(pedido) {
+    return typeof pedido?.total === 'number' ? pedido.total : parseCurrency(pedido?.total);
+}
+
+function getPedidoCompraTotalQuantidade(pedido) {
+    return (Array.isArray(pedido?.itens) ? pedido.itens : []).reduce((total, item) => total + (Number(item.quantidade || 0) || 0), 0);
+}
+
+function atualizarResumoRelatorioCompras(pedidos) {
+    const totalPedidos = pedidos.length;
+    const valorTotal = pedidos.reduce((total, pedido) => total + getPedidoCompraTotal(pedido), 0);
+    const totalVolume = pedidos.reduce((total, pedido) => total + getPedidoCompraVolumeTotal(pedido), 0);
+    const precoMedioM3 = totalVolume > 0 ? valorTotal / totalVolume : 0;
+
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+    setText('relTotalPedidos', String(totalPedidos));
+    setText('relValorTotal', formatCurrency(valorTotal));
+    setText('relPrecoMedioM3', formatCurrency(precoMedioM3));
+    setText('relComprasFooterTotalPedidos', String(totalPedidos));
+    setText('relComprasFooterTotalCarrego', formatNumber(totalVolume, 3));
+    setText('relComprasFooterValorTotal', formatCurrency(valorTotal));
+}
+
+function renderRelatorioComprasPedidos(pedidos) {
+    comprasRelatorioModoAtual = 'pedidos';
+    comprasRelatorioAtual = pedidos.slice();
+
+    const tabelaAgrupada = document.getElementById('relComprasTabela');
+    const tabelaPedidos = document.getElementById('relComprasPedidos');
+    const tbody = document.getElementById('relComprasPedidosTableBody');
+    if (tabelaAgrupada) {
+        tabelaAgrupada.innerHTML = '';
+        tabelaAgrupada.style.display = 'none';
+    }
+    if (tabelaPedidos) tabelaPedidos.style.display = 'block';
+    if (!tbody) return;
+
+    if (pedidos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" data-label="Mensagem" class="commerce-full-row" style="text-align:center;">Nenhum pedido encontrado para os filtros informados.</td></tr>';
+        aplicarColunasRelatorioCompras();
+        refreshCommerceResponsiveTables();
+        return;
+    }
+
+    tbody.innerHTML = pedidos.map((pedido) => {
+        const id = escapeJsString(pedido.id || pedido.firebaseKey || '');
+        const fornecedor = pedido.fornecedor?.nome || pedido.fornecedor?.name || 'Fornecedor não informado';
+        const status = String(pedido.status || 'pendente');
+        return `
+            <tr>
+                <td data-col="numero" data-label="Número"><span class="commerce-card-value commerce-card-number">${escapeHtml(pedido.numero || '-')}</span></td>
+                <td data-col="data" data-label="Data"><span class="commerce-card-value commerce-card-number">${escapeHtml(formatDate(pedido.data))}</span></td>
+                <td data-col="fornecedor" data-label="Fornecedor"><span class="commerce-card-value commerce-card-title">${escapeHtml(fornecedor)}</span></td>
+                <td data-col="total" data-label="Total" style="text-align:right;"><span class="commerce-card-value commerce-card-money">${escapeHtml(formatCurrency(getPedidoCompraTotal(pedido)))}</span></td>
+                <td data-col="status" data-label="Status"><span class="status-badge status-${escapeHtml(status)}">${escapeHtml(getStatusLabel(status))}</span></td>
+                <td data-col="acoes" data-label="Ações" class="acoes-cell">
+                    <div class="acoes-buttons commerce-actions-wrap">
+                        <button type="button" onclick="visualizarPedido('${id}')" class="btn-primary btn-small" title="Visualizar" aria-label="Visualizar"><i class="fas fa-eye"></i></button>
+                        <button type="button" onclick="imprimirPedido('${id}')" class="btn-primary btn-small" title="Imprimir" aria-label="Imprimir"><i class="fas fa-print"></i></button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    aplicarColunasRelatorioCompras();
+    refreshCommerceResponsiveTables();
+}
+
+function agruparPedidosRelatorioCompras(pedidos, agrupamento) {
+    const grupos = new Map();
+    const addGrupo = (key, label, pedido, item = null) => {
+        if (!grupos.has(key)) {
+            grupos.set(key, { grupo: label, pedidos: new Set(), quantidade: 0, volume: 0, valorTotal: 0 });
+        }
+        const row = grupos.get(key);
+        row.pedidos.add(String(pedido.id || pedido.numero || ''));
+        row.quantidade += item ? (Number(item.quantidade || 0) || 0) : getPedidoCompraTotalQuantidade(pedido);
+        row.volume += item ? getItemVolumeCompra(item) : getPedidoCompraVolumeTotal(pedido);
+        row.valorTotal += item ? (Number(item.total || 0) || 0) : getPedidoCompraTotal(pedido);
+    };
+
+    pedidos.forEach((pedido) => {
+        const fornecedorNome = pedido.fornecedor?.nome || pedido.fornecedor?.name || 'Fornecedor não informado';
+        const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
+        if (agrupamento === 'fornecedor') {
+            addGrupo(`fornecedor:${fornecedorNome}`, fornecedorNome, pedido);
+            return;
+        }
+        if (agrupamento === 'especie') {
+            if (itens.length === 0) addGrupo('especie:sem-itens', 'Sem itens', pedido);
+            itens.forEach((item) => addGrupo(`especie:${getItemEspecieCompra(item)}`, getItemEspecieCompra(item), pedido, item));
+            return;
+        }
+        if (agrupamento === 'fornecedor_especie') {
+            if (itens.length === 0) addGrupo(`fornecedor_especie:${fornecedorNome}:sem-itens`, `${fornecedorNome} / Sem itens`, pedido);
+            itens.forEach((item) => {
+                const especie = getItemEspecieCompra(item);
+                addGrupo(`fornecedor_especie:${fornecedorNome}:${especie}`, `${fornecedorNome} / ${especie}`, pedido, item);
+            });
+        }
+    });
+
+    return Array.from(grupos.values())
+        .map(row => ({ ...row, totalPedidos: row.pedidos.size }))
+        .sort((a, b) => b.valorTotal - a.valorTotal || a.grupo.localeCompare(b.grupo, 'pt-BR'));
+}
+
+function renderRelatorioComprasAgrupado(pedidos, agrupamento) {
+    comprasRelatorioModoAtual = 'agrupado';
+    const rows = agruparPedidosRelatorioCompras(pedidos, agrupamento);
+    comprasRelatorioAtual = rows;
+
+    const tabelaPedidos = document.getElementById('relComprasPedidos');
+    const tabelaAgrupada = document.getElementById('relComprasTabela');
+    if (tabelaPedidos) tabelaPedidos.style.display = 'none';
+    if (!tabelaAgrupada) return;
+    tabelaAgrupada.style.display = 'block';
+
+    if (rows.length === 0) {
+        tabelaAgrupada.innerHTML = `
+            <table class="table commerce-report-table" id="relComprasAgrupadoTable">
+                <tbody>
+                    <tr><td colspan="6" data-label="Mensagem" class="commerce-full-row" style="text-align:center;">Nenhum dado encontrado para os filtros informados.</td></tr>
+                </tbody>
+            </table>
+        `;
+        refreshCommerceResponsiveTables();
+        return;
+    }
+
+    tabelaAgrupada.innerHTML = `
+        <table class="table commerce-report-table" id="relComprasAgrupadoTable">
+            <thead>
+                <tr>
+                    <th>Grupo</th>
+                    <th>Pedidos</th>
+                    <th>Quantidade</th>
+                    <th>Volume (m³)</th>
+                    <th>Valor Total</th>
+                    <th>Preço Médio/m³</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows.map((row) => {
+                    const precoMedio = row.volume > 0 ? row.valorTotal / row.volume : 0;
+                    return `
+                        <tr>
+                            <td data-label="Grupo">${escapeHtml(row.grupo)}</td>
+                            <td data-label="Pedidos" style="text-align:center;"><span class="commerce-card-value commerce-card-number">${escapeHtml(row.totalPedidos)}</span></td>
+                            <td data-label="Quantidade" style="text-align:right;"><span class="commerce-card-value commerce-card-number">${escapeHtml(formatNumber(row.quantidade, 3))}</span></td>
+                            <td data-label="Volume (m³)" style="text-align:right;"><span class="commerce-card-value commerce-card-number">${escapeHtml(formatNumber(row.volume, 3))}</span></td>
+                            <td data-label="Valor Total" style="text-align:right;"><span class="commerce-card-value commerce-card-money">${escapeHtml(formatCurrency(row.valorTotal))}</span></td>
+                            <td data-label="Preço Médio/m³" style="text-align:right;"><span class="commerce-card-value commerce-card-money">${escapeHtml(formatCurrency(precoMedio))}</span></td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+    refreshCommerceResponsiveTables();
+}
+
+async function gerarRelatorioCompras() {
+    LoadingManager.show('Gerando relatório de compras...');
+    try {
+        prepararRelatoriosCompras();
+        const pedidos = await carregarPedidosComprasParaRelatorio();
+        const filtrados = filtrarPedidosRelatorioCompras(pedidos);
+        const result = document.getElementById('relatorioResult');
+        if (result) result.style.display = 'block';
+        atualizarResumoRelatorioCompras(filtrados);
+
+        const agrupamento = String(document.getElementById('relAgrupamento')?.value || 'nenhum');
+        if (agrupamento === 'nenhum') {
+            renderRelatorioComprasPedidos(filtrados);
+        } else {
+            renderRelatorioComprasAgrupado(filtrados, agrupamento);
+        }
+    } catch (error) {
+        console.error('Erro ao gerar relatório de compras:', error);
+        ToastManager.error('Erro ao gerar relatório de compras.');
+    } finally {
+        LoadingManager.hide();
+    }
+}
+
+function csvCell(value) {
+    const text = String(value ?? '').replace(/\r?\n/g, ' ').trim();
+    return `"${text.replace(/"/g, '""')}"`;
+}
+
+function baixarArquivoTexto(nomeArquivo, conteudo, tipo = 'text/csv;charset=utf-8;') {
+    const blob = new Blob([conteudo], { type: tipo });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nomeArquivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function exportarRelatorioComprasCSV() {
+    try {
+        if (!comprasRelatorioAtual.length) {
+            ToastManager.warning('Gere o relatório antes de exportar.');
+            return;
+        }
+        let headers;
+        let rows;
+        if (comprasRelatorioModoAtual === 'agrupado') {
+            headers = ['Grupo', 'Pedidos', 'Quantidade', 'Volume (m3)', 'Valor Total', 'Preco Medio m3'];
+            rows = comprasRelatorioAtual.map((row) => [
+                row.grupo,
+                row.totalPedidos,
+                formatNumber(row.quantidade, 3),
+                formatNumber(row.volume, 3),
+                formatCurrency(row.valorTotal),
+                formatCurrency(row.volume > 0 ? row.valorTotal / row.volume : 0)
+            ]);
+        } else {
+            headers = ['Numero', 'Data', 'Fornecedor', 'Total', 'Status'];
+            rows = comprasRelatorioAtual.map((pedido) => [
+                pedido.numero || '',
+                formatDate(pedido.data),
+                pedido.fornecedor?.nome || pedido.fornecedor?.name || '',
+                formatCurrency(getPedidoCompraTotal(pedido)),
+                getStatusLabel(pedido.status || '')
+            ]);
+        }
+        const csv = [headers.map(csvCell).join(';'), ...rows.map(row => row.map(csvCell).join(';'))].join('\n');
+        baixarArquivoTexto(`relatorio_compras_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    } catch (error) {
+        console.error('Erro ao exportar relatório de compras:', error);
+        ToastManager.error('Erro ao exportar CSV.');
+    }
+}
+
+function exportarRelatorioComprasPDF() {
+    return (async () => {
+    try {
+        const result = document.getElementById('relatorioResult');
+        if (!result || result.style.display === 'none') {
+            ToastManager.warning('Gere o relatório antes de exportar.');
+            return;
+        }
+        LoadingManager.show('Preparando relatório...');
+        const dadosEmpresa = await obterDadosEmpresa();
+        const helper = window.SiswebCommercePdf;
+        const inicioVal = String(document.getElementById('periodoInicio')?.value || '').trim();
+        const fimVal = String(document.getElementById('periodoFim')?.value || '').trim();
+        const periodoLabel = inicioVal || fimVal
+            ? `Periodo: ${inicioVal ? formatDate(inicioVal) : 'inicio'} a ${fimVal ? formatDate(fimVal) : 'fim'}`
+            : 'Periodo: todos';
+        const fornecedorSelect = document.getElementById('relFornecedor');
+        const statusSelect = document.getElementById('relStatus');
+        const agrupamentoSelect = document.getElementById('relAgrupamento');
+        const metaRows = [
+            periodoLabel,
+            fornecedorSelect?.value ? `Fornecedor: ${fornecedorSelect.options[fornecedorSelect.selectedIndex]?.text || fornecedorSelect.value}` : '',
+            statusSelect?.value ? `Status: ${statusSelect.options[statusSelect.selectedIndex]?.text || statusSelect.value}` : '',
+            agrupamentoSelect?.value && agrupamentoSelect.value !== 'nenhum' ? `Agrupamento: ${agrupamentoSelect.options[agrupamentoSelect.selectedIndex]?.text || agrupamentoSelect.value}` : ''
+        ].filter(Boolean);
+        const clone = result.cloneNode(true);
+        clone.querySelectorAll('h3, button, input, .action-buttons, .acoes-buttons, .no-print, [data-col="acoes"]').forEach((node) => node.remove());
+        clone.querySelectorAll('.table-responsive').forEach((node) => {
+            node.style.overflow = 'visible';
+            node.style.maxHeight = 'none';
+        });
+        clone.querySelectorAll('table').forEach((table) => {
+            table.classList.add('sisweb-print-table', 'commerce-print-report-table');
+        });
+        const bodyHtml = `
+            <section class="sisweb-print-section">
+                <h2 class="sisweb-print-section-title">Resumo e dados</h2>
+                ${clone.innerHTML}
+            </section>
+        `;
+
+        if (helper && typeof helper.printHtmlDocument === 'function') {
+            const printOptions = {
+                title: 'Relatório de Compras',
+                company: dadosEmpresa,
+                badgeText: 'Compras',
+                subtitle: periodoLabel,
+                metaRows,
+                bodyHtml,
+                compact: comprasRelatorioAtual.length > 18,
+                extraCss: `
+                    .commerce-print-report-table th,
+                    .commerce-print-report-table td { font-size: 9.8px; }
+                    .summary-box { max-width: 330px; margin-left: auto; }
+                    .summary-box .summary-row span:last-child { font-weight: 800; color: #1f2937; }
+                `
+            };
+            const preparedOptions = typeof helper.preparePrintOptions === 'function'
+                ? await helper.preparePrintOptions(printOptions)
+                : printOptions;
+            helper.printHtmlDocument(preparedOptions);
+            return;
+        }
+
+        const printWindow = window.open('', '_blank', 'width=1100,height=800');
+        if (!printWindow) {
+            window.print();
+            return;
+        }
+        printWindow.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório de Compras</title><style>body{font-family:Arial,sans-serif;color:#1f2937;padding:24px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px}th{background:#2c3e50;color:#fff}.summary-box{margin:12px 0;border:1px solid #d1d5db;padding:10px}.summary-row{display:flex;justify-content:space-between;margin:4px 0}</style></head><body><h1>Relatório de Compras</h1>${bodyHtml}</body></html>`);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+    } catch (error) {
+        console.error('Erro ao exportar PDF de compras:', error);
+        ToastManager.error('Erro ao exportar PDF.');
+    } finally {
+        LoadingManager.hide();
+    }
+    })();
+}
+
+function aplicarColunasRelatorioCompras() {
+    const table = document.getElementById('relComprasPedidosTable');
+    if (!table) return;
+    table.querySelectorAll('[data-col]').forEach((cell) => {
+        const key = cell.getAttribute('data-col');
+        const visible = comprasRelatorioColunasVisiveis.has(key);
+        cell.style.display = visible ? '' : 'none';
+    });
+}
+
+function abrirCustomizarColunasCompras() {
+    carregarEstadoColunasRelatorioCompras();
+    const list = document.getElementById('comprasPrintColumnsList');
+    if (list) {
+        list.innerHTML = comprasRelatorioColunasPadrao.map((coluna) => `
+            <label class="columns-item">
+                <span>${escapeHtml(coluna.label)}</span>
+                <span>
+                    <input type="checkbox" data-col="${escapeHtml(coluna.key)}" ${comprasRelatorioColunasVisiveis.has(coluna.key) ? 'checked' : ''}>
+                </span>
+            </label>
+        `).join('');
+    }
+    const modal = document.getElementById('customizarColunasComprasModal');
+    if (modal) modal.style.display = 'block';
+}
+
+function aplicarCustomizacaoColunasCompras() {
+    const checks = document.querySelectorAll('#comprasPrintColumnsList input[type="checkbox"][data-col]');
+    const selected = Array.from(checks).filter(input => input.checked).map(input => input.dataset.col);
+    comprasRelatorioColunasVisiveis = new Set(selected.length ? selected : comprasRelatorioColunasPadrao.map(c => c.key));
+    salvarEstadoColunasRelatorioCompras();
+    aplicarColunasRelatorioCompras();
+    fecharModal('customizarColunasComprasModal');
+    ToastManager.success('Colunas do relatório atualizadas.');
 }
 
 async function obterDadosEmpresa() {
@@ -1969,6 +3104,22 @@ async function obterDadosEmpresa() {
             if (/^(\.\/|\.\.\/|\/)/.test(s) || /\.(png|jpg|jpeg|webp|svg)$/i.test(s)) return s;
             return s;
         };
+
+        const centralSvc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+        if (centralSvc && typeof centralSvc.getCompanyProfileForReport === 'function') {
+            try {
+                const centralResult = await centralSvc.getCompanyProfileForReport();
+                const centralData = centralResult && centralResult.success !== false
+                    ? (centralResult.data || centralResult)
+                    : null;
+                if (centralData && typeof centralData === 'object') {
+                    const logoCandidate = centralData.logoUrl || centralData.logoURL || centralData.logoDownloadURL || centralData.logoStoragePath || centralData.logoPath || centralData.logo || centralData.logoBase64 || centralData.logoData || '';
+                    return { ...centralData, logo: normalizeLogo(logoCandidate) };
+                }
+            } catch (error) {
+                console.warn('Aviso ao obter empresa pelo helper central:', error);
+            }
+        }
 
         const resolveCompanyId = () => {
             try {
@@ -1987,20 +3138,11 @@ async function obterDadosEmpresa() {
                 const stored = localStorage.getItem('company_info');
                 if (stored) {
                     const obj = JSON.parse(stored);
-                    const id = obj && (obj.id || obj.companyId || obj.companyID || obj.tenantId || obj.slug);
+                    const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                     if (id) return String(id);
                 }
             } catch (_) {}
             return null;
-        };
-
-        const pickCompanyFromPayload = (payload) => {
-            if (!payload) return {};
-            if (Array.isArray(payload)) return payload[0] || {};
-            if (typeof payload !== 'object') return {};
-            const values = Object.values(payload).filter(v => v && typeof v === 'object');
-            if (values.length > 0) return values[0] || {};
-            return payload;
         };
 
         const tenantId = resolveCompanyId();
@@ -2013,25 +3155,42 @@ async function obterDadosEmpresa() {
 
         if (tenantId && svc && typeof svc.loadFromFirebase === 'function') {
             try {
-                const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
-                const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
-                if (byPathData && typeof byPathData === 'object') {
-                    companyData = { ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
+                const byPathRoot = await svc.loadFromFirebase(`companies/${tenantId}`);
+                const byPathRootData = byPathRoot && (byPathRoot.success ? byPathRoot.data : byPathRoot.data);
+                if (byPathRootData && typeof byPathRootData === 'object' && (byPathRootData.nome || byPathRootData.name)) {
+                    companyData = { ...byPathRootData, id: tenantId, companyId: tenantId, tenantId: tenantId };
                 }
             } catch (_) {}
-        }
 
-        if (!companyData || (!companyData.nome && !companyData.name)) {
-            if (typeof getData === 'function') {
-                const companiesPayload = await getData('companies');
-                companyData = pickCompanyFromPayload(companiesPayload);
+            if (!companyData || (!companyData.nome && !companyData.name)) {
+                try {
+                    const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
+                    const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
+                    if (byPathData && typeof byPathData === 'object') {
+                        companyData = { ...companyData, ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
+                    }
+                } catch (_) {}
             }
         }
 
         if (!companyData || (!companyData.nome && !companyData.name)) {
             try {
+                let payload = null;
+                if (typeof window.getData === 'function') {
+                    payload = tenantId ? await window.getData(`companies/${tenantId}/profile`) : null;
+                } else if (typeof window.getDataAsync === 'function') {
+                    payload = tenantId ? await window.getDataAsync(`companies/${tenantId}/profile`) : null;
+                }
+                if (payload && typeof payload === 'object') {
+                    companyData = { ...companyData, ...payload, id: tenantId, companyId: tenantId, tenantId: tenantId };
+                }
+            } catch (_) {}
+        }
+
+        if (!companyData || (!companyData.nome && !companyData.name)) {
+            try {
                 const raw = localStorage.getItem('company_info');
-                if (raw) companyData = JSON.parse(raw) || companyData;
+                if (raw) companyData = { ...companyData, ...(JSON.parse(raw) || {}) };
             } catch (_) {}
         }
 
@@ -2079,7 +3238,7 @@ async function obterDadosEmpresa() {
             empresaFinal.telefone = phoneResolved;
             empresaFinal.phone = phoneResolved;
         }
-        const logoCandidate = empresaFinal.logoBase64 || empresaFinal.logoUrl || empresaFinal.logoURL || empresaFinal.logoData || empresaFinal.logo || '';
+        const logoCandidate = empresaFinal.logoUrl || empresaFinal.logoURL || empresaFinal.logoDownloadURL || empresaFinal.logoStoragePath || empresaFinal.logoPath || empresaFinal.logo || empresaFinal.logoBase64 || empresaFinal.logoData || '';
         empresaFinal.logo = normalizeLogo(logoCandidate);
 
         return empresaFinal;
@@ -2089,141 +3248,273 @@ async function obterDadosEmpresa() {
     }
 }
 
+async function gerarHTMLImpressaoPedidoCompra(pedido) {
+    const dadosEmpresa = await obterDadosEmpresa();
+    const helper = window.SiswebCommercePdf || {};
+    const htmlEscape = typeof helper.escapeHtml === 'function'
+        ? helper.escapeHtml
+        : escapeHtml;
+    const fornecedor = pedido.fornecedor || {};
+    const fornecedorNome = fornecedor.nome || fornecedor.name || 'Fornecedor não informado';
+    const fornecedorDetalhes = [
+        fornecedor.email ? `<p><strong>Email:</strong> ${htmlEscape(fornecedor.email)}</p>` : '',
+        fornecedor.telefone ? `<p><strong>Telefone:</strong> ${htmlEscape(fornecedor.telefone)}</p>` : '',
+        fornecedor.endereco ? `<p><strong>Endereço:</strong> ${htmlEscape(fornecedor.endereco)}</p>` : ''
+    ].filter(Boolean).join('') || '<p><strong>Contato:</strong> -</p>';
+    const itensHtml = (pedido.itens || []).map((item, idx) => {
+        const produto = item.produtoCodigo
+            ? `${item.produtoCodigo} - ${item.produtoNome || item.produto || item.nome || item.descricao || ''}`
+            : (item.produtoNome || item.produto || item.nome || item.descricao || 'Produto não informado');
+        const quantidade = `${formatNumber(item.quantidade || 0)}${item.unidade ? ` ${item.unidade}` : ''}`;
+        return `
+            <tr>
+                <td class="text-center" style="width: 38px;">${idx + 1}</td>
+                <td>${htmlEscape(produto)}</td>
+                <td class="text-center" style="width: 100px;">${htmlEscape(quantidade)}</td>
+                <td class="text-right" style="width: 110px;">${htmlEscape(formatCurrency(item.precoUnitario || item.preco || 0))}</td>
+                <td class="text-right" style="width: 110px;"><strong>${htmlEscape(formatCurrency(item.total || 0))}</strong></td>
+            </tr>
+        `;
+    }).join('');
+    const contasHtml = (pedido.contasPagar || []).length > 0
+        ? (pedido.contasPagar || []).map(c => `
+            <tr>
+                <td>${htmlEscape(formatDate(c.vencimento || c.dataVencimento))}</td>
+                <td>${htmlEscape(getTipoContaLabel(c.tipo || c.tipoPagamento))}</td>
+                <td>${htmlEscape(c.observacao || c.observacoes || '-')}</td>
+                <td class="text-right">${htmlEscape(formatCurrency(typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor)))}</td>
+            </tr>
+        `).join('')
+        : '<tr><td colspan="4" class="text-center">Sem informações de pagamento</td></tr>';
+    const totalPedido = typeof getPedidoCompraTotal === 'function' ? getPedidoCompraTotal(pedido) : pedido.total;
+    const bodyHtml = `
+        <section class="sisweb-print-info-grid">
+            <div class="sisweb-print-info-box">
+                <h3>Dados do pedido</h3>
+                <p><strong>Número:</strong> ${htmlEscape(pedido.numero || '-')}</p>
+                <p><strong>Data:</strong> ${htmlEscape(formatDate(pedido.data))}</p>
+                <p><strong>Status:</strong> ${htmlEscape(getStatusLabel(pedido.status))}</p>
+                <p><strong>Emissão:</strong> ${htmlEscape(new Date().toLocaleDateString('pt-BR'))} ${htmlEscape(new Date().toLocaleTimeString('pt-BR'))}</p>
+            </div>
+            <div class="sisweb-print-info-box">
+                <h3>Dados do fornecedor</h3>
+                <p><strong>Nome:</strong> ${htmlEscape(fornecedorNome)}</p>
+                ${fornecedorDetalhes}
+            </div>
+        </section>
+
+        <section class="sisweb-print-section">
+            <h2 class="sisweb-print-section-title">Itens do pedido</h2>
+            <table class="sisweb-print-table">
+                <thead>
+                    <tr>
+                        <th class="text-center" style="width: 38px;">#</th>
+                        <th>Produto</th>
+                        <th class="text-center" style="width: 100px;">Qtd</th>
+                        <th class="text-right" style="width: 110px;">Preço Unit.</th>
+                        <th class="text-right" style="width: 110px;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>${itensHtml || '<tr><td colspan="5" class="text-center">Nenhum item informado.</td></tr>'}</tbody>
+            </table>
+        </section>
+
+        <section class="sisweb-print-section">
+            <div class="sisweb-print-totals">
+                <div class="sisweb-print-total-row">
+                    <span>Subtotal</span>
+                    <strong>${htmlEscape(formatCurrency(pedido.subtotal || 0))}</strong>
+                </div>
+                <div class="sisweb-print-total-row">
+                    <span>Desconto</span>
+                    <strong>${htmlEscape(formatCurrency(pedido.desconto || 0))}</strong>
+                </div>
+                <div class="sisweb-print-total-row total">
+                    <span>TOTAL</span>
+                    <span>${htmlEscape(formatCurrency(totalPedido || 0))}</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="sisweb-print-section">
+            <h2 class="sisweb-print-section-title">Forma de pagamento</h2>
+            <table class="sisweb-print-table">
+                <thead>
+                    <tr>
+                        <th>Vencimento</th>
+                        <th>Tipo</th>
+                        <th>Observação</th>
+                        <th class="text-right">Valor</th>
+                    </tr>
+                </thead>
+                <tbody>${contasHtml}</tbody>
+            </table>
+        </section>
+    `;
+
+    if (typeof helper.buildPrintDocument === 'function') {
+        const printOptions = {
+            title: `Pedido de Compra Nº ${pedido.numero || '-'}`,
+            company: dadosEmpresa,
+            badgeText: 'Compras',
+            subtitle: `Emitido em ${new Date().toLocaleDateString('pt-BR')} as ${new Date().toLocaleTimeString('pt-BR')}`,
+            documentNumber: pedido.numero || '',
+            bodyHtml,
+            compact: ((pedido.itens || []).length + Math.max(0, (pedido.contasPagar || []).length - 3)) > 20
+        };
+        const preparedOptions = typeof helper.preparePrintOptions === 'function'
+            ? await helper.preparePrintOptions(printOptions)
+            : printOptions;
+        return helper.buildPrintDocument(preparedOptions);
+    }
+
+    return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Pedido de Compra ${htmlEscape(pedido.numero || '')}</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111827}table{width:100%;border-collapse:collapse}th,td{border:1px solid #d6dde8;padding:8px}th{background:#2c3e50;color:#fff}.text-right{text-align:right}.text-center{text-align:center}</style></head><body>${bodyHtml}</body></html>`;
+}
+
 async function imprimirPedido(pedidoId) {
-    const pedido = window.compras.find(p => p.id === pedidoId);
+    const pedido = window.compras.find(p => String(p.id || p.firebaseKey) === String(pedidoId));
     if (!pedido) return;
     
     LoadingManager.show('Preparando impressão...');
     
     try {
+        if (isCommercePwaPrintContext() && window.SiswebCommercePdf) {
+            const result = await exportarPedidosCompraPdf([pedido]);
+            notificarEntregaPdfPedido(result);
+            return;
+        }
+
         const dadosEmpresa = await obterDadosEmpresa();
-        
-        // Gerar Logo
-        const logoHtml = (dadosEmpresa.logo && dadosEmpresa.logo.trim() !== '') 
-            ? `<img src="${dadosEmpresa.logo}" alt="Logo da Empresa" style="max-width: 100px; max-height: 100px; object-fit: contain;" />` 
-            : `<svg viewBox="0 0 100 100" style="width: 80px; height: 80px;">
-                <circle cx="50" cy="50" r="45" fill="#2c3e50" stroke="#34495e" stroke-width="2"/>
-                <text x="50" y="60" text-anchor="middle" fill="white" font-size="24" font-weight="bold">SW</text>
-            </svg>`;
-
-        const janelaImpressao = window.open('', '_blank', 'width=800,height=600');
-        
-        const html = `
-            <html>
-            <head>
-                <title>Pedido de Compra ${pedido.numero}</title>
-                <style>
-                    * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { font-family: Arial, sans-serif; padding: 20px; color: #333; font-size: 11px; line-height: 1.25; }
-                    .header { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #2c3e50; }
-                    .logo { flex: 0 0 100px; text-align: center; }
-                    .company-info { flex: 1; }
-                    .company-name { font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 5px; text-transform: uppercase; }
-                    .report-title { font-size: 24px; font-weight: bold; color: #2c3e50; text-align: right; }
-                    .info-box { background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin-bottom: 15px; }
-                    .table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                    .table th, .table td { border: 1px solid #ddd; padding: 6px; text-align: left; }
-                    .table th { background-color: #f2f2f2; font-weight: bold; }
-                    .totals { text-align: right; margin-top: 10px; border-top: 2px solid #333; padding-top: 10px; }
-                    .total-row { font-size: 14px; margin-bottom: 5px; }
-                    .total-final { font-size: 16px; font-weight: bold; color: #2c3e50; }
-                    @media print {
-                        body { padding: 0; }
-                        .no-print { display: none; }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <div class="logo">${logoHtml}</div>
-                    <div class="company-info">
-                        <div class="company-name">${dadosEmpresa.nome || dadosEmpresa.name || 'Empresa não informada'}</div>
-                        <div>${dadosEmpresa.cnpj ? `CNPJ: ${dadosEmpresa.cnpj}` : ''}</div>
-                        <div>${dadosEmpresa.endereco || dadosEmpresa.address || ''}</div>
-                        <div>${dadosEmpresa.cidade || dadosEmpresa.city || ''} - ${dadosEmpresa.estado || dadosEmpresa.state || ''}</div>
-                        <div>${dadosEmpresa.telefone || dadosEmpresa.phone || ''}</div>
-                    </div>
-                    <div class="report-title">
-                        PEDIDO DE COMPRA<br>
-                        #${pedido.numero}
-                    </div>
+        const helper = window.SiswebCommercePdf || {};
+        const htmlEscape = typeof helper.escapeHtml === 'function'
+            ? helper.escapeHtml
+            : escapeHtml;
+        const fornecedor = pedido.fornecedor || {};
+        const fornecedorNome = fornecedor.nome || fornecedor.name || 'Fornecedor não informado';
+        const fornecedorDetalhes = [
+            fornecedor.email ? `<p><strong>Email:</strong> ${htmlEscape(fornecedor.email)}</p>` : '',
+            fornecedor.telefone ? `<p><strong>Telefone:</strong> ${htmlEscape(fornecedor.telefone)}</p>` : '',
+            fornecedor.endereco ? `<p><strong>Endereço:</strong> ${htmlEscape(fornecedor.endereco)}</p>` : ''
+        ].filter(Boolean).join('') || '<p><strong>Contato:</strong> -</p>';
+        const itensHtml = (pedido.itens || []).map((item, idx) => {
+            const produto = item.produtoCodigo
+                ? `${item.produtoCodigo} - ${item.produtoNome || item.produto || item.nome || item.descricao || ''}`
+                : (item.produtoNome || item.produto || item.nome || item.descricao || 'Produto não informado');
+            const quantidade = `${formatNumber(item.quantidade || 0)}${item.unidade ? ` ${item.unidade}` : ''}`;
+            return `
+                <tr>
+                    <td class="text-center" style="width: 38px;">${idx + 1}</td>
+                    <td>${htmlEscape(produto)}</td>
+                    <td class="text-center" style="width: 100px;">${htmlEscape(quantidade)}</td>
+                    <td class="text-right" style="width: 110px;">${htmlEscape(formatCurrency(item.precoUnitario || item.preco || 0))}</td>
+                    <td class="text-right" style="width: 110px;"><strong>${htmlEscape(formatCurrency(item.total || 0))}</strong></td>
+                </tr>
+            `;
+        }).join('');
+        const contasHtml = (pedido.contasPagar || []).length > 0
+            ? (pedido.contasPagar || []).map(c => `
+                <tr>
+                    <td>${htmlEscape(formatDate(c.vencimento || c.dataVencimento))}</td>
+                    <td>${htmlEscape(getTipoContaLabel(c.tipo || c.tipoPagamento))}</td>
+                    <td>${htmlEscape(c.observacao || c.observacoes || '-')}</td>
+                    <td class="text-right">${htmlEscape(formatCurrency(typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor)))}</td>
+                </tr>
+            `).join('')
+            : '<tr><td colspan="4" class="text-center">Sem informações de pagamento</td></tr>';
+        const totalPedido = typeof getPedidoCompraTotal === 'function' ? getPedidoCompraTotal(pedido) : pedido.total;
+        const bodyHtml = `
+            <section class="sisweb-print-info-grid">
+                <div class="sisweb-print-info-box">
+                    <h3>Dados do pedido</h3>
+                    <p><strong>Número:</strong> ${htmlEscape(pedido.numero || '-')}</p>
+                    <p><strong>Data:</strong> ${htmlEscape(formatDate(pedido.data))}</p>
+                    <p><strong>Status:</strong> ${htmlEscape(getStatusLabel(pedido.status))}</p>
+                    <p><strong>Emissão:</strong> ${htmlEscape(new Date().toLocaleDateString('pt-BR'))} ${htmlEscape(new Date().toLocaleTimeString('pt-BR'))}</p>
                 </div>
-
-                <div class="info-box">
-                    <div style="display: flex; justify-content: space-between;">
-                        <div>
-                            <strong>Fornecedor:</strong> ${pedido.fornecedor?.nome || '-'}<br>
-                            <strong>Data:</strong> ${formatDate(pedido.data)}<br>
-                            <strong>Status:</strong> ${getStatusLabel(pedido.status)}
-                        </div>
-                        <div style="text-align: right;">
-                            <strong>Emissão:</strong> ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}
-                        </div>
-                    </div>
+                <div class="sisweb-print-info-box">
+                    <h3>Dados do fornecedor</h3>
+                    <p><strong>Nome:</strong> ${htmlEscape(fornecedorNome)}</p>
+                    ${fornecedorDetalhes}
                 </div>
+            </section>
 
-                <h3>Itens do Pedido</h3>
-                <table class="table">
+            <section class="sisweb-print-section">
+                <h2 class="sisweb-print-section-title">Itens do pedido</h2>
+                <table class="sisweb-print-table">
                     <thead>
                         <tr>
-                            <th style="width: 50px;">#</th>
+                            <th class="text-center" style="width: 38px;">#</th>
                             <th>Produto</th>
-                            <th style="text-align: center; width: 100px;">Qtd</th>
-                            <th style="text-align: right; width: 120px;">Preço Unit.</th>
-                            <th style="text-align: right; width: 120px;">Total</th>
+                            <th class="text-center" style="width: 100px;">Qtd</th>
+                            <th class="text-right" style="width: 110px;">Preço Unit.</th>
+                            <th class="text-right" style="width: 110px;">Total</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        ${(pedido.itens || []).map((i, idx) => `
-                            <tr>
-                                <td>${idx + 1}</td>
-                                <td>${i.produtoNome}</td>
-                                <td style="text-align: center;">${formatNumber(i.quantidade)} ${i.unidade || ''}</td>
-                                <td style="text-align: right;">${formatCurrency(i.precoUnitario)}</td>
-                                <td style="text-align: right;">${formatCurrency(i.total)}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
+                    <tbody>${itensHtml || '<tr><td colspan="5" class="text-center">Nenhum item informado.</td></tr>'}</tbody>
                 </table>
+            </section>
 
-                <div class="totals">
-                    <div class="total-row">Subtotal: ${formatCurrency(pedido.subtotal)}</div>
-                    <div class="total-row">Desconto: ${formatCurrency(pedido.desconto)}</div>
-                    <div class="total-final">Total Geral: ${formatCurrency(pedido.total)}</div>
+            <section class="sisweb-print-section">
+                <div class="sisweb-print-totals">
+                    <div class="sisweb-print-total-row">
+                        <span>Subtotal</span>
+                        <strong>${htmlEscape(formatCurrency(pedido.subtotal || 0))}</strong>
+                    </div>
+                    <div class="sisweb-print-total-row">
+                        <span>Desconto</span>
+                        <strong>${htmlEscape(formatCurrency(pedido.desconto || 0))}</strong>
+                    </div>
+                    <div class="sisweb-print-total-row total">
+                        <span>TOTAL</span>
+                        <span>${htmlEscape(formatCurrency(totalPedido || 0))}</span>
+                    </div>
                 </div>
+            </section>
 
-                ${pedido.contasPagar && pedido.contasPagar.length > 0 ? `
-                    <h3 style="margin-top: 20px;">Forma de Pagamento</h3>
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Vencimento</th>
-                                <th>Tipo</th>
-                                <th>Observação</th>
-                                <th style="text-align: right;">Valor</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${pedido.contasPagar.map(c => `
-                                <tr>
-                                    <td>${formatDate(c.vencimento)}</td>
-                                    <td>${getTipoContaLabel(c.tipo || c.tipoPagamento)}</td>
-                                    <td>${c.observacao || '-'}</td>
-                                    <td style="text-align: right;">${formatCurrency(typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor))}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                ` : ''}
-            </body>
-            </html>
+            <section class="sisweb-print-section">
+                <h2 class="sisweb-print-section-title">Forma de pagamento</h2>
+                <table class="sisweb-print-table">
+                    <thead>
+                        <tr>
+                            <th>Vencimento</th>
+                            <th>Tipo</th>
+                            <th>Observação</th>
+                            <th class="text-right">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>${contasHtml}</tbody>
+                </table>
+            </section>
         `;
-        
-        janelaImpressao.document.write(html);
-        janelaImpressao.document.close();
-        janelaImpressao.onload = function() {
-            janelaImpressao.print();
-        };
+
+        if (typeof helper.printHtmlDocument === 'function') {
+            const printOptions = {
+                title: `Pedido de Compra Nº ${pedido.numero || '-'}`,
+                company: dadosEmpresa,
+                badgeText: 'Compras',
+                subtitle: `Emitido em ${new Date().toLocaleDateString('pt-BR')} as ${new Date().toLocaleTimeString('pt-BR')}`,
+                documentNumber: pedido.numero || '',
+                bodyHtml,
+                compact: ((pedido.itens || []).length + Math.max(0, (pedido.contasPagar || []).length - 3)) > 20,
+                windowFeatures: 'width=900,height=700'
+            };
+            const preparedOptions = typeof helper.preparePrintOptions === 'function'
+                ? await helper.preparePrintOptions(printOptions)
+                : printOptions;
+            helper.printHtmlDocument(preparedOptions);
+        } else {
+            const janelaImpressao = window.open('', '_blank', 'width=800,height=600');
+            const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Pedido de Compra ${htmlEscape(pedido.numero || '')}</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111827}table{width:100%;border-collapse:collapse}th,td{border:1px solid #d6dde8;padding:8px}th{background:#2c3e50;color:#fff}.text-right{text-align:right}.text-center{text-align:center}</style></head><body>${bodyHtml}</body></html>`;
+            if (janelaImpressao) {
+                janelaImpressao.document.write(html);
+                janelaImpressao.document.close();
+                janelaImpressao.onload = function() {
+                    janelaImpressao.print();
+                };
+            } else {
+                window.print();
+            }
+        }
     } catch (e) {
         console.error(e);
         ToastManager.error('Erro ao imprimir pedido.');
@@ -2233,18 +3524,14 @@ async function imprimirPedido(pedidoId) {
 }
 
 async function editarPedido(id) {
-    const pedido = window.compras.find(p => p.id === id);
+    const pedido = window.compras.find(p => getPedidoCompraId(p) === String(id));
     if (!pedido) return;
     
     // Verificar se existem pagamentos realizados
     LoadingManager.show('Verificando pagamentos...');
     try {
-        const contasAll = await getData('financas/pagar') || [];
-        const vinculadas = contasAll.filter(c => String(c.origemId) === String(id));
-        const temPagamento = vinculadas.some(c => {
-            const st = (c.status || '').toLowerCase();
-            return st === 'pago' || st === 'parcial';
-        });
+        const vinculadas = await carregarContasPagarVinculadasPedidoCompra(pedido);
+        const temPagamento = vinculadas.some(c => isContaPagarComPagamento(c));
         
         if (temPagamento) {
             ToastManager.warning('Este pedido possui pagamentos realizados. Cancele os pagamentos antes de editar.');
@@ -2343,18 +3630,13 @@ async function excluirPedido(id) {
     
     try {
         // Verificar pagamentos antes de excluir
-        const contasAll = await getData('financas/pagar') || [];
-        const vinculadas = contasAll.filter(c => String(c.origemId) === String(id));
-        const temPagamento = vinculadas.some(c => {
-            const st = (c.status || '').toLowerCase();
-            return st === 'pago' || st === 'parcial';
-        });
+        const pedido = window.compras.find(p => getPedidoCompraId(p) === String(id));
+        const vinculadas = await carregarContasPagarVinculadasPedidoCompra(pedido || id);
+        const temPagamento = vinculadas.some(c => isContaPagarComPagamento(c));
         
         if (temPagamento) {
             throw new Error('Não é possível excluir: existem pagamentos realizados vinculados a este pedido.');
         }
-        
-        const pedido = window.compras.find(p => p.id === id);
         
         // Preparar atualizações atômicas
         const updates = {};
@@ -2363,26 +3645,30 @@ async function excluirPedido(id) {
         updates[`pedidosCompra/${id}`] = null;
         
         // 2. Remover Contas a Pagar
-        vinculadas.forEach(c => {
-            const mk = toMonthKey(c.vencimento);
-            if (c.id) {
-                updates[`financas/pagar/${mk}/${c.id}`] = null;
-                updates[`financas/pagar/${c.id}`] = null; // Legacy path
-            }
-        });
+        Object.assign(updates, montarUpdatesRemocaoContasPagarCompra(vinculadas));
         
         // 3. Executar no Firebase
+        let savedToFirebase = false;
+        const hasFinanceMutation = Object.keys(updates).some(k => String(k).startsWith('financas/pagar/'));
         if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
-            await window.firebaseService.updatePaths(updates);
+            const res = await window.firebaseService.updatePaths(updates);
+            savedToFirebase = !!(res && res.success);
+        }
+
+        if (!savedToFirebase && hasFinanceMutation) {
+            throw new Error('Não foi possível remover o financeiro vinculado ao pedido de compra. Nenhuma alteração foi concluída.');
         }
         
         // 5. Atualizar Local
-        window.compras = window.compras.filter(p => p.id !== id);
-        await saveData('compras', window.compras);
-        
-        // Atualizar cache de contas pagar localmente também, se necessário
-        const novasContasLocal = contasAll.filter(c => String(c.origemId) !== String(id));
-        await saveData('contasPagar', novasContasLocal);
+        const nextCompras = (window.compras || []).filter(p => getPedidoCompraId(p) !== String(id));
+        if (!savedToFirebase) {
+            const savedFallback = await saveData('pedidosCompra', nextCompras);
+            if (!savedFallback) {
+                throw new Error('Não foi possível excluir o pedido de compra no servidor.');
+            }
+        }
+        window.compras = nextCompras;
+        persistirComprasCacheLocal(window.compras);
         
         ToastManager.success('Pedido excluído.');
         listarPedidos();
@@ -2399,14 +3685,208 @@ async function excluirPedido(id) {
 // 5. GERENCIAMENTO DE FORNECEDORES
 // ============================================================================
 
-async function carregarFornecedores() {
-    window.fornecedores = await getData('fornecedores') || [];
-    // Fallback: tentar carregar 'clients' se 'fornecedores' estiver vazio (legado)
-    if (window.fornecedores.length === 0) {
-        const clients = await getData('clients');
-        if (clients && clients.length > 0) window.fornecedores = clients;
+function comprasFornecedoresNome(fornecedor) {
+    return String((fornecedor && (fornecedor.nome || fornecedor.name || fornecedor.razaoSocial || fornecedor.nomeFantasia)) || '').trim();
+}
+
+function comprasFornecedoresDocumento(fornecedor) {
+    return String((fornecedor && (fornecedor.documento || fornecedor.document || fornecedor.cnpj || fornecedor.cpf)) || '').trim();
+}
+
+function comprasFornecedoresTelefone(fornecedor) {
+    return String((fornecedor && (fornecedor.telefone || fornecedor.phone || fornecedor.celular || fornecedor.whatsapp)) || '').trim();
+}
+
+function comprasFornecedoresTexto(...values) {
+    for (const value of values) {
+        const clean = String(value || '').trim();
+        if (clean) return clean;
     }
+    return '';
+}
+
+function comprasFornecedoresCampo(id) {
+    return String(document.getElementById(id)?.value || '').trim();
+}
+
+function comprasFornecedoresGerarId(fornecedor, index = 0) {
+    const seed = comprasFornecedoresDocumento(fornecedor) || comprasFornecedoresNome(fornecedor) || `fornecedor-${index}`;
+    const slug = String(seed)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9_-]/g, '')
+        .slice(0, 44);
+    return `FOR-${slug || Date.now()}`;
+}
+
+function comprasFornecedoresNormalizar(fornecedor, index = 0) {
+    const data = fornecedor && typeof fornecedor === 'object' ? fornecedor : {};
+    const nome = comprasFornecedoresNome(data);
+    const documento = comprasFornecedoresDocumento(data);
+    const telefone = comprasFornecedoresTelefone(data);
+    const email = String(data.email || '').trim();
+    const endereco = String(data.endereco || data.address || '').trim();
+    const numero = String(data.numero || data.number || '').trim();
+    const bairro = String(data.bairro || data.neighborhood || '').trim();
+    const complemento = comprasFornecedoresTexto(data.complemento, data.complement);
+    const estado = String(data.estado || data.state || '').trim().slice(0, 2).toUpperCase();
+    const cidade = String(data.cidade || data.city || '').trim();
+    const obs = String(data.obs || data.observacoes || data.observations || '').trim();
+    const tipoPessoa = comprasFornecedoresTexto(data.tipoPessoa, data.personType, data.fiscalPersonType);
+    const indIEDest = comprasFornecedoresTexto(data.indIEDest, data.indicadorInscricaoEstadual, data.ieIndicator);
+    const inscricaoEstadual = comprasFornecedoresTexto(data.inscricaoEstadual, data.stateRegistration, data.ie);
+    const inscricaoMunicipal = comprasFornecedoresTexto(data.inscricaoMunicipal, data.municipalRegistration, data.im);
+    const suframa = comprasFornecedoresTexto(data.suframa, data.SUFRAMA);
+    const cep = comprasFornecedoresTexto(data.cep, data.postalCode, data.zipCode);
+    const codigoMunicipio = comprasFornecedoresTexto(data.codigoMunicipio, data.municipioCodigo, data.municipalityCode, data.cMun, data.ibgeCode);
+    const paisCodigo = comprasFornecedoresTexto(data.paisCodigo, data.countryCode, data.cPais) || '1058';
+    const pais = comprasFornecedoresTexto(data.pais, data.country, data.countryName, data.xPais) || 'Brasil';
+    const id = String(data.id || data.firebaseKey || data.codigo || '').trim();
+
+    return {
+        ...data,
+        id: id || comprasFornecedoresGerarId(data, index),
+        nome,
+        name: data.name || nome,
+        documento,
+        document: data.document || documento,
+        cnpj: data.cnpj || documento,
+        tipoPessoa,
+        personType: tipoPessoa,
+        fiscalPersonType: tipoPessoa,
+        indIEDest,
+        indicadorInscricaoEstadual: indIEDest,
+        ieIndicator: indIEDest,
+        inscricaoEstadual,
+        stateRegistration: inscricaoEstadual,
+        ie: inscricaoEstadual,
+        inscricaoMunicipal,
+        municipalRegistration: inscricaoMunicipal,
+        suframa,
+        cep,
+        postalCode: cep,
+        telefone,
+        phone: data.phone || telefone,
+        email,
+        endereco,
+        address: data.address || endereco,
+        numero,
+        number: data.number || numero,
+        bairro,
+        neighborhood: data.neighborhood || bairro,
+        complemento,
+        complement: complemento,
+        estado,
+        state: data.state || estado,
+        cidade,
+        city: data.city || cidade,
+        codigoMunicipio,
+        municipioCodigo: codigoMunicipio,
+        municipalityCode: codigoMunicipio,
+        cMun: codigoMunicipio,
+        ibgeCode: codigoMunicipio,
+        paisCodigo,
+        countryCode: paisCodigo,
+        cPais: paisCodigo,
+        pais,
+        country: pais,
+        countryName: pais,
+        xPais: pais,
+        obs,
+        observacoes: data.observacoes || obs,
+        observations: data.observations || obs
+    };
+}
+
+function comprasFornecedoresNormalizarLista(lista) {
+    const byKey = new Map();
+    (Array.isArray(lista) ? lista : []).forEach((item, index) => {
+        if (!item || typeof item !== 'object') return;
+        const fornecedor = comprasFornecedoresNormalizar(item, index);
+        const nome = comprasFornecedoresNome(fornecedor);
+        if (!nome) return;
+        const id = String(fornecedor.id || '').trim();
+        const documento = comprasFornecedoresDocumento(fornecedor).replace(/\D/g, '');
+        const key = id ? `id:${id}` : documento ? `doc:${documento}` : `name:${nome.toLowerCase()}`;
+        if (!byKey.has(key)) byKey.set(key, fornecedor);
+    });
+    return Array.from(byKey.values())
+        .sort((a, b) => comprasFornecedoresNome(a).localeCompare(comprasFornecedoresNome(b), 'pt-BR'));
+}
+
+async function comprasFornecedoresCarregarDados() {
+    let lista = await getData('fornecedores') || [];
+    if (!Array.isArray(lista) || lista.length === 0) {
+        const clients = await getData('clients');
+        if (Array.isArray(clients) && clients.length > 0) lista = clients;
+    }
+    return comprasFornecedoresNormalizarLista(lista);
+}
+
+function comprasFornecedoresGetService() {
+    return {
+        getFornecedores: comprasFornecedoresCarregarDados,
+        saveFornecedor: async (fornecedor) => {
+            const normalized = comprasFornecedoresNormalizar(fornecedor);
+            const id = String(normalized.id || '').trim() || `FOR-${Date.now()}`;
+            normalized.id = id;
+            const current = comprasFornecedoresNormalizarLista(window.fornecedores);
+            const index = current.findIndex((item) => String(item.id || '') === id);
+            const next = current.slice();
+            if (index >= 0) next[index] = normalized;
+            else next.push(normalized);
+            const ordered = comprasFornecedoresNormalizarLista(next);
+            const saved = await saveData('fornecedores', ordered);
+            if (!saved) throw new Error('Não foi possível salvar o fornecedor no servidor.');
+            window.fornecedores = ordered;
+            return normalized;
+        },
+        deleteFornecedor: async (id) => {
+            const fornecedorId = String(id || '').trim();
+            const next = comprasFornecedoresNormalizarLista(window.fornecedores)
+                .filter((item) => String(item.id || '') !== fornecedorId);
+            const saved = await saveData('fornecedores', next);
+            if (!saved) throw new Error('Não foi possível excluir o fornecedor no servidor.');
+            window.fornecedores = next;
+            return true;
+        }
+    };
+}
+
+function comprasFornecedoresMostrarEstado(message, icon = 'fa-circle-info') {
+    const tbody = document.getElementById('comprasFornecedoresTableBody');
+    if (tbody) {
+        tbody.innerHTML = `
+            <tr>
+                <td class="purchase-suppliers-empty" colspan="5"><i class="fas ${icon}"></i> ${escapeHtml(message)}</td>
+            </tr>
+        `;
+    }
+}
+
+function comprasFornecedoresAtualizarResumo(lista) {
+    const fornecedores = Array.isArray(lista) ? lista : [];
+    const documentados = fornecedores.filter((fornecedor) => comprasFornecedoresDocumento(fornecedor)).length;
+    const contatos = fornecedores.filter((fornecedor) => comprasFornecedoresTelefone(fornecedor) || fornecedor.email).length;
+    const cidades = new Set(fornecedores.map((fornecedor) => String(fornecedor.city || fornecedor.cidade || '').trim()).filter(Boolean));
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = String(value);
+    };
+    setText('comprasFornecedoresTotal', fornecedores.length);
+    setText('comprasFornecedoresDocumentados', documentados);
+    setText('comprasFornecedoresContatos', contatos);
+    setText('comprasFornecedoresCidades', cidades.size);
+}
+
+async function carregarFornecedores() {
+    const service = comprasFornecedoresGetService();
+    window.fornecedores = await service.getFornecedores(false);
     atualizarSelectFornecedores();
+    prepararFiltrosPedidosCompras();
+    prepararRelatoriosCompras();
+    renderizarFornecedoresCompra();
+    return window.fornecedores;
 }
 
 function atualizarSelectFornecedores(selectedId = null) {
@@ -2416,15 +3896,409 @@ function atualizarSelectFornecedores(selectedId = null) {
     const currentVal = select.value;
     select.innerHTML = '<option value="">Selecione um fornecedor</option>';
     
-    window.fornecedores.sort((a,b) => (a.nome||'').localeCompare(b.nome||'')).forEach(f => {
+    comprasFornecedoresNormalizarLista(window.fornecedores).forEach(f => {
         const opt = document.createElement('option');
         opt.value = f.id;
-        opt.textContent = f.nome || f.name || 'Sem Nome';
+        opt.textContent = comprasFornecedoresNome(f) || 'Sem Nome';
+        opt.dataset.documento = comprasFornecedoresDocumento(f);
+        opt.dataset.email = String(f.email || '');
+        opt.dataset.cidade = String(f.cidade || f.city || '');
         select.appendChild(opt);
     });
     
     if (selectedId) select.value = selectedId;
     else if (currentVal) select.value = currentVal;
+}
+
+function filtrarFornecedoresSelect() {
+    try {
+        const select = document.getElementById('fornecedorSelect');
+        const buscaInput = document.getElementById('fornecedorBusca');
+        if (!select || !buscaInput) return;
+
+        const busca = String(buscaInput.value || '').trim().toLowerCase();
+        Array.from(select.options).forEach((opt) => {
+            if (!opt.value) {
+                opt.hidden = false;
+                opt.style.display = '';
+                return;
+            }
+            const haystack = [
+                opt.textContent,
+                opt.dataset.documento,
+                opt.dataset.email,
+                opt.dataset.cidade
+            ].join(' ').toLowerCase();
+            const match = !busca || haystack.includes(busca);
+            opt.hidden = !match;
+            opt.style.display = match ? '' : 'none';
+        });
+    } catch (error) {
+        console.warn('Falha ao filtrar fornecedores:', error);
+    }
+}
+
+async function carregarFornecedoresAbaCompra(forceRefresh = false) {
+    const activePanel = document.getElementById('clientes');
+    if (window.__siswebComprasOperationalReady !== true) {
+        comprasFornecedoresAtualizarResumo([]);
+        comprasFornecedoresMostrarEstado('Empresa da sessão não identificada. Faça login novamente para carregar fornecedores.', 'fa-lock');
+        return [];
+    }
+    comprasFornecedoresMostrarEstado('Carregando fornecedores...', 'fa-spinner');
+    try {
+        const service = comprasFornecedoresGetService();
+        window.fornecedores = await service.getFornecedores(forceRefresh);
+        atualizarSelectFornecedores();
+        prepararFiltrosPedidosCompras();
+        prepararRelatoriosCompras();
+        renderizarFornecedoresCompra();
+        if (activePanel && activePanel.classList.contains('active') && forceRefresh) {
+            ToastManager.success('Fornecedores atualizados.', 'Fornecedores', 1800);
+        }
+        return window.fornecedores;
+    } catch (error) {
+        console.error('Erro ao carregar fornecedores na aba de compras:', error);
+        comprasFornecedoresMostrarEstado('Erro ao carregar fornecedores. Verifique a sessão e tente novamente.', 'fa-triangle-exclamation');
+        ToastManager.error('Erro ao carregar fornecedores: ' + (error && error.message ? error.message : error), 'Fornecedores');
+        return [];
+    }
+}
+
+function renderizarFornecedoresCompra() {
+    const tbody = document.getElementById('comprasFornecedoresTableBody');
+    if (!tbody) return;
+    const source = comprasFornecedoresNormalizarLista(window.fornecedores);
+    window.fornecedores = source;
+    comprasFornecedoresAtualizarResumo(source);
+    const busca = String(document.getElementById('comprasFornecedoresBusca')?.value || '').trim().toLowerCase();
+    comprasFornecedoresFiltered = source.filter((fornecedor) => {
+        if (!busca) return true;
+        const haystack = [
+            comprasFornecedoresNome(fornecedor),
+            comprasFornecedoresDocumento(fornecedor),
+            comprasFornecedoresTelefone(fornecedor),
+            fornecedor.email,
+            fornecedor.cidade,
+            fornecedor.city,
+            fornecedor.estado,
+            fornecedor.state,
+            fornecedor.bairro,
+            fornecedor.neighborhood
+        ].map((value) => String(value || '').toLowerCase()).join(' ');
+        return haystack.includes(busca);
+    });
+
+    if (comprasFornecedoresFiltered.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td class="purchase-suppliers-empty" colspan="5">Nenhum fornecedor encontrado.</td>
+            </tr>
+        `;
+        refreshCommerceResponsiveTables();
+        return;
+    }
+
+    tbody.innerHTML = comprasFornecedoresFiltered.map((fornecedor) => {
+        const id = String(fornecedor.id || '').trim();
+        const encodedId = escapeHtml(encodeURIComponent(id).replace(/'/g, '%27'));
+        const nome = escapeHtml(comprasFornecedoresNome(fornecedor) || 'Sem nome');
+        const email = escapeHtml(fornecedor.email || '');
+        const documento = escapeHtml(comprasFornecedoresDocumento(fornecedor) || '-');
+        const telefone = escapeHtml(comprasFornecedoresTelefone(fornecedor) || '-');
+        const cidadeUf = [fornecedor.city || fornecedor.cidade, fornecedor.state || fornecedor.estado].filter(Boolean).join(' / ') || '-';
+        const endereco = [fornecedor.address || fornecedor.endereco, fornecedor.number || fornecedor.numero, fornecedor.neighborhood || fornecedor.bairro].filter(Boolean).join(', ');
+        return `
+            <tr>
+                <td data-label="Fornecedor" class="purchase-suppliers-name-cell">
+                    <strong>${nome}</strong>
+                    ${email ? `<small>${email}</small>` : ''}
+                </td>
+                <td data-label="Documento">${documento}</td>
+                <td data-label="Contato">${telefone}</td>
+                <td data-label="Localização">
+                    <span>${escapeHtml(cidadeUf)}</span>
+                    ${endereco ? `<small style="display:block;color:#64748b;margin-top:3px;">${escapeHtml(endereco)}</small>` : ''}
+                </td>
+                <td data-label="Ações" class="purchase-suppliers-actions-cell commerce-actions-cell">
+                    <div class="commerce-actions-wrap">
+                        <button type="button" class="btn-primary btn-small" onclick="comprasFornecedoresEditar(decodeURIComponent('${encodedId}'))" title="Editar fornecedor" aria-label="Editar fornecedor">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn-danger btn-small" onclick="comprasFornecedoresExcluir(decodeURIComponent('${encodedId}'))" title="Excluir fornecedor" aria-label="Excluir fornecedor">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    refreshCommerceResponsiveTables();
+}
+
+async function comprasFornecedoresCarregarCidades(uf, selectedCity = '') {
+    const citySelect = document.getElementById('comprasFornecedorCity');
+    if (!citySelect) return;
+    const cleanUf = String(uf || '').trim().slice(0, 2).toUpperCase();
+    if (!cleanUf) {
+        citySelect.innerHTML = '<option value="">Selecione primeiro o estado</option>';
+        return;
+    }
+    try {
+        if (typeof window.loadCities === 'function') {
+            await Promise.resolve(window.loadCities(cleanUf, 'comprasFornecedorCity'));
+        } else if (typeof window.populateCitySelect === 'function') {
+            await Promise.resolve(window.populateCitySelect(cleanUf, 'comprasFornecedorCity'));
+        }
+    } catch (error) {
+        console.warn('Falha ao carregar cidades para fornecedor de compras:', error);
+    }
+    if (selectedCity) {
+        const exists = Array.from(citySelect.options).some((option) => option.value === selectedCity);
+        if (!exists) {
+            const option = document.createElement('option');
+            option.value = selectedCity;
+            option.textContent = selectedCity;
+            citySelect.appendChild(option);
+        }
+        citySelect.value = selectedCity;
+    }
+}
+
+function comprasFornecedoresPreencherForm(fornecedor = null) {
+    const data = fornecedor || {};
+    const setValue = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value || '';
+    };
+    const title = document.getElementById('comprasFornecedorFormTitle');
+    if (title) title.textContent = fornecedor ? 'Editar Fornecedor' : 'Novo Fornecedor';
+    setValue('comprasFornecedorId', data.id || '');
+    setValue('comprasFornecedorName', comprasFornecedoresNome(data));
+    setValue('comprasFornecedorDocumento', comprasFornecedoresDocumento(data));
+    setValue('comprasFornecedorTipoPessoa', data.tipoPessoa || data.personType || data.fiscalPersonType || '');
+    setValue('comprasFornecedorIndIEDest', data.indIEDest || data.indicadorInscricaoEstadual || data.ieIndicator || '');
+    setValue('comprasFornecedorInscricaoEstadual', data.inscricaoEstadual || data.stateRegistration || data.ie || '');
+    setValue('comprasFornecedorInscricaoMunicipal', data.inscricaoMunicipal || data.municipalRegistration || data.im || '');
+    setValue('comprasFornecedorSuframa', data.suframa || '');
+    setValue('comprasFornecedorPhone', comprasFornecedoresTelefone(data));
+    setValue('comprasFornecedorEmail', data.email || '');
+    setValue('comprasFornecedorCep', data.cep || data.postalCode || data.zipCode || '');
+    setValue('comprasFornecedorAddress', data.endereco || data.address || '');
+    setValue('comprasFornecedorNumber', data.numero || data.number || '');
+    setValue('comprasFornecedorNeighborhood', data.bairro || data.neighborhood || '');
+    setValue('comprasFornecedorComplement', data.complemento || data.complement || '');
+    setValue('comprasFornecedorState', data.estado || data.state || '');
+    setValue('comprasFornecedorMunicipalityCode', data.codigoMunicipio || data.municipioCodigo || data.municipalityCode || data.cMun || data.ibgeCode || '');
+    setValue('comprasFornecedorCountryCode', data.paisCodigo || data.countryCode || data.cPais || '1058');
+    setValue('comprasFornecedorCountryName', data.pais || data.country || data.countryName || data.xPais || 'Brasil');
+    setValue('comprasFornecedorObs', data.obs || data.observacoes || data.observations || '');
+}
+
+function comprasFornecedoresNovo() {
+    if (window.__siswebComprasOperationalReady !== true) {
+        comprasFornecedoresMostrarEstado('Empresa da sessão não identificada. Faça login novamente para cadastrar fornecedores.', 'fa-lock');
+        return;
+    }
+    comprasFornecedoresEditingId = null;
+    const form = document.getElementById('comprasFornecedorForm');
+    if (form) {
+        form.reset();
+        form.hidden = false;
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    comprasFornecedoresPreencherForm(null);
+    comprasFornecedoresCarregarCidades('');
+    setTimeout(() => document.getElementById('comprasFornecedorName')?.focus(), 50);
+}
+
+async function comprasFornecedoresEditar(id) {
+    const fornecedorId = String(id || '').trim();
+    const fornecedor = (Array.isArray(window.fornecedores) ? window.fornecedores : [])
+        .find((item) => String(item.id || '') === fornecedorId);
+    if (!fornecedor) {
+        ToastManager.warning('Fornecedor não encontrado.', 'Fornecedores');
+        return;
+    }
+    comprasFornecedoresEditingId = fornecedorId;
+    const form = document.getElementById('comprasFornecedorForm');
+    if (form) {
+        form.hidden = false;
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    comprasFornecedoresPreencherForm(fornecedor);
+    await comprasFornecedoresCarregarCidades(fornecedor.estado || fornecedor.state || '', fornecedor.cidade || fornecedor.city || '');
+    setTimeout(() => document.getElementById('comprasFornecedorName')?.focus(), 50);
+}
+
+function comprasFornecedoresCancelar() {
+    comprasFornecedoresEditingId = null;
+    const form = document.getElementById('comprasFornecedorForm');
+    if (form) {
+        form.reset();
+        form.hidden = true;
+    }
+}
+
+async function comprasFornecedoresSalvar(event) {
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    if (window.__siswebComprasOperationalReady !== true) {
+        comprasFornecedoresMostrarEstado('Empresa da sessão não identificada. Faça login novamente para salvar fornecedores.', 'fa-lock');
+        return;
+    }
+    const name = String(document.getElementById('comprasFornecedorName')?.value || '').trim();
+    if (!name) {
+        ToastManager.warning('Informe o nome do fornecedor.', 'Fornecedores');
+        document.getElementById('comprasFornecedorName')?.focus();
+        return;
+    }
+    const saveBtn = document.getElementById('comprasFornecedorSaveBtn');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando';
+    }
+    try {
+        const existing = comprasFornecedoresEditingId
+            ? (Array.isArray(window.fornecedores) ? window.fornecedores : []).find((item) => String(item.id || '') === String(comprasFornecedoresEditingId))
+            : null;
+        const nowIso = new Date().toISOString();
+        const telefone = String(document.getElementById('comprasFornecedorPhone')?.value || '').trim();
+        const documento = String(document.getElementById('comprasFornecedorDocumento')?.value || '').trim();
+        const tipoPessoa = comprasFornecedoresCampo('comprasFornecedorTipoPessoa');
+        const indIEDest = comprasFornecedoresCampo('comprasFornecedorIndIEDest');
+        const inscricaoEstadual = comprasFornecedoresCampo('comprasFornecedorInscricaoEstadual');
+        const inscricaoMunicipal = comprasFornecedoresCampo('comprasFornecedorInscricaoMunicipal');
+        const suframa = comprasFornecedoresCampo('comprasFornecedorSuframa');
+        const cep = comprasFornecedoresCampo('comprasFornecedorCep');
+        const endereco = String(document.getElementById('comprasFornecedorAddress')?.value || '').trim();
+        const numero = String(document.getElementById('comprasFornecedorNumber')?.value || '').trim();
+        const bairro = String(document.getElementById('comprasFornecedorNeighborhood')?.value || '').trim();
+        const complemento = comprasFornecedoresCampo('comprasFornecedorComplement');
+        const estado = String(document.getElementById('comprasFornecedorState')?.value || '').trim();
+        const cidade = String(document.getElementById('comprasFornecedorCity')?.value || '').trim();
+        const codigoMunicipio = comprasFornecedoresCampo('comprasFornecedorMunicipalityCode');
+        const paisCodigo = comprasFornecedoresCampo('comprasFornecedorCountryCode') || '1058';
+        const pais = comprasFornecedoresCampo('comprasFornecedorCountryName') || 'Brasil';
+        const obs = String(document.getElementById('comprasFornecedorObs')?.value || '').trim();
+        const fornecedorId = comprasFornecedoresEditingId || `FOR-${Date.now()}`;
+        const payload = {
+            ...(existing || {}),
+            id: fornecedorId,
+            nome: name,
+            name,
+            documento,
+            document: documento,
+            cnpj: documento,
+            tipoPessoa,
+            personType: tipoPessoa,
+            fiscalPersonType: tipoPessoa,
+            indIEDest,
+            indicadorInscricaoEstadual: indIEDest,
+            ieIndicator: indIEDest,
+            inscricaoEstadual,
+            stateRegistration: inscricaoEstadual,
+            ie: inscricaoEstadual,
+            inscricaoMunicipal,
+            municipalRegistration: inscricaoMunicipal,
+            suframa,
+            cep,
+            postalCode: cep,
+            telefone,
+            phone: telefone,
+            email: String(document.getElementById('comprasFornecedorEmail')?.value || '').trim(),
+            endereco,
+            address: endereco,
+            numero,
+            number: numero,
+            bairro,
+            neighborhood: bairro,
+            complemento,
+            complement: complemento,
+            estado,
+            state: estado,
+            cidade,
+            city: cidade,
+            codigoMunicipio,
+            municipioCodigo: codigoMunicipio,
+            municipalityCode: codigoMunicipio,
+            cMun: codigoMunicipio,
+            ibgeCode: codigoMunicipio,
+            paisCodigo,
+            countryCode: paisCodigo,
+            cPais: paisCodigo,
+            pais,
+            country: pais,
+            countryName: pais,
+            xPais: pais,
+            obs,
+            observacoes: obs,
+            observations: obs,
+            createdAt: existing?.createdAt || existing?.created || nowIso,
+            updatedAt: nowIso,
+            updated: nowIso
+        };
+        const service = comprasFornecedoresGetService();
+        const saved = await service.saveFornecedor(payload);
+        const savedId = String(saved.id || payload.id || comprasFornecedoresEditingId || '').trim();
+        atualizarSelectFornecedores(savedId || null);
+        prepararFiltrosPedidosCompras();
+        prepararRelatoriosCompras();
+        renderizarFornecedoresCompra();
+        comprasFornecedoresCancelar();
+        ToastManager.success('Fornecedor salvo com sucesso.', 'Fornecedores');
+    } catch (error) {
+        console.error('Erro ao salvar fornecedor na aba de compras:', error);
+        ToastManager.error('Erro ao salvar fornecedor: ' + (error && error.message ? error.message : error), 'Fornecedores');
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Fornecedor';
+        }
+    }
+}
+
+async function comprasFornecedoresExcluir(id) {
+    const fornecedorId = String(id || '').trim();
+    if (!fornecedorId) return;
+    const fornecedor = (Array.isArray(window.fornecedores) ? window.fornecedores : [])
+        .find((item) => String(item.id || '') === fornecedorId);
+    const nome = comprasFornecedoresNome(fornecedor) || 'este fornecedor';
+    if (!window.confirm(`Excluir ${nome}?`)) return;
+    try {
+        const service = comprasFornecedoresGetService();
+        await service.deleteFornecedor(fornecedorId);
+        atualizarSelectFornecedores();
+        prepararFiltrosPedidosCompras();
+        prepararRelatoriosCompras();
+        renderizarFornecedoresCompra();
+        if (comprasFornecedoresEditingId === fornecedorId) comprasFornecedoresCancelar();
+        ToastManager.success('Fornecedor excluído.', 'Fornecedores');
+    } catch (error) {
+        console.error('Erro ao excluir fornecedor na aba de compras:', error);
+        ToastManager.error('Erro ao excluir fornecedor: ' + (error && error.message ? error.message : error), 'Fornecedores');
+    }
+}
+
+function comprasFornecedoresRecarregar() {
+    carregarFornecedoresAbaCompra(true);
+}
+
+function configurarAbaFornecedoresCompras() {
+    const form = document.getElementById('comprasFornecedorForm');
+    if (form && !form.dataset.bound) {
+        form.addEventListener('submit', comprasFornecedoresSalvar);
+        form.dataset.bound = '1';
+    }
+    const busca = document.getElementById('comprasFornecedoresBusca');
+    if (busca && !busca.dataset.bound) {
+        busca.addEventListener('input', renderizarFornecedoresCompra);
+        busca.dataset.bound = '1';
+    }
+    const state = document.getElementById('comprasFornecedorState');
+    if (state && !state.dataset.bound) {
+        state.addEventListener('change', () => comprasFornecedoresCarregarCidades(state.value));
+        state.dataset.bound = '1';
+    }
 }
 
 // Modal Rápido de Fornecedor
@@ -2439,54 +4313,110 @@ window.fecharModalFornecedor = function() {
 window.salvarFornecedorInline = async function(event) {
     event.preventDefault();
     LoadingManager.show('Salvando fornecedor...');
-    
-    const novoFornecedor = {
-        id: `FOR-${Date.now()}`,
-        nome: document.getElementById('fornNome').value,
-        documento: document.getElementById('fornDocumento').value,
-        telefone: document.getElementById('fornTelefone').value,
-        email: document.getElementById('fornEmail').value,
-        endereco: document.getElementById('fornEndereco').value,
-        cidade: document.getElementById('fornCidade').value,
-        estado: document.getElementById('fornEstado').value
-    };
-    
-    window.fornecedores.push(novoFornecedor);
-    await saveData('fornecedores', window.fornecedores);
-    
-    atualizarSelectFornecedores(novoFornecedor.id);
-    fecharModalFornecedor();
-    LoadingManager.hide();
-    ToastManager.success('Fornecedor cadastrado!');
-    document.querySelector('#modalFornecedor form').reset();
+    try {
+        const novoFornecedor = {
+            id: `FOR-${Date.now()}`,
+            nome: document.getElementById('fornNome').value,
+            documento: document.getElementById('fornDocumento').value,
+            document: document.getElementById('fornDocumento').value,
+            cnpj: document.getElementById('fornDocumento').value,
+            tipoPessoa: comprasFornecedoresCampo('fornTipoPessoa'),
+            personType: comprasFornecedoresCampo('fornTipoPessoa'),
+            indIEDest: comprasFornecedoresCampo('fornIndIEDest'),
+            indicadorInscricaoEstadual: comprasFornecedoresCampo('fornIndIEDest'),
+            ieIndicator: comprasFornecedoresCampo('fornIndIEDest'),
+            inscricaoEstadual: comprasFornecedoresCampo('fornInscricaoEstadual'),
+            stateRegistration: comprasFornecedoresCampo('fornInscricaoEstadual'),
+            inscricaoMunicipal: comprasFornecedoresCampo('fornInscricaoMunicipal'),
+            municipalRegistration: comprasFornecedoresCampo('fornInscricaoMunicipal'),
+            suframa: comprasFornecedoresCampo('fornSuframa'),
+            cep: comprasFornecedoresCampo('fornCep'),
+            postalCode: comprasFornecedoresCampo('fornCep'),
+            telefone: document.getElementById('fornTelefone').value,
+            email: document.getElementById('fornEmail').value,
+            endereco: document.getElementById('fornEndereco').value,
+            address: document.getElementById('fornEndereco').value,
+            numero: comprasFornecedoresCampo('fornNumero'),
+            number: comprasFornecedoresCampo('fornNumero'),
+            bairro: comprasFornecedoresCampo('fornBairro'),
+            neighborhood: comprasFornecedoresCampo('fornBairro'),
+            complemento: comprasFornecedoresCampo('fornComplemento'),
+            complement: comprasFornecedoresCampo('fornComplemento'),
+            cidade: document.getElementById('fornCidade').value,
+            city: document.getElementById('fornCidade').value,
+            estado: document.getElementById('fornEstado').value,
+            state: document.getElementById('fornEstado').value,
+            codigoMunicipio: comprasFornecedoresCampo('fornCodigoMunicipio'),
+            municipioCodigo: comprasFornecedoresCampo('fornCodigoMunicipio'),
+            municipalityCode: comprasFornecedoresCampo('fornCodigoMunicipio'),
+            cMun: comprasFornecedoresCampo('fornCodigoMunicipio'),
+            paisCodigo: comprasFornecedoresCampo('fornPaisCodigo') || '1058',
+            countryCode: comprasFornecedoresCampo('fornPaisCodigo') || '1058',
+            cPais: comprasFornecedoresCampo('fornPaisCodigo') || '1058',
+            pais: comprasFornecedoresCampo('fornPais') || 'Brasil',
+            country: comprasFornecedoresCampo('fornPais') || 'Brasil',
+            countryName: comprasFornecedoresCampo('fornPais') || 'Brasil',
+            xPais: comprasFornecedoresCampo('fornPais') || 'Brasil'
+        };
+
+        const service = comprasFornecedoresGetService();
+        const saved = await service.saveFornecedor(novoFornecedor);
+        const savedId = String(saved.id || novoFornecedor.id || '').trim();
+
+        atualizarSelectFornecedores(savedId || null);
+        prepararFiltrosPedidosCompras();
+        prepararRelatoriosCompras();
+        renderizarFornecedoresCompra();
+        fecharModalFornecedor();
+        ToastManager.success('Fornecedor cadastrado!');
+        document.querySelector('#modalFornecedor form')?.reset();
+    } catch (error) {
+        console.error('Erro ao salvar fornecedor pelo modal rápido:', error);
+        ToastManager.error('Erro ao salvar fornecedor: ' + (error && error.message ? error.message : error));
+    } finally {
+        LoadingManager.hide();
+    }
 };
 
 // ============================================================================
 // 6. INICIALIZAÇÃO DO SISTEMA
 // ============================================================================
 
-document.addEventListener('DOMContentLoaded', async () => {
+async function inicializarSistemaCompras() {
     LoadingManager.show('Inicializando sistema de compras...');
+    configurarAbaFornecedoresCompras();
     
     try {
-        await Promise.all([
-            carregarFornecedores(),
-            (async () => {
-                // Tentar carregar species primeiro (padrão novo)
-                let items = await getData('species');
-                if (!items || items.length === 0) {
-                    // Fallback para produtos (legado)
-                    items = await getData('produtos');
-                }
-                window.produtos = items || [];
-            })()
-        ]);
-        
-        // Popular select de produtos cadastrados usando função dedicada
-        atualizarSelectProdutos();
+        const contextoEmpresa = await garantirContextoEmpresaCompras();
+        if (!contextoEmpresa || !contextoEmpresa.success || (!contextoEmpresa.companyId && !contextoEmpresa.superAdmin)) {
+            window.fornecedores = [];
+            window.produtos = [];
+            atualizarSelectFornecedores();
+            atualizarSelectProdutos();
+            renderOperationalAccessStateCompras(contextoEmpresa || { error: 'Empresa da sessão não identificada.' });
+            const msg = contextoEmpresa && contextoEmpresa.superAdmin
+                ? 'Acesse Compras com um usuário vinculado a uma empresa.'
+                : 'Sessão sem empresa ativa. Entre novamente para carregar Compras com segurança.';
+            console.warn(`⚠️ Compras sem tenant operacional: ${msg}`, contextoEmpresa || {});
+            ToastManager.warning(msg);
+        } else {
+            clearOperationalAccessStateCompras();
+
+            await Promise.all([
+                carregarFornecedores(),
+                (async () => {
+                    window.produtos = await getData('produtos') || [];
+                })()
+            ]);
+            
+            // Popular select de produtos cadastrados usando função dedicada
+            atualizarSelectProdutos();
+            prepararRelatoriosCompras();
+        }
         
     } catch (e) {
         console.error('Erro na inicialização:', e);
+        renderOperationalAccessStateCompras({ error: e && e.message ? e.message : 'Erro ao carregar dados iniciais.' });
         ToastManager.error('Erro ao carregar dados iniciais.');
     } finally {
         LoadingManager.hide();
@@ -2581,7 +4511,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         agruparRomaneioCheckbox.dataset.bound = '1';
     }
-});
+}
+
+function iniciarSistemaComprasUmaVez() {
+    if (window.__siswebComprasInitStarted) return;
+    window.__siswebComprasInitStarted = true;
+    inicializarSistemaCompras();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', iniciarSistemaComprasUmaVez);
+} else {
+    iniciarSistemaComprasUmaVez();
+}
 
 function filtrarPedidos() {
     pedidosListPage = 1;
@@ -2601,6 +4543,7 @@ window.removerConta = removerConta;
 window.alterarTipoProduto = alterarTipoProduto;
 window.editarPedido = editarPedido;
 window.excluirPedido = excluirPedido;
+window.imprimirPedido = imprimirPedido;
 window.abrirModalFornecedor = abrirModalFornecedor;
 window.fecharModalFornecedor = fecharModalFornecedor;
 window.salvarFornecedorInline = salvarFornecedorInline;
@@ -2608,7 +4551,21 @@ window.filtrarPedidos = filtrarPedidos;
 window.toggleSelecionarPedido = toggleSelecionarPedido;
 window.toggleSelecionarTodosPedidos = toggleSelecionarTodosPedidos;
 window.imprimirPedidosSelecionados = imprimirPedidosSelecionados;
-window.filtrarFornecedoresSelect = () => {}; // Placeholder se necessário
+window.filtrarFornecedoresSelect = filtrarFornecedoresSelect;
+window.gerarRelatorioCompras = gerarRelatorioCompras;
+window.exportarRelatorioComprasCSV = exportarRelatorioComprasCSV;
+window.exportarRelatorioComprasPDF = exportarRelatorioComprasPDF;
+window.abrirCustomizarColunasCompras = abrirCustomizarColunasCompras;
+window.aplicarCustomizacaoColunasCompras = aplicarCustomizacaoColunasCompras;
+window.carregarFornecedores = carregarFornecedores;
+window.atualizarSelectFornecedores = atualizarSelectFornecedores;
+window.carregarFornecedoresAbaCompra = carregarFornecedoresAbaCompra;
+window.comprasFornecedoresNovo = comprasFornecedoresNovo;
+window.comprasFornecedoresEditar = comprasFornecedoresEditar;
+window.comprasFornecedoresCancelar = comprasFornecedoresCancelar;
+window.comprasFornecedoresSalvar = comprasFornecedoresSalvar;
+window.comprasFornecedoresExcluir = comprasFornecedoresExcluir;
+window.comprasFornecedoresRecarregar = comprasFornecedoresRecarregar;
 
 // Integração com sistema de cidades (cities.js)
 window.loadCities = function(uf, targetId) {
@@ -2632,6 +4589,22 @@ window.addEventListener('suppliers:updated', (e) => {
             atualizarSelectFornecedores(e.detail.id);
         });
     }
+});
+
+window.addEventListener('fornecedores:updated', (e) => {
+    if (e.detail) {
+        carregarFornecedores().then(() => {
+            atualizarSelectFornecedores(e.detail.id);
+        });
+    }
+});
+
+window.addEventListener('message', (event) => {
+    if (event.origin !== window.location.origin) return;
+    const data = event.data || {};
+    if (!data || data.source !== 'sisweb-commerce-embedded') return;
+    if (data.type !== 'sisweb:suppliers:updated' && data.type !== 'sisweb:fornecedores:updated') return;
+    window.dispatchEvent(new CustomEvent('suppliers:updated', { detail: data.detail || {} }));
 });
 
 // ============================================================================
@@ -2664,18 +4637,15 @@ window.carregarRomaneiosPorTipo = async function() {
             return;
         }
         
-        // Ordenar por data (mais recente primeiro)
-        dados.sort((a, b) => {
-            const da = new Date(a.dataHora || a.data || 0).getTime();
-            const db = new Date(b.dataHora || b.data || 0).getTime();
-            return (isNaN(db) ? 0 : db) - (isNaN(da) ? 0 : da);
-        });
+        dados.sort(compareRomaneiosCompraByRecencyDesc);
         
         dados.forEach(r => {
             const opt = document.createElement('option');
             opt.value = r.id || r.firebaseKey;
             
-            const data = r.dataHora ? new Date(r.dataHora).toLocaleDateString('pt-BR') : 'S/D';
+            const dataBase = r.dataEmissao || r.data || r.dataHora || r.createdAt || r.created || r.timestamp;
+            const dataObj = dataBase ? new Date(dataBase) : null;
+            const data = dataObj && !isNaN(dataObj.getTime()) ? dataObj.toLocaleDateString('pt-BR') : 'S/D';
             // Suporte a diferentes estruturas de cliente/fornecedor
             const nome = r.fornecedor?.nome || r.cliente?.nome || r.fornecedor || r.cliente || 'Sem Nome';
             
@@ -2794,6 +4764,7 @@ window.adicionarItensRomaneio = async function() {
                 const especie = (item.especie || item.produto || item.descricao || 'Item Romaneio').trim();
                 const key = especie.toUpperCase(); // Agrupar case-insensitive
                 
+                // Campos geométricos da tora são informativos para romaneio; pedido de compra usa o volume comercial já existente.
                 const qtd = parseFloat(item.volumeLiquido || item.volume || item.quantidade || 0);
                 const preco = parseFloat(item.preco || item.precoUnitario || 0);
                 const totalItem = qtd * preco;
@@ -2834,7 +4805,8 @@ window.adicionarItensRomaneio = async function() {
                 // Tentar mapear campos variados (Tora, Pct, etc)
                 const nomeProduto = item.especie || item.produto || item.descricao || 'Item Romaneio';
                 
-                // Priorizar volumeLiquido para Toras, ou volume/quantidade genérico
+                // Priorizar volumeLiquido para Toras, ou volume/quantidade genérico.
+                // Campos geométricos novos permanecem fora do pedido de compra.
                 const qtd = parseFloat(item.volumeLiquido || item.volume || item.quantidade || 0);
                 
                 // Evitar itens zerados se não for intencional (mas o usuário disse "valores zerados" como bug)

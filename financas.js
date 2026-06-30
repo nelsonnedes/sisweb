@@ -518,6 +518,9 @@ window.saveFinanceFornecedorModal = saveFinanceFornecedorModal;
 // Inicialização quando a página carrega
 document.addEventListener('DOMContentLoaded', async function() {
     try {
+        if (window.__siswebFirebaseServiceReady && typeof window.__siswebFirebaseServiceReady.then === 'function') {
+            await window.__siswebFirebaseServiceReady;
+        }
         // ✅ Unificar inicialização para garantir bind de eventos e navegação
         inicializarSistema();
         return;
@@ -638,6 +641,107 @@ function configurarDatasDoMesAtual() {
         ultimoDia: ultimoDiaStr,
         hoje: hojeStr
     };
+}
+
+function getFinanceFirebaseService() {
+    try {
+        return window.firebaseService || window.FirebaseService || null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function isFirebaseOfflineModeFinancas() {
+    try {
+        if (window._FIREBASE_CONNECTED === false || window.firebaseConnected === false) return true;
+    } catch (_) {}
+    try {
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) return true;
+    } catch (_) {}
+    return false;
+}
+
+function limparContextoEmpresaFinancasInseguro() {
+    try { window.appTenantId = null; } catch (_) {}
+    try { window.companyInfo = null; } catch (_) {}
+    try { localStorage.removeItem('company_info'); } catch (_) {}
+    try {
+        const svc = getFinanceFirebaseService();
+        if (svc && typeof svc.setTenantId === 'function') svc.setTenantId(null);
+    } catch (_) {}
+}
+
+async function ensureFinanceTenantContext(timeoutMs = 7000) {
+    const startedAt = Date.now();
+    if (typeof window !== 'undefined' && window.__siswebFirebaseServiceReady && typeof window.__siswebFirebaseServiceReady.then === 'function') {
+        try {
+            await Promise.race([
+                window.__siswebFirebaseServiceReady,
+                new Promise((resolve) => setTimeout(resolve, Math.min(timeoutMs, 2500)))
+            ]);
+        } catch (_) {}
+    }
+    let svc = getFinanceFirebaseService();
+    const isOffline = isFirebaseOfflineModeFinancas();
+
+    if (svc && typeof svc.resolveAuthenticatedTenant === 'function') {
+        try {
+            const resolved = await svc.resolveAuthenticatedTenant({ timeoutMs: Math.min(timeoutMs, 4500), allowCached: isOffline });
+            if (resolved && resolved.success && resolved.companyId) return String(resolved.companyId);
+            if (resolved && resolved.success && resolved.superAdmin) {
+                limparContextoEmpresaFinancasInseguro();
+                return '';
+            }
+        } catch (_) {}
+    }
+
+    const getCachedTenant = () => {
+        try {
+            const currentSvc = getFinanceFirebaseService();
+            if (currentSvc && typeof currentSvc.getCurrentTenantId === 'function') {
+                const t = currentSvc.getCurrentTenantId();
+                if (t) return String(t);
+            }
+            if (currentSvc && typeof currentSvc.getTenantId === 'function') {
+                const t = currentSvc.getTenantId();
+                if (t) return String(t);
+            }
+        } catch (_) {}
+        try {
+            if (window.appTenantId) return String(window.appTenantId);
+            const raw = localStorage.getItem('company_info');
+            if (raw) {
+                const obj = JSON.parse(raw);
+                const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
+                if (id) return String(id);
+            }
+        } catch (_) {}
+        return '';
+    };
+
+    let tenant = isOffline ? getCachedTenant() : '';
+    while (!tenant && (Date.now() - startedAt) < timeoutMs) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        svc = getFinanceFirebaseService();
+        if (svc && typeof svc.resolveAuthenticatedTenant === 'function') {
+            try {
+                const retry = await svc.resolveAuthenticatedTenant({ timeoutMs: 1000, allowCached: isOffline });
+                if (retry && retry.success && retry.companyId) return String(retry.companyId);
+            } catch (_) {}
+        }
+        tenant = isOffline ? getCachedTenant() : '';
+    }
+
+    if (tenant) {
+        try {
+            const currentSvc = getFinanceFirebaseService();
+            if (currentSvc && typeof currentSvc.setTenantId === 'function') currentSvc.setTenantId(tenant);
+        } catch (_) {}
+        return tenant;
+    }
+
+    if (!isOffline) limparContextoEmpresaFinancasInseguro();
+    return '';
 }
 
 // Funções de inicialização
@@ -999,26 +1103,70 @@ function reindexGeneratedParcelRows(tipo) {
     } catch (_) {}
 }
 
-async function uploadAttachmentMetaForConta(file, tipo, contaId) {
+function normalizeFinanceAttachmentMeta(input = {}, legacy = false) {
+    const source = input && typeof input === 'object' ? input : {};
+    let normalized = null;
+    if (window.storageService && typeof window.storageService.normalizeAttachmentMeta === 'function') {
+        normalized = window.storageService.normalizeAttachmentMeta(source);
+    }
+    const base = normalized || {};
+    const url = String(base.url || base.downloadURL || source.url || source.downloadURL || source.comprovanteUrl || source.anexoUrl || '').trim();
+    return {
+        ...source,
+        ...base,
+        url,
+        downloadURL: url,
+        storagePath: base.storagePath || source.storagePath || source.comprovanteStoragePath || source.path || null,
+        name: base.name || source.name || source.fileName || 'arquivo',
+        fileName: base.fileName || source.fileName || source.name || 'arquivo',
+        contentType: base.contentType || source.contentType || source.mimeType || '',
+        size: typeof base.size === 'number' ? base.size : (typeof source.size === 'number' ? source.size : null),
+        uploadedAt: base.uploadedAt || source.uploadedAt || source.createdAt || source.data || null,
+        uploadedBy: base.uploadedBy || source.uploadedBy || null,
+        module: source.module || base.module || 'financas',
+        legacy: legacy === true || base.legacy === true || source.legacy === true
+    };
+}
+
+async function uploadAttachmentMetaForConta(file, tipo, contaId, uploadOptions = {}) {
+    if (!file) return null;
+    if (!window.storageService || typeof window.storageService.uploadFile !== 'function') return null;
+    return uploadFinanceStorageMeta(file, `financas/anexos/${tipo}/${String(contaId)}`, {
+        tipo,
+        entityId: String(contaId)
+    }, uploadOptions);
+}
+
+async function uploadFinanceStorageMeta(file, path, extra = {}, uploadOptions = {}) {
     if (!file) return null;
     if (!window.storageService || typeof window.storageService.uploadFile !== 'function') return null;
     let uploadResult = null;
-    if (typeof window.storageService.uploadFileWithPath === 'function') {
-        uploadResult = await window.storageService.uploadFileWithPath(file, `financas/anexos/${tipo}/${String(contaId)}`);
+    if (typeof window.storageService.uploadAttachment === 'function') {
+        uploadResult = await window.storageService.uploadAttachment(file, path, {
+            module: 'financas',
+            ...extra,
+            name: file && file.name ? String(file.name) : 'arquivo',
+            fileName: file && file.name ? String(file.name) : 'arquivo',
+            contentType: file && file.type ? String(file.type) : '',
+            size: file && typeof file.size === 'number' ? file.size : null
+        }, uploadOptions);
+    } else if (typeof window.storageService.uploadFileWithPath === 'function') {
+        uploadResult = await window.storageService.uploadFileWithPath(file, path, uploadOptions);
     } else {
-        const urlOnly = await window.storageService.uploadFile(file, `financas/anexos/${tipo}/${String(contaId)}`);
+        const urlOnly = await window.storageService.uploadFile(file, path, uploadOptions);
         uploadResult = { url: urlOnly, storagePath: null };
     }
-    const url = uploadResult && uploadResult.url ? uploadResult.url : null;
-    if (!url) return null;
-    return {
-        url,
-        storagePath: uploadResult && uploadResult.storagePath ? uploadResult.storagePath : null,
-        name: file && file.name ? String(file.name) : 'arquivo',
-        contentType: file && file.type ? String(file.type) : '',
-        size: file && typeof file.size === 'number' ? file.size : null,
-        uploadedAt: new Date().toISOString()
-    };
+    const meta = normalizeFinanceAttachmentMeta({
+        ...(uploadResult || {}),
+        module: 'financas',
+        ...extra,
+        name: file && file.name ? String(file.name) : ((uploadResult && (uploadResult.name || uploadResult.fileName)) || 'arquivo'),
+        fileName: file && file.name ? String(file.name) : ((uploadResult && (uploadResult.fileName || uploadResult.name)) || 'arquivo'),
+        contentType: file && file.type ? String(file.type) : ((uploadResult && uploadResult.contentType) || ''),
+        size: file && typeof file.size === 'number' ? file.size : (uploadResult && typeof uploadResult.size === 'number' ? uploadResult.size : null),
+        uploadedAt: (uploadResult && uploadResult.uploadedAt) || new Date().toISOString()
+    });
+    return meta && meta.url ? meta : null;
 }
 
 async function anexarArquivoContaInternal(contaId, tipo, file) {
@@ -1039,30 +1187,14 @@ async function anexarArquivoContaInternal(contaId, tipo, file) {
         }
 
         mostrarNotificacao('Enviando anexo...', 'info');
-        let uploadResult = null;
-        if (typeof window.storageService.uploadFileWithPath === 'function') {
-            uploadResult = await window.storageService.uploadFileWithPath(file, `financas/anexos/${tipo}/${String(conta.id)}`);
-        } else {
-            const urlOnly = await window.storageService.uploadFile(file, `financas/anexos/${tipo}/${String(conta.id)}`);
-            uploadResult = { url: urlOnly, storagePath: null };
-        }
-        const url = uploadResult && uploadResult.url ? uploadResult.url : null;
-        const storagePath = uploadResult && uploadResult.storagePath ? uploadResult.storagePath : null;
-        if (!url) {
+        const meta = await uploadAttachmentMetaForConta(file, tipo, conta.id);
+        if (!meta || !meta.url) {
             mostrarNotificacao('Falha ao gerar URL do anexo.', 'error');
             return;
         }
-        const meta = {
-            url,
-            storagePath,
-            name: file && file.name ? String(file.name) : 'arquivo',
-            contentType: file && file.type ? String(file.type) : '',
-            size: file && typeof file.size === 'number' ? file.size : null,
-            uploadedAt: new Date().toISOString()
-        };
         if (!Array.isArray(conta.anexos)) conta.anexos = [];
         conta.anexos.push(meta);
-        conta.anexoUrl = url;
+        conta.anexoUrl = meta.url;
 
         const mk = getMonthKeyFromDateVal(conta.dataVencimento || conta.vencimento);
         const base = tipo === 'receber' ? `financas/receber/${mk}` : `financas/pagar/${mk}`;
@@ -1082,33 +1214,6 @@ async function anexarArquivoContaInternal(contaId, tipo, file) {
         const fileInput = document.getElementById('anexoFileInput');
         if (fileInput) fileInput.disabled = false;
         try { window.mostrarLoading(false); } catch(_) {}
-    }
-}
-
-async function anexarArquivoConta(contaId, tipo) {
-    try {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.id = 'anexoFileInput';
-        input.accept = 'image/*,application/pdf';
-        input.style.display = 'none';
-        input.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            // Travar a interface para evitar fechamento do modal durante upload
-            try { LoadingManager.show('Enviando e salvando anexo...'); } catch(_) {}
-            const modal = document.getElementById('anexosModal');
-            if (modal) modal.style.pointerEvents = 'none';
-            input.disabled = true;
-
-            await anexarArquivoContaInternal(contaId, tipo, file);
-        });
-        document.body.appendChild(input);
-        input.click();
-        setTimeout(() => { document.body.removeChild(input); }, 1000);
-    } catch (_) {
-        try { LoadingManager.hide(); } catch(e) {}
     }
 }
 
@@ -1136,39 +1241,28 @@ async function substituirAnexoContaInternal(contaId, tipo, index, file) {
             return;
         }
 
+        const previousStoragePath = resolveAttachmentStoragePath(target);
         mostrarNotificacao('Enviando novo anexo...', 'info');
-        let uploadResult = null;
-        if (typeof window.storageService.uploadFileWithPath === 'function') {
-            uploadResult = await window.storageService.uploadFileWithPath(file, `financas/anexos/${tipo}/${String(conta.id)}`);
-        } else {
-            const urlOnly = await window.storageService.uploadFile(file, `financas/anexos/${tipo}/${String(conta.id)}`);
-            uploadResult = { url: urlOnly, storagePath: null };
-        }
-        const url = uploadResult && uploadResult.url ? uploadResult.url : null;
-        const storagePath = uploadResult && uploadResult.storagePath ? uploadResult.storagePath : null;
-        if (!url) {
+        const newMeta = await uploadAttachmentMetaForConta(file, tipo, conta.id, {
+            replaceStoragePath: previousStoragePath
+        });
+        if (!newMeta || !newMeta.url) {
             mostrarNotificacao('Falha ao gerar URL do anexo.', 'error');
             return;
         }
-
-        const newMeta = {
-            url,
-            storagePath,
-            name: file && file.name ? String(file.name) : (target.name || 'arquivo'),
-            contentType: file && file.type ? String(file.type) : (target.contentType || ''),
-            size: file && typeof file.size === 'number' ? file.size : null,
-            uploadedAt: new Date().toISOString()
-        };
+        newMeta.name = newMeta.name || target.name || 'arquivo';
+        newMeta.fileName = newMeta.fileName || target.fileName || newMeta.name;
+        newMeta.contentType = newMeta.contentType || target.contentType || '';
 
         applyAttachmentReplacement(conta, index, newMeta);
-
-        if (target.storagePath && window.firebaseService.storage && typeof window.firebaseService.storage.delete === 'function') {
-            try { await window.firebaseService.storage.delete(target.storagePath); } catch (_) {}
-        }
 
         const mk = getMonthKeyFromDateVal(conta.dataVencimento || conta.vencimento);
         const base = tipo === 'receber' ? `financas/receber/${mk}` : `financas/pagar/${mk}`;
         await window.firebaseService.saveToFirebase(base, String(conta.id), conta);
+        const newStoragePath = resolveAttachmentStoragePath(newMeta);
+        if (previousStoragePath && !isSameStorageObject(previousStoragePath, newStoragePath)) {
+            await deleteStorageFileSafely(previousStoragePath, target.url);
+        }
         renderAnexosModalTable();
         if (tipo === 'receber') carregarTabelaReceber(lastFiltroReceber || {});
         else carregarTabelaPagar(lastFiltroPagar || {});
@@ -1182,19 +1276,14 @@ async function substituirAnexoContaInternal(contaId, tipo, index, file) {
 
 function getContaAttachments(conta) {
     const list = [];
-    const push = (meta) => { if (meta && meta.url) list.push(meta); };
+    const push = (meta, legacy = false) => {
+        const normalized = normalizeFinanceAttachmentMeta(meta, legacy);
+        if (normalized && normalized.url) list.push(normalized);
+    };
     if (Array.isArray(conta && conta.anexos)) {
         conta.anexos.forEach(a => {
             if (!a || typeof a !== 'object') return;
-            push({
-                url: a.url,
-                storagePath: a.storagePath || null,
-                name: a.name || 'arquivo',
-                contentType: a.contentType || '',
-                size: (typeof a.size === 'number' ? a.size : null),
-                uploadedAt: a.uploadedAt || a.data || null,
-                legacy: false
-            });
+            push(a, false);
         });
     }
 
@@ -1203,7 +1292,7 @@ function getContaAttachments(conta) {
         .map(u => String(u));
     legacyUrls.forEach(url => {
         if (list.some(a => String(a.url) === url)) return;
-        push({ url, storagePath: null, name: 'anexo', contentType: '', size: null, uploadedAt: null, legacy: true });
+        push({ url, storagePath: null, name: 'anexo', contentType: '', size: null, uploadedAt: null }, true);
     });
 
     return list;
@@ -1230,9 +1319,13 @@ function applyAttachmentReplacement(conta, index, newMeta) {
 }
 
 function normalizeAttachmentsList(value) {
-    if (Array.isArray(value)) return value.filter((item) => item && typeof item === 'object');
-    if (value && typeof value === 'object') return Object.values(value).filter((item) => item && typeof item === 'object');
-    return [];
+    const raw = Array.isArray(value)
+        ? value
+        : (value && typeof value === 'object' ? Object.values(value) : []);
+    return raw
+        .filter((item) => item && typeof item === 'object')
+        .map((item) => normalizeFinanceAttachmentMeta(item, item.legacy === true))
+        .filter((item) => item && (item.url || item.storagePath));
 }
 
 function cloneContaSnapshotForEdit(conta) {
@@ -1274,6 +1367,24 @@ function extractStoragePathFromDownloadUrl(url) {
     } catch (_) {
         return null;
     }
+}
+
+function resolveAttachmentStoragePath(meta) {
+    const source = meta && typeof meta === 'object' ? meta : {};
+    const raw = String(
+        source.storagePath
+        || source.comprovanteStoragePath
+        || source.path
+        || extractStoragePathFromDownloadUrl(source.url || source.downloadURL || source.comprovanteUrl || source.anexoUrl)
+        || ''
+    ).trim();
+    return String(extractStoragePathFromDownloadUrl(raw) || raw || '').trim();
+}
+
+function isSameStorageObject(a, b) {
+    const left = String(a || '').trim();
+    const right = String(b || '').trim();
+    return !!left && !!right && left === right;
 }
 
 async function deleteStorageFileSafely(storagePath, url) {
@@ -1623,6 +1734,21 @@ async function carregarDados() {
         }
 
         window.financeInitialLoading = true;
+        const firebaseAvailable = !!(window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function');
+        const financeTenant = await ensureFinanceTenantContext();
+        if (firebaseAvailable && !financeTenant) {
+            contasReceber = [];
+            contasPagar = [];
+            clientes = [];
+            fornecedores = [];
+            funcionarios = [];
+            window.financeTableOverlayOnce = true;
+            carregarTabelaReceber();
+            carregarTabelaPagar();
+            atualizarDashboard();
+            mostrarNotificacao('Empresa da sessão não identificada. Faça login novamente para carregar o Financeiro.', 'error');
+            return;
+        }
         // Garantir que company_info esteja carregado em memória
         try {
             const ci = localStorage.getItem('company_info');
@@ -1646,7 +1772,7 @@ async function carregarDados() {
         const monthKey = getTodayISODateLocal().slice(0,7);
         
         // 2. Carregamento Paralelo de Dados (Otimizado)
-        if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+        if (firebaseAvailable) {
             // BLAZE OPTIMIZATION: Use loadData with limit definitions to cap maximum reads per month chunk (Safety limit)
             const fetchOptions = { limitToLast: 1500, orderByKey: true };
             const promises = [
@@ -2161,7 +2287,7 @@ function getCompanyPrintInfo() {
                             const tb = Date.parse(b.timestamp||b.updatedAt||b.createdAt||'') || 0;
                             return tb - ta;
                         });
-                        info = sorted.find(c => c.logoBase64 || c.logo || c.logoUrl || c.logoURL) || sorted[0];
+                        info = sorted.find(c => c.logoUrl || c.logoURL || c.logoDownloadURL || c.logoStoragePath || c.logoPath || c.logo || c.logoBase64) || sorted[0];
                     }
                 }
             } catch (_) {}
@@ -2171,10 +2297,13 @@ function getCompanyPrintInfo() {
         if (logoEl) logoUrl = logoEl.src || logoEl.getAttribute('src') || '';
         // Mapear possíveis chaves de logo
         const candidates = [
-            info && info.logoBase64,
             info && info.logoUrl,
             info && info.logoURL,
+            info && info.logoDownloadURL,
+            info && info.logoStoragePath,
+            info && info.logoPath,
             info && info.logo,
+            info && info.logoBase64,
             info && info.logoData
         ].filter(Boolean);
         for (const c of candidates) {
@@ -2214,13 +2343,13 @@ async function ensureCompanyInfoForPrint() {
                 if (window.appTenantId) return String(window.appTenantId);
                 if (window.companyInfo) {
                     const raw = window.companyInfo;
-                    const id = raw && (raw.id || raw.companyId || raw.companyID || raw.tenantId || raw.slug);
+                    const id = raw && (raw.companyId || raw.companyID || raw.tenantId || raw.id);
                     if (id) return String(id);
                 }
                 const stored = localStorage.getItem('company_info');
                 if (stored) {
                     const obj = JSON.parse(stored);
-                    const id = obj && (obj.id || obj.companyId || obj.companyID || obj.tenantId || obj.slug);
+                    const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                     if (id) return String(id);
                 }
             } catch (_) {}
@@ -2244,6 +2373,43 @@ async function ensureCompanyInfoForPrint() {
             return s;
         };
 
+        const centralSvc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+        if (centralSvc && typeof centralSvc.getCompanyProfileForReport === 'function') {
+            try {
+                const centralResult = await centralSvc.getCompanyProfileForReport();
+                const centralCompany = centralResult && centralResult.success !== false
+                    ? (centralResult.data || centralResult)
+                    : null;
+                if (centralCompany && typeof centralCompany === 'object') {
+                    const name = centralCompany.nome || centralCompany.name || '';
+                    const hasIdentity = (name && name !== 'Empresa não informada')
+                        || (centralCompany.cnpj && centralCompany.cnpj !== '-')
+                        || centralCompany.logo
+                        || centralCompany.logoUrl;
+                    if (hasIdentity) {
+                        const existing = (() => {
+                            try {
+                                const raw = localStorage.getItem('company_info');
+                                return raw ? (JSON.parse(raw) || {}) : {};
+                            } catch (_) { return {}; }
+                        })();
+                        const merged = { ...existing };
+                        Object.entries(centralCompany).forEach(([key, value]) => {
+                            if (value === undefined || value === null || value === '') return;
+                            if (value === '-' && existing[key]) return;
+                            if ((key === 'nome' || key === 'name') && value === 'Empresa não informada' && existing[key]) return;
+                            merged[key] = value;
+                        });
+                        localStorage.setItem('company_info', JSON.stringify(merged));
+                        window.companyInfo = merged;
+                    }
+                    return;
+                }
+            } catch (error) {
+                console.warn('Aviso ao obter empresa pelo helper central:', error);
+            }
+        }
+
         const tenantId = resolveCompanyId();
         const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
         let company = null;
@@ -2254,34 +2420,49 @@ async function ensureCompanyInfoForPrint() {
 
         if (tenantId && svc && typeof svc.loadFromFirebase === 'function') {
             try {
-                const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
-                const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
-                if (byPathData && typeof byPathData === 'object') {
-                    company = { ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
+                const byPathRoot = await svc.loadFromFirebase(`companies/${tenantId}`);
+                const byPathRootData = byPathRoot && (byPathRoot.success ? byPathRoot.data : byPathRoot.data);
+                if (byPathRootData && typeof byPathRootData === 'object' && (byPathRootData.nome || byPathRootData.name)) {
+                    company = { ...(company || {}), ...byPathRootData, id: tenantId, companyId: tenantId, tenantId: tenantId };
                 }
             } catch (_) {}
-        }
 
-        if (!company && typeof getDataAsync === 'function') {
-            try {
-                const payload = await getDataAsync('companies');
-                if (payload) {
-                    if (Array.isArray(payload)) company = payload[0] || null;
-                    else if (typeof payload === 'object') {
-                        const vals = Object.values(payload).filter(v => v && typeof v === 'object');
-                        company = vals[0] || payload;
+            if (!company || (!company.nome && !company.name)) {
+                try {
+                    const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
+                    const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
+                    if (byPathData && typeof byPathData === 'object') {
+                        company = { ...(company || {}), ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
                     }
+                } catch (_) {}
+            }
+        }
+
+        if (tenantId && (!company || (!company.nome && !company.name))) {
+            try {
+                let payload = null;
+                if (typeof window.getData === 'function') {
+                    payload = await window.getData(`companies/${tenantId}/profile`);
+                } else if (typeof getDataAsync === 'function') {
+                    payload = await getDataAsync(`companies/${tenantId}/profile`);
+                }
+                if (payload && typeof payload === 'object') {
+                    company = { ...(company || {}), ...payload, id: tenantId, companyId: tenantId, tenantId: tenantId };
                 }
             } catch (_) {}
         }
 
-        if (!company) {
+        if (!company && tenantId) {
             try {
                 const raw = localStorage.getItem('companies');
                 if (raw) {
                     const parsed = JSON.parse(raw);
                     const arr = Array.isArray(parsed) ? parsed : (parsed && typeof parsed === 'object' ? Object.values(parsed) : []);
-                    company = (arr && arr.length > 0) ? arr[0] : null;
+                    company = (arr || []).find(item => {
+                        if (!item || typeof item !== 'object') return false;
+                        const id = item.id || item.companyId || item.companyID || item.tenantId;
+                        return id && String(id) === String(tenantId);
+                    }) || null;
                 }
             } catch (_) {}
         }
@@ -2299,7 +2480,7 @@ async function ensureCompanyInfoForPrint() {
         const cnpj = company.cnpj || company.taxId || existing.cnpj || existing.taxId || '';
         const address = company.endereco || company.address || existing.endereco || existing.address || '';
         const phone = company.telefone || company.phone || existing.telefone || existing.phone || '';
-        const logoCandidate = company.logoUrl || company.logoURL || company.logoBase64 || company.logoData || company.logo || existing.logoUrl || existing.logoURL || existing.logoBase64 || existing.logoData || existing.logo || '';
+        const logoCandidate = company.logoUrl || company.logoURL || company.logoDownloadURL || company.logoStoragePath || company.logoPath || company.logo || company.logoBase64 || company.logoData || existing.logoUrl || existing.logoURL || existing.logoDownloadURL || existing.logoStoragePath || existing.logoPath || existing.logo || existing.logoBase64 || existing.logoData || '';
         const logoUrl = normalizeLogo(logoCandidate);
         const merged = { ...existing };
 
@@ -2346,7 +2527,7 @@ function getPrintPreferencesKey(tipo) {
             const raw = localStorage.getItem('company_info');
             if (raw) {
                 const obj = JSON.parse(raw);
-                tenant = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                tenant = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
             }
         }
         if (tenant) return `company_${String(tenant)}__printPrefs_finance_${tipo}`;
@@ -4120,6 +4301,11 @@ async function carregarTabelaReceber(filtro = {}) {
                     ` : `
                         <div style="width: 28px; min-width: 28px; height: 28px; display: inline-block;"></div>
                     `}
+                    ${String(conta.tipo || '').toLowerCase() === 'boleto' ? `
+                        <button onclick="abrirBoletoPixLamina('${conta.id}', 'receber')" class="btn btn-warning btn-small boleto-pix-btn" style="min-width: 28px; background-color: #f59e0b; border-color: #d97706; color: white;" title="Gerar Lâmina de Cobrança PIX">
+                            <i class="fas fa-barcode"></i>
+                        </button>
+                    ` : ''}
                     <button onclick="editarConta('${conta.id}', 'receber')" class="btn btn-primary btn-small" style="min-width: 28px;" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -4367,6 +4553,11 @@ async function carregarTabelaPagar(filtro = {}) {
                     ` : `
                         <div style="width: 28px; min-width: 28px; height: 28px; display: inline-block;"></div>
                     `}
+                    ${String(conta.tipo || '').toLowerCase() === 'boleto' ? `
+                        <button onclick="abrirBoletoPixLamina('${conta.id}', 'pagar')" class="btn btn-warning btn-small boleto-pix-btn" style="min-width: 28px; background-color: #f59e0b; border-color: #d97706; color: white;" title="Gerar Lâmina de Cobrança PIX">
+                            <i class="fas fa-barcode"></i>
+                        </button>
+                    ` : ''}
                     <button onclick="editarConta('${conta.id}', 'pagar')" class="btn btn-primary btn-small" style="min-width: 28px;" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -4588,9 +4779,7 @@ function getNamespacedPath(basePath) {
     try {
         const svc = window.firebaseService;
         const tenant = svc && svc.getCurrentTenantId ? svc.getCurrentTenantId() : null;
-        const uid = svc && svc.getCurrentUid ? svc.getCurrentUid() : null;
         if (tenant && !/^companies\//.test(basePath)) return `companies/${tenant}/${basePath}`;
-        if (uid && !/^users\//.test(basePath) && !/^companies\//.test(basePath)) return `users/${uid}/${basePath}`;
         return basePath;
     } catch(_) { return basePath; }
 }
@@ -4964,27 +5153,23 @@ async function anexarComprovanteHistorico(contaId, tipo = 'receber', registroRef
             try {
                 const file = event && event.target && event.target.files ? event.target.files[0] : null;
                 if (!file) return;
-                let uploadResult = null;
-                if (typeof window.storageService.uploadFileWithPath === 'function') {
-                    uploadResult = await window.storageService.uploadFileWithPath(file, `financas/anexos/${tipo}/${String(conta.id)}`);
-                } else {
-                    const urlOnly = await window.storageService.uploadFile(file, `financas/anexos/${tipo}/${String(conta.id)}`);
-                    uploadResult = { url: urlOnly, storagePath: null };
-                }
-                const nextUrl = uploadResult && uploadResult.url ? uploadResult.url : null;
-                const nextStoragePath = uploadResult && uploadResult.storagePath ? uploadResult.storagePath : null;
+                const previous = resolveHistoricoPagamento(conta, registroRef);
+                const previousStoragePath = resolveAttachmentStoragePath(previous);
+                const uploadMeta = await uploadAttachmentMetaForConta(file, tipo, conta.id, {
+                    replaceStoragePath: previousStoragePath
+                });
+                const nextUrl = uploadMeta && uploadMeta.url ? uploadMeta.url : null;
+                const nextStoragePath = uploadMeta && uploadMeta.storagePath ? uploadMeta.storagePath : null;
                 if (!nextUrl) {
                     mostrarNotificacao('Falha ao anexar comprovante.', 'error');
                     return;
                 }
 
-                const previous = resolveHistoricoPagamento(conta, registroRef);
                 applyHistoricoComprovante(conta, registroRef, { url: nextUrl, storagePath: nextStoragePath });
-                if (previous && previous.url && (previous.url !== nextUrl || previous.storagePath !== nextStoragePath)) {
-                    await deleteStorageFileSafely(previous.storagePath, previous.url);
-                }
-
                 await salvarContaFinanceiraPersistida(conta, tipo);
+                if (previous && previous.url && !isSameStorageObject(previousStoragePath, nextStoragePath)) {
+                    await deleteStorageFileSafely(previousStoragePath || previous.storagePath, previous.url);
+                }
                 if (tipo === 'receber') await carregarTabelaReceber(lastFiltroReceber || {});
                 else await carregarTabelaPagar(lastFiltroPagar || {});
                 atualizarDashboard();
@@ -5029,8 +5214,8 @@ async function excluirComprovanteHistorico(contaId, tipo = 'receber', registroRe
         if (!confirm('Remover comprovante deste registro?')) return;
 
         applyHistoricoComprovante(conta, registroRef, { url: null, storagePath: null });
-        await deleteStorageFileSafely(current.storagePath, current.url);
         await salvarContaFinanceiraPersistida(conta, tipo);
+        await deleteStorageFileSafely(current.storagePath, current.url);
         if (tipo === 'receber') await carregarTabelaReceber(lastFiltroReceber || {});
         else await carregarTabelaPagar(lastFiltroPagar || {});
         atualizarDashboard();
@@ -5921,14 +6106,13 @@ async function confirmarPagamento(event) {
             const file = fileInput && fileInput.files ? fileInput.files[0] : null;
             if (file && window.storageService && typeof window.storageService.uploadFile === 'function') {
                 const subfolder = tipoContaAtual === 'receber' ? 'recebimentos' : 'pagamentos';
-                if (typeof window.storageService.uploadFileWithPath === 'function') {
-                    const uploadResult = await window.storageService.uploadFileWithPath(file, `financas/${subfolder}/${conta.id}`);
-                    comprovanteUrl = uploadResult && uploadResult.url ? uploadResult.url : null;
-                    comprovanteStoragePath = uploadResult && uploadResult.storagePath ? uploadResult.storagePath : null;
-                } else {
-                    comprovanteUrl = await window.storageService.uploadFile(file, `financas/${subfolder}/${conta.id}`);
-                    comprovanteStoragePath = null;
-                }
+                const comprovanteMeta = await uploadFinanceStorageMeta(file, `financas/${subfolder}/${conta.id}`, {
+                    tipo: tipoContaAtual,
+                    entityId: String(conta.id),
+                    finalidade: 'comprovante-pagamento'
+                });
+                comprovanteUrl = comprovanteMeta && comprovanteMeta.url ? comprovanteMeta.url : null;
+                comprovanteStoragePath = comprovanteMeta && comprovanteMeta.storagePath ? comprovanteMeta.storagePath : null;
             }
         } catch (errUpload) {
             console.warn('⚠️ Falha ao subir comprovante para o Storage:', errUpload);
@@ -6057,7 +6241,7 @@ async function excluirPagamento(contaId, tipo = 'receber', registroRef) {
         const comprovantesParaRemover = [];
         const registrarComprovanteRemovido = (url, storagePath) => {
             const u = String(url || '').trim();
-            const p = String(storagePath || '').trim();
+            const p = resolveAttachmentStoragePath({ url: u, storagePath });
             if (!u && !p) return;
             if (comprovantesParaRemover.some((item) => String(item.url || '') === u && String(item.storagePath || '') === p)) return;
             comprovantesParaRemover.push({ url: u || null, storagePath: p || null });
@@ -6122,6 +6306,7 @@ async function excluirPagamento(contaId, tipo = 'receber', registroRef) {
             }
         } catch(_) {
             mostrarNotificacao('Falha ao salvar no banco online. Verifique conexão.', 'warning');
+            return;
         }
 
         for (const meta of comprovantesParaRemover) {
@@ -6218,43 +6403,31 @@ async function reativarBotaoRomaneio(romaneioId, tipo = 'tl') {
     try {
         const tipoLabel = tipo.toUpperCase();
         
-        // ✅ CORREÇÃO: Usar Firebase diretamente em vez de FirebaseService
-        if (!window.database) {
-            console.warn(`⚠️ Firebase não disponível para reativar botão do romaneio ${tipoLabel}`);
+        const service = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+        if (!service || typeof service.loadFromFirebase !== 'function') {
+            console.warn(`⚠️ FirebaseService não disponível para reativar botão do romaneio ${tipoLabel}`);
             return;
         }
         
-        // ✅ CORREÇÃO: Carregar dados atuais do Firebase diretamente
-        const { ref, get, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-        const collectionRaw = tipo === 'pct' ? 'romaneiosPct' : 'romaneios_tl'; // ✅ CORREÇÃO: PCT usa camelCase
-        const collection = window.firebaseService && typeof window.firebaseService.getNamespacedPath === 'function' 
-            ? window.firebaseService.getNamespacedPath(collectionRaw) 
-            : collectionRaw;
-        const romaneiosRef = ref(window.database, collection);
-        const romaneiosSnapshot = await get(romaneiosRef);
-        const romaneiosFirebase = romaneiosSnapshot.exists() ? romaneiosSnapshot.val() : null;
-        
-        
-        
-        // ✅ CORREÇÃO: Tratar diferentes estruturas de dados (PCT vs TL)
-        let romaneiosData = romaneiosFirebase;
-        
-        // Se os dados PCT vêm como array, converter para objeto com IDs como chaves
-        if (tipo === 'pct' && Array.isArray(romaneiosFirebase)) {
-            romaneiosData = {};
-            romaneiosFirebase.forEach(romaneio => {
-                if (romaneio && romaneio.id) {
-                    romaneiosData[romaneio.id] = romaneio;
-                }
-            });
-        }
-        
-        if (romaneiosData && romaneiosData[romaneioId]) {
+        const collection = tipo === 'pct' ? 'romaneios/pct' : 'romaneios/tl';
+        const result = await service.loadFromFirebase(collection);
+        const romaneiosFirebase = result && result.success !== false ? (result.data || result) : null;
+        const lista = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function'
+            ? window.RomaneioDataUtils.normalizeRomaneioCollection(romaneiosFirebase, { type: tipo === 'pct' ? 'PCT' : 'TL' })
+            : (Array.isArray(romaneiosFirebase)
+                ? romaneiosFirebase
+                : Object.entries(romaneiosFirebase || {}).map(([key, value]) => ({ id: value && value.id || key, firebaseKey: key, ...(value || {}) })));
+        const romaneioAtual = lista.find((r) => String(r.id) === String(romaneioId) || String(r.firebaseKey || '') === String(romaneioId));
+        if (romaneioAtual) {
             
             
             // Reativar o botão (remover flag de lançado)
-            romaneiosData[romaneioId].contasReceberLancado = false;
-            romaneiosData[romaneioId].contasReceberReativadoEm = new Date().toISOString();
+            const registroId = String(romaneioAtual.firebaseKey || romaneioAtual.key || romaneioAtual.id || romaneioId);
+            const registroAtualizado = {
+                ...romaneioAtual,
+                contasReceberLancado: false,
+                contasReceberReativadoEm: new Date().toISOString()
+            };
             
             // Notificar sistema de preservação PCT se disponível
             if (tipo === 'pct' && window.PreservacaoFinanceirasPCT) {
@@ -6272,10 +6445,12 @@ async function reativarBotaoRomaneio(romaneioId, tipo = 'tl') {
             
             
             
-            // ✅ CORREÇÃO: Atualizar APENAS o registro alvo (evita overwrite da coleção)
-            const registroPath = `${collection}/${romaneioId}`;
-            const registroRef = ref(window.database, registroPath);
-            await update(registroRef, romaneiosData[romaneioId]);
+            // ✅ CORREÇÃO: Atualizar APENAS o registro alvo no caminho canônico.
+            if (typeof service.saveToFirebase === 'function') {
+                await service.saveToFirebase(collection, registroId, registroAtualizado);
+            } else if (typeof service.saveData === 'function') {
+                await service.saveData(`${collection}/${registroId}`, registroAtualizado);
+            }
             
             // ✅ MELHORIA: Forçar atualização do modal correspondente
             const modalObj = tipo === 'pct' ? window.ModalListaRomaneiosPCT : window.ModalListaRomaneios;
@@ -8607,3 +8782,95 @@ function renderRowsChunked(tbody, rowsHtml, chunkSize = 300) {
         try { tbody.innerHTML = rowsHtml.join(''); } catch(__) {}
     }
 }
+
+async function abrirBoletoPixLamina(contaId, tipo) {
+    try {
+        mostrarLoading(true, 'Gerando Lâmina de Cobrança PIX...');
+        const lista = tipo === 'receber' ? (typeof contasReceber !== 'undefined' ? contasReceber : (window.contasReceber || [])) : (typeof contasPagar !== 'undefined' ? contasPagar : (window.contasPagar || []));
+        const conta = lista.find(c => String(c.id) === String(contaId));
+        if (!conta) {
+            throw new Error('Conta não encontrada.');
+        }
+
+        let empresa = window.companyInfo || {};
+        if (!empresa.cnpj) {
+            try {
+                const raw = localStorage.getItem('company_info');
+                if (raw) empresa = JSON.parse(raw);
+            } catch (_) {}
+        }
+
+        if (!empresa.cnpj && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+            const currentCompanyId = window.appTenantId || empresa.id || empresa.companyId;
+            if (currentCompanyId) {
+                const res = await window.firebaseService.loadFromFirebase(`companies/${currentCompanyId}/profile`);
+                const profile = res && res.success ? res.data : res;
+                if (profile) empresa = { ...empresa, ...profile };
+            }
+        }
+
+        const validPix = window.PixBrCode.validateCompanyPix(empresa);
+        if (!validPix.valid) {
+            mostrarNotificacao('Complete os dados PIX da Empresa em Cadastro > Empresa antes de gerar a lâmina.', 'warning');
+            mostrarLoading(false);
+            return;
+        }
+
+        // Tentar obter dados do cliente/fornecedor (sacado)
+        let sacado = null;
+        const sacadoId = conta.clienteId || conta.fornecedorId || conta.cliente || conta.fornecedor;
+        if (sacadoId && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+            const path = tipo === 'receber' ? `clientes/${sacadoId}` : `fornecedores/${sacadoId}`;
+            try {
+                const res = await window.firebaseService.loadFromFirebase(path);
+                if (res && res.success) {
+                    sacado = res.data;
+                }
+            } catch (_) {}
+        }
+
+        // Busca local fallback no array de clientes/fornecedores carregados na página
+        if (!sacado) {
+            const cObj = tipo === 'receber' ? conta.cliente : conta.fornecedor;
+            if (cObj && typeof cObj === 'object') {
+                sacado = {
+                    nome: cObj.nome || cObj.name || cObj.nomeCompleto || cObj.razaoSocial,
+                    cnpj: cObj.cnpj || cObj.cpf || cObj.cnpjCpf || cObj.documento,
+                    documento: cObj.documento || cObj.cnpj || cObj.cpf,
+                    endereco: cObj.endereco || cObj.address
+                };
+            } else {
+                const searchName = String(cObj || sacadoId || conta.clienteNome || conta.fornecedorNome || '');
+                if (tipo === 'receber' && typeof clientes !== 'undefined' && Array.isArray(clientes)) {
+                    sacado = clientes.find(c => String(c.id) === String(sacadoId) || (c.nome || c.name || c.nomeCompleto || '').toLowerCase() === searchName.toLowerCase());
+                } else if (tipo === 'pagar' && typeof fornecedores !== 'undefined' && Array.isArray(fornecedores)) {
+                    sacado = fornecedores.find(f => String(f.id) === String(sacadoId) || (f.nome || f.name || f.nomeCompleto || '').toLowerCase() === searchName.toLowerCase());
+                }
+                
+                if (!sacado && searchName) {
+                    sacado = {
+                        nome: searchName,
+                        documento: conta.clienteDocumento || conta.fornecedorDocumento || conta.documento || conta.cpfCnpj || conta.cnpjCpf
+                    };
+                }
+            }
+        }
+
+        const financeInfo = typeof getContaFinanceInfo === 'function' ? getContaFinanceInfo(conta) : null;
+
+        await window.CommerceBoletoPixPdf.abrirLaminaPix({
+            conta,
+            empresa,
+            pixProfile: empresa,
+            sacado,
+            financeInfo
+        });
+        
+        mostrarLoading(false);
+    } catch (err) {
+        console.error('Erro ao gerar lâmina PIX:', err);
+        mostrarNotificacao('Erro ao gerar Lâmina PIX: ' + err.message, 'error');
+        mostrarLoading(false);
+    }
+}
+

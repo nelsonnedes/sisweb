@@ -129,12 +129,12 @@ function createMockFirebase() {
     console.log('🧪 Criando Firebase mock com dados de exemplo (ÚLTIMO RECURSO)...');
     
     const mockDatabase = {
-        species: {
-            'sp1': { nome: 'Eucalipto', descricao: 'Eucalipto grandis - Madeira de crescimento rápido' },
-            'sp2': { nome: 'Pinus', descricao: 'Pinus elliottii - Conífera para construção' },
-            'sp3': { nome: 'Cedro', descricao: 'Cedro rosa - Madeira nobre para móveis' },
-            'sp4': { nome: 'Araucária', descricao: 'Araucaria angustifolia - Pinheiro brasileiro' },
-            'sp5': { nome: 'Mogno', descricao: 'Swietenia macrophylla - Madeira de luxo' }
+        especies: {
+            'sp1': { especie: 'Eucalipto', nomeCientifico: 'Eucalyptus grandis' },
+            'sp2': { especie: 'Pinus', nomeCientifico: 'Pinus elliottii' },
+            'sp3': { especie: 'Cedro', nomeCientifico: 'Cedrela fissilis' },
+            'sp4': { especie: 'Araucária', nomeCientifico: 'Araucaria angustifolia' },
+            'sp5': { especie: 'Mogno', nomeCientifico: 'Swietenia macrophylla' }
         },
         clients: {
             'cl1': { nome: 'Madeireira Silva', email: 'silva@madeiras.com', telefone: '(11) 9999-0001' },
@@ -248,8 +248,9 @@ class FirebaseService {
             'clientes': 'clients',
             
             // ESPÉCIES
-            'species': 'data/species',
-            'especies': 'data/species',
+            'species': 'especies',
+            'especies': 'especies',
+            'especiesPct': 'especies',
             
             // EMPRESA (específico, não deve interceptar caminhos hierárquicos com 'companies')
             'empresaInfo': 'empresaInfo'
@@ -368,6 +369,34 @@ class FirebaseService {
         }
         return true;
     }
+
+    _isBusinessDataPath(path) {
+        const normalized = String(this._normalizePath(path || '') || '').replace(/^\/+/, '');
+        if (!normalized) return false;
+        if (/^companies\/[^/]+\//.test(normalized)) return this._isBusinessDataPath(normalized.replace(/^companies\/[^/]+\//, ''));
+        return /^(romaneios\/(tora|pct|tl|pes)(\/|$)|preromaneios(\/|$)|especies(\/|$)|fornecedores(\/|$)|clients(\/|$)|clientes(\/|$)|estoqueTorasAtual(\/|$)|movimentacoesToras(\/|$)|estoqueProdutos(\/|$)|movimentacoesProdutos(\/|$))/.test(normalized);
+    }
+
+    _resolveRemotePath(path, actionLabel = 'acesso') {
+        const normalized = this._normalizePath(path);
+        if (!normalized || /^companies\//.test(normalized) || /^users\//.test(normalized)) return normalized;
+        const tenant = this.getCurrentTenantId ? this.getCurrentTenantId() : null;
+        if (tenant) {
+            const nsPath = `companies/${tenant}/${normalized}`;
+            console.log(`${actionLabel} em namespace empresa: ${nsPath}`);
+            return nsPath;
+        }
+        if (this._isBusinessDataPath(normalized)) {
+            throw new Error(`Empresa ativa não resolvida para ${actionLabel} de dado de negócio: ${normalized}`);
+        }
+        const uidPref = this.getCurrentUid ? this.getCurrentUid() : null;
+        if (uidPref) {
+            const nsPath = `users/${uidPref}/${normalized}`;
+            console.log(`${actionLabel} em namespace usuário: ${nsPath}`);
+            return nsPath;
+        }
+        return normalized;
+    }
     
     // Método para carregar dados
     async loadData(path, options = {}) {
@@ -384,17 +413,11 @@ class FirebaseService {
                 console.log(`🔁 Alias detectado: '${path}' → '${remotePath}'`);
             }
             try {
-                const tenant = this.getCurrentTenantId ? this.getCurrentTenantId() : null;
-                const uidPref = this.getCurrentUid ? this.getCurrentUid() : null;
-                const shouldNamespace = true;
-                if (shouldNamespace && tenant && remotePath && !/^companies\//.test(remotePath)) {
-                    remotePath = `companies/${tenant}/${remotePath}`;
-                    console.log(`📡 Namespace (empresa) aplicado para leitura: ${remotePath}`);
-                } else if (shouldNamespace && uidPref && remotePath && !/^users\//.test(remotePath)) {
-                    remotePath = `users/${uidPref}/${remotePath}`;
-                    console.log(`📡 Namespace (usuário) aplicado para leitura: ${remotePath}`);
-                }
-            } catch (_) {}
+                remotePath = this._resolveRemotePath(remotePath, '📡 Leitura');
+            } catch (namespaceError) {
+                console.warn('⚠️ Leitura bloqueada por contexto de empresa:', namespaceError.message || namespaceError);
+                return { success: false, error: namespaceError.message || String(namespaceError), data: null, isMock: this.isMock };
+            }
             console.log(`📡 Carregando dados de: ${remotePath}`);
             
             // ✅ APLICAR PAGINAÇÃO E FILTROS (PLANO OTIMIZAÇÃO BLAZE)
@@ -442,24 +465,17 @@ class FirebaseService {
             // 🔐 Fallback inteligente em permission_denied
             if (this._isPermissionDenied(error)) {
                 try {
-                    const tenant = this.getCurrentTenantId ? this.getCurrentTenantId() : null;
-                    const uid = this.getCurrentUid ? this.getCurrentUid() : null;
                     const remotePath = this._normalizePath(path);
-                    const shouldNamespace = true;
-                    if (shouldNamespace && tenant && remotePath && !/^companies\//.test(remotePath)) {
-                        const nsPath = `companies/${tenant}/${remotePath}`;
-                        console.log(`📡 Tentando leitura em namespace empresa: ${nsPath}`);
-                        const snapshotNs = await this.database.ref(nsPath).once('value');
-                        const dataNs = snapshotNs.val();
-                        if (dataNs) return { success: true, data: dataNs, isMock: this.isMock, namespaced: true };
-                    } else if (shouldNamespace && uid && remotePath && !/^users\//.test(remotePath)) {
-                        const nsPath = `users/${uid}/${remotePath}`;
-                        console.log(`📡 Tentando leitura em namespace usuário: ${nsPath}`);
+                    const nsPath = this._resolveRemotePath(remotePath, '📡 Tentativa de leitura');
+                    if (nsPath && nsPath !== remotePath) {
                         const snapshotNs = await this.database.ref(nsPath).once('value');
                         const dataNs = snapshotNs.val();
                         if (dataNs) return { success: true, data: dataNs, isMock: this.isMock, namespaced: true };
                     }
                 } catch (_) {}
+                if (this._isBusinessDataPath(path)) {
+                    return { success: false, error: 'permission_denied', data: null, isMock: this.isMock };
+                }
                 // Tentar primeiro a chave original e depois a normalizada
                 let local = this._getLocal(path);
                 if ((local === null || local === undefined)) {
@@ -476,6 +492,9 @@ class FirebaseService {
                 return { success: false, error: 'permission_denied', isLocalFallback: true, isMock: this.isMock };
             }
             // 🔄 Outros erros: ainda tentar localStorage para não bloquear UI
+            if (this._isBusinessDataPath(path)) {
+                return { success: false, error: error.message, data: null, isMock: this.isMock };
+            }
             let local = this._getLocal(path);
             if ((local === null || local === undefined)) {
                 const altKey = this._normalizePath(path);
@@ -556,17 +575,11 @@ class FirebaseService {
                 console.log(`🔁 Alias detectado para salvar: '${path}' → '${remotePath}'`);
             }
             try {
-                const tenant = this.getCurrentTenantId ? this.getCurrentTenantId() : null;
-                const uidPref = this.getCurrentUid ? this.getCurrentUid() : null;
-                const shouldNamespace = true;
-                if (shouldNamespace && tenant && remotePath && !/^companies\//.test(remotePath)) {
-                    remotePath = `companies/${tenant}/${remotePath}`;
-                    console.log(`💾 Namespace (empresa) aplicado para escrita: ${remotePath}`);
-                } else if (shouldNamespace && uidPref && remotePath && !/^users\//.test(remotePath)) {
-                    remotePath = `users/${uidPref}/${remotePath}`;
-                    console.log(`💾 Namespace (usuário) aplicado para escrita: ${remotePath}`);
-                }
-            } catch (_) {}
+                remotePath = this._resolveRemotePath(remotePath, '💾 Escrita');
+            } catch (namespaceError) {
+                console.warn('⚠️ Escrita bloqueada por contexto de empresa:', namespaceError.message || namespaceError);
+                return { success: false, error: namespaceError.message || String(namespaceError), isMock: this.isMock };
+            }
             console.log(`💾 Salvando dados em: ${remotePath}`);
             try {
                 const uidLog = this.getCurrentUid ? this.getCurrentUid() : null;
@@ -582,20 +595,16 @@ class FirebaseService {
             if (this._isPermissionDenied(error)) {
                 try {
                     const remotePath = this._normalizePath(path);
-                    const tenant = this.getCurrentTenantId ? this.getCurrentTenantId() : null;
-                    const uid = this.getCurrentUid ? this.getCurrentUid() : null;
-                    const shouldNamespace = true;
-                    if (shouldNamespace && tenant && remotePath && !/^companies\//.test(remotePath)) {
-                        const nsPath = `companies/${tenant}/${remotePath}`;
-                        await this.database.ref(nsPath).set(data);
-                        return { success: true, isMock: this.isMock, namespaced: true };
-                    } else if (shouldNamespace && uid && remotePath && !/^users\//.test(remotePath)) {
-                        const nsPath = `users/${uid}/${remotePath}`;
+                    const nsPath = this._resolveRemotePath(remotePath, '💾 Tentativa de escrita');
+                    if (nsPath && nsPath !== remotePath) {
                         await this.database.ref(nsPath).set(data);
                         return { success: true, isMock: this.isMock, namespaced: true };
                     }
                 } catch (nsErr) {
                     try { console.warn('⚠️ Falha ao salvar em namespace:', typeof nsErr === 'object' ? (nsErr.message || JSON.stringify(nsErr)) : String(nsErr)); } catch (_) {}
+                }
+                if (this._isBusinessDataPath(path)) {
+                    return { success: false, error: 'permission_denied', isMock: this.isMock };
                 }
                 const { baseKey, itemKey } = this._splitPath(path);
                 try {
@@ -627,6 +636,9 @@ class FirebaseService {
             }
             // Outros erros: logar erro e tentar salvar no localStorage como cache
             console.error(`❌ Erro ao salvar dados em ${path}:`, error);
+            if (this._isBusinessDataPath(path)) {
+                return { success: false, error: error.message, isMock: this.isMock };
+            }
             try {
                 const { baseKey, itemKey } = this._splitPath(path);
                 if (itemKey) {
@@ -661,15 +673,11 @@ class FirebaseService {
             }
             let remotePath = this._normalizePath(path);
             try {
-                const tenant = this.getCurrentTenantId ? this.getCurrentTenantId() : null;
-                const uidPref = this.getCurrentUid ? this.getCurrentUid() : null;
-                const shouldNamespace = true;
-                if (shouldNamespace && tenant && remotePath && !/^companies\//.test(remotePath)) {
-                    remotePath = `companies/${tenant}/${remotePath}`;
-                } else if (shouldNamespace && uidPref && remotePath && !/^users\//.test(remotePath)) {
-                    remotePath = `users/${uidPref}/${remotePath}`;
-                }
-            } catch (_) {}
+                remotePath = this._resolveRemotePath(remotePath, '🗑️ Exclusão');
+            } catch (namespaceError) {
+                console.warn('⚠️ Exclusão bloqueada por contexto de empresa:', namespaceError.message || namespaceError);
+                return { success: false, error: namespaceError.message || String(namespaceError), isMock: this.isMock };
+            }
             await this.database.ref(remotePath).remove();
             console.log(`✅ Dados excluídos em ${remotePath}`);
             return { success: true, isMock: this.isMock };
@@ -679,20 +687,8 @@ class FirebaseService {
             if (this._isPermissionDenied(error)) {
                 try {
                     const remotePath = this._normalizePath(path);
-                    const tenant = this.getCurrentTenantId ? this.getCurrentTenantId() : null;
-                    const uid = this.getCurrentUid ? this.getCurrentUid() : null;
-                    const shouldNamespace = true;
-                    if (shouldNamespace && tenant && remotePath && !/^companies\//.test(remotePath)) {
-                        const nsPath = `companies/${tenant}/${remotePath}`;
-                        const { baseKey: nsBase, itemKey: nsItem } = this._splitPath(nsPath);
-                        if (nsItem) {
-                            await this.database.ref(`${nsBase}/${nsItem}`).remove();
-                        } else {
-                            await this.database.ref(nsPath).remove();
-                        }
-                        return { success: true, isMock: this.isMock, namespaced: true };
-                    } else if (shouldNamespace && uid && remotePath && !/^users\//.test(remotePath)) {
-                        const nsPath = `users/${uid}/${remotePath}`;
+                    const nsPath = this._resolveRemotePath(remotePath, '🗑️ Tentativa de exclusão');
+                    if (nsPath && nsPath !== remotePath) {
                         const { baseKey: nsBase, itemKey: nsItem } = this._splitPath(nsPath);
                         if (nsItem) {
                             await this.database.ref(`${nsBase}/${nsItem}`).remove();
@@ -703,6 +699,9 @@ class FirebaseService {
                     }
                 } catch (nsErr) {
                     try { console.warn('⚠️ Falha ao excluir em namespace:', typeof nsErr === 'object' ? (nsErr.message || JSON.stringify(nsErr)) : String(nsErr)); } catch (_) {}
+                }
+                if (this._isBusinessDataPath(path)) {
+                    return { success: false, error: 'permission_denied', isMock: this.isMock };
                 }
                 const { baseKey, itemKey } = this._splitPath(path);
                 try {
@@ -734,6 +733,9 @@ class FirebaseService {
             }
 
             // Outros erros: tentar refletir no cache local
+            if (this._isBusinessDataPath(path)) {
+                return { success: false, error: error.message, isMock: this.isMock };
+            }
             try {
                 const { baseKey, itemKey } = this._splitPath(path);
                 if (itemKey) {
@@ -773,16 +775,26 @@ class FirebaseService {
 
     getCurrentTenantId() {
         try {
-            if (this.currentTenantId) return this.currentTenantId;
-            const fromWin = typeof window !== 'undefined' && (window.appTenantId || (window.companyInfo && (window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug)));
+            const sanitizeTenant = (value) => {
+                const raw = value ? String(value).trim() : '';
+                if (!raw || /[\/.#$\[\]\s]/.test(raw)) return null;
+                const blocked = new Set(['users', 'companies', 'roles', 'system', '__no_tenant__', 'default']);
+                return blocked.has(raw.toLowerCase()) ? null : raw;
+            };
+            const fromMemory = sanitizeTenant(this.currentTenantId);
+            if (fromMemory) return fromMemory;
+            const fromWin = typeof window !== 'undefined' && (
+                sanitizeTenant(window.appTenantId)
+                || (window.companyInfo && sanitizeTenant(window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id))
+            );
             let tenant = null;
             if (fromWin) {
-                tenant = String(window.appTenantId || window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug);
+                tenant = fromWin;
             } else {
                 const raw = localStorage.getItem('company_info');
                 if (raw) {
                     const obj = JSON.parse(raw);
-                    tenant = String(obj.id || obj.companyId || obj.slug || obj.nome || obj.name || 'default').replace(/\s+/g,'_').toLowerCase();
+                    tenant = sanitizeTenant(obj.companyId || obj.companyID || obj.tenantId || obj.id);
                 }
             }
             this.currentTenantId = tenant || null;
@@ -792,9 +804,103 @@ class FirebaseService {
 
     setTenantId(tenantId) {
         try {
-            this.currentTenantId = tenantId ? String(tenantId) : null;
+            const raw = tenantId ? String(tenantId).trim() : '';
+            this.currentTenantId = raw && !/[\/.#$\[\]\s]/.test(raw) ? raw : null;
             console.log('🏷️ Tenant atualizado:', this.currentTenantId);
         } catch(_) {}
+    }
+
+    normalizeCompanyProfileForReport(raw = {}, companyId = '') {
+        const src = raw && typeof raw === 'object' ? raw : {};
+        const id = String(src.companyId || src.companyID || src.tenantId || src.id || companyId || '').trim();
+        const name = src.nome || src.name || src.razaoSocial || src.fantasia || src.nomeFantasia || src.companyName || '';
+        const enderecoObj = src.endereco && typeof src.endereco === 'object' ? src.endereco : {};
+        const address = src.endereco && typeof src.endereco !== 'object'
+            ? src.endereco
+            : (src.address || [enderecoObj.logradouro, enderecoObj.numero, enderecoObj.bairro].filter(Boolean).join(', '));
+        const city = src.cidade || src.city || src.municipio || enderecoObj.municipio || '';
+        const state = src.estado || src.state || src.uf || enderecoObj.uf || '';
+        const phone = src.telefone || src.phone || src.celular || '';
+        const logoStoragePath = src.logoStoragePath || src.logoPath || src.storagePath || '';
+        const logoRaw = src.logoUrl || src.logoURL || src.logoDownloadURL || src.logo || logoStoragePath || src.logoBase64 || src.logoData || '';
+        const logo = logoRaw && /^[A-Za-z0-9+/=]+$/.test(String(logoRaw)) && String(logoRaw).length > 80
+            ? `data:image/png;base64,${logoRaw}`
+            : String(logoRaw || '');
+        return {
+            id,
+            companyId: id,
+            tenantId: id,
+            nome: name || 'Empresa não informada',
+            name: name || 'Empresa não informada',
+            cnpj: src.cnpj || src.taxId || '-',
+            endereco: address || '-',
+            address: address || '-',
+            cidade: city || '-',
+            city: city || '-',
+            estado: state || '-',
+            state: state || '-',
+            telefone: phone || '-',
+            phone: phone || '-',
+            email: src.email || '-',
+            logo,
+            logoUrl: logo,
+            logoStoragePath: String(logoStoragePath || ''),
+            logoPath: String(logoStoragePath || ''),
+            logoFileName: src.logoFileName || src.logoName || '',
+            logoContentType: src.logoContentType || src.logoMimeType || '',
+            logoSize: src.logoSize || '',
+            logoUpdatedAt: src.logoUpdatedAt || '',
+            logoSvg: !logo
+        };
+    }
+
+    async resolveReportCompanyId(options = {}) {
+        const explicit = options.companyId || options.companyID || options.tenantId;
+        if (explicit) {
+            this.setTenantId(explicit);
+            return this.getCurrentTenantId() || '';
+        }
+        const tenant = this.getCurrentTenantId();
+        if (tenant) return tenant;
+        try {
+            const uid = this.getCurrentUid && this.getCurrentUid();
+            if (uid) {
+                const res = await this.loadData(`users/${uid}`);
+                const user = res && res.success ? res.data : null;
+                const companyId = user && (user.companyId || user.companyID || user.tenantId);
+                if (companyId) {
+                    this.setTenantId(companyId);
+                    return this.getCurrentTenantId() || '';
+                }
+            }
+        } catch (_) {}
+        return '';
+    }
+
+    async getCompanyProfileForReport(options = {}) {
+        const companyId = await this.resolveReportCompanyId(options);
+        let data = {};
+        if (companyId) {
+            try {
+                const profile = await this.loadData(`companies/${companyId}/profile`);
+                if (profile && profile.success && profile.data && typeof profile.data === 'object') data = { ...data, ...profile.data };
+            } catch (_) {}
+            try {
+                const root = await this.loadData(`companies/${companyId}`);
+                const rootData = root && root.success && root.data && typeof root.data === 'object' ? root.data : {};
+                data = { ...rootData, ...data };
+            } catch (_) {}
+        }
+        try {
+            const raw = localStorage.getItem('company_info');
+            const localInfo = raw ? JSON.parse(raw) : {};
+            const localId = localInfo && (localInfo.companyId || localInfo.companyID || localInfo.tenantId || localInfo.id);
+            if ((!companyId || !localId || String(localId) === String(companyId)) && localInfo && typeof localInfo === 'object') {
+                data = { ...localInfo, ...data };
+            }
+        } catch (_) {}
+        const normalized = this.normalizeCompanyProfileForReport(data, companyId);
+        return { success: true, companyId: normalized.companyId || companyId || '', source: companyId ? 'firebaseService.unified' : 'defaults', data: normalized };
     }
 
     async normalizeToKeyedObject(path, keyField = 'id') {
@@ -804,20 +910,12 @@ class FirebaseService {
             
             let remotePath = this._normalizePath(path);
             
-            // ✅ APLICAR NAMESPACE (TENANT/USER) - CRÍTICO PARA EVITAR PERMISSION_DENIED
+            // ✅ APLICAR NAMESPACE CANÔNICO
             try {
-                const tenant = this.getCurrentTenantId ? this.getCurrentTenantId() : null;
-                const uidPref = this.getCurrentUid ? this.getCurrentUid() : null;
-                const shouldNamespace = true;
-                if (shouldNamespace && tenant && remotePath && !/^companies\//.test(remotePath)) {
-                    remotePath = `companies/${tenant}/${remotePath}`;
-                    console.log(`🛠️ Normalização: Namespace (empresa) aplicado: ${remotePath}`);
-                } else if (shouldNamespace && uidPref && remotePath && !/^users\//.test(remotePath)) {
-                    remotePath = `users/${uidPref}/${remotePath}`;
-                    console.log(`🛠️ Normalização: Namespace (usuário) aplicado: ${remotePath}`);
-                }
+                remotePath = this._resolveRemotePath(remotePath, '🛠️ Normalização');
             } catch (nsErr) {
                 console.warn('⚠️ Falha ao aplicar namespace na normalização:', nsErr);
+                return { success: false, normalized: false, error: nsErr.message || String(nsErr) };
             }
 
             const snap = await this.database.ref(remotePath).once('value');
@@ -1005,9 +1103,14 @@ class FirebaseService {
                     }
 
                     const tenant = this.getCurrentTenantId ? this.getCurrentTenantId() : null;
-                    const uidPref = this.getCurrentUid ? this.getCurrentUid() : null;
-                    if (tenant && remotePath && !/^companies\//.test(remotePath)) remotePath = `companies/${tenant}/${remotePath}`;
-                    else if (uidPref && remotePath && !/^users\//.test(remotePath)) remotePath = `users/${uidPref}/${remotePath}`;
+                    if (tenant && remotePath && !/^companies\//.test(remotePath)) {
+                        remotePath = `companies/${tenant}/${remotePath}`;
+                    } else if (this._isBusinessDataPath(remotePath)) {
+                        console.warn(`🛑 flushLocalOps: descartando operação de negócio sem empresa ativa (${op.path}).`);
+                        continue;
+                    } else {
+                        remotePath = this._resolveRemotePath(remotePath, '🔄 Sincronização local');
+                    }
                     if (op.type === 'delete') {
                         const { baseKey, itemKey } = this._splitPath(remotePath);
                         if (itemKey) await this.database.ref(`${baseKey}/${itemKey}`).remove();
@@ -1068,6 +1171,9 @@ class FirebaseService {
             if (!path || typeof path !== 'string') return path;
             const parts = path.split('/').filter(Boolean);
             if (parts.length === 0) return path;
+            if (parts[0] === 'data' && parts[1] === 'species') {
+                return ['especies', ...parts.slice(2)].join('/');
+            }
             const first = parts[0];
             const mapped = this._PATH_ALIASES[first];
             if (!mapped) return path;
@@ -1168,17 +1274,25 @@ class FirebaseService {
     // Métodos específicos para espécies
     async loadSpecies() {
         console.log('🌿 Carregando espécies...');
-        const result = await this.loadData('species');
+        const result = await this.loadData('especies');
         
         if (result.success && result.data) {
             const speciesArray = Array.isArray(result.data) 
                 ? result.data 
-                : Object.keys(result.data).map(key => ({
-                    id: key,
-                    nome: result.data[key].nome || result.data[key].name || 'Sem nome',
-                    descricao: result.data[key].descricao || result.data[key].description || '',
-                    ...result.data[key]
-                }));
+                : Object.keys(result.data).map(key => {
+                    const item = result.data[key] || {};
+                    const name = item.especie || item.nome || item.name || item.nomeComum || 'Sem nome';
+                    const scientificName = item.nomeCientifico || item.scientificName || item.scientific || item.descricao || item.description || item.decription || '';
+                    return {
+                        ...item,
+                        id: key,
+                        especie: name,
+                        nome: name,
+                        nomeCientifico: scientificName,
+                        scientificName,
+                        scientific: scientificName
+                    };
+                });
             
             console.log(`✅ ${speciesArray.length} espécies carregadas`);
             return {

@@ -23,7 +23,7 @@ function formatNumber(value, decimals = 3) {
 }
 
 function formatDateLabel(romaneio) {
-    const d = romaneio.data || romaneio.dataHora || romaneio.createdAt || romaneio.timestamp;
+    const d = romaneio.dataEmissao || romaneio.data || romaneio.dataHora || romaneio.updatedAt || romaneio.createdAt || romaneio.timestamp;
     try {
         const dt = typeof d === 'string' ? new Date(d) : new Date(parseInt(d));
         if (!isNaN(dt.getTime())) return dt.toLocaleDateString('pt-BR');
@@ -32,7 +32,19 @@ function formatDateLabel(romaneio) {
 }
 
 function extractTimestamp(romaneio) {
-    const cands = [romaneio.timestamp, romaneio.lastModified, romaneio.createdAt, romaneio.dataHora];
+    const cands = [
+        romaneio?._metadata?.lastUpdated,
+        romaneio.updatedAt,
+        romaneio.updated,
+        romaneio.lastModified,
+        romaneio.dataEmissao,
+        romaneio.data,
+        romaneio.dataHora,
+        romaneio.dataCriacao,
+        romaneio.createdAt,
+        romaneio.created,
+        romaneio.timestamp
+    ];
     for (const c of cands) {
         if (!c) continue;
         const t = typeof c === 'number' ? c : Date.parse(c);
@@ -195,7 +207,7 @@ function getStorageKey(key) {
         const raw = localStorage.getItem('company_info');
         if (raw) {
             const obj = JSON.parse(raw);
-            const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+            const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
             if (id) return `company_${id}__${key}`;
         }
     } catch (_) {}

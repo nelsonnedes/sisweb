@@ -134,13 +134,13 @@ function resolveCompanyId() {
         if (window.appTenantId) return String(window.appTenantId);
         if (window.companyInfo) {
             const raw = window.companyInfo;
-            const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+            const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
             if (id) return String(id);
         }
         const stored = localStorage.getItem('company_info');
         if (stored) {
             const obj = JSON.parse(stored);
-            const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+            const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
             if (id) return String(id);
         }
     } catch (_) {}
@@ -273,8 +273,8 @@ async function carregarEspecies() {
         // ✅ PRIORIDADE 100% FIREBASE
         if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
             try {
-                console.log("🔥 Carregando espécies da coleção 'species'...");
-            const result = await window.firebaseService.loadFromFirebase('species');
+                console.log("🔥 Carregando espécies da coleção 'especies'...");
+            const result = await window.firebaseService.loadFromFirebase('especies');
                 console.log("✅ loadFromFirebase resultado:", result);
                 
                 if (result && result.success && result.data) {
@@ -302,14 +302,14 @@ async function carregarEspecies() {
             } catch (firebaseError) {
                 console.error("❌ Erro no Firebase:", firebaseError);
                 // Fallback para localStorage em caso de erro
-                const localData = readLocalStorageValue('species');
+                const localData = readLocalStorageValue('especies');
                 species = localData ? JSON.parse(localData) : [];
                 console.log(`📦 ${species.length} espécies carregadas do localStorage (fallback)`);
             }
             } else {
             console.error("❌ Firebase Service não disponível");
             // Fallback para localStorage
-            const localData = readLocalStorageValue('species');
+            const localData = readLocalStorageValue('especies');
             species = localData ? JSON.parse(localData) : [];
             console.log(`📦 ${species.length} espécies carregadas do localStorage (sem Firebase)`);
         }
@@ -319,9 +319,15 @@ async function carregarEspecies() {
             if (!specie.id) {
                 specie.id = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             }
-            specie.nome = String(specie.nome || specie.name || 'Sem nome');
-            specie.descricao = String(specie.descricao || specie.description || '');
-            return specie;
+            const nome = String(specie.especie || specie.nome || specie.name || 'Sem nome');
+            const nomeCientifico = String(specie.nomeCientifico || specie.scientificName || specie.scientific || specie.descricao || specie.description || '');
+            return {
+                ...specie,
+                especie: nome,
+                nome,
+                name: nome,
+                nomeCientifico
+            };
         });
         
         // ✅ ATUALIZAR VARIÁVEIS GLOBAIS
@@ -329,7 +335,7 @@ async function carregarEspecies() {
         
         // ✅ ATUALIZAR CACHE LOCAL
         try {
-            writeLocalStorageValue('species', JSON.stringify(species));
+            writeLocalStorageValue('especies', JSON.stringify(species));
             console.log("✅ Cache local de espécies atualizado");
         } catch (cacheError) {
             console.warn("⚠️ Erro ao atualizar cache local:", cacheError);
@@ -341,7 +347,7 @@ async function carregarEspecies() {
     } catch (error) {
         console.error("❌ Erro geral ao carregar espécies:", error);
         // Último recurso: localStorage
-        const localData = readLocalStorageValue('species');
+        const localData = readLocalStorageValue('especies');
         const species = localData ? JSON.parse(localData) : [];
         window.species = species;
         return species;
@@ -415,9 +421,9 @@ async function saveData(key, data) {
             finalKey = 'clients';
             console.log(`🔄 Redirecionando salvamento de '${key}' para 'clients'`);
         }
-        if (key === 'especies' || key === 'especiesPct') {
-            finalKey = 'species';
-            console.log(`🔄 Redirecionando salvamento de '${key}' para 'species'`);
+        if (key === 'species' || key === 'especiesPct') {
+            finalKey = 'especies';
+            console.log(`🔄 Redirecionando salvamento de '${key}' para 'especies'`);
         }
         if (key === 'romaneiosPacotes' || key === 'pacotes') {
             finalKey = 'romaneiosPct';
@@ -615,9 +621,9 @@ async function getData(key) {
             finalKey = 'clients';
             console.log(`🔄 Redirecionando carregamento de '${key}' para 'clients'`);
         }
-        if (key === 'especies' || key === 'especiesPct') {
-            finalKey = 'species';
-            console.log(`🔄 Redirecionando carregamento de '${key}' para 'species'`);
+        if (key === 'species' || key === 'especiesPct') {
+            finalKey = 'especies';
+            console.log(`🔄 Redirecionando carregamento de '${key}' para 'especies'`);
         }
         if (key === 'romaneiosPacotes' || key === 'pacotes') {
             finalKey = 'romaneiosPct';
@@ -898,7 +904,7 @@ async function diagnosticarESincronizarDados() {
         
         const localRomaneios = readLocalStorageValue('romaneiosPct');
         const localClientes = readLocalStorageValue('clients');
-        const localEspecies = readLocalStorageValue('species');
+        const localEspecies = readLocalStorageValue('especies');
         
         if (localRomaneios) {
             try {
@@ -1087,10 +1093,20 @@ async function diagnosticarESincronizarDados() {
             // Sincronizar espécies
             if (diagnostico.localStorage.especies > 0 && diagnostico.firebase.especies === 0) {
                 try {
-                    const especies = JSON.parse(readLocalStorageValue('species'));
-                    const result = await window.firebaseService.saveToFirebase('species', null, especies);
-                    if (result && result.success) {
-                        diagnostico.acoesTomadas.push(`${especies.length} espécies sincronizadas para Firebase`);
+                    const especies = JSON.parse(readLocalStorageValue('especies') || '[]');
+                    let ok = 0;
+                    for (let i = 0; i < especies.length; i += 1) {
+                        const item = especies[i];
+                        if (!item || typeof item !== 'object') continue;
+                        const id = String(item.firebaseKey || item.key || item.id || `ESP_${Date.now()}_${i}`).trim();
+                        const payload = window.SiswebSpecies && typeof window.SiswebSpecies.toCanonicalRecord === 'function'
+                            ? window.SiswebSpecies.toCanonicalRecord({ ...item, id }, i, { id })
+                            : { ...item, id };
+                        const result = await window.firebaseService.saveToFirebase('especies', id, payload);
+                        if (result && result.success) ok++;
+                    }
+                    if (ok > 0) {
+                        diagnostico.acoesTomadas.push(`${ok} espécies sincronizadas para Firebase`);
                     }
                 } catch (e) {
                     diagnostico.problemas.push(`Erro ao sincronizar espécies: ${e.message}`);

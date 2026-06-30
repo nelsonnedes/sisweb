@@ -28,7 +28,7 @@ const entityMappings = {
   species: {
     localKey: 'especies',
     firebasePath: 'especies',
-    alternativeKeys: ['especie', 'species', 'madeiras', 'tipos_madeira']
+    alternativeKeys: ['especie', 'madeiras', 'tipos_madeira']
   },
   romaneiosPct: {
     localKey: 'pacotes',

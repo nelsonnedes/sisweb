@@ -63,7 +63,7 @@ export const MIGRATION_CONFIG_EXAMPLE = {
     // Chaves prioritárias para migração
     priorityKeys: [
         'clients',
-        'species', 
+        'especies',
         'romaneiosTora',
         'romaneiosPct',
         'romaneiosTL',
@@ -88,10 +88,10 @@ export const MIGRATION_CONFIG_EXAMPLE = {
             firebasePath: 'clients',
             batchSize: 5 // Menor para dados grandes
         },
-        species: {
+        especies: {
             validate: true,
             backup: true,
-            firebasePath: 'species',
+            firebasePath: 'especies',
             batchSize: 10
         },
         romaneiosTora: {
@@ -158,7 +158,7 @@ export const DEV_CONFIG = {
     generateTestData: true,
     testDataSize: {
         clients: 10,
-        species: 5,
+        especies: 5,
         romaneios: 15
     },
     

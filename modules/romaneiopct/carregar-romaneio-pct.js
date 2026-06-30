@@ -22,13 +22,13 @@
             if (window.appTenantId) return String(window.appTenantId);
             if (window.companyInfo) {
                 const raw = window.companyInfo;
-                const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                 if (id) return String(id);
             }
             const stored = localStorage.getItem('company_info');
             if (stored) {
                 const obj = JSON.parse(stored);
-                const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                 if (id) return String(id);
             }
         } catch (_) {}
@@ -110,6 +110,41 @@
         }
     }
 
+    function parseRomaneioDateCandidate(value) {
+        if (!value) return 0;
+        if (typeof value === 'number' && isFinite(value)) return value;
+        if (value instanceof Date) {
+            const t = value.getTime();
+            return isNaN(t) ? 0 : t;
+        }
+        const t = Date.parse(value);
+        return isNaN(t) ? 0 : t;
+    }
+
+    function parseRomaneioRecencyTime(r) {
+        if (!r || typeof r !== 'object') return 0;
+        const candidates = [
+            r && r._metadata && r._metadata.lastUpdated,
+            r.updatedAt,
+            r.updated,
+            r.lastModified,
+            r.dataEmissao,
+            r.data,
+            r.dataHora,
+            r.dataCriacao,
+            r.createdAt,
+            r.created,
+            r.timestamp
+        ];
+        for (const candidate of candidates) {
+            const ts = parseRomaneioDateCandidate(candidate);
+            if (ts) return ts;
+        }
+        const id = String(r.id || r.romaneioId || r.firebaseKey || r.key || r.numero || r.numeroRomaneio || '');
+        const match = id.match(/(\d{10,})/);
+        return match ? Number(match[1]) || 0 : 0;
+    }
+
 
     function filterByActiveTenant(list) {
         const tenant = resolveCompanyId();
@@ -135,7 +170,7 @@
 
             if (nextCount === 0) {
                 try {
-                    const prevRaw = readLocalStorageValue('romaneiosPct');
+                    const prevRaw = readLocalStorageValue('romaneios/pct');
                     if (prevRaw) {
                         const prevList = JSON.parse(prevRaw);
                         const prevCount = Array.isArray(prevList) ? prevList.length : 0;
@@ -150,18 +185,14 @@
             // Limitar ao máximo de itens em cache (os mais recentes)
             let listaParaSalvar = isArray ? lista : Object.values(lista || {});
             if (listaParaSalvar.length > LS_MAX_ROMANEIOS_CACHE) {
-                const sorted = [...listaParaSalvar].sort((a, b) => {
-                    const ta = a && (a.timestamp || (a.dataCriacao && new Date(a.dataCriacao).getTime()) || 0);
-                    const tb = b && (b.timestamp || (b.dataCriacao && new Date(b.dataCriacao).getTime()) || 0);
-                    return (tb || 0) - (ta || 0);
-                });
+                const sorted = [...listaParaSalvar].sort((a, b) => parseRomaneioRecencyTime(b) - parseRomaneioRecencyTime(a));
                 listaParaSalvar = sorted.slice(0, LS_MAX_ROMANEIOS_CACHE);
                 console.warn(`⚠️ PCT: Lista truncada para ${LS_MAX_ROMANEIOS_CACHE} mais recentes (total: ${nextCount}).`);
             }
 
             // Não gravar backup automático (causa direta do QuotaExceededError)
-            writeLocalStorageValue('romaneiosPct', JSON.stringify(listaParaSalvar));
-            console.log(`💾 PCT: romaneiosPct atualizado com ${listaParaSalvar.length} itens (contexto: ${contexto}).`);
+            writeLocalStorageValue('romaneios/pct', JSON.stringify(listaParaSalvar));
+            console.log(`💾 PCT: cache romaneios/pct atualizado com ${listaParaSalvar.length} itens (contexto: ${contexto}).`);
             return true;
         } catch (err) {
             console.error('❌ PCT: Erro na persistência segura de romaneiosPct:', err);
@@ -182,26 +213,29 @@
         console.log('Índice:', indice);
         
         try {
-            // ✅ CORREÇÃO: Tentar carregar do Firebase primeiro, depois localStorage
+            // Fonte canônica: companies/{companyId}/romaneios/pct via firebaseService.
             let romaneios = [];
-            const activeTenant = resolveCompanyId();
             
-            // ✅ PRIORIDADE 1: Firebase (chave consistente com localStorage)
             if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
                 try {
-                    console.log('🔥 PCT: Tentando carregar da tabela romaneiosPct...');
+                    console.log('🔥 PCT: Tentando carregar de romaneios/pct...');
                     const firebaseResult = await window.firebaseService.loadFromFirebase('romaneios/pct');
                     
                     if (firebaseResult && firebaseResult.success && firebaseResult.data) {
                         const firebaseData = firebaseResult.data;
-                        
-                        if (Array.isArray(firebaseData) && firebaseData.length > 0) {
+
+                        if (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function') {
+                            romaneios = window.RomaneioDataUtils.normalizeRomaneioCollection(firebaseData, { type: 'PCT' })
+                                .map(item => ({ ...item, __source: 'firebase' }));
+                            console.log(`✅ PCT: ${romaneios.length} romaneios válidos carregados do Firebase`);
+                        } else if (Array.isArray(firebaseData) && firebaseData.length > 0) {
                             romaneios = firebaseData
                                 .filter(item => item && (item.cliente || item.numero || item.id))
                                 .map(item => ({ ...item, __source: 'firebase' }));
                             console.log(`✅ PCT: ${romaneios.length} romaneios válidos carregados do Firebase`);
                         } else if (typeof firebaseData === 'object' && Object.keys(firebaseData).length > 0) {
-                            romaneios = Object.values(firebaseData)
+                            romaneios = Object.entries(firebaseData)
+                                .map(([key, value]) => ({ id: value && value.id || key, firebaseKey: key, ...(value || {}) }))
                                 .filter(item => item && (item.cliente || item.numero || item.id))
                                 .map(item => ({ ...item, __source: 'firebase' }));
                             console.log(`✅ PCT: ${romaneios.length} romaneios válidos carregados do Firebase (convertidos)`);
@@ -210,34 +244,15 @@
                         }
                     }
                 } catch (firebaseError) {
-                    console.warn('⚠️ PCT: Erro ao carregar da tabela romaneiosPct:', firebaseError);
+                    console.warn('⚠️ PCT: Erro ao carregar de romaneios/pct:', firebaseError);
                 }
             }
             
             romaneios = filterByActiveTenant(romaneios).map(({ __source, ...rest }) => rest);
-            if (romaneios.length === 0 && activeTenant) {
-                console.log('🔍 PCT: Firebase vazio para tenant ativo, tentando localStorage namespaced...');
-                try {
-                    const localData = JSON.parse(readLocalStorageValue('romaneiosPct') || '[]');
-                    let localRomaneios = [];
-                    if (Array.isArray(localData) && localData.length > 0) {
-                        localRomaneios = localData
-                            .filter(item => item && (item.cliente || item.numero || item.id))
-                            .map(item => ({ ...item, __source: 'local' }));
-                    } else if (typeof localData === 'object' && localData !== null && Object.keys(localData).length > 0) {
-                        localRomaneios = Object.keys(localData).map(key => ({ id: key, ...localData[key], __source: 'local' }))
-                            .filter(item => item && (item.cliente || item.numero || item.id));
-                    }
-                    romaneios = filterByActiveTenant(localRomaneios).map(({ __source, ...rest }) => rest);
-                    console.log(`🧩 PCT: Fallback local aplicado para tenant ${activeTenant}. Itens: ${romaneios.length}`);
-                } catch (localError) {
-                    console.warn('⚠️ PCT: Erro ao carregar fallback local:', localError);
-                }
-            }
             
             // ✅ VALIDAÇÃO FINAL
             if (romaneios.length === 0) {
-                console.log('ℹ️ PCT: Nenhum romaneio encontrado em nenhuma fonte');
+                console.log('ℹ️ PCT: Nenhum romaneio encontrado em companies/{companyId}/romaneios/pct');
                 romaneios = [];
             }
             
@@ -312,10 +327,9 @@
                     console.log('- Itens inválidos:', itensInvalidos);
                     console.log('- Itens convertidos:', itensConvertidos.length);
                     
-                    // ✅ Salvar o romaneio corrigido de volta (Firebase primeiro, localStorage como fallback)
+                    // Salvar o romaneio corrigido de volta no caminho canônico quando possível.
                     romaneios[romaneioIndex] = romaneio;
                     
-                    // ✅ PRIORIDADE 1: Firebase - PRESERVANDO PROPRIEDADES DE CONTAS A RECEBER
                     if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
                         try {
                             console.log('🔥 PCT: Carregando dados atuais do Firebase para preservar propriedades...');
@@ -324,11 +338,15 @@
                             const dadosAtuais = await window.firebaseService.loadFromFirebase('romaneios/pct');
                             let romaneiosComPropriedades = romaneios;
                             
-                            if (dadosAtuais && dadosAtuais.success && Array.isArray(dadosAtuais.data)) {
+                            const dadosAtuaisLista = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function'
+                                ? window.RomaneioDataUtils.normalizeRomaneioCollection(dadosAtuais && dadosAtuais.success ? dadosAtuais.data : null, { type: 'PCT' })
+                                : (dadosAtuais && dadosAtuais.success && Array.isArray(dadosAtuais.data) ? dadosAtuais.data : []);
+
+                            if (dadosAtuaisLista.length > 0) {
                                 console.log('🔍 PCT: Preservando propriedades de contas a receber...');
                                 romaneiosComPropriedades = romaneios.map(romaneio => {
                                     // Encontrar o romaneio correspondente nos dados atuais
-                                    const romaneioAtual = dadosAtuais.data.find(r => r && r.id === romaneio.id);
+                                    const romaneioAtual = dadosAtuaisLista.find(r => r && String(r.id) === String(romaneio.id));
                                     if (romaneioAtual) {
                                         // Preservar propriedades de contas a receber
                                         return {
@@ -352,32 +370,35 @@
                             if (!alvo || !alvo.id) throw new Error('Romaneio alvo inválido para salvamento');
                             const payload = { ...alvo };
                             Object.keys(payload).forEach(k => { if (payload[k] === undefined) delete payload[k]; });
-                            const res = await window.firebaseService.saveToFirebase('romaneiosPct', String(alvo.id), payload);
+                            const res = await window.firebaseService.saveToFirebase('romaneios/pct', String(alvo.id), payload);
                             if (res && res.success) {
                                 console.log('✅ PCT: Romaneio alvo salvo no Firebase');
                                 try { window.dispatchEvent(new CustomEvent('romaneiosPct:updated', { detail: { id: String(alvo.id) } })); } catch {}
-                                // Persistir lista atualizada localmente para manter consistência offline
-                                safePersistRomaneiosPct(romaneios, 'saveFirebaseCorrigido');
-                                console.log('✅ PCT: localStorage sincronizado (lista atualizada)');
                             } else {
                                 throw new Error('Falha ao salvar romaneio alvo');
                             }
                         } catch (firebaseError) {
                             console.warn('⚠️ PCT: Erro ao salvar no Firebase:', firebaseError);
-                            // ✅ FALLBACK: Salvar apenas no localStorage
-                            safePersistRomaneiosPct(romaneios, 'fallbackSaveLocal');
-                            console.log('💾 PCT: Romaneio corrigido salvo no localStorage (fallback)');
                         }
                     } else {
-                        // ✅ FALLBACK: Firebase indisponível, salvar apenas no localStorage
-                        safePersistRomaneiosPct(romaneios, 'firebaseIndisponivelSaveLocal');
-                        console.log('💾 PCT: Romaneio corrigido salvo no localStorage (Firebase indisponível)');
+                        console.warn('⚠️ PCT: Firebase indisponível, correção automática não foi persistida.');
                     }
                     
                     // Carregar os itens
                     window.romaneioItems = itensConvertidos;
                     if (typeof window.romaneioItems !== 'undefined') {
                         window.romaneioItems = itensConvertidos;
+                    }
+
+                    const dataEmissao = romaneio.dataEmissao || romaneio.data || romaneio.timestamp || '';
+                    if (typeof window.setRomaneioPctEmissionDate === 'function') {
+                        window.setRomaneioPctEmissionDate(dataEmissao);
+                    } else {
+                        const dataInput = document.getElementById('romaneioData');
+                        if (dataInput) {
+                            const iso = String(dataEmissao || '').match(/^(\d{4}-\d{2}-\d{2})/);
+                            dataInput.value = iso ? iso[1] : new Date().toISOString().slice(0, 10);
+                        }
                     }
                     
                     // Verificar se há cliente definido
@@ -408,7 +429,11 @@
                     // Definir estado de edição
                     window.romaneioEmEdicao = {
                         id: romaneio.id,
-                        indice: romaneioIndex
+                        indice: romaneioIndex,
+                        numero: romaneio.numero,
+                        data: romaneio.data,
+                        dataEmissao: romaneio.dataEmissao,
+                        timestamp: romaneio.timestamp
                     };
                     
                     // Atualizar interface se as funções estiverem disponíveis

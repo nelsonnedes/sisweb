@@ -33,6 +33,45 @@ window.ModalListaRomaneiosPCT = (function() {
     const MSG_WARNING_LANCAR_FAILED_PREFIX = getMessage('romaneio.warning.lancar_contas_receber_failed_prefix', 'Não foi possível lançar contas a receber: ');
     let modalOutsideClickHandler = null;
     const handleFilterInput = (e) => filterRomaneios(e && e.target ? e.target.value : '');
+
+    function parseRomaneioDateCandidate(value) {
+        if (!value) return 0;
+        if (typeof value === 'number' && isFinite(value)) return value;
+        if (value instanceof Date) {
+            const t = value.getTime();
+            return isNaN(t) ? 0 : t;
+        }
+        const t = Date.parse(value);
+        return isNaN(t) ? 0 : t;
+    }
+
+    function parseRomaneioRecencyTime(r) {
+        if (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.parseRomaneioTimestamp === 'function') {
+            return window.RomaneioDataUtils.parseRomaneioTimestamp(r);
+        }
+        if (!r || typeof r !== 'object') return 0;
+        const candidates = [
+            r && r._metadata && r._metadata.lastUpdated,
+            r.updatedAt,
+            r.updated,
+            r.lastModified,
+            r.dataEmissao,
+            r.data,
+            r.dataHora,
+            r.dataCriacao,
+            r.createdAt,
+            r.created,
+            r.timestamp
+        ];
+        for (const candidate of candidates) {
+            const ts = parseRomaneioDateCandidate(candidate);
+            if (ts) return ts;
+        }
+        const id = String(r.id || r.romaneioId || r.firebaseKey || r.key || r.numero || r.numeroRomaneio || '');
+        const match = id.match(/(\d{10,})/);
+        return match ? Number(match[1]) || 0 : 0;
+    }
+
     function ensureFirebaseIoBindings() {
         try {
             const candidates = [window.firebaseService, window.firebaseServiceTL, window.unifiedFirebaseService, window.FirebaseService].filter(Boolean);
@@ -75,13 +114,13 @@ window.ModalListaRomaneiosPCT = (function() {
             if (window.appTenantId) return String(window.appTenantId);
             if (window.companyInfo) {
                 const raw = window.companyInfo;
-                const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                 if (id) return String(id);
             }
             const stored = localStorage.getItem('company_info');
             if (stored) {
                 const obj = JSON.parse(stored);
-                const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                 if (id) return String(id);
             }
         } catch (_) {}
@@ -117,32 +156,32 @@ window.ModalListaRomaneiosPCT = (function() {
         return (Array.isArray(list) ? list : []).filter(item => {
             if (!item || typeof item !== 'object') return false;
             const itemTenant = item.companyId || item.tenantId || item.companyID || null;
-            if (!itemTenant) return false;
+            if (!itemTenant) return true;
             return String(itemTenant) === String(tenant);
         });
     }
 
     async function sanitizeMissingCompanyId(records, tenantId) {
-        if (!tenantId || !Array.isArray(records) || records.length === 0) return records || [];
-        const missing = records.filter(item => item && item.__source === 'firebase' && item.id != null && !(item.companyId || item.tenantId || item.companyID));
-        if (missing.length === 0) return records;
-        const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
-        if (!svc) return records;
-        for (const item of missing) {
-            try {
-                const patched = { ...item, companyId: String(tenantId) };
-                delete patched.__source;
-                if (window.firebaseServiceTL && typeof window.firebaseServiceTL.saveData === 'function') {
-                    await window.firebaseServiceTL.saveData(`romaneiosPct/${String(item.id)}`, patched);
-                } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-                    await window.firebaseService.saveToFirebase('romaneiosPct', String(item.id), patched);
-                }
-                item.companyId = String(tenantId);
-            } catch (e) {
-                console.warn(`⚠️ PCT: Falha ao sanear companyId do romaneio ${String(item.id)}:`, e);
-            }
+        return records || [];
+    }
+
+    function normalizeRomaneiosPctData(data, source = 'firebase') {
+        if (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function') {
+            return window.RomaneioDataUtils.normalizeRomaneioCollection(data, { type: 'PCT' })
+                .map(item => ({ ...item, __source: source }));
         }
-        return records;
+        if (Array.isArray(data)) {
+            return data
+                .filter(item => item && (item.cliente || item.numero || item.id))
+                .map(item => ({ ...item, __source: source }));
+        }
+        if (data && typeof data === 'object') {
+            return Object.entries(data)
+                .map(([key, item]) => ({ id: key, firebaseKey: key, ...(item || {}) }))
+                .filter(item => item && (item.cliente || item.numero || item.id))
+                .map(item => ({ ...item, __source: source }));
+        }
+        return [];
     }
 
     function readLocalStorageValue(key) {
@@ -275,8 +314,8 @@ window.ModalListaRomaneiosPCT = (function() {
             }
 
             const { ref, onValue } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-            const realtimePath = resolvePath('romaneiosPct');
-            if (realtimePath === 'romaneiosPct' && !resolveCompanyId()) {
+            const realtimePath = resolvePath('romaneios/pct');
+            if (realtimePath === 'romaneios/pct' && !resolveCompanyId()) {
                 realtimeStarting = false;
                 if (realtimeRetryCount < 6) {
                     realtimeRetryCount += 1;
@@ -298,34 +337,15 @@ window.ModalListaRomaneiosPCT = (function() {
             
             realtimeUnsubscribe = onValue(ref(db, finalRealtimePath), (snapshot) => {
                 const val = snapshot.val() || {};
-                const arr = Array.isArray(val) ? val.filter(Boolean) : Object.entries(val).map(([id,v]) => ({ id, ...(v||{}) }));
+                const arr = normalizeRomaneiosPctData(val, 'firebase');
 
                 if (arr.length === 0) {
-                    try {
-                        const prevRaw = readLocalStorageValue('romaneiosPct');
-                        const prevList = prevRaw ? JSON.parse(prevRaw) : [];
-                        if (Array.isArray(prevList) && prevList.length > 0) {
-                            console.warn(`🛑 PCT: Realtime veio vazio, mantendo cache local (${prevList.length} itens).`);
-                            state.romaneios = prevList;
-                            state.filteredRomaneios = prevList;
-                            const modal = document.getElementById(CONFIG.modalId);
-                            if (modal && modal.style.display === 'block') {
-                                renderRomaneiosList();
-                                renderPagination();
-                                updateModalInfo();
-                            }
-                            try { window.dispatchEvent(new CustomEvent('romaneiosPct:updated', { detail: { total: prevList.length } })); } catch {}
-                            console.log(`📡 PCT: Realtime recebido (0 itens) - usando cache local`);
-                            return;
-                        }
-                    } catch (_) {}
+                    console.log('📡 PCT: Realtime recebido sem romaneios válidos em companies/{companyId}/romaneios/pct');
                 }
 
                 // Atualizar estado e UI
-                state.romaneios = arr;
-                state.filteredRomaneios = arr;
-                // Persistir com proteção
-                safePersistRomaneiosPct(arr, 'realtime');
+                state.romaneios = arr.sort((a, b) => parseRomaneioRecencyTime(b) - parseRomaneioRecencyTime(a));
+                state.filteredRomaneios = [...state.romaneios];
                 // Se modal aberto, re-renderizar
                 const modal = document.getElementById(CONFIG.modalId);
                 if (modal && modal.style.display === 'block') {
@@ -393,11 +413,7 @@ window.ModalListaRomaneiosPCT = (function() {
             let listaParaSalvar = isArray ? lista : Object.values(lista || {});
             if (listaParaSalvar.length > LS_MAX_ROMANEIOS_CACHE) {
                 // Ordenar por data mais recente e manter apenas os N mais recentes
-                const sorted = [...listaParaSalvar].sort((a, b) => {
-                    const ta = a && (a.timestamp || (a.dataCriacao && new Date(a.dataCriacao).getTime()) || 0);
-                    const tb = b && (b.timestamp || (b.dataCriacao && new Date(b.dataCriacao).getTime()) || 0);
-                    return (tb || 0) - (ta || 0);
-                });
+                const sorted = [...listaParaSalvar].sort((a, b) => parseRomaneioRecencyTime(b) - parseRomaneioRecencyTime(a));
                 listaParaSalvar = sorted.slice(0, LS_MAX_ROMANEIOS_CACHE);
                 console.warn(`⚠️ PCT: Lista de romaneios truncada para ${LS_MAX_ROMANEIOS_CACHE} itens mais recentes (total: ${nextCount}). Dados completos no Firebase.`);
             }
@@ -454,17 +470,9 @@ window.ModalListaRomaneiosPCT = (function() {
                     if (result && result.success && result.data) {
                         const firebaseData = result.data;
                         console.log("🔍 PCT: Dados do firebaseService:", Array.isArray(firebaseData) ? `Array com ${firebaseData.length} itens` : 'Objeto');
-                        
-                        if (Array.isArray(firebaseData) && firebaseData.length > 0) {
-                            romaneios = firebaseData
-                                .filter(item => item && (item.cliente || item.numero || item.id))
-                                .map(item => ({ ...item, __source: 'firebase' }));
-                            console.log(`✅ PCT: ${romaneios.length} romaneios carregados do firebaseService (array)`);
-                        } else if (typeof firebaseData === "object" && Object.keys(firebaseData).length > 0) {
-                            romaneios = Object.values(firebaseData)
-                                .filter(item => item && (item.cliente || item.numero || item.id))
-                                .map(item => ({ ...item, __source: 'firebase' }));
-                            console.log(`✅ PCT: ${romaneios.length} romaneios carregados do firebaseService (objeto convertido)`);
+                        romaneios = normalizeRomaneiosPctData(firebaseData, 'firebase');
+                        if (romaneios.length > 0) {
+                            console.log(`✅ PCT: ${romaneios.length} romaneios carregados do firebaseService`);
                         } else {
                             console.log("📭 PCT: firebaseService retornou dados vazios");
                         }
@@ -481,24 +489,14 @@ window.ModalListaRomaneiosPCT = (function() {
                 try {
                     console.log("🔄 PCT: Fallback para Firebase direto...");
                     const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-                    const romaneiosRef = ref(window.database, resolvePath('romaneiosPct'));
+                    const romaneiosRef = ref(window.database, resolvePath('romaneios/pct'));
                     const snapshot = await get(romaneiosRef);
                     
                     if (snapshot.exists()) {
                         const firebaseData = snapshot.val();
                         console.log("🔍 PCT: Dados do Firebase direto:", Array.isArray(firebaseData) ? `Array com ${firebaseData.length} itens` : 'Objeto');
-                        
-                        if (Array.isArray(firebaseData) && firebaseData.length > 0) {
-                            romaneios = firebaseData
-                                .filter(item => item && (item.cliente || item.numero || item.id))
-                                .map(item => ({ ...item, __source: 'firebase' }));
-                            console.log(`✅ PCT: ${romaneios.length} romaneios carregados do Firebase direto (array)`);
-                        } else if (typeof firebaseData === "object" && Object.keys(firebaseData).length > 0) {
-                            romaneios = Object.values(firebaseData)
-                                .filter(item => item && (item.cliente || item.numero || item.id))
-                                .map(item => ({ ...item, __source: 'firebase' }));
-                            console.log(`✅ PCT: ${romaneios.length} romaneios carregados do Firebase direto (objeto convertido)`);
-                        }
+                        romaneios = normalizeRomaneiosPctData(firebaseData, 'firebase');
+                        console.log(`✅ PCT: ${romaneios.length} romaneios carregados do Firebase direto`);
                     } else {
                         console.log("📭 PCT: Nenhum dado encontrado no Firebase direto");
                     }
@@ -506,124 +504,8 @@ window.ModalListaRomaneiosPCT = (function() {
                     console.warn("⚠️ PCT: Erro ao carregar diretamente do Firebase:", firebaseError);
                 }
             }
-            // ✅ FALLBACK: Se nada veio do Firebase, tentar localStorage
-            if (romaneios.length === 0 && activeTenant) {
-                try {
-                    console.log('📦 PCT: Firebase vazio/indisponível, tentando localStorage...');
-                    const raw = readLocalStorageValue('romaneiosPct');
-                    if (raw) {
-                        const localData = JSON.parse(raw);
-                        if (Array.isArray(localData)) {
-                            romaneios = localData
-                                .filter(item => item && (item.cliente || item.numero || item.id))
-                                .map(item => ({ ...item, __source: 'local' }));
-                            console.log(`✅ PCT: ${romaneios.length} romaneios carregados do localStorage (array)`);
-                        } else if (typeof localData === 'object' && localData !== null) {
-                            romaneios = Object.values(localData)
-                                .filter(item => item && (item.cliente || item.numero || item.id))
-                                .map(item => ({ ...item, __source: 'local' }));
-                            console.log(`✅ PCT: ${romaneios.length} romaneios carregados do localStorage (objeto convertido)`);
-                        } else {
-                            console.log('📭 PCT: localStorage romaneiosPct sem dados utilizáveis');
-                        }
-                    } else {
-                        console.log('📭 PCT: localStorage romaneiosPct está vazio');
-                    }
-                } catch (lsError) {
-                    console.warn('⚠️ PCT: Erro ao carregar do localStorage:', lsError);
-                }
-            }
-
-            // 🔗 MESCLAR: Somente mesclar localStorage quando Firebase não retornou dados
-            try {
-                const rawLocal = readLocalStorageValue('romaneiosPct');
-                if (rawLocal) {
-                    const localData = JSON.parse(rawLocal);
-                    let localItems = Array.isArray(localData) ? localData : (typeof localData === 'object' && localData !== null ? Object.values(localData) : []);
-                    localItems = localItems
-                        .filter(item => item && (item.cliente || item.numero || item.id))
-                        .map(item => ({ ...item, __source: 'local' }));
-                    const firebaseLoaded = romaneios && Array.isArray(romaneios) && romaneios.length > 0;
-                    if (activeTenant && localItems.length > 0 && !firebaseLoaded) {
-                        const beforeCount = romaneios.length;
-                        const byId = new Map();
-                        romaneios.forEach(r => {
-                            if (r && r.id != null) byId.set(String(r.id), r);
-                        });
-
-                        localItems.forEach(item => {
-                            const key = item && item.id != null ? String(item.id) : null;
-                            if (!key) {
-                                // Sem ID, adicionar como está para não perder
-                                romaneios.push(item);
-                                return;
-                            }
-                            if (!byId.has(key)) {
-                                romaneios.push(item);
-                                byId.set(key, item);
-                            } else {
-                                // Se já existe, preferir o mais recente (timestamp/dataCriacao)
-                                const remote = byId.get(key);
-                                const localTs = (item.timestamp || (item.dataCriacao ? new Date(item.dataCriacao).getTime() : 0) || 0);
-                                const remoteTs = (remote && (remote.timestamp || (remote.dataCriacao ? new Date(remote.dataCriacao).getTime() : 0) || 0)) || 0;
-                                if (localTs > remoteTs) {
-                                    const idx = romaneios.findIndex(r => r && String(r.id) === key);
-                                    if (idx >= 0) romaneios[idx] = item;
-                                    byId.set(key, item);
-                                }
-                            }
-                        });
-                        const mergedCount = romaneios.length - beforeCount;
-                        if (mergedCount > 0) {
-                            console.log(`🔗 PCT: Mesclados ${mergedCount} romaneios do localStorage (IDs únicos).`);
-                        } else {
-                            console.log('🔗 PCT: Nenhum romaneio adicional do localStorage para mesclar.');
-                        }
-                    } else if (firebaseLoaded && preferFirebase) {
-                        // ✅ Atualizar cache local com a lista do Firebase (fonte de verdade)
-                        safePersistRomaneiosPct(romaneios, 'firebasePriority');
-                        console.log('💾 PCT: Cache local atualizado a partir do Firebase (preferência ativa)');
-                    } else {
-                        console.log('📭 PCT: localStorage não possui itens para mesclar.');
-                    }
-                }
-            } catch (mergeErr) {
-                console.warn('⚠️ PCT: Erro ao mesclar dados do localStorage:', mergeErr);
-            }
-
-            // ♻️ Opcional: restaurar itens do backup que estejam faltando
-            try {
-                const restoreFlag = getQueryParam('restoreFromBackup') === '1' || window.restoreRomaneiosPctFromBackup === true;
-                if (restoreFlag && activeTenant && !preferFirebase) {
-                    const rawBackup = readLocalStorageValue('romaneiosPct_backup');
-                    if (rawBackup) {
-                        const backupData = JSON.parse(rawBackup);
-                        let backupItems = Array.isArray(backupData) ? backupData : (typeof backupData === 'object' && backupData !== null ? Object.values(backupData) : []);
-                        backupItems = backupItems.filter(item => item && (item.cliente || item.numero || item.id));
-
-                        const byId = new Map();
-                        romaneios.forEach(r => { if (r && r.id != null) byId.set(String(r.id), r); });
-                        let restoredCount = 0;
-                        backupItems.forEach(item => {
-                            const key = item && item.id != null ? String(item.id) : null;
-                            if (!key) return;
-                            if (!byId.has(key)) {
-                                romaneios.push(item);
-                                byId.set(key, item);
-                                restoredCount++;
-                            }
-                        });
-                        if (restoredCount > 0) {
-                            console.log(`♻️ PCT: Restaurados ${restoredCount} itens do backup para romaneiosPct.`);
-                        } else {
-                            console.log('♻️ PCT: Nenhum item do backup para restaurar.');
-                        }
-                    } else {
-                        console.log('♻️ PCT: Backup romaneiosPct_backup inexistente.');
-                    }
-                }
-            } catch (restoreErr) {
-                console.warn('⚠️ PCT: Erro ao tentar restaurar do backup:', restoreErr);
+            if (romaneios.length === 0) {
+                console.log('📭 PCT: nenhum romaneio válido em companies/{companyId}/romaneios/pct');
             }
 
             // 🔎 Diagnóstico: verificar romaneios do cliente Lucas
@@ -651,19 +533,7 @@ window.ModalListaRomaneiosPCT = (function() {
             romaneios = await sanitizeMissingCompanyId(romaneios, activeTenant);
             romaneios = filterByActiveTenant(romaneios).map(({ __source, ...rest }) => rest);
             console.log(`🔐 PCT: Romaneios após filtro de tenant (${activeTenant || 'sem tenant'}): ${romaneios.length}`);
-            // ✅ ORDENAR ROMANEIOS: último atualizado no topo (prioriza _metadata.lastUpdated)
-            const parseTime = (r) => {
-                const m = r && r._metadata && r._metadata.lastUpdated;
-                if (typeof m === 'number') return m;
-                if (typeof m === 'string') { const t = Date.parse(m); if (!isNaN(t)) return t; }
-                if (r && r.contasReceberLancadoEm) { const t = Date.parse(r.contasReceberLancadoEm); if (!isNaN(t)) return t; }
-                if (r && r.dataCriacao) { const t = Date.parse(r.dataCriacao); if (!isNaN(t)) return t; }
-                if (r && r.data) { const t = Date.parse(r.data); if (!isNaN(t)) return t; }
-                if (r && r.created) { const t = Date.parse(r.created); if (!isNaN(t)) return t; }
-                const idn = parseFloat(r && r.id); if (!isNaN(idn)) return idn;
-                return 0;
-            };
-            romaneios.sort((a, b) => parseTime(b) - parseTime(a));
+            romaneios.sort((a, b) => parseRomaneioRecencyTime(b) - parseRomaneioRecencyTime(a));
             
             // ✅ APLICAR PRESERVAÇÃO DE PROPRIEDADES FINANCEIRAS
             if (window.PreservacaoFinanceirasPCT && typeof window.PreservacaoFinanceirasPCT.aplicarPreservacao === 'function') {
@@ -678,9 +548,6 @@ window.ModalListaRomaneiosPCT = (function() {
             state.filteredRomaneios = romaneios;
             state.currentPage = 1;
 
-            // 🔐 Opcional: sincronizar localStorage com a lista mesclada (com proteção)
-            safePersistRomaneiosPct(romaneios, 'loadRomaneios');
-            
             // 🧪 DEBUG: Verificar estados de lançamento após carregamento
             const romaneiosComLancamento = romaneios.filter(r => r.contasReceberLancado === true);
             console.log(`✅ PCT: Total de ${romaneios.length} romaneios carregados, ${romaneiosComLancamento.length} já lançados`);
@@ -733,7 +600,7 @@ window.ModalListaRomaneiosPCT = (function() {
         try {
             if (!result.firebaseService && window.database) {
                 const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-                const romaneiosRef = ref(window.database, resolvePath('romaneiosPct'));
+                const romaneiosRef = ref(window.database, resolvePath('romaneios/pct'));
                 const snapshot = await get(romaneiosRef);
                 if (snapshot.exists()) {
                     const firebaseData = snapshot.val();
@@ -745,6 +612,48 @@ window.ModalListaRomaneiosPCT = (function() {
 
         console.log('🔎 debugFindRomaneioPct resultado:', result);
         return result;
+    }
+
+    function normalizeDateInputValue(value) {
+        if (typeof value === 'number' && isFinite(value)) {
+            const parsed = new Date(value);
+            if (!isNaN(parsed.getTime())) {
+                const y = parsed.getFullYear();
+                const m = String(parsed.getMonth() + 1).padStart(2, '0');
+                const d = String(parsed.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+        }
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+        const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+        const parsed = new Date(raw);
+        if (!isNaN(parsed.getTime())) {
+            const y = parsed.getFullYear();
+            const m = String(parsed.getMonth() + 1).padStart(2, '0');
+            const d = String(parsed.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        return '';
+    }
+
+    function formatDateLabel(value) {
+        const normalized = normalizeDateInputValue(value);
+        if (!normalized) return value ? String(value) : 'N/A';
+        const parts = normalized.split('-');
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    function toLocalDateObject(value) {
+        const normalized = normalizeDateInputValue(value);
+        if (normalized) {
+            const parts = normalized.split('-').map(Number);
+            return new Date(parts[0], parts[1] - 1, parts[2]);
+        }
+        return new Date();
     }
     
     function renderRomaneiosList() {
@@ -816,20 +725,7 @@ window.ModalListaRomaneiosPCT = (function() {
                 especiesTexto = especiesDosItens.join(", ");
             }
             
-            // ✅ CORREÇÃO: Formatar data para formato brasileiro
-            let dataFormatada = 'N/A';
-            if (romaneio.data) {
-                try {
-                    const data = new Date(romaneio.data);
-                    if (!isNaN(data.getTime())) {
-                        dataFormatada = data.toLocaleDateString('pt-BR');
-                    } else {
-                        dataFormatada = romaneio.data;
-                    }
-                } catch (e) {
-                    dataFormatada = romaneio.data;
-                }
-            }
+            const dataFormatada = formatDateLabel(romaneio.dataEmissao || romaneio.data || romaneio.timestamp);
             
             // ✅ CORREÇÃO: Buscar volume e valor nos campos corretos do Firebase
             let volume = 0;
@@ -1021,9 +917,7 @@ window.ModalListaRomaneiosPCT = (function() {
             state.filteredRomaneios = state.romaneios.filter(romaneio => {
                 const clienteTxt = toLowerSafe(getClienteTexto(romaneio.cliente));
                 const numeroTxt = toLowerSafe(romaneio.numero || romaneio.id);
-                const dataTxt = romaneio.data
-                    ? toLowerSafe(romaneio.data)
-                    : (romaneio.timestamp ? toLowerSafe(new Date(romaneio.timestamp).toLocaleDateString('pt-BR')) : '');
+                const dataTxt = toLowerSafe(`${romaneio.dataEmissao || romaneio.data || ''} ${formatDateLabel(romaneio.dataEmissao || romaneio.data || romaneio.timestamp)}`);
 
                 return clienteTxt.includes(term) || numeroTxt.includes(term) || dataTxt.includes(term);
             });
@@ -1072,9 +966,8 @@ window.ModalListaRomaneiosPCT = (function() {
             state.filteredRomaneios = state.filteredRomaneios.filter(r => r.id !== romaneioId);
             if (window.firebaseService && typeof window.firebaseService.saveToFirebase === "function") {
                 // ✅ Remover por registro (evita sobrescrever coleção)
-                await window.firebaseService.saveToFirebase("romaneiosPct", String(romaneioId), null);
+                await window.firebaseService.saveToFirebase("romaneios/pct", String(romaneioId), null);
             }
-            safePersistRomaneiosPct(state.romaneios, 'deleteRomaneio');
                 renderRomaneiosList();
                 renderPagination();
             showSuccess(MSG_SUCCESS_DELETE);
@@ -1631,19 +1524,8 @@ window.ModalListaRomaneiosPCT = (function() {
             
             // ✅ CORREÇÃO: Calcular data de vencimento com validação (igual ao TL)
             let dataVencimento = new Date();
-            
-            // Validar e usar timestamp do romaneio se disponível
-            if (romaneio.timestamp && !isNaN(romaneio.timestamp)) {
-                try {
-                    const dataRomaneioValida = new Date(romaneio.timestamp);
-                    if (!isNaN(dataRomaneioValida.getTime())) {
-                        dataVencimento = new Date(dataRomaneioValida);
-                        console.log('🎯 PCT: Usando data do romaneio:', dataVencimento);
-                    }
-                } catch (error) {
-                    console.warn('⚠️ PCT: Timestamp inválido, usando data atual:', romaneio.timestamp);
-                }
-            }
+            const dataBaseRomaneio = romaneio.dataEmissao || romaneio.data || romaneio.timestamp;
+            dataVencimento = toLocalDateObject(dataBaseRomaneio);
             
             // Adicionar 30 dias
             dataVencimento.setDate(dataVencimento.getDate() + 30);
@@ -1670,8 +1552,7 @@ window.ModalListaRomaneiosPCT = (function() {
             }
             
             // ✅ CORREÇÃO: Validar dados do romaneio para evitar undefined
-            const romaneioDataValida = romaneio.timestamp || romaneio.data || Date.now();
-            const dataRomaneioFormatada = new Date(romaneioDataValida).toISOString();
+            const dataRomaneioISO = normalizeDateInputValue(dataBaseRomaneio) || normalizeDateInputValue(new Date()) || '';
             
             // ✅ CORREÇÃO: Criar conta a receber com padrão igual ao TL
             const novaConta = {
@@ -1688,7 +1569,7 @@ window.ModalListaRomaneiosPCT = (function() {
                 tipo: 'receber',
                 origem: 'romaneio_pct',
                 origemId: romaneio.id,
-                romaneioData: dataRomaneioFormatada, // ✅ CORREÇÃO: Usar data formatada válida
+                romaneioData: dataRomaneioISO,
                 romaneioCliente: romaneio.cliente || 'Cliente não informado',
                 romaneioEspecies: especies,
                 observacoes: `Gerado automaticamente do Romaneio PCT em ${new Date().toLocaleDateString('pt-BR')}`,
@@ -1823,7 +1704,7 @@ window.ModalListaRomaneiosPCT = (function() {
         try {
             if (window.database) {
                 const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-                const romaneiosRef = ref(window.database, resolvePath('romaneiosPct'));
+                    const romaneiosRef = ref(window.database, resolvePath('romaneios/pct'));
                 const snapshot = await get(romaneiosRef);
                 
                 if (snapshot.exists()) {
@@ -1901,7 +1782,7 @@ window.ModalListaRomaneiosPCT = (function() {
         // Verificar no Firebase
         if (window.database) {
             import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js').then(async ({ ref, get }) => {
-                const romaneiosRef = ref(window.database, resolvePath('romaneiosPct'));
+                const romaneiosRef = ref(window.database, resolvePath('romaneios/pct'));
                 const snapshot = await get(romaneiosRef);
                 
                 if (snapshot.exists()) {

@@ -1,0 +1,1038 @@
+/* Radio groups in commerce forms must not inherit full-width text-field sizing. */
+.product-type-selector label {
+    min-width: 0;
+}
+
+.product-type-selector input[type="radio"] {
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+    flex: 0 0 18px;
+    margin: 0;
+    padding: 0;
+    accent-color: #0d6efd;
+}
+
+.product-type-selector span {
+    min-width: 0;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+/* Checkboxes in commerce screens must behave as compact controls, not text fields. */
+.commerce-check-option,
+.pedido-numero-cell,
+.pedido-numero-head,
+.numero-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    max-width: 100%;
+    line-height: 1.25;
+}
+
+input[type="checkbox"],
+.commerce-check-option input[type="checkbox"],
+.pedido-numero-cell input[type="checkbox"],
+.pedido-numero-head input[type="checkbox"],
+.numero-cell input[type="checkbox"],
+input[type="checkbox"].pedido-select-item,
+input[type="checkbox"].sel-carrego,
+input[type="checkbox"].sel-carrego-all,
+#pedidosSelectAll,
+#relFiltroDisponivel,
+#agruparEspecieCheckbox,
+#agruparItensRomaneio {
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+    flex: 0 0 18px;
+    margin: 0;
+    padding: 0;
+    accent-color: #0d6efd;
+}
+
+.commerce-check-option span,
+.pedido-numero-cell span,
+.pedido-numero-head span,
+.numero-cell span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.romaneio-actions {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.romaneio-load-btn {
+    flex: 1 1 160px;
+    min-width: 150px;
+}
+
+.romaneio-group-option {
+    flex: 1 1 230px;
+    margin: 0 0 2px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #34495e;
+}
+
+.rel-filter-available,
+.rel-select-all,
+.summary-print-option {
+    cursor: pointer;
+}
+
+.summary-print-option {
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.commerce-embedded-module {
+    border: 1px solid #d6dde8;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.commerce-embedded-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-bottom: 1px solid #e5ebf3;
+    background: #f8fafc;
+}
+
+.commerce-embedded-toolbar h2 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.12rem;
+    line-height: 1.25;
+}
+
+.commerce-embedded-open {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.commerce-embedded-frame {
+    display: block;
+    width: 100%;
+    min-height: 720px;
+    border: 0;
+    background: #ffffff;
+}
+
+html.sisweb-embedded,
+html.sisweb-embedded body {
+    min-height: auto;
+    background: #ffffff !important;
+}
+
+html.sisweb-embedded body {
+    padding: 0 !important;
+}
+
+html.sisweb-embedded .container {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 16px !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+html.sisweb-embedded main-menu,
+html.sisweb-embedded .global-system-footer {
+    display: none !important;
+}
+
+html.sisweb-embedded .page-header {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 1.45rem;
+        line-height: 1.2;
+        margin: 12px 0 18px;
+    }
+
+    h2,
+    h3 {
+        line-height: 1.25;
+    }
+
+    .tabs {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        border-bottom: 0;
+        padding: 2px 2px 10px;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tab {
+        flex: 0 0 auto;
+        min-width: max-content;
+        border: 1px solid #dbe3ec;
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 10px 12px;
+        scroll-snap-align: start;
+    }
+
+    .tab.active {
+        border-color: #2563eb;
+        background: #eff6ff;
+        color: #1e3a8a;
+    }
+
+    .action-buttons {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        align-items: stretch !important;
+    }
+
+    .action-buttons button,
+    .action-buttons .btn,
+    .action-buttons .btn-primary,
+    .action-buttons .btn-secondary,
+    .action-buttons .btn-success,
+    .action-buttons .btn-danger,
+    .action-buttons .btn-warning {
+        width: 100%;
+        min-width: 0;
+        justify-content: center;
+    }
+
+    .commerce-embedded-module {
+        border-radius: 6px;
+    }
+
+    .commerce-embedded-toolbar {
+        display: grid;
+        grid-template-columns: 1fr;
+        padding: 10px;
+    }
+
+    .commerce-embedded-open {
+        width: 100%;
+    }
+
+    .commerce-embedded-frame {
+        min-height: calc(100dvh - 178px);
+    }
+
+    html.sisweb-embedded .container {
+        padding: 10px !important;
+    }
+
+    .action-buttons button,
+    .support-actions button,
+    .modal-footer button,
+    .btn-primary,
+    .btn-secondary,
+    .btn-success,
+    .btn-danger,
+    .btn-warning {
+        min-height: 42px;
+    }
+
+    .form-row,
+    .search-box,
+    .date-filter-row {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .form-group,
+    .inline-field {
+        min-width: 0 !important;
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    #relatorios .form-group > button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    #pedidoForm .form-row > .form-group {
+        flex: 0 0 auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    #pedidoForm input,
+    #pedidoForm select,
+    #pedidoForm textarea {
+        display: block;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box;
+    }
+
+    #pedidoForm input[type="date"] {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        min-height: 44px;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    #pedidoForm input[type="date"]::-webkit-date-and-time-value {
+        min-width: 0;
+        text-align: left;
+    }
+
+    #pedidoForm input[type="date"]::-webkit-calendar-picker-indicator {
+        margin-left: auto;
+    }
+
+    #relatorios input[type="date"],
+    #listaPedidosModal input[type="date"],
+    .commerce-payment-table-wrap input[type="date"] {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        min-height: 44px;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .form-group > div[style*="display: flex"],
+    .form-group-large > div[style*="display: flex"] {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 8px;
+        align-items: stretch !important;
+    }
+
+    .product-type-selector {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+        width: 100%;
+        max-width: 100%;
+        margin-top: 8px !important;
+        padding: 8px;
+        border: 1px solid #dbe3ec;
+        border-radius: 8px;
+        background: #f8fafc;
+        align-items: stretch !important;
+    }
+
+    .product-type-selector label {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 10px !important;
+        width: 100%;
+        min-height: 44px;
+        margin: 0 !important;
+        padding: 10px 12px !important;
+        border: 1px solid #dbe3ec;
+        border-radius: 8px;
+        background: #fff;
+        color: #34495e;
+        font-weight: 600 !important;
+        text-align: left;
+    }
+
+    .product-type-selector label:has(input[type="radio"]:checked) {
+        border-color: #0d6efd;
+        background: #eff6ff;
+        color: #1e3a8a;
+    }
+
+    .romaneio-actions {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 8px;
+        align-items: stretch !important;
+        padding: 8px;
+        border: 1px solid #dbe3ec;
+        border-radius: 8px;
+        background: #f8fafc;
+    }
+
+    .romaneio-load-btn {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .commerce-check-option {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 10px !important;
+        width: 100%;
+        min-height: 44px;
+        margin: 0 !important;
+        padding: 10px 12px !important;
+        border: 1px solid #dbe3ec;
+        border-radius: 8px;
+        background: #fff;
+        color: #34495e;
+        font-weight: 700 !important;
+        text-align: left;
+    }
+
+    .commerce-check-option:has(input[type="checkbox"]:checked) {
+        border-color: #0d6efd;
+        background: #eff6ff;
+        color: #1e3a8a;
+    }
+
+    input,
+    select,
+    textarea {
+        max-width: 100%;
+        min-height: 40px;
+    }
+
+    .modal {
+        padding: 0;
+    }
+
+    .modal-content,
+    #listaPedidosModal .modal-content,
+    #visualizarPedidoModal .modal-content,
+    #produtoModal .modal-content,
+    #customizarColunasModal .modal-content,
+    #customizarColunasComprasModal .modal-content {
+        width: 100% !important;
+        max-width: none !important;
+        height: 100dvh;
+        max-height: 100dvh;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .modal-header {
+        flex: 0 0 auto;
+    }
+
+    .modal-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #listaPedidosModal .modal-body,
+    #visualizarPedidoModal .modal-body {
+        overflow-y: auto !important;
+    }
+
+    .modal-footer,
+    #visualizarPedidoModal .modal-footer {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 8px;
+        flex: 0 0 auto;
+        justify-content: stretch !important;
+    }
+
+    .modal-content > form {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 16px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .modal-content > form .modal-footer {
+        position: sticky;
+        bottom: -16px;
+        margin-left: -16px !important;
+        margin-right: -16px !important;
+        padding: 10px 16px 0 !important;
+        background: #fff;
+        border-top: 1px solid #e4eaf1;
+    }
+
+    .summary-box {
+        border-radius: 8px;
+    }
+
+    .summary-row {
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .table-responsive {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #listaPedidosModal .table-responsive,
+    #relComprasPedidos.table-responsive,
+    #relComprasTabela.table-responsive {
+        max-height: none !important;
+    }
+
+    .table-responsive.mobile-cards {
+        overflow: visible !important;
+    }
+
+    .table-responsive.mobile-cards table,
+    .table-responsive.mobile-cards thead,
+    .table-responsive.mobile-cards tbody,
+    .table-responsive.mobile-cards th,
+    .table-responsive.mobile-cards td,
+    .table-responsive.mobile-cards tr {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100%;
+        min-width: 0 !important;
+    }
+
+    .table-responsive.mobile-cards colgroup {
+        display: none !important;
+    }
+
+    .commerce-cart-table {
+        table-layout: auto !important;
+    }
+
+    .table-responsive.mobile-cards thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    .table-responsive.mobile-cards tr {
+        border: 1px solid #e1e8ed;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        background: #fff;
+        padding: 8px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .table-responsive.mobile-cards td {
+        display: grid !important;
+        grid-template-columns: minmax(96px, 38%) minmax(0, 1fr);
+        align-items: center;
+        position: relative;
+        border: none;
+        border-bottom: 1px solid #f0f0f0;
+        gap: 8px;
+        padding: 10px 12px;
+        text-align: right;
+        min-height: 42px;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .table-responsive.mobile-cards td::before {
+        content: attr(data-label);
+        position: static;
+        transform: none;
+        width: auto;
+        padding-right: 10px;
+        color: #657786;
+        font-weight: 700;
+        text-align: left;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .table-responsive.mobile-cards td.commerce-full-row {
+        display: block !important;
+        padding: 14px 12px;
+        text-align: center;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+        word-break: normal !important;
+        overflow-wrap: normal !important;
+    }
+
+    .table-responsive.mobile-cards td.commerce-full-row::before {
+        content: "";
+    }
+
+    .table-responsive.mobile-cards td[data-label="Ações"],
+    .table-responsive.mobile-cards td.commerce-actions-cell {
+        display: flex !important;
+        padding: 10px 12px;
+        width: 100% !important;
+        min-width: 100% !important;
+        justify-content: flex-end;
+    }
+
+    .table-responsive.mobile-cards td[data-label="Ações"]::before,
+    .table-responsive.mobile-cards td.commerce-actions-cell::before {
+        content: "";
+    }
+
+    .table-responsive.mobile-cards td .btn-small,
+    .table-responsive.mobile-cards td button {
+        min-width: 38px;
+        min-height: 36px;
+    }
+
+    .table-responsive.mobile-cards .commerce-card-value {
+        min-width: 0;
+        max-width: 100%;
+        justify-self: end;
+        text-align: right;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+    }
+
+    .table-responsive.mobile-cards .commerce-card-money,
+    .table-responsive.mobile-cards .commerce-card-number {
+        white-space: nowrap;
+        word-break: keep-all;
+        overflow-wrap: normal;
+    }
+
+    .table-responsive.mobile-cards .pedido-numero-cell,
+    .table-responsive.mobile-cards .numero-cell {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .commerce-cart-table-wrap.mobile-cards td[data-label="Produto"] {
+        grid-template-columns: 1fr;
+        text-align: left;
+    }
+
+    .commerce-cart-table-wrap.mobile-cards td[data-label="Produto"]::before {
+        padding-right: 0;
+    }
+
+    .commerce-cart-table-wrap.mobile-cards td[data-label="Quantidade"],
+    .commerce-cart-table-wrap.mobile-cards td[data-label="Preço Unit."],
+    .commerce-cart-table-wrap.mobile-cards td[data-label="Total"] {
+        grid-template-columns: minmax(110px, 42%) minmax(0, 1fr);
+    }
+
+    .commerce-cart-table-wrap.mobile-cards tr {
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        overflow: hidden;
+    }
+
+    .commerce-cart-table-wrap.mobile-cards td {
+        height: auto !important;
+        min-height: 42px !important;
+        padding: 10px 12px !important;
+        line-height: 1.3 !important;
+        white-space: normal !important;
+    }
+
+    .commerce-cart-table-wrap.mobile-cards td::before {
+        font-size: 0.78rem;
+        line-height: 1.2;
+    }
+
+    .commerce-cart-table-wrap.mobile-cards td[data-label="Produto"] {
+        display: block !important;
+        min-height: 0 !important;
+        padding: 12px !important;
+        border-bottom-color: #e5edf5;
+        background: #f8fafc;
+        color: #243447;
+        font-weight: 700;
+        line-height: 1.25 !important;
+        text-align: left !important;
+    }
+
+    .commerce-cart-table-wrap.mobile-cards td[data-label="Produto"]::before {
+        display: block;
+        margin-bottom: 4px;
+        padding-right: 0;
+        color: #657786;
+        font-size: 0.72rem;
+        letter-spacing: 0;
+    }
+
+    .commerce-cart-table-wrap.mobile-cards td[data-label="Quantidade"],
+    .commerce-cart-table-wrap.mobile-cards td[data-label="Preço Unit."],
+    .commerce-cart-table-wrap.mobile-cards td[data-label="Total"] {
+        display: grid !important;
+        grid-template-columns: minmax(108px, 42%) minmax(0, 1fr) !important;
+        align-items: center;
+        text-align: right !important;
+    }
+
+    .commerce-cart-table-wrap.mobile-cards td[data-label="Ações"],
+    .commerce-cart-table-wrap.mobile-cards td.commerce-actions-cell {
+        min-height: 48px !important;
+        border-bottom: 0;
+        background: #fff;
+        gap: 8px;
+    }
+
+    .commerce-cart-table-wrap.mobile-cards td[data-label="Ações"] .btn-small,
+    .commerce-cart-table-wrap.mobile-cards td.commerce-actions-cell .btn-small,
+    .commerce-cart-table-wrap.mobile-cards td[data-label="Ações"] button,
+    .commerce-cart-table-wrap.mobile-cards td.commerce-actions-cell button {
+        height: 40px !important;
+        min-height: 40px !important;
+        min-width: 44px !important;
+        padding: 0 10px !important;
+        line-height: 1 !important;
+    }
+
+    .commerce-orders-table-wrap.mobile-cards tr,
+    .commerce-detail-table-wrap.mobile-cards tr,
+    #listaPedidosModal .commerce-orders-table-wrap.mobile-cards #listaPedidosTable tr {
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        overflow: hidden;
+    }
+
+    .commerce-orders-table-wrap.mobile-cards td,
+    .commerce-detail-table-wrap.mobile-cards td,
+    #listaPedidosModal .commerce-orders-table-wrap.mobile-cards #listaPedidosTable td {
+        height: auto !important;
+        min-height: 42px !important;
+        max-width: 100% !important;
+        padding: 10px 12px !important;
+        line-height: 1.3 !important;
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }
+
+    .commerce-orders-table-wrap.mobile-cards td::before,
+    .commerce-detail-table-wrap.mobile-cards td::before {
+        font-size: 0.78rem;
+        line-height: 1.2;
+    }
+
+    .commerce-orders-table-wrap.mobile-cards .pedido-numero-cell,
+    .commerce-orders-table-wrap.mobile-cards .pedido-numero-head {
+        justify-content: flex-end;
+        width: 100%;
+    }
+
+    .commerce-orders-table-wrap.mobile-cards td[data-label="Ações"],
+    .commerce-orders-table-wrap.mobile-cards td.commerce-actions-cell {
+        justify-content: stretch !important;
+        border-bottom: 0;
+        background: #fff;
+        min-height: 52px !important;
+    }
+
+    .commerce-orders-table-wrap.mobile-cards .commerce-actions-wrap,
+    .commerce-orders-table-wrap.mobile-cards .acoes-buttons {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        width: 100%;
+    }
+
+    .table-responsive.mobile-cards .commerce-actions-wrap,
+    .table-responsive.mobile-cards .acoes-buttons {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+        gap: 8px;
+        width: 100%;
+    }
+
+    .commerce-orders-table-wrap.mobile-cards .commerce-actions-wrap .btn-small,
+    .commerce-orders-table-wrap.mobile-cards .acoes-buttons .btn-small,
+    .commerce-orders-table-wrap.mobile-cards td[data-label="Ações"] button,
+    .commerce-orders-table-wrap.mobile-cards td.commerce-actions-cell button {
+        width: 100% !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        min-width: 0 !important;
+        padding: 0 8px !important;
+        line-height: 1 !important;
+    }
+
+    .commerce-detail-table-wrap.mobile-cards td[data-label="Produto"] {
+        display: block !important;
+        text-align: left !important;
+        min-height: 0 !important;
+        background: #f8fafc;
+        font-weight: 700;
+    }
+
+    .commerce-detail-table-wrap.mobile-cards td {
+        grid-template-columns: minmax(112px, 42%) minmax(0, 1fr) !important;
+        align-items: center;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+        justify-content: initial !important;
+        text-align: right !important;
+        word-break: normal !important;
+        overflow-wrap: normal !important;
+    }
+
+    .commerce-detail-table-wrap.mobile-cards td:last-child:not(.commerce-full-row),
+    .commerce-detail-table-wrap.mobile-cards td[data-label="Total"],
+    .commerce-detail-table-wrap.mobile-cards td[data-label="Status"] {
+        display: grid !important;
+        grid-template-columns: minmax(112px, 42%) minmax(0, 1fr) !important;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        padding: 10px 12px !important;
+        justify-content: initial !important;
+        text-align: right !important;
+        white-space: normal !important;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    #visualizarPedidoModal .pedido-detail-field,
+    #visualizarPedidoModal .pedido-detail-value,
+    #visualizarPedidoModal .pedido-meta-row {
+        min-width: 0;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        word-break: normal;
+    }
+
+    #visualizarPedidoModal .commerce-detail-totals .summary-row,
+    #visualizarPedidoModal .pedido-totais .summary-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .commerce-filters-row {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .commerce-filter-field,
+    .commerce-filter-action {
+        min-width: 0 !important;
+        width: 100%;
+    }
+
+    .commerce-detail-table-wrap.mobile-cards .commerce-card-value {
+        min-width: 0;
+        max-width: 100%;
+        justify-self: end;
+        text-align: right;
+        line-height: 1.25;
+        word-break: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .commerce-detail-table-wrap.mobile-cards .commerce-card-title {
+        display: block;
+        justify-self: stretch;
+        text-align: left;
+        overflow-wrap: anywhere;
+    }
+
+    .commerce-detail-table-wrap.mobile-cards .commerce-card-money,
+    .commerce-detail-table-wrap.mobile-cards .commerce-card-number {
+        white-space: nowrap;
+        word-break: keep-all;
+        overflow-wrap: normal;
+    }
+
+    .commerce-detail-table-wrap.mobile-cards .commerce-card-strong {
+        font-weight: 800;
+        color: #1f2937;
+    }
+
+    .commerce-detail-table-wrap.mobile-cards td[data-label="Produto"] .commerce-card-value {
+        margin-top: 4px;
+    }
+
+    .commerce-payment-table-wrap.mobile-cards tr {
+        padding: 0 !important;
+        overflow: hidden;
+    }
+
+    .commerce-payment-table-wrap.mobile-cards td {
+        grid-template-columns: 1fr !important;
+        align-items: stretch;
+        text-align: left !important;
+    }
+
+    .commerce-payment-table-wrap.mobile-cards td::before {
+        display: block;
+        margin-bottom: 6px;
+        padding-right: 0;
+    }
+
+    .commerce-payment-table-wrap.mobile-cards input,
+    .commerce-payment-table-wrap.mobile-cards select,
+    .commerce-payment-table-wrap.mobile-cards textarea {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        min-height: 42px;
+        box-sizing: border-box;
+    }
+
+    .commerce-payment-table-wrap.mobile-cards td[data-label="Ações"],
+    .commerce-payment-table-wrap.mobile-cards td.commerce-actions-cell {
+        display: flex !important;
+        justify-content: stretch !important;
+    }
+
+    .commerce-payment-table-wrap.mobile-cards td[data-label="Ações"] button,
+    .commerce-payment-table-wrap.mobile-cards td.commerce-actions-cell button {
+        width: 100% !important;
+        min-height: 42px !important;
+    }
+
+    .commerce-report-table-wrap.mobile-cards td {
+        grid-template-columns: minmax(104px, 40%) minmax(0, 1fr) !important;
+    }
+
+    #visualizarPedidoModal .modal-header {
+        align-items: center;
+        gap: 10px;
+    }
+
+    #visualizarPedidoModal .modal-header h2 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        font-size: 1.25rem;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
+    #visualizarPedidoModal .modal-header .close,
+    #visualizarPedidoModal .modal-header .close-modal,
+    .modal-header .close,
+    .modal-header .close-modal {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        margin-left: auto;
+    }
+
+    #visualizarPedidoModal .pedido-header,
+    #visualizarPedidoModal .pedido-totais {
+        padding: 14px !important;
+        margin-bottom: 14px !important;
+        border-radius: 8px !important;
+    }
+
+    #visualizarPedidoModal .pedido-header > div:first-child {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    .acoes-buttons {
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .relatorio-actions,
+    .summary-print-option {
+        width: 100%;
+    }
+
+    .summary-row {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+    }
+
+    .summary-row > span:first-child {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .modal .columns-list {
+        max-height: min(45dvh, 320px) !important;
+    }
+
+    .columns-item {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        align-items: stretch !important;
+    }
+
+    .columns-item > span:last-child {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .atualizado-cell {
+        white-space: normal !important;
+    }
+
+    .pagination-controls {
+        gap: 6px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .product-type-selector,
+    .form-group > div[style*="display: flex"],
+    .form-group-large > div[style*="display: flex"],
+    .search-box,
+    .date-filter-row {
+        flex-wrap: wrap !important;
+        min-width: 0;
+    }
+
+    .product-type-selector > *,
+    .form-group > div[style*="display: flex"] > *,
+    .form-group-large > div[style*="display: flex"] > * {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .product-type-selector {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px !important;
+        align-items: stretch !important;
+    }
+
+    .product-type-selector label {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        margin: 0 !important;
+        line-height: 1.25;
+    }
+}

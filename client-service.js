@@ -26,13 +26,13 @@ function resolveCompanyId() {
         if (window.appTenantId) return String(window.appTenantId);
         if (window.companyInfo) {
             const raw = window.companyInfo;
-            const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+            const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
             if (id) return String(id);
         }
         const stored = localStorage.getItem('company_info');
         if (stored) {
             const obj = JSON.parse(stored);
-            const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+            const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
             if (id) return String(id);
         }
     } catch (_) {}
@@ -547,14 +547,32 @@ async function findClientsByName(name) {
  */
 function normalizeClient(client) {
     if (!client) return null;
+    const firstText = (...values) => {
+        for (const value of values) {
+            const clean = String(value || '').trim();
+            if (clean) return clean;
+        }
+        return '';
+    };
     const nowIso = new Date().toISOString();
     const nome = String(client.name || client.nome || '').trim();
+    const documento = firstText(client.documento, client.document, client.cnpj, client.cpf);
     const estado = String(client.state || client.estado || '').trim();
     const cidade = String(client.city || client.cidade || '').trim();
     const telefone = String(client.phone || client.telefone || '').trim();
     const endereco = String(client.address || client.endereco || '').trim();
     const numero = String(client.number || client.numero || '').trim();
     const bairro = String(client.neighborhood || client.bairro || '').trim();
+    const complemento = firstText(client.complemento, client.complement);
+    const tipoPessoa = firstText(client.tipoPessoa, client.personType, client.fiscalPersonType);
+    const inscricaoEstadual = firstText(client.inscricaoEstadual, client.stateRegistration, client.ie);
+    const inscricaoMunicipal = firstText(client.inscricaoMunicipal, client.municipalRegistration, client.im);
+    const indIEDest = firstText(client.indIEDest, client.indicadorInscricaoEstadual, client.ieIndicator);
+    const cep = firstText(client.cep, client.postalCode, client.zipCode);
+    const codigoMunicipio = firstText(client.codigoMunicipio, client.municipioCodigo, client.municipalityCode, client.cMun, client.ibgeCode);
+    const paisCodigo = firstText(client.paisCodigo, client.countryCode, client.cPais) || '1058';
+    const pais = firstText(client.pais, client.country, client.countryName, client.xPais) || 'Brasil';
+    const suframa = firstText(client.suframa, client.SUFRAMA);
     const obs = String(client.obs || client.observacoes || client.observations || '').trim();
     const createdAt = client.createdAt || client.created || nowIso;
     const updatedAt = client.updatedAt || client.updated || nowIso;
@@ -565,7 +583,9 @@ function normalizeClient(client) {
         nome,
         name: nome,
         nomeCompleto: String(client.nomeCompleto || nome).trim(),
-        cnpj: String(client.cnpj || '').trim(),
+        documento,
+        document: documento,
+        cnpj: documento,
         estado,
         state: estado,
         cidade,
@@ -579,6 +599,8 @@ function normalizeClient(client) {
         number: numero,
         bairro,
         neighborhood: bairro,
+        complemento,
+        complement: complemento,
         obs,
         observacoes: obs,
         observations: obs,
@@ -589,8 +611,32 @@ function normalizeClient(client) {
         updatedAt: nowIso,
         created: createdAt,
         updated: nowIso,
-        inscricaoEstadual: String(client.inscricaoEstadual || client.stateRegistration || '').trim(),
-        stateRegistration: String(client.stateRegistration || client.inscricaoEstadual || '').trim()
+        tipoPessoa,
+        personType: tipoPessoa,
+        fiscalPersonType: tipoPessoa,
+        inscricaoEstadual,
+        stateRegistration: inscricaoEstadual,
+        ie: inscricaoEstadual,
+        inscricaoMunicipal,
+        municipalRegistration: inscricaoMunicipal,
+        indIEDest,
+        indicadorInscricaoEstadual: indIEDest,
+        ieIndicator: indIEDest,
+        cep,
+        postalCode: cep,
+        codigoMunicipio,
+        municipioCodigo: codigoMunicipio,
+        municipalityCode: codigoMunicipio,
+        cMun: codigoMunicipio,
+        ibgeCode: codigoMunicipio,
+        paisCodigo,
+        countryCode: paisCodigo,
+        cPais: paisCodigo,
+        pais,
+        country: pais,
+        countryName: pais,
+        xPais: pais,
+        suframa
     };
 }
 

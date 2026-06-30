@@ -1,6 +1,8 @@
 # Prints do Manual (ajuda.html)
 
-Este diretório guarda os **prints reais** usados em `ajuda.html`.
+Este diretório é legado e **não é publicado no Hosting**. O manual atual usa mockups internos em HTML/CSS com dados fictícios para evitar exposição de dados reais.
+
+Não use prints de produção sem sanitização completa de nomes, valores, documentos, chaves PIX, emails, telefones, logos de clientes, dados trabalhistas, fiscais ou financeiros.
 
 ## Estrutura esperada
 - `help-assets/inicio/dashboard.png`
@@ -19,4 +21,4 @@ Este diretório guarda os **prints reais** usados em `ajuda.html`.
 - `help-assets/perfil/user-profile.png`
 
 ## Como gerar automaticamente
-Use o capturador em `tools/help-screenshots/`.
+Se for necessário gerar novos prints no futuro, use apenas ambiente demonstrativo com dados fictícios e revise visualmente antes de remover o bloqueio `help-assets/**` do `firebase.json`.

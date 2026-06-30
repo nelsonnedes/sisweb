@@ -6,11 +6,11 @@
       ".read": true,
       ".write": true
     },
-    "species": {
+    "especies": {
       ".read": true,
       ".write": true,
-      "$speciesId": {
-        ".validate": "newData.hasChild('name') && newData.child('name').isString() && newData.child('name').val().length > 0"
+      "$especieId": {
+        ".validate": "newData.hasChild('especie') && newData.child('especie').isString() && newData.child('especie').val().length > 0 && (!newData.hasChild('nomeCientifico') || newData.child('nomeCientifico').isString())"
       }
     },
     "users": {

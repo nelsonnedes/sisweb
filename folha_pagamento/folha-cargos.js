@@ -27,13 +27,13 @@ class FolhaCargos {
             }
             const base = String(path || '');
             if (!base) return base;
-            if (/^companies\//.test(base) || /^users\//.test(base)) return base;
-            const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug || window.companyInfo.nome || window.companyInfo.name));
+            if (/^companies(\/|$)/.test(base) || /^users(\/|$)/.test(base)) return base;
+            const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
             if (rawTenant) return `companies/${String(rawTenant)}/${base}`;
             const stored = localStorage.getItem('company_info');
             if (stored) {
                 const obj = JSON.parse(stored);
-                const t = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                const t = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                 if (t) return `companies/${String(t)}/${base}`;
             }
         } catch {}
@@ -869,15 +869,15 @@ class FolhaCargos {
             
             return `
                 <tr>
-                    <td>
+                    <td data-label="Nome">
                         <strong>${cargo.nome}</strong>
                         ${cargo.observacoes ? `<div style="font-size: 11px; color: #666; margin-top: 2px;">${cargo.observacoes}</div>` : ''}
                     </td>
-                    <td>R$ ${Number(cargo.salarioBase || 0).toFixed(2).replace('.', ',')}</td>
-                    <td>${cargo.periculosidade || 0}%</td>
-                    <td>${cargo.adicionalNoturno || 0}%</td>
-                    <td><strong>R$ ${salarioTotal.toFixed(2).replace('.', ',')}</strong></td>
-                    <td class="actions-cell">
+                    <td data-label="Salário Base">R$ ${Number(cargo.salarioBase || 0).toFixed(2).replace('.', ',')}</td>
+                    <td data-label="Periculosidade">${cargo.periculosidade || 0}%</td>
+                    <td data-label="Adicional Noturno">${cargo.adicionalNoturno || 0}%</td>
+                    <td data-label="Total"><strong>R$ ${salarioTotal.toFixed(2).replace('.', ',')}</strong></td>
+                    <td data-label="Ações" class="actions-cell">
                         <button class="action-button select-button" title="Selecionar" 
                                 onclick="selectCargoFromList('${cargo.id}')">
                             <i class="fas fa-check"></i>
@@ -894,6 +894,9 @@ class FolhaCargos {
                 </tr>
             `;
         }).join('');
+        if (window.FolhaUtils && typeof window.FolhaUtils.applyMobileTableLabels === 'function') {
+            window.FolhaUtils.applyMobileTableLabels(document.getElementById('cargosListModal'));
+        }
         
         this.updateCargosModalInfo(`${cargosAtivos.length} cargo(s) cadastrado(s)`);
     }

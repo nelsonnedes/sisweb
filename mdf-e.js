@@ -16,6 +16,50 @@ const configuracoesMdfe = {
     razaoSocialEmitente: ''
 };
 
+function normalizeCompanyForMdfeReport(raw = {}) {
+    const src = raw && typeof raw === 'object' ? raw : {};
+    const enderecoObj = src.endereco && typeof src.endereco === 'object' ? src.endereco : {};
+    const name = src.razaoSocial || src.nome || src.name || src.nomeFantasia || src.fantasia || configuracoesMdfe.razaoSocialEmitente || 'Empresa não informada';
+    const address = src.endereco && typeof src.endereco !== 'object'
+        ? src.endereco
+        : (src.address || [enderecoObj.logradouro, enderecoObj.numero, enderecoObj.bairro].filter(Boolean).join(', '));
+    return {
+        name,
+        cnpj: src.cnpj || configuracoesMdfe.cnpjEmitente || '-',
+        address: address || '-',
+        city: src.cidade || src.city || src.municipio || enderecoObj.municipio || '-',
+        state: src.estado || src.state || src.uf || enderecoObj.uf || configuracoesMdfe.ufEmitente || '-',
+        phone: src.telefone || src.phone || '-'
+    };
+}
+
+async function obterDadosEmpresaMdfe() {
+    try {
+        const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+        if (svc && typeof svc.getCompanyProfileForReport === 'function') {
+            const central = await svc.getCompanyProfileForReport();
+            const data = central && central.success !== false ? (central.data || central) : null;
+            if (data && typeof data === 'object') return normalizeCompanyForMdfeReport(data);
+        }
+    } catch (_) {}
+    try {
+        const raw = localStorage.getItem('company_info');
+        const info = raw ? JSON.parse(raw) : {};
+        return normalizeCompanyForMdfeReport(info);
+    } catch (_) {
+        return normalizeCompanyForMdfeReport({});
+    }
+}
+
+function escapeHtmlMdfe(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // Inicialização do sistema
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚛 Inicializando sistema MDF-e...');
@@ -631,7 +675,7 @@ function atualizarDashboard() {
 }
 
 // Gerar relatório
-function gerarRelatorioMdfe() {
+async function gerarRelatorioMdfe() {
     const dataInicio = document.getElementById('relMdfePeriodoInicio').value;
     const dataFim = document.getElementById('relMdfePeriodoFim').value;
     
@@ -650,8 +694,14 @@ function gerarRelatorioMdfe() {
         return;
     }
     
+    const empresa = await obterDadosEmpresaMdfe();
+
     // Gerar relatório simples
-    let relatorio = `RELATÓRIO MDF-e - ${formatarData(dataInicio)} a ${formatarData(dataFim)}\n\n`;
+    let relatorio = `${empresa.name}\n`;
+    relatorio += `CNPJ: ${empresa.cnpj}\n`;
+    relatorio += `${empresa.address} - ${empresa.city}/${empresa.state}\n`;
+    relatorio += `Fone: ${empresa.phone}\n\n`;
+    relatorio += `RELATÓRIO MDF-e - ${formatarData(dataInicio)} a ${formatarData(dataFim)}\n\n`;
     relatorio += `Total de MDF-es: ${mdfesRelatorio.length}\n`;
     relatorio += `Autorizados: ${mdfesRelatorio.filter(m => m.status === 'autorizado').length}\n`;
     relatorio += `Encerrados: ${mdfesRelatorio.filter(m => m.status === 'encerrado').length}\n`;
@@ -674,7 +724,7 @@ function gerarRelatorioMdfe() {
         <html>
             <head><title>Relatório MDF-e</title></head>
             <body>
-                <pre style="font-family: monospace; white-space: pre-wrap;">${relatorio}</pre>
+                <pre style="font-family: monospace; white-space: pre-wrap;">${escapeHtmlMdfe(relatorio)}</pre>
                 <button onclick="window.print()">Imprimir</button>
             </body>
         </html>

@@ -19,6 +19,61 @@ window.SalvarRomaneio = (function() {
     // ✅ VARIÁVEIS DE CONTROLE
     let isProcessing = false;
     let currentRomaneioId = null;
+    let currentRomaneioData = null;
+
+    function getTodayLocalISODate() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    function normalizeDateInputValue(value) {
+        if (typeof value === 'number' && isFinite(value)) {
+            const parsed = new Date(value);
+            if (!isNaN(parsed.getTime())) {
+                const y = parsed.getFullYear();
+                const m = String(parsed.getMonth() + 1).padStart(2, '0');
+                const d = String(parsed.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+        }
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+        const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+        const parsed = new Date(raw);
+        if (!isNaN(parsed.getTime())) {
+            const y = parsed.getFullYear();
+            const m = String(parsed.getMonth() + 1).padStart(2, '0');
+            const d = String(parsed.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        return '';
+    }
+
+    function setRomaneioEmissionDate(value) {
+        const input = document.getElementById('romaneioData');
+        if (!input) return '';
+        const dateValue = normalizeDateInputValue(value) || getTodayLocalISODate();
+        input.value = dateValue;
+        return dateValue;
+    }
+
+    function getRomaneioEmissionDate(fallbackValue) {
+        const input = document.getElementById('romaneioData');
+        const dateValue = normalizeDateInputValue(input && input.value)
+            || normalizeDateInputValue(fallbackValue)
+            || getTodayLocalISODate();
+        if (input && input.value !== dateValue) {
+            input.value = dateValue;
+        }
+        return dateValue;
+    }
+
     function getRomaneioDataService() {
         try {
             const candidates = [window.firebaseService, window.firebaseServiceTL, window.unifiedFirebaseService, window.FirebaseService].filter(Boolean);
@@ -41,13 +96,13 @@ window.SalvarRomaneio = (function() {
             if (window.appTenantId) return String(window.appTenantId);
             if (window.companyInfo) {
                 const raw = window.companyInfo;
-                const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                 if (id) return String(id);
             }
             const stored = localStorage.getItem('company_info');
             if (stored) {
                 const obj = JSON.parse(stored);
-                const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                 if (id) return String(id);
             }
         } catch (_) {}
@@ -66,7 +121,8 @@ window.SalvarRomaneio = (function() {
         if (companyId && !/^companies\//.test(base) && !/^users\//.test(base)) {
             return `companies/${companyId}/${base}`;
         }
-        return base;
+        if (/^companies\//.test(base)) return base;
+        return null;
     }
 
     /**
@@ -131,6 +187,8 @@ window.SalvarRomaneio = (function() {
         // Obter dados básicos
         const clienteInput = document.getElementById('fornecedorInput') || document.getElementById('clienteInput');
         const clienteNome = clienteInput?.value?.trim() || '';
+        const dadosAtuais = getCurrentRomaneioData();
+        const dataEmissao = getRomaneioEmissionDate(dadosAtuais && (dadosAtuais.dataEmissao || dadosAtuais.data || dadosAtuais.timestamp));
         
         // ✅ PADRONIZAÇÃO: Construir objeto cliente rico
         let clienteObj = null;
@@ -168,6 +226,8 @@ window.SalvarRomaneio = (function() {
         return {
             cliente: clienteObj, // ✅ AGORA É UM OBJETO (padronizado com Tora)
             clienteNome: clienteNome, // ✅ CAMPO NOVO: String simples para compatibilidade/leitura rápida
+            data: dataEmissao,
+            dataEmissao: dataEmissao,
             items: items.map(item => {
                 const out = { ...item };
                 out.espessura = out.espessura || out[legacyKey] || 0;
@@ -353,6 +413,8 @@ window.SalvarRomaneio = (function() {
             cliente: dados.cliente, // Objeto principal
             clienteNome: dados.clienteNome, // String (compatibilidade)
             fornecedor: dados.cliente, // ✅ ALIAS: Facilita filtros unificados (Compras/Vendas)
+            data: dados.data,
+            dataEmissao: dados.dataEmissao || dados.data,
             items: dados.items,
             totalVolume: dados.totalVolume,
             totalValue: dados.totalValue,
@@ -381,7 +443,7 @@ window.SalvarRomaneio = (function() {
                     salvarLocalStorage(romaneio);
                     return { success: true, location: 'Firebase (namespaced)', id: romaneio.id };
                 } catch (errByRecord) {
-                    console.warn('⚠️ Erro no saveToFirebase por registro, tentando saveData:', errByRecord);
+                    console.warn('⚠️ Erro no saveToFirebase por registro, tentando saveData canônico:', errByRecord);
                 }
             }
             // Tentar salvar no Firebase primeiro (unificado), depois serviço legado
@@ -402,30 +464,16 @@ window.SalvarRomaneio = (function() {
                     await window.FirebaseService.saveData(`romaneios/tl/${romaneio.id}`, romaneio);
                     console.log('✅ Romaneio salvo no Firebase');
                     
-                    // Salvar também no localStorage como backup
                     salvarLocalStorage(romaneio);
                     
                     return { success: true, location: 'Firebase', id: romaneio.id };
                     
                 } catch (firebaseError) {
-                    console.warn('⚠️ Erro no Firebase, tentando localStorage:', firebaseError);
-                    
-                    // Fallback para localStorage
-                    const localResult = salvarLocalStorage(romaneio);
-                    if (localResult) {
-                        return { success: true, location: 'localStorage (offline)', id: romaneio.id };
-                    } else {
-                        throw new Error('Falha no Firebase e localStorage');
-                    }
+                    console.warn('⚠️ Erro no Firebase:', firebaseError);
+                    throw new Error('Falha ao salvar romaneio TL no Firebase canônico.');
                 }
             } else {
-                // Apenas localStorage se Firebase não estiver disponível
-                const localResult = salvarLocalStorage(romaneio);
-                if (localResult) {
-                    return { success: true, location: 'localStorage', id: romaneio.id };
-                } else {
-                    throw new Error('Falha ao salvar no localStorage');
-                }
+                throw new Error('FirebaseService indisponível para salvar romaneio TL.');
             }
             
         } catch (error) {
@@ -441,22 +489,20 @@ window.SalvarRomaneio = (function() {
         try {
             try {
                 if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {
-                    const storageKeyQuick = resolveStorageKey('romaneios_tl');
+                    const storageKeyQuick = resolveStorageKey('romaneios/tl');
+                    if (!storageKeyQuick || !/^companies\//.test(String(storageKeyQuick))) return false;
                     const currentRaw = localStorage.getItem(storageKeyQuick);
                     const currentObj = currentRaw ? JSON.parse(currentRaw) : {};
                     const merged = (currentObj && typeof currentObj === 'object') ? currentObj : {};
                     merged[romaneio.id] = romaneio;
-                    return window.SiswebStorage.write('romaneios_tl', merged) !== false;
+                    return window.SiswebStorage.write(storageKeyQuick, merged) !== false;
                 }
             } catch (_) {}
-            const storageKey = resolveStorageKey('romaneios_tl');
-            const allowLegacy = storageKey === 'romaneios_tl';
+            const storageKey = resolveStorageKey('romaneios/tl');
+            if (!storageKey || !/^companies\//.test(String(storageKey))) return false;
             const raw = localStorage.getItem(storageKey);
             let romaneiosExistentes = raw ? JSON.parse(raw) : null;
-            if (!romaneiosExistentes || typeof romaneiosExistentes !== 'object') {
-                const fallbackRaw = allowLegacy ? localStorage.getItem('romaneios_tl') : null;
-                romaneiosExistentes = fallbackRaw ? JSON.parse(fallbackRaw) : {};
-            }
+            if (!romaneiosExistentes || typeof romaneiosExistentes !== 'object') romaneiosExistentes = {};
             
             // Adicionar/atualizar romaneio
             romaneiosExistentes[romaneio.id] = romaneio;
@@ -517,7 +563,7 @@ window.SalvarRomaneio = (function() {
                 }
             }
             
-            console.log('✅ Romaneio salvo no localStorage');
+            console.log('✅ Cache local do romaneio TL atualizado em companies/{companyId}/romaneios/tl');
             return true;
             
         } catch (error) {
@@ -539,8 +585,7 @@ window.SalvarRomaneio = (function() {
      * Obter dados do romaneio atual (para edição)
      */
     function getCurrentRomaneioData() {
-        // Implementar se necessário para edição
-        return null;
+        return currentRomaneioData;
     }
 
     /**
@@ -648,6 +693,8 @@ window.SalvarRomaneio = (function() {
             
             // Resetar ID do romaneio atual
             currentRomaneioId = null;
+            currentRomaneioData = null;
+            setRomaneioEmissionDate();
             
             // Focar no campo cliente
             const clienteInput = document.getElementById('fornecedorInput') || document.getElementById('clienteInput');
@@ -679,18 +726,13 @@ window.SalvarRomaneio = (function() {
                 }
             }
             
-            // Fallback para localStorage
-            if (!romaneio) {
-                const romaneiosLocal = JSON.parse(localStorage.getItem('romaneios_tl') || '{}');
-                romaneio = romaneiosLocal[romaneioId];
-            }
-            
             if (!romaneio) {
                 throw new Error('Romaneio não encontrado');
             }
             
             // Definir ID atual para edição
             currentRomaneioId = romaneioId;
+            currentRomaneioData = romaneio;
             
             // Preencher formulário
             preencherFormularioEdicao(romaneio);
@@ -710,6 +752,7 @@ window.SalvarRomaneio = (function() {
      */
     function preencherFormularioEdicao(romaneio) {
         console.log('📝 Preenchendo formulário para edição:', romaneio);
+        setRomaneioEmissionDate(romaneio && (romaneio.dataEmissao || romaneio.data || romaneio.timestamp));
         
         // Preencher cliente
         const clienteInput = document.getElementById('clienteInput');
@@ -826,6 +869,8 @@ window.SalvarRomaneio = (function() {
      */
     function cancelarEdicao() {
         currentRomaneioId = null;
+        currentRomaneioData = null;
+        setRomaneioEmissionDate();
         console.log('✅ Edição cancelada');
     }
 
@@ -914,7 +959,8 @@ window.SalvarRomaneio = (function() {
         isEditMode,
         obterEstatisticas,
         testarValidacao,
-        testarEdicaoRomaneio
+        testarEdicaoRomaneio,
+        setRomaneioEmissionDate
     };
 
 })();
@@ -923,6 +969,12 @@ window.SalvarRomaneio = (function() {
 window.salvarRomaneio = window.SalvarRomaneio.salvarRomaneio;
 window.testarValidacaoRomaneio = window.SalvarRomaneio.testarValidacao; // Função de debug
 window.testarEdicaoRomaneio = window.SalvarRomaneio.testarEdicaoRomaneio; // Função de debug
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => window.SalvarRomaneio.setRomaneioEmissionDate(), { once: true });
+} else {
+    window.SalvarRomaneio.setRomaneioEmissionDate();
+}
 
 console.log('✅ Módulo SalvarRomaneio carregado com sucesso (campo espessura)');
 console.log('🧪 Para testar a validação, digite: testarValidacaoRomaneio() no console'); 

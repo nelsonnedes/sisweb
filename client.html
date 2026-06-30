@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="layout-comum.css">
+    <link rel="stylesheet" href="commerce-responsive.css?v=2026-06-07-print-context-v13">
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -16,8 +17,18 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
     <!-- Menu Component -->
-    <script src="menu-component.js?v=20260326"></script>
+    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
     <script src="schema-migration-contatos.js"></script>
+    <script>
+        (function () {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                if (params.get('embedded') === 'true' || params.get('embedded') === '1') {
+                    document.documentElement.classList.add('sisweb-embedded');
+                }
+            } catch (_) {}
+        })();
+    </script>
     
     <link rel="stylesheet" href="ui-components.css">
     <style>
@@ -276,6 +287,67 @@
                     </div>
 
                     <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <input type="email" id="email" placeholder="contato@empresa.com">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="personType">Tipo de pessoa</label>
+                                <select id="personType">
+                                    <option value="">Não informado</option>
+                                    <option value="juridica">Pessoa jurídica</option>
+                                    <option value="fisica">Pessoa física</option>
+                                    <option value="estrangeiro">Estrangeiro</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="ieIndicator">Indicador IE</label>
+                                <select id="ieIndicator">
+                                    <option value="">Não informado</option>
+                                    <option value="1">Contribuinte ICMS</option>
+                                    <option value="2">Contribuinte isento</option>
+                                    <option value="9">Não contribuinte</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="stateRegistration">Inscrição Estadual</label>
+                                <input type="text" id="stateRegistration" placeholder="IE / ISENTO">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="municipalRegistration">Inscrição Municipal</label>
+                                <input type="text" id="municipalRegistration" placeholder="Opcional">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="suframa">SUFRAMA</label>
+                                <input type="text" id="suframa" placeholder="Opcional">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col" style="flex: 1;">
+                            <div class="form-group">
+                                <label for="postalCode">CEP</label>
+                                <input type="text" id="postalCode" placeholder="00000-000">
+                            </div>
+                        </div>
                         <div class="form-col" style="flex: 2;">
                             <div class="form-group">
                                 <label for="address">Endereço</label>
@@ -290,16 +362,26 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="neighborhood">Bairro</label>
-                        <input type="text" id="neighborhood" placeholder="Bairro">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="neighborhood">Bairro</label>
+                                <input type="text" id="neighborhood" placeholder="Bairro">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="complement">Complemento</label>
+                                <input type="text" id="complement" placeholder="Sala, lote, referência">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="state">Estado</label>
-                                <select id="state" required>
+                                <select id="state">
                                     <option value="">Selecione</option>
                                     <option value="AC">Acre</option>
                                     <option value="AL">Alagoas</option>
@@ -334,9 +416,30 @@
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="city">Cidade</label>
-                                <select id="city" required>
+                                <select id="city">
                                     <option value="">Selecione primeiro o estado</option>
                                 </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="municipalityCode">Código IBGE do município</label>
+                                <input type="text" id="municipalityCode" placeholder="Ex: 1501402">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="countryCode">Código do país</label>
+                                <input type="text" id="countryCode" value="1058" placeholder="1058">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="countryName">País</label>
+                                <input type="text" id="countryName" value="Brasil" placeholder="Brasil">
                             </div>
                         </div>
                     </div>
@@ -370,7 +473,8 @@
     </script>
     <!-- ✅ FIX: Correção Unificada de Clientes (Salvar/Excluir/Multi-tenant) -->
     <script src="romaneios-client-save-fix.js?v=202602271"></script>
-    <script type="module" src="js/client.js?v=202602271"></script>
+    <script type="module" src="js/client.js?v=2026-06-23-cadastro-fiscal-nfe-v1"></script>
+    <script src="commerce-responsive.js?v=2026-06-07-print-context-v13"></script>
 
 </body>
 </html>

@@ -38,6 +38,50 @@ window.isSavingRomaneio = false;
 window.currentPage = 1;
 window.itemsPerPage = 5;
 
+const PCT_TABLE_SORT_COLUMNS = [
+    { key: 'especie' },
+    { key: 'comprimento', type: 'number' },
+    { key: 'espessura', type: 'number' },
+    { key: 'largura', type: 'number' },
+    { key: 'quantidade', type: 'number' },
+    { key: 'pecasPorPacote', type: 'number' },
+    { key: 'totalPecas', type: 'number', accessor: (item) => item.totalPecas || ((parseFloat(item.quantidade) || 0) * (parseFloat(item.pecasPorPacote) || 0)) },
+    { key: 'volume', type: 'number' },
+    { key: 'valorUnitario', type: 'number' },
+    { key: 'valorTotal', type: 'number' },
+    { key: 'acoes', sortable: false }
+];
+
+function getPCTTableSortConfig() {
+    return {
+        tableSelector: '#romaneioTable',
+        minWidth: '1400px',
+        columns: PCT_TABLE_SORT_COLUMNS,
+        getItems: () => window.romaneioItems || [],
+        setPage: (page) => { window.currentPage = page; },
+        render: () => reconstruirTabela()
+    };
+}
+
+function configurarTabelaPCT() {
+    if (!window.RomaneioTableEnhancements) return;
+    window.RomaneioTableEnhancements.bindSortableHeaders(getPCTTableSortConfig());
+}
+
+function aplicarOrdenacaoTabelaPCT() {
+    if (!window.RomaneioTableEnhancements) return;
+    window.RomaneioTableEnhancements.applySortFromTable(getPCTTableSortConfig());
+}
+
+function sincronizarItensPorPaginaPCT() {
+    try {
+        const saved = parseInt(localStorage.getItem('romaneio_pct_items_per_page') || '', 10);
+        if ([10, 20, 25, 50, 100].includes(saved)) {
+            window.itemsPerPage = saved;
+        }
+    } catch (_) {}
+}
+
 function getStorageKey(key) {
     try {
         const svc = window.firebaseServiceTL || window.FirebaseService || window.firebaseService;
@@ -744,6 +788,8 @@ function reconstruirTabela() {
         console.warn('⚠️ Elemento romaneioTableBody não encontrado');
         return;
     }
+
+    configurarTabelaPCT();
     
     tbody.innerHTML = '';
     
@@ -759,6 +805,9 @@ function reconstruirTabela() {
         renderizarPaginacao(0);
         return;
     }
+
+    aplicarOrdenacaoTabelaPCT();
+    sincronizarItensPorPaginaPCT();
     
     const ITENS_POR_PAGINA = window.itemsPerPage || 5;
     let itensPagina;
@@ -1095,6 +1144,59 @@ function formatarNumeroDecimal(valor, decimais = 2) {
     return numeroValor.toFixed(decimais).replace('.', ',');
 }
 
+function getTodayLocalISODate() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function normalizeDateInputValue(value) {
+    if (typeof value === 'number' && isFinite(value)) {
+        const parsed = new Date(value);
+        if (!isNaN(parsed.getTime())) {
+            const y = parsed.getFullYear();
+            const m = String(parsed.getMonth() + 1).padStart(2, '0');
+            const d = String(parsed.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+    }
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+    const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+    const parsed = new Date(raw);
+    if (!isNaN(parsed.getTime())) {
+        const y = parsed.getFullYear();
+        const m = String(parsed.getMonth() + 1).padStart(2, '0');
+        const d = String(parsed.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    return '';
+}
+
+function setRomaneioEmissionDate(value) {
+    const input = document.getElementById('romaneioData');
+    if (!input) return '';
+    const dateValue = normalizeDateInputValue(value) || getTodayLocalISODate();
+    input.value = dateValue;
+    return dateValue;
+}
+
+function getRomaneioEmissionDate(fallbackValue) {
+    const input = document.getElementById('romaneioData');
+    const dateValue = normalizeDateInputValue(input && input.value)
+        || normalizeDateInputValue(fallbackValue)
+        || getTodayLocalISODate();
+    if (input && input.value !== dateValue) {
+        input.value = dateValue;
+    }
+    return dateValue;
+}
+
 // ========================================
 // FUNÇÕES DE SALVAMENTO
 // ========================================
@@ -1192,10 +1294,13 @@ async function salvarRomaneio() {
             cnpj: String(clienteAtual.cnpj || '')
         };
 
+        const dataEmissao = getRomaneioEmissionDate(window.romaneioEmEdicao && (window.romaneioEmEdicao.dataEmissao || window.romaneioEmEdicao.data || window.romaneioEmEdicao.timestamp));
+
         const romaneio = {
             id: window.romaneioEmEdicao?.id || generatedId,
             numero: window.romaneioEmEdicao?.numero || generatedId,
-            data: new Date().toISOString().split('T')[0],
+            data: dataEmissao,
+            dataEmissao: dataEmissao,
             cliente: clienteObj, // ✅ Objeto sanitizado
             clienteNome: nomeCliente, // ✅ String para compatibilidade
             fornecedor: { ...clienteObj }, // ✅ Alias para módulos de compras/estoque
@@ -1415,6 +1520,7 @@ function limparFormulario() {
     
     // Limpar campos
     limparCamposItem();
+    setRomaneioEmissionDate();
     
     // Atualizar interface
     reconstruirTabela();
@@ -1441,6 +1547,7 @@ function limparFormularioAposSalvamento() {
     if (comprimentoInput) comprimentoInput.value = '';
     if (quantidadeInput) quantidadeInput.value = '';
     if (pecasPorPacoteInput) pecasPorPacoteInput.value = '1';
+    setRomaneioEmissionDate();
     reconstruirTabela();
     atualizarTotais();
     limparEstadoRomaneioEmEdicao();
@@ -1873,12 +1980,14 @@ window.limparFormulario = limparFormulario;
 window.renderizarPaginacao = renderizarPaginacao;
 window.irParaPaginaPCT = irParaPaginaPCT;
 window.reconstruirTabela = reconstruirTabela;
+window.setRomaneioPctEmissionDate = setRomaneioEmissionDate;
 
 console.log('✅ Função reconstruirTabela registrada no escopo global');
 
 // ✅ CORREÇÃO: Chamar reconstruirTabela imediatamente para mostrar ícone quando tabela vazia
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎯 CORREÇÃO: Chamando reconstruirTabela no DOMContentLoaded');
+    setRomaneioEmissionDate();
     setTimeout(() => {
         if (typeof window.reconstruirTabela === 'function') {
             window.reconstruirTabela();

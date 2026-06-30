@@ -1,4 +1,55 @@
 const authService = window.firebaseService.authService;
+const speciesTools = window.SiswebSpecies || {};
+
+function getSpeciesName(specie) {
+    if (speciesTools.getDisplayName) return speciesTools.getDisplayName(specie);
+    return String((specie && (specie.especie || specie.name || specie.nome || specie.nomeComum)) || '').trim();
+}
+
+function getSpeciesScientific(specie) {
+    if (speciesTools.getScientificName) return speciesTools.getScientificName(specie);
+    return String((specie && (specie.nomeCientifico || specie.scientificName || specie.scientific || specie.description || specie.descricao || specie.decription)) || '').trim();
+}
+
+function normalizeSpecies(specie, index = 0) {
+    if (speciesTools.normalizeRecord) return speciesTools.normalizeRecord(specie, index);
+    const name = getSpeciesName(specie) || 'Nome não informado';
+    const scientific = getSpeciesScientific(specie);
+    return {
+        ...(specie || {}),
+        id: (specie && (specie.firebaseKey || specie.key || specie.id)) || `specie_${index}`,
+        especie: name,
+        name,
+        nome: name,
+        nomeComum: (specie && (specie.nomeComum || specie.nome || specie.name)) || name,
+        nomeCientifico: scientific,
+        scientificName: scientific,
+        scientific
+    };
+}
+
+function toCanonicalSpecies(specie, index = 0, options = {}) {
+    if (speciesTools.toCanonicalRecord) return speciesTools.toCanonicalRecord(specie, index, options);
+    const now = options.updatedAt || new Date().toISOString();
+    return {
+        id: options.id || specie.firebaseKey || specie.key || specie.id || `specie_${index}`,
+        especie: getSpeciesName(specie),
+        nomeCientifico: getSpeciesScientific(specie),
+        ativo: specie.ativo !== false,
+        createdAt: specie.createdAt || now,
+        updatedAt: now
+    };
+}
+
+function normalizeSearchKey(value) {
+    if (speciesTools.normalizeNameKey) return speciesTools.normalizeNameKey(value);
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function escapeHtml(value) {
+    if (speciesTools.escapeHtml) return speciesTools.escapeHtml(value);
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+}
 
 async function ensureAuthAndTenant() {
     const noRedirect = (() => {
@@ -76,8 +127,9 @@ const elements = {
     modal: document.getElementById('speciesModal'),
     form: document.getElementById('speciesForm'),
     modalTitle: document.getElementById('modalTitle'),
-    nameInput: document.getElementById('name'),
-    descriptionInput: document.getElementById('description'),
+    nameInput: document.getElementById('speciesName') || document.getElementById('name'),
+    scientificNameInput: document.getElementById('scientificName'),
+    speciesIdInput: document.getElementById('speciesId'),
     saveBtn: document.getElementById('saveBtn'),
     cancelBtn: document.getElementById('cancelBtn'),
     closeBtn: document.querySelector('.close'),
@@ -117,8 +169,10 @@ function setupListeners() {
     window.openNewSpeciesModal = () => {
         editingId = null;
         elements.form.reset();
+        if (elements.speciesIdInput) elements.speciesIdInput.value = '';
         elements.modalTitle.textContent = 'Nova Espécie';
-        elements.saveBtn.textContent = 'Salvar';
+        elements.saveBtn.textContent = 'Salvar Espécie';
+        enhanceSpeciesModal();
         openModal();
     };
 
@@ -128,28 +182,39 @@ function setupListeners() {
     }
 }
 
+function enhanceSpeciesModal() {
+    if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.enhance === 'function') {
+        window.SiswebSpeciesModal.enhance({
+            modal: elements.modal,
+            nameInput: elements.nameInput,
+            scientificInput: elements.scientificNameInput,
+            getSpeciesList: () => currentSpecies
+        });
+    }
+}
+
 // Data Operations
 async function loadSpecies() {
     showLoading(true);
     try {
         await ensureAuthAndTenant();
-        const result = await window.firebaseService.loadFromFirebase('species');
+        const result = await window.firebaseService.loadFromFirebase('especies');
         if (result.success && result.data) {
             // Convert object to array
-            currentSpecies = Object.keys(result.data).map(key => ({
-                id: key,
-                ...result.data[key]
-            }));
-            currentSpecies = currentSpecies.map(s => {
-                const name = String((s && (s.name ?? s.nome)) ?? '').trim();
-                const description = String((s && (s.description ?? s.descricao)) ?? '').trim();
-                const next = { ...s };
-                if (!next.name && name) next.name = name;
-                if (!next.description && description) next.description = description;
-                return next;
-            });
+            currentSpecies = (speciesTools.normalizeList
+                ? speciesTools.normalizeList(result.data)
+                : Object.keys(result.data).map((key, index) => {
+                    const item = result.data[key] || {};
+                    return normalizeSpecies({
+                        ...item,
+                        id: key,
+                        key,
+                        firebaseKey: key,
+                        originalId: item.id || item.key || key
+                    }, index);
+                }));
             const emptyIds = currentSpecies
-                .filter(s => !String((s && (s.name ?? s.nome)) ?? '').trim() && !String((s && (s.description ?? s.descricao)) ?? '').trim())
+                .filter(s => !getSpeciesName(s) && !getSpeciesScientific(s))
                 .map(s => s.id)
                 .filter(Boolean);
             if (emptyIds.length) {
@@ -157,7 +222,7 @@ async function loadSpecies() {
                 const deletedIds = new Set();
                 for (const id of emptyIds.slice(0, 50)) {
                     try {
-                        const del = await window.firebaseService.deleteData(`species/${id}`);
+                        const del = await window.firebaseService.deleteData(`especies/${id}`);
                         if (del && del.success) {
                             cleaned++;
                             deletedIds.add(id);
@@ -172,7 +237,7 @@ async function loadSpecies() {
         }
         
         // Sort by name
-        currentSpecies.sort((a, b) => String((a && (a.name || a.nome)) || '').localeCompare(String((b && (b.name || b.nome)) || '')));
+        currentSpecies.sort((a, b) => getSpeciesName(a).localeCompare(getSpeciesName(b)));
         
         renderTable();
     } catch (error) {
@@ -187,25 +252,34 @@ async function handleSave(e) {
     e.preventDefault();
     
     const name = elements.nameInput.value.trim();
-    const description = elements.descriptionInput.value.trim();
+    const scientificName = elements.scientificNameInput.value.trim();
     
     if (!name) {
         showToast('O nome é obrigatório', 'warning');
         return;
     }
 
+    if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
+        const duplicate = window.SiswebSpeciesModal.getExactDuplicate(name, editingId, () => currentSpecies);
+        if (duplicate) {
+            showToast(`Espécie já cadastrada: ${getSpeciesName(duplicate)}. Use o cadastro existente para evitar duplicidade.`, 'warning');
+            elements.nameInput.focus();
+            return;
+        }
+    }
+
     showLoading(true);
 
-    const speciesData = {
-        name,
-        nome: name,
-        description,
-        descricao: description,
-        updatedAt: new Date().toISOString()
-    };
+    const now = new Date().toISOString();
+    const speciesData = toCanonicalSpecies({
+        id: editingId || undefined,
+        especie: name,
+        nomeCientifico: scientificName,
+        updatedAt: now
+    }, 0, { updatedAt: now });
 
     if (!editingId) {
-        speciesData.createdAt = new Date().toISOString();
+        speciesData.createdAt = now;
     }
 
     try {
@@ -224,25 +298,25 @@ async function handleSave(e) {
             if (finalId === 'auto') {
                 if (window.firebaseService.database) {
                     // Criar referência para gerar ID sem criar registro vazio
-                    finalId = window.firebaseService.database.ref('species').push().key;
+                    finalId = window.firebaseService.database.ref('especies').push().key;
                 } else {
                     finalId = Date.now().toString();
                 }
             }
             // Adicionar o ID ao objeto de dados para garantir consistência
             const dataToSave = { ...speciesData, id: finalId };
-            result = await saveMethod.call(window.firebaseService, `species/${finalId}`, dataToSave);
+            result = await saveMethod.call(window.firebaseService, `especies/${finalId}`, dataToSave);
         } else {
             let finalId = id;
             if (finalId === 'auto') {
                 if (window.firebaseService.database) {
-                    finalId = window.firebaseService.database.ref('species').push().key;
+                    finalId = window.firebaseService.database.ref('especies').push().key;
                 } else {
                     finalId = Date.now().toString();
                 }
             }
             const dataToSave = { ...speciesData, id: finalId };
-            result = await saveMethod.call(window.firebaseService, 'species', finalId, dataToSave);
+            result = await saveMethod.call(window.firebaseService, 'especies', finalId, dataToSave);
         }
         
         if (result.success) {
@@ -261,15 +335,21 @@ async function handleSave(e) {
 }
 
 window.editSpecies = (id) => {
-    const species = currentSpecies.find(s => s.id === id);
+    const normalizedId = String(id || '').trim();
+    const species = currentSpecies.find(s => [s && s.id, s && s.key, s && s.firebaseKey, s && s.originalId]
+        .map(value => String(value || '').trim())
+        .filter(Boolean)
+        .includes(normalizedId));
     if (!species) return;
 
-    editingId = id;
-    elements.nameInput.value = species.name || species.nome || '';
-    elements.descriptionInput.value = species.description || species.descricao || '';
+    editingId = String((species.firebaseKey || species.key || species.id || id) || '').trim();
+    if (elements.speciesIdInput) elements.speciesIdInput.value = editingId;
+    elements.nameInput.value = getSpeciesName(species);
+    elements.scientificNameInput.value = getSpeciesScientific(species);
     
     elements.modalTitle.textContent = 'Editar Espécie';
-    elements.saveBtn.textContent = 'Atualizar';
+    elements.saveBtn.textContent = 'Atualizar Espécie';
+    enhanceSpeciesModal();
     
     openModal();
 };
@@ -280,14 +360,17 @@ window.deleteSpecies = async (id) => {
     showLoading(true);
     try {
         const tenant = await ensureAuthAndTenant();
-        // Only delete from 'species'
-        // Note: deleteData in firebaseService might need 'species/ID'
-        const result = await window.firebaseService.deleteData(`species/${id}`);
+        // Excluir no caminho canônico.
+        const result = await window.firebaseService.deleteData(`especies/${id}`);
         
         if (result.success) {
             currentSpecies = currentSpecies.filter(s => s.id !== id);
             try {
                 if (window.firebaseService && typeof window.firebaseService.removeLocalStorage === 'function') {
+                    window.firebaseService.removeLocalStorage('especies');
+                    window.firebaseService.removeLocalStorage(`companies/${tenant}/especies`);
+                    window.firebaseService.removeLocalStorage(`especies/${id}`);
+                    window.firebaseService.removeLocalStorage(`companies/${tenant}/especies/${id}`);
                     window.firebaseService.removeLocalStorage('species');
                     window.firebaseService.removeLocalStorage(`companies/${tenant}/species`);
                     window.firebaseService.removeLocalStorage(`species/${id}`);
@@ -315,8 +398,8 @@ function renderTable(list = currentSpecies) {
     
     elements.tableBody.innerHTML = paginatedItems.map(item => `
         <tr>
-            <td>${item.name || item.nome || '-'}</td>
-            <td>${item.description || item.descricao || '-'}</td>
+            <td>${escapeHtml(getSpeciesName(item) || '-')}</td>
+            <td>${escapeHtml(getSpeciesScientific(item) || '-')}</td>
             <td class="actions-cell">
                 <button onclick="editSpecies('${item.id}')" class="btn btn-sm btn-primary" title="Editar">
                     <i class="fas fa-edit"></i>
@@ -375,22 +458,27 @@ function filterSpecies(text) {
 
 function filterList(list, text) {
     if (!text) return list;
-    const lower = text.toLowerCase();
-    return list.filter(item => 
-        (item.name && item.name.toLowerCase().includes(lower)) ||
-        (item.nome && item.nome.toLowerCase().includes(lower)) ||
-        (item.description && item.description.toLowerCase().includes(lower)) ||
-        (item.descricao && item.descricao.toLowerCase().includes(lower))
-    );
+    const lower = normalizeSearchKey(text);
+    return list.filter(item => {
+        const haystack = [
+            getSpeciesName(item),
+            getSpeciesScientific(item),
+            item.nomeComum,
+            item.commonName
+        ].map(normalizeSearchKey).join(' ');
+        return haystack.includes(lower);
+    });
 }
 
 function openModal() {
-    elements.modal.style.display = 'block';
+    elements.modal.style.display = 'flex';
+    elements.modal.setAttribute('aria-hidden', 'false');
     elements.nameInput.focus();
 }
 
 function closeModal() {
     elements.modal.style.display = 'none';
+    elements.modal.setAttribute('aria-hidden', 'true');
 }
 
 function showLoading(show) {

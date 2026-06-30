@@ -21,6 +21,7 @@ class FirebaseServiceTL {
         this.syncQueue = new Map();
         this.cache = new Map();
         this.cacheTimeout = 5 * 60 * 1000; // 5 minutos
+        this.pendingReads = new Map();
         this.tenantId = null;
         
         this.init();
@@ -222,6 +223,99 @@ class FirebaseServiceTL {
         return null;
     }
 
+    normalizeCompanyProfileForReport(raw = {}, companyId = '') {
+        const src = raw && typeof raw === 'object' ? raw : {};
+        const id = String(src.companyId || src.companyID || src.tenantId || src.id || companyId || '').trim();
+        const name = src.nome || src.name || src.razaoSocial || src.fantasia || src.nomeFantasia || src.companyName || '';
+        const enderecoObj = src.endereco && typeof src.endereco === 'object' ? src.endereco : {};
+        const address = src.endereco && typeof src.endereco !== 'object'
+            ? src.endereco
+            : (src.address || [enderecoObj.logradouro, enderecoObj.numero, enderecoObj.bairro].filter(Boolean).join(', '));
+        const city = src.cidade || src.city || src.municipio || enderecoObj.municipio || '';
+        const state = src.estado || src.state || src.uf || enderecoObj.uf || '';
+        const phone = src.telefone || src.phone || src.celular || '';
+        const logoStoragePath = src.logoStoragePath || src.logoPath || src.storagePath || '';
+        const logoRaw = src.logoUrl || src.logoURL || src.logoDownloadURL || src.logo || logoStoragePath || src.logoBase64 || src.logoData || '';
+        const logo = logoRaw && /^[A-Za-z0-9+/=]+$/.test(String(logoRaw)) && String(logoRaw).length > 80
+            ? `data:image/png;base64,${logoRaw}`
+            : String(logoRaw || '');
+        return {
+            id,
+            companyId: id,
+            tenantId: id,
+            nome: name || 'Empresa não informada',
+            name: name || 'Empresa não informada',
+            cnpj: src.cnpj || src.taxId || '-',
+            endereco: address || '-',
+            address: address || '-',
+            cidade: city || '-',
+            city: city || '-',
+            estado: state || '-',
+            state: state || '-',
+            telefone: phone || '-',
+            phone: phone || '-',
+            email: src.email || '-',
+            logo,
+            logoUrl: logo,
+            logoStoragePath: String(logoStoragePath || ''),
+            logoPath: String(logoStoragePath || ''),
+            logoFileName: src.logoFileName || src.logoName || '',
+            logoContentType: src.logoContentType || src.logoMimeType || '',
+            logoSize: src.logoSize || '',
+            logoUpdatedAt: src.logoUpdatedAt || '',
+            logoSvg: !logo
+        };
+    }
+
+    async resolveReportCompanyId(options = {}) {
+        const explicit = options.companyId || options.companyID || options.tenantId;
+        if (explicit) {
+            this.setTenantId(explicit);
+            return this.getTenantId() || '';
+        }
+        const tenant = this.getTenantId();
+        if (tenant) return tenant;
+        try {
+            const uid = this.currentUid || (firebase && firebase.auth && firebase.auth().currentUser && firebase.auth().currentUser.uid);
+            if (uid) {
+                const res = await this.loadFromFirebase(`users/${uid}`);
+                const user = res && res.success ? res.data : null;
+                const companyId = user && (user.companyId || user.companyID || user.tenantId);
+                if (companyId) {
+                    this.setTenantId(companyId);
+                    return this.getTenantId() || '';
+                }
+            }
+        } catch (_) {}
+        return '';
+    }
+
+    async getCompanyProfileForReport(options = {}) {
+        const companyId = await this.resolveReportCompanyId(options);
+        let data = {};
+        if (companyId) {
+            try {
+                const profile = await this.loadFromFirebase(`companies/${companyId}/profile`);
+                if (profile && profile.success && profile.data && typeof profile.data === 'object') data = { ...data, ...profile.data };
+            } catch (_) {}
+            try {
+                const root = await this.loadFromFirebase(`companies/${companyId}`);
+                const rootData = root && root.success && root.data && typeof root.data === 'object' ? root.data : {};
+                data = { ...rootData, ...data };
+            } catch (_) {}
+        }
+        try {
+            const raw = localStorage.getItem('company_info');
+            const localInfo = raw ? JSON.parse(raw) : {};
+            const localId = localInfo && (localInfo.companyId || localInfo.companyID || localInfo.tenantId || localInfo.id);
+            if ((!companyId || !localId || String(localId) === String(companyId)) && localInfo && typeof localInfo === 'object') {
+                data = { ...localInfo, ...data };
+            }
+        } catch (_) {}
+        const normalized = this.normalizeCompanyProfileForReport(data, companyId);
+        return { success: true, companyId: normalized.companyId || companyId || '', source: companyId ? 'firebaseServiceTL' : 'defaults', data: normalized };
+    }
+
     isTenantAuditDebugEnabled() {
         try {
             if (typeof window !== 'undefined' && window.__TENANT_AUDIT_DEBUG === true) return true;
@@ -268,7 +362,11 @@ class FirebaseServiceTL {
     // Namespace final
     getNamespacedPath(path) {
         try {
-            const clean = String(path || '').replace(/^\/+/, '');
+            const cleanRaw = String(path || '').replace(/^\/+/, '');
+            const clean = cleanRaw
+                .replace(/^data\/species(\/|$)/, 'especies$1')
+                .replace(/^species(\/|$)/, 'especies$1')
+                .replace(/^especiesPct(\/|$)/, 'especies$1');
             
             // 1. Caminhos absolutos (já começam com companies/ ou users/) não devem ser alterados
             if (!clean || /^companies\//.test(clean) || /^users\//.test(clean)) return clean;
@@ -318,12 +416,27 @@ class FirebaseServiceTL {
             'romaneiosPes': ['romaneios/pes', 'romaneios_pes'],
             'romaneios_pes': ['romaneios/pes', 'romaneios_pes'],
             'romaneioPes': ['romaneios/pes', 'romaneios_pes'],
-            'romaneiopes': ['romaneios/pes', 'romaneios_pes']
+            'romaneiopes': ['romaneios/pes', 'romaneios_pes'],
+            // Especies
+            'species': ['especies'],
+            'especies': ['especies'],
+            'especiesPct': ['especies'],
+            'data/species': ['especies']
         };
 
         const candidates = [];
         const seen = new Set();
         const push = (p) => { if (p && !seen.has(p)) { seen.add(p); candidates.push(p); } };
+
+        if (/^(species|especies|especiesPct|data\/species)(\/|$)/.test(String(key || ''))) {
+            const rest = String(key || '')
+                .replace(/^data\/species\/?/, '')
+                .replace(/^species\/?/, '')
+                .replace(/^especiesPct\/?/, '')
+                .replace(/^especies\/?/, '');
+            push(rest ? `especies/${rest}` : 'especies');
+            return candidates;
+        }
 
         // Preferir mapeamentos conhecidos
         if (map[key]) {
@@ -382,6 +495,65 @@ class FirebaseServiceTL {
                 try { localStorage.setItem(k, payload); } catch (_) {}
             }
         } catch (_) {}
+    }
+
+    readFreshCache(keys) {
+        const now = Date.now();
+        for (const key of keys) {
+            const cached = this.cache.get(key);
+            if (cached && (now - cached.timestamp) < this.cacheTimeout) {
+                return cached.data;
+            }
+        }
+        return null;
+    }
+
+    readLocalFallback(key) {
+        const localData = this.readLocalStorage(key);
+        if (!localData) return null;
+
+        try {
+            return JSON.parse(localData);
+        } catch (_) {
+            return null;
+        }
+    }
+
+    async waitForAuthReady(timeoutMs = 1800) {
+        try {
+            if (this.currentUid) return true;
+            const startedAt = Date.now();
+            while ((Date.now() - startedAt) < timeoutMs) {
+                if (typeof firebase !== 'undefined' && typeof firebase.auth === 'function') break;
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            if (typeof firebase === 'undefined' || typeof firebase.auth !== 'function') return false;
+
+            const auth = firebase.auth();
+            if (auth.currentUser) {
+                this.currentUid = auth.currentUser.uid;
+                return true;
+            }
+
+            return await new Promise((resolve) => {
+                let finished = false;
+                const done = (user) => {
+                    if (finished) return;
+                    finished = true;
+                    try { unsubscribe(); } catch (_) {}
+                    if (user && user.uid) this.currentUid = user.uid;
+                    resolve(Boolean(user));
+                };
+                const unsubscribe = auth.onAuthStateChanged(
+                    (user) => done(user || auth.currentUser || null),
+                    () => done(auth.currentUser || null)
+                );
+                const remaining = Math.max(0, timeoutMs - (Date.now() - startedAt));
+                setTimeout(() => done(auth.currentUser || null), remaining || 1);
+            });
+        } catch (_) {
+            return false;
+        }
     }
 
     removeLocalStorage(key) {
@@ -468,6 +640,32 @@ class FirebaseServiceTL {
      */
     async saveData(key, data) {
         console.log(`💾 Salvando dados: ${key}`);
+
+        if (/^(species|especies|especiesPct|data\/species)(\/|$)/.test(String(key || '')) && data && typeof data === 'object') {
+            const normalizeSpeciesItem = (item) => {
+                if (!item || typeof item !== 'object') return item;
+                const name = String(item.especie || item.nome || item.name || item.nomeComum || item.commonName || '').trim();
+                const scientificName = String(item.nomeCientifico || item.scientificName || item.scientific || item.descricao || item.description || item.decription || item.desc || '').trim();
+                const excluded = new Set(['key', 'firebaseKey', 'nome', 'name', 'nomeComum', 'commonName', 'description', 'descricao', 'decription', 'desc', 'scientificName', 'scientific', 'nomeCientífico']);
+                const clean = {};
+                Object.keys(item).forEach((field) => {
+                    if (field.startsWith('__') || excluded.has(field)) return;
+                    if (item[field] !== undefined) clean[field] = item[field];
+                });
+                clean.id = item.id || item.key || item.firebaseKey || clean.id;
+                clean.especie = name;
+                clean.nomeCientifico = scientificName;
+                clean.ativo = item.ativo !== false;
+                clean.createdAt = item.createdAt || item.created || clean.createdAt || new Date().toISOString();
+                clean.updatedAt = item.updatedAt || item.updated || new Date().toISOString();
+                return clean;
+            };
+            if (Array.isArray(data)) {
+                data = data.map(normalizeSpeciesItem);
+            } else {
+                data = normalizeSpeciesItem(data);
+            }
+        }
         
         // ✅ SANITIZAÇÃO DE SEGURANÇA (CRÍTICO)
         if (key && (key.includes('romaneios') || key.includes('romaneioTora'))) {
@@ -548,18 +746,39 @@ class FirebaseServiceTL {
     /**
      * 📖 Carregar dados com prioridade Firebase - COMPATÍVEL COM ROMANEIOPCT
      */
-    async loadFromFirebase(path) {
+    async loadFromFirebase(path, options = {}) {
         console.log(`🔥 loadFromFirebase: Carregando "${path}" do Firebase`);
         
         try {
+            const canonicalOnly = options && options.canonicalOnly === true;
+            const candidates = canonicalOnly ? [path] : this.resolveReadCandidates(path);
+            const scopedCandidates = candidates.map(candidate => this.getNamespacedPath(candidate));
+            const cacheKeys = [path, ...candidates, ...scopedCandidates];
+            const cached = this.readFreshCache(cacheKeys);
+            if (cached !== null && cached !== undefined) {
+                return { success: true, data: cached, source: 'memory-cache' };
+            }
+
             if (!this.isFirebaseAvailable || !this.isOnline) {
+                const localFallback = this.readLocalFallback(path);
+                if (localFallback !== null && localFallback !== undefined) {
+                    return { success: true, data: localFallback, source: 'localStorage' };
+                }
                 return {
                     success: false,
                     error: 'Firebase não disponível ou offline',
                     data: null
                 };
             }
-            const candidates = this.resolveReadCandidates(path);
+
+            await this.waitForAuthReady();
+
+            const pendingKey = `${canonicalOnly ? 'canonical:' : 'compat:'}${scopedCandidates.join('|') || path}`;
+            if (this.pendingReads.has(pendingKey)) {
+                return await this.pendingReads.get(pendingKey);
+            }
+
+            const readPromise = (async () => {
             for (const candidate of candidates) {
                 try {
                     const nsCandidate = this.getNamespacedPath(candidate);
@@ -623,13 +842,30 @@ class FirebaseServiceTL {
                 } catch (e) {
                     const msg = String(e && e.message || e);
                     if (msg.toLowerCase().includes('permission_denied')) {
-                        console.warn(`⚠️ Permissão negada em '${candidate}', tentando próximo alias`);
+                        if (canonicalOnly || candidates.length <= 1) {
+                            console.warn(`⚠️ Permissão negada em '${candidate}'`);
+                        } else {
+                            console.warn(`⚠️ Permissão negada em '${candidate}', tentando próximo alias`);
+                        }
                         continue;
                     }
                     console.warn(`⚠️ Erro ao consultar '${candidate}':`, msg);
                 }
             }
+            const localFallback = this.readLocalFallback(path);
+            if (localFallback !== null && localFallback !== undefined) {
+                return { success: true, data: localFallback, source: 'localStorage' };
+            }
             return { success: false, error: 'Nenhum dado encontrado', data: null };
+            })();
+
+            this.pendingReads.set(pendingKey, readPromise);
+
+            try {
+                return await readPromise;
+            } finally {
+                this.pendingReads.delete(pendingKey);
+            }
 
         } catch (error) {
             console.error(`❌ Erro ao carregar ${path}:`, error);
@@ -644,9 +880,9 @@ class FirebaseServiceTL {
     /**
      * 📖 Carregar dados com prioridade Firebase (método original)
      */
-    async loadData(key) {
+    async loadData(key, options = {}) {
         // Redirecionar para o método mais robusto
-        const result = await this.loadFromFirebase(key);
+        const result = await this.loadFromFirebase(key, options);
         if (result.success) {
             return result.data;
         }

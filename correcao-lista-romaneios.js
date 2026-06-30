@@ -17,8 +17,8 @@ console.log("🛑 === SCRIPT CORRECAO-LISTA-ROMANEIOS.JS DESATIVADO ===");
 console.log("🛑 Motivo: Causando loop infinito e abertura automática de modais");
 console.log("🛑 Use o script romaneiotora_modal_fix_final_cleaned.js para correções");
 
-// Sair imediatamente sem executar nada
-return;
+// Sair imediatamente sem executar nada, mantendo o restante do arquivo parseavel.
+if (false) {
 
 console.log('🔧 Carregando correções para Lista de Romaneios...');
 
@@ -44,6 +44,31 @@ async function aguardarInterfaceCorrigida() {
     
     console.warn('⚠️ Timeout aguardando DatabaseAdapter');
     return false;
+}
+
+function getRomaneioRecencyTimestampCorrigido(romaneio) {
+    if (!romaneio || typeof romaneio !== 'object') return 0;
+    const candidates = [
+        romaneio._metadata && romaneio._metadata.lastUpdated,
+        romaneio.updatedAt,
+        romaneio.updated,
+        romaneio.lastModified,
+        romaneio.dataEmissao,
+        romaneio.data,
+        romaneio.dataHora,
+        romaneio.dataCriacao,
+        romaneio.createdAt,
+        romaneio.created,
+        romaneio.timestamp
+    ];
+    for (const candidate of candidates) {
+        if (!candidate) continue;
+        const ts = typeof candidate === 'number' ? candidate : Date.parse(candidate);
+        if (!isNaN(ts)) return ts;
+    }
+    const id = String(romaneio.id || romaneio.romaneioId || romaneio.firebaseKey || romaneio.key || romaneio.numero || romaneio.numeroRomaneio || '');
+    const match = id.match(/(\d{10,})/);
+    return match ? Number(match[1]) || 0 : 0;
 }
 
 // Função corrigida para abrir lista de romaneios
@@ -352,12 +377,7 @@ async function renderRomaneioListCorrigida(filter = '') {
             return;
         }
 
-        // Ordenar por data (mais recente primeiro)
-        romaneiosValidos.sort((a, b) => {
-            const dataA = new Date(a.data || '1900-01-01');
-            const dataB = new Date(b.data || '1900-01-01');
-            return dataB - dataA;
-        });
+        romaneiosValidos.sort((a, b) => getRomaneioRecencyTimestampCorrigido(b) - getRomaneioRecencyTimestampCorrigido(a));
         
         // Gerar HTML das linhas
         let html = '';
@@ -742,6 +762,38 @@ window.imprimirRomaneioToraExternal = async function(romaneioId, index, tipo = '
     }
 };
 
+function resolveCompanyIdForReportLegacy() {
+    try {
+        const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+        if (svc && typeof svc.resolveReportCompanyId === 'function') {
+            const maybe = svc.resolveReportCompanyId();
+            if (maybe && typeof maybe.then !== 'function') return String(maybe);
+        }
+        if (svc && typeof svc.getCurrentTenantId === 'function') {
+            const id = svc.getCurrentTenantId();
+            if (id) return String(id);
+        }
+        if (svc && typeof svc.getTenantId === 'function') {
+            const id = svc.getTenantId();
+            if (id) return String(id);
+        }
+    } catch (_) {}
+    try {
+        if (window.appTenantId) return String(window.appTenantId);
+        const current = JSON.parse(localStorage.getItem('currentUser') || 'null') || {};
+        const persistent = JSON.parse(localStorage.getItem('persistentUser') || 'null') || {};
+        const id = current.companyId || current.companyID || current.tenantId || persistent.companyId || persistent.companyID || persistent.tenantId;
+        if (id) return String(id);
+    } catch (_) {}
+    try {
+        const raw = localStorage.getItem('company_info');
+        const info = raw ? JSON.parse(raw) : {};
+        const id = info.companyId || info.companyID || info.tenantId || info.id;
+        if (id) return String(id);
+    } catch (_) {}
+    return '';
+}
+
 // ✅ FUNÇÃO PARA OBTER DADOS DA EMPRESA
 async function obterDadosEmpresa() {
     console.log('🏢 Obtendo dados da empresa...');
@@ -749,20 +801,28 @@ async function obterDadosEmpresa() {
     try {
         // Tentar diferentes métodos para obter dados da empresa
         let dadosEmpresa = null;
+        const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+        if (svc && typeof svc.getCompanyProfileForReport === 'function') {
+            const centralResult = await svc.getCompanyProfileForReport();
+            dadosEmpresa = centralResult && centralResult.success !== false ? (centralResult.data || centralResult) : null;
+            if (dadosEmpresa) console.log('✅ Dados obtidos via helper central:', dadosEmpresa);
+        }
         
         // 1. Tentar usar a função getCompanyDataFirebase se disponível
-        if (typeof getCompanyDataFirebase === 'function') {
+        if (!dadosEmpresa && typeof getCompanyDataFirebase === 'function') {
             dadosEmpresa = await getCompanyDataFirebase();
             console.log('✅ Dados obtidos via getCompanyDataFirebase:', dadosEmpresa);
         } 
-        // 2. Tentar usar getData('companies') diretamente
-        else if (typeof getData === 'function') {
+        // 2. Tentar usar profile do tenant diretamente
+        else if (!dadosEmpresa && typeof getData === 'function') {
             try {
-                const companies = await getData('companies') || [];
-                dadosEmpresa = companies.length > 0 ? companies[0] : null;
-                console.log('✅ Dados obtidos via getData(companies):', dadosEmpresa);
+                const tenantId = resolveCompanyIdForReportLegacy();
+                if (tenantId) {
+                    dadosEmpresa = await getData(`companies/${tenantId}/profile`);
+                    console.log('✅ Dados obtidos via companies/{tenantId}/profile:', dadosEmpresa);
+                }
             } catch (error) {
-                console.warn('⚠️ Erro ao obter dados via getData(companies):', error);
+                console.warn('⚠️ Erro ao obter dados via profile do tenant:', error);
             }
         }
         // 3. Tentar usar databaseAdapter se disponível
@@ -2414,3 +2474,4 @@ window.garantirListaAtualizadaAposExclusao = async function(tentativas = 3) {
 };
 
 console.log('🎯 Sistema avançado de consistência de lista ativado!');
+}

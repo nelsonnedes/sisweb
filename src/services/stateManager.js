@@ -462,7 +462,7 @@ class StateManager {
                 }
             } else {
                 this.state.especies.push(savedEspecie);
-                this.state.especies.sort((a, b) => a.nome.localeCompare(b.nome));
+                this.state.especies.sort((a, b) => String(a.especie || a.nome || '').localeCompare(String(b.especie || b.nome || '')));
             }
 
             this.emit(EVENT_TYPES.ESPECIES_UPDATED, this.state.especies);
@@ -678,4 +678,4 @@ export const {
     clearFilters,
     syncWithFirebase,
     clearMessages
-} = stateManager; 
+} = stateManager;

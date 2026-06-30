@@ -71,8 +71,10 @@ const KEY_MAPPING = {
     'clients': 'clients',
     'fornecedores': 'fornecedores', // Coleção exclusiva de fornecedores
     'clientesTora': 'clients', // Redirecionamento
-    'species': 'species',
-    'especies': 'species', // Redirecionamento
+    'species': 'especies', // Legado de leitura/escrita normalizada
+    'especies': 'especies',
+    'especiesPct': 'especies', // Redirecionamento legado
+    'data/species': 'especies', // Redirecionamento legado
     
     // Vendas e pedidos
     'pedidosVenda': 'pedidosVenda',
@@ -142,7 +144,7 @@ class UnifiedFirebaseService {
         // Políticas de sincronização e fallback por coleção
         this.syncPolicies = {
             high: ['romaneios/tora', 'romaneiosPct', 'romaneios/tl'],
-            medium: ['fornecedores', 'clients', 'species', 'especies'],
+            medium: ['fornecedores', 'clients', 'especies'],
             low: ['preferences', 'cache']
         };
 

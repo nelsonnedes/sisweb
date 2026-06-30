@@ -29,6 +29,42 @@ window.RenderizarTabela = (function() {
         if (OPCOES_ITENS_POR_PAGINA.includes(saved)) itensPorPagina = saved;
     } catch (_) {}
 
+    const TL_TABLE_SORT_COLUMNS = [
+        { key: 'especie' },
+        { key: 'comprimento', type: 'number' },
+        { key: 'espessura', type: 'number', accessor: (item) => item.espessura || item[legacyKey] || 0 },
+        { key: 'largura', type: 'number' },
+        { key: 'quantidade', type: 'number' },
+        { key: 'volumeTotal', type: 'number', accessor: (item) => calcularVolume(item) * (parseInt(item.quantidade, 10) || 1) },
+        { key: 'preco', type: 'number', accessor: (item) => item.preco || item.price || 0 },
+        { key: 'valorTotal', type: 'number', accessor: (item) => {
+            const volumeTotal = calcularVolume(item) * (parseInt(item.quantidade, 10) || 1);
+            return volumeTotal * (parseFloat(item.preco || item.price) || 0);
+        } },
+        { key: 'acoes', sortable: false }
+    ];
+
+    function getTLTableSortConfig() {
+        return {
+            tableSelector: '#romaneioTable',
+            minWidth: '1100px',
+            columns: TL_TABLE_SORT_COLUMNS,
+            getItems: () => window.AdicionarItem ? window.AdicionarItem.obterItens() : (window.romaneioItems || []),
+            setPage: (page) => { paginaAtual = page; },
+            render: () => renderizarTabela()
+        };
+    }
+
+    function configurarTabelaOrdenavel() {
+        if (!window.RomaneioTableEnhancements) return;
+        window.RomaneioTableEnhancements.bindSortableHeaders(getTLTableSortConfig());
+    }
+
+    function aplicarOrdenacaoTabela() {
+        if (!window.RomaneioTableEnhancements) return;
+        window.RomaneioTableEnhancements.applySortFromTable(getTLTableSortConfig());
+    }
+
     /**
      * ✅ FUNÇÃO PRINCIPAL: Renderizar Tabela
      */
@@ -38,6 +74,8 @@ window.RenderizarTabela = (function() {
         try {
             // Obter itens do módulo AdicionarItem
             const items = window.AdicionarItem ? window.AdicionarItem.obterItens() : (window.romaneioItems || []);
+            configurarTabelaOrdenavel();
+            aplicarOrdenacaoTabela();
             
             console.log(`📋 Total de itens: ${items.length}`);
             

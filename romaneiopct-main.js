@@ -46,13 +46,13 @@ function resolveCompanyId() {
         if (window.appTenantId) return String(window.appTenantId);
         if (window.companyInfo) {
             const raw = window.companyInfo;
-            const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+            const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
             if (id) return String(id);
         }
         const stored = localStorage.getItem('company_info');
         if (stored) {
             const obj = JSON.parse(stored);
-            const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+            const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
             if (id) return String(id);
         }
     } catch (_) {}
@@ -596,7 +596,15 @@ async function carregarDadosIniciais() {
             console.log(`📦 Fallback: ${window.clientes.length} clientes, ${window.especies.length} espécies`);
         }
 
-        if (typeof window.getData === 'function') {
+        if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.getAll === 'function') {
+            try {
+                window.especies = await window.SiswebSpeciesStore.getAll({ waitRemote: true, timeoutMs: 5000 });
+                console.log(`✅ ${window.especies.length} espécies carregadas via speciesStore`);
+            } catch (error) {
+                console.warn('⚠️ Erro ao carregar espécies via speciesStore:', error);
+                window.especies = [];
+            }
+        } else if (typeof window.getData === 'function') {
             try {
                 const especies = await window.getData('especies');
                 window.especies = especies || [];

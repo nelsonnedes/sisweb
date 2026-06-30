@@ -4,6 +4,7 @@ class FolhaLancamentos {
         this.isEditMode = false;
         this.lancamentoAtual = {};
         this._fechadasCache = { items: [], lastUpdated: 0 };
+        this._folhasFechadasFiltrosAtivos = { mesAno: '', funcionario: '' };
         this.setupDataListeners(); // Configurar listener para atualizações de dados
         // Adiar primeira carga até que o database esteja pronto ou dados do sistema estejam prontos
         this._initialLoadDone = false;
@@ -28,21 +29,133 @@ class FolhaLancamentos {
             }
             const base = String(path || '');
             if (!base) return base;
-            if (/^companies\//.test(base) || /^users\//.test(base)) return base;
+            if (/^companies(\/|$)/.test(base) || /^users(\/|$)/.test(base)) return base;
             const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
             if (svc && typeof svc.getNamespacedPath === 'function') {
                 return svc.getNamespacedPath(base);
             }
-            const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug || window.companyInfo.nome || window.companyInfo.name));
+            const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
             if (rawTenant) return `companies/${String(rawTenant)}/${base}`;
             const stored = localStorage.getItem('company_info');
             if (stored) {
                 const obj = JSON.parse(stored);
-                const t = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                const t = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                 if (t) return `companies/${String(t)}/${base}`;
             }
         } catch {}
         return path;
+    }
+
+    _findLancamentoByAnyId(id) {
+        const alvo = String(id || '').trim();
+        if (!alvo) return null;
+        const sources = [
+            this.lancamentos,
+            window.folhaSystem && window.folhaSystem.folhas
+        ];
+        for (const source of sources) {
+            if (!Array.isArray(source)) continue;
+            const found = source.find((item) => {
+                const itemId = item && (item.id || item.key || item.$key || item.recordId);
+                return String(itemId || '').trim() === alvo;
+            });
+            if (found) return found;
+        }
+        return null;
+    }
+
+    _resolveEditLancamentoId(data = {}) {
+        const current = this.lancamentoAtual || {};
+        const funcionarioId = String(
+            (data && data.funcionario && data.funcionario.id) ||
+            (current && current.funcionario && current.funcionario.id) ||
+            ''
+        ).trim();
+        const domId = (() => {
+            try {
+                const idEl = document.getElementById('folhaId');
+                return idEl ? String(idEl.value || '').trim() : '';
+            } catch { return ''; }
+        })();
+        const candidates = [
+            this._editLancamentoId,
+            current.id,
+            current.key,
+            current.$key,
+            current.recordId,
+            domId,
+            data.id,
+            data.key,
+            data.$key,
+            data.recordId
+        ].map((id) => String(id || '').trim()).filter(Boolean);
+
+        for (const id of candidates) {
+            if (this._findLancamentoByAnyId(id)) return id;
+        }
+
+        const stable = candidates.find((id) => !funcionarioId || id !== funcionarioId);
+        return stable || candidates[0] || '';
+    }
+
+    _ensureEditLancamentoIdentity(data = {}) {
+        if (!this.isEditMode) return data;
+        const originalId = this._resolveEditLancamentoId(data);
+        if (!originalId) return data;
+
+        const previousId = String(data.id || '').trim();
+        data.id = originalId;
+
+        try {
+            const idEl = document.getElementById('folhaId');
+            if (idEl && String(idEl.value || '').trim() !== originalId) {
+                idEl.value = originalId;
+            }
+        } catch {}
+
+        if (previousId && previousId !== originalId) {
+            console.warn('🛡️ ID do lançamento preservado durante edição:', {
+                recebido: previousId,
+                preservado: originalId
+            });
+        }
+        return data;
+    }
+
+    _findFuncionarioCadastro(id, nome) {
+        const alvoId = String(id || '').trim();
+        const norm = (value) => {
+            try {
+                return String(value || '').toLowerCase().trim()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ');
+            } catch { return ''; }
+        };
+        const alvoNome = norm(nome);
+        const sources = [
+            window.folhaFuncionarios && window.folhaFuncionarios.funcionarios,
+            window.folhaSystem && window.folhaSystem.funcionarios
+        ];
+        for (const source of sources) {
+            if (!Array.isArray(source)) continue;
+            let found = null;
+            if (alvoId) found = source.find((func) => String((func && func.id) || '').trim() === alvoId);
+            if (!found && alvoNome) found = source.find((func) => norm(func && func.nome) === alvoNome);
+            if (found) return found;
+        }
+        return null;
+    }
+
+    _syncFuncionarioAtivoFlag(data = {}) {
+        if (!data || !data.funcionario || typeof data.funcionario !== 'object') return data;
+        const cadastro = this._findFuncionarioCadastro(data.funcionario.id, data.funcionario.nome);
+        if (!cadastro) return data;
+        if (cadastro.ativo === false) {
+            data.funcionario.ativo = false;
+        } else if (data.funcionario.ativo === false) {
+            delete data.funcionario.ativo;
+        }
+        return data;
     }
 
     setupDataListeners() {
@@ -107,6 +220,7 @@ class FolhaLancamentos {
             // Atualizar cache de fechadas com base nos lançamentos mais recentes
             this._fechadasCache.items = this._filtrarFechadas(this.lancamentos);
             this._fechadasCache.lastUpdated = Date.now();
+            this._refreshFolhasFechadasModalSeAberto();
             // 🔔 Notificar outros módulos para aplicarem filtros/render
             try {
                 window.dispatchEvent(new CustomEvent('folhas:updated', { detail: { total: this.lancamentos.length, source: 'folha-lancamentos' } }));
@@ -191,6 +305,97 @@ class FolhaLancamentos {
                 : String((f && (f.tipo || f.tipoPagamento)) || '') === 'quinzena';
             return st === 'mes_fechado' || (isQuinzena && st === 'quinzena_paga');
         });
+    }
+
+    _isFolhasFechadasModalAberto() {
+        const modal = document.getElementById('folhasFechadasModal');
+        return !!(modal && modal.style.display === 'block');
+    }
+
+    _normalizarTextoFiltroFolhasFechadas(value) {
+        return String(value || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim();
+    }
+
+    _getMesAnoPadraoFolhasFechadas() {
+        const candidatos = [];
+        try {
+            const mesPagina = document.getElementById('mesAno');
+            if (mesPagina && mesPagina.value) candidatos.push(mesPagina.value);
+        } catch {}
+        try {
+            if (window.folhaFiltros && window.folhaFiltros.filtrosAtivos && window.folhaFiltros.filtrosAtivos.mesAno) {
+                candidatos.push(window.folhaFiltros.filtrosAtivos.mesAno);
+            }
+        } catch {}
+        try {
+            const mesModal = document.getElementById('filtroFechadasMesAno');
+            if (mesModal && mesModal.value) candidatos.push(mesModal.value);
+        } catch {}
+        try {
+            if (this._folhasFechadasFiltrosAtivos && this._folhasFechadasFiltrosAtivos.mesAno) {
+                candidatos.push(this._folhasFechadasFiltrosAtivos.mesAno);
+            }
+        } catch {}
+        for (const candidato of candidatos) {
+            const mes = this._normalizeMes(candidato);
+            if (/^\d{4}-\d{2}$/.test(mes)) return mes;
+        }
+        const now = new Date();
+        const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    _getFolhasFechadasFiltrosFromDom() {
+        const mesInput = document.getElementById('filtroFechadasMesAno');
+        const funcInput = document.getElementById('filtroFechadasFuncionario');
+        return {
+            mesAno: this._normalizeMes(mesInput ? mesInput.value : ''),
+            funcionario: String(funcInput ? funcInput.value : '').trim()
+        };
+    }
+
+    _setFolhasFechadasFiltrosToDom(filtros = {}) {
+        const mesInput = document.getElementById('filtroFechadasMesAno');
+        const funcInput = document.getElementById('filtroFechadasFuncionario');
+        const mesAno = this._normalizeMes(filtros.mesAno || '');
+        if (mesInput) mesInput.value = /^\d{4}-\d{2}$/.test(mesAno) ? mesAno : '';
+        if (funcInput) funcInput.value = String(filtros.funcionario || '');
+        this._folhasFechadasFiltrosAtivos = {
+            mesAno: /^\d{4}-\d{2}$/.test(mesAno) ? mesAno : '',
+            funcionario: String(filtros.funcionario || '').trim()
+        };
+    }
+
+    _filtrarFolhasFechadasPorFiltros(lista, filtros = {}) {
+        const mesVal = this._normalizeMes(filtros.mesAno || '');
+        const termo = this._normalizarTextoFiltroFolhasFechadas(filtros.funcionario || '');
+        let base = Array.isArray(lista) ? lista.slice() : [];
+        if (mesVal) base = base.filter(f => this._normalizeMes(f.mesAno) === mesVal);
+        if (termo) base = base.filter(f => {
+            const nome = this._normalizarTextoFiltroFolhasFechadas(f && f.funcionario && f.funcionario.nome);
+            const cargo = this._normalizarTextoFiltroFolhasFechadas(f && f.funcionario && f.funcionario.cargo);
+            return nome.includes(termo) || cargo.includes(termo);
+        });
+        return base;
+    }
+
+    _renderFolhasFechadasComFiltros(mensagemVazia = 'Nenhuma folha fechada encontrada com os filtros') {
+        const filtros = this._getFolhasFechadasFiltrosFromDom();
+        this._folhasFechadasFiltrosAtivos = filtros;
+        const baseCache = Array.isArray(this._fechadasCache.items) && this._fechadasCache.items.length
+            ? this._fechadasCache.items
+            : this._filtrarFechadas(this.lancamentos);
+        const filtradas = this._filtrarFolhasFechadasPorFiltros(baseCache, filtros);
+        this._renderFolhasFechadasTable(filtradas, mensagemVazia);
+    }
+
+    _refreshFolhasFechadasModalSeAberto() {
+        if (!this._isFolhasFechadasModalAberto()) return;
+        this._renderFolhasFechadasComFiltros();
     }
 
     _getFolhasFechadasSortState() {
@@ -329,15 +534,15 @@ class FolhaLancamentos {
             const quinz = window.FolhaUtils?.calcularValorQuinzena ? window.FolhaUtils.calcularValorQuinzena(f) : 0;
             const liquido = window.FolhaUtils?.calcularSalarioLiquidoDisplay ? window.FolhaUtils.calcularSalarioLiquidoDisplay(f) : (f.liquido || 0);
             return `<tr>
-                <td class="ff-col-funcionario"><strong class="ff-nome">${nome}</strong>${cargo ? `<div class="ff-cargo">${cargo}</div>` : ''}</td>
-                <td>${mes}</td>
-                <td><span class="badge-status ${isQuinzena ? 'badge-quinzena' : 'badge-mes'}">${tipoLabel}</span></td>
-                <td>${perc}%</td>
-                <td>${window.FolhaUtils?.formatarMoeda ? window.FolhaUtils.formatarMoeda(salarioBase) : salarioBase}</td>
-                <td>${window.FolhaUtils?.formatarMoeda ? window.FolhaUtils.formatarMoeda(quinz) : quinz}</td>
-                <td class="ff-col-detalhes"><span class="detalhes-info">Acresc.: ${window.FolhaUtils?.formatarMoeda ? window.FolhaUtils.formatarMoeda(f.acrescimos || 0) : (f.acrescimos || 0)} | Desc.: ${window.FolhaUtils?.formatarMoeda ? window.FolhaUtils.formatarMoeda(f.descontos || 0) : (f.descontos || 0)}</span></td>
-                <td><strong>${window.FolhaUtils?.formatarMoeda ? window.FolhaUtils.formatarMoeda(liquido) : liquido}</strong></td>
-                <td class="actions-cell">
+                <td data-label="Funcionário" class="ff-col-funcionario"><strong class="ff-nome">${nome}</strong>${cargo ? `<div class="ff-cargo">${cargo}</div>` : ''}</td>
+                <td data-label="Mês/Ano">${mes}</td>
+                <td data-label="Tipo"><span class="badge-status ${isQuinzena ? 'badge-quinzena' : 'badge-mes'}">${tipoLabel}</span></td>
+                <td data-label="Percentual">${perc}%</td>
+                <td data-label="Salário Base">${window.FolhaUtils?.formatarMoeda ? window.FolhaUtils.formatarMoeda(salarioBase) : salarioBase}</td>
+                <td data-label="1ª Quinzena">${window.FolhaUtils?.formatarMoeda ? window.FolhaUtils.formatarMoeda(quinz) : quinz}</td>
+                <td data-label="Detalhes" class="ff-col-detalhes"><span class="detalhes-info">Acresc.: ${window.FolhaUtils?.formatarMoeda ? window.FolhaUtils.formatarMoeda(f.acrescimos || 0) : (f.acrescimos || 0)} | Desc.: ${window.FolhaUtils?.formatarMoeda ? window.FolhaUtils.formatarMoeda(f.descontos || 0) : (f.descontos || 0)}</span></td>
+                <td data-label="Líquido"><strong>${window.FolhaUtils?.formatarMoeda ? window.FolhaUtils.formatarMoeda(liquido) : liquido}</strong></td>
+                <td data-label="Ações" class="actions-cell">
                     <button class="action-button btn-estornar" title="Estornar Fechamento" onclick="estornarFechamento('${f.id}')" data-folha-id="${f.id}">
                         <i class="fas fa-undo"></i>
                     </button>
@@ -345,17 +550,24 @@ class FolhaLancamentos {
             </tr>`;
         }).join('');
         tbody.innerHTML = linhas;
+        if (window.FolhaUtils && typeof window.FolhaUtils.applyMobileTableLabels === 'function') {
+            window.FolhaUtils.applyMobileTableLabels(document.getElementById('folhasFechadasModal'));
+        }
         if (info) info.textContent = `Mostrando ${base.length} folha(s) fechadas`;
         this._updateFolhasFechadasSortIndicators();
     }
 
-    loadFolhasFechadas() {
+    loadFolhasFechadas(opcoes = {}) {
         try {
             const todos = (window.folhaSystem && Array.isArray(window.folhaSystem.folhas)) ? window.folhaSystem.folhas : (this.lancamentos || []);
             const fechadas = this._filtrarFechadas(todos);
             this._fechadasCache.items = fechadas;
             this._fechadasCache.lastUpdated = Date.now();
-            this._renderFolhasFechadasTable(fechadas, 'Nenhuma folha fechada encontrada');
+            if (opcoes.aplicarFiltros || this._isFolhasFechadasModalAberto()) {
+                this._renderFolhasFechadasComFiltros('Nenhuma folha fechada encontrada com os filtros');
+            } else {
+                this._renderFolhasFechadasTable(fechadas, 'Nenhuma folha fechada encontrada');
+            }
         } catch (e) {
             console.error('❌ Erro ao listar folhas fechadas:', e);
         }
@@ -446,6 +658,7 @@ class FolhaLancamentos {
         
         this.isEditMode = true;
         this.lancamentoAtual = lancamento;
+        this._editLancamentoId = lancamento.id || lancamento.key || lancamento.$key || lancamento.recordId || lancamentoId || '';
         
         // Limpar formulário antes de preencher para evitar estados residuais
         this.clearFolhaForm();
@@ -506,6 +719,7 @@ class FolhaLancamentos {
             console.log('🔍 [DEBUG] Inicialização folhaLancamentos:', typeof window.folhaLancamentos, window.folhaLancamentos);
             console.log('🔧 Configurando cálculo em tempo real para edição...');
             this.setupCalculoRealTime();
+            this.setupValesDetalhados();
             
             // Configurar opções de quinzena
             this.toggleQuinzenaOptions();
@@ -690,6 +904,7 @@ class FolhaLancamentos {
         console.log('💰 Abrindo modal nova folha...');
         
         this.isEditMode = false;
+        this._editLancamentoId = '';
         this.lancamentoAtual = { status: 'rascunho', funcionario: {}, tipo: 'mes', tipoPagamento: 'mes', mesAno: '' };
         
         this.clearFolhaForm();
@@ -721,6 +936,7 @@ class FolhaLancamentos {
         
         setTimeout(() => {
             this.setupCalculoRealTime();
+            this.setupValesDetalhados();
             const tipoSelect = document.getElementById('folhaTipoPagamento');
             if (tipoSelect) {
                 if (!tipoSelect.value) tipoSelect.value = 'mes';
@@ -788,11 +1004,10 @@ class FolhaLancamentos {
         try {
             const mesInput = document.getElementById('filtroFechadasMesAno');
             const funcInput = document.getElementById('filtroFechadasFuncionario');
-            // Definir mês anterior do ano atual
-            const now = new Date();
-            const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-            const yyyyMm = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}`;
-            if (mesInput) mesInput.value = yyyyMm;
+            this._setFolhasFechadasFiltrosToDom({
+                mesAno: this._getMesAnoPadraoFolhasFechadas(),
+                funcionario: funcInput ? funcInput.value : (this._folhasFechadasFiltrosAtivos && this._folhasFechadasFiltrosAtivos.funcionario) || ''
+            });
             // Debounce simples
             let t;
             const trigger = () => { clearTimeout(t); t = setTimeout(() => this.filtrarFolhasFechadas(), 150); };
@@ -800,8 +1015,7 @@ class FolhaLancamentos {
             if (funcInput && !funcInput._fechadasBound) { funcInput.addEventListener('input', trigger); funcInput._fechadasBound = true; }
         } catch(e) { console.warn('⚠️ Falha ao configurar filtros auto do modal fechadas:', e); }
 
-        this.loadFolhasFechadas();
-        setTimeout(() => this.filtrarFolhasFechadas(), 150);
+        this.loadFolhasFechadas({ aplicarFiltros: true });
     }
 
     closeFolhaModal() {
@@ -812,6 +1026,7 @@ class FolhaLancamentos {
         
         this.clearFolhaForm();
         this.isEditMode = false;
+        this._editLancamentoId = '';
         this.lancamentoAtual = null;
     }
 
@@ -827,24 +1042,214 @@ class FolhaLancamentos {
         console.log('🔍 Filtrando folhas fechadas...');
         const tbody = document.getElementById('folhasFechadasTable');
         if (!tbody) return;
-        const mesInput = document.getElementById('filtroFechadasMesAno');
-        const funcInput = document.getElementById('filtroFechadasFuncionario');
-        const mesVal = this._normalizeMes(mesInput ? mesInput.value : '');
-        const termo = String(funcInput ? funcInput.value : '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-        let base = Array.isArray(this._fechadasCache.items) && this._fechadasCache.items.length ? this._fechadasCache.items : this._filtrarFechadas(this.lancamentos);
-        if (mesVal) base = base.filter(f => this._normalizeMes(f.mesAno) === mesVal);
-        if (termo) base = base.filter(f => {
-            const nome = (f.funcionario && f.funcionario.nome) ? String(f.funcionario.nome).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'') : '';
-            const cargo = (f.funcionario && f.funcionario.cargo) ? String(f.funcionario.cargo).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'') : '';
-            return nome.includes(termo) || cargo.includes(termo);
-        });
-        this._renderFolhasFechadasTable(base, 'Nenhuma folha fechada encontrada com os filtros');
+        this._renderFolhasFechadasComFiltros('Nenhuma folha fechada encontrada com os filtros');
     }
 
     // Métodos auxiliares mencionados na função openEditFolhaModal
     clearFolhaForm() {
         const form = document.getElementById('folhaForm');
         if (form) form.reset();
+        this._renderValesDetalhados([]);
+        this._setFolhaValesTotal(0);
+    }
+
+    _parseFolhaNumber(value) {
+        if (window.FolhaUtils && typeof window.FolhaUtils.parseNumeroFolha === 'function') {
+            return window.FolhaUtils.parseNumeroFolha(value);
+        }
+        if (value == null || value === '') return 0;
+        if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+        const raw = String(value).replace(/[^0-9,.-]/g, '');
+        if (!raw) return 0;
+        const parsed = raw.includes(',')
+            ? parseFloat(raw.replace(/\./g, '').replace(/,/g, '.'))
+            : parseFloat(raw);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    _normalizarValeDetalhado(item = {}, index = 0) {
+        return {
+            id: String(item.id || item.key || `vale_${Date.now()}_${index}`),
+            data: String(item.data || item.date || item.dataVale || '').trim(),
+            valor: this._parseFolhaNumber(item.valor ?? item.value ?? item.total ?? 0),
+            observacao: String(item.observacao || item.observacoes || item.descricao || item.description || '').trim()
+        };
+    }
+
+    _getValesDetalhadosFromLancamento(lancamento = {}) {
+        let detalhes = [];
+        try {
+            if (window.FolhaUtils && typeof window.FolhaUtils.normalizarValesDetalhados === 'function') {
+                detalhes = window.FolhaUtils.normalizarValesDetalhados(lancamento);
+            }
+        } catch {}
+        if (!detalhes.length) {
+            const fontes = [lancamento.valesDetalhados, lancamento.historicoVales, lancamento.valesHistorico, lancamento.detalhesVales];
+            const origem = fontes.find(Array.isArray);
+            if (Array.isArray(origem)) {
+                detalhes = origem.map((item, index) => this._normalizarValeDetalhado(item, index))
+                    .filter(item => item.valor > 0 || item.data || item.observacao);
+            }
+        }
+        if (!detalhes.length) {
+            const totalLegado = this._parseFolhaNumber(lancamento.vales || (lancamento.calculos && lancamento.calculos.vales) || 0);
+            if (totalLegado > 0) {
+                detalhes = [{
+                    id: 'vale_legado',
+                    data: '',
+                    valor: totalLegado,
+                    observacao: 'Valor legado sem data'
+                }];
+            }
+        }
+        return detalhes.map((item, index) => this._normalizarValeDetalhado(item, index));
+    }
+
+    _formatFolhaMoney(value) {
+        const total = this._parseFolhaNumber(value);
+        return total.toFixed(2);
+    }
+
+    _setFolhaValesTotal(total) {
+        const valor = Math.round(this._parseFolhaNumber(total) * 100) / 100;
+        const input = document.getElementById('folhaVales');
+        if (input) {
+            input.value = valor > 0 ? valor.toFixed(2) : '0.00';
+            input.readOnly = true;
+            if (input._ptbrDisplay) {
+                input._ptbrDisplay.textContent = (window.FolhaUtils && window.FolhaUtils.formatarMoeda)
+                    ? window.FolhaUtils.formatarMoeda(valor)
+                    : `R$ ${valor.toFixed(2).replace('.', ',')}`;
+            }
+        }
+        return valor;
+    }
+
+    _collectValesDetalhadosFromForm() {
+        const tbody = document.getElementById('folhaValesDetalhadosBody');
+        if (!tbody) return [];
+        return Array.from(tbody.querySelectorAll('tr[data-vale-row="1"]')).map((row, index) => {
+            const data = row.querySelector('[data-vale-field="data"]');
+            const valor = row.querySelector('[data-vale-field="valor"]');
+            const observacao = row.querySelector('[data-vale-field="observacao"]');
+            return this._normalizarValeDetalhado({
+                id: row.dataset.valeId || `vale_${Date.now()}_${index}`,
+                data: data ? data.value : '',
+                valor: valor ? valor.value : 0,
+                observacao: observacao ? observacao.value : ''
+            }, index);
+        }).filter(item => item.valor > 0 || item.data || item.observacao);
+    }
+
+    _syncValesDetalhadosTotal({ recalculate = true } = {}) {
+        const detalhes = this._collectValesDetalhadosFromForm();
+        const total = detalhes.reduce((sum, item) => sum + this._parseFolhaNumber(item.valor), 0);
+        this._setFolhaValesTotal(total);
+        this._syncValesDetalhadosEmpty();
+        if (recalculate) {
+            try {
+                if (typeof this.scheduleCalcularFolhaRealTime === 'function') this.scheduleCalcularFolhaRealTime(80);
+                else this.calcularFolhaRealTime();
+            } catch {}
+        }
+        return total;
+    }
+
+    _syncValesDetalhadosEmpty() {
+        const tbody = document.getElementById('folhaValesDetalhadosBody');
+        const empty = document.getElementById('folhaValesDetalhadosEmpty');
+        const wrap = document.querySelector('#folhaValesDetalhadosSection .vales-detalhados-table-wrap');
+        const hasRows = !!(tbody && tbody.querySelector('tr[data-vale-row="1"]'));
+        if (empty) empty.style.display = hasRows ? 'none' : 'block';
+        if (wrap) wrap.style.display = hasRows ? 'block' : 'none';
+    }
+
+    _addValeDetalhadoRow(item = {}) {
+        const tbody = document.getElementById('folhaValesDetalhadosBody');
+        if (!tbody) return;
+        const detalhe = this._normalizarValeDetalhado(item, tbody.children.length);
+        const tr = document.createElement('tr');
+        tr.dataset.valeRow = '1';
+        tr.dataset.valeId = detalhe.id;
+
+        const tdData = document.createElement('td');
+        tdData.dataset.label = 'Data';
+        const inputData = document.createElement('input');
+        inputData.type = 'date';
+        inputData.dataset.valeField = 'data';
+        inputData.value = detalhe.data;
+        tdData.appendChild(inputData);
+
+        const tdValor = document.createElement('td');
+        tdValor.dataset.label = 'Valor';
+        const inputValor = document.createElement('input');
+        inputValor.type = 'number';
+        inputValor.step = '0.01';
+        inputValor.min = '0';
+        inputValor.dataset.valeField = 'valor';
+        inputValor.placeholder = '0,00';
+        inputValor.value = detalhe.valor > 0 ? this._formatFolhaMoney(detalhe.valor) : '';
+        tdValor.appendChild(inputValor);
+
+        const tdObs = document.createElement('td');
+        tdObs.dataset.label = 'Observação';
+        const inputObs = document.createElement('input');
+        inputObs.type = 'text';
+        inputObs.dataset.valeField = 'observacao';
+        inputObs.maxLength = 120;
+        inputObs.placeholder = 'Observação';
+        inputObs.value = detalhe.observacao;
+        tdObs.appendChild(inputObs);
+
+        const tdAcoes = document.createElement('td');
+        tdAcoes.dataset.label = 'Ações';
+        const btnRemover = document.createElement('button');
+        btnRemover.type = 'button';
+        btnRemover.className = 'action-button delete-button vale-remover-btn';
+        btnRemover.title = 'Remover vale';
+        btnRemover.innerHTML = '<i class="fas fa-trash"></i>';
+        tdAcoes.appendChild(btnRemover);
+
+        tr.appendChild(tdData);
+        tr.appendChild(tdValor);
+        tr.appendChild(tdObs);
+        tr.appendChild(tdAcoes);
+        tbody.appendChild(tr);
+
+        [inputData, inputValor, inputObs].forEach((input) => {
+            input.addEventListener('input', () => this._syncValesDetalhadosTotal());
+            input.addEventListener('change', () => this._syncValesDetalhadosTotal());
+        });
+        btnRemover.addEventListener('click', () => {
+            tr.remove();
+            this._syncValesDetalhadosTotal();
+        });
+        this._syncValesDetalhadosEmpty();
+    }
+
+    _renderValesDetalhados(detalhes = []) {
+        const tbody = document.getElementById('folhaValesDetalhadosBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        detalhes.forEach(item => this._addValeDetalhadoRow(item));
+        this._syncValesDetalhadosTotal({ recalculate: false });
+    }
+
+    setupValesDetalhados() {
+        const btn = document.getElementById('addValeDetalhadoBtn');
+        if (btn && !btn._valesDetalhadosBound) {
+            btn.addEventListener('click', () => {
+                const hoje = new Date();
+                const data = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+                this._addValeDetalhadoRow({ data, valor: 0, observacao: '' });
+                this._syncValesDetalhadosTotal();
+                const tbody = document.getElementById('folhaValesDetalhadosBody');
+                const valorInput = tbody && tbody.querySelector('tr:last-child [data-vale-field="valor"]');
+                if (valorInput) valorInput.focus();
+            });
+            btn._valesDetalhadosBound = true;
+        }
+        this._syncValesDetalhadosEmpty();
     }
 
     // Implementar fillFolhaForm completo baseado na estrutura do HTML
@@ -935,7 +1340,15 @@ class FolhaLancamentos {
                             id: fobj.id,
                             nome: fobj.nome || nome,
                             cargo: (lancamento.funcionario && lancamento.funcionario.cargo) || fobj.cargo || '',
-                            tipoContrato: (lancamento.funcionario && lancamento.funcionario.tipoContrato) || fobj.tipoContrato || fobj.funcionarioTipoContrato || ''
+                            tipoContrato: (lancamento.funcionario && lancamento.funcionario.tipoContrato) || fobj.tipoContrato || fobj.funcionarioTipoContrato || '',
+                            formaPagamento: (lancamento.funcionario && lancamento.funcionario.formaPagamento) || fobj.formaPagamento || '',
+                            pix: (lancamento.funcionario && lancamento.funcionario.pix) || fobj.pix || '',
+                            pixTipo: (lancamento.funcionario && (lancamento.funcionario.pixTipo || lancamento.funcionario.tipoPix || lancamento.funcionario.tipoChavePix)) || fobj.pixTipo || fobj.tipoPix || fobj.tipoChavePix || '',
+                            favorecidoPix: (lancamento.funcionario && (lancamento.funcionario.favorecidoPix || lancamento.funcionario.nomeFavorecidoPix)) || fobj.favorecidoPix || fobj.nomeFavorecidoPix || '',
+                            beneficiario: (lancamento.funcionario && lancamento.funcionario.beneficiario) || fobj.beneficiario || '',
+                            banco: (lancamento.funcionario && lancamento.funcionario.banco) || fobj.banco || '',
+                            agencia: (lancamento.funcionario && lancamento.funcionario.agencia) || fobj.agencia || '',
+                            conta: (lancamento.funcionario && lancamento.funcionario.conta) || fobj.conta || ''
                         };
                         if (sb2 > 0 && !func.salarioBase) func.salarioBase = sb2;
                         el.dataset.funcionarioId = func.id;
@@ -1005,7 +1418,7 @@ class FolhaLancamentos {
         setVal('folhaQtdFilhos', (lancamento.quantidadeFilhos || lancamento.dependentes));
         setVal('folhaSalarioFamilia', lancamento.salarioFamilia);
         setVal('folhaFaltas', lancamento.faltas);
-        setVal('folhaVales', lancamento.vales);
+        this._renderValesDetalhados(this._getValesDetalhadosFromLancamento(lancamento));
         setVal('folhaDescRepousoRemunerado', lancamento.descontoRepousoRemunerado);
         setVal('folhaDescontoINSSManual', lancamento.descontoINSSManual);
         setVal('folhaContribuicaoConfederativa', lancamento.contribuicaoConfederativa);
@@ -1135,6 +1548,9 @@ class FolhaLancamentos {
                     if (obj.tipoContrato && !funcionario.tipoContrato) funcionario.tipoContrato = obj.tipoContrato;
                     if (obj.funcionarioTipoContrato && !funcionario.tipoContrato) funcionario.tipoContrato = obj.funcionarioTipoContrato;
                     if (obj.cargo && !funcionario.cargo) funcionario.cargo = obj.cargo;
+                    ['formaPagamento', 'pix', 'pixTipo', 'tipoPix', 'tipoChavePix', 'favorecidoPix', 'nomeFavorecidoPix', 'beneficiario', 'banco', 'agencia', 'conta'].forEach((key) => {
+                        if (!funcionario[key] && obj[key]) funcionario[key] = obj[key];
+                    });
                 } catch (e) {
                     console.warn('⚠️ Falha ao ler dataset de funcionário:', e);
                 }
@@ -1147,6 +1563,10 @@ class FolhaLancamentos {
         const statusAtual = (window.FolhaUtils && typeof window.FolhaUtils.normalizarStatus === 'function')
             ? window.FolhaUtils.normalizarStatus(curr.status)
             : (typeof curr.status === 'string' ? curr.status : String(curr.status || 'rascunho'));
+        const valesDetalhados = this._collectValesDetalhadosFromForm();
+        let totalValesDetalhados = valesDetalhados.reduce((sum, item) => sum + this._parseFolhaNumber(item.valor), 0);
+        if (!valesDetalhados.length) totalValesDetalhados = valNum('folhaVales');
+        totalValesDetalhados = Math.round(totalValesDetalhados * 100) / 100;
 
         const data = {
             id: valStr('folhaId') || curr.id || curr.key || '',
@@ -1165,7 +1585,8 @@ class FolhaLancamentos {
             quantidadeFilhos: valNum('folhaQtdFilhos'),
             salarioFamilia: valNum('folhaSalarioFamilia'),
             faltas: valNum('folhaFaltas'),
-            vales: valNum('folhaVales'),
+            vales: totalValesDetalhados,
+            valesDetalhados,
             descontoRepousoRemunerado: valNum('folhaDescRepousoRemunerado'),
             descontoINSSManual: valNum('folhaDescontoINSSManual'),
             contribuicaoConfederativa: valNum('folhaContribuicaoConfederativa'),
@@ -1257,6 +1678,8 @@ class FolhaLancamentos {
             }
         }
 
+        this._syncFuncionarioAtivoFlag(data);
+        this._ensureEditLancamentoIdentity(data);
         return data;
     }
     
@@ -1507,6 +1930,8 @@ class FolhaLancamentos {
 
             // Preparação dos dados (mantendo lógica original)
             if (!data || typeof data !== 'object') data = {};
+            this._ensureEditLancamentoIdentity(data);
+            this._syncFuncionarioAtivoFlag(data);
             if (!(typeof data.status === 'string' && data.status.trim())) delete data.status;
 
             // --- INÍCIO DA CÓPIA DA LÓGICA DE RESOLUÇÃO ---
@@ -1582,6 +2007,7 @@ class FolhaLancamentos {
                     } catch {}
                 }
             } catch {}
+            this._syncFuncionarioAtivoFlag(data);
             const __clean2 = (obj) => { Object.keys(obj).forEach((k)=>{ const v=obj[k]; if (v===undefined) { delete obj[k]; } else if (v && typeof v==='object' && !Array.isArray(v)) { obj[k]=__clean2(v); } }); return obj; };
             data = __clean2(data);
             
@@ -1679,8 +2105,8 @@ class FolhaLancamentos {
                 
                 // Atualizar modal se estiver aberto
                 const modal = document.getElementById('folhasFechadasModal');
-                if (modal && modal.style.display === 'block' && typeof this.loadFolhasFechadas === 'function') {
-                    this.loadFolhasFechadas();
+                if (modal && modal.style.display === 'block' && typeof this.filtrarFolhasFechadas === 'function') {
+                    this.filtrarFolhasFechadas();
                 }
             } catch (e) {
                 console.warn('⚠️ Falha ao atualizar caches locais após update:', e);
@@ -2219,7 +2645,7 @@ class FolhaLancamentos {
             // Soma direta dos componentes manuais (que são os totais neste modo)
             const somaManual = (lanc.descontoINSSManual || 0) + 
                                (lanc.descontoIRRFManual || 0) + // ou descontoIRPJ
-                               (lanc.vales || 0) + 
+                               (vales || 0) +
                                (lanc.outrosDescontos || 0) + 
                                // Faltas aqui sempre em R$, nunca em dias.
                                // O campo lanc.faltas representa dias e não deve entrar na soma monetária.
@@ -2723,6 +3149,13 @@ ensureSaveButtonBound() {
         alert('Mês/Ano é obrigatório');
         return false;
     }
+    if (Array.isArray(data.valesDetalhados)) {
+        const valeIncompleto = data.valesDetalhados.find(item => (item.data || item.observacao) && !(Number(item.valor || 0) > 0));
+        if (valeIncompleto) {
+            alert('Informe o valor do vale ou remova a linha incompleta.');
+            return false;
+        }
+    }
     return true;
 }
 
@@ -2748,6 +3181,8 @@ ensureSaveButtonBound() {
 
         try {
             const data = this.collectLancamentoData();
+            this._ensureEditLancamentoIdentity(data);
+            this._syncFuncionarioAtivoFlag(data);
             if (!data.id && this.isEditMode) {
                 const cur = this.lancamentoAtual || {};
                 data.id = cur.id || cur.key || '';
@@ -2990,6 +3425,20 @@ function __getLiquidoLancamento(lancamento) {
     return (Number(base || 0) + Number(acres || 0) - Number(desc || 0) - (tipo === 'quinzena' ? Number(quinz || 0) : 0));
 }
 
+function __getValorFinanceiroLancamento(lancamento, kind) {
+    if (kind === 'quinzena' && __resolveTipoPagamento(lancamento) === 'quinzena') {
+        try {
+            if (window.FolhaUtils && typeof window.FolhaUtils.calcularValorQuinzena === 'function') {
+                const valorQuinzena = Number(window.FolhaUtils.calcularValorQuinzena(lancamento) || 0);
+                if (Number.isFinite(valorQuinzena) && valorQuinzena > 0) return valorQuinzena;
+            }
+        } catch {}
+        const manual = __toNumber(lancamento && (lancamento.quinzenaValorManual || lancamento.valorManualQuinzena || lancamento.valorQuinzena));
+        if (Number.isFinite(manual) && manual > 0) return manual;
+    }
+    return __getLiquidoLancamento(lancamento);
+}
+
 function __getFinanceiroEntry(lancamento, kind) {
     if (!lancamento) return null;
     if (lancamento.financeiro && typeof lancamento.financeiro === 'object') {
@@ -3049,7 +3498,7 @@ async function __gerarFinanceiro(lancamento, kind) {
         if (window.folhaLancamentos) window.folhaLancamentos.showNotification('Financeiro já existia e foi vinculado ao lançamento.', 'info');
         return entry;
     }
-    const valor = __getLiquidoLancamento(lancamento);
+    const valor = __getValorFinanceiroLancamento(lancamento, kind);
     if (!Number.isFinite(valor) || valor <= 0) {
         if (window.folhaLancamentos) window.folhaLancamentos.showNotification('Valor líquido inválido para gerar financeiro.', 'warning');
         return null;
@@ -3211,6 +3660,41 @@ window.fecharMes = async function(id) {
     }
 };
 
+function __limparCamposVariaveisCloneFolha(clone) {
+    if (!clone || typeof clone !== 'object') return clone;
+    clone.faltas = 0;
+    clone.vales = 0;
+    clone.valesDetalhados = [];
+    clone.diasTrabalhados = null;
+    delete clone.historicoVales;
+    delete clone.valesHistorico;
+    delete clone.detalhesVales;
+
+    const zerar = (obj, keys) => {
+        if (!obj || typeof obj !== 'object') return;
+        keys.forEach((key) => {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) obj[key] = 0;
+        });
+    };
+    zerar(clone, ['descontoFaltas']);
+    if (clone.calculos && typeof clone.calculos === 'object') {
+        clone.calculos = { ...clone.calculos };
+        zerar(clone.calculos, ['faltas', 'vales', 'descontoFaltas']);
+        if (clone.calculos.calculos && typeof clone.calculos.calculos === 'object') {
+            clone.calculos.calculos = { ...clone.calculos.calculos };
+            zerar(clone.calculos.calculos, ['faltas', 'vales', 'descontoFaltas']);
+        }
+    }
+    if (clone.valores && typeof clone.valores === 'object') {
+        clone.valores = { ...clone.valores };
+        if (clone.valores.descontos && typeof clone.valores.descontos === 'object') {
+            clone.valores.descontos = { ...clone.valores.descontos };
+            zerar(clone.valores.descontos, ['faltas', 'vales', 'descontoFaltas']);
+        }
+    }
+    return clone;
+}
+
 window.clonarFolha = async function(id) {
     console.log(`📋 Clonando folha: ${id}`);
     try {
@@ -3239,7 +3723,7 @@ window.clonarFolha = async function(id) {
         if (existe) throw new Error('Já existe folha para o próximo mês');
         
         // Clonar dados
-        const clone = { ...original, id: null, mesAno: novoMesAno, status: 'rascunho' };
+        const clone = __limparCamposVariaveisCloneFolha({ ...original, id: null, mesAno: novoMesAno, status: 'rascunho' });
         delete clone.id; // Garantir novo ID
         
         // Criar novo

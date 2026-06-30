@@ -8,6 +8,7 @@
     <!-- ✅ MESMOS IMPORTS DO ROMANEIOPCT -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <!-- CSS do sistema - ORDEM IMPORTANTE -->
     <link rel="stylesheet" href="../layout-comum.css">
@@ -16,7 +17,7 @@
     <link rel="stylesheet" href="../ui-components.css">
     <link rel="stylesheet" href="folha.css">
     <link rel="stylesheet" href="folha-menu-original-completo.css">
-    <script src="../menu-component.js?v=20260326"></script>
+    <script src="../menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
     <!-- 🎨 LOADING E CONEXÃO OTIMIZADOS -->
     <link rel="stylesheet" href="folha-loading-styles.css">
     <style>
@@ -150,7 +151,7 @@
           const firebaseUser = (window.firebaseAuth && window.firebaseAuth.currentUser) || window.firebaseAuthUser;
           const sessionUser = (sessionStorage.getItem('userAuthenticated') === 'true');
           const companyInfo = (function(){ try { return JSON.parse(localStorage.getItem('company_info')); } catch(e) { return null; } })();
-          const hasValidCompanyId = !!(companyInfo && (companyInfo.id || companyInfo.companyId || companyInfo.slug || companyInfo.nome || companyInfo.name));
+          const hasValidCompanyId = !!(companyInfo && (companyInfo.companyId || companyInfo.companyID || companyInfo.tenantId || companyInfo.id));
           return !!(u || p || firebaseUser || sessionUser) && hasValidCompanyId;
         }
 
@@ -159,7 +160,7 @@
             const raw = localStorage.getItem('company_info');
             if (!raw) return;
             const obj = JSON.parse(raw);
-            const tenant = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+            const tenant = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
             if (tenant) {
               window.appTenantId = String(tenant);
               if (window.firebaseService && typeof window.firebaseService.setTenantId === 'function') {
@@ -206,7 +207,7 @@
             const firebaseUser = (window.firebaseAuth && window.firebaseAuth.currentUser) || window.firebaseAuthUser;
             const u = getUiUser();
             const companyInfo = (function(){ try { return JSON.parse(localStorage.getItem('company_info')); } catch(e) { return null; } })();
-            const hasValidCompanyId = !!(companyInfo && (companyInfo.id || companyInfo.companyId || companyInfo.slug || companyInfo.nome || companyInfo.name));
+            const hasValidCompanyId = !!(companyInfo && (companyInfo.companyId || companyInfo.companyID || companyInfo.tenantId || companyInfo.id));
             
             // Se já estiver autenticado na UI, permitir acesso
             if (isUiAuthenticated()) return;
@@ -243,7 +244,7 @@
             syncTenantFromCompanyInfo();
             const firebaseUser = (window.firebaseAuth && window.firebaseAuth.currentUser) || window.firebaseAuthUser;
             const companyInfo = (function(){ try { return JSON.parse(localStorage.getItem('company_info')); } catch(e) { return null; } })();
-            const hasValidCompanyId = !!(companyInfo && (companyInfo.id || companyInfo.companyId || companyInfo.slug || companyInfo.nome || companyInfo.name));
+            const hasValidCompanyId = !!(companyInfo && (companyInfo.companyId || companyInfo.companyID || companyInfo.tenantId || companyInfo.id));
             if (ev.key === 'company_info') {
               if (firebaseUser && !hasValidCompanyId) {
                 const currentPath = window.location.pathname + (window.location.hash || '');
@@ -332,7 +333,7 @@
                                placeholder="Digite o nome ou cargo...">
                         <div class="autocomplete-icons-container">
                             <span class="autocomplete-icon" title="Listar Funcionários" 
-                                  onclick="openFuncionariosListModal()">
+                                  onclick="(function(){ try { if (window.folhaFuncionarios) window.folhaFuncionarios.targetField = 'funcionarioFiltro'; } catch(e){} openFuncionariosListModal(); })()">
                                 <i class="fas fa-list"></i>
                             </span>
                             <span class="autocomplete-icon" title="Limpar Filtro" 
@@ -374,8 +375,18 @@
         </section>
 
         <!-- ➕ BOTÕES DE AÇÃO PRINCIPAIS -->
-        <section id="acoes-principais">
-            <div class="form-buttons">
+        <section id="acoes-principais" class="acoes-recolhidas">
+            <button type="button" id="toggleAcoesPrincipais" class="acoes-toggle-button" aria-expanded="false" aria-controls="acoesPrincipaisConteudo">
+                <span class="acoes-toggle-title">
+                    <i class="fas fa-bolt" aria-hidden="true"></i>
+                    Ações rápidas da folha
+                </span>
+                <span class="acoes-toggle-state">
+                    <span class="acoes-toggle-text">Expandir ações</span>
+                    <i class="fas fa-chevron-down acoes-toggle-icon" aria-hidden="true"></i>
+                </span>
+            </button>
+            <div id="acoesPrincipaisConteudo" class="form-buttons" hidden>
                 <button type="button" class="btn-adicionar" onclick="openNovoFuncionarioModal()">
                     <i class="fas fa-user-plus"></i> Novo Funcionário
                 </button>
@@ -629,33 +640,64 @@
                             <option value="Dinheiro">Dinheiro</option>
                         </select>
                     </div>
+                    <div class="form-group" id="funcionarioPixFavorecidoGroup">
+                        <label for="funcionarioPixFavorecido">
+                            <i class="fas fa-user-check"></i> Nome:
+                        </label>
+                        <input type="text" id="funcionarioPixFavorecido" placeholder="Nome do favorecido do PIX" aria-describedby="funcionarioPixFavorecidoHelp">
+                        <small id="funcionarioPixFavorecidoHelp" class="field-help pix-field-help">
+                            Informe o nome do titular da chave PIX, como deve aparecer na conferência do pagamento.
+                        </small>
+                    </div>
                     <div class="form-group" id="funcionarioPixGroup">
                         <label for="funcionarioPix">
                             <i class="fas fa-key"></i> Chave PIX:
                         </label>
-                        <input type="text" id="funcionarioPix" placeholder="CPF, e-mail, telefone ou chave aleatória">
+                        <input type="text" id="funcionarioPix" placeholder="Ex: 64704424200, 67999999999 ou nome@email.com" aria-describedby="funcionarioPixHelp">
+                        <small id="funcionarioPixHelp" class="field-help pix-field-help">
+                            CPF/CNPJ somente números; telefone com DDD; e-mail completo; chave aleatória no formato UUID.
+                        </small>
+                    </div>
+                    <div class="form-group" id="funcionarioPixTipoGroup">
+                        <label for="funcionarioPixTipo">
+                            <i class="fas fa-tags"></i> Tipo da chave:
+                        </label>
+                        <select id="funcionarioPixTipo" aria-describedby="funcionarioPixTipoHelp">
+                            <option value="">Selecione</option>
+                            <option value="cpf">CPF</option>
+                            <option value="cnpj">CNPJ</option>
+                            <option value="telefone">Telefone</option>
+                            <option value="email">E-mail</option>
+                            <option value="aleatoria">Aleatória</option>
+                        </select>
+                        <small id="funcionarioPixTipoHelp" class="field-help pix-field-help">
+                            Selecione o tipo real cadastrado no banco. Em chaves com 11 dígitos, isso evita confundir CPF com telefone.
+                        </small>
                     </div>
                 </div>
                 <div class="campos-grid" id="funcionarioContaBancariaGroup">
-                    <div class="form-group">
+                    <div class="form-group" id="funcionarioBeneficiarioGroup">
                         <label for="funcionarioBeneficiario">
                             <i class="fas fa-user-check"></i> Beneficiário:
                         </label>
                         <input type="text" id="funcionarioBeneficiario" placeholder="Nome do beneficiário da conta">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="funcionarioBancoGroup">
                         <label for="funcionarioBanco">
                             <i class="fas fa-university"></i> Banco:
                         </label>
-                        <input type="text" id="funcionarioBanco" placeholder="Ex: Banco do Brasil">
+                        <input type="text" id="funcionarioBanco" placeholder="Ex: Banco do Brasil" aria-describedby="funcionarioBancoPixHelp">
+                        <small id="funcionarioBancoPixHelp" class="field-help pix-field-help">
+                            Para PIX, informe o banco onde a chave está cadastrada; ele aparece abaixo do QR para conferência.
+                        </small>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="funcionarioAgenciaGroup">
                         <label for="funcionarioAgencia">
                             <i class="fas fa-hashtag"></i> Agência:
                         </label>
                         <input type="text" id="funcionarioAgencia" placeholder="Ex: 1234">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="funcionarioContaGroup">
                         <label for="funcionarioConta">
                             <i class="fas fa-credit-card"></i> Conta:
                         </label>
@@ -689,6 +731,43 @@
                 <div class="footer-primary">
                     <button type="submit" class="btn-save" id="saveFuncionarioBtn">
                         <i class="fas fa-save"></i> Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de QR Code PIX -->
+    <div id="pixQrCodeModal" class="modal">
+        <div class="modal-content pix-qrcode-modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-qrcode"></i> QR Code PIX
+                </h3>
+            </div>
+            <div class="modal-body pix-qrcode-modal-body">
+                <div class="pix-qrcode-layout">
+                    <div class="pix-qrcode-preview">
+                        <div id="pixQrCodeContainer" class="pix-qrcode-container"></div>
+                        <div id="pixQrCodeFallback" class="pix-qrcode-fallback" style="display:none;"></div>
+                    </div>
+                    <div class="pix-qrcode-info">
+                        <div id="pixQrCodeFavorecido" class="pix-qrcode-favorecido"></div>
+                        <div id="pixQrCodeBanco" class="pix-qrcode-banco"></div>
+                        <div class="pix-qrcode-chave-row">
+                            <div id="pixQrCodeChave" class="pix-qrcode-chave"></div>
+                            <button type="button" id="pixQrCodeEditFuncionario" class="pix-qrcode-edit-button" onclick="FolhaUtils.openPixFuncionarioEditFromQrCode()" title="Editar PIX do funcionário" aria-label="Editar PIX do funcionário">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                        <div id="pixQrCodeLiquido" class="pix-qrcode-liquido"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="footer-secondary">
+                    <button type="button" class="back-button close-modal-btn" onclick="FolhaUtils.closePixQrCodeModal()">
+                        <i class="fas fa-times"></i> Fechar
                     </button>
                 </div>
             </div>
@@ -777,7 +856,7 @@
                                placeholder="Selecione um funcionário..." required>
                         <div class="autocomplete-icons-container">
                             <span class="autocomplete-icon" title="Listar Funcionários" 
-                                  onclick="openFuncionariosListModal()">
+                                  onclick="(function(){ try { if (window.folhaFuncionarios) window.folhaFuncionarios.targetField = 'folhaFuncionario'; } catch(e){} openFuncionariosListModal(); })()">
                                 <i class="fas fa-list"></i>
                             </span>
                         </div>
@@ -969,11 +1048,34 @@
                     </div>
                     <div class="form-group">
                         <label for="folhaVales">
-                            <i class="fas fa-money-bill-wave"></i> Vales:
+                            <i class="fas fa-money-bill-wave"></i> Total Vales:
                         </label>
                         <input type="number" id="folhaVales" step="0.01" min="0" 
-                               placeholder="0,00">
+                               placeholder="0,00" readonly>
                     </div>
+                </div>
+
+                <div class="vales-detalhados-section" id="folhaValesDetalhadosSection">
+                    <div class="vales-detalhados-header">
+                        <h4><i class="fas fa-receipt"></i> Histórico de Vales</h4>
+                        <button type="button" class="btn-adicionar vales-add-btn" id="addValeDetalhadoBtn">
+                            <i class="fas fa-plus-circle"></i> Vale
+                        </button>
+                    </div>
+                    <div class="vales-detalhados-table-wrap">
+                        <table class="vales-detalhados-table">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Valor</th>
+                                    <th>Observação</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="folhaValesDetalhadosBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="vales-detalhados-empty" id="folhaValesDetalhadosEmpty">Nenhum vale lançado.</div>
                 </div>
 
                 <!-- Campos de Encargos Unificados (Auto/Manual) -->
@@ -1144,7 +1246,7 @@
                         <div class="autocomplete-container">
                             <input type="text" id="filtroFechadasFuncionario" placeholder="Filtrar por funcionário..." class="autocomplete-input">
                             <div class="autocomplete-icons-container">
-                                <span class="autocomplete-icon" title="Listar Funcionários" onclick="openFuncionariosListModal()">
+                                <span class="autocomplete-icon" title="Listar Funcionários" onclick="(function(){ try { if (window.folhaFuncionarios) window.folhaFuncionarios.targetField = 'filtroFechadasFuncionario'; } catch(e){} openFuncionariosListModal(); })()">
                                     <i class="fas fa-list"></i>
                                 </span>
                             </div>

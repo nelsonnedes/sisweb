@@ -187,14 +187,56 @@ class FolhaFuncionarios {
         if (formaPagamentoField) {
             formaPagamentoField.addEventListener('change', () => this.updateFormaPagamentoFields({ clearHidden: true }));
         }
+        const pixField = document.getElementById('funcionarioPix');
+        if (pixField) {
+            pixField.addEventListener('blur', () => this.autofillPixTipoFromChave());
+        }
         this.updateFormaPagamentoFields();
+    }
+
+    resolvePixTipo(funcionario = {}) {
+        const explicit = funcionario.pixTipo || funcionario.tipoPix || funcionario.tipoChavePix || '';
+        if (window.FolhaUtils && typeof window.FolhaUtils.normalizePixKeyType === 'function') {
+            const normalized = window.FolhaUtils.normalizePixKeyType(explicit);
+            if (normalized) return normalized;
+            if (typeof window.FolhaUtils.detectPixKeyType === 'function') {
+                return window.FolhaUtils.detectPixKeyType(funcionario.pix || '');
+            }
+        }
+        return String(explicit || '').trim();
+    }
+
+    autofillPixTipoFromChave({ force = false } = {}) {
+        const pixField = document.getElementById('funcionarioPix');
+        const pixTipoField = document.getElementById('funcionarioPixTipo');
+        if (!pixField || !pixTipoField || (!force && pixTipoField.value)) return;
+
+        const raw = String(pixField.value || '').trim();
+        const compact = raw.replace(/\s+/g, '');
+        const digits = raw.replace(/\D/g, '');
+        let detected = '';
+        if (raw.includes('@')) detected = 'email';
+        else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(compact)) detected = 'aleatoria';
+        else if (/^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(compact)) detected = 'cpf';
+        else if (/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(compact)) detected = 'cnpj';
+        else if (raw.startsWith('+') || /\(\s*\d{2}\s*\)/.test(raw) || ((digits.length === 12 || digits.length === 13) && digits.startsWith('55')) || digits.length === 10) detected = 'telefone';
+
+        if (detected) pixTipoField.value = detected;
     }
 
     updateFormaPagamentoFields({ clearHidden = false } = {}) {
         const formaPagamentoField = document.getElementById('funcionarioFormaPagamento');
+        const pixFavorecidoGroup = document.getElementById('funcionarioPixFavorecidoGroup');
         const pixGroup = document.getElementById('funcionarioPixGroup');
+        const pixTipoGroup = document.getElementById('funcionarioPixTipoGroup');
         const contaGroup = document.getElementById('funcionarioContaBancariaGroup');
+        const pixFavorecidoField = document.getElementById('funcionarioPixFavorecido');
         const pixField = document.getElementById('funcionarioPix');
+        const pixTipoField = document.getElementById('funcionarioPixTipo');
+        const beneficiarioGroup = document.getElementById('funcionarioBeneficiarioGroup');
+        const bancoGroup = document.getElementById('funcionarioBancoGroup');
+        const agenciaGroup = document.getElementById('funcionarioAgenciaGroup');
+        const contaFieldGroup = document.getElementById('funcionarioContaGroup');
         const beneficiarioField = document.getElementById('funcionarioBeneficiario');
         const bancoField = document.getElementById('funcionarioBanco');
         const agenciaField = document.getElementById('funcionarioAgencia');
@@ -203,16 +245,26 @@ class FolhaFuncionarios {
         const forma = String(formaPagamentoField.value || '').trim();
         const mostrarPix = forma === 'PIX';
         const mostrarConta = forma === 'Conta Bancária';
+        if (pixFavorecidoGroup) pixFavorecidoGroup.style.display = mostrarPix ? 'flex' : 'none';
         pixGroup.style.display = mostrarPix ? 'flex' : 'none';
-        contaGroup.style.display = mostrarConta ? 'grid' : 'none';
+        if (pixTipoGroup) pixTipoGroup.style.display = mostrarPix ? 'flex' : 'none';
+        contaGroup.style.display = (mostrarConta || mostrarPix) ? 'grid' : 'none';
+        if (beneficiarioGroup) beneficiarioGroup.style.display = mostrarConta ? 'flex' : 'none';
+        if (bancoGroup) bancoGroup.style.display = (mostrarConta || mostrarPix) ? 'flex' : 'none';
+        if (agenciaGroup) agenciaGroup.style.display = mostrarConta ? 'flex' : 'none';
+        if (contaFieldGroup) contaFieldGroup.style.display = mostrarConta ? 'flex' : 'none';
         if (clearHidden) {
-            if (!mostrarPix && pixField) pixField.value = '';
+            if (!mostrarPix) {
+                if (pixFavorecidoField) pixFavorecidoField.value = '';
+                if (pixField) pixField.value = '';
+                if (pixTipoField) pixTipoField.value = '';
+            }
             if (!mostrarConta) {
                 if (beneficiarioField) beneficiarioField.value = '';
-                if (bancoField) bancoField.value = '';
                 if (agenciaField) agenciaField.value = '';
                 if (contaField) contaField.value = '';
             }
+            if (!mostrarConta && !mostrarPix && bancoField) bancoField.value = '';
         }
     }
     
@@ -221,18 +273,21 @@ class FolhaFuncionarios {
      */
     setupFuncionarioAtivoToggle() {
         const funcionarioAtivo = document.getElementById('funcionarioAtivo');
-        const toggleSwitch = document.querySelector('.toggle-switch');
+        const toggleSwitch = document.querySelector('#funcionarioAtivoContainer .toggle-switch');
         
         if (funcionarioAtivo) {
-            // Event listener no checkbox
-            funcionarioAtivo.addEventListener('change', () => this.updateFuncionarioAtivoDescription());
+            if (!funcionarioAtivo._ativoToggleBound) {
+                funcionarioAtivo.addEventListener('change', () => this.updateFuncionarioAtivoDescription());
+                funcionarioAtivo._ativoToggleBound = true;
+            }
             
-            // Event listener no container do toggle para garantir que funcione
-            if (toggleSwitch) {
-                toggleSwitch.addEventListener('click', () => {
+            if (toggleSwitch && !toggleSwitch._ativoToggleClickBound) {
+                toggleSwitch.addEventListener('click', (event) => {
+                    if (event.target === funcionarioAtivo) return;
                     funcionarioAtivo.checked = !funcionarioAtivo.checked;
                     funcionarioAtivo.dispatchEvent(new Event('change'));
                 });
+                toggleSwitch._ativoToggleClickBound = true;
             }
             
             // Configurar estado inicial
@@ -269,6 +324,7 @@ class FolhaFuncionarios {
         const camposFuncionario = [
             'funcionarioFiltro',      // Filtro principal
             'folhaFuncionario',       // Modal de folha
+            'filtroFechadasFuncionario', // Modal de folhas fechadas
             'funcionarioRelatorio',   // Modal de relatórios
             'bh-funcionario-nome',    // Modal de BH - lançamento
             'bh-ger-func-nome'        // Modal de BH - gerenciar
@@ -291,7 +347,7 @@ class FolhaFuncionarios {
      * 👆 HANDLER PARA FOCO EM CAMPO DE FUNCIONÁRIO
      */
     handleFuncionarioFieldFocus(e) {
-        const camposFuncionario = ['funcionarioFiltro', 'folhaFuncionario', 'funcionarioRelatorio', 'bh-funcionario-nome', 'bh-ger-func-nome'];
+        const camposFuncionario = ['funcionarioFiltro', 'folhaFuncionario', 'filtroFechadasFuncionario', 'funcionarioRelatorio', 'bh-funcionario-nome', 'bh-ger-func-nome'];
         
         // Limpar flag de outros campos
         camposFuncionario.forEach(campoId => {
@@ -304,6 +360,62 @@ class FolhaFuncionarios {
         // Marcar este campo como o último focado
         e.target.dataset.lastFocused = 'true';
         console.log(`👆 Campo ${e.target.id} marcado como lastFocused`);
+    }
+
+    _isModalVisible(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return false;
+        const style = window.getComputedStyle ? window.getComputedStyle(modal) : null;
+        return modal.style.display === 'block' || (style && style.display !== 'none' && style.visibility !== 'hidden');
+    }
+
+    _setFuncionarioTargetField(targetId) {
+        const input = document.getElementById(targetId);
+        if (!input) return false;
+        this.targetField = targetId;
+        const camposFuncionario = ['funcionarioFiltro', 'folhaFuncionario', 'filtroFechadasFuncionario', 'funcionarioRelatorio', 'bh-funcionario-nome', 'bh-ger-func-nome'];
+        camposFuncionario.forEach((campoId) => {
+            const campo = document.getElementById(campoId);
+            if (campo) campo.dataset.lastFocused = campoId === targetId ? 'true' : 'false';
+        });
+        return true;
+    }
+
+    _isFuncionarioTargetUsable(targetId) {
+        const input = document.getElementById(targetId);
+        if (!input) return false;
+        if (input === document.activeElement || input.offsetParent !== null) return true;
+        if (targetId === 'folhaFuncionario') return this._isModalVisible('folhaModal');
+        if (targetId === 'filtroFechadasFuncionario') return this._isModalVisible('folhasFechadasModal');
+        return false;
+    }
+
+    _prepareFuncionarioSelectionTarget() {
+        const camposFuncionario = ['funcionarioFiltro', 'folhaFuncionario', 'filtroFechadasFuncionario', 'funcionarioRelatorio', 'bh-funcionario-nome', 'bh-ger-func-nome'];
+        if (this.targetField && this._isFuncionarioTargetUsable(this.targetField)) {
+            this._setFuncionarioTargetField(this.targetField);
+            return this.targetField;
+        } else if (this.targetField) {
+            this.targetField = null;
+        }
+
+        const activeId = document.activeElement && document.activeElement.id;
+        if (activeId && camposFuncionario.includes(activeId)) {
+            this._setFuncionarioTargetField(activeId);
+            return activeId;
+        }
+
+        if (this._isModalVisible('folhaModal') && document.getElementById('folhaFuncionario')) {
+            this._setFuncionarioTargetField('folhaFuncionario');
+            return 'folhaFuncionario';
+        }
+
+        if (this._isModalVisible('folhasFechadasModal') && document.getElementById('filtroFechadasFuncionario')) {
+            this._setFuncionarioTargetField('filtroFechadasFuncionario');
+            return 'filtroFechadasFuncionario';
+        }
+
+        return '';
     }
     
     /**
@@ -535,7 +647,7 @@ class FolhaFuncionarios {
     /**
      * ✏️ ABRIR MODAL EDITAR FUNCIONÁRIO
      */
-    openEditFuncionarioModal(funcionarioId) {
+    openEditFuncionarioModal(funcionarioId, opcoes = {}) {
         console.log('✏️ Abrindo modal editar funcionário:', funcionarioId);
         console.log('📊 Funcionários disponíveis:', this.funcionarios.length);
         console.log('🔍 IDs disponíveis:', this.funcionarios.map(f => f.id));
@@ -557,18 +669,18 @@ class FolhaFuncionarios {
             
             // Aguardar um pouco para o modal da lista fechar completamente
             setTimeout(() => {
-                this.showEditModal(funcionario);
+                this.showEditModal(funcionario, opcoes);
             }, 200);
         } else {
             // Se não há modal da lista aberto, abrir imediatamente
-            this.showEditModal(funcionario);
+            this.showEditModal(funcionario, opcoes);
         }
     }
     
     /**
      * 🎭 MOSTRAR MODAL DE EDIÇÃO
      */
-    showEditModal(funcionario) {
+    showEditModal(funcionario, opcoes = {}) {
         this.isEditMode = true;
         this.funcionarioAtual = funcionario;
         
@@ -588,9 +700,12 @@ class FolhaFuncionarios {
             setTimeout(() => {
                 this.fillFuncionarioForm(funcionario);
                 this.updateFuncionarioAtivoDescription();
-                // Focar no primeiro campo
-                const nomeField = document.getElementById('funcionarioNome');
-                if (nomeField) nomeField.focus();
+                const focusFieldId = String(opcoes.focusField || 'funcionarioNome');
+                const focusField = document.getElementById(focusFieldId);
+                if (focusField) {
+                    focusField.focus();
+                    if (typeof focusField.select === 'function') focusField.select();
+                }
             }, 100);
         }
     }
@@ -642,6 +757,8 @@ class FolhaFuncionarios {
         
         const nomeNorm = (function(){ const v = String(funcionario.nome||''); return (window.isAllCaps && window.toTitleCasePt && window.isAllCaps(v)) ? window.toTitleCasePt(v) : v; })();
         const cargoNorm = (function(){ const v = String(funcionario.cargo||''); return (window.isAllCaps && window.toTitleCasePt && window.isAllCaps(v)) ? window.toTitleCasePt(v) : v; })();
+        const favorecidoPix = funcionario.favorecidoPix || funcionario.nomeFavorecidoPix || (funcionario.formaPagamento === 'PIX' ? funcionario.beneficiario : '');
+        const pixTipo = this.resolvePixTipo(funcionario);
         const fields = {
             'funcionarioId': funcionario.id,
             'funcionarioNome': nomeNorm,
@@ -653,7 +770,9 @@ class FolhaFuncionarios {
             'funcionarioTipoContrato': funcionario.tipoContrato,
             'funcionarioDataAdmissional': funcionario.dataAdmissional,
             'funcionarioFormaPagamento': funcionario.formaPagamento,
+            'funcionarioPixFavorecido': favorecidoPix,
             'funcionarioPix': funcionario.pix,
+            'funcionarioPixTipo': pixTipo,
             'funcionarioBeneficiario': funcionario.beneficiario,
             'funcionarioBanco': funcionario.banco,
             'funcionarioAgencia': funcionario.agencia,
@@ -841,6 +960,14 @@ class FolhaFuncionarios {
             tipoContrato: document.getElementById('funcionarioTipoContrato').value,
             dataAdmissional: document.getElementById('funcionarioDataAdmissional').value,
             formaPagamento: document.getElementById('funcionarioFormaPagamento').value.trim(),
+            favorecidoPix: document.getElementById('funcionarioPixFavorecido').value.trim(),
+            pixTipo: (function(){
+                const field = document.getElementById('funcionarioPixTipo');
+                const raw = field ? field.value.trim() : '';
+                return (window.FolhaUtils && typeof window.FolhaUtils.normalizePixKeyType === 'function')
+                    ? window.FolhaUtils.normalizePixKeyType(raw)
+                    : raw;
+            })(),
             pix: document.getElementById('funcionarioPix').value.trim(),
             beneficiario: document.getElementById('funcionarioBeneficiario').value.trim(),
             banco: document.getElementById('funcionarioBanco').value.trim(),
@@ -932,15 +1059,37 @@ class FolhaFuncionarios {
 
         const formaPagamentoField = document.getElementById('funcionarioFormaPagamento');
         const pixField = document.getElementById('funcionarioPix');
+        const pixTipoField = document.getElementById('funcionarioPixTipo');
         const beneficiarioField = document.getElementById('funcionarioBeneficiario');
         const bancoField = document.getElementById('funcionarioBanco');
         const agenciaField = document.getElementById('funcionarioAgencia');
         const contaField = document.getElementById('funcionarioConta');
         const formaPagamento = String((formaPagamentoField && formaPagamentoField.value) || '').trim();
-        if (formaPagamento === 'PIX' && pixField && !pixField.value.trim()) {
-            this.showFieldError(pixField, 'Informe a chave PIX para forma de pagamento PIX');
-            isValid = false;
-            errors.push('Chave PIX obrigatória');
+        if (formaPagamento === 'PIX') {
+            const pixValue = pixField ? pixField.value.trim() : '';
+            const pixTipoValue = pixTipoField ? pixTipoField.value.trim() : '';
+            if (pixField && !pixValue) {
+                this.showFieldError(pixField, 'Informe a chave PIX para forma de pagamento PIX');
+                isValid = false;
+                errors.push('Chave PIX obrigatória');
+            } else if (pixField) {
+                this.clearFieldError(pixField);
+            }
+            if (pixTipoField && !pixTipoValue) {
+                this.showFieldError(pixTipoField, 'Selecione CPF, CNPJ, Telefone, E-mail ou Aleatória conforme o cadastro no banco');
+                isValid = false;
+                errors.push('Tipo da chave PIX obrigatório');
+            } else if (pixTipoField) {
+                this.clearFieldError(pixTipoField);
+            }
+            if (pixValue && pixTipoValue && window.FolhaUtils && typeof window.FolhaUtils.normalizePixKeyForBrCode === 'function') {
+                const pixNormalizado = window.FolhaUtils.normalizePixKeyForBrCode(pixValue, pixTipoValue);
+                if (!pixNormalizado) {
+                    this.showFieldError(pixField, 'Chave PIX incompatível com o tipo selecionado. Confira CPF/CNPJ, telefone com DDD, e-mail ou chave aleatória');
+                    isValid = false;
+                    errors.push('Chave PIX inválida');
+                }
+            }
         }
         if (formaPagamento === 'Conta Bancária') {
             if (beneficiarioField && !beneficiarioField.value.trim()) {
@@ -1051,17 +1200,17 @@ class FolhaFuncionarios {
                         }
                         const base = String(p || '');
                         if (!base) return base;
-                        if (/^companies\//.test(base) || /^users\//.test(base)) return base;
+                        if (/^companies(\/|$)/.test(base) || /^users(\/|$)/.test(base)) return base;
                         const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
                         if (svc && typeof svc.getNamespacedPath === 'function') {
                             return svc.getNamespacedPath(base);
                         }
-                        const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug || window.companyInfo.nome || window.companyInfo.name));
+                        const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
                         if (rawTenant) return `companies/${String(rawTenant)}/${base}`;
                         const stored = localStorage.getItem('company_info');
                         if (stored) {
                             const obj = JSON.parse(stored);
-                            const t = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                            const t = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                             if (t) return `companies/${String(t)}/${base}`;
                         }
                     } catch {}
@@ -1271,6 +1420,7 @@ class FolhaFuncionarios {
      */
     async openFuncionariosListModal() {
         if (window.__folhaDebugAll) console.log('📋 Abrindo modal de lista de funcionários...');
+        this._prepareFuncionarioSelectionTarget();
         
         // Verificar se o modal existe, senão criar
         if (!document.getElementById('funcionariosListModal')) {
@@ -1582,6 +1732,9 @@ class FolhaFuncionarios {
         const fim = inicio + ipp;
         const dadosPagina = (this.funcionariosFiltrados || []).slice(inicio, fim);
         tableBody.innerHTML = dadosPagina.map(funcionario => this.renderFuncionarioRow(funcionario)).join('');
+        if (window.FolhaUtils && typeof window.FolhaUtils.applyMobileTableLabels === 'function') {
+            window.FolhaUtils.applyMobileTableLabels(document.getElementById('funcionariosListModal'));
+        }
         const infoEl = document.getElementById('funcListPaginacaoInfo');
         const paginaInfo = document.getElementById('funcListPaginaAtual');
         const btnPrimeira = document.getElementById('funcListBtnPrimeira');
@@ -1617,22 +1770,22 @@ class FolhaFuncionarios {
 
         return `
             <tr class="${isAtivo ? '' : 'funcionario-inativo'}">
-                <td class="func-col-nome">
+                <td data-label="Nome" class="func-col-nome">
                     <strong class="func-nome">${funcionario.nome || 'N/A'}</strong>
                     <div class="func-contrato">
                         ${funcionario.tipoContrato || 'N/A'}
                     </div>
                 </td>
-                <td>${funcionario.cpf || 'N/A'}</td>
-                <td>${funcionario.cargo || 'N/A'}</td>
-                <td style="font-size: 12px;">${formaPagamentoTexto}</td>
-                <td>R$ ${Number(funcionario.salarioBase || 0).toFixed(2).replace('.', ',')}</td>
-                <td>
+                <td data-label="CPF">${funcionario.cpf || 'N/A'}</td>
+                <td data-label="Cargo">${funcionario.cargo || 'N/A'}</td>
+                <td data-label="Forma Pgto." style="font-size: 12px;">${formaPagamentoTexto}</td>
+                <td data-label="Salário">R$ ${Number(funcionario.salarioBase || 0).toFixed(2).replace('.', ',')}</td>
+                <td data-label="Status">
                     <span class="badge-status ${statusClass}">
                         <i class="${statusIcon}"></i> ${statusText}
                     </span>
                 </td>
-                <td class="actions-cell">
+                <td data-label="Ações" class="actions-cell">
                     <button class="action-button select-button" title="Selecionar" onclick="selectFuncionarioFromList('${funcionario.id}')">
                         <i class="fas fa-check"></i>
                     </button>
@@ -1686,6 +1839,8 @@ class FolhaFuncionarios {
                 (funcionario.pis || '').includes(term) ||
                 (funcionario.tipoContrato || '').toLowerCase().includes(term) ||
                 (funcionario.formaPagamento || '').toLowerCase().includes(term) ||
+                (funcionario.favorecidoPix || '').toLowerCase().includes(term) ||
+                (funcionario.nomeFavorecidoPix || '').toLowerCase().includes(term) ||
                 (funcionario.beneficiario || '').toLowerCase().includes(term) ||
                 (funcionario.banco || '').toLowerCase().includes(term) ||
                 (funcionario.pix || '').toLowerCase().includes(term)
@@ -1728,6 +1883,7 @@ class FolhaFuncionarios {
         }
         
         console.log('👤 Selecionando funcionário:', funcionario.nome);
+        this._prepareFuncionarioSelectionTarget();
         
         // ✅ CORREÇÃO: Usar targetField se definido, senão usar lógica de prioridade
         let campoAtivo = null;
@@ -1748,6 +1904,7 @@ class FolhaFuncionarios {
             const campos = [
                 'funcionarioFiltro',      // Filtro principal
                 'folhaFuncionario',       // Modal de folha
+                'filtroFechadasFuncionario', // Modal de folhas fechadas
                 'funcionarioRelatorio',   // Modal de relatórios
                 'bh-funcionario-nome',    // Modal de Banco de Horas
                 'bh-ger-func-nome'        // Modal de BH - gerenciar
@@ -1790,7 +1947,7 @@ class FolhaFuncionarios {
         
         // 4. Última opção: Primeiro campo disponível
         if (!campoAtivo) {
-            const camposFallback = ['funcionarioFiltro', 'folhaFuncionario', 'funcionarioRelatorio', 'bh-funcionario-nome'];
+            const camposFallback = ['funcionarioFiltro', 'folhaFuncionario', 'filtroFechadasFuncionario', 'funcionarioRelatorio', 'bh-funcionario-nome'];
             for (const campoId of camposFallback) {
                 const campo = document.getElementById(campoId);
                 if (campo) {
@@ -1869,7 +2026,7 @@ class FolhaFuncionarios {
             }
             
             // Limpar flag de lastFocused de outros campos
-            const todosCampos = ['funcionarioFiltro', 'folhaFuncionario', 'funcionarioRelatorio', 'bh-funcionario-nome', 'bh-ger-func-nome'];
+            const todosCampos = ['funcionarioFiltro', 'folhaFuncionario', 'filtroFechadasFuncionario', 'funcionarioRelatorio', 'bh-funcionario-nome', 'bh-ger-func-nome'];
             todosCampos.forEach(campoId => {
                 const campo = document.getElementById(campoId);
                 if (campo && campo !== campoAtivo) {

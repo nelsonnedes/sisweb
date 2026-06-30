@@ -47,6 +47,8 @@ class FirebaseConnectionManager {
         this.pendingOperations = [];
         this.isProcessingQueue = false;
         this.queueStorageKey = 'folha_pending_ops_v1';
+        this.localStorageSkipLog = new Set();
+        this.localStorageMaxBytes = 1500 * 1024;
         
         // Debounce para operações
         this.debounceTimers = new Map();
@@ -309,7 +311,7 @@ class FirebaseConnectionManager {
         try {
             const base = String(path || '');
             if (!base) return base;
-            if (/^companies\//.test(base) || /^users\//.test(base)) return base;
+            if (/^companies(\/|$)/.test(base) || /^users(\/|$)/.test(base)) return base;
             if (window.FolhaUtils && typeof window.FolhaUtils.resolveFirebasePath === 'function') {
                 return window.FolhaUtils.resolveFirebasePath(base);
             }
@@ -317,12 +319,12 @@ class FirebaseConnectionManager {
             if (svc && typeof svc.getNamespacedPath === 'function') {
                 return svc.getNamespacedPath(base);
             }
-            const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug || window.companyInfo.nome || window.companyInfo.name));
+            const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
             if (rawTenant) return `companies/${String(rawTenant)}/${base}`;
             const stored = localStorage.getItem('company_info');
             if (stored) {
                 const obj = JSON.parse(stored);
-                const t = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                const t = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                 if (t) return `companies/${String(t)}/${base}`;
             }
             return base;
@@ -338,7 +340,8 @@ class FirebaseConnectionManager {
         const {
             useCache = true,
             debounceMs = 300,
-            forceRefresh = false
+            forceRefresh = false,
+            skipLocalStorage = false
         } = options;
         
         // Debounce para evitar múltiplas chamadas
@@ -352,7 +355,7 @@ class FirebaseConnectionManager {
                 const timer = setTimeout(async () => {
                     this.debounceTimers.delete(debounceKey);
                     try {
-                        const result = await this._loadDataInternal(path, useCache, forceRefresh);
+                        const result = await this._loadDataInternal(path, useCache, forceRefresh, { skipLocalStorage });
                         resolve(result);
                     } catch (error) {
                         reject(error);
@@ -363,13 +366,13 @@ class FirebaseConnectionManager {
             });
         }
         
-        return this._loadDataInternal(path, useCache, forceRefresh);
+        return this._loadDataInternal(path, useCache, forceRefresh, { skipLocalStorage });
     }
     
     /**
      * 📊 Carregamento interno de dados
      */
-    async _loadDataInternal(path, useCache, forceRefresh) {
+    async _loadDataInternal(path, useCache, forceRefresh, options = {}) {
         const resolvedPath = this.resolvePath(path);
         const pathKey = resolvedPath || path;
         // Verificar cache primeiro
@@ -394,7 +397,9 @@ class FirebaseConnectionManager {
             this.updateCache(pathKey, data);
             
             // Salvar no localStorage como backup
-            this.saveToLocalStorage(pathKey, data);
+            if (!options.skipLocalStorage) {
+                this.saveToLocalStorage(pathKey, data);
+            }
             
             console.log(`✅ Dados carregados: ${pathKey} (${Object.keys(data).length} itens)`);
             return data;
@@ -611,6 +616,25 @@ class FirebaseConnectionManager {
     /**
      * 💾 LocalStorage para backup
      */
+    shouldSkipLocalStorage(path, serializedLength = 0) {
+        const normalizedPath = String(path || '');
+        const rootCompanyPathPattern = /^companies\/[^/]+$/;
+        if (rootCompanyPathPattern.test(normalizedPath)) {
+            return 'root-company-path';
+        }
+        if (serializedLength > this.localStorageMaxBytes) {
+            return 'payload-too-large';
+        }
+        return '';
+    }
+
+    logLocalStorageSkip(path, reason) {
+        const key = `${reason}:${path}`;
+        if (this.localStorageSkipLog.has(key)) return;
+        this.localStorageSkipLog.add(key);
+        console.info('ℹ️ Cache local ignorado para evitar quota/storage pesado:', { path, reason });
+    }
+
     saveToLocalStorage(path, data) {
         try {
             const key = `folha_cache_${path.replace(/[\/\.]/g, '_')}`;
@@ -618,12 +642,23 @@ class FirebaseConnectionManager {
                 data,
                 timestamp: Date.now()
             };
+            const serialized = JSON.stringify(payload);
+            const estimatedBytes = serialized.length * 2;
+            const skipReason = this.shouldSkipLocalStorage(path, estimatedBytes);
+            if (skipReason) {
+                this.logLocalStorageSkip(path, skipReason);
+                return;
+            }
             if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {
                 window.SiswebStorage.write(key, payload);
             } else {
-                localStorage.setItem(key, JSON.stringify(payload));
+                localStorage.setItem(key, serialized);
             }
         } catch (error) {
+            if (error && error.name === 'QuotaExceededError') {
+                this.logLocalStorageSkip(path, 'quota-exceeded');
+                return;
+            }
             console.warn('⚠️ Erro ao salvar no localStorage:', error);
         }
     }

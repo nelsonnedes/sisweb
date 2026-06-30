@@ -96,13 +96,13 @@
                 if (window.appTenantId) return String(window.appTenantId);
                 if (window.companyInfo) {
                     const raw = window.companyInfo;
-                    const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                    const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                     if (id) return String(id);
                 }
                 const stored = localStorage.getItem('company_info');
                 if (stored) {
                     const obj = JSON.parse(stored);
-                    const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                    const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                     if (id) return String(id);
                 }
             } catch (_) {}
@@ -172,13 +172,13 @@
         
         // Função para verificar espécies
         function checkSpecies() {
-            const species = getData('species');
+            const species = getData('especies');
             const resultsDiv = document.getElementById('results');
             resultsDiv.style.display = 'block';
             
             // Filtrar espécies inválidas
             const invalidSpecies = species.filter(specie => 
-                !specie.name && !specie.nome || 
+                !specie.especie && !specie.name && !specie.nome ||
                 specie.name === 'undefined' || 
                 specie.name === undefined ||
                 specie.nome === 'undefined' || 
@@ -198,19 +198,19 @@
                         <tr>
                             <th>ID</th>
                             <th>Nome</th>
-                            <th>Descrição</th>
+                            <th>Nome Científico</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
             
             invalidSpecies.forEach(specie => {
-                const nome = specie.nome || specie.name || 'undefined';
+                const nome = specie.especie || specie.nome || specie.name || 'undefined';
                 html += `
                     <tr>
                         <td>${specie.id || 'N/A'}</td>
                         <td>${nome}</td>
-                        <td>${specie.description || 'N/A'}</td>
+                        <td>${specie.nomeCientifico || specie.description || specie.descricao || 'N/A'}</td>
                     </tr>
                 `;
             });
@@ -226,7 +226,7 @@
         
         // Função para limpar espécies inválidas
         function cleanSpecies() {
-            const species = getData('species');
+            const species = getData('especies');
             const resultsDiv = document.getElementById('results');
             resultsDiv.style.display = 'block';
             
@@ -235,6 +235,7 @@
             
             // Filtrar espécies válidas (remover as inválidas)
             const validSpecies = species.filter(specie => 
+                (specie.especie && specie.especie !== 'undefined' && specie.especie !== undefined) ||
                 (specie.name && specie.name !== 'undefined' && specie.name !== undefined) ||
                 (specie.nome && specie.nome !== 'undefined' && specie.nome !== undefined)
             );
@@ -248,7 +249,7 @@
             }
             
             // Salvar a nova lista de espécies
-            if (saveData('species', validSpecies)) {
+            if (saveData('especies', validSpecies)) {
                 resultsDiv.innerHTML = `
                     <p class="success">Limpeza concluída com sucesso!</p>
                     <p>Foram removidas ${removedCount} espécies inválidas.</p>

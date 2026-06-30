@@ -204,7 +204,7 @@ class HybridSyncService {
                 const ns = window.firebaseService.getNamespacedPath(base);
                 return ns || `companies/__no_tenant__/${base}`;
             }
-            const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug || window.companyInfo.nome || window.companyInfo.name));
+            const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
             const tenant = rawTenant ? String(rawTenant) : null;
             if (tenant && !/^companies\//.test(base) && !/^users\//.test(base)) {
                 return `companies/${tenant}/${base}`;

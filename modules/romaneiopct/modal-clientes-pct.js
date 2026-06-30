@@ -66,13 +66,13 @@ window.ModalClientesPCT = (function() {
             if (window.appTenantId) return String(window.appTenantId);
             if (window.companyInfo) {
                 const raw = window.companyInfo;
-                const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                 if (id) return String(id);
             }
             const stored = localStorage.getItem('company_info');
             if (stored) {
                 const obj = JSON.parse(stored);
-                const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                 if (id) return String(id);
             }
         } catch (_) {}
@@ -236,21 +236,64 @@ window.ModalClientesPCT = (function() {
                 console.log(`📦 PCT: ${clients.length} clientes carregados do localStorage (unificado)`);
             }
             
-            // Normalizar dados para compatibilidade PCT
-            state.clients = clients.map(client => ({
-                id: client.id || `CLIENT_PCT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                nome: client.nome || client.name || 'Nome não informado',
-                name: client.nome || client.name || 'Nome não informado', // Compatibilidade
-                cidade: client.cidade || client.city || '',
-                city: client.cidade || client.city || '', // Compatibilidade
-                estado: client.estado || client.state || '',
-                state: client.estado || client.state || '', // Compatibilidade
-                telefone: client.telefone || client.phone || '',
-                phone: client.telefone || client.phone || '', // Compatibilidade
-                email: client.email || '',
-                endereco: client.endereco || client.address || '',
-                address: client.endereco || client.address || '' // Compatibilidade
-            }));
+            // Normalizar dados para compatibilidade PCT sem descartar campos fiscais.
+            state.clients = clients.map(client => {
+                const documento = client.documento || client.document || client.cnpj || client.cpf || '';
+                const inscricaoEstadual = client.inscricaoEstadual || client.stateRegistration || client.ie || '';
+                const inscricaoMunicipal = client.inscricaoMunicipal || client.municipalRegistration || client.im || '';
+                const indIEDest = client.indIEDest || client.indicadorInscricaoEstadual || client.ieIndicator || '';
+                const codigoMunicipio = client.codigoMunicipio || client.municipioCodigo || client.municipalityCode || client.cMun || client.ibgeCode || '';
+                const paisCodigo = client.paisCodigo || client.countryCode || client.cPais || '1058';
+                const pais = client.pais || client.country || client.countryName || client.xPais || 'Brasil';
+                return {
+                    ...client,
+                    id: client.id || `CLIENT_PCT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    nome: client.nome || client.name || 'Nome não informado',
+                    name: client.nome || client.name || 'Nome não informado', // Compatibilidade
+                    documento,
+                    document: documento,
+                    cnpj: documento,
+                    tipoPessoa: client.tipoPessoa || client.personType || client.fiscalPersonType || '',
+                    personType: client.tipoPessoa || client.personType || client.fiscalPersonType || '',
+                    inscricaoEstadual,
+                    stateRegistration: inscricaoEstadual,
+                    inscricaoMunicipal,
+                    municipalRegistration: inscricaoMunicipal,
+                    indIEDest,
+                    indicadorInscricaoEstadual: indIEDest,
+                    ieIndicator: indIEDest,
+                    suframa: client.suframa || '',
+                    cep: client.cep || client.postalCode || '',
+                    postalCode: client.cep || client.postalCode || '',
+                    cidade: client.cidade || client.city || '',
+                    city: client.cidade || client.city || '', // Compatibilidade
+                    estado: client.estado || client.state || '',
+                    state: client.estado || client.state || '', // Compatibilidade
+                    telefone: client.telefone || client.phone || '',
+                    phone: client.telefone || client.phone || '', // Compatibilidade
+                    email: client.email || '',
+                    endereco: client.endereco || client.address || '',
+                    address: client.endereco || client.address || '', // Compatibilidade
+                    numero: client.numero || client.number || '',
+                    number: client.numero || client.number || '',
+                    bairro: client.bairro || client.neighborhood || '',
+                    neighborhood: client.bairro || client.neighborhood || '',
+                    complemento: client.complemento || client.complement || '',
+                    complement: client.complemento || client.complement || '',
+                    codigoMunicipio,
+                    municipioCodigo: codigoMunicipio,
+                    municipalityCode: codigoMunicipio,
+                    cMun: codigoMunicipio,
+                    ibgeCode: codigoMunicipio,
+                    paisCodigo,
+                    countryCode: paisCodigo,
+                    cPais: paisCodigo,
+                    pais,
+                    country: pais,
+                    countryName: pais,
+                    xPais: pais
+                };
+            });
 
             const parseTime = (c) => {
                 const m = c && c._metadata && c._metadata.lastUpdated;
@@ -739,9 +782,22 @@ window.ModalClientesPCT = (function() {
                         const basicFields = {
                             'clientId': client.id,
                             'clientName': client.nome,
+                            'clientCnpj': client.documento || client.document || client.cnpj || client.cpf,
+                            'clientPersonType': client.tipoPessoa || client.personType || client.fiscalPersonType,
+                            'clientIndIEDest': client.indIEDest || client.indicadorInscricaoEstadual || client.ieIndicator,
+                            'clientStateRegistration': client.inscricaoEstadual || client.stateRegistration || client.ie,
+                            'clientMunicipalRegistration': client.inscricaoMunicipal || client.municipalRegistration,
+                            'clientSuframa': client.suframa,
+                            'clientCep': client.cep || client.postalCode,
                             'clientPhone': client.telefone,
                             'clientEmail': client.email,
-                            'clientAddress': client.endereco
+                            'clientAddress': client.endereco,
+                            'clientNumber': client.numero || client.number,
+                            'clientNeighborhood': client.bairro || client.neighborhood,
+                            'clientComplement': client.complemento || client.complement,
+                            'clientMunicipalityCode': client.codigoMunicipio || client.municipioCodigo || client.municipalityCode || client.cMun || client.ibgeCode,
+                            'clientCountryCode': client.paisCodigo || client.countryCode || client.cPais || '1058',
+                            'clientCountryName': client.pais || client.country || client.countryName || client.xPais || 'Brasil'
                         };
                         
                         Object.entries(basicFields).forEach(([fieldId, value]) => {

@@ -140,17 +140,39 @@ class DatabaseAdapter {
             if (window.appTenantId) return String(window.appTenantId);
             if (window.companyInfo) {
                 const raw = window.companyInfo;
-                const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                 if (id) return String(id);
             }
             const stored = localStorage.getItem('company_info');
             if (stored) {
                 const obj = JSON.parse(stored);
-                const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                 if (id) return String(id);
             }
         } catch (_) {}
         return null;
+    }
+
+    _canonicalBusinessKey(key) {
+        const raw = String(key || '').replace(/^\/+/, '');
+        const withoutTenant = raw.replace(/^companies\/[^/]+\//, '').replace(/^users\/[^/]+\//, '');
+        const aliases = {
+            romaneiosTora: 'romaneios/tora',
+            romaneiosPct: 'romaneios/pct',
+            romaneiosPCT: 'romaneios/pct',
+            romaneiosTL: 'romaneios/tl',
+            romaneiosTl: 'romaneios/tl',
+            romaneios_tl: 'romaneios/tl',
+            romaneiosPes: 'romaneios/pes',
+            romaneiosPES: 'romaneios/pes',
+            romaneios_pes: 'romaneios/pes'
+        };
+        return aliases[withoutTenant] || withoutTenant;
+    }
+
+    _isBusinessDataKey(key) {
+        const normalized = this._canonicalBusinessKey(key);
+        return /^(romaneios\/(tora|pct|tl|pes)(\/|$)|preromaneios(\/|$)|especies(\/|$)|fornecedores(\/|$)|clients(\/|$)|clientes(\/|$)|estoqueTorasAtual(\/|$)|movimentacoesToras(\/|$)|estoqueProdutos(\/|$)|movimentacoesProdutos(\/|$))/.test(normalized);
     }
 
     /**
@@ -546,6 +568,15 @@ class DatabaseAdapter {
      */
     async loadFromLocalStorage(key) {
         try {
+            if (this._isBusinessDataKey(key)) {
+                return {
+                    success: true,
+                    data: null,
+                    source: 'localStorage',
+                    cached: false,
+                    blockedBusinessCache: true
+                };
+            }
             // Verificar se localStorage está disponível
             if (!this.isLocalStorageAvailable()) {
                 throw new Error('localStorage bloqueado por Tracking Prevention');
@@ -630,6 +661,14 @@ class DatabaseAdapter {
      */
     async saveToLocalStorage(key, data, itemKey) {
         try {
+            if (this._isBusinessDataKey(key)) {
+                return {
+                    success: false,
+                    source: 'localStorage',
+                    blockedBusinessCache: true,
+                    error: 'Cache local desabilitado para dados de negócio multiempresa'
+                };
+            }
             // Verificar se localStorage está disponível
             if (!this.isLocalStorageAvailable()) {
                 console.warn('⚠️ localStorage bloqueado, salvando apenas em memória');
@@ -818,7 +857,7 @@ class DatabaseAdapter {
         // Validações específicas por tipo de chave
         if (key === 'clients' || key === 'fornecedores') {
             return this.validateClientData(item);
-        } else if (key === 'species' || key === 'especies') {
+        } else if (this.isSpeciesKey(key)) {
             return this.validateSpeciesData(item);
         } else if (key.includes('romaneio')) {
             return this.validateRomaneioData(item);
@@ -834,7 +873,43 @@ class DatabaseAdapter {
 
     validateSpeciesData(data) {
         // Espécie deve ter nome
-        return data && (data.nome || data.name);
+        return data && (data.especie || data.nome || data.name);
+    }
+
+    isSpeciesKey(key) {
+        const normalized = String(key || '').toLowerCase().replace(/^company_[^_]+__/, '');
+        return normalized === 'species'
+            || normalized === 'especies'
+            || normalized === 'especiespct'
+            || normalized === 'data/species';
+    }
+
+    normalizeSpeciesItem(item) {
+        const source = item && typeof item === 'object' ? item : {};
+        const name = String(source.especie || source.nome || source.name || source.nomeComum || source.commonName || '').trim();
+        const scientificName = String(
+            source.nomeCientifico ||
+            source.scientificName ||
+            source.scientific ||
+            source.descricao ||
+            source.description ||
+            source.decription ||
+            source.desc ||
+            ''
+        ).trim();
+        const excluded = new Set(['key', 'firebaseKey', 'nome', 'name', 'nomeComum', 'commonName', 'description', 'descricao', 'decription', 'desc', 'scientificName', 'scientific', 'nomeCientífico']);
+        const clean = {};
+        Object.keys(source).forEach((field) => {
+            if (field.startsWith('__') || excluded.has(field)) return;
+            if (source[field] !== undefined) clean[field] = source[field];
+        });
+        clean.id = source.id || source.key || source.firebaseKey || clean.id;
+        clean.especie = name;
+        clean.nomeCientifico = scientificName;
+        clean.ativo = source.ativo !== false;
+        clean.createdAt = source.createdAt || source.created || clean.createdAt || new Date().toISOString();
+        clean.updatedAt = source.updatedAt || source.updated || new Date().toISOString();
+        return clean;
     }
 
     validateRomaneioData(data) {
@@ -922,6 +997,7 @@ class DatabaseAdapter {
 
             // Normalizar chave para comparações (ex.: especies/species)
             const normalizedKey = (key || '').toLowerCase();
+            const isSpecies = this.isSpeciesKey(key);
 
             // Arrays: filtrar itens inválidos
             if (Array.isArray(data)) {
@@ -930,7 +1006,7 @@ class DatabaseAdapter {
 
                 for (const item of data) {
                     if (this.validateSingleItem(normalizedKey, item)) {
-                        validItems.push(item);
+                        validItems.push(isSpecies ? this.normalizeSpeciesItem(item) : item);
                     } else {
                         invalidItems.push(item);
                     }
@@ -945,10 +1021,10 @@ class DatabaseAdapter {
 
             // Objetos: tentar correção mínima para species/especies
             if (data && typeof data === 'object') {
-                if (normalizedKey === 'species' || normalizedKey === 'especies') {
-                    const nome = data.nome || data.name || null;
+                if (isSpecies) {
+                    const nome = data.especie || data.nome || data.name || null;
                     if (typeof nome === 'string' && nome.trim().length > 0) {
-                        return { ...data, nome: nome.trim() };
+                        return this.normalizeSpeciesItem({ ...data, nome: nome.trim() });
                     }
                     return [];
                 }

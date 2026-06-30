@@ -119,13 +119,13 @@
                 if (window.appTenantId) return String(window.appTenantId);
                 if (window.companyInfo) {
                     const raw = window.companyInfo;
-                    const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                    const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                     if (id) return String(id);
                 }
                 const stored = localStorage.getItem('company_info');
                 if (stored) {
                     const obj = JSON.parse(stored);
-                    const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                    const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                     if (id) return String(id);
                 }
             } catch (_) {}

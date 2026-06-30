@@ -47,6 +47,32 @@ class FolhaRelatorios {
         this.setupEventListeners();
         this.loadData();
     }
+
+    calcularTotalValesLancamento(lancamento) {
+        if (window.FolhaUtils && typeof window.FolhaUtils.calcularTotalVales === 'function') {
+            return window.FolhaUtils.calcularTotalVales(lancamento);
+        }
+        const detalhes = this.normalizarValesDetalhados(lancamento);
+        if (detalhes.length) {
+            return Math.round(detalhes.reduce((sum, item) => sum + Number(item.valor || 0), 0) * 100) / 100;
+        }
+        return Number((lancamento && lancamento.vales) || 0);
+    }
+
+    normalizarValesDetalhados(lancamento) {
+        if (window.FolhaUtils && typeof window.FolhaUtils.normalizarValesDetalhados === 'function') {
+            return window.FolhaUtils.normalizarValesDetalhados(lancamento);
+        }
+        if (!lancamento || typeof lancamento !== 'object') return [];
+        const origem = [lancamento.valesDetalhados, lancamento.historicoVales, lancamento.valesHistorico, lancamento.detalhesVales].find(Array.isArray);
+        if (!Array.isArray(origem)) return [];
+        return origem.map((item, index) => ({
+            id: String((item && (item.id || item.key)) || `vale_${index}`),
+            data: String((item && (item.data || item.date || item.dataVale)) || '').trim(),
+            valor: Number((item && (item.valor || item.value || item.total)) || 0),
+            observacao: String((item && (item.observacao || item.observacoes || item.descricao || item.description)) || '').trim()
+        })).filter(item => item.valor > 0 || item.data || item.observacao);
+    }
     
     /**
      * 🎯 CONFIGURAR EVENT LISTENERS (CORRIGIDO - COM PROTEÇÃO CONTRA DUPLICAÇÃO)
@@ -362,6 +388,17 @@ class FolhaRelatorios {
                                 </select>
                             </div>
 
+                            <div class="form-group">
+                                <label for="relatorioOrientacaoImpressao">
+                                    <i class="fas fa-print"></i> Orientação de Impressão/PDF:
+                                </label>
+                                <select id="relatorioOrientacaoImpressao">
+                                    <option value="auto">Automática (Recomendado)</option>
+                                    <option value="portrait">Retrato</option>
+                                    <option value="landscape">Paisagem</option>
+                                </select>
+                            </div>
+
                             <div class="campos-grid" id="pfMesesFilterGroup" style="display:none; grid-template-columns: 1fr 1fr; gap: 12px;">
                                 <div class="form-group">
                                     <label for="pfMesesMin">
@@ -494,10 +531,13 @@ class FolhaRelatorios {
         }
         
         // Botões de exportação
-        const exportButtons = document.querySelectorAll('.export-button');
+        const exportButtons = document.querySelectorAll('.export-button[data-formato]');
         exportButtons.forEach(btn => {
             btn.addEventListener('click', () => {
-                this.gerarRelatorio(btn.dataset.formato);
+                const formato = btn.dataset.formato;
+                if (formato) {
+                    this.gerarRelatorio(formato);
+                }
             });
         });
         
@@ -660,7 +700,7 @@ class FolhaRelatorios {
                 const stored = localStorage.getItem('company_info');
                 if (stored) {
                     const obj = JSON.parse(stored);
-                    const id = obj && (obj.id || obj.companyId || obj.companyID || obj.tenantId || obj.slug);
+                    const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                     if (id) tenantId = String(id);
                 }
             }
@@ -1087,13 +1127,22 @@ class FolhaRelatorios {
             const dadosFonte = Array.isArray(baseDados) ? baseDados : Object.values(baseDados);
             
             // ✅ FILTRO ADICIONAL: Garantir que não há folhas fechadas nos dados base
+            let folhasFechadasRemovidas = 0;
+            const amostraFolhasFechadas = [];
             const dadosLimpos = dadosFonte.filter(item => {
                 const isClosed = item.status === 'mes_fechado';
                 if (isClosed) {
-                    console.log('🚫 Folha fechada removida dos dados base do relatório:', ((item && item.funcionario && item.funcionario.nome) || ''));
+                    folhasFechadasRemovidas += 1;
+                    if (amostraFolhasFechadas.length < 5) {
+                        amostraFolhasFechadas.push((item && item.funcionario && item.funcionario.nome) || 'sem nome');
+                    }
                 }
                 return !isClosed;
             });
+
+            if (folhasFechadasRemovidas > 0) {
+                console.log(`🚫 Folhas fechadas removidas dos dados base do relatório: ${folhasFechadasRemovidas}`, amostraFolhasFechadas);
+            }
             
             console.log(`📊 Dados base para relatório: ${dadosLimpos.length}/${dadosFonte.length} (folhas fechadas excluídas)`);
             
@@ -1469,11 +1518,12 @@ class FolhaRelatorios {
             const calc = l.calculos || {};
             const calcInner = calc.calculos || calc;
             const descontoFaltasMonetario = Number(((calcInner && calcInner.descontoFaltas) || (l && l.valores && l.valores.descontos && l.valores.descontos.faltas) || 0)) || 0;
-            const diretos = (l.vales || 0) + (l.outrosDescontos || 0) + descontoFaltasMonetario +
+            const totalVales = this.calcularTotalValesLancamento(l);
+            const diretos = totalVales + (l.outrosDescontos || 0) + descontoFaltasMonetario +
                             (l.descontoRepousoRemunerado || 0) + (l.descontoINSSManual || 0) +
                             (l.contribuicaoConfederativa || 0) + (l.contribuicaoSindical || 0) +
                             (l.descontoIRPJ || 0) + (l.emprestimoConsignado || 0);
-            const aninhados = (((l && l.valores && l.valores.descontos && l.valores.descontos.vales) || 0) + ((l && l.valores && l.valores.descontos && l.valores.descontos.outros) || 0) + descontoFaltasMonetario);
+            const aninhados = (totalVales + ((l && l.valores && l.valores.descontos && l.valores.descontos.outros) || 0) + descontoFaltasMonetario);
             return acc + (diretos || aninhados || 0);
         }, 0);
         const totaisAbatimento = dadosMes.reduce((acc, l) => acc + (((l && l.fechamento && l.fechamento.abatimentos && l.fechamento.abatimentos.quinzenaPago) || 0)), 0);
@@ -1502,7 +1552,7 @@ class FolhaRelatorios {
                             const bruto = ((l && l.valores && l.valores.bruto) || (l && l.calculos && l.calculos.salarioBruto) || 0);
                             const inss = ((l && l.valores && l.valores.descontos && l.valores.descontos.inss) || 0);
                             const sindicato = ((l && l.valores && l.valores.descontos && l.valores.descontos.sindicato) || 0);
-                            const descontosOutros = (((l && l.valores && l.valores.descontos && l.valores.descontos.vales) || 0) + ((l && l.valores && l.valores.descontos && l.valores.descontos.outros) || 0) + (((l && l.calculos && l.calculos.calculos && l.calculos.calculos.descontoFaltas) || (l && l.calculos && l.calculos.descontoFaltas) || (l && l.valores && l.valores.descontos && l.valores.descontos.faltas) || 0)));
+                            const descontosOutros = (this.calcularTotalValesLancamento(l) + ((l && l.valores && l.valores.descontos && l.valores.descontos.outros) || 0) + (((l && l.calculos && l.calculos.calculos && l.calculos.calculos.descontoFaltas) || (l && l.calculos && l.calculos.descontoFaltas) || (l && l.valores && l.valores.descontos && l.valores.descontos.faltas) || 0)));
                             const abat = ((l && l.fechamento && l.fechamento.abatimentos && l.fechamento.abatimentos.quinzenaPago) || 0);
                             const saldo = (((l && l.fechamento && l.fechamento.saldoFinalLiquido) || (l && l.valores && l.valores.liquido) || (l && l.calculos && l.calculos.salarioLiquido) || 0));
                             const funcionario = this.getFuncionarioDetalhado(l);
@@ -1705,7 +1755,7 @@ class FolhaRelatorios {
                 <td>R$ ${valorQuinzena.toFixed(2).replace('.', ',')}</td>
                 <td>R$ ${acrescimos.toFixed(2).replace('.', ',')}</td>
                 <td>R$ ${descontos.toFixed(2).replace('.', ',')}</td>
-                <td>R$ ${Number(lancamento.vales || 0).toFixed(2).replace('.', ',')}</td>
+                <td>R$ ${Number(this.calcularTotalValesLancamento(lancamento) || 0).toFixed(2).replace('.', ',')}</td>
                 <td><strong>R$ ${salarioLiquido.toFixed(2).replace('.', ',')}</strong></td>
             </tr>
         `;
@@ -1747,7 +1797,7 @@ class FolhaRelatorios {
                 case 'liquido':
                     return acc + window.FolhaUtils.calcularSalarioLiquidoDisplay(lancamento);
                 case 'vales':
-                    return acc + (lancamento.vales || 0);
+                    return acc + this.calcularTotalValesLancamento(lancamento);
                 case 'adicionais':
                     return acc + this.calcularAdicionais(lancamento);
                 default:
@@ -1839,6 +1889,78 @@ class FolhaRelatorios {
         }
         return '100%';
     }
+
+    normalizeRelatorioPrintOptions(options = {}) {
+        const rawOrientation = String((options && options.orientation) || '').toLowerCase();
+        const orientation = rawOrientation === 'landscape' ? 'landscape' : 'portrait';
+        const margin = (options && options.margin) || (orientation === 'landscape' ? '9mm' : '12mm');
+        const pageWidthPx = orientation === 'landscape' ? 1122 : 793;
+        return { orientation, margin, pageWidthPx };
+    }
+
+    getRelatorioDefaultOrientation(tipoRelatorio = '') {
+        const tipo = String(tipoRelatorio || '').toLowerCase();
+        const relatoriosLargos = new Set([
+            'completo',
+            'quinzena',
+            'mensal',
+            'anual',
+            'fechamento',
+            'provisao_rescisao_detalhada',
+            'extrato_bh'
+        ]);
+        return relatoriosLargos.has(tipo) ? 'landscape' : 'portrait';
+    }
+
+    getRelatorioPrintOptions(tipoRelatorio = '') {
+        const select = document.getElementById('relatorioOrientacaoImpressao');
+        const raw = String((select && select.value) || 'auto').toLowerCase();
+        const orientation = raw === 'portrait' || raw === 'landscape'
+            ? raw
+            : this.getRelatorioDefaultOrientation(tipoRelatorio);
+        return this.normalizeRelatorioPrintOptions({ orientation });
+    }
+
+    getRelatorioOrientationOverrideCSS(printOptions = {}) {
+        const options = this.normalizeRelatorioPrintOptions(printOptions);
+        const pageRule = printOptions && printOptions.omitPageSize
+            ? `@page { margin: ${options.margin}; }`
+            : `@page { size: A4 ${options.orientation}; margin: ${options.margin}; }`;
+        return `
+            html {
+                --relatorio-page-width-px: ${options.pageWidthPx};
+                --relatorio-print-margin: ${options.margin};
+            }
+            html[data-print-orientation="${options.orientation}"] .relatorio-container {
+                max-width: 100%;
+            }
+            @media print {
+                ${pageRule}
+                html[data-print-orientation="${options.orientation}"] .relatorio-container {
+                    max-width: 100%;
+                }
+            }
+        `;
+    }
+
+    applyRelatorioPrintAttributes(html, tipoRelatorio = '', printOptions = null) {
+        const options = printOptions ? this.normalizeRelatorioPrintOptions(printOptions) : null;
+        try {
+            return String(html || '').replace(/<html(\s[^>]*)?>/i, (match) => {
+                const attrs = [];
+                if (tipoRelatorio && !/data-report-type=/i.test(match)) {
+                    attrs.push(`data-report-type="${String(tipoRelatorio).replace(/"/g, '&quot;')}"`);
+                }
+                if (options && !/data-print-orientation=/i.test(match)) {
+                    attrs.push(`data-print-orientation="${options.orientation}"`);
+                }
+                if (!attrs.length) return match;
+                return match.replace(/>$/, ` ${attrs.join(' ')}>`);
+            });
+        } catch (_) {
+            return html;
+        }
+    }
     
     /**
      * 📤 EXPORTAR RELATÓRIO
@@ -1868,14 +1990,16 @@ class FolhaRelatorios {
             }
         }
 
+        const printOptions = this.getRelatorioPrintOptions(tipoRelatorio);
+
         switch (formato) {
             case 'print':
                 // Título customizado para recibo de horas extras
                 const titulo = tipoRelatorio === 'recibo_horas_extras' ? 'Recibo de Pagamento - Horas Extras' : 'Relatório - SisWeb';
-                this.imprimirRelatorio(relatorioHTML, titulo, tipoRelatorio);
+                this.imprimirRelatorio(relatorioHTML, titulo, tipoRelatorio, printOptions);
                 break;
             case 'pdf':
-                await this.exportarPDF(relatorioHTML, nomeArquivo, tipoRelatorio);
+                await this.exportarPDF(relatorioHTML, nomeArquivo, tipoRelatorio, printOptions);
                 break;
             case 'excel':
                 this.exportarExcel(relatorioHTML, nomeArquivo);
@@ -1888,7 +2012,8 @@ class FolhaRelatorios {
     /**
      * 🖨️ IMPRIMIR RELATÓRIO
      */
-    imprimirRelatorio(relatorioHTML, tituloCustomizado = 'Relatório - SisWeb', tipoRelatorio = '') {
+    imprimirRelatorio(relatorioHTML, tituloCustomizado = 'Relatório - SisWeb', tipoRelatorio = '', printOptions = null) {
+        const isLikelyReciboDoc = tipoRelatorio === 'recibo' || /id=["']recibo-content["']/i.test(String(relatorioHTML || '')) || /\brecibo-page\b/i.test(String(relatorioHTML || ''));
         const printWindow = window.open('', '_blank');
         if (!printWindow || !printWindow.document) {
             console.error('❌ Erro ao abrir janela de impressão');
@@ -1896,71 +2021,43 @@ class FolhaRelatorios {
             return;
         }
 
+        const resolvedPrintOptions = printOptions ? this.normalizeRelatorioPrintOptions(printOptions) : null;
+        const commonCssOptions = isLikelyReciboDoc
+            ? { ...(resolvedPrintOptions || {}), omitPageSize: true }
+            : (resolvedPrintOptions || undefined);
+        const commonCss = this.getRelatorioCSS(commonCssOptions);
+        const orientationCss = resolvedPrintOptions
+            ? this.getRelatorioOrientationOverrideCSS({ ...resolvedPrintOptions, omitPageSize: isLikelyReciboDoc })
+            : '';
+
         // Detectar se o HTML já é um documento completo
         const isFullDoc = /<html[\s>]/i.test(relatorioHTML) || /<!DOCTYPE/i.test(relatorioHTML);
         let finalHTML = '';
         if (isFullDoc) {
             // Injetar CSS comum e título dentro do <head> do documento gerado
-            finalHTML = relatorioHTML.replace(/<head>/i, `<head><title>${tituloCustomizado}</title><link rel="stylesheet" href="../print-styles.css"><style>${this.getRelatorioCSS()}</style>`);
+            finalHTML = relatorioHTML.replace(/<head>/i, `<head><title>${tituloCustomizado}</title><link rel="stylesheet" href="../print-styles.css"><style>${commonCss}</style>`);
+            if (orientationCss) {
+                finalHTML = finalHTML.replace(/<\/head>/i, `<style>${orientationCss}</style></head>`);
+            }
         } else {
-            finalHTML = `<!DOCTYPE html><html><head><title>${tituloCustomizado}</title><link rel="stylesheet" href="../print-styles.css"><style>${this.getRelatorioCSS()}</style></head><body>${relatorioHTML}</body></html>`;
+            const htmlAttrs = [
+                tipoRelatorio ? `data-report-type="${String(tipoRelatorio).replace(/"/g, '&quot;')}"` : '',
+                resolvedPrintOptions ? `data-print-orientation="${resolvedPrintOptions.orientation}"` : ''
+            ].filter(Boolean).join(' ');
+            finalHTML = `<!DOCTYPE html><html${htmlAttrs ? ` ${htmlAttrs}` : ''}><head><title>${tituloCustomizado}</title><link rel="stylesheet" href="../print-styles.css"><style>${commonCss}${orientationCss}</style></head><body>${relatorioHTML}</body></html>`;
         }
 
-        if (tipoRelatorio) {
-            try {
-                finalHTML = finalHTML.replace(/<html(\s[^>]*)?>/i, (m) => {
-                    if (/data-report-type=/i.test(m)) return m;
-                    return m.replace(/>$/, ` data-report-type="${String(tipoRelatorio).replace(/"/g, '&quot;')}">`);
-                });
-            } catch (_) {}
-        }
+        finalHTML = this.applyRelatorioPrintAttributes(finalHTML, tipoRelatorio, resolvedPrintOptions);
+        const isReciboDoc = tipoRelatorio === 'recibo' || /id=["']recibo-content["']/i.test(finalHTML) || /\brecibo-page\b/i.test(finalHTML);
 
         // Injetar script de fonte adaptativa para impressão de relatórios genéricos
-        const adaptScript = `
-        <script>(function(){
-            var adaptativo = true;
+        const adaptScript = this.getRelatorioAdaptivePrintScript();
+        if (!isReciboDoc) {
             try {
-                var qs = new URLSearchParams(location.search);
-                var ap = qs.get('adapt');
-                if (typeof ap === 'string') { adaptativo = !(ap.toLowerCase() === 'false' || ap === '0'); }
-            } catch (e) {}
-            function ajustarFonteRelatorio(){
-                try {
-                    var pageW = 793;
-                    try { if (window.matchMedia && window.matchMedia('(orientation: landscape)').matches) pageW = 1122; } catch(e) {}
-                    var marginPx = 24;
-                    var disponivelW = pageW - marginPx * 2 - 2;
-                    document.documentElement.style.setProperty('--fs','1');
-                    var container = document.querySelector('.relatorio-container') || document.body;
-                    if (!container) return;
-                    var tables = Array.from(container.querySelectorAll('table'));
-                    var width = 0;
-                    tables.forEach(function(t){
-                        try {
-                            var w = t.scrollWidth || t.getBoundingClientRect().width || 0;
-                            if (w > width) width = w;
-                        } catch(e) {}
-                    });
-                    if (!width) {
-                        var rect = container.getBoundingClientRect();
-                        width = rect.width || 0;
-                    }
-                    if (!width || !disponivelW) return;
-                    var escalaW = disponivelW / width;
-                    var fs = 1;
-                    if (adaptativo && escalaW < 1) { fs = Math.max(0.72, Math.min(1, escalaW - 0.02)); }
-                    document.documentElement.style.setProperty('--fs', String(fs));
-                } catch (e) {}
+                finalHTML = finalHTML.replace(/<\/body>/i, adaptScript + '</body>');
+            } catch (e) {
+                finalHTML += adaptScript;
             }
-            function onBeforePrint(){ ajustarFonteRelatorio(); try { if (document.fonts && document.fonts.ready) { document.fonts.ready.then(function(){ setTimeout(ajustarFonteRelatorio, 60); }); } } catch(e){} }
-            function onAfterPrint(){ document.documentElement.style.setProperty('--fs','1'); }
-            try { window.addEventListener('beforeprint', onBeforePrint); window.addEventListener('afterprint', onAfterPrint); } catch(e){}
-            setTimeout(ajustarFonteRelatorio, 80);
-        })();</script>`;
-        try {
-            finalHTML = finalHTML.replace(/<\/body>/i, adaptScript + '</body>');
-        } catch (e) {
-            finalHTML += adaptScript;
         }
 
         printWindow.document.open();
@@ -1968,12 +2065,43 @@ class FolhaRelatorios {
         printWindow.document.close();
 
         // Aguardar carregamento para garantir que scripts de autoajuste e estilos apliquem antes de imprimir
+        let printStarted = false;
         const onLoad = () => {
+            if (printStarted) return;
+            printStarted = true;
+            const doc = printWindow.document;
+            const waitForFonts = (() => {
+                try {
+                    return doc.fonts && doc.fonts.ready ? doc.fonts.ready : Promise.resolve();
+                } catch {
+                    return Promise.resolve();
+                }
+            })();
+            const waitForImages = (() => {
+                try {
+                    const images = Array.from(doc.images || []);
+                    return Promise.all(images.map((img) => {
+                        if (img.complete) return Promise.resolve();
+                        return new Promise((resolve) => {
+                            img.addEventListener('load', resolve, { once: true });
+                            img.addEventListener('error', resolve, { once: true });
+                            setTimeout(resolve, 1200);
+                        });
+                    }));
+                } catch {
+                    return Promise.resolve();
+                }
+            })();
             try { printWindow.focus(); } catch {}
-            setTimeout(() => {
+            try { printWindow.moveTo(0, 0); } catch {}
+            try { printWindow.resizeTo(screen.availWidth || 1100, screen.availHeight || 800); } catch {}
+            Promise.all([waitForFonts, waitForImages]).finally(() => setTimeout(() => {
+                try { printWindow.focus(); } catch {}
                 try { printWindow.print(); } catch {}
-                try { printWindow.close(); } catch {}
-            }, 300);
+                if (!isReciboDoc) {
+                    setTimeout(() => { try { printWindow.close(); } catch {} }, 1200);
+                }
+            }, 180));
         };
         // Nem todos os navegadores disparam load corretamente após document.write; usar ambos como fallback
         try {
@@ -1982,17 +2110,177 @@ class FolhaRelatorios {
             // Fallback: tempo fixo
             setTimeout(onLoad, 600);
         }
+        setTimeout(onLoad, 900);
+    }
+
+    getRelatorioAdaptivePrintScript(options = {}) {
+        const autoPrint = !!(options && options.autoPrint);
+        const autoClose = options && Object.prototype.hasOwnProperty.call(options, 'autoClose') ? !!options.autoClose : true;
+        return `
+        <script>(function(){
+            var adaptativo = true;
+            var emImpressao = false;
+            var printFitTimer = null;
+            try {
+                var qs = new URLSearchParams(location.search);
+                var ap = qs.get('adapt');
+                if (typeof ap === 'string') { adaptativo = !(ap.toLowerCase() === 'false' || ap === '0'); }
+            } catch (e) {}
+
+            function setRootVar(name, value) {
+                try { document.documentElement.style.setProperty(name, String(value)); } catch (e) {}
+            }
+
+            function removeRootVar(name) {
+                try { document.documentElement.style.removeProperty(name); } catch (e) {}
+            }
+
+            function isLandscapeNow() {
+                try {
+                    var forced = String(document.documentElement.getAttribute('data-print-orientation') || '').toLowerCase();
+                    if (!emImpressao && forced === 'landscape') return true;
+                    if (!emImpressao && forced === 'portrait') return false;
+                    return !!(window.matchMedia && window.matchMedia('(orientation: landscape)').matches);
+                } catch (e) {}
+                return false;
+            }
+
+            function marginToPx(fallback) {
+                try {
+                    var raw = String(getComputedStyle(document.documentElement).getPropertyValue('--relatorio-print-margin') || '').trim();
+                    var n = parseFloat(raw.replace(',', '.'));
+                    if (!Number.isFinite(n)) return fallback;
+                    if (/cm$/i.test(raw)) return n * 37.795;
+                    if (/mm$/i.test(raw)) return n * 3.7795;
+                    if (/in$/i.test(raw)) return n * 96;
+                    return n;
+                } catch (e) {}
+                return fallback;
+            }
+
+            function getPageWidth(landscape) {
+                return landscape ? 1122 : 793;
+            }
+
+            function measureReportWidth(root) {
+                var width = 0;
+                try {
+                    var tables = Array.from(root.querySelectorAll('table'));
+                    tables.forEach(function(t){
+                        try {
+                            var w = Math.max(t.scrollWidth || 0, t.getBoundingClientRect().width || 0);
+                            if (w > width) width = w;
+                        } catch(e) {}
+                    });
+                    if (!width) {
+                        var rect = root.getBoundingClientRect();
+                        width = Math.max(root.scrollWidth || 0, rect.width || 0);
+                    }
+                } catch (e) {}
+                return width;
+            }
+
+            function calcularFonteParaLargura(root, landscape) {
+                var pageW = getPageWidth(landscape);
+                var marginPx = marginToPx(landscape ? 34 : 45);
+                var disponivelW = Math.max(1, pageW - marginPx * 2 - 2);
+                setRootVar('--fs', '1');
+                var width = measureReportWidth(root);
+                if (!width || !disponivelW) return 1;
+                var escalaW = disponivelW / width;
+                if (adaptativo && escalaW < 1) {
+                    return Math.max(0.72, Math.min(1, escalaW - 0.02));
+                }
+                return 1;
+            }
+
+            function ajustarFonteRelatorio(){
+                try {
+                    var root = document.querySelector('.relatorio-container') || document.body;
+                    if (!root) return;
+                    var portraitFs = calcularFonteParaLargura(root, false);
+                    var landscapeFs = calcularFonteParaLargura(root, true);
+                    setRootVar('--fs-portrait', portraitFs.toFixed(3));
+                    setRootVar('--fs-landscape', landscapeFs.toFixed(3));
+                    if (emImpressao) {
+                        removeRootVar('--fs');
+                    } else {
+                        setRootVar('--fs', (isLandscapeNow() ? landscapeFs : portraitFs).toFixed(3));
+                    }
+                } catch (e) {}
+            }
+
+            function scheduleFit() {
+                ajustarFonteRelatorio();
+                setTimeout(ajustarFonteRelatorio, 80);
+                setTimeout(ajustarFonteRelatorio, 220);
+            }
+
+            function startPrintFitLoop() {
+                stopPrintFitLoop();
+                printFitTimer = setInterval(ajustarFonteRelatorio, 450);
+            }
+
+            function stopPrintFitLoop() {
+                if (printFitTimer) {
+                    clearInterval(printFitTimer);
+                    printFitTimer = null;
+                }
+            }
+
+            function onBeforePrint(){
+                emImpressao = true;
+                scheduleFit();
+                startPrintFitLoop();
+                try { if (document.fonts && document.fonts.ready) { document.fonts.ready.then(function(){ setTimeout(scheduleFit, 60); }); } } catch(e){}
+            }
+
+            function onAfterPrint(){
+                emImpressao = false;
+                stopPrintFitLoop();
+                setRootVar('--fs', '1');
+                setRootVar('--fs-portrait', '1');
+                setRootVar('--fs-landscape', '1');
+            }
+
+            try {
+                window.addEventListener('beforeprint', onBeforePrint);
+                window.addEventListener('afterprint', onAfterPrint);
+                window.addEventListener('resize', function(){ if (emImpressao) scheduleFit(); else ajustarFonteRelatorio(); });
+                window.addEventListener('focus', function(){ if (emImpressao) scheduleFit(); });
+                document.addEventListener('visibilitychange', function(){ if (emImpressao) scheduleFit(); });
+                var printMq = window.matchMedia && window.matchMedia('print');
+                if (printMq && printMq.addEventListener) {
+                    printMq.addEventListener('change', function(e){ if (e.matches) onBeforePrint(); else onAfterPrint(); });
+                }
+            } catch(e){}
+            setTimeout(ajustarFonteRelatorio, 80);
+            ${autoPrint ? `
+            window.onload = function() {
+                setTimeout(function() {
+                    try { window.focus(); } catch(e) {}
+                    onBeforePrint();
+                    setTimeout(function() {
+                        try { window.focus(); } catch(e) {}
+                        try { window.print(); } catch(e) {}
+                        ${autoClose ? `setTimeout(function() { try { window.close(); } catch(e) {} }, 1000);` : ''}
+                    }, 180);
+                }, 500);
+            };` : ''}
+        })();</script>`;
     }
     
     /**
      * 📄 EXPORTAR PDF
      */
-    async exportarPDF(relatorioHTML, nomeArquivo, tipoRelatorio = '') {
+    async exportarPDF(relatorioHTML, nomeArquivo, tipoRelatorio = '', printOptions = null) {
         try {
             console.log('📄 Iniciando geração de PDF...');
             
             // ✅ MÉTODO: Usar window.print() com CSS que incorpora estilos do relatório
             const printWindow = window.open('', '_blank');
+            const resolvedPrintOptions = printOptions ? this.normalizeRelatorioPrintOptions(printOptions) : this.normalizeRelatorioPrintOptions({ orientation: this.getRelatorioDefaultOrientation(tipoRelatorio) });
+            const orientationCss = this.getRelatorioOrientationOverrideCSS(resolvedPrintOptions);
 
             // Detectar se o HTML contém um documento completo
             const isFullDoc = /<html[\s>]/i.test(relatorioHTML) || /<!DOCTYPE/i.test(relatorioHTML);
@@ -2011,23 +2299,24 @@ class FolhaRelatorios {
             // ✅ Estilos de impressão acrescentando regras para cores em PDF
             const cssEstilos = `
                 <style>
-                    ${this.getRelatorioCSS()}
+                    ${this.getRelatorioCSS(resolvedPrintOptions)}
                     /* Estilos embutidos do recibo (preservar layout e cores) */
                     ${embeddedStyleBlocks}
+                    ${orientationCss}
                     @media print {
                         body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
                         .relatorio-container { max-width: 100%; }
                         /* Garantir cores exatas em cabeçalhos e linhas finais */
                         .detalhes-table th { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
                         .total-final { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-                        @page { margin: 2cm; }
+                        @page { size: A4 ${resolvedPrintOptions.orientation}; margin: ${resolvedPrintOptions.margin}; }
                     }
                 </style>
             `;
 
             const finalDoc = `
                 <!DOCTYPE html>
-                <html${tipoRelatorio ? ` data-report-type="${String(tipoRelatorio).replace(/"/g, '&quot;')}"` : ''}>
+                <html${tipoRelatorio ? ` data-report-type="${String(tipoRelatorio).replace(/"/g, '&quot;')}"` : ''} data-print-orientation="${resolvedPrintOptions.orientation}">
                 <head>
                     <title>Relatório - ${nomeArquivo}</title>
                     <meta charset="utf-8">
@@ -2035,51 +2324,7 @@ class FolhaRelatorios {
                 </head>
                 <body>
                     ${bodyContent}
-                    <script>
-                        (function(){
-                            function ajustarFonteRelatorio(){
-                                try {
-                                    var pageW = 793;
-                                    var marginPx = 24;
-                                    try { if (window.matchMedia && window.matchMedia('(orientation: landscape)').matches) pageW = 1122; } catch(e) {}
-                                    var disponivelW = pageW - marginPx * 2 - 2;
-                                    document.documentElement.style.setProperty('--fs','1');
-                                    var root = document.querySelector('.relatorio-container') || document.body;
-                                    if (!root) return;
-                                    var tables = Array.from(root.querySelectorAll('table'));
-                                    var width = 0;
-                                    tables.forEach(function(t){
-                                        try {
-                                            var w = t.scrollWidth || t.getBoundingClientRect().width || 0;
-                                            if (w > width) width = w;
-                                        } catch(e) {}
-                                    });
-                                    if (!width) {
-                                        try { width = root.getBoundingClientRect().width || 0; } catch(e) { width = 0; }
-                                    }
-                                    if (!width || !disponivelW) return;
-                                    var escalaW = disponivelW / width;
-                                    var fs = 1;
-                                    if (escalaW < 1) fs = Math.max(0.72, Math.min(1, escalaW - 0.02));
-                                    document.documentElement.style.setProperty('--fs', String(fs));
-                                } catch(e) {}
-                            }
-                            function onBeforePrint(){
-                                ajustarFonteRelatorio();
-                                try { if (document.fonts && document.fonts.ready) { document.fonts.ready.then(function(){ setTimeout(ajustarFonteRelatorio, 60); }); } } catch(e){}
-                            }
-                            function onAfterPrint(){ document.documentElement.style.setProperty('--fs','1'); }
-                            try { window.addEventListener('beforeprint', onBeforePrint); window.addEventListener('afterprint', onAfterPrint); } catch(e){}
-                            setTimeout(ajustarFonteRelatorio, 80);
-                        })();
-                        window.onload = function() {
-                            setTimeout(function() {
-                                try { document.documentElement.style.setProperty('--fs','1'); } catch(e) {}
-                                try { window.print(); } catch {}
-                                setTimeout(function() { try { window.close(); } catch {} }, 1000);
-                            }, 500);
-                        };
-                    </script>
+                    ${this.getRelatorioAdaptivePrintScript({ autoPrint: true, autoClose: true })}
                 </body>
                 </html>
             `;
@@ -2228,9 +2473,20 @@ class FolhaRelatorios {
     /**
      * 🎨 OBTER CSS DO RELATÓRIO
      */
-    getRelatorioCSS() {
+    getRelatorioCSS(printOptions = {}) {
+        const omitPageSize = !!(printOptions && printOptions.omitPageSize);
+        const options = this.normalizeRelatorioPrintOptions(printOptions || {});
+        const pageRule = omitPageSize
+            ? `@page { margin: ${options.margin}; }`
+            : `@page { size: A4 ${options.orientation}; margin: ${options.margin}; }`;
         return `
-            :root { --fs: 1; }
+            :root {
+                --fs: 1;
+                --fs-portrait: 1;
+                --fs-landscape: 1;
+                --relatorio-page-width-px: ${options.pageWidthPx};
+                --relatorio-print-margin: ${options.margin};
+            }
             .relatorio-container {
                 font-family: Arial, sans-serif;
                 max-width: 1200px;
@@ -2266,6 +2522,95 @@ class FolhaRelatorios {
                 text-overflow: ellipsis;
                 white-space: nowrap;
                 line-height: 1.25;
+            }
+
+            .relatorio-container .relatorio-table tfoot td,
+            .relatorio-container .data-table tfoot td,
+            .relatorio-container .detalhes-table tfoot td,
+            .relatorio-container .relatorio-table .total-row td,
+            .relatorio-container .data-table .total-row td,
+            .relatorio-container .detalhes-table .total-row td,
+            .relatorio-container .totais-table td,
+            .relatorio-container .summary-totals .value,
+            .relatorio-container .summary-item .value {
+                overflow: visible;
+                text-overflow: clip;
+                white-space: nowrap;
+                word-break: normal;
+                overflow-wrap: normal;
+                font-variant-numeric: tabular-nums;
+            }
+
+            .relatorio-container .relatorio-table tfoot td:not(:first-child),
+            .relatorio-container .data-table tfoot td:not(:first-child),
+            .relatorio-container .detalhes-table tfoot td:not(:first-child),
+            .relatorio-container .relatorio-table .total-row td:not(:first-child),
+            .relatorio-container .data-table .total-row td:not(:first-child),
+            .relatorio-container .detalhes-table .total-row td:not(:first-child),
+            .relatorio-container .totais-table td:last-child,
+            .relatorio-container .summary-totals .value,
+            .relatorio-container .summary-item .value {
+                min-width: 92px;
+                text-align: right;
+                font-family: 'Consolas', 'Courier New', monospace;
+            }
+
+            .relatorio-container .relatorio-table tfoot td:first-child,
+            .relatorio-container .data-table tfoot td:first-child,
+            .relatorio-container .detalhes-table tfoot td:first-child,
+            .relatorio-container .relatorio-table .total-row td:first-child,
+            .relatorio-container .data-table .total-row td:first-child,
+            .relatorio-container .detalhes-table .total-row td:first-child {
+                min-width: 120px;
+                white-space: normal;
+            }
+
+            .relatorio-container.bh-extrato-report {
+                max-width: 100%;
+            }
+
+            .relatorio-container .bh-extrato-table {
+                table-layout: fixed;
+                font-size: 12px;
+            }
+
+            .relatorio-container .bh-extrato-table thead th {
+                white-space: normal;
+                overflow-wrap: normal;
+                word-break: normal;
+                hyphens: auto;
+                line-height: 1.15;
+                text-align: center;
+                vertical-align: middle;
+                padding: 8px 6px;
+            }
+
+            .relatorio-container .bh-extrato-table thead th .th-sub {
+                display: block;
+                font-size: 0.86em;
+                font-weight: 600;
+            }
+
+            .relatorio-container .bh-extrato-table td {
+                padding: 7px 6px;
+                vertical-align: top;
+            }
+
+            .relatorio-container .bh-extrato-table td:nth-child(1),
+            .relatorio-container .bh-extrato-table td:nth-child(2),
+            .relatorio-container .bh-extrato-table td:nth-child(4) {
+                white-space: normal;
+                overflow: visible;
+                text-overflow: clip;
+                overflow-wrap: anywhere;
+            }
+
+            .relatorio-container .bh-extrato-table td:nth-child(3),
+            .relatorio-container .bh-extrato-table td:nth-child(5),
+            .relatorio-container .bh-extrato-table td:nth-child(6),
+            .relatorio-container .bh-extrato-table td:nth-child(7),
+            .relatorio-container .bh-extrato-table td:nth-child(8) {
+                white-space: nowrap;
             }
 
             .relatorio-container { overflow-x: auto; }
@@ -2430,6 +2775,12 @@ class FolhaRelatorios {
                 }
                 .relatorio-container { overflow: visible; max-width: 100%; }
 
+                .relatorio-container .relatorio-table:not(.bh-extrato-table),
+                .relatorio-container .data-table:not(.bh-extrato-table),
+                .relatorio-container .detalhes-table:not(.bh-extrato-table) {
+                    table-layout: auto;
+                }
+
                 .relatorio-table th, .relatorio-table td,
                 .data-table th, .data-table td,
                 .detalhes-table th, .detalhes-table td { box-sizing: border-box; }
@@ -2463,6 +2814,48 @@ class FolhaRelatorios {
                     white-space: nowrap;
                 }
 
+                .relatorio-container .relatorio-table tfoot td,
+                .relatorio-container .data-table tfoot td,
+                .relatorio-container .detalhes-table tfoot td,
+                .relatorio-container .relatorio-table .total-row td,
+                .relatorio-container .data-table .total-row td,
+                .relatorio-container .detalhes-table .total-row td,
+                .relatorio-container .totais-table td {
+                    overflow: visible;
+                    text-overflow: clip;
+                    white-space: nowrap;
+                    font-size: clamp(8px, calc(12px * var(--fs, 1)), 12px);
+                    padding: clamp(4px, calc(8px * var(--fs, 1)), 8px) clamp(5px, calc(10px * var(--fs, 1)), 10px);
+                }
+
+                .relatorio-container .relatorio-table tfoot td:first-child,
+                .relatorio-container .data-table tfoot td:first-child,
+                .relatorio-container .detalhes-table tfoot td:first-child,
+                .relatorio-container .relatorio-table .total-row td:first-child,
+                .relatorio-container .data-table .total-row td:first-child,
+                .relatorio-container .detalhes-table .total-row td:first-child {
+                    white-space: normal;
+                }
+
+                .relatorio-container .bh-extrato-table th {
+                    font-size: clamp(8px, calc(11px * var(--fs, 1)), 11px);
+                    padding: clamp(4px, calc(7px * var(--fs, 1)), 7px) clamp(3px, calc(5px * var(--fs, 1)), 5px);
+                    white-space: normal;
+                    line-height: 1.12;
+                }
+
+                .relatorio-container .bh-extrato-table td {
+                    font-size: clamp(8px, calc(10px * var(--fs, 1)), 10px);
+                    padding: clamp(3px, calc(6px * var(--fs, 1)), 6px) clamp(3px, calc(5px * var(--fs, 1)), 5px);
+                }
+
+                .relatorio-container .bh-extrato-table td:nth-child(1),
+                .relatorio-container .bh-extrato-table td:nth-child(2),
+                .relatorio-container .bh-extrato-table td:nth-child(4) {
+                    white-space: normal;
+                    overflow-wrap: anywhere;
+                }
+
                 .header,
                 .title,
                 .subtitle,
@@ -2470,11 +2863,17 @@ class FolhaRelatorios {
                 .summary-box,
                 .relatorio-footer { break-inside: avoid; page-break-inside: avoid; }
 
-                @page { size: A4 portrait; margin: 12mm; }
+                ${pageRule}
             }
-
+            @media print and (orientation: portrait) {
+                :root {
+                    --fs: var(--fs-portrait, 1);
+                }
+            }
             @media print and (orientation: landscape) {
-                @page { size: A4 landscape; margin: 10mm; }
+                :root {
+                    --fs: var(--fs-landscape, 1);
+                }
             }
         `;
     }
@@ -2606,7 +3005,7 @@ class FolhaRelatorios {
         const descontoINSSManual = lancamento.descontoINSSManual || 0;
         const inssFinal = descontoINSSManual > 0 ? descontoINSSManual : (vinculosSemINSSAuto.has(tipoContrato) ? 0 : inssAuto);
         const irrfFinal = vinculosSemINSSAuto.has(tipoContrato) ? 0 : irrfAuto;
-        const vales = Number(lancamento.vales || calculos.vales || (calculosAninhados && calculosAninhados.vales) || 0);
+        const vales = Number(this.calcularTotalValesLancamento(lancamento) || 0);
         const outrosDescontos = Number(lancamento.outrosDescontos || calculos.outrosDescontos || (calculosAninhados && calculosAninhados.outrosDescontos) || 0);
         const descontoRepousoRemunerado = Number(lancamento.descontoRepousoRemunerado || calculos.descontoRepousoRemunerado || (calculosAninhados && calculosAninhados.descontoRepousoRemunerado) || 0);
         let descontoFaltas = (((calculos && calculos.calculos && calculos.calculos.descontoFaltas) || calculos.descontoFaltas || 0));
@@ -2691,17 +3090,17 @@ class FolhaRelatorios {
                         }
                         const base = String(p || '');
                         if (!base) return base;
-                        if (/^companies\//.test(base) || /^users\//.test(base)) return base;
+                        if (/^companies(\/|$)/.test(base) || /^users(\/|$)/.test(base)) return base;
                         const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
                         if (svc && typeof svc.getNamespacedPath === 'function') {
                             return svc.getNamespacedPath(base);
                         }
-                        const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug || window.companyInfo.nome || window.companyInfo.name));
+                        const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
                         if (rawTenant) return `companies/${String(rawTenant)}/${base}`;
                         const stored = localStorage.getItem('company_info');
                         if (stored) {
                             const obj = JSON.parse(stored);
-                            const t = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                            const t = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                             if (t) return `companies/${String(t)}/${base}`;
                         }
                     } catch {}
@@ -2771,7 +3170,7 @@ class FolhaRelatorios {
         const descontoINSSManual = lancamento.descontoINSSManual || 0;
         const inssFinal = descontoINSSManual > 0 ? descontoINSSManual : (vinculosSemINSSAuto.has(tipoContrato) ? 0 : inssAuto);
         const irrfFinal = vinculosSemINSSAuto.has(tipoContrato) ? 0 : irrfAuto;
-        const vales = lancamento.vales || 0;
+        const vales = this.calcularTotalValesLancamento(lancamento) || 0;
         const outrosDescontos = lancamento.outrosDescontos || 0;
         const descontoRepousoRemunerado = Number(lancamento.descontoRepousoRemunerado || calculos.descontoRepousoRemunerado || (calculosAninhados && calculosAninhados.descontoRepousoRemunerado) || 0);
         let descontoFaltas = (((calculos && calculos.calculos && calculos.calculos.descontoFaltas) || calculos.descontoFaltas || 0));
@@ -2806,7 +3205,7 @@ class FolhaRelatorios {
         
         // CORREÇÃO: Usar nome do funcionário no título
         const tituloPersonalizado = `Recibo de Pagamento - ${funcionario.nome}`;
-        this.imprimirRelatorio(reciboHTML, tituloPersonalizado);
+        this.imprimirRelatorio(reciboHTML, tituloPersonalizado, 'recibo');
     }
 
     _resolveFuncionarioForLancamento(lancamento) {
@@ -2891,7 +3290,7 @@ class FolhaRelatorios {
             const descontoINSSManual = Number(lanc.descontoINSSManual || 0);
             const inssFinal = descontoINSSManual > 0 ? descontoINSSManual : (vinculosSemINSSAuto.has(String(tipoContrato).toLowerCase()) ? 0 : inssAuto);
             const irrfFinal = vinculosSemINSSAuto.has(String(tipoContrato).toLowerCase()) ? 0 : irrfAuto;
-            const vales = Number(lanc.vales || calculos.vales || (nested && nested.vales) || 0);
+            const vales = Number(this.calcularTotalValesLancamento(lanc) || 0);
             const outrosDescontos = Number(lanc.outrosDescontos || calculos.outrosDescontos || (nested && nested.outrosDescontos) || 0);
 
             const pushDesc = (descricao, referencia, valorNum) => {
@@ -2972,7 +3371,7 @@ class FolhaRelatorios {
                 const descontoINSSManual = Number(lanc.descontoINSSManual || 0);
                 const inssFinal = descontoINSSManual > 0 ? descontoINSSManual : (vinculosSemINSSAuto.has(String(tipoContrato).toLowerCase()) ? 0 : inssAuto);
                 const irrfFinal = vinculosSemINSSAuto.has(String(tipoContrato).toLowerCase()) ? 0 : irrfAuto;
-                const vales = Number(lanc.vales || calculos.vales || (nested && nested.vales) || 0);
+                const vales = Number(this.calcularTotalValesLancamento(lanc) || 0);
                 const outrosDescontos = Number(lanc.outrosDescontos || calculos.outrosDescontos || (nested && nested.outrosDescontos) || 0);
 
                 const pushDesc = (descricao, referencia, valorNum) => {
@@ -3002,6 +3401,292 @@ class FolhaRelatorios {
             }
         }
         return html;
+    }
+
+    getReciboAutoFitStyles() {
+        return `
+        :root {
+            --recibo-print-scale: 1;
+            --recibo-print-scale-portrait: 1;
+            --recibo-print-scale-landscape: 1;
+            --recibo-content-width: 100%;
+            --recibo-content-width-portrait: 100%;
+            --recibo-content-width-landscape: 100%;
+            --recibo-page-width: 100%;
+            --recibo-page-width-portrait: 689px;
+            --recibo-page-width-landscape: 1034px;
+            --recibo-fs-portrait: 1;
+            --recibo-fs-landscape: 1;
+        }
+        @media print {
+            .recibo-page {
+                width: var(--recibo-page-width) !important;
+                max-width: none !important;
+                min-height: 0 !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                overflow: visible !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid-page !important;
+            }
+            #recibo-content {
+                width: var(--recibo-content-width) !important;
+                max-width: none !important;
+                zoom: var(--recibo-print-scale) !important;
+                transform: none !important;
+                transform-origin: top left !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid-page !important;
+            }
+        }
+        @media print and (orientation: portrait) {
+            :root {
+                --recibo-print-scale: var(--recibo-print-scale-portrait);
+                --recibo-content-width: var(--recibo-content-width-portrait);
+                --recibo-page-width: var(--recibo-page-width-portrait);
+                --fs: var(--recibo-fs-portrait);
+            }
+        }
+        @media print and (orientation: landscape) {
+            :root {
+                --recibo-print-scale: var(--recibo-print-scale-landscape);
+                --recibo-content-width: var(--recibo-content-width-landscape);
+                --recibo-page-width: var(--recibo-page-width-landscape);
+                --fs: var(--recibo-fs-landscape);
+            }
+        }
+        `;
+    }
+
+    getReciboAutoFitScript() {
+        return `
+    <script>
+    (function() {
+        var emImpressao = false;
+        var adaptativo = true;
+        var printFitTimer = null;
+        try {
+            var qs = new URLSearchParams(location.search);
+            var ap = qs.get('adapt');
+            if (typeof ap === 'string') adaptativo = !(ap.toLowerCase() === 'false' || ap === '0');
+        } catch (e) {}
+
+        function setRootVar(name, value) {
+            try { document.documentElement.style.setProperty(name, String(value)); } catch (e) {}
+        }
+
+        function removeRootVar(name) {
+            try { document.documentElement.style.removeProperty(name); } catch (e) {}
+        }
+
+        function isLandscapeNow() {
+            try { return !!(window.matchMedia && window.matchMedia('(orientation: landscape)').matches); } catch (e) {}
+            return false;
+        }
+
+        function getPageMetrics(landscape) {
+            var pageW = landscape ? 1122 : 793;
+            var pageH = landscape ? 793 : 1122;
+            var margin = landscape ? 40 : 48;
+            if (typeof landscape !== 'boolean') {
+                landscape = isLandscapeNow();
+                pageW = landscape ? 1122 : 793;
+                pageH = landscape ? 793 : 1122;
+                margin = landscape ? 40 : 48;
+            }
+            try {
+                var css = getComputedStyle(document.documentElement);
+                if (typeof landscape !== 'boolean') {
+                    pageW = Number(css.getPropertyValue('--a4-width-px')) || pageW;
+                    pageH = Number(css.getPropertyValue('--a4-height-px')) || pageH;
+                    margin = Number(css.getPropertyValue('--print-margin-px')) || margin;
+                }
+            } catch (e) {}
+            return {
+                width: Math.max(1, pageW - margin * 2 - 8),
+                height: Math.max(1, pageH - margin * 2 - 8)
+            };
+        }
+
+        function measureContent(conteudo) {
+            var base = conteudo.getBoundingClientRect();
+            var width = Math.max(conteudo.scrollWidth || 0, base.width || 0);
+            var height = Math.max(conteudo.scrollHeight || 0, base.height || 0);
+            try {
+                Array.from(conteudo.children || []).forEach(function(child) {
+                    var rect = child.getBoundingClientRect();
+                    width = Math.max(width, rect.right - base.left);
+                    height = Math.max(height, rect.bottom - base.top);
+                });
+                Array.from(conteudo.querySelectorAll('table, .header, .title, .funcionario-info, .duas-colunas, .observacoes, .data-recibo, .assinaturas, .footer')).forEach(function(node) {
+                    var rect = node.getBoundingClientRect();
+                    width = Math.max(width, rect.right - base.left);
+                    height = Math.max(height, rect.bottom - base.top);
+                });
+            } catch (e) {}
+            return { width: Math.max(1, width), height: Math.max(1, height) };
+        }
+
+        function resetForMeasure(conteudo, pagina, metrics) {
+            setRootVar('--recibo-print-scale', '1');
+            setRootVar('--recibo-content-width', '100%');
+            setRootVar('--recibo-page-width', metrics.width + 'px');
+            setRootVar('--fs', '1');
+            try { pagina.style.setProperty('--fs', '1'); } catch (e) {}
+            conteudo.style.zoom = '';
+            conteudo.style.transform = 'none';
+            conteudo.style.transformOrigin = 'top left';
+            conteudo.style.width = '';
+            pagina.style.zoom = '';
+            pagina.style.height = '';
+            pagina.style.width = '';
+            pagina.style.maxWidth = '';
+        }
+
+        function calcularAjusteParaOrientacao(conteudo, pagina, metrics) {
+            resetForMeasure(conteudo, pagina, metrics);
+            var measured = measureContent(conteudo);
+            var escalaW = metrics.width / measured.width;
+            var escalaH = metrics.height / measured.height;
+            var escala = adaptativo ? Math.min(1, escalaW, escalaH) : 1;
+            var fs = 1;
+
+            if (adaptativo && escala < 0.92) {
+                fs = Math.max(0.74, Math.min(1, escala + 0.08));
+                setRootVar('--fs', fs.toFixed(3));
+                try { pagina.style.setProperty('--fs', fs.toFixed(3)); } catch (e) {}
+                measured = measureContent(conteudo);
+                escalaW = metrics.width / measured.width;
+                escalaH = metrics.height / measured.height;
+                escala = Math.min(1, escalaW, escalaH);
+            }
+
+            escala = adaptativo ? Math.max(0.48, Math.min(1, escala - 0.012)) : 1;
+            return {
+                scale: escala,
+                fs: fs,
+                pageWidth: metrics.width,
+                contentWidth: metrics.width / escala
+            };
+        }
+
+        function aplicarAjuste(nome, ajuste) {
+            setRootVar('--recibo-print-scale-' + nome, ajuste.scale.toFixed(3));
+            setRootVar('--recibo-content-width-' + nome, ajuste.contentWidth.toFixed(2) + 'px');
+            setRootVar('--recibo-page-width-' + nome, ajuste.pageWidth.toFixed(2) + 'px');
+            setRootVar('--recibo-fs-' + nome, ajuste.fs.toFixed(3));
+        }
+
+        function ativarAjusteAtual(ajuste) {
+            if (emImpressao) {
+                removeRootVar('--recibo-print-scale');
+                removeRootVar('--recibo-content-width');
+                removeRootVar('--recibo-page-width');
+                removeRootVar('--fs');
+                return;
+            }
+            setRootVar('--recibo-print-scale', ajuste.scale.toFixed(3));
+            setRootVar('--recibo-content-width', ajuste.contentWidth.toFixed(2) + 'px');
+            setRootVar('--recibo-page-width', ajuste.pageWidth.toFixed(2) + 'px');
+            setRootVar('--fs', ajuste.fs.toFixed(3));
+        }
+
+        function limparInlineMedicao(conteudo, pagina) {
+            conteudo.style.width = '';
+            conteudo.style.zoom = '';
+            conteudo.style.transform = '';
+            conteudo.style.transformOrigin = '';
+            pagina.style.width = '';
+            pagina.style.height = '';
+            pagina.style.maxWidth = '';
+            pagina.style.minHeight = '';
+            pagina.style.zoom = '';
+        }
+
+        function ajustarEscalaParaA4() {
+            var conteudo = document.getElementById('recibo-content');
+            var pagina = document.getElementById('recibo-page');
+            if (!conteudo || !pagina) return;
+
+            var portrait = calcularAjusteParaOrientacao(conteudo, pagina, getPageMetrics(false));
+            var landscape = calcularAjusteParaOrientacao(conteudo, pagina, getPageMetrics(true));
+            aplicarAjuste('portrait', portrait);
+            aplicarAjuste('landscape', landscape);
+            ativarAjusteAtual(isLandscapeNow() ? landscape : portrait);
+            limparInlineMedicao(conteudo, pagina);
+        }
+
+        function scheduleFit() {
+            ajustarEscalaParaA4();
+            setTimeout(ajustarEscalaParaA4, 80);
+            setTimeout(ajustarEscalaParaA4, 220);
+        }
+
+        function startPrintFitLoop() {
+            stopPrintFitLoop();
+            printFitTimer = setInterval(ajustarEscalaParaA4, 450);
+        }
+
+        function stopPrintFitLoop() {
+            if (printFitTimer) {
+                clearInterval(printFitTimer);
+                printFitTimer = null;
+            }
+        }
+
+        function onBeforePrint() {
+            emImpressao = true;
+            scheduleFit();
+            startPrintFitLoop();
+            try {
+                if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleFit);
+            } catch (e) {}
+        }
+
+        function onAfterPrint() {
+            emImpressao = false;
+            stopPrintFitLoop();
+            var conteudo = document.getElementById('recibo-content');
+            var pagina = document.getElementById('recibo-page');
+            setRootVar('--recibo-print-scale', '1');
+            setRootVar('--fs', '1');
+            if (conteudo) {
+                conteudo.style.zoom = '';
+                conteudo.style.transform = '';
+                conteudo.style.transformOrigin = '';
+                conteudo.style.width = '';
+            }
+            if (pagina) {
+                pagina.style.width = '';
+                pagina.style.height = '';
+                pagina.style.maxWidth = '';
+                pagina.style.minHeight = '';
+                pagina.style.zoom = '';
+                try { pagina.style.setProperty('--fs', '1'); } catch (e) {}
+            }
+        }
+
+        window.addEventListener('beforeprint', onBeforePrint);
+        window.addEventListener('afterprint', onAfterPrint);
+        window.addEventListener('resize', function() { if (emImpressao) scheduleFit(); else ajustarEscalaParaA4(); });
+        window.addEventListener('focus', function() { if (emImpressao) scheduleFit(); });
+        document.addEventListener('visibilitychange', function() { if (emImpressao) scheduleFit(); });
+        try {
+            var printMq = window.matchMedia('print');
+            if (printMq && printMq.addEventListener) {
+                printMq.addEventListener('change', function(e) {
+                    emImpressao = !!e.matches;
+                    if (emImpressao) scheduleFit(); else onAfterPrint();
+                });
+            }
+            var portraitMq = window.matchMedia('(orientation: portrait)');
+            if (portraitMq && portraitMq.addEventListener) {
+                portraitMq.addEventListener('change', function() { if (emImpressao) scheduleFit(); });
+            }
+        } catch (e) {}
+        setTimeout(ajustarEscalaParaA4, 100);
+    })();
+    </script>`;
     }
 
     /**
@@ -3074,16 +3759,16 @@ class FolhaRelatorios {
         }
         .logo img { max-width: 100%; height: auto; max-height: 100px; }
         .logo svg { width: 80px; height: 80px; }
-        .company-info { flex: 1; padding-left: 15px; }
+        .company-info { flex: 1; padding-left: 15px; min-width: 0; }
         .company-name { font-size: 20px; font-weight: bold; margin-bottom: 8px; color: #2c3e50; text-transform: uppercase; }
         .company-details { font-size: 12px; margin-bottom: 4px; color: #555; line-height: 1.3; }
         .title {
             text-align: center; font-size: 18px; font-weight: bold; margin: 20px 0; text-transform: uppercase; color: #2c3e50; border: 2px solid #2c3e50; padding: 10px; background-color: #f8f9fa;
         }
         .funcionario-info { margin-bottom: 20px; border: 1px solid #ddd; padding: 15px; background-color: #f9f9f9; }
-        .info-row { display: flex; margin-bottom: 8px; }
-        .info-label { font-weight: bold; min-width: 120px; margin-right: 10px; }
-        .info-value { flex: 1; margin-right: 20px; }
+        .info-row { display: grid; grid-template-columns: minmax(108px, max-content) minmax(0, 1fr) minmax(108px, max-content) minmax(0, 1fr); gap: 4px 10px; align-items: start; margin-bottom: 8px; }
+        .info-label { font-weight: bold; min-width: 0; }
+        .info-value { min-width: 0; overflow-wrap: anywhere; word-break: normal; }
         .detalhes-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
         .detalhes-table th, .detalhes-table td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 11px; word-break: break-word; overflow-wrap: anywhere; }
         .detalhes-table th { background-color: #0d2339; color: white; font-weight: bold; text-align: center; text-transform: uppercase; }
@@ -3091,15 +3776,22 @@ class FolhaRelatorios {
         .total-row { background-color: #e3f2fd; font-weight: bold; }
         .total-final { background-color: #1976d2; color: white; font-size: 14px; }
         .duas-colunas { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
-        .coluna { flex: 1; }
+        .coluna { flex: 1; min-width: 0; }
         :root { --a4-width-px: 793; --a4-height-px: 1122; --print-margin-px: 48; --fs: 1; }
         .recibo-page { max-width: calc(var(--a4-width-px) - 2 * var(--print-margin-px)); width: 100%; margin: 0 auto; padding: 0; box-sizing: border-box; }
         .recibo-scale { transform-origin: top left; will-change: transform; }
-        @page { size: A4 portrait; margin: 12mm; }
+        @page { margin: 12mm; }
+        @media (max-width: 680px) {
+            .info-row { grid-template-columns: minmax(100px, max-content) minmax(0, 1fr); }
+        }
+        @media print and (orientation: landscape) {
+            :root { --a4-width-px: 1122; --a4-height-px: 793; --print-margin-px: 40; }
+        }
         @media print {
             html, body { margin: 0; padding: 0; }
             .detalhes-table, .detalhes-table th, .detalhes-table td { box-sizing: border-box; }
-            .recibo-page { width: calc(var(--a4-width-px) - 2 * var(--print-margin-px)); height: var(--a4-height-px); margin: 0 auto; padding: 0; overflow: visible; }
+            .recibo-page { width: 100%; max-width: none; height: auto; min-height: 0; margin: 0 auto; padding: 0; overflow: visible; page-break-inside: auto; break-inside: auto; }
+            #recibo-content { width: 100%; max-width: 100%; transform: none !important; zoom: 1 !important; page-break-inside: auto; break-inside: auto; }
             body { font-size: 11px; line-height: 1.3; }
             .header { margin-bottom: 12px; padding-bottom: 10px; }
             .logo img { max-height: 70px; }
@@ -3109,13 +3801,25 @@ class FolhaRelatorios {
             .title { font-size: 16px; margin: 12px 0; padding: 6px; border-width: 1px; }
             .funcionario-info { margin-bottom: 12px; padding: 10px; }
             .funcionario-info .info-row { margin-bottom: 6px; }
-            .info-label { min-width: 110px; }
+            .info-label { min-width: 0; }
+            .info-value { min-width: 0; overflow-wrap: anywhere; }
             .duas-colunas { gap: clamp(8px, calc(12px * var(--fs, 1)), 12px); }
             .detalhes-table { font-size: clamp(8.5px, calc(10px * var(--fs, 1)), 10px); }
-            .detalhes-table th, .detalhes-table td { padding: clamp(2px, calc(4px * var(--fs, 1)), 4px) clamp(3px, calc(6px * var(--fs, 1)), 6px); }
+            .detalhes-table th, .detalhes-table td {
+                padding: clamp(2px, calc(4px * var(--fs, 1)), 4px) clamp(3px, calc(6px * var(--fs, 1)), 6px);
+                vertical-align: top;
+            }
+            .detalhes-table td:not(.valor),
+            .detalhes-table th:not(:last-child) {
+                white-space: normal !important;
+                word-break: break-word !important;
+                overflow-wrap: anywhere !important;
+            }
             .detalhes-table th { background-color: #0d2339 !important; color: white !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
             .detalhes-table .valor { white-space: nowrap !important; word-break: normal !important; overflow-wrap: normal !important; }
             .total-final { background-color: #1976d2 !important; color: white !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            .recibo-page, #recibo-content, .duas-colunas, .detalhes-table { page-break-inside: auto; break-inside: auto; }
+            .detalhes-table tr, .assinaturas, .footer, .total-row, .total-final, .data-recibo { page-break-inside: avoid; break-inside: avoid; }
         }
         .grupo-titulo { font-weight: bold; text-transform: uppercase; margin: 8px 0; color: #2c3e50; }
         .assinaturas { margin-top: 50px; display: flex; justify-content: space-between; }
@@ -3124,6 +3828,7 @@ class FolhaRelatorios {
         .assinatura-label { margin-top: 6px; font-weight: bold; font-size: 11px; }
         .assinatura-dados { margin-top: 4px; font-size: 10px; }
         .data-recibo { text-align: right; margin-top: 30px; font-style: italic; }
+        ${this.getReciboAutoFitStyles()}
     </style>
 </head>
 <body>
@@ -3191,11 +3896,11 @@ class FolhaRelatorios {
         <div class="duas-colunas">
             <div class="coluna">
                 <div class="grupo-titulo">Horas Extras (Créditos)</div>
-                <table class="detalhes-table">
+                <table class="detalhes-table proventos-table">
                     <colgroup>
-                        <col style="width: 46%;">
+                        <col style="width: 44%;">
+                        <col style="width: 30%;">
                         <col style="width: 26%;">
-                        <col style="width: 28%;">
                     </colgroup>
                     <thead>
                         <tr>
@@ -3217,7 +3922,7 @@ class FolhaRelatorios {
         </div>
 
         <!-- Resumo final -->
-        <table class="detalhes-table">
+        <table class="detalhes-table resumo-table">
             <colgroup>
                 <col style="width: 56%;">
                 <col style="width: 16%;">
@@ -3289,77 +3994,7 @@ class FolhaRelatorios {
         </div>
     </div>
     </div>
-    <script>
-        (function() {
-            var emImpressao = false;
-            var adaptativo = true;
-            try {
-                var qs = new URLSearchParams(location.search);
-                var ap = qs.get('adapt');
-                if (typeof ap === 'string') { adaptativo = !(ap.toLowerCase() === 'false' || ap === '0'); }
-            } catch (e) {}
-            function ajustarEscalaParaA4() {
-                var pageW = 793;   // px
-                var pageH = 1122;  // px
-                var margin = 38;   // px (~10mm)
-                var disponivelW = pageW - margin * 2 - 2;
-                var disponivelH = pageH - margin * 2 - 2;
-                var conteudo = document.getElementById('recibo-content');
-                var pagina = document.getElementById('recibo-page');
-                if (!conteudo || !pagina) return;
-                conteudo.style.transform = 'none';
-                conteudo.style.zoom = '';
-                pagina.style.zoom = '';
-                pagina.style.width = '';
-                pagina.style.height = '';
-                var rect = conteudo.getBoundingClientRect();
-                var escalaW = disponivelW / rect.width;
-                var escalaH = disponivelH / rect.height;
-                // Fonte adaptativa: reduzir suavemente fonte/padding se faltar largura
-                var fs = 1;
-                if (adaptativo && escalaW < 1) {
-                    fs = Math.max(0.85, Math.min(1, escalaW - 0.02));
-                }
-                pagina.style.setProperty('--fs', fs);
-                // Recalcular após aplicar fonte adaptativa
-                rect = conteudo.getBoundingClientRect();
-                escalaW = disponivelW / rect.width;
-                escalaH = disponivelH / rect.height;
-                var escala = Math.min(escalaW, escalaH, 1);
-                escala = Math.max(0, escala - 0.03);
-                if (emImpressao) {
-                    pagina.style.width = pageW + 'px';
-                    pagina.style.height = pageH + 'px';
-                    pagina.style.zoom = escala;
-                    conteudo.style.zoom = '';
-                    conteudo.style.transform = '';
-                    conteudo.style.transformOrigin = '';
-                } else {
-                    conteudo.style.zoom = '';
-                    conteudo.style.transform = '';
-                    conteudo.style.transformOrigin = '';
-                    pagina.style.width = '';
-                    pagina.style.height = '';
-                }
-            }
-            function onBeforePrint() { 
-                emImpressao = true; 
-                ajustarEscalaParaA4();
-                try { if (document.fonts && document.fonts.ready) { document.fonts.ready.then(() => setTimeout(ajustarEscalaParaA4, 100)); } } catch(e){}
-            }
-            function onAfterPrint() { emImpressao = false; pagina && pagina.style.setProperty('--fs', 1); ajustarEscalaParaA4(); }
-            window.addEventListener('resize', ajustarEscalaParaA4);
-            if (window.matchMedia) {
-                var mediaQueryList = window.matchMedia('print');
-                mediaQueryList.addListener(function(mql) {
-                    if (mql.matches) { onBeforePrint(); } else { onAfterPrint(); }
-                });
-            }
-            window.onbeforeprint = onBeforePrint;
-            window.onafterprint = onAfterPrint;
-            setTimeout(ajustarEscalaParaA4, 100);
-        })();
-    </script>
+    ${this.getReciboAutoFitScript()}
 </body>
 </html>`;
     }
@@ -3380,6 +4015,22 @@ class FolhaRelatorios {
                 return s;
             };
 
+            const centralSvc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+            if (centralSvc && typeof centralSvc.getCompanyProfileForReport === 'function') {
+                try {
+                    const centralResult = await centralSvc.getCompanyProfileForReport();
+                    const centralData = centralResult && centralResult.success !== false
+                        ? (centralResult.data || centralResult)
+                        : null;
+                    if (centralData && typeof centralData === 'object') {
+                        const logoCandidate = centralData.logoUrl || centralData.logoURL || centralData.logoDownloadURL || centralData.logoStoragePath || centralData.logoPath || centralData.logo || centralData.logoBase64 || centralData.logoData || '';
+                        return { ...centralData, logo: normalizeLogo(logoCandidate) };
+                    }
+                } catch (error) {
+                    console.warn('Aviso ao obter empresa pelo helper central:', error);
+                }
+            }
+
             const resolveCompanyId = () => {
                 try {
                     const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
@@ -3397,20 +4048,18 @@ class FolhaRelatorios {
                     const stored = localStorage.getItem('company_info');
                     if (stored) {
                         const obj = JSON.parse(stored);
-                        const id = obj && (obj.id || obj.companyId || obj.companyID || obj.tenantId || obj.slug);
+                        const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                         if (id) return String(id);
                     }
                 } catch (_) {}
+                // Fallback via currentUser / persistentUser
+                try {
+                    const cu = JSON.parse(localStorage.getItem('currentUser') || 'null') || {};
+                    const pu = JSON.parse(localStorage.getItem('persistentUser') || 'null') || {};
+                    const id = cu.companyId || cu.tenantId || pu.companyId || pu.tenantId;
+                    if (id) return String(id);
+                } catch (_) {}
                 return null;
-            };
-
-            const pickCompanyFromPayload = (payload) => {
-                if (!payload) return {};
-                if (Array.isArray(payload)) return payload[0] || {};
-                if (typeof payload !== 'object') return {};
-                const values = Object.values(payload).filter(v => v && typeof v === 'object');
-                if (values.length > 0) return values[0] || {};
-                return payload;
             };
 
             const tenantId = resolveCompanyId();
@@ -3421,25 +4070,34 @@ class FolhaRelatorios {
                 try { svc.setTenantId(tenantId); } catch (_) {}
             }
 
-            if (tenantId && svc && typeof svc.loadFromFirebase === 'function') {
+            // ✅ ESTÁGIO 1: Perfil /profile — fonte canônica pequena para cabeçalhos
+            if (tenantId && typeof window.getData === 'function') {
                 try {
-                    const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
-                    const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
-                    if (byPathData && typeof byPathData === 'object') {
-                        companyData = { ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
+                    const byPath = await window.getData(`companies/${tenantId}/profile`, { debounceMs: 0 });
+                    if (byPath && typeof byPath === 'object' && (byPath.nome || byPath.name)) {
+                        companyData = { ...companyData, ...byPath, id: tenantId, companyId: tenantId, tenantId: tenantId };
                     }
                 } catch (_) {}
             }
 
-            if (!companyData || (!companyData.nome && !companyData.name)) {
-                const companiesPayload = await getData('companies');
-                companyData = pickCompanyFromPayload(companiesPayload);
+            if (tenantId && (!companyData || (!companyData.nome && !companyData.name))) {
+                try {
+                    const companyPayload = typeof window.getData === 'function' ? await window.getData(`companies/${tenantId}/profile`, { debounceMs: 0 }) : (typeof getData === 'function' ? await getData(`companies/${tenantId}/profile`, { debounceMs: 0 }) : null);
+                    if (companyPayload && typeof companyPayload === 'object') {
+                        companyData = { ...companyData, ...companyPayload, id: tenantId, companyId: tenantId, tenantId: tenantId };
+                    }
+                } catch (e) {
+                    console.warn("Aviso ao tentar obter companyData via getData:", e);
+                }
             }
 
             if (!companyData || (!companyData.nome && !companyData.name)) {
                 try {
                     const raw = localStorage.getItem('company_info');
-                    if (raw) companyData = JSON.parse(raw) || companyData;
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        companyData = { ...companyData, ...parsed };
+                    }
                 } catch (_) {}
             }
 
@@ -3487,7 +4145,7 @@ class FolhaRelatorios {
                 empresaFinal.telefone = phoneResolved;
                 empresaFinal.phone = phoneResolved;
             }
-            const logoCandidate = empresaFinal.logoBase64 || empresaFinal.logoUrl || empresaFinal.logoURL || empresaFinal.logoData || empresaFinal.logo || '';
+            const logoCandidate = empresaFinal.logoUrl || empresaFinal.logoURL || empresaFinal.logoDownloadURL || empresaFinal.logoStoragePath || empresaFinal.logoPath || empresaFinal.logo || empresaFinal.logoBase64 || empresaFinal.logoData || '';
             empresaFinal.logo = normalizeLogo(logoCandidate);
 
             return empresaFinal;
@@ -3535,10 +4193,33 @@ class FolhaRelatorios {
         const inssNum = toNum(valores.inss);
         const irrfNum = toNum(valores.irrf);
         const valesNum = toNum(valores.vales);
+        const valesDetalhados = this.normalizarValesDetalhados(lancamento);
+        const escapeHtml = (value) => String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+        const formatarDataVale = (data) => (window.FolhaUtils && typeof window.FolhaUtils.formatarDataBR === 'function')
+            ? window.FolhaUtils.formatarDataBR(data)
+            : (data || 'Sem data');
+        const valesDetalhadosRows = valesDetalhados.length ? valesDetalhados.map((vale) => `
+                    <tr>
+                        <td>Vale</td>
+                        <td>${escapeHtml(formatarDataVale(vale.data))}${vale.observacao ? ` - ${escapeHtml(vale.observacao)}` : ''}</td>
+                        <td class="valor">R$ ${Number(vale.valor || 0).toFixed(2).replace('.', ',')}</td>
+                    </tr>`).join('') : '';
+        const totalValesRow = valesDetalhados.length > 1 ? `
+                    <tr class="total-row">
+                        <td><strong>Total Vales</strong></td>
+                        <td></td>
+                        <td class="valor"><strong>R$ ${valesNum.toFixed(2).replace('.', ',')}</strong></td>
+                    </tr>` : '';
         const outrosDescontosNum = toNum(valores.outrosDescontos);
         const descontoFaltasNum = toNum(valores.descontoFaltas);
         const descontoRepousoRemuneradoNum = toNum(valores.descontoRepousoRemunerado);
         const descontoINSSManualNum = toNum(valores.descontoINSSManual);
+        const inssReciboNum = inssNum > 0 ? inssNum : descontoINSSManualNum;
         const contribuicaoConfederativaNum = toNum(valores.contribuicaoConfederativa);
         const contribuicaoSindicalNum = toNum(valores.contribuicaoSindical);
         const descontoIRPJNum = toNum(valores.descontoIRPJ);
@@ -3547,12 +4228,31 @@ class FolhaRelatorios {
         const totalAcrescimosNum = toNum(valores.totalAcrescimos);
         const totalDescontosNum = toNum(valores.totalDescontos);
         const salarioLiquidoNum = toNum(valores.salarioLiquido);
+        const statusRecibo = String((window.FolhaUtils && typeof window.FolhaUtils.normalizarStatus === 'function')
+            ? window.FolhaUtils.normalizarStatus(lancamento.status)
+            : (lancamento && lancamento.status) || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[^a-z_]/g, '');
+        const quinzenaJaBaixada = isQuinzena && (statusRecibo === 'quinzena_paga' || statusRecibo === 'quinzenapaga');
+        const quinzenaMesFechado = isQuinzena && (statusRecibo === 'mes_fechado' || statusRecibo === 'mesfechado');
+        const quinzenaAberta = isQuinzena && !quinzenaJaBaixada && !quinzenaMesFechado;
+        const valorQuinzenaReciboNum = isQuinzena && window.FolhaUtils && typeof window.FolhaUtils.calcularValorQuinzena === 'function'
+            ? Number(window.FolhaUtils.calcularValorQuinzena(lancamento) || valorQuinzenaNum || 0)
+            : valorQuinzenaNum;
+        const quinzenaComoDesconto = valorQuinzenaReciboNum > 0 && (!isQuinzena || quinzenaJaBaixada || quinzenaMesFechado);
+        const valorQuinzenaDescontoNum = quinzenaComoDesconto ? valorQuinzenaReciboNum : 0;
+        const totalDescontosReciboNum = totalDescontosNum + valorQuinzenaDescontoNum;
         // Fallback robusto para salário líquido e valor a receber
         const totalProventosNumCalc = salarioBaseNum + totalAcrescimosNum;
-        const totalDescontosComQuinzenaNum = totalDescontosNum + valorQuinzenaNum;
         const salarioLiquidoCalcNum = (Number.isFinite(salarioLiquidoNum) && salarioLiquidoNum !== 0)
             ? salarioLiquidoNum
-            : (totalProventosNumCalc - totalDescontosComQuinzenaNum);
+            : (totalProventosNumCalc - totalDescontosReciboNum);
+        const valorReceberReciboNum = quinzenaAberta && valorQuinzenaReciboNum > 0
+            ? valorQuinzenaReciboNum
+            : salarioLiquidoCalcNum;
+        const salarioLiquidoResumoLabel = quinzenaAberta ? 'Valor da Quinzena' : 'Salário Líquido';
+        const salarioLiquidoResumoNum = quinzenaAberta ? valorReceberReciboNum : salarioLiquidoCalcNum;
 
         // ⚙️ Notas opcionais (encargos) controladas por FolhaConfig.POLITICAS.mostrarNotasEncargos
         const politicas = (window.FolhaConfig && window.FolhaConfig.POLITICAS) || {};
@@ -3562,6 +4262,14 @@ class FolhaRelatorios {
         const usarNotaEncargos = mostrarNotas && naoCLT;
         const usarNotaInssManual = mostrarNotas && (lancamento && lancamento.descontoINSSManual > 0);
         const notasHtml = `${usarNotaEncargos ? '<div class=\"nota-discreta\">(Encargos automáticos suprimidos para vínculo não-CLT)</div>' : ''}${usarNotaInssManual ? '<div class=\"nota-discreta\">(INSS manual aplicado)</div>' : ''}`;
+        const lancamentoQuitado = (window.FolhaUtils && typeof window.FolhaUtils.lancamentoContaNoResumo === 'function')
+            ? !window.FolhaUtils.lancamentoContaNoResumo(lancamento)
+            : false;
+        const valorPagoLancamentoNum = window.FolhaUtils && typeof window.FolhaUtils.calcularValorPagoLancamento === 'function'
+            ? Number(window.FolhaUtils.calcularValorPagoLancamento(lancamento) || 0)
+            : 0;
+        const valorFinalLabel = lancamentoQuitado ? 'Valor Pago' : 'Valor a Receber';
+        const valorFinalNum = lancamentoQuitado ? valorPagoLancamentoNum : valorReceberReciboNum;
 
         return `
 <!DOCTYPE html>
@@ -3610,6 +4318,7 @@ class FolhaRelatorios {
         .company-info {
             flex: 1;
             padding-left: 15px;
+            min-width: 0;
         }
         
         .company-name {
@@ -3648,19 +4357,22 @@ class FolhaRelatorios {
         }
         
         .info-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: minmax(108px, max-content) minmax(0, 1fr) minmax(108px, max-content) minmax(0, 1fr);
+            gap: 4px 10px;
+            align-items: start;
             margin-bottom: 8px;
         }
         
         .info-label {
             font-weight: bold;
-            min-width: 120px;
-            margin-right: 10px;
+            min-width: 0;
         }
         
         .info-value {
-            flex: 1;
-            margin-right: 20px;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: normal;
         }
         
         /* Tabela de detalhes */
@@ -3717,6 +4429,7 @@ class FolhaRelatorios {
         }
         .coluna {
             flex: 1;
+            min-width: 0;
         }
         /* Layout adaptativo de impressão (A4) */
         :root {
@@ -3736,8 +4449,19 @@ class FolhaRelatorios {
             will-change: transform;
         }
         @page {
-            size: A4 portrait;
             margin: 12mm;
+        }
+        @media (max-width: 680px) {
+            .info-row {
+                grid-template-columns: minmax(100px, max-content) minmax(0, 1fr);
+            }
+        }
+        @media print and (orientation: landscape) {
+            :root {
+                --a4-width-px: 1122;
+                --a4-height-px: 793;
+                --print-margin-px: 40;
+            }
         }
         @media print {
             html, body {
@@ -3746,11 +4470,23 @@ class FolhaRelatorios {
             }
             .detalhes-table, .detalhes-table th, .detalhes-table td { box-sizing: border-box; }
             .recibo-page {
-                width: calc(var(--a4-width-px) - 2 * var(--print-margin-px));
-                height: var(--a4-height-px);
+                width: 100%;
+                max-width: none;
+                height: auto;
+                min-height: 0;
                 margin: 0 auto;
                 padding: 0;
                 overflow: visible;
+                page-break-inside: auto;
+                break-inside: auto;
+            }
+            #recibo-content {
+                width: 100%;
+                max-width: 100%;
+                transform: none !important;
+                zoom: 1 !important;
+                page-break-inside: auto;
+                break-inside: auto;
             }
         }
         .grupo-titulo {
@@ -3812,11 +4548,21 @@ class FolhaRelatorios {
 
             .funcionario-info { margin-bottom: 12px; padding: 10px; }
             .funcionario-info .info-row { margin-bottom: 6px; }
-            .info-label { min-width: 110px; }
+            .info-label { min-width: 0; }
+            .info-value { min-width: 0; overflow-wrap: anywhere; }
             .duas-colunas { gap: clamp(8px, calc(12px * var(--fs, 1)), 12px); }
 
             .detalhes-table { font-size: clamp(8.5px, calc(10px * var(--fs, 1)), 10px); }
-            .detalhes-table th, .detalhes-table td { padding: clamp(2px, calc(4px * var(--fs, 1)), 4px) clamp(3px, calc(6px * var(--fs, 1)), 6px); }
+            .detalhes-table th, .detalhes-table td {
+                padding: clamp(2px, calc(4px * var(--fs, 1)), 4px) clamp(3px, calc(6px * var(--fs, 1)), 6px);
+                vertical-align: top;
+            }
+            .detalhes-table td:not(.valor),
+            .detalhes-table th:not(:last-child) {
+                white-space: normal !important;
+                word-break: break-word !important;
+                overflow-wrap: anywhere !important;
+            }
             .detalhes-table th {
                 background-color: #0d2339 !important;
                 color: white !important;
@@ -3845,14 +4591,16 @@ class FolhaRelatorios {
             .assinatura-bloco { margin-top: 8px; }
             .linha-assinatura { margin-top: 12px; }
 
-            /* Evitar quebra interna e garantir escala adequada na impressão */
-            #recibo-content { transform: none !important; }
-            .recibo-page, #recibo-content { page-break-inside: avoid; break-inside: avoid; }
-            .assinaturas, .footer, .duas-colunas, .detalhes-table, .total-final, .data-recibo {
+            .recibo-page, #recibo-content, .duas-colunas, .detalhes-table {
+                page-break-inside: auto;
+                break-inside: auto;
+            }
+            .detalhes-table tr, .assinaturas, .footer, .total-row, .total-final, .data-recibo {
                 page-break-inside: avoid; break-inside: avoid;
             }
             .observacoes { page-break-inside: avoid; break-inside: avoid; }
         }
+        ${this.getReciboAutoFitStyles()}
     </style>
 </head>
 <body>
@@ -3922,11 +4670,11 @@ class FolhaRelatorios {
         <!-- PROVENTOS / CRÉDITOS -->
         <div class="coluna">
             <div class="grupo-titulo">Proventos (Créditos)</div>
-                <table class="detalhes-table">
+                <table class="detalhes-table proventos-table">
                 <colgroup>
-                    <col style="width: 46%;">
+                    <col style="width: 44%;">
+                    <col style="width: 30%;">
                     <col style="width: 26%;">
-                    <col style="width: 28%;">
                 </colgroup>
                 <thead>
                     <tr>
@@ -4006,11 +4754,11 @@ class FolhaRelatorios {
         <!-- DESCONTOS / DÉBITOS -->
         <div class="coluna">
             <div class="grupo-titulo">Descontos (Débitos)</div>
-            <table class="detalhes-table">
+            <table class="detalhes-table descontos-table">
                 <colgroup>
-                    <col style="width: 46%;">
+                    <col style="width: 34%;">
+                    <col style="width: 40%;">
                     <col style="width: 26%;">
-                    <col style="width: 28%;">
                 </colgroup>
                 <thead>
                     <tr>
@@ -4020,11 +4768,11 @@ class FolhaRelatorios {
                     </tr>
                 </thead>
                 <tbody>
-                    ${inssNum > 0 ? `
+                    ${inssReciboNum > 0 ? `
                     <tr>
                         <td>INSS</td>
                         <td>Previdência Social</td>
-                        <td class="valor">R$ ${inssNum.toFixed(2).replace('.', ',')}</td>
+                        <td class="valor">R$ ${inssReciboNum.toFixed(2).replace('.', ',')}</td>
                     </tr>` : ''}
                     
                     ${irrfNum > 0 ? `
@@ -4034,12 +4782,12 @@ class FolhaRelatorios {
                         <td class="valor">R$ ${irrfNum.toFixed(2).replace('.', ',')}</td>
                     </tr>` : ''}
                     
-                    ${valesNum > 0 ? `
+                    ${valesNum > 0 ? (valesDetalhados.length ? `${valesDetalhadosRows}${totalValesRow}` : `
                     <tr>
                         <td>Vales</td>
                         <td>Adiantamentos</td>
                         <td class="valor">R$ ${valesNum.toFixed(2).replace('.', ',')}</td>
-                    </tr>` : ''}
+                    </tr>`) : ''}
                     
                     ${outrosDescontosNum > 0 ? `
                     <tr>
@@ -4060,12 +4808,6 @@ class FolhaRelatorios {
                         <td>Desc. Repouso Remunerado</td>
                         <td>Manual</td>
                         <td class="valor">R$ ${descontoRepousoRemuneradoNum.toFixed(2).replace('.', ',')}</td>
-                    </tr>` : ''}
-                    ${descontoINSSManualNum > 0 ? `
-                    <tr>
-                        <td>Desconto INSS (Manual)</td>
-                        <td>Ajuste</td>
-                        <td class="valor">R$ ${descontoINSSManualNum.toFixed(2).replace('.', ',')}</td>
                     </tr>` : ''}
                     ${contribuicaoConfederativaNum > 0 ? `
                     <tr>
@@ -4093,18 +4835,18 @@ class FolhaRelatorios {
                     </tr>` : ''}
                     
                     <!-- QUINZENA COMO DÉBITO (se aplicável) -->
-                    ${valorQuinzenaNum > 0 ? `
+                    ${quinzenaComoDesconto ? `
                     <tr class="total-row">
                         <td><strong>QUINZENA (${percentualQuinzena}%)</strong></td>
                         <td>Pagamento Antecipado</td>
-                        <td class="valor"><strong>R$ ${valorQuinzenaNum.toFixed(2).replace('.', ',')}</strong></td>
+                        <td class="valor"><strong>R$ ${valorQuinzenaDescontoNum.toFixed(2).replace('.', ',')}</strong></td>
                     </tr>` : ''}
                     
                     <!-- TOTAL DESCONTOS -->
                     <tr class="total-row">
                         <td><strong>TOTAL DESCONTOS</strong></td>
                         <td></td>
-                        <td class="valor"><strong>R$ ${( (totalDescontosNum + valorQuinzenaNum) ).toFixed(2).replace('.', ',')}</strong></td>
+                        <td class="valor"><strong>R$ ${totalDescontosReciboNum.toFixed(2).replace('.', ',')}</strong></td>
                     </tr>
                 </tbody>
             </table>
@@ -4112,7 +4854,7 @@ class FolhaRelatorios {
     </div>
 
     <!-- Resumo final -->
-    <table class="detalhes-table">
+    <table class="detalhes-table resumo-table">
         <colgroup>
             <col style="width: 56%;">
             <col style="width: 16%;">
@@ -4134,17 +4876,17 @@ class FolhaRelatorios {
             <tr class="total-row">
                 <td><strong>Total Descontos</strong></td>
                 <td></td>
-                <td class="valor"><strong>R$ ${( (totalDescontosNum + valorQuinzenaNum) ).toFixed(2).replace('.', ',')}</strong></td>
+                <td class="valor"><strong>R$ ${totalDescontosReciboNum.toFixed(2).replace('.', ',')}</strong></td>
             </tr>
             <tr class="total-row">
-                <td><strong>Salário Líquido</strong></td>
+                <td><strong>${salarioLiquidoResumoLabel}</strong></td>
                 <td></td>
-                <td class="valor"><strong>R$ ${salarioLiquidoCalcNum.toFixed(2).replace('.', ',')}</strong></td>
+                <td class="valor"><strong>R$ ${salarioLiquidoResumoNum.toFixed(2).replace('.', ',')}</strong></td>
             </tr>
             <tr class="total-final">
-                <td><strong>Valor a Receber</strong></td>
+                <td><strong>${valorFinalLabel}</strong></td>
                 <td></td>
-                <td class="valor"><strong>R$ ${salarioLiquidoCalcNum.toFixed(2).replace('.', ',')}</strong></td>
+                <td class="valor"><strong>R$ ${valorFinalNum.toFixed(2).replace('.', ',')}</strong></td>
             </tr>
         </tbody>
     </table>
@@ -4186,88 +4928,7 @@ class FolhaRelatorios {
         Este documento serve como comprovante de pagamento e deve ser conservado pelo funcionário.<br>
         Emitido em ${dataEmissao} às ${new Date().toLocaleTimeString('pt-BR')}
     </div>
-    <script>
-    (function() {
-        var emImpressao = false;
-        var adaptativo = true;
-        try {
-            var qs = new URLSearchParams(location.search);
-            var ap = qs.get('adapt');
-            if (typeof ap === 'string') { adaptativo = !(ap.toLowerCase() === 'false' || ap === '0'); }
-        } catch (e) {}
-        function ajustarEscalaParaA4() {
-            var pageW = 793;   // px
-            var pageH = 1122;  // px
-            var margin = 38;   // px (~10mm)
-            var disponivelW = pageW - margin * 2 - 2; // pequena folga
-            var disponivelH = pageH - margin * 2 - 2; // pequena folga
-            var conteudo = document.getElementById('recibo-content');
-            var pagina = document.getElementById('recibo-page');
-            if (!conteudo || !pagina) return;
-            // Resetar antes de medir
-            conteudo.style.transform = 'none';
-            conteudo.style.zoom = '';
-            pagina.style.zoom = '';
-            pagina.style.width = '';
-            pagina.style.height = '';
-            var rect = conteudo.getBoundingClientRect();
-            var escalaW = disponivelW / rect.width;
-            var escalaH = disponivelH / rect.height;
-            // Fonte adaptativa: reduzir suavemente fonte/padding se faltar largura
-            var fs = 1;
-            if (adaptativo && escalaW < 1) {
-                fs = Math.max(0.85, Math.min(1, escalaW - 0.02));
-            }
-            pagina.style.setProperty('--fs', fs);
-            // Recalcular após aplicar fonte adaptativa
-            rect = conteudo.getBoundingClientRect();
-            escalaW = disponivelW / rect.width;
-            escalaH = disponivelH / rect.height;
-            var escala = Math.min(escalaW, escalaH, 1);
-            // aplicar redução leve para evitar corte por arredondamento
-            escala = Math.max(0, escala - 0.03);
-            if (emImpressao) {
-                // No modo impressão, usar zoom no container para afetar layout de toda a página
-                pagina.style.width = pageW + 'px';
-                pagina.style.height = pageH + 'px';
-                pagina.style.zoom = escala;
-                conteudo.style.zoom = '';
-                conteudo.style.transform = '';
-                conteudo.style.transformOrigin = '';
-            } else {
-                // Na aba, manter tamanho normal (sem escala)
-                conteudo.style.zoom = '';
-                conteudo.style.transform = '';
-                conteudo.style.transformOrigin = '';
-                pagina.style.width = '';
-                pagina.style.height = '';
-            }
-        }
-        function onBeforePrint() { 
-            emImpressao = true; 
-            ajustarEscalaParaA4();
-            // Recalcular após carregamento de fontes/imagens para maior precisão
-            try { if (document.fonts && document.fonts.ready) { document.fonts.ready.then(() => setTimeout(ajustarEscalaParaA4, 100)); } } catch(e){}
-            setTimeout(ajustarEscalaParaA4, 120);
-        }
-        function onAfterPrint() {
-            emImpressao = false;
-            // Limpar qualquer escala após impressão
-            var conteudo = document.getElementById('recibo-content');
-            var pagina = document.getElementById('recibo-page');
-            if (conteudo) { conteudo.style.zoom = ''; conteudo.style.transform = ''; conteudo.style.transformOrigin = ''; }
-            if (pagina) { pagina.style.width = ''; pagina.style.height = ''; pagina.style.zoom = ''; pagina.style.setProperty('--fs', 1); }
-        }
-        window.addEventListener('beforeprint', onBeforePrint);
-        window.addEventListener('afterprint', onAfterPrint);
-        try {
-            var mq = window.matchMedia('print');
-            if (mq && mq.addEventListener) {
-                mq.addEventListener('change', function(e){ emImpressao = e.matches; ajustarEscalaParaA4(); });
-            }
-        } catch (e) {}
-    })();
-    </script>
+    ${this.getReciboAutoFitScript()}
     </div>
     </div>
 </body>
@@ -4819,13 +5480,60 @@ class FolhaRelatorios {
         return `${sinal}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     }
 
+    _bhFuncionarioChaves(funcionario) {
+        if (!funcionario) return [];
+        const chaves = [];
+        const add = (value, digitsOnly = false) => {
+            let s = String(value || '').trim();
+            if (digitsOnly) s = s.replace(/\D/g, '');
+            if (s && !chaves.includes(s)) chaves.push(s);
+        };
+        add(funcionario.id);
+        add(funcionario.funcionarioId);
+        add(funcionario.key);
+        add(funcionario.$key);
+        add(funcionario.cpf, true);
+        add(funcionario.matricula);
+        add(funcionario.codigo);
+        return chaves;
+    }
+
+    _bhLancamentoSortTime(lancamento) {
+        const raw = (lancamento && (lancamento.data || lancamento.createdAt)) || '';
+        const date = this._parseISODate(String(raw).slice(0, 10));
+        return date ? date.getTime() : 0;
+    }
+
+    _bhLancamentoDedupKey(lancamento) {
+        if (!lancamento) return '';
+        return String(lancamento.id || lancamento.key || lancamento.lancamentoId || [
+            lancamento.data || '',
+            lancamento.createdAt || '',
+            lancamento.minutos || 0,
+            lancamento.compensado || 0,
+            lancamento.descricao || lancamento.observacao || ''
+        ].join('|'));
+    }
+
+    _bhColetarLancamentosBatch(chaves = [], batch = {}) {
+        const vistos = new Set();
+        const out = [];
+        for (const chave of chaves) {
+            const lista = (batch && batch[String(chave)]) || [];
+            if (!Array.isArray(lista) || lista.length === 0) continue;
+            for (const lancamento of lista) {
+                const dedupKey = this._bhLancamentoDedupKey(lancamento);
+                if (dedupKey && vistos.has(dedupKey)) continue;
+                if (dedupKey) vistos.add(dedupKey);
+                out.push(lancamento);
+            }
+        }
+        return out.sort((a, b) => this._bhLancamentoSortTime(a) - this._bhLancamentoSortTime(b));
+    }
+
     async _listarLancamentosBH(funcionario, inicioISO, fimISO) {
         if (!window.BHFirebase || typeof window.BHFirebase.bhListLancamentos !== 'function' || !funcionario) return [];
-        const chaves = [];
-        if (funcionario.id) chaves.push(String(funcionario.id));
-        if (funcionario.cpf) chaves.push(String(funcionario.cpf).replace(/\D/g, ''));
-        if (funcionario.matricula) chaves.push(String(funcionario.matricula));
-        if (funcionario.codigo) chaves.push(String(funcionario.codigo));
+        const chaves = this._bhFuncionarioChaves(funcionario);
         for (const chave of chaves) {
             try {
                 const lista = await window.BHFirebase.bhListLancamentos(chave, { inicioISO, fimISO, fresh: false });
@@ -4841,8 +5549,28 @@ class FolhaRelatorios {
         const fimDate = this._parseISODate(`${dataFim}-01`) || new Date();
         const fimISO = new Date(fimDate.getFullYear(), fimDate.getMonth() + 1, 0).toISOString().slice(0, 10);
         const linhas = [];
+        const chavesPorFuncionario = new Map();
+        const todasChaves = [];
+        funcionarios.forEach((func) => {
+            const chaves = this._bhFuncionarioChaves(func);
+            chavesPorFuncionario.set(func, chaves);
+            chaves.forEach(chave => todasChaves.push(chave));
+        });
+
+        let lancamentosBatch = null;
+        if (todasChaves.length > 0 && window.BHFirebase && typeof window.BHFirebase.bhListLancamentosBatch === 'function') {
+            try {
+                lancamentosBatch = await window.BHFirebase.bhListLancamentosBatch(todasChaves, { inicioISO, fimISO, fresh: false });
+            } catch (error) {
+                console.warn('Aviso ao carregar Banco de Horas em lote; usando fallback individual:', error);
+            }
+        }
+
         for (const func of funcionarios) {
-            const lancamentos = await this._listarLancamentosBH(func, inicioISO, fimISO);
+            const chaves = chavesPorFuncionario.get(func) || [];
+            const lancamentos = lancamentosBatch
+                ? this._bhColetarLancamentosBatch(chaves, lancamentosBatch)
+                : await this._listarLancamentosBH(func, inicioISO, fimISO);
             lancamentos.forEach((l) => {
                 const minutos = Number((l && l.minutos) || 0);
                 const compensado = Math.max(0, Number((l && l.compensado) || 0));
@@ -4873,23 +5601,33 @@ class FolhaRelatorios {
             </tr>
         `).join('');
         return `
-            <div class="relatorio-container">
+            <div class="relatorio-container bh-extrato-report">
                 ${header}
                 <div class="summary-cards">
                     <div class="summary-card info"><h4>Funcionários Considerados</h4><p>${funcionarios.length}</p></div>
                     <div class="summary-card success"><h4>Lançamentos de BH</h4><p>${linhas.length}</p></div>
                 </div>
-                <table class="data-table">
+                <table class="data-table bh-extrato-table">
+                    <colgroup>
+                        <col style="width:18%">
+                        <col style="width:14%">
+                        <col style="width:9%">
+                        <col style="width:25%">
+                        <col style="width:10%">
+                        <col style="width:9%">
+                        <col style="width:7%">
+                        <col style="width:8%">
+                    </colgroup>
                     <thead>
                         <tr>
                             <th>Funcionário</th>
                             <th>Cargo</th>
                             <th>Data</th>
                             <th>Descrição</th>
-                            <th>Movimento (HH:MM)</th>
+                            <th>Movimento <span class="th-sub">(HH:MM)</span></th>
                             <th>Compensado</th>
                             <th>Saldo</th>
-                            <th>Vence em</th>
+                            <th>Vence <span class="th-sub">em</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -4943,7 +5681,10 @@ class FolhaRelatorios {
             // Definir mês atual padrão
             try {
                 const now = new Date();
-                const yyyyMm = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+                const mesTela = document.getElementById('mesAno');
+                const yyyyMm = (mesTela && mesTela.value)
+                    ? String(mesTela.value)
+                    : `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
                 const di = document.getElementById('resumoDataInicio');
                 const df = document.getElementById('resumoDataFim');
                 if (di && !di.value) di.value = yyyyMm;
@@ -4987,7 +5728,9 @@ class FolhaRelatorios {
             { key: 'emprestimoConsignado', label: 'Empréstimo' },
             { key: 'totalAcrescimos', label: 'Total Acréscimos' },
             { key: 'totalDescontos', label: 'Total Descontos' },
-            { key: 'salarioLiquido', label: 'Salário Líquido' }
+            { key: 'salarioLiquido', label: 'Salário Líquido' },
+            { key: 'valorPago', label: 'Valor Pago' },
+            { key: 'saldoAberto', label: 'Saldo em Aberto' }
         ];
         // Agrupamento visual de colunas
         const grupos = {
@@ -4995,7 +5738,7 @@ class FolhaRelatorios {
             'Proventos': ['salarioBase','valorHorasExtras','bonificacoes','periculosidade','adicionalNoturno','insalubridade','salarioFamilia','premioAssiduidade'],
             'Quinzena': ['valorQuinzena'],
             'Descontos': ['inss','irrf','vales','outrosDescontos','descontoFaltas','descontoRepousoRemunerado','descontoINSSManual','contribuicaoConfederativa','contribuicaoSindical','descontoIRPJ','emprestimoConsignado'],
-            'Totais': ['totalAcrescimos','totalDescontos','salarioLiquido']
+            'Totais': ['totalAcrescimos','totalDescontos','salarioLiquido','valorPago','saldoAberto']
         };
         const defaultCols = ['funcionarioNome','cargo','formaPagamento','mesAno','valorQuinzena','totalAcrescimos','totalDescontos','salarioLiquido'];
         const renderItens = (keys) => keys.map(k => {
@@ -5066,6 +5809,14 @@ class FolhaRelatorios {
                                     <option value="landscape">Paisagem</option>
                                 </select>
                             </div>
+                            <div class="form-group resumo-filter-option">
+                                <label for="resumoSomenteAbertos"><i class="fas fa-filter"></i> Status:</label>
+                                <label class="resumo-toggle">
+                                    <input type="checkbox" id="resumoSomenteAbertos">
+                                    <span>Imprimir apenas lançamentos em aberto</span>
+                                </label>
+                                <small>Desconsidera lançamentos pagos, baixados ou fechados.</small>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label><i class="fas fa-columns"></i> Seleção de Colunas:</label>
@@ -5111,7 +5862,7 @@ class FolhaRelatorios {
             const all = Array.from(document.querySelectorAll('#resumoFolhaModal input[name="resumoCols"]'));
             all.forEach(cb => cb.checked = keys.includes(cb.value));
         };
-        const financeiroKeys = ['funcionarioNome','mesAno','salarioBase','valorHorasExtras','totalAcrescimos','totalDescontos','salarioLiquido'];
+        const financeiroKeys = ['funcionarioNome','mesAno','salarioBase','valorHorasExtras','totalAcrescimos','totalDescontos','salarioLiquido','valorPago','saldoAberto'];
         const rhKeys = ['funcionarioNome','cpf','cargo','tipoContrato','mesAno','descontoFaltas','salarioFamilia','valorHorasExtras','salarioLiquido'];
         const proventosKeys = ['funcionarioNome','mesAno','salarioBase','valorHorasExtras','bonificacoes','periculosidade','adicionalNoturno','insalubridade','salarioFamilia','premioAssiduidade','totalAcrescimos','salarioLiquido'];
         const descontosKeys = ['funcionarioNome','mesAno','inss','irrf','vales','outrosDescontos','descontoFaltas','descontoRepousoRemunerado','descontoINSSManual','contribuicaoConfederativa','contribuicaoSindical','descontoIRPJ','emprestimoConsignado','totalDescontos','salarioLiquido'];
@@ -5164,6 +5915,7 @@ class FolhaRelatorios {
             const df = document.getElementById('resumoDataFim').value;
             const cols = Array.from(document.querySelectorAll('#resumoFolhaModal input[name="resumoCols"]:checked')).map(cb => cb.value);
             const orientacaoSelecionada = String((document.getElementById('resumoOrientacaoImpressao') && document.getElementById('resumoOrientacaoImpressao').value) || 'auto').toLowerCase();
+            const somenteAbertos = !!(document.getElementById('resumoSomenteAbertos') && document.getElementById('resumoSomenteAbertos').checked);
             if (!di || !df || cols.length === 0) {
                 alert('Selecione período e ao menos uma coluna.');
                 return;
@@ -5175,7 +5927,7 @@ class FolhaRelatorios {
                 id: (funcInput && funcInput.dataset && funcInput.dataset.funcionarioId) ? String(funcInput.dataset.funcionarioId) : '',
                 text: (funcInput && funcInput.value) ? String(funcInput.value) : ''
             };
-            const html = await this.gerarResumoFolhaCompact(dados, di, df, cols, funcFiltro, { orientacao: orientacaoSelecionada });
+            const html = await this.gerarResumoFolhaCompact(dados, di, df, cols, funcFiltro, { orientacao: orientacaoSelecionada, somenteAbertos });
             this.imprimirRelatorio(html, 'Resumo da Folha');
         });
     }
@@ -5183,6 +5935,7 @@ class FolhaRelatorios {
     async gerarResumoFolhaCompact(dados, dataInicio, dataFim, cols, funcionarioFiltro = {}, opcoesImpressao = {}) {
         const from = String(dataInicio);
         const to = String(dataFim);
+        const somenteAbertos = !!(opcoesImpressao && opcoesImpressao.somenteAbertos);
         const inRange = (mesAno) => {
             const s = String(mesAno||'');
             return s >= from && s <= to;
@@ -5269,7 +6022,7 @@ class FolhaRelatorios {
                 byKey.set(k, l);
             }
         });
-        const selecionados = Array.from(byKey.values())
+        const selecionadosBase = Array.from(byKey.values())
             .map(l => {
             try { window.FolhaUtils.ensureCalculosPresent && window.FolhaUtils.ensureCalculosPresent(l); } catch {}
             const c = l.calculos || {};
@@ -5279,6 +6032,8 @@ class FolhaRelatorios {
             const acres = (window.FolhaUtils && window.FolhaUtils.calcularAcrescimosDisplay) ? window.FolhaUtils.calcularAcrescimosDisplay(l) : 0;
             const descs = (window.FolhaUtils && window.FolhaUtils.calcularDescontosDisplay) ? window.FolhaUtils.calcularDescontosDisplay(l) : 0;
             const liq = (window.FolhaUtils && window.FolhaUtils.calcularSalarioLiquidoDisplay) ? window.FolhaUtils.calcularSalarioLiquidoDisplay(l) : 0;
+            const valorPago = (window.FolhaUtils && window.FolhaUtils.calcularValorPagoLancamento) ? window.FolhaUtils.calcularValorPagoLancamento(l) : 0;
+            const saldoAberto = (window.FolhaUtils && window.FolhaUtils.calcularSaldoLiquidoEmAberto) ? window.FolhaUtils.calcularSaldoLiquidoEmAberto(l) : liq;
             const funcionario = this.getFuncionarioDetalhado(l);
             const tipoContrato = String((funcionario && funcionario.tipoContrato)||'').toLowerCase();
             const vinculosSemINSSAuto = new Set(['temporario','terceirizado','estagio','estagiario']);
@@ -5309,7 +6064,7 @@ class FolhaRelatorios {
                 valorQuinzena: qz,
                 inss: Number(inssFinal||0),
                 irrf: Number(irrfFinal||0),
-                vales: Number(l.vales || c.vales || 0),
+                vales: Number(this.calcularTotalValesLancamento(l) || 0),
                 outrosDescontos: Number(l.outrosDescontos || c.outrosDescontos || 0),
                 descontoFaltas: Number(calc.descontoFaltas || c.descontoFaltas || 0),
                 descontoRepousoRemunerado: Number(calc.descontoRepousoRemunerado || c.descontoRepousoRemunerado || 0),
@@ -5321,11 +6076,16 @@ class FolhaRelatorios {
                 totalAcrescimos: acres,
                 totalDescontos: descs,
                 salarioLiquido: liq,
+                valorPago,
+                saldoAberto,
                 contaNoResumo
             };
         });
+        const selecionados = somenteAbertos
+            ? selecionadosBase.filter(r => r.contaNoResumo !== false)
+            : selecionadosBase;
         const textCols = new Set(['funcionarioNome','cargo','formaPagamento','tipoContrato','cpf','mesAno']);
-        const highlightCols = new Set(['valorQuinzena','salarioLiquido']);
+        const highlightCols = new Set(['valorQuinzena','salarioLiquido','valorPago','saldoAberto']);
         const headers = cols.map(key => {
             const titulo = key.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase()).replace('Cpf','CPF');
             const baseCls = textCols.has(key) ? (key === 'funcionarioNome' ? 'nome-col text-col' : 'text-col') : 'valor';
@@ -5344,12 +6104,25 @@ class FolhaRelatorios {
         const paddingTabela = orientacaoResolvida === 'landscape' ? '5px' : '4px';
         const larguraNome = orientacaoResolvida === 'landscape' ? '190px' : '140px';
         const larguraTexto = orientacaoResolvida === 'landscape' ? '160px' : '120px';
-        const rows = selecionados.map(r => `<tr>${cols.map(k => {
-            const val = (typeof r[k] === 'number') ? (r[k].toFixed(2).replace('.',',')) : (r[k] || '');
+        const fmtMoedaResumo = (valor) => {
+            const numero = Number(valor || 0);
+            const seguro = Number.isFinite(numero) ? numero : 0;
+            try {
+                return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(seguro);
+            } catch (e) {
+                return `R$ ${seguro.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+        };
+        const rows = selecionados.length > 0 ? selecionados.map(r => `<tr>${cols.map(k => {
+            const val = (typeof r[k] === 'number') ? fmtMoedaResumo(r[k]) : (r[k] || '');
             const baseCls = textCols.has(k) ? (k === 'funcionarioNome' ? 'nome-cell text-cell' : 'text-cell') : 'valor';
             const cls = highlightCols.has(k) ? `${baseCls} destaque-cell` : baseCls;
             return `<td class="${cls}">${val}</td>`;
-        }).join('')}</tr>`).join('');
+        }).join('')}</tr>`).join('') : `<tr><td colspan="${cols.length}" class="text-cell empty-row">Nenhum lançamento encontrado para os filtros selecionados.</td></tr>`;
+        const resumoAviso = somenteAbertos
+            ? 'Filtro aplicado: exibindo apenas lançamentos em aberto. Lançamentos pagos, baixados ou fechados foram desconsiderados.'
+            : 'Resumo operacional: totais principais consideram lançamentos não baixados. Cartões adicionais exibem Total Pagos e Total Restantes.';
+        const tituloResumo = somenteAbertos ? 'Resumo da Folha - Lançamentos em Aberto' : 'Resumo da Folha - Layout Compacto';
         const html = `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -5377,6 +6150,7 @@ td.nome-cell { background: #f6faff; }
 .compact-table tbody tr:nth-child(odd) { background-color: #f9fbfd; }
 .compact-table tbody tr:nth-child(even) { background-color: #ffffff; }
 .compact-table td, .compact-table th { color: #1a1a1a; }
+.compact-table .empty-row { text-align:center; padding:14px; color:#666; font-style:italic; white-space:normal; }
 .compact-table thead { display: table-header-group; }
 .compact-table tr { break-inside: avoid; page-break-inside: avoid; }
 @media print {
@@ -5395,14 +6169,14 @@ td.nome-cell { background: #f6faff; }
 .compact-summary { margin-top: 16px; }
 .summary-header { font-weight: 700; color:#0d2339; margin-bottom: 8px; }
 .summary-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-bottom: 8px; }
-.total-card { border: 1px solid #ddd; border-radius: 8px; padding: 10px; display:flex; align-items:center; justify-content:space-between; }
+.total-card { border: 1px solid #ddd; border-radius: 8px; padding: 10px; display:flex; align-items:center; justify-content:space-between; gap: 12px; }
 .total-card.credit { background: #e8f6ff; border-color: #bfe7ff; }
 .total-card.debit { background: #fff5f5; border-color: #ffd7d7; }
 .total-card.net { background: #f4fff4; border-color: #cde8cd; }
 .total-card.paid { background: #eef9f1; border-color: #cfead7; }
 .total-card.remaining { background: #fff6ec; border-color: #ffe0bf; }
 .total-card .label { font-weight: 600; color:#333; }
-.total-card .value { font-weight: 800; font-family:'Courier New', monospace; }
+.total-card .value { font-weight: 800; font-family:'Courier New', monospace; margin-left: 8px; white-space: nowrap; }
 .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
 .summary-item { border: 1px solid #ddd; border-radius: 6px; background: #fafafa; padding: 8px; display:flex; align-items:center; justify-content:space-between; }
 .summary-item .label { font-weight: 600; color: #333; }
@@ -5423,11 +6197,12 @@ td.nome-cell { background: #f6faff; }
     <div class="company-name">${empresa.nome || empresa.name || ''}</div>
     <div class="company-details">CNPJ: ${empresa.cnpj || ''}</div>
     <div class="company-details">Período: ${from} a ${to}</div>
+    ${somenteAbertos ? '<div class="company-details">Filtro: somente lançamentos em aberto</div>' : ''}
   </div>
 </div>
-<div class="title">Resumo da Folha - Layout Compacto</div>
+<div class="title">${tituloResumo}</div>
 <div style="margin-bottom:10px; padding:8px 12px; border-radius:6px; background:#eef6ff; border:1px solid #d6e8ff; color:#1f4f82; font-size:12px;">
-  Resumo operacional: totais principais consideram lançamentos não baixados. Cartões adicionais exibem Total Pagos e Total Restantes.
+  ${resumoAviso}
 </div>
 <table class="compact-table">
   <thead><tr>${headers}</tr></thead>
@@ -5435,13 +6210,15 @@ td.nome-cell { background: #f6faff; }
 </table>
 ${(() => {
   const cfg = (typeof window !== 'undefined' && window.resumoFolhaConfig) ? window.resumoFolhaConfig : { pageBreakMode: 'auto', threshold: 12, zebra: true };
-  const numericCols = new Set(['salarioBase','valorHorasExtras','bonificacoes','periculosidade','adicionalNoturno','insalubridade','salarioFamilia','premioAssiduidade','valorQuinzena','inss','irrf','vales','outrosDescontos','descontoFaltas','descontoRepousoRemunerado','descontoINSSManual','contribuicaoConfederativa','contribuicaoSindical','descontoIRPJ','emprestimoConsignado','totalAcrescimos','totalDescontos','salarioLiquido']);
+  const numericCols = new Set(['salarioBase','valorHorasExtras','bonificacoes','periculosidade','adicionalNoturno','insalubridade','salarioFamilia','premioAssiduidade','valorQuinzena','inss','irrf','vales','outrosDescontos','descontoFaltas','descontoRepousoRemunerado','descontoINSSManual','contribuicaoConfederativa','contribuicaoSindical','descontoIRPJ','emprestimoConsignado','totalAcrescimos','totalDescontos','salarioLiquido','valorPago','saldoAberto']);
   const selectedNumeric = cols.filter(k => numericCols.has(k));
   if (selectedNumeric.length === 0) return '';
   const labels = (k) => {
     switch(k){
       case 'valorQuinzena': return 'Quinzena (R$)';
       case 'salarioLiquido': return 'Salário Líquido';
+      case 'valorPago': return 'Valor Pago';
+      case 'saldoAberto': return 'Saldo em Aberto';
       case 'salarioBase': return 'Salário Base';
       case 'salarioFamilia': return 'Salário Família';
       case 'totalAcrescimos': return 'Total Acréscimos';
@@ -5453,39 +6230,42 @@ ${(() => {
     }
   };
   const totals = Object.fromEntries(selectedNumeric.map(k => [k, selecionados.reduce((sum, r) => sum + (Number(r[k])||0), 0)]));
-  const totalPagos = selecionados.filter(r => !r.contaNoResumo).reduce((sum, r) => sum + (Number(r.salarioLiquido)||0), 0);
-  const totalRestantes = selecionados.filter(r => r.contaNoResumo).reduce((sum, r) => sum + (Number(r.salarioLiquido)||0), 0);
-  const creditKeys = ['salarioBase','valorQuinzena','valorHorasExtras','bonificacoes','periculosidade','adicionalNoturno','insalubridade','salarioFamilia','premioAssiduidade','totalAcrescimos'];
+  const totalAcrescimosReal = selecionados.reduce((sum, r) => sum + (Number(r.totalAcrescimos)||0), 0);
+  const totalDescontosReal = selecionados.reduce((sum, r) => sum + (Number(r.totalDescontos)||0), 0);
+  const totalLiquidoReal = selecionados.reduce((sum, r) => sum + (Number(r.salarioLiquido)||0), 0);
+  const totalPagos = selecionados.reduce((sum, r) => sum + (Number(r.valorPago)||0), 0);
+  const totalRestantes = selecionados.reduce((sum, r) => sum + (Number(r.saldoAberto)||0), 0);
+  const creditKeys = ['salarioBase','valorHorasExtras','bonificacoes','periculosidade','adicionalNoturno','insalubridade','salarioFamilia','premioAssiduidade','totalAcrescimos'];
+  const neutralKeys = ['valorQuinzena'];
   const debitKeys = ['inss','irrf','vales','outrosDescontos','descontoFaltas','descontoRepousoRemunerado','descontoINSSManual','contribuicaoConfederativa','contribuicaoSindical','descontoIRPJ','emprestimoConsignado','totalDescontos'];
-  const selectedCredits = cols.filter(k => creditKeys.includes(k));
-  const selectedDebits = cols.filter(k => debitKeys.includes(k));
-  const totalCreditos = selectedCredits.reduce((acc,k) => acc + (totals[k]||0), 0);
-  const totalDebitos = selectedDebits.reduce((acc,k) => acc + (totals[k]||0), 0);
-  const totalLiquido = cols.includes('salarioLiquido') ? (totals['salarioLiquido']||0) : (totalCreditos - totalDebitos);
-  const fmt = (n) => `R$ ${Number(n || 0).toFixed(2).replace('.',',')}`;
+  const fmt = (n) => fmtMoedaResumo(n);
+  const statusCards = somenteAbertos
+    ? `<div class="total-card remaining"><div class="label">Total em Aberto</div><div class="value">${fmt(totalRestantes)}</div></div>`
+    : `<div class="total-card paid"><div class="label">Total Pagos</div><div class="value">${fmt(totalPagos)}</div></div>
+    <div class="total-card remaining"><div class="label">Total Restantes</div><div class="value">${fmt(totalRestantes)}</div></div>`;
   const totalsCards = `<div class="summary-totals">
-    <div class="total-card credit"><div class="label">Total Acréscimos (selecionados)</div><div class="value">${fmt(totalCreditos)}</div></div>
-    <div class="total-card debit"><div class="label">Total Descontos (selecionados)</div><div class="value">${fmt(totalDebitos)}</div></div>
-    <div class="total-card net"><div class="label">Total Líquido</div><div class="value">${fmt(totalLiquido)}</div></div>
-    <div class="total-card paid"><div class="label">Total Pagos</div><div class="value">${fmt(totalPagos)}</div></div>
-    <div class="total-card remaining"><div class="label">Total Restantes</div><div class="value">${fmt(totalRestantes)}</div></div>
+    <div class="total-card credit"><div class="label">Total Acréscimos</div><div class="value">${fmt(totalAcrescimosReal)}</div></div>
+    <div class="total-card debit"><div class="label">Total Descontos</div><div class="value">${fmt(totalDescontosReal)}</div></div>
+    <div class="total-card net"><div class="label">Total Líquido</div><div class="value">${fmt(totalLiquidoReal)}</div></div>
+    ${statusCards}
   </div>`;
   // Remover duplicatas: não repetir agregados já exibidos nos cartões
   const aggregatedSet = new Set(['totalAcrescimos','totalDescontos','salarioLiquido']);
   const isCredit = (k) => creditKeys.includes(k);
+  const isNeutral = (k) => neutralKeys.includes(k);
   const isDebit  = (k) => debitKeys.includes(k);
   const gridKeys = selectedNumeric
     .filter(k => !aggregatedSet.has(k))
     .sort((a,b) => {
-      const pa = isCredit(a) ? 0 : isDebit(a) ? 1 : 2;
-      const pb = isCredit(b) ? 0 : isDebit(b) ? 1 : 2;
+      const pa = isCredit(a) ? 0 : isNeutral(a) ? 1 : isDebit(a) ? 2 : 3;
+      const pb = isCredit(b) ? 0 : isNeutral(b) ? 1 : isDebit(b) ? 2 : 3;
       if (pa !== pb) return pa - pb;
       // manter ordem do usuário dentro do grupo
       return cols.indexOf(a) - cols.indexOf(b);
     });
   const itemsHtml = gridKeys.map(k => {
-    const v = Number(totals[k] || 0).toFixed(2).replace('.',',');
-    return `<div class="summary-item"><div class="label">${labels(k)}</div><div class="value">R$ ${v}</div></div>`;
+    const v = fmtMoedaResumo(totals[k] || 0);
+    return `<div class="summary-item"><div class="label">${labels(k)}</div><div class="value">${v}</div></div>`;
   }).join('');
   const pageBreakClass = (cfg.pageBreakMode === 'always') ? 'page-break' : (cfg.pageBreakMode === 'auto' && selectedNumeric.length > (cfg.threshold||12) ? 'page-break' : '');
   const zebraClass = (cfg.zebra ? 'zebra' : '');
@@ -5513,6 +6293,24 @@ if (!window.getCompanyData) {
 					return s;
 				};
 
+				const centralSvc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+				if (centralSvc && typeof centralSvc.getCompanyProfileForReport === 'function') {
+					try {
+						const centralResult = await centralSvc.getCompanyProfileForReport();
+						const centralData = centralResult && centralResult.success !== false
+							? (centralResult.data || centralResult)
+							: null;
+						if (centralData && typeof centralData === 'object') {
+							const logoCandidate = centralData.logoUrl || centralData.logoURL || centralData.logoDownloadURL || centralData.logoStoragePath || centralData.logoPath || centralData.logo || centralData.logoBase64 || centralData.logoData || '';
+							const merged = { ...centralData, logo: normalizeLogo(logoCandidate) };
+							try { localStorage.setItem('company_info', JSON.stringify({ ...merged })); } catch (_) {}
+							return merged;
+						}
+					} catch (error) {
+						console.warn('Aviso ao obter empresa pelo helper central:', error);
+					}
+				}
+
 				const resolveCompanyId = () => {
 					try {
 						const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
@@ -5529,13 +6327,13 @@ if (!window.getCompanyData) {
 						if (window.appTenantId) return String(window.appTenantId);
 						if (window.companyInfo) {
 							const raw = window.companyInfo;
-							const id = raw && (raw.id || raw.companyId || raw.companyID || raw.tenantId || raw.slug);
+							const id = raw && (raw.companyId || raw.companyID || raw.tenantId || raw.id);
 							if (id) return String(id);
 						}
 						const stored = localStorage.getItem('company_info');
 						if (stored) {
 							const obj = JSON.parse(stored);
-							const id = obj && (obj.id || obj.companyId || obj.companyID || obj.tenantId || obj.slug);
+							const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
 							if (id) return String(id);
 						}
 					} catch (_) {}
@@ -5570,7 +6368,7 @@ if (!window.getCompanyData) {
 				if (tenantId && svc && typeof svc.loadFromFirebase === 'function') {
 					try {
 						const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
-						const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
+						const byPathData = byPath && (byPath.success === false ? byPath.data : (byPath.data || byPath));
 						if (byPathData && typeof byPathData === 'object') {
 							companyData = { ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
 						}
@@ -5596,13 +6394,11 @@ if (!window.getCompanyData) {
 					} catch (_) {}
 				}
 
-				if (!companyData) {
+				if (!companyData && tenantId) {
 					try {
-						const companies = await getData('companies');
-						if (Array.isArray(companies)) companyData = companies[0] || null;
-						else if (companies && typeof companies === 'object') {
-							const vals = Object.values(companies).filter(v => v && typeof v === 'object');
-							companyData = vals[0] || companies;
+						const companyPayload = await getData(`companies/${tenantId}/profile`);
+						if (companyPayload && typeof companyPayload === 'object') {
+							companyData = { ...companyPayload, id: tenantId, companyId: tenantId, tenantId: tenantId };
 						}
 					} catch (_) {}
 				}
@@ -5618,7 +6414,7 @@ if (!window.getCompanyData) {
 				if (estadoResolved) { merged.estado = estadoResolved; merged.state = estadoResolved; }
 				const telefoneResolved = merged.phone || merged.telefone;
 				if (telefoneResolved) { merged.telefone = telefoneResolved; merged.phone = telefoneResolved; }
-				const logoCandidate = merged.logoBase64 || merged.logoUrl || merged.logoURL || merged.logoData || merged.logo || '';
+				const logoCandidate = merged.logoUrl || merged.logoURL || merged.logoDownloadURL || merged.logoStoragePath || merged.logoPath || merged.logo || merged.logoBase64 || merged.logoData || '';
 				merged.logo = normalizeLogo(logoCandidate);
 				if (!merged.logo || String(merged.logo).trim() === '') merged.logo = '';
 				try { localStorage.setItem('company_info', JSON.stringify({ ...merged })); } catch (_) {}

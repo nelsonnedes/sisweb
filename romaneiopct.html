@@ -88,12 +88,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css?v=20260324_2">
-    <link rel="stylesheet" href="romaneio-comum.css?v=20260324_2">
+    <link rel="stylesheet" href="romaneio-comum.css?v=20260607pwaqa">
+    <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <link rel="stylesheet" href="print-styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <!-- 🔧 CORREÇÃO CRÍTICA: Menu carregado no HEAD igual ao romaneiotl -->
-    <script src="menu-component.js?v=20260326"></script>
+    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
     
     <style>
         :root {
@@ -922,6 +923,69 @@
         /* Ajuste específico para o campo de preço */
         .form-group input#price {
             text-align: right;
+        }
+
+        .romaneio-header-fields {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .romaneio-date-field {
+            flex: 0 0 190px;
+            max-width: 190px;
+        }
+
+        .romaneio-date-field input[type="date"] {
+            box-sizing: border-box;
+            padding-right: 34px;
+            position: relative;
+            text-align: left;
+            width: 100%;
+        }
+
+        .romaneio-date-field input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            height: 18px;
+            padding: 2px;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+        }
+
+        .romaneio-date-field input[type="date"]::-webkit-date-and-time-value {
+            text-align: left;
+        }
+
+        .romaneio-client-field {
+            flex: 1 1 0;
+            min-width: 420px;
+            max-width: none;
+        }
+
+        @media (max-width: 640px) {
+            .romaneio-header-fields {
+                display: block;
+            }
+
+            .romaneio-date-field,
+            .romaneio-client-field {
+                min-width: 0;
+                max-width: none;
+            }
+        }
+
+        .campos-grid .species-default-field {
+            flex: 1.3 1 260px;
+            min-width: 260px;
+        }
+
+        .campos-grid .field-compact-10 {
+            flex: 0.9 1 108px;
+            min-width: 108px;
         }
 
         .error {
@@ -2043,26 +2107,33 @@
         
         <section id="romaneio-form-section">
         <form id="romaneioForm" onsubmit="event.preventDefault(); console.log('Submit prevenido via HTML'); return false;">
-            <div class="form-group">
-                    <label for="clienteInput">Cliente:</label>
-                    <div class="autocomplete-container">
-                    <input type="text" id="clienteInput" class="autocomplete-input" placeholder="clique para selecionar um cliente" oninput="showClientSuggestions(this)">
-                        <div class="autocomplete-icons-container">
-                        <span class="autocomplete-icon" title="Listar Clientes" onclick="openClientListModal(event)">
-                            <i class="fas fa-list"></i>
-                        </span>
-                        <span class="autocomplete-icon" title="Novo Cliente" onclick="openNewClientModal(event)">
-                            <i class="fas fa-user-plus"></i>
-                        </span>
-                            </div>
-                    </div>
+            <div class="romaneio-header-fields">
+                <div class="form-group romaneio-date-field">
+                    <label for="romaneioData">Data de Emissão:</label>
+                    <input type="date" id="romaneioData" autocomplete="off">
+                </div>
+
+                <div class="form-group romaneio-client-field">
+                        <label for="clienteInput">Cliente:</label>
+                        <div class="autocomplete-container">
+                        <input type="text" id="clienteInput" class="autocomplete-input" placeholder="clique para selecionar um cliente" oninput="showClientSuggestions(this)">
+                            <div class="autocomplete-icons-container">
+                            <span class="autocomplete-icon" title="Listar Clientes" onclick="openClientListModal(event)">
+                                <i class="fas fa-list"></i>
+                            </span>
+                            <span class="autocomplete-icon" title="Novo Cliente" onclick="openNewClientModal(event)">
+                                <i class="fas fa-user-plus"></i>
+                            </span>
+                                </div>
+                        </div>
+                </div>
             </div>
 
             <div class="campos-grid">
-                <div class="form-group">
+                <div class="form-group species-default-field">
                     <label for="especieInput">Espécie Padrão:</label>
                     <div class="autocomplete-container">
-                        <input type="text" id="especieInput" class="autocomplete-input" placeholder="Clique para selecionar uma espécie" oninput="showSpeciesSuggestions(this)">
+                        <input type="text" id="especieInput" class="autocomplete-input" placeholder="Clique para selecionar uma espécie" autocomplete="off" data-species-list-on-type="true" data-species-list-min-chars="3" oninput="showSpeciesSuggestions(this)">
                         <div class="autocomplete-icons-container">
                             <span class="autocomplete-icon" title="Listar Espécies" onclick="openSpeciesListModal(event)">
                                 <i class="fas fa-list"></i>
@@ -2074,18 +2145,18 @@
                     </div>
                 </div>
 
-                <div class="form-group dimensao-input">
+                <div class="form-group dimensao-input field-compact-10">
                     <label for="espessura">Espessura (cm):</label>
                     <input type="text" id="espessura" required placeholder="Ex: 2,50" inputmode="decimal">
                     <div id="espessuraError" class="error">Digite uma espessura válida</div>
                 </div>
 
-                <div class="form-group dimensao-input">
+                <div class="form-group dimensao-input field-compact-10">
                     <label for="largura">Largura (cm):</label>
                     <input type="text" id="largura" required placeholder="Ex: 15,00" inputmode="decimal">
                 </div>
 
-                <div class="form-group dimensao-input">
+                <div class="form-group dimensao-input field-compact-10">
                     <label for="price">Preço:</label>
                     <input type="text" id="price" required onInput="formatCurrencyInput(this)">
                     <div id="priceError" class="error">Digite um preço válido</div>
@@ -2129,7 +2200,7 @@
                         <i class="fas fa-download"></i> Carregar Itens
                     </button>
                     <button type="button" id="btnLimparPreRomaneio" class="btn-listar btn-carregar btn-limpar-pre">
-                        <i class="fas fa-eraser"></i> Limpar Pré-Romaneio
+                        <i class="fas fa-eraser"></i> Limpar
                     </button>
                 </div>
             </div>
@@ -2311,6 +2382,9 @@
                     <!-- Botões de paginação serão inseridos aqui -->
                 </div>
                 <div class="modal-footer-buttons" style="flex: 1; display: flex; justify-content: flex-end; order: 3;">
+                    <button type="button" class="romaneio-print-config-trigger" onclick="window.RomaneioPrintConfig && window.RomaneioPrintConfig.openModal('PCT')" title="Configurar colunas impressas" style="margin-right: 8px;">
+                        <i class="fas fa-print"></i> Configurar Impressão
+                    </button>
                     <button type="button" class="back-button close-modal-btn">Fechar</button>
                 </div>
             </div>
@@ -2380,8 +2454,42 @@
                         <input type="text" id="clientName" name="name" required>
                     </div>
                     <div class="form-group">
+                        <label for="clientCnpj">CPF / CNPJ:</label>
+                        <input type="text" id="clientCnpj" name="cnpj" placeholder="000.000.000-00">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientPersonType">Tipo de pessoa:</label>
+                        <select id="clientPersonType" name="personType">
+                            <option value="">Não informado</option>
+                            <option value="juridica">Pessoa jurídica</option>
+                            <option value="fisica">Pessoa física</option>
+                            <option value="estrangeiro">Estrangeiro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientIndIEDest">Indicador IE:</label>
+                        <select id="clientIndIEDest" name="indIEDest">
+                            <option value="">Não informado</option>
+                            <option value="1">Contribuinte ICMS</option>
+                            <option value="2">Contribuinte isento</option>
+                            <option value="9">Não contribuinte</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientStateRegistration">Inscrição Estadual:</label>
+                        <input type="text" id="clientStateRegistration" name="stateRegistration" placeholder="IE / ISENTO">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientMunicipalRegistration">Inscrição Municipal:</label>
+                        <input type="text" id="clientMunicipalRegistration" name="municipalRegistration" placeholder="Opcional">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientSuframa">SUFRAMA:</label>
+                        <input type="text" id="clientSuframa" name="suframa" placeholder="Opcional">
+                    </div>
+                    <div class="form-group">
                         <label for="clientState">Estado:</label>
-                        <select id="clientState" name="state" required>
+                        <select id="clientState" name="state">
                             <option value="">Selecione o estado</option>
                             <option value="AC">Acre</option>
                             <option value="AL">Alagoas</option>
@@ -2414,9 +2522,13 @@
                     </div>
                     <div class="form-group">
                         <label for="clientCity">Cidade:</label>
-                        <select id="clientCity" name="city" required>
+                        <select id="clientCity" name="city">
                             <option value="">Selecione primeiro o estado</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientMunicipalityCode">Código IBGE do município:</label>
+                        <input type="text" id="clientMunicipalityCode" name="municipalityCode" placeholder="Ex: 1501402">
                     </div>
                     <div class="form-group">
                         <label for="clientPhone">Telefone:</label>
@@ -2429,6 +2541,30 @@
                     <div class="form-group span-2">
                         <label for="clientAddress">Endereço:</label>
                         <input type="text" id="clientAddress" name="address">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientNumber">Número:</label>
+                        <input type="text" id="clientNumber" name="number">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientNeighborhood">Bairro:</label>
+                        <input type="text" id="clientNeighborhood" name="neighborhood">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientComplement">Complemento:</label>
+                        <input type="text" id="clientComplement" name="complement">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientCep">CEP:</label>
+                        <input type="text" id="clientCep" name="cep" placeholder="00000-000">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientCountryCode">Código do país:</label>
+                        <input type="text" id="clientCountryCode" name="countryCode" value="1058" placeholder="1058">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientCountryName">País:</label>
+                        <input type="text" id="clientCountryName" name="countryName" value="Brasil" placeholder="Brasil">
                     </div>
                     <div class="form-group span-2">
                         <label for="clientObs">Observações:</label>
@@ -2452,7 +2588,7 @@
             </div>
                 <div class="modal-body">
                     <div style="margin-bottom: 15px;">
-                        <input type="text" id="speciesListFilter" placeholder="🔍 Filtrar por nome ou descrição..." 
+                        <input type="text" id="speciesListFilter" placeholder="🔍 Filtrar por espécie ou nome científico..."
                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
                     </div>
                     <div class="table-container">
@@ -2460,8 +2596,8 @@
                             <thead>
                             <tr>
                                 <th>Nome</th>
-                                <th>Descrição</th>
-                                    <th style="width: 120px; text-align: center;">Ações</th>
+                                <th>Nome Científico</th>
+                                    <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody id="speciesListTable">
@@ -2489,34 +2625,34 @@
     </div>
 
     <!-- ✅ Modal de Criação/Edição de Espécies - PADRONIZADO ROMANEIOTL -->
-    <div id="speciesModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="speciesModalTitle" class="modal-title">Nova Espécie</h3>
-                <span class="close-modal" onclick="closeSpeciesModal()">&times;</span>
+    <div id="speciesModal" class="modal species-standard-modal" aria-hidden="true">
+        <div class="modal-content species-standard-modal-content">
+            <div class="modal-header species-standard-header">
+                <h3 id="speciesModalTitle" class="modal-title species-standard-title">Nova Espécie</h3>
+                <button type="button" class="close-modal species-standard-close" onclick="closeSpeciesModal()" aria-label="Fechar modal">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="speciesForm" onsubmit="return saveSpeciesPCT(event)">
+                <form id="speciesForm" class="species-standard-form" onsubmit="return saveSpeciesPCT(event)">
                     <input type="hidden" id="speciesId" name="speciesId">
                     
-                    <div class="form-group" style="margin-bottom: 20px;">
-                        <label for="speciesName" style="display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50;">Nome da Espécie:</label>
+                    <div class="form-group species-standard-field">
+                        <label for="speciesName" class="species-standard-label">Nome da Espécie:</label>
                         <input type="text" id="speciesName" name="speciesName" required 
                                placeholder="Ex: Eucalipto, Pinus, Cedro, Mogno..."
-                               style="width: 100%; padding: 10px; border: 2px solid #bdc3c7; border-radius: 5px; font-size: 14px;">
-                        <small style="color: #7f8c8d; font-size: 12px;">Nome científico ou popular da espécie</small>
+                               class="species-standard-input">
+                        <div id="speciesNameSuggestionsReserve" class="species-name-suggestions-reserve" aria-hidden="true"></div>
+                        <div id="speciesNameDuplicateHint" class="species-duplicate-hint" aria-live="polite"></div>
                     </div>
                     
-                    <div class="form-group" style="margin-bottom: 25px;">
-                        <label for="speciesDescription" style="display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50;">Descrição (opcional):</label>
+                    <div class="form-group species-standard-field">
+                        <label for="speciesDescription" class="species-standard-label">Nome Científico:</label>
                         <textarea id="speciesDescription" name="speciesDescription" rows="4" 
-                                  placeholder="Descrição detalhada da espécie, características, usos, etc..."
-                                  style="width: 100%; padding: 10px; border: 2px solid #bdc3c7; border-radius: 5px; font-size: 14px; resize: vertical; font-family: inherit;"></textarea>
-                        <small style="color: #7f8c8d; font-size: 12px;">Informações adicionais sobre a espécie</small>
+                                  placeholder="Ex.: Handroanthus albus"
+                                  class="species-standard-textarea"></textarea>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer species-standard-actions">
                 <button type="button" class="back-button" onclick="closeSpeciesModal()">Cancelar</button>
                 <button type="submit" form="speciesForm" class="btn-save">Salvar Espécie</button>
             </div>
@@ -2525,6 +2661,9 @@
 
     <!-- Scripts -->
     <script src="utils.js"></script>
+    <script src="species-utils.js"></script>
+    <script src="species-store.js"></script>
+    <script src="species-modal-standard.js"></script>
     <script src="data-functions.js"></script>
     <script src="auth.js"></script>
     <script src="validation-system.js"></script>
@@ -2696,6 +2835,8 @@
     <!-- 0. Sistema de formatação PCT (deve ser carregado primeiro) -->
     <script src="modules/romaneiopct/formatacao-campos-pct.js"></script>
     
+    <script src="romaneio-table-enhancements.js?v=20260601a"></script>
+
     <!-- ✅ CORREÇÃO CRÍTICA: Tabela com função adicionarItem -->
     <script src="romaneiopct-tabela.js"></script>
     
@@ -2705,6 +2846,8 @@
     <!-- ✅ SISTEMA PRINCIPAL ROMANEIOPCT - NAVEGAÇÃO ENTER E INICIALIZAÇÃO -->
     <script src="romaneiopct-main.js"></script>
     
+    <script src="romaneio-print-config.js?v=20260603a"></script>
+
     <!-- 1. Sistema de impressão específico PCT -->
     <script src="modules/romaneiopct/imprimir-romaneio-pct.js"></script>
     
@@ -3071,6 +3214,8 @@
                 modalEl.style.setProperty('opacity', '1', 'important');
                 modalEl.style.setProperty('pointer-events', 'auto', 'important');
                 modalEl.style.setProperty('z-index', String(zIndex), 'important');
+                modalEl.classList.add('is-open');
+                modalEl.setAttribute('aria-hidden', 'false');
                 document.body.style.overflow = 'hidden';
             } catch (_) {}
         }
@@ -3113,8 +3258,6 @@
                 event.preventDefault();
                 event.stopPropagation();
             }
-            console.log('🌿 openSpeciesListModal chamado');
-            
             // Força a exibição bruta por precaução
             const modal = document.getElementById('speciesListModal');
             if (modal) {
@@ -3131,9 +3274,7 @@
             }
             
             if (window.ModalEspeciesPCT && typeof window.ModalEspeciesPCT.openModal === 'function') {
-                console.log('✅ Usando ModalEspeciesPCT padronizado');
                 window.ModalEspeciesPCT.openModal();
-                setTimeout(() => debugModalGeometry('speciesListModal'), 50);
             } else {
                 console.log('⚠️ Usando fallback para espécies');
                 // Manter lógica de fallback existente
@@ -3326,13 +3467,13 @@
                 if (window.appTenantId) return String(window.appTenantId);
                 if (window.companyInfo) {
                     const raw = window.companyInfo;
-                    const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                    const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                     if (id) return String(id);
                 }
                 const stored = localStorage.getItem('company_info');
                 if (stored) {
                     const obj = JSON.parse(stored);
-                    const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                    const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                     if (id) return String(id);
                 }
             } catch (_) {}
@@ -3368,6 +3509,29 @@
                 if (val) return val;
             }
             return null;
+        }
+
+        function getSpeciesDisplayName(specie) {
+            if (window.SiswebSpecies && typeof window.SiswebSpecies.getDisplayName === 'function') {
+                return window.SiswebSpecies.getDisplayName(specie);
+            }
+            return String((specie && (specie.especie || specie.nome || specie.name || specie.nomeComum)) || '').trim();
+        }
+
+        function toCanonicalSpeciesRecord(specie, index = 0, options = {}) {
+            if (window.SiswebSpecies && typeof window.SiswebSpecies.toCanonicalRecord === 'function') {
+                return window.SiswebSpecies.toCanonicalRecord(specie, index, options);
+            }
+            const now = options.updatedAt || new Date().toISOString();
+            return {
+                id: specie.id || options.id || `ESP_${Date.now()}_${index}`,
+                especie: getSpeciesDisplayName(specie),
+                nomeCientifico: String((specie && specie.nomeCientifico) || '').trim(),
+                ativo: specie.ativo !== false,
+                createdAt: specie.createdAt || now,
+                updatedAt: now,
+                companyId: specie.companyId || undefined
+            };
         }
 
         function writeLocalStorageValue(key, data) {
@@ -3437,18 +3601,18 @@
             
             try {
                 const companyId = resolveCompanyId();
-                const novaEspecie = {
+                const novaEspecie = toCanonicalSpeciesRecord({
                     id: `ESP_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                    nome: nomeEspecie,
-                    descricao: '',
+                    especie: nomeEspecie,
+                    nomeCientifico: '',
                     companyId: companyId || undefined
-                };
+                });
                 
                 // Salvar no Firebase
                 if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
                     console.log('🔥 PCT: Salvando nova espécie no Firebase...');
                     // CORREÇÃO: Passar ID como chave (segundo argumento) e dados como terceiro
-                    const result = await window.firebaseService.saveToFirebase('species', novaEspecie.id, novaEspecie);
+                    const result = await window.firebaseService.saveToFirebase('especies', novaEspecie.id, novaEspecie);
                     
                     if (result && result.success) {
                         console.log('✅ PCT: Nova espécie salva no Firebase com sucesso');
@@ -3468,9 +3632,9 @@
                 } else {
                     // Fallback para localStorage
                     console.log('📦 PCT: Salvando nova espécie no localStorage...');
-                    const especies = JSON.parse(readLocalStorageValue('species') || '[]');
+                    const especies = JSON.parse(readLocalStorageValue('especies') || '[]');
                     especies.push(novaEspecie);
-                    writeLocalStorageValue('species', especies);
+                    writeLocalStorageValue('especies', especies);
                     
                     // Preencher campo automaticamente
                     const especieInput = document.getElementById('especieInput');
@@ -3518,33 +3682,49 @@
                 const stateField = document.getElementById('clientState');
                 const cityField = document.getElementById('clientCity');
                 const idField = document.getElementById('clientId');
+                const cnpjField = document.getElementById('clientCnpj');
+                const personTypeField = document.getElementById('clientPersonType');
+                const indIEField = document.getElementById('clientIndIEDest');
+                const stateRegistrationField = document.getElementById('clientStateRegistration');
+                const municipalRegistrationField = document.getElementById('clientMunicipalRegistration');
+                const suframaField = document.getElementById('clientSuframa');
+                const cepField = document.getElementById('clientCep');
                 const phoneField = document.getElementById('clientPhone');
                 const emailField = document.getElementById('clientEmail');
                 const addressField = document.getElementById('clientAddress');
+                const numberField = document.getElementById('clientNumber');
+                const neighborhoodField = document.getElementById('clientNeighborhood');
+                const complementField = document.getElementById('clientComplement');
+                const municipalityCodeField = document.getElementById('clientMunicipalityCode');
+                const countryCodeField = document.getElementById('clientCountryCode');
+                const countryNameField = document.getElementById('clientCountryName');
                 const obsField = document.getElementById('clientObs');
 
                 const name = nameField ? nameField.value.trim() : '';
                 const state = stateField ? stateField.value.trim() : '';
                 const city = cityField ? cityField.value.trim() : '';
                 const id = idField ? idField.value.trim() : '';
+                const documento = cnpjField ? cnpjField.value.trim() : '';
+                const tipoPessoa = personTypeField ? personTypeField.value.trim() : '';
+                const indIEDest = indIEField ? indIEField.value.trim() : '';
+                const inscricaoEstadual = stateRegistrationField ? stateRegistrationField.value.trim() : '';
+                const inscricaoMunicipal = municipalRegistrationField ? municipalRegistrationField.value.trim() : '';
+                const suframa = suframaField ? suframaField.value.trim() : '';
+                const cep = cepField ? cepField.value.trim() : '';
                 const phone = phoneField ? phoneField.value.trim() : '';
                 const email = emailField ? emailField.value.trim() : '';
                 const address = addressField ? addressField.value.trim() : '';
+                const number = numberField ? numberField.value.trim() : '';
+                const neighborhood = neighborhoodField ? neighborhoodField.value.trim() : '';
+                const complement = complementField ? complementField.value.trim() : '';
+                const municipalityCode = municipalityCodeField ? municipalityCodeField.value.trim() : '';
+                const countryCode = countryCodeField && countryCodeField.value.trim() ? countryCodeField.value.trim() : '1058';
+                const countryName = countryNameField && countryNameField.value.trim() ? countryNameField.value.trim() : 'Brasil';
                 const obs = obsField ? obsField.value.trim() : '';
 
                 if (!name) {
                     alert('Nome do cliente é obrigatório');
                     if (nameField) nameField.focus();
-                    return false;
-                }
-                if (!state) {
-                    alert('Estado do cliente é obrigatório');
-                    if (stateField) stateField.focus();
-                    return false;
-                }
-                if (!city) {
-                    alert('Cidade do cliente é obrigatória');
-                    if (cityField) cityField.focus();
                     return false;
                 }
 
@@ -3553,6 +3733,22 @@
                     id: id || undefined,
                     nome: name,
                     name,
+                    cnpj: documento,
+                    documento,
+                    document: documento,
+                    tipoPessoa,
+                    personType: tipoPessoa,
+                    fiscalPersonType: tipoPessoa,
+                    indIEDest,
+                    indicadorInscricaoEstadual: indIEDest,
+                    ieIndicator: indIEDest,
+                    inscricaoEstadual,
+                    stateRegistration: inscricaoEstadual,
+                    inscricaoMunicipal,
+                    municipalRegistration: inscricaoMunicipal,
+                    suframa,
+                    cep,
+                    postalCode: cep,
                     estado: state,
                     state,
                     cidade: city,
@@ -3562,7 +3758,26 @@
                     email,
                     endereco: address,
                     address,
+                    numero: number,
+                    number,
+                    bairro: neighborhood,
+                    neighborhood,
+                    complemento: complement,
+                    complement,
+                    codigoMunicipio: municipalityCode,
+                    municipioCodigo: municipalityCode,
+                    municipalityCode,
+                    cMun: municipalityCode,
+                    paisCodigo: countryCode,
+                    countryCode,
+                    cPais: countryCode,
+                    pais: countryName,
+                    country: countryName,
+                    countryName,
+                    xPais: countryName,
                     obs,
+                    observacoes: obs,
+                    observations: obs,
                     companyId: companyId || undefined
                 };
 
@@ -3629,7 +3844,12 @@
             title.textContent = 'Nova Espécie';
             form.reset();
             document.getElementById('speciesId').value = '';
+            const saveButton = document.querySelector('#speciesModal button[type="submit"], #speciesModal .btn-save');
+            if (saveButton) saveButton.textContent = 'Salvar Espécie';
             window.editingSpeciesIdPCT = null;
+            if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.enhance === 'function') {
+                window.SiswebSpeciesModal.enhance({ modal });
+            }
             
             forceShowOverlayModal(modal, 10000000);
             setTimeout(() => debugModalGeometry('speciesModal'), 50);
@@ -3660,13 +3880,22 @@
             // Configurar para EDIÇÃO
             title.textContent = 'Editar Espécie';
             form.reset();
+            const saveButton = document.querySelector('#speciesModal button[type="submit"], #speciesModal .btn-save');
+            if (saveButton) saveButton.textContent = 'Atualizar Espécie';
             
+            const speciesRecordId = String(speciesData.firebaseKey || speciesData.key || speciesId || speciesData.id || speciesData.originalId || '').trim();
+
             // Preencher campos com dados existentes
-            document.getElementById('speciesId').value = speciesId;
-            document.getElementById('speciesName').value = speciesData.nome || speciesData.name || '';
-            document.getElementById('speciesDescription').value = speciesData.descricao || speciesData.description || '';
+            document.getElementById('speciesId').value = speciesRecordId;
+            document.getElementById('speciesName').value = getSpeciesDisplayName(speciesData);
+            document.getElementById('speciesDescription').value = (window.SiswebSpecies && window.SiswebSpecies.getScientificName)
+                ? window.SiswebSpecies.getScientificName(speciesData)
+                : (speciesData.nomeCientifico || speciesData.scientificName || speciesData.scientific || speciesData.descricao || speciesData.description || speciesData.decription || '');
             
-            window.editingSpeciesIdPCT = speciesId;
+            window.editingSpeciesIdPCT = speciesRecordId;
+            if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.enhance === 'function') {
+                window.SiswebSpeciesModal.enhance({ modal });
+            }
             
             forceShowOverlayModal(modal, 10000000);
             setTimeout(() => debugModalGeometry('speciesModal'), 50);
@@ -3686,6 +3915,8 @@
             const modal = document.getElementById('speciesModal');
             if (modal) {
                 modal.style.display = 'none';
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
                 try { document.body.style.overflow = ''; } catch (_) {}
                 
                 // Limpar formulário
@@ -3713,31 +3944,42 @@
             }
             
             const nome = nomeInput.value.trim();
-            const descricao = descricaoInput ? descricaoInput.value.trim() : '';
+            const nomeCientifico = descricaoInput ? descricaoInput.value.trim() : '';
+            const currentSpeciesId = String(document.getElementById('speciesId')?.value || window.editingSpeciesIdPCT || '').trim();
             
             if (!nome) {
                 alert('❌ Nome da espécie é obrigatório!');
                 nomeInput.focus();
                 return false;
             }
+
+            if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
+                const duplicate = window.SiswebSpeciesModal.getExactDuplicate(nome, currentSpeciesId);
+                if (duplicate) {
+                    alert(`Espécie já cadastrada: ${getSpeciesDisplayName(duplicate)}. Use o cadastro existente para evitar duplicidade.`);
+                    nomeInput.focus();
+                    return false;
+                }
+            }
             
             try {
                 const companyId = resolveCompanyId();
-                const especieData = {
-                    nome: nome,
-                    descricao: descricao,
+                const especieData = toCanonicalSpeciesRecord({
+                    especie: nome,
+                    nomeCientifico,
                     companyId: companyId || undefined
-                };
+                });
                 
-                if (window.editingSpeciesIdPCT) {
+                if (currentSpeciesId) {
                     // EDITAR espécie existente
-                    console.log('✏️ Editando espécie:', window.editingSpeciesIdPCT);
-                    especieData.id = window.editingSpeciesIdPCT;
+                    console.log('✏️ Editando espécie:', currentSpeciesId);
+                    especieData.id = currentSpeciesId;
+                    window.editingSpeciesIdPCT = currentSpeciesId;
                     
                     // Salvar via Firebase
                     if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
                         // CORREÇÃO: Passar ID como chave (segundo argumento) e dados como terceiro
-                        const result = await window.firebaseService.saveToFirebase('species', especieData.id, especieData);
+                        const result = await window.firebaseService.saveToFirebase('especies', especieData.id, especieData);
                         if (result && result.success) {
                             console.log('✅ Espécie editada no Firebase');
                             alert(`✅ Espécie "${nome}" atualizada com sucesso!`);
@@ -3747,13 +3989,19 @@
                     } else {
                         // Fallback localStorage
                         const especies = JSON.parse(readLocalStorageValue('especies') || '[]');
-                        const index = especies.findIndex(e => e.id === especieData.id);
+                        const targetId = String(especieData.id || '').trim();
+                        const index = especies.findIndex(e => [e && e.id, e && e.key, e && e.firebaseKey, e && e.originalId]
+                            .map(value => String(value || '').trim())
+                            .filter(Boolean)
+                            .includes(targetId));
                         if (index >= 0) {
                             especies[index] = especieData;
-                            writeLocalStorageValue('especies', especies);
-                            console.log('✅ Espécie editada no localStorage');
-                            alert(`✅ Espécie "${nome}" atualizada com sucesso!`);
+                        } else {
+                            especies.push(especieData);
                         }
+                        writeLocalStorageValue('especies', especies);
+                        console.log('✅ Espécie editada no localStorage');
+                        alert(`✅ Espécie "${nome}" atualizada com sucesso!`);
                     }
                 } else {
                     // CRIAR nova espécie
@@ -3763,7 +4011,7 @@
                     // Salvar via Firebase
                     if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
                         // CORREÇÃO: Passar ID como chave (segundo argumento) e dados como terceiro
-                        const result = await window.firebaseService.saveToFirebase('species', especieData.id, especieData);
+                        const result = await window.firebaseService.saveToFirebase('especies', especieData.id, especieData);
                         if (result && result.success) {
                             console.log('✅ Nova espécie salva no Firebase');
                             alert(`✅ Espécie "${nome}" criada com sucesso!`);
@@ -3779,9 +4027,9 @@
                         }
                     } else {
                         // Fallback localStorage
-                        const especies = JSON.parse(readLocalStorageValue('species') || '[]');
+                        const especies = JSON.parse(readLocalStorageValue('especies') || '[]');
                         especies.push(especieData);
-                        writeLocalStorageValue('species', especies);
+                        writeLocalStorageValue('especies', especies);
                         console.log('✅ Nova espécie salva no localStorage');
                         alert(`✅ Espécie "${nome}" criada com sucesso!`);
                         
@@ -3900,6 +4148,9 @@
         if (campoPecasPorPacote && !campoPecasPorPacote.value) {
             campoPecasPorPacote.value = '1';
         }
+        if (typeof window.setRomaneioPctEmissionDate === 'function') {
+            window.setRomaneioPctEmissionDate();
+        }
         const clientForm = document.getElementById('clientForm');
         if (clientForm) {
             clientForm.removeEventListener('submit', saveClientPCT);
@@ -3940,6 +4191,10 @@
             btnLimparPre.onclick = function() {
                 const select = document.getElementById('preRomaneioSelect');
                 if (select) select.value = '';
+                window.currentPage = 1;
+                window.currentRomaneioId = null;
+                window.romaneioEditandoId = null;
+                window.romaneioEmEdicao = null;
                 if (typeof window.limparFormulario === 'function') {
                     window.limparFormulario();
                 } else {

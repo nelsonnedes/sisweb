@@ -596,7 +596,7 @@ class EspecieForm {
         if (!especie) return;
 
         // Campos básicos
-        this.setFieldValue('especie-nome', especie.nome);
+        this.setFieldValue('especie-nome', especie.especie || especie.nome);
         this.setFieldValue('especie-codigo', especie.codigo);
         this.setFieldValue('especie-cientifico', especie.nomeCientifico);
         this.setFieldValue('especie-familia', especie.familia);
@@ -697,7 +697,7 @@ class EspecieForm {
         });
 
         return {
-            nome: this.getFieldValue('especie-nome'),
+            especie: this.getFieldValue('especie-nome'),
             codigo: this.getFieldValue('especie-codigo'),
             nomeCientifico: this.getFieldValue('especie-cientifico'),
             familia: this.getFieldValue('especie-familia'),

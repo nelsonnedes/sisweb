@@ -7,11 +7,14 @@ service firebase.storage {
       // Somente membros ativos da empresa e superadmins podem ler os recibos financeiros
       allow read: if request.auth != null &&
         (request.auth.token.superadmin == true || 
-        (request.auth.token.companyId == companyId && (request.auth.token.subscriptionStatus == 'active' || request.auth.token.subscriptionStatus == 'trial_active')));
+        (
+          (request.auth.token.companyId == companyId || request.auth.token.companyID == companyId || request.auth.token.tenantId == companyId) &&
+          (request.auth.token.subscriptionStatus == 'active' || request.auth.token.subscriptionStatus == 'trial_active')
+        ));
         
       // Somente membros (ou superadmins) podem escrever/remover anexos (máx 10MB em uploads)
       allow write: if request.auth != null &&
-        (request.auth.token.superadmin == true || request.auth.token.companyId == companyId) &&
+        (request.auth.token.superadmin == true || request.auth.token.companyId == companyId || request.auth.token.companyID == companyId || request.auth.token.tenantId == companyId) &&
         (request.auth.token.superadmin == true || request.auth.token.subscriptionStatus == 'active' || request.auth.token.subscriptionStatus == 'trial_active') &&
         (
           // Delete não tem request.resource
@@ -30,9 +33,72 @@ service firebase.storage {
       allow read: if true;
       allow write: if request.auth != null &&
         (request.auth.token.superadmin == true || 
-        (request.auth.token.companyId == companyId && (request.auth.token.subscriptionStatus == 'active' || request.auth.token.subscriptionStatus == 'trial_active'))) &&
-        request.resource.size < 2 * 1024 * 1024 &&
-        request.resource.contentType.matches('image/.*');
+        request.auth.token.companyId == companyId ||
+        request.auth.token.companyID == companyId ||
+        request.auth.token.tenantId == companyId) &&
+        (
+          request.resource == null ||
+          (
+            request.resource.size < 2 * 1024 * 1024 &&
+            request.resource.contentType.matches('image/.*')
+          )
+        );
+    }
+
+    // ANEXOS DE TICKETS DE SUPORTE (PRINTS/PDFs, ISOLADOS POR TENANT)
+    match /companies/{companyId}/support/{allPaths=**} {
+      allow read: if request.auth != null &&
+        (
+          request.auth.token.superadmin == true ||
+          request.auth.token.companyId == companyId ||
+          request.auth.token.companyID == companyId ||
+          request.auth.token.tenantId == companyId
+        );
+      allow write: if request.auth != null &&
+        (
+          request.auth.token.superadmin == true ||
+          request.auth.token.companyId == companyId ||
+          request.auth.token.companyID == companyId ||
+          request.auth.token.tenantId == companyId
+        ) &&
+        (
+          request.resource == null ||
+          (
+            request.resource.size < 6 * 1024 * 1024 &&
+            request.resource.contentType.matches('image/.*|application/pdf')
+          )
+        );
+    }
+
+    // DOCUMENTOS FISCAIS: XMLs, DANFEs e artefatos auxiliares por tenant
+    match /companies/{companyId}/fiscal/{allPaths=**} {
+      allow read, write: if request.auth != null &&
+        (request.auth.token.superadmin == true ||
+        (
+          (request.auth.token.companyId == companyId || request.auth.token.companyID == companyId || request.auth.token.tenantId == companyId) &&
+          (request.auth.token.subscriptionStatus == 'active' || request.auth.token.subscriptionStatus == 'trial_active')
+        )) &&
+        (
+          request.resource == null ||
+          (
+            request.resource.size < 10 * 1024 * 1024 &&
+            request.resource.contentType.matches('application/xml|text/xml|application/pdf|image/.*|application/octet-stream')
+          )
+        );
+    }
+
+    // CERTIFICADOS FISCAIS A1 CRIPTOGRAFADOS (OPERACAO VIA BACKEND / SUPERADMIN)
+    match /tenants/{tenantId}/certificados/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.token.superadmin == true;
+      allow write: if request.auth != null &&
+        request.auth.token.superadmin == true &&
+        (
+          request.resource == null ||
+          (
+            request.resource.size < 10 * 1024 * 1024 &&
+            request.resource.contentType == 'application/octet-stream'
+          )
+        );
     }
 
     // COMPROVANTES DE ASSINATURA/MENSALIDADES DO SISTEMA (ISOLADOS POR USER)
@@ -55,10 +121,7 @@ service firebase.storage {
       allow read: if request.auth != null &&
         (
           request.auth.token.superadmin == true ||
-          request.auth.uid == uid ||
-          request.auth.token.companyId == companyId ||
-          request.auth.token.companyID == companyId ||
-          request.auth.token.tenantId == companyId
+          request.auth.uid == uid
         );
       allow write: if request.auth != null &&
         (

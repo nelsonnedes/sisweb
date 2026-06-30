@@ -10,6 +10,7 @@ if (window.AUTH_JS_LOADED) {
     // Para permitir que o script funcione mesmo sendo carregado múltiplas vezes
 } else {
     window.AUTH_JS_LOADED = true;
+    window.AUTH_JS_LOADED_AT = Date.now();
     console.log("🔐 auth.js: Carregando pela primeira vez");
 }
 
@@ -18,8 +19,11 @@ function getAuthService() {
     if (window.firebaseService && window.firebaseService.authService) {
         return window.firebaseService.authService;
     }
-    
-    console.warn("⚠️ firebaseService não disponível, usando fallback");
+
+    const loadedAt = Number(window.AUTH_JS_LOADED_AT || Date.now());
+    const waitingForModule = Date.now() - loadedAt < 10000;
+    const log = waitingForModule ? console.debug : console.warn;
+    log.call(console, "⚠️ firebaseService não disponível, usando fallback");
     return {
         getCurrentUser: () => Promise.resolve(null),
         login: () => Promise.resolve({ success: false, error: "Serviço não disponível" }),
@@ -27,6 +31,17 @@ function getAuthService() {
         register: () => Promise.resolve({ success: false, error: "Serviço não disponível" }),
         onAuthStateChanged: (callback) => { if (callback) callback(null); return null; }
     };
+}
+
+async function waitForAuthInfrastructureReady() {
+    try {
+        await waitForFirebaseService(80);
+    } catch (_) {}
+    try {
+        if (window.firebaseService && window.firebaseService.authPersistenceReady) {
+            await window.firebaseService.authPersistenceReady;
+        }
+    } catch (_) {}
 }
 
 // Função para obter o dbService de forma segura  
@@ -89,7 +104,7 @@ async function setCompanyContext(companyId) {
         }
 
         if (storedCompany && tenant) {
-            const storedId = storedCompany.id || storedCompany.companyId || storedCompany.slug || storedCompany.nome || storedCompany.name;
+            const storedId = storedCompany.companyId || storedCompany.companyID || storedCompany.tenantId || storedCompany.id;
             if (storedId && String(storedId) === tenant) {
                 window.companyInfo = storedCompany;
                 return storedCompany;
@@ -104,37 +119,54 @@ async function setCompanyContext(companyId) {
             return null;
         }
 
-        let companies = null;
-        if (typeof window.getDataAsync === 'function') {
-            companies = await window.getDataAsync('companies');
-        } else {
-            try {
-                const raw = localStorage.getItem('companies');
-                companies = raw ? JSON.parse(raw) : null;
-            } catch (_) {
-                companies = null;
-            }
-        }
-
-        let list = [];
-        if (Array.isArray(companies)) {
-            list = companies;
-        } else if (companies && typeof companies === 'object') {
-            list = Object.values(companies);
-        }
-
         let found = null;
         if (tenant) {
-            found = list.find((c) => {
-                const cid = c && (c.id || c.companyId || c.slug || c.nome || c.name);
-                return cid && String(cid) === tenant;
-            }) || null;
+            try {
+                if (window.firebaseService && typeof window.firebaseService.getCompanyProfileForReport === 'function') {
+                    const central = await window.firebaseService.getCompanyProfileForReport({ companyId: tenant });
+                    found = central && central.success !== false ? (central.data || central) : null;
+                }
+            } catch (_) {}
+
+            if (!found && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+                try {
+                    const profileResult = await window.firebaseService.loadFromFirebase('companies/' + tenant + '/profile');
+                    const profileData = profileResult && profileResult.success ? profileResult.data : profileResult;
+                    if (profileData && typeof profileData === 'object') found = { ...profileData, companyId: tenant, tenantId: tenant, id: tenant };
+                } catch (_) {}
+
+                if (!found) {
+                    try {
+                        const rootResult = await window.firebaseService.loadFromFirebase('companies/' + tenant);
+                        const rootData = rootResult && rootResult.success ? rootResult.data : rootResult;
+                        if (rootData && typeof rootData === 'object') found = { ...rootData, companyId: tenant, tenantId: tenant, id: tenant };
+                    } catch (_) {}
+                }
+            }
+
+            if (!found) {
+                let companies = null;
+                try {
+                    const raw = localStorage.getItem('companies');
+                    companies = raw ? JSON.parse(raw) : null;
+                } catch (_) {
+                    companies = null;
+                }
+
+                const list = Array.isArray(companies)
+                    ? companies
+                    : (companies && typeof companies === 'object' ? Object.values(companies) : []);
+                found = list.find((c) => {
+                    const cid = c && (c.companyId || c.companyID || c.tenantId || c.id);
+                    return cid && String(cid) === tenant;
+                }) || null;
+            }
         }
 
         if (found) {
             localStorage.setItem('company_info', JSON.stringify(found));
             window.companyInfo = found;
-            const newTenant = String(found.id || found.companyId || found.slug || found.nome || found.name || '').trim();
+            const newTenant = String(found.companyId || found.companyID || found.tenantId || found.id || tenant || '').trim();
             if (newTenant) {
                 window.appTenantId = newTenant;
                 if (window.firebaseService && typeof window.firebaseService.setTenantId === 'function') {
@@ -161,7 +193,7 @@ async function resolveCompanyIdFromStorage() {
         const raw = localStorage.getItem('company_info');
         if (raw) {
             const obj = JSON.parse(raw);
-            const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+            const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
             if (id) return String(id);
         }
     } catch (_) {}
@@ -244,6 +276,8 @@ const AUTH_INITIALIZED_KEY = window.AUTH_INITIALIZED_KEY;
 let isInitialized = false;
 const ADMIN_CORE_COMPANY_ID = 'sisweb_admin_core';
 const SUPER_ADMIN_UIDS = new Set(['HfrQ6ObQq2aSEoeEE4Ng9jpAolB3']);
+const SISWEB_AUTH_SESSION_KEY = 'siswebAuthSession';
+const SISWEB_AUTH_SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 function parseStoredObject(key, fallbackValue = null) {
     try {
@@ -265,6 +299,157 @@ function parseCurrentUserSafe() {
 function parsePersistentUserSafe() {
     const parsed = parseStoredObject('persistentUser', null);
     return parsed && typeof parsed === 'object' ? parsed : null;
+}
+
+function normalizeAuthSessionUser(user) {
+    const source = user && typeof user === 'object' ? user : {};
+    const uid = String(source.uid || source.id || source.userId || '').trim();
+    const email = String(source.email || '').trim();
+    const displayName = String(source.displayName || source.nome || source.username || (email ? email.split('@')[0] : '') || '').trim();
+    const companyId = String(source.companyId || source.companyID || source.tenantId || source.empresaId || '').trim();
+    return { uid, email, displayName, companyId };
+}
+
+function readDurableAuthSession() {
+    try {
+        const raw = localStorage.getItem(SISWEB_AUTH_SESSION_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function clearDurableAuthSession() {
+    try { localStorage.removeItem(SISWEB_AUTH_SESSION_KEY); } catch (_) {}
+}
+
+function clearCompanyContextCache() {
+    try { localStorage.removeItem('company_info'); } catch (_) {}
+    try { window.companyInfo = null; } catch (_) {}
+    try { window.appTenantId = null; } catch (_) {}
+    try {
+        if (window.firebaseService && typeof window.firebaseService.setTenantId === 'function') {
+            window.firebaseService.setTenantId(null);
+        }
+    } catch (_) {}
+}
+
+async function restoreCompanyContextFromCachedUser(user) {
+    const normalized = normalizeAuthSessionUser(user);
+    if (!normalized.companyId) return null;
+    try {
+        return await setCompanyContext(normalized.companyId);
+    } catch (_) {
+        return null;
+    }
+}
+
+function persistAuthenticatedSession(user, options = {}) {
+    try {
+        const now = Date.now();
+        const normalized = normalizeAuthSessionUser(user);
+        const existingCurrent = parseCurrentUserSafe() || {};
+        const existingUid = String(existingCurrent.uid || existingCurrent.id || existingCurrent.userId || '').trim();
+        const existingEmail = String(existingCurrent.email || '').trim().toLowerCase();
+        const normalizedEmail = String(normalized.email || '').trim().toLowerCase();
+        const existingHasIdentity = !!(existingUid || existingEmail);
+        const normalizedHasIdentity = !!(normalized.uid || normalizedEmail);
+        const sameCachedUser = existingHasIdentity
+            ? ((!normalized.uid || !existingUid || normalized.uid === existingUid)
+                && (!normalizedEmail || !existingEmail || normalizedEmail === existingEmail))
+            : !normalizedHasIdentity;
+        const safeExistingCurrent = sameCachedUser ? existingCurrent : {};
+        const currentCompany = sameCachedUser
+            ? String(existingCurrent.companyId || existingCurrent.companyID || existingCurrent.tenantId || '').trim()
+            : '';
+        const mergedCurrent = {
+            ...safeExistingCurrent,
+            ...(normalized.uid ? { uid: normalized.uid } : {}),
+            ...(normalized.email ? { email: normalized.email } : {}),
+            ...(normalized.displayName ? { displayName: normalized.displayName } : {}),
+            ...(normalized.companyId || currentCompany ? { companyId: normalized.companyId || currentCompany } : {}),
+            lastAuthAt: now
+        };
+        if (mergedCurrent.uid || mergedCurrent.email) {
+            localStorage.setItem('currentUser', JSON.stringify(mergedCurrent));
+        }
+        sessionStorage.setItem('userAuthenticated', 'true');
+        sessionStorage.setItem('lastLogin', String(now));
+        sessionStorage.setItem('redirectCount', '0');
+        localStorage.setItem(SISWEB_AUTH_SESSION_KEY, JSON.stringify({
+            authenticated: true,
+            uid: normalized.uid || String(mergedCurrent.uid || mergedCurrent.id || mergedCurrent.userId || '').trim(),
+            email: normalized.email || String(mergedCurrent.email || '').trim(),
+            companyId: normalized.companyId || String(mergedCurrent.companyId || mergedCurrent.companyID || mergedCurrent.tenantId || '').trim(),
+            source: String(options.source || 'auth'),
+            updatedAt: now,
+            expiresAt: now + SISWEB_AUTH_SESSION_MAX_AGE_MS
+        }));
+    } catch (_) {}
+}
+
+function getCachedAuthUserForSession() {
+    const current = parseCurrentUserSafe();
+    const persistent = parsePersistentUserSafe();
+    if (current && persistent) {
+        return {
+            ...persistent,
+            ...current,
+            companyId: current.companyId || current.companyID || current.tenantId || persistent.companyId || persistent.companyID || persistent.tenantId || '',
+            tenantId: current.tenantId || persistent.tenantId || persistent.companyId || persistent.companyID || ''
+        };
+    }
+    return current || persistent;
+}
+
+function isDurableAuthSessionValid(session, cachedUser) {
+    if (!session || session.authenticated !== true) return false;
+    const now = Date.now();
+    const expiresAt = Number(session.expiresAt || 0);
+    const updatedAt = Number(session.updatedAt || 0);
+    if (expiresAt && expiresAt < now) {
+        clearDurableAuthSession();
+        return false;
+    }
+    if (!expiresAt && updatedAt && (now - updatedAt) > SISWEB_AUTH_SESSION_MAX_AGE_MS) {
+        clearDurableAuthSession();
+        return false;
+    }
+    const user = normalizeAuthSessionUser(cachedUser || {});
+    const sessionUid = String(session.uid || '').trim();
+    const sessionEmail = String(session.email || '').trim().toLowerCase();
+    if (!user.uid && !user.email) return false;
+    if (sessionUid && user.uid && sessionUid !== user.uid) return false;
+    if (sessionEmail && user.email && sessionEmail !== user.email.toLowerCase()) return false;
+    return true;
+}
+
+function getUsableCachedAuthSession() {
+    const cachedUser = getCachedAuthUserForSession();
+    const durableSession = readDurableAuthSession();
+    if (isDurableAuthSessionValid(durableSession, cachedUser)) {
+        return { user: cachedUser, session: durableSession };
+    }
+    return null;
+}
+
+async function tryAllowCachedAuthSession(source) {
+    const cached = getUsableCachedAuthSession();
+    if (!cached || !cached.user) return { allowed: false };
+    await restoreCompanyContextFromCachedUser(cached.user);
+    authAuditLog('currentUser', { fallback: source, durable: true });
+    const guard = await enforceSubscriptionGuard(cached.user, window.location.pathname);
+    if (!guard.allowed && guard.redirect) {
+        if (guard.statusKey === 'expired' || guard.statusKey === 'blocked') {
+            clearRestrictedSessionCache();
+        }
+        window.location.href = guard.redirect;
+        return { allowed: false, redirected: true };
+    }
+    persistAuthenticatedSession(cached.user, { source });
+    return { allowed: true, user: cached.user };
 }
 
 function parseUsersCacheSafe() {
@@ -727,10 +912,86 @@ function isAdminInternalPath(pathname) {
     return false;
 }
 
+function isAuthLandingPath(pathname) {
+    const path = String(pathname || '').toLowerCase();
+    if (!path || path === '/' || path.endsWith('/')) return true;
+    if (path.includes('index.html')) return true;
+    if (path.includes('login.html')) return true;
+    if (path.includes('subscription.html')) return true;
+    if (path.includes('subscription-status.html')) return true;
+    return false;
+}
+
+function isSubscriptionCheckoutTarget(value) {
+    return String(value || '').toLowerCase().includes('subscription.html');
+}
+
+function isSubscriptionStatusTarget(value) {
+    return String(value || '').toLowerCase().includes('subscription-status.html');
+}
+
+function isSubscriptionSelfServiceTarget(value) {
+    return isSubscriptionCheckoutTarget(value) || isSubscriptionStatusTarget(value);
+}
+
+function isLoginTarget(value) {
+    return String(value || '').toLowerCase().includes('login.html');
+}
+
+function decodeRedirectCandidate(value) {
+    let candidate = String(value || '').trim();
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+            const decoded = decodeURIComponent(candidate).trim();
+            if (decoded === candidate) break;
+            candidate = decoded;
+        } catch (_) {
+            break;
+        }
+    }
+    return candidate;
+}
+
+function normalizeInternalRedirectTarget(value, fallback = '') {
+    const raw = String(value || '').trim();
+    if (!raw) return fallback;
+    const decoded = decodeRedirectCandidate(raw);
+    if (!decoded || /[\u0000-\u001f\u007f]/.test(decoded) || decoded.includes('\\')) return fallback;
+
+    const compact = decoded.replace(/\s+/g, '').toLowerCase();
+    if (compact.startsWith('http://')
+        || compact.startsWith('https://')
+        || compact.startsWith('//')
+        || compact.startsWith('javascript:')
+        || compact.startsWith('data:')
+        || compact.startsWith('vbscript:')) {
+        return fallback;
+    }
+
+    const pathCandidate = decoded.split(/[?#]/)[0].replace(/^\/+/, '');
+    if (pathCandidate.split('/').includes('..')) return fallback;
+
+    try {
+        const base = typeof window !== 'undefined' && window.location && window.location.origin
+            ? window.location.origin
+            : 'https://sisweb.local';
+        const url = new URL(decoded, `${base}/`);
+        if (url.origin !== base) return fallback;
+
+        const pathname = url.pathname.replace(/^\/+/, '') || 'index.html';
+        if (pathname.split('/').includes('..')) return fallback;
+        if (!/^[a-z0-9_./-]+\.html$/i.test(pathname)) return fallback;
+
+        return `${pathname}${url.search}${url.hash}`;
+    } catch (_) {
+        return fallback;
+    }
+}
+
 async function resolvePostLoginRoute(userDetails, options = {}) {
     const opts = options && typeof options === 'object' ? options : {};
     const currentPathname = String(opts.currentPathname || (typeof window !== 'undefined' ? window.location.pathname : '') || '').toLowerCase();
-    const requested = String(opts.requestedRedirect || '').trim();
+    const requested = normalizeInternalRedirectTarget(opts.requestedRedirect);
     const lowerRequested = requested.toLowerCase();
     const user = userDetails && typeof userDetails === 'object' ? userDetails : {};
     const isAdmin = opts.isSuperAdmin === true ? true : await isSuperAdminSession();
@@ -739,7 +1000,16 @@ async function resolvePostLoginRoute(userDetails, options = {}) {
         if (isAdminInternalPath(currentPathname)) {
             return null;
         }
-        if (!requested || lowerRequested === 'index.html' || lowerRequested.includes('login.html') || lowerRequested.includes('subscription.html') || lowerRequested.includes('subscription-status.html')) {
+        if (!requested && isSubscriptionSelfServiceTarget(currentPathname)) {
+            return null;
+        }
+        if (!requested) {
+            return isAuthLandingPath(currentPathname) ? 'admin.html?tab=dashboard' : null;
+        }
+        if (isSubscriptionSelfServiceTarget(lowerRequested)) {
+            return requested;
+        }
+        if (lowerRequested === 'index.html' || isLoginTarget(lowerRequested)) {
             return 'admin.html?tab=dashboard';
         }
         if (lowerRequested.includes('admin')) {
@@ -749,8 +1019,14 @@ async function resolvePostLoginRoute(userDetails, options = {}) {
     }
     const statusKey = String(opts.statusKey || resolveSubscriptionStatus(user)).toLowerCase();
     if (statusKey === 'unknown') {
-        if (requested && !lowerRequested.includes('login.html') && !lowerRequested.includes('subscription.html') && !lowerRequested.includes('subscription-status.html')) return requested;
+        if (requested && !isLoginTarget(lowerRequested)) return requested;
         return null;
+    }
+    if (!requested && isSubscriptionSelfServiceTarget(currentPathname)) {
+        return null;
+    }
+    if (requested && isSubscriptionSelfServiceTarget(lowerRequested)) {
+        return requested;
     }
     const companyId = getNormalizedCompanyId(user);
     const hasCompanyId = !!companyId;
@@ -763,10 +1039,13 @@ async function resolvePostLoginRoute(userDetails, options = {}) {
     if (statusKey === 'expired') return 'subscription.html?reason=expired';
     if (statusKey === 'blocked') return 'subscription.html?reason=blocked';
     if (statusKey === 'pending' || statusKey === 'pending_grace') return 'subscription.html?reason=pending';
-    if ((statusKey === 'active' || statusKey === 'trial_active') && (!requested || loweredRequested.includes('login.html') || loweredRequested.includes('subscription.html') || loweredRequested.includes('subscription-status.html'))) {
+    const currentIsLoginPage = isLoginTarget(currentPathname);
+    if ((statusKey === 'active' || statusKey === 'trial_active')
+        && ((requested && isLoginTarget(lowerRequested))
+            || (!requested && currentIsLoginPage))) {
         return 'index.html';
     }
-    if (requested && !lowerRequested.includes('admin-') && !lowerRequested.includes('admin.html') && !lowerRequested.includes('login.html') && !lowerRequested.includes('subscription.html') && !lowerRequested.includes('subscription-status.html')) {
+    if (requested && !lowerRequested.includes('admin-') && !lowerRequested.includes('admin.html') && !isLoginTarget(lowerRequested)) {
         return requested;
     }
     return null;
@@ -904,6 +1183,8 @@ function clearRestrictedSessionCache() {
         sessionStorage.setItem('redirectCount', '0');
         localStorage.removeItem('currentUser');
         localStorage.removeItem('persistentUser');
+        clearDurableAuthSession();
+        clearCompanyContextCache();
     } catch (_) {}
 }
 
@@ -992,6 +1273,7 @@ function checkAuth() {
             }
             
             console.log("🔍 Verificando autenticação no Firebase...");
+            await waitForAuthInfrastructureReady();
             
             let user = await getAuthService().getCurrentUser();
             if (!user && window._FIREBASE_CONNECTED === true) {
@@ -1007,8 +1289,7 @@ function checkAuth() {
                 console.log("✅ Usuário autenticado no Firebase:", user.email);
                 authAuditLog('firebase', { uid: user.uid, email: user.email || '' });
                 // Atualizar estado na sessão
-                sessionStorage.setItem('userAuthenticated', 'true');
-                sessionStorage.setItem('lastLogin', Date.now().toString());
+                persistAuthenticatedSession({ uid: user.uid, email: user.email, displayName: user.displayName }, { source: 'firebase' });
                 // Limpar contador de redirecionamentos
                 sessionStorage.setItem('redirectCount', '0');
                 
@@ -1061,6 +1342,18 @@ function checkAuth() {
                     return;
                 }
 
+                persistAuthenticatedSession(guardUserDetails, { source: 'firebase_guard' });
+                resolve(true);
+                return;
+            }
+
+            const cachedAuth = await tryAllowCachedAuthSession('pwa_cached_session');
+            if (cachedAuth.redirected) {
+                resolve(false);
+                return;
+            }
+            if (cachedAuth.allowed) {
+                console.log("👤 Sessão restaurada via cache local PWA");
                 resolve(true);
                 return;
             }
@@ -1093,8 +1386,7 @@ function checkAuth() {
                         return;
                     }
                     // Atualizar estado na sessão
-                    sessionStorage.setItem('userAuthenticated', 'true');
-                    sessionStorage.setItem('lastLogin', Date.now().toString());
+                    persistAuthenticatedSession(cachedCurrentUser, { source: 'offline_session' });
                     resolve(true);
                     return;
                 }
@@ -1126,6 +1418,15 @@ function checkAuth() {
             // Tenta fallback para o sistema antigo se o Firebase falhar
             const currentUser = parseCurrentUserSafe();
             const hasSessionFlag = sessionStorage.getItem('userAuthenticated') === 'true';
+            const cachedAuth = await tryAllowCachedAuthSession('catch_cached_session');
+            if (cachedAuth.redirected) {
+                resolve(false);
+                return;
+            }
+            if (cachedAuth.allowed) {
+                resolve(true);
+                return;
+            }
             if (hasSessionFlag && currentUser) {
                 authAuditLog('currentUser', { fallback: 'catch' });
                 console.log("👤 Fallback: usando autenticação em cache");
@@ -1172,10 +1473,12 @@ function checkAuth() {
  */
 async function login(email, password) {
     try {
-        console.log("🔐 Iniciando processo de login para:", email);
+        const normalizedEmail = String(email || '').trim().toLowerCase();
+        const rawPassword = typeof password === 'string' ? password : String(password || '');
+        console.log("🔐 Iniciando processo de login para:", normalizedEmail);
         
         // Validar entrada
-        if (!email || !password) {
+        if (!normalizedEmail || !rawPassword) {
             return { success: false, error: "Email e senha são obrigatórios" };
         }
         
@@ -1185,10 +1488,10 @@ async function login(email, password) {
         
         // Tentar login usando firebaseService
         const authService = getAuthService();
-        const result = await authService.login(email, password);
+        const result = await authService.login(normalizedEmail, rawPassword);
         
         if (result.success) {
-            console.log("✅ Login bem-sucedido para:", email);
+            console.log("✅ Login bem-sucedido para:", normalizedEmail);
             const user = result.user;
 
             // Forçar a atualização do token para obter os custom claims mais recentes
@@ -1233,6 +1536,7 @@ async function login(email, password) {
                 companyId: effectiveCompanyId || String((remoteProfile && (remoteProfile.companyId || remoteProfile.companyID || remoteProfile.tenantId)) || '').trim(),
                 subscriptionStatus
             };
+            persistAuthenticatedSession(routeUser, { source: 'login' });
             const flowRedirect = await resolvePostLoginRoute(routeUser, {
                 statusKey: subscriptionStatus,
                 isSuperAdmin
@@ -1340,6 +1644,8 @@ async function logout() {
             localStorage.removeItem('currentUser');
             localStorage.removeItem('persistentUser');
             localStorage.removeItem('auth');
+            clearDurableAuthSession();
+            clearCompanyContextCache();
             sessionStorage.clear();
             try { window.__SESSION_SUPERADMIN = false; } catch (_) {}
             try { window.__SESSION_SUPERADMIN_UID = ''; } catch (_) {}
@@ -1354,6 +1660,8 @@ async function logout() {
         // Fallback para o sistema antigo
         localStorage.removeItem('currentUser');
         localStorage.removeItem('persistentUser');
+        clearDurableAuthSession();
+        clearCompanyContextCache();
         try { window.__SESSION_SUPERADMIN = false; } catch (_) {}
         try { window.__SESSION_SUPERADMIN_UID = ''; } catch (_) {}
         const target = encodeURIComponent('index.html');
@@ -1569,8 +1877,12 @@ function setupAuthListener() {
             if (!user) {
                 // Verificar se há autenticação legada
                 const legacyAuth = getData('auth');
-                if (!legacyAuth || !legacyAuth.isLoggedIn) {
+                const cachedAuth = getUsableCachedAuthSession();
+                if ((!legacyAuth || !legacyAuth.isLoggedIn) && !cachedAuth) {
                     // Não está autenticado em nenhum sistema
+                    if (isSubscriptionCheckoutTarget(window.location.pathname)) {
+                        return;
+                    }
                     if (window.location.pathname !== '/login.html') {
                         const target = encodeURIComponent(window.location.pathname + (window.location.hash || ''));
                         window.location.href = `login.html?noRedirect=true&reason=auth_listener&redirect=${target}`;
@@ -1588,14 +1900,14 @@ function setupAuthListener() {
 // Verifica autenticação ao carregar a página, mas evita redirecionar na página de login
 document.addEventListener('DOMContentLoaded', async function() {
     // Evitar inicialização repetida
-    if (isInitialized || sessionStorage.getItem(AUTH_INITIALIZED_KEY) === 'true') {
+    if (isInitialized || window.__siswebAuthInitializedForPath === window.location.pathname) {
         console.log("🔄 auth.js já inicializado, pulando");
         return;
     }
     
     // Marcar como inicializado
     isInitialized = true;
-    sessionStorage.setItem(AUTH_INITIALIZED_KEY, 'true');
+    window.__siswebAuthInitializedForPath = window.location.pathname;
     
     try {
         // Obter o path da página atual
@@ -1604,6 +1916,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Evitar verificar autenticação e redirecionamento se já estiver na página de login
         if (currentPath.includes('login.html')) {
             console.log("🔑 Página de login detectada, pulando verificação de autenticação");
+            return;
+        }
+        if (isSubscriptionCheckoutTarget(currentPath)) {
+            console.log("🧾 Página pública de assinatura detectada, carregando oferta sem redirecionamento automático");
             return;
         }
         
@@ -1641,6 +1957,7 @@ window.authFunctions = {
     checkSubscription,
     resolveSubscriptionStatus,
     resolveSubscriptionRedirect,
+    normalizeInternalRedirectTarget,
     resolvePostLoginRoute,
     enforceSubscriptionGuard,
     isSuperAdminUid,
@@ -1652,6 +1969,10 @@ window.authFunctions = {
     login,
     register,
     logout,
+    persistAuthenticatedSession,
+    clearDurableAuthSession,
+    clearCompanyContextCache,
+    getUsableCachedAuthSession,
     getLoggedUsername,
     getCurrentUserDetails,
     startTrial,
@@ -1663,6 +1984,7 @@ window.authFunctions = {
 window.checkSubscription = checkSubscription;
 window.resolveSubscriptionStatus = resolveSubscriptionStatus;
 window.resolveSubscriptionRedirect = resolveSubscriptionRedirect;
+window.normalizeInternalRedirectTarget = normalizeInternalRedirectTarget;
 window.resolvePostLoginRoute = resolvePostLoginRoute;
 window.enforceSubscriptionGuard = enforceSubscriptionGuard;
 window.isSuperAdminUid = isSuperAdminUid;
@@ -1674,6 +1996,10 @@ window.checkAuth = checkAuth;
 window.login = login;
 window.register = register;
 window.logout = logout;
+window.markSiswebSessionAuthenticated = persistAuthenticatedSession;
+window.clearSiswebDurableAuthSession = clearDurableAuthSession;
+window.clearSiswebCompanyContextCache = clearCompanyContextCache;
+window.getSiswebCachedAuthSession = getUsableCachedAuthSession;
 window.getLoggedUsername = getLoggedUsername;
 window.getCurrentUserDetails = getCurrentUserDetails;
 window.startTrial = startTrial;

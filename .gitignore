@@ -3,12 +3,43 @@ functions/.env.*
 !.env.example
 !functions/.env.example
 
+# Firebase/GCP credentials
+service-account.json
+service-account*.json
+serviceAccount*.json
+*service*account*.json
+
 # Environment & Secrets (AIOX)
 .env
+.env.*
 .env.local
 .env.*.local
+!.env.example
+!functions/.env.example
 *.key
 *.pem
+*.p12
+*.pfx
+*.cer
+*.crt
+
+# Local production exports and PII dumps
+Clients.json
+fornecedores.json
+contasReceber.json
+romaneiosTora.json
+sisweb-*-rtdb-export*.json
+*default-rtdb-export*.json
+*rtdb-export*.json
+*dump*.json
+*backup*.json
+*diagnostic*.json
+relatorio_correcao*.json
+temp_file_list.json
+firebase-backup.json
+*.sqlite
+*.db
+Analise o sistema sisweb Como Umo Todo Seguran*.txt
 
 # Dependencies (AIOX)
 node_modules/
@@ -17,6 +48,9 @@ node_modules
 # Build & Logs (AIOX)
 dist/
 build/
+.firebase/
+tmp/
+tmp/**
 *.log
 logs/
 

@@ -16,7 +16,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     
     <!-- Menu Component -->
-    <script src="menu-component.js?v=20260326"></script>
+    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
+    <script src="species-utils.js"></script>
     
     <style>
         /* Page Specific Styles */
@@ -138,8 +139,8 @@
             <p>Formato esperado: "<strong>Nome Científico - Nome Comum</strong>"</p>
             <p>Exemplo: "Aspidosperma album (Vahl) R.Benoist ex Pichon - Araracanga"</p>
             <ul>
-                <li>Antes do "-": <strong>Descrição</strong> (nome científico)</li>
-                <li>Após o "-": <strong>Nome</strong> (nome comum)</li>
+                <li>Antes do "-": <strong>Nome Científico</strong></li>
+                <li>Após o "-": <strong>Espécie</strong> (nome comum)</li>
             </ul>
         </div>
         
@@ -167,8 +168,8 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
                     <thead>
                         <tr>
                             <th width="50">#</th>
-                            <th>Nome</th>
-                            <th>Descrição (Nome Científico)</th>
+                            <th>Espécie</th>
+                            <th>Nome Científico</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -203,15 +204,50 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
 
         const authService = svc.authService;
         const loadFromFirebase = (path) => svc.loadFromFirebase(path);
+        const speciesTools = window.SiswebSpecies || {};
+        const canonicalSpeciesPath = speciesTools.canonicalCollection || 'especies';
+
+        function getSpeciesName(specie) {
+            if (speciesTools.getDisplayName) return speciesTools.getDisplayName(specie);
+            return String((specie && (specie.especie || specie.nome || specie.name || specie.nomeComum)) || '').trim();
+        }
+
+        function getSpeciesScientific(specie) {
+            if (speciesTools.getScientificName) return speciesTools.getScientificName(specie);
+            return String((specie && (specie.nomeCientifico || specie.scientificName || specie.scientific || specie.descricao || specie.description || specie.decription)) || '').trim();
+        }
+
+        function normalizeSpeciesName(value) {
+            if (speciesTools.normalizeNameKey) return speciesTools.normalizeNameKey(value);
+            return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+        }
+
+        function toCanonicalSpeciesRecord(specie, index = 0, options = {}) {
+            if (speciesTools.toCanonicalRecord) return speciesTools.toCanonicalRecord(specie, index, options);
+            const now = options.updatedAt || new Date().toISOString();
+            return {
+                id: specie.id || options.id || `specie_${index}`,
+                especie: getSpeciesName(specie),
+                nomeCientifico: getSpeciesScientific(specie),
+                ativo: specie.ativo !== false,
+                createdAt: specie.createdAt || now,
+                updatedAt: now
+            };
+        }
 
         async function ensureAuthAndTenant() {
+            const noRedirect = (() => {
+                try { return new URLSearchParams(window.location.search).get('noRedirect') === 'true'; } catch (_) { return false; }
+            })();
             if (!authService || typeof authService.getCurrentUser !== 'function') {
                 throw new Error('Serviço de autenticação não disponível');
             }
             const user = await authService.getCurrentUser();
             if (!user) {
-                alert('Acesso negado! Você precisa estar logado.');
-                window.location.href = 'login.html';
+                if (!noRedirect) {
+                    alert('Acesso negado! Você precisa estar logado.');
+                    window.location.href = 'login.html';
+                }
                 throw new Error('Usuário não autenticado');
             }
 
@@ -253,8 +289,10 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
             }
 
             if (!tenant) {
-                alert('Selecione/defina a empresa antes de importar espécies.');
-                window.location.href = 'company.html';
+                if (!noRedirect) {
+                    alert('Selecione/defina a empresa antes de importar espécies.');
+                    window.location.href = 'company.html';
+                }
                 throw new Error('Tenant/company não definido');
             }
 
@@ -278,7 +316,7 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
             }
 
             const key = `${base}/${finalId}`;
-            const payload = (data && typeof data === 'object') ? { ...data, id: data.id || finalId } : data;
+            const payload = (data && typeof data === 'object') ? { ...data, id: finalId } : data;
             const res = await svc.saveData(key, payload);
             if (!res || res.success !== true) {
                 throw new Error((res && res.error) ? res.error : 'Falha ao salvar');
@@ -325,22 +363,22 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
                     return;
                 }
                 
-                const description = line.substring(0, dashIndex).trim();
-                const name = line.substring(dashIndex + 3).trim();
+                const nomeCientifico = line.substring(0, dashIndex).trim();
+                const especie = line.substring(dashIndex + 3).trim();
                 
-                if (!name || !description) {
+                if (!especie || !nomeCientifico) {
                     invalidLines.push({ line, index: index + 1, reason: 'Dados incompletos' });
                     return;
                 }
                 
-                const nameLower = name.toLowerCase();
-                if (processedNames.has(nameLower)) {
+                const especieKey = normalizeSpeciesName(especie);
+                if (processedNames.has(especieKey)) {
                     invalidLines.push({ line, index: index + 1, reason: 'Duplicada no arquivo' });
                     return;
                 }
                 
-                processedNames.add(nameLower);
-                validLines.push({ name, description, index: index + 1 });
+                processedNames.add(especieKey);
+                validLines.push({ especie, nomeCientifico, index: index + 1 });
             });
             
             return { validLines, invalidLines };
@@ -357,12 +395,85 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
             return raw;
         }
 
-        async function loadAllSpecies() {
-            const result = await loadFromFirebase('species');
-            if (result.success && result.data) {
-                return Object.keys(result.data).map(key => ({ id: key, ...result.data[key] }));
+        function getSpeciesPathCandidates() {
+            const canonical = speciesTools.canonicalizePath
+                ? speciesTools.canonicalizePath(canonicalSpeciesPath)
+                : canonicalSpeciesPath;
+            return [canonical || canonicalSpeciesPath];
+        }
+
+        function parseRecordTime(record) {
+            const updated = record && record.updatedAt;
+            if (typeof updated === 'number') return updated;
+            if (typeof updated === 'string') {
+                const parsed = Date.parse(updated);
+                if (!Number.isNaN(parsed)) return parsed;
             }
-            return [];
+
+            const created = record && record.createdAt;
+            if (typeof created === 'number') return created;
+            if (typeof created === 'string') {
+                const parsed = Date.parse(created);
+                if (!Number.isNaN(parsed)) return parsed;
+            }
+
+            const numericId = parseFloat((record && (record.originalId || record.id)) || '');
+            const keyedRecordBias = record && String(record.id || '') === String(record.originalId || '') ? 0.5 : 0;
+            return Number.isNaN(numericId) ? keyedRecordBias : numericId + keyedRecordBias;
+        }
+
+        function normalizeSpeciesRecordFromStorage(item, key, sourcePath) {
+            const value = item && typeof item === 'object' ? item : {};
+            return {
+                ...value,
+                id: String(key),
+                key: String(key),
+                firebaseKey: String(key),
+                originalId: value.id || value.key || String(key),
+                __sourcePath: sourcePath
+            };
+        }
+
+        function normalizeSpeciesCollection(data, sourcePath) {
+            if (!data) return [];
+            const list = Array.isArray(data)
+                ? data.map((item, index) => normalizeSpeciesRecordFromStorage(item, String(index), sourcePath))
+                : Object.keys(data || {}).map(key => normalizeSpeciesRecordFromStorage(data[key], key, sourcePath));
+
+            return list.filter(specie => specie && getSpeciesName(specie));
+        }
+
+        function dedupeSpeciesRecords(records) {
+            const seen = new Set();
+            return records
+                .slice()
+                .sort((a, b) => parseRecordTime(b) - parseRecordTime(a))
+                .filter((specie) => {
+                    const nameKey = normalizeSpeciesName(getSpeciesName(specie));
+                    const idKey = String(specie.firebaseKey || specie.key || specie.id || specie.originalId || '').trim();
+                    const dedupeKey = nameKey || idKey;
+                    if (!dedupeKey || seen.has(dedupeKey)) return false;
+                    seen.add(dedupeKey);
+                    return true;
+                });
+        }
+
+        async function loadAllSpecies() {
+            const allSpecies = [];
+            const paths = getSpeciesPathCandidates();
+
+            for (const path of paths) {
+                try {
+                    const result = await loadFromFirebase(path);
+                    if (result && result.success && result.data) {
+                        allSpecies.push(...normalizeSpeciesCollection(result.data, path));
+                    }
+                } catch (error) {
+                    console.warn(`Falha ao carregar espécies em ${path}:`, error);
+                }
+            }
+
+            return dedupeSpeciesRecords(allSpecies);
         }
 
         // Event Listeners
@@ -376,12 +487,10 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
                 await ensureAuthAndTenant();
                 const { validLines, invalidLines } = processExcelData(text);
                 const existingSpecies = await loadAllSpecies();
-                const getNome = (s) => String((s && (s.name || s.nome)) || '').trim();
-                const getDesc = (s) => String((s && (s.description || s.descricao || s.nomeCientifico || s.scientific)) || '').trim();
                 const speciesMap = new Map(existingSpecies
-                    .map(s => ({ raw: s, nome: getNome(s), desc: getDesc(s) }))
-                    .filter(s => s.nome)
-                    .map(s => [s.nome.toLowerCase(), { ...s.raw, __nomeNorm: s.nome, __descNorm: s.desc }]));
+                    .map(s => ({ raw: s, especie: getSpeciesName(s), nomeCientifico: getSpeciesScientific(s) }))
+                    .filter(s => s.especie)
+                    .map(s => [normalizeSpeciesName(s.especie), { ...s.raw, __especieNorm: s.especie, __nomeCientificoNorm: s.nomeCientifico }]));
 
                 elements.previewTable.innerHTML = '';
                 let newCount = 0;
@@ -389,22 +498,22 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
 
                 // Render Valid
                 validLines.forEach(item => {
-                    const existing = speciesMap.get(item.name.toLowerCase());
-                    const descImport = String(item.description || '').trim();
-                    const descExist = existing ? normalizeComparableText(existing.description || existing.descricao || existing.nomeCientifico || existing.scientific) : '';
-                    const canUpdateDesc = !!existing && !descExist && !!normalizeComparableText(descImport);
+                    const existing = speciesMap.get(normalizeSpeciesName(item.especie));
+                    const scientificImport = String(item.nomeCientifico || '').trim();
+                    const scientificExist = existing ? normalizeComparableText(getSpeciesScientific(existing)) : '';
+                    const canUpdateScientific = !!existing && !scientificExist && !!normalizeComparableText(scientificImport);
                     const status = !existing
                         ? `<span class="success">Novo</span>`
-                        : (canUpdateDesc ? `<span class="warning">Atualizar descrição</span>` : `<span class="success">Já completo</span>`);
+                        : (canUpdateScientific ? `<span class="warning">Atualizar nome científico</span>` : `<span class="success">Já completo</span>`);
                     
                     if (!existing) newCount++;
-                    else if (canUpdateDesc) updateCount++;
+                    else if (canUpdateScientific) updateCount++;
 
                     elements.previewTable.innerHTML += `
                         <tr>
                             <td>${item.index}</td>
-                            <td>${item.name}</td>
-                            <td>${item.description}</td>
+                            <td>${item.especie}</td>
+                            <td>${item.nomeCientifico}</td>
                             <td>${status}</td>
                         </tr>
                     `;
@@ -457,42 +566,39 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
                 let successCount = 0;
                 
                 for (const item of window.importData) {
-                    const existing = window.speciesMap.get(item.name.toLowerCase());
+                    const existing = window.speciesMap.get(normalizeSpeciesName(item.especie));
                     const id = existing ? existing.id : 'auto';
                     
-                    const descImport = String(item.description || '').trim();
-                    const descExist = existing ? normalizeComparableText(existing.description || existing.descricao || existing.nomeCientifico || existing.scientific) : '';
-                    const canUpdateDesc = !!existing && !descExist && !!normalizeComparableText(descImport);
+                    const scientificImport = String(item.nomeCientifico || '').trim();
+                    const scientificExist = existing ? normalizeComparableText(getSpeciesScientific(existing)) : '';
+                    const canUpdateScientific = !!existing && !scientificExist && !!normalizeComparableText(scientificImport);
 
-                    if (existing && !canUpdateDesc) {
+                    if (existing && !canUpdateScientific) {
                         continue;
                     }
 
+                    const now = new Date().toISOString();
                     const data = existing
                         ? (() => {
                             const base = { ...existing };
                             try {
                                 Object.keys(base).forEach(k => { if (k.startsWith('__')) delete base[k]; });
                             } catch (_) {}
-                            base.description = descImport;
-                            base.descricao = descImport;
-                            base.nomeCientifico = descImport;
-                            base.scientific = descImport;
-                            base.updatedAt = new Date().toISOString();
-                            return base;
+                            base.especie = item.especie;
+                            base.nomeCientifico = scientificImport;
+                            base.updatedAt = now;
+                            return toCanonicalSpeciesRecord(base, 0, { id: existing.id, updatedAt: now });
                         })()
-                        : {
-                            name: item.name,
-                            nome: item.name,
-                            description: descImport,
-                            descricao: descImport,
-                            nomeCientifico: descImport,
-                            scientific: descImport,
-                            updatedAt: new Date().toISOString(),
-                            createdAt: new Date().toISOString()
-                        };
+                        : toCanonicalSpeciesRecord({
+                            id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                            especie: item.especie,
+                            nomeCientifico: scientificImport,
+                            ativo: true,
+                            updatedAt: now,
+                            createdAt: now
+                        }, 0, { updatedAt: now });
 
-                    await saveToFirebase('species', id, data);
+                    await saveToFirebase(canonicalSpeciesPath, id, data);
                     successCount++;
                 }
 

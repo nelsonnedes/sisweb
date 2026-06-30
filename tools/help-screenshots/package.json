@@ -4,9 +4,19 @@
   "type": "module",
   "scripts": {
     "install:browsers": "playwright install --with-deps chromium",
-    "capture": "node capture.mjs"
+    "inventory": "node inventory.mjs --write",
+    "routes:full": "node build-full-routes.mjs",
+    "gallery": "node build-help-gallery.mjs",
+    "capture": "node capture.mjs",
+    "capture:training": "node capture.mjs --training",
+    "capture:full": "node capture.mjs --full",
+    "optimize": "node optimize.mjs",
+    "optimize:apply": "node optimize.mjs --apply --webp"
   },
   "dependencies": {
     "playwright": "^1.55.0"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.5"
   }
 }

@@ -149,7 +149,7 @@
                         const raw = localStorage.getItem('company_info');
                         if (raw) {
                             const obj = JSON.parse(raw);
-                            tenant = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                            tenant = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                         }
                     } catch (e) {}
                     const candidates = [];

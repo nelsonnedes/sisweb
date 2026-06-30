@@ -144,13 +144,13 @@
                 if (window.appTenantId) return String(window.appTenantId);
                 if (window.companyInfo) {
                     const raw = window.companyInfo;
-                    const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                    const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                     if (id) return String(id);
                 }
                 const stored = localStorage.getItem('company_info');
                 if (stored) {
                     const obj = JSON.parse(stored);
-                    const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                    const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                     if (id) return String(id);
                 }
             } catch (_) {}
@@ -442,23 +442,6 @@
                     log(`⚠️ Erro ao parsear espécies localStorage: ${e.message}`);
                 }
             }
-            
-            // Estratégia 1b: Tentar chave 'species' diretamente
-            const localSpecies = readLocalStorageValue('species');
-            if (localSpecies && !especiesData) {
-                try {
-                    especiesData = JSON.parse(localSpecies);
-                    count = Array.isArray(especiesData) ? especiesData.length : 1;
-                    if (count > 0) {
-                        writeLocalStorageValue('especies', especiesData);
-                        log(`✅ Espécies do localStorage.species: ${count}`);
-                        return count;
-                    }
-                } catch (e) {
-                    log(`⚠️ Erro ao parsear species localStorage: ${e.message}`);
-                }
-            }
-            
             // Estratégia 2: Função getData
             if (window.getData && !especiesData) {
                 try {
@@ -473,24 +456,8 @@
                     log(`⚠️ Erro getData espécies: ${e.message}`);
                 }
             }
-            
-            // Estratégia 2b: Tentar getData com 'species'
-            if (window.getData && !especiesData) {
-                try {
-                    especiesData = await window.getData('species');
-                    if (especiesData) {
-                        count = Array.isArray(especiesData) ? especiesData.length : 1;
-                        writeLocalStorageValue('especies', especiesData);
-                        log(`✅ Espécies via getData('species'): ${count}`);
-                        return count;
-                    }
-                } catch (e) {
-                    log(`⚠️ Erro getData species: ${e.message}`);
-                }
-            }
-            
             // Estratégia 3: Variáveis globais
-            const variaveis = ['especies', 'species', 'dadosEspecies', 'especiesList', 'allEspecies', 'especiesData'];
+            const variaveis = ['especies', 'dadosEspecies', 'especiesList', 'allEspecies', 'especiesData'];
             for (const varName of variaveis) {
                 if (window[varName] && !especiesData) {
                     especiesData = window[varName];
@@ -529,67 +496,20 @@
         async function extrairRomaneios(logIndividual = true) {
             if (logIndividual) log('📋 Extraindo romaneios...');
             
-            let romaneiosData = null;
             let count = 0;
-            
-            // Estratégia 1: localStorage direto
-            const localRomaneios = readLocalStorageValue('romaneiosPct');
-            if (localRomaneios) {
-                try {
-                    romaneiosData = JSON.parse(localRomaneios);
-                    count = Array.isArray(romaneiosData) ? romaneiosData.length : 1;
-                    if (count > 0) {
-                        log(`✅ Romaneios do localStorage: ${count}`);
-                        return count;
-                    }
-                } catch (e) {
-                    log(`⚠️ Erro ao parsear romaneios localStorage: ${e.message}`);
+
+            try {
+                const result = window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function'
+                    ? await window.firebaseService.loadFromFirebase('romaneios/pct')
+                    : null;
+                const data = result && result.success ? result.data : null;
+                count = Array.isArray(data) ? data.length : (data && typeof data === 'object' ? Object.keys(data).filter(k => k !== '_metadata').length : 0);
+                if (count > 0) {
+                    log(`✅ Romaneios PCT via companies/{companyId}/romaneios/pct: ${count}`);
+                    return count;
                 }
-            }
-            
-            // Estratégia 2: Função getData
-            if (window.getData && !romaneiosData) {
-                try {
-                    romaneiosData = await window.getData('romaneios/pct');
-                    if (romaneiosData) {
-                        count = Array.isArray(romaneiosData) ? romaneiosData.length : 1;
-                        writeLocalStorageValue('romaneiosPct', romaneiosData);
-                        log(`✅ Romaneios via getData: ${count}`);
-                        return count;
-                    }
-                } catch (e) {
-                    log(`⚠️ Erro getData romaneios: ${e.message}`);
-                }
-            }
-            
-            // Estratégia 3: Variáveis globais
-            const variaveis = ['romaneiosPct', 'romaneios', 'pctData', 'romaneiosList', 'allRomaneios'];
-            for (const varName of variaveis) {
-                if (window[varName] && !romaneiosData) {
-                    romaneiosData = window[varName];
-                    count = Array.isArray(romaneiosData) ? romaneiosData.length : 1;
-                    if (count > 0) {
-                        writeLocalStorageValue('romaneiosPct', romaneiosData);
-                        log(`✅ Romaneios de window.${varName}: ${count}`);
-                        return count;
-                    }
-                }
-            }
-            
-            // Estratégia 4: Procurar em todas as chaves do localStorage
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && (key.toLowerCase().includes('romaneio') || key.toLowerCase().includes('pct'))) {
-                    try {
-                        const data = JSON.parse(localStorage.getItem(key));
-                        if (Array.isArray(data) && data.length > 0) {
-                            writeLocalStorageValue('romaneiosPct', data);
-                            count = data.length;
-                            log(`✅ Romaneios encontrados em ${key}: ${count}`);
-                            return count;
-                        }
-                    } catch (e) {}
-                }
+            } catch (e) {
+                log(`⚠️ Erro ao consultar romaneios canônicos: ${e.message}`);
             }
             
             if (logIndividual) log('❌ Nenhum romaneio encontrado');

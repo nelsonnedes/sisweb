@@ -51,6 +51,129 @@ class FolhaUtils {
         }
     }
 
+    static setAcoesPrincipaisExpanded(expanded) {
+        const section = document.getElementById('acoes-principais');
+        const content = document.getElementById('acoesPrincipaisConteudo');
+        const toggle = document.getElementById('toggleAcoesPrincipais');
+        if (!section || !content || !toggle) return false;
+
+        const isExpanded = expanded === true;
+        content.hidden = !isExpanded;
+        section.classList.toggle('acoes-recolhidas', !isExpanded);
+        section.classList.toggle('acoes-expandidas', isExpanded);
+        toggle.setAttribute('aria-expanded', String(isExpanded));
+
+        const text = toggle.querySelector('.acoes-toggle-text');
+        if (text) text.textContent = isExpanded ? 'Recolher ações' : 'Expandir ações';
+
+        const icon = toggle.querySelector('.acoes-toggle-icon');
+        if (icon) {
+            icon.classList.toggle('fa-chevron-down', !isExpanded);
+            icon.classList.toggle('fa-chevron-up', isExpanded);
+        }
+
+        return true;
+    }
+
+    static toggleAcoesPrincipais() {
+        const content = document.getElementById('acoesPrincipaisConteudo');
+        const shouldExpand = content ? content.hidden : true;
+        return FolhaUtils.setAcoesPrincipaisExpanded(shouldExpand);
+    }
+
+    static setupAcoesPrincipaisToggle() {
+        const content = document.getElementById('acoesPrincipaisConteudo');
+        const toggle = document.getElementById('toggleAcoesPrincipais');
+        if (!content || !toggle) return false;
+
+        if (!toggle.dataset.acoesPrincipaisBound) {
+            toggle.addEventListener('click', () => FolhaUtils.toggleAcoesPrincipais());
+            toggle.dataset.acoesPrincipaisBound = 'true';
+        }
+
+        const isExpanded = !content.hidden && toggle.getAttribute('aria-expanded') === 'true';
+        return FolhaUtils.setAcoesPrincipaisExpanded(isExpanded);
+    }
+
+    static isLancamentoMesFechadoPago(lancamento, tipoPagamento = '', statusNormalizado = '') {
+        const tipo = tipoPagamento || ((window.FolhaUtils && typeof window.FolhaUtils.resolveTipoPagamento === 'function')
+            ? window.FolhaUtils.resolveTipoPagamento(lancamento)
+            : ((lancamento && (lancamento.tipoPagamento || lancamento.tipo || lancamento.tipoFolha)) || 'mes'));
+        const status = statusNormalizado || String((window.FolhaUtils && typeof window.FolhaUtils.normalizarStatus === 'function')
+            ? window.FolhaUtils.normalizarStatus(lancamento && lancamento.status)
+            : ((lancamento && lancamento.status) || ''))
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[^a-z_]/g, '');
+        return String(tipo || '').toLowerCase() === 'mes' && status === 'mes_fechado';
+    }
+
+    static getLancamentoPagoActionsPanelId(lancamentoId) {
+        const raw = String(lancamentoId || 'sem_id')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^A-Za-z0-9_-]/g, '_')
+            .slice(0, 48) || 'sem_id';
+        return `acoesPagamento_${raw}`;
+    }
+
+    static renderizarAcoesLancamento(lancamento, botoesAcao = '', opcoes = {}) {
+        const id = lancamento && (lancamento.id || lancamento.key || lancamento.$key || lancamento.recordId || '');
+        const idAttr = FolhaUtils.escapeHtml(id);
+        const acoesHtml = `
+            <button class="action-button btn-editar edit-button" title="Editar" data-folha-id="${idAttr}" data-id="${idAttr}" onclick="__onEditFolhaButtonClick(this.dataset.folhaId)">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="action-button print-button" title="Imprimir" data-folha-id="${idAttr}" data-id="${idAttr}" onclick="printFolha(this.dataset.folhaId)">
+                <i class="fas fa-print"></i>
+            </button>
+            ${botoesAcao || ''}
+            <button class="action-button btn-excluir delete-button" title="Excluir" data-folha-id="${idAttr}" data-id="${idAttr}" onclick="deleteFolha(this.dataset.folhaId)">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+
+        if (!FolhaUtils.isLancamentoMesFechadoPago(lancamento, opcoes.tipoPagamento, opcoes.statusNorm)) {
+            return acoesHtml;
+        }
+
+        const panelId = FolhaUtils.getLancamentoPagoActionsPanelId(id);
+        return `
+            <div class="paid-actions-collapse" data-folha-id="${idAttr}">
+                <button type="button" class="paid-actions-toggle" aria-expanded="false" aria-controls="${panelId}" title="Expandir ações do pagamento" onclick="FolhaUtils.toggleAcoesLancamentoPago(this)">
+                    <i class="fas fa-chevron-down paid-actions-toggle-icon" aria-hidden="true"></i>
+                    <span class="paid-actions-toggle-text">Ações</span>
+                </button>
+                <div id="${panelId}" class="paid-actions-panel" hidden>
+                    ${acoesHtml}
+                </div>
+            </div>
+        `;
+    }
+
+    static toggleAcoesLancamentoPago(toggle) {
+        if (!toggle) return false;
+        const panelId = toggle.getAttribute('aria-controls');
+        const panel = panelId ? document.getElementById(panelId) : null;
+        if (!panel) return false;
+
+        const isExpanded = panel.hidden === true;
+        panel.hidden = !isExpanded;
+        toggle.setAttribute('aria-expanded', String(isExpanded));
+        toggle.setAttribute('title', isExpanded ? 'Recolher ações do pagamento' : 'Expandir ações do pagamento');
+
+        const text = toggle.querySelector('.paid-actions-toggle-text');
+        if (text) text.textContent = isExpanded ? 'Recolher' : 'Ações';
+
+        const icon = toggle.querySelector('.paid-actions-toggle-icon');
+        if (icon) {
+            icon.classList.toggle('fa-chevron-down', !isExpanded);
+            icon.classList.toggle('fa-chevron-up', isExpanded);
+        }
+
+        return true;
+    }
+
     static showLoading() {
         if (FolhaUtils.getDebugMode() === 'all') console.log('🔄 Loading...');
         // this.loadingCount++; // Removido pois não funciona em método estático
@@ -65,21 +188,37 @@ class FolhaUtils {
         try {
             const base = String(path || '');
             if (!base) return base;
-            if (/^companies\//.test(base) || /^users\//.test(base)) return base;
+            if (/^companies(\/|$)/.test(base) || /^users(\/|$)/.test(base)) return base;
+            
+            // 1. Prioritize active user session company context for multi-tenancy
+            let resolvedTenant = null;
+            try {
+                const cu = JSON.parse(localStorage.getItem('currentUser') || 'null') || {};
+                const pu = JSON.parse(localStorage.getItem('persistentUser') || 'null') || {};
+                resolvedTenant = cu.companyId || cu.tenantId || pu.companyId || pu.tenantId;
+            } catch (_) {}
+
+            // 2. Fallbacks: window properties or company_info
+            if (!resolvedTenant) {
+                resolvedTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
+            }
+            if (!resolvedTenant) {
+                try {
+                    const stored = localStorage.getItem('company_info');
+                    if (stored) {
+                        const obj = JSON.parse(stored);
+                        resolvedTenant = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
+                    }
+                } catch (_) {}
+            }
+
+            if (resolvedTenant) {
+                return `companies/${String(resolvedTenant)}/${base}`;
+            }
+
             const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
             if (svc && typeof svc.getNamespacedPath === 'function') {
                 return svc.getNamespacedPath(base);
-            }
-            const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug || window.companyInfo.nome || window.companyInfo.name));
-            if (rawTenant) {
-                const tenant = String(rawTenant);
-                return `companies/${tenant}/${base}`;
-            }
-            const stored = localStorage.getItem('company_info');
-            if (stored) {
-                const obj = JSON.parse(stored);
-                const t = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
-                if (t) return `companies/${String(t)}/${base}`;
             }
             return base;
         } catch (_) {
@@ -92,6 +231,7 @@ class FolhaUtils {
     // =============================
     static showTablePreload(rowCount = 8) {
         try {
+            FolhaUtils.ensureFolhaMainSectionsVisible();
             const container = document.querySelector('#tabela-folhas-section .table-container') || document.querySelector('.table-container');
             const tbody = document.getElementById('folhasTableBody');
             if (container) container.classList.add('loading');
@@ -122,6 +262,25 @@ class FolhaUtils {
                 if (hasSkeleton) {
                     tbody.innerHTML = '';
                 }
+            }
+        } catch (e) {}
+    }
+
+    static ensureFolhaMainSectionsVisible() {
+        try {
+            const tabelaSection = document.getElementById('tabela-folhas-section');
+            const totaisSection = document.getElementById('totais-section');
+            const isHidden = (el) => {
+                if (!el) return false;
+                const inlineDisplay = el.style && el.style.display;
+                if (inlineDisplay === 'none') return true;
+                try { return window.getComputedStyle && window.getComputedStyle(el).display === 'none'; } catch (e) { return false; }
+            };
+            if (isHidden(tabelaSection)) {
+                tabelaSection.style.display = 'block';
+            }
+            if (isHidden(totaisSection)) {
+                totaisSection.style.display = 'block';
             }
         } catch (e) {}
     }
@@ -281,13 +440,230 @@ class FolhaUtils {
         };
         const status = normalizar(FolhaUtils.normalizarStatus(lancamento.status));
         if (!status) return true;
+        const tipoPagamento = (typeof FolhaUtils.resolveTipoPagamento === 'function')
+            ? FolhaUtils.resolveTipoPagamento(lancamento)
+            : String(lancamento.tipoPagamento || lancamento.tipo || lancamento.tipoFolha || 'mes').toLowerCase();
+        if (tipoPagamento === 'quinzena' && (status === 'quinzena_paga' || status === 'quinzenapaga')) {
+            return true;
+        }
         const statusBaixados = new Set(['quinzena_paga', 'quinzenapaga', 'mes_fechado', 'mesfechado', 'baixado', 'baixada', 'pago', 'paga']);
         return !statusBaixados.has(status);
+    }
+
+    static calcularValorPagoLancamento(lancamento) {
+        if (!lancamento) return 0;
+        const status = String(FolhaUtils.normalizarStatus(lancamento.status) || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[^a-z_]/g, '');
+        const tipoPagamento = (typeof FolhaUtils.resolveTipoPagamento === 'function')
+            ? FolhaUtils.resolveTipoPagamento(lancamento)
+            : String(lancamento.tipoPagamento || lancamento.tipo || lancamento.tipoFolha || 'mes').toLowerCase();
+        if (!(tipoPagamento === 'quinzena' && (status === 'quinzena_paga' || status === 'quinzenapaga')) && FolhaUtils.lancamentoContaNoResumo(lancamento)) return 0;
+        const valor = Number(FolhaUtils.calcularValorTotalPagoFuncionario(lancamento) || 0);
+        return Number.isFinite(valor) ? Math.round(valor * 100) / 100 : 0;
+    }
+
+    static calcularSaldoLiquidoEmAberto(lancamento) {
+        if (!lancamento) return 0;
+        const status = String(FolhaUtils.normalizarStatus(lancamento.status) || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[^a-z_]/g, '');
+        const tipoPagamento = (typeof FolhaUtils.resolveTipoPagamento === 'function')
+            ? FolhaUtils.resolveTipoPagamento(lancamento)
+            : String(lancamento.tipoPagamento || lancamento.tipo || lancamento.tipoFolha || 'mes').toLowerCase();
+        if (tipoPagamento === 'quinzena' && (status === 'quinzena_paga' || status === 'quinzenapaga')) {
+            const valorParcial = Number(FolhaUtils.calcularSalarioLiquidoDisplay(lancamento) || 0);
+            return Number.isFinite(valorParcial) ? valorParcial : 0;
+        }
+        if (!FolhaUtils.lancamentoContaNoResumo(lancamento)) return 0;
+        const valor = Number(FolhaUtils.calcularSalarioLiquidoDisplay(lancamento) || 0);
+        return Number.isFinite(valor) ? valor : 0;
+    }
+
+    static isPixLancamentoQuitado(lancamento) {
+        if (!lancamento) return false;
+        const status = String(FolhaUtils.normalizarStatus(lancamento.status) || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[^a-z_]/g, '');
+        const tipoPagamento = (typeof FolhaUtils.resolveTipoPagamento === 'function')
+            ? FolhaUtils.resolveTipoPagamento(lancamento)
+            : String(lancamento.tipoPagamento || lancamento.tipo || lancamento.tipoFolha || 'mes').toLowerCase();
+        if (tipoPagamento === 'quinzena' && (status === 'quinzena_paga' || status === 'quinzenapaga')) return false;
+        return !FolhaUtils.lancamentoContaNoResumo(lancamento);
+    }
+
+    static calcularValorPixLancamento(lancamento) {
+        if (!lancamento) return 0;
+        const status = String(FolhaUtils.normalizarStatus(lancamento.status) || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[^a-z_]/g, '');
+        const tipoPagamento = (typeof FolhaUtils.resolveTipoPagamento === 'function')
+            ? FolhaUtils.resolveTipoPagamento(lancamento)
+            : String(lancamento.tipoPagamento || lancamento.tipo || lancamento.tipoFolha || 'mes').toLowerCase();
+        if (FolhaUtils.isPixLancamentoQuitado(lancamento)) return 0;
+        if (tipoPagamento === 'quinzena') {
+            if (status === 'quinzena_paga' || status === 'quinzenapaga') {
+                return FolhaUtils.calcularSaldoLiquidoEmAberto(lancamento);
+            }
+            const valorQuinzena = Number(FolhaUtils.calcularValorQuinzena ? FolhaUtils.calcularValorQuinzena(lancamento) : 0);
+            if (Number.isFinite(valorQuinzena) && valorQuinzena > 0) return valorQuinzena;
+        }
+        return FolhaUtils.calcularSaldoLiquidoEmAberto(lancamento);
+    }
+
+    static calcularValorTotalPagoFuncionario(lancamento) {
+        if (!lancamento || typeof lancamento !== 'object') return 0;
+        const parse = (value) => {
+            if (typeof FolhaUtils.parseNumeroFolha === 'function') {
+                return FolhaUtils.parseNumeroFolha(value);
+            }
+            const n = Number(value || 0);
+            return Number.isFinite(n) ? n : 0;
+        };
+        const explicitSources = [
+            lancamento.valorPagoFuncionario,
+            lancamento.valorTotalPagoFuncionario,
+            lancamento.valorPagoTotal,
+            lancamento.totalPagoFuncionario,
+            lancamento.totalPago,
+            lancamento.valorQuitado,
+            lancamento.baixa && lancamento.baixa.valorTotal,
+            lancamento.baixa && lancamento.baixa.valorQuitado,
+            lancamento.fechamento && lancamento.fechamento.valorTotalPago,
+            lancamento.fechamento && lancamento.fechamento.valorPagoTotal,
+            lancamento.fechamento && lancamento.fechamento.totalPagoFuncionario,
+            lancamento.pagamento && lancamento.pagamento.valorTotal,
+            lancamento.pagamento && lancamento.pagamento.valorQuitado,
+            lancamento.financeiro && lancamento.financeiro.valorPagoTotal,
+            lancamento.financeiro && lancamento.financeiro.totalPago
+        ];
+        const explicitValue = explicitSources.map(parse).find((value) => Number.isFinite(value) && value > 0);
+        if (Number.isFinite(explicitValue)) return Math.round(explicitValue * 100) / 100;
+
+        const status = String(FolhaUtils.normalizarStatus(lancamento.status) || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[^a-z_]/g, '');
+        const tipoPagamento = (typeof FolhaUtils.resolveTipoPagamento === 'function')
+            ? FolhaUtils.resolveTipoPagamento(lancamento)
+            : String(lancamento.tipoPagamento || lancamento.tipo || lancamento.tipoFolha || 'mes').toLowerCase();
+        const liquidoFinal = Math.max(0, parse(FolhaUtils.calcularSalarioLiquidoDisplay(lancamento)));
+        const valesPagos = Math.max(0, parse(FolhaUtils.calcularTotalVales ? FolhaUtils.calcularTotalVales(lancamento) : lancamento.vales));
+        const quinzenaExplicit = [
+            lancamento.fechamento &&
+            lancamento.fechamento.abatimentos &&
+            lancamento.fechamento.abatimentos.quinzenaPago,
+            lancamento.quinzenaPaga,
+            lancamento.valorQuinzenaPago,
+            lancamento.valorQuinzena,
+            lancamento.quinzenaValorManual,
+            lancamento.calculos && lancamento.calculos.valorQuinzena,
+            lancamento.calculos && lancamento.calculos.calculos && lancamento.calculos.calculos.valorQuinzena
+        ].map(parse).find((value) => Number.isFinite(value) && value > 0);
+        const quinzenaCalculada = parse(FolhaUtils.calcularValorQuinzena ? FolhaUtils.calcularValorQuinzena(lancamento) : 0);
+        const quinzenaPaga = Math.max(0, quinzenaExplicit || quinzenaCalculada);
+
+        if (tipoPagamento === 'quinzena' && (status === 'quinzena_paga' || status === 'quinzenapaga')) {
+            return Math.round((quinzenaPaga || liquidoFinal) * 100) / 100;
+        }
+
+        if (status === 'mes_fechado' || status === 'mesfechado' || status === 'baixado' || status === 'baixada' || status === 'pago' || status === 'paga') {
+            return Math.round((liquidoFinal + valesPagos + quinzenaPaga) * 100) / 100;
+        }
+
+        return Math.round(liquidoFinal * 100) / 100;
+    }
+
+    static formatarLiquidoLancamentoTabela(lancamento, opcoes = {}) {
+        const valorHistorico = Number.isFinite(Number(opcoes.valorHistorico))
+            ? Number(opcoes.valorHistorico)
+            : Number(FolhaUtils.calcularSalarioLiquidoDisplay(lancamento) || 0);
+        const saldoAberto = Number.isFinite(Number(opcoes.saldoAberto))
+            ? Number(opcoes.saldoAberto)
+            : Number(FolhaUtils.calcularSaldoLiquidoEmAberto(lancamento) || 0);
+        const valorPago = Number.isFinite(Number(opcoes.valorPago))
+            ? Number(opcoes.valorPago)
+            : Number(FolhaUtils.calcularValorPagoLancamento(lancamento) || 0);
+        const saldoFmt = FolhaUtils.formatarMoeda(saldoAberto);
+        const pagoFmt = FolhaUtils.formatarMoeda(valorPago || valorHistorico);
+
+        if (valorPago > 0 && Math.abs(saldoAberto) < 0.005) {
+            return `
+                <span class="liquido-cell-display liquido-saldo-zerado">${saldoFmt}</span>
+                <span class="liquido-pago-info">Pago: ${pagoFmt}</span>
+            `;
+        }
+
+        if (valorPago > 0) {
+            return `
+                <span class="liquido-cell-display">${saldoFmt}</span>
+                <span class="liquido-pago-info">Pago: ${pagoFmt}</span>
+            `;
+        }
+
+        return `<span class="liquido-cell-display">${saldoFmt}</span>`;
     }
 
     // Alias para compatibilidade
     static formatarMoeda(value) {
         return FolhaUtils.formatCurrency(value);
+    }
+
+    static parseNumeroFolha(value) {
+        if (value == null || value === '') return 0;
+        if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+        const raw = String(value).trim();
+        if (!raw) return 0;
+        const cleaned = raw.replace(/[^0-9,.-]/g, '');
+        if (!cleaned) return 0;
+        if (cleaned.includes(',')) {
+            const parsed = parseFloat(cleaned.replace(/\./g, '').replace(/,/g, '.'));
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+        const parsed = parseFloat(cleaned);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    static normalizarValesDetalhados(folha) {
+        if (!folha || typeof folha !== 'object') return [];
+        const fontes = [
+            folha.valesDetalhados,
+            folha.historicoVales,
+            folha.valesHistorico,
+            folha.detalhesVales
+        ];
+        const origem = fontes.find(Array.isArray);
+        if (!Array.isArray(origem)) return [];
+        return origem.map((item, index) => {
+            const valor = FolhaUtils.parseNumeroFolha(item && (item.valor ?? item.value ?? item.total));
+            const data = String((item && (item.data || item.date || item.dataVale)) || '').trim();
+            const observacao = String((item && (item.observacao || item.observacoes || item.descricao || item.description)) || '').trim();
+            const id = String((item && (item.id || item.key)) || `vale_${index}`).trim();
+            return { id, data, valor, observacao };
+        }).filter((item) => item.valor > 0 || item.data || item.observacao);
+    }
+
+    static calcularTotalVales(folha) {
+        if (!folha || typeof folha !== 'object') return 0;
+        const detalhes = FolhaUtils.normalizarValesDetalhados(folha);
+        if (detalhes.length) {
+            return Math.round(detalhes.reduce((sum, item) => sum + FolhaUtils.parseNumeroFolha(item.valor), 0) * 100) / 100;
+        }
+        const c = folha.calculos || {};
+        const calc = c.calculos || c;
+        return FolhaUtils.parseNumeroFolha(folha.vales ?? c.vales ?? calc.vales ?? 0);
+    }
+
+    static formatarDataBR(data) {
+        const raw = String(data || '').trim();
+        if (!raw) return 'Sem data';
+        const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) return `${match[3]}/${match[2]}/${match[1]}`;
+        return raw;
     }
 
     static getFolhasColumnsDefs() {
@@ -420,22 +796,34 @@ class FolhaUtils {
             case 'descontos':
                 return Number(FolhaUtils.calcularDescontosDisplay ? FolhaUtils.calcularDescontosDisplay(item) : 0) || 0;
             case 'vales':
-                return Number(item.vales || 0) || 0;
+                return Number(FolhaUtils.calcularTotalVales ? FolhaUtils.calcularTotalVales(item) : (item.vales || 0)) || 0;
             case 'liquido':
-                return Number(FolhaUtils.calcularSalarioLiquidoDisplay ? FolhaUtils.calcularSalarioLiquidoDisplay(item) : 0) || 0;
+                return Number(FolhaUtils.calcularSaldoLiquidoEmAberto ? FolhaUtils.calcularSaldoLiquidoEmAberto(item) : (FolhaUtils.calcularSalarioLiquidoDisplay ? FolhaUtils.calcularSalarioLiquidoDisplay(item) : 0)) || 0;
             default:
                 return '';
+        }
+    }
+
+    static getLancamentoAbertoSortRank(item) {
+        try {
+            return FolhaUtils.lancamentoContaNoResumo(item) ? 0 : 1;
+        } catch {
+            return 0;
         }
     }
 
     static aplicarOrdenacaoTabelaFolhas(lista) {
         if (!Array.isArray(lista) || lista.length <= 1) return Array.isArray(lista) ? lista.slice() : [];
         const state = FolhaUtils.getFolhasTableSortState();
-        if (!state.key || state.key === 'acoes') return lista.slice();
+        const hasColumnSort = !!(state.key && state.key !== 'acoes');
         const directionMultiplier = state.direction === 'desc' ? -1 : 1;
         return lista
             .map((item, index) => ({ item, index }))
             .sort((a, b) => {
+                const rankA = FolhaUtils.getLancamentoAbertoSortRank(a.item);
+                const rankB = FolhaUtils.getLancamentoAbertoSortRank(b.item);
+                if (rankA !== rankB) return rankA - rankB;
+                if (!hasColumnSort) return a.index - b.index;
                 const va = FolhaUtils.getFolhasSortValue(a.item, state.key);
                 const vb = FolhaUtils.getFolhasSortValue(b.item, state.key);
                 const aIsNumber = typeof va === 'number' && Number.isFinite(va);
@@ -450,6 +838,29 @@ class FolhaUtils {
                 return a.index - b.index;
             })
             .map(({ item }) => item);
+    }
+
+    static applyMobileTableLabels(root = document) {
+        try {
+            const scope = root && typeof root.querySelectorAll === 'function' ? root : document;
+            scope.querySelectorAll('table').forEach((table) => {
+                const labels = Array.from(table.querySelectorAll('thead th')).map((th) => (
+                    String(th.textContent || '')
+                        .replace(/\s+/g, ' ')
+                        .trim()
+                ));
+                if (!labels.length) return;
+                table.querySelectorAll('tbody tr').forEach((row) => {
+                    Array.from(row.children || []).forEach((cell, index) => {
+                        if (!cell || cell.tagName !== 'TD') return;
+                        if (cell.hasAttribute('colspan')) return;
+                        if (!cell.getAttribute('data-label') && labels[index]) {
+                            cell.setAttribute('data-label', labels[index]);
+                        }
+                    });
+                });
+            });
+        } catch (_) {}
     }
 
     static getFolhasColumnsStorageKey() {
@@ -530,6 +941,7 @@ class FolhaUtils {
         table.querySelectorAll('tbody td[colspan]').forEach(td => {
             td.colSpan = visibleCount;
         });
+        FolhaUtils.applyMobileTableLabels(table);
     }
 
     static ensureFolhasColumnsConfigModal() {
@@ -614,6 +1026,550 @@ class FolhaUtils {
 
     static closeFolhasColumnsConfigModal() {
         const modal = document.getElementById('folhasColumnsConfigModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    static escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    static getTenantScopeKey() {
+        try {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null') || {};
+            const persistentUser = JSON.parse(localStorage.getItem('persistentUser') || 'null') || {};
+            const tenant = currentUser.companyId || currentUser.tenantId || persistentUser.companyId || persistentUser.tenantId ||
+                window.appTenantId ||
+                (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
+            if (tenant) return String(tenant);
+            const stored = localStorage.getItem('company_info');
+            if (stored) {
+                const company = JSON.parse(stored);
+                const companyTenant = company && (company.companyId || company.companyID || company.tenantId || company.id);
+                if (companyTenant) return String(companyTenant);
+            }
+        } catch {}
+        return 'default';
+    }
+
+    static getPixQrCodeStore() {
+        const tenant = FolhaUtils.getTenantScopeKey();
+        if (!window.__folhaPixQrCodeData || typeof window.__folhaPixQrCodeData !== 'object') {
+            window.__folhaPixQrCodeData = { tenant, seq: 0, items: {} };
+        }
+        if (window.__folhaPixQrCodeData.tenant !== tenant) {
+            window.__folhaPixQrCodeData = { tenant, seq: 0, items: {} };
+        }
+        return window.__folhaPixQrCodeData;
+    }
+
+    static resolvePixFavorecido(funcionario, fallbackNome = '') {
+        if (!funcionario || typeof funcionario !== 'object') return String(fallbackNome || '').trim();
+        return String(
+            funcionario.favorecido ||
+            funcionario.favorecidoPix ||
+            funcionario.nomeFavorecidoPix ||
+            fallbackNome ||
+            funcionario.nome ||
+            funcionario.beneficiario ||
+            ''
+        ).trim();
+    }
+
+    static normalizePixBrCodeText(value, maxLength) {
+        const normalized = String(value || '')
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^A-Za-z0-9 ]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toUpperCase();
+        return normalized.slice(0, maxLength);
+    }
+
+    static onlyPixDigits(value) {
+        return String(value || '').replace(/\D/g, '');
+    }
+
+    static isValidCpfDigits(value) {
+        const cpf = FolhaUtils.onlyPixDigits(value);
+        if (!/^\d{11}$/.test(cpf) || /^(\d)\1{10}$/.test(cpf)) return false;
+
+        let sum = 0;
+        for (let index = 0; index < 9; index += 1) {
+            sum += Number(cpf[index]) * (10 - index);
+        }
+        let firstDigit = (sum * 10) % 11;
+        if (firstDigit === 10) firstDigit = 0;
+        if (firstDigit !== Number(cpf[9])) return false;
+
+        sum = 0;
+        for (let index = 0; index < 10; index += 1) {
+            sum += Number(cpf[index]) * (11 - index);
+        }
+        let secondDigit = (sum * 10) % 11;
+        if (secondDigit === 10) secondDigit = 0;
+        return secondDigit === Number(cpf[10]);
+    }
+
+    static isValidCnpjDigits(value) {
+        const cnpj = FolhaUtils.onlyPixDigits(value);
+        if (!/^\d{14}$/.test(cnpj) || /^(\d)\1{13}$/.test(cnpj)) return false;
+
+        const calculateDigit = (base, weights) => {
+            const sum = weights.reduce((total, weight, index) => total + (Number(base[index]) * weight), 0);
+            const rest = sum % 11;
+            return rest < 2 ? 0 : 11 - rest;
+        };
+        const firstDigit = calculateDigit(cnpj, [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+        const secondDigit = calculateDigit(cnpj, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+        return firstDigit === Number(cnpj[12]) && secondDigit === Number(cnpj[13]);
+    }
+
+    static normalizePixKeyType(value) {
+        const normalized = String(value || '')
+            .toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '');
+        if (normalized === 'cpf') return 'cpf';
+        if (normalized === 'cnpj') return 'cnpj';
+        if (['telefone', 'phone', 'celular', 'fone'].includes(normalized)) return 'telefone';
+        if (['email', 'mail', 'e-mail'].includes(normalized)) return 'email';
+        if (['aleatoria', 'aleatorio', 'evp', 'uuid', 'random'].includes(normalized)) return 'aleatoria';
+        return '';
+    }
+
+    static detectPixKeyType(value) {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        const compact = raw.replace(/\s+/g, '');
+        if (raw.includes('@')) return 'email';
+        if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(compact)) {
+            return 'aleatoria';
+        }
+
+        const digits = FolhaUtils.onlyPixDigits(raw);
+        const hasOnlyNumericSymbols = /^[\d.\-/()\s+]+$/.test(raw);
+        if (!digits || !hasOnlyNumericSymbols) return '';
+
+        const hasCpfMask = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(compact);
+        const hasCnpjMask = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(compact);
+        if (hasCpfMask) return 'cpf';
+        if (hasCnpjMask) return 'cnpj';
+
+        const hasPhoneCountryCode = raw.startsWith('+') || ((digits.length === 12 || digits.length === 13) && digits.startsWith('55'));
+        const hasPhoneMask = /\(\s*\d{2}\s*\)/.test(raw) || (/[()\s-]/.test(raw) && (digits.length === 10 || digits.length === 11 || digits.length === 12));
+        if (hasPhoneCountryCode || hasPhoneMask || (digits.length === 12 && digits.startsWith('0'))) return 'telefone';
+
+        if (digits.length === 11 && (hasCpfMask || (!/[()\s-]/.test(raw) && FolhaUtils.isValidCpfDigits(digits)))) {
+            return 'cpf';
+        }
+        if (digits.length === 14 && (hasCnpjMask || FolhaUtils.isValidCnpjDigits(digits))) return 'cnpj';
+        if (digits.length === 10 || digits.length === 11) return 'telefone';
+        return '';
+    }
+
+    static normalizePixKeyForBrCode(value, type = '') {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+
+        const compact = raw.replace(/\s+/g, '');
+        const pixType = FolhaUtils.normalizePixKeyType(type) || FolhaUtils.detectPixKeyType(raw);
+        if (pixType === 'email') return compact.toLowerCase();
+        if (pixType === 'aleatoria') return compact.toLowerCase();
+
+        const digits = FolhaUtils.onlyPixDigits(raw);
+        if (pixType === 'cpf') return FolhaUtils.isValidCpfDigits(digits) ? digits : '';
+        if (pixType === 'cnpj') return FolhaUtils.isValidCnpjDigits(digits) ? digits : '';
+        if (pixType === 'telefone') {
+            if (!digits) return '';
+            if (raw.startsWith('+') || ((digits.length === 12 || digits.length === 13) && digits.startsWith('55'))) return `+${digits}`;
+            if (digits.length === 12 && digits.startsWith('0')) return `+55${digits.slice(1)}`;
+            if (digits.length === 10 || digits.length === 11) return `+55${digits}`;
+            return compact;
+        }
+
+        if (raw.includes('@')) return compact.toLowerCase();
+        if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(compact)) {
+            return compact.toLowerCase();
+        }
+        return /^[\d.\-/()\s+]+$/.test(raw) ? digits : compact;
+    }
+
+    static parseMoedaPix(value) {
+        if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+        const raw = String(value || '').trim();
+        if (!raw) return 0;
+        const cleaned = raw.replace(/[^\d,.-]/g, '');
+        const normalized = cleaned.includes(',')
+            ? cleaned.replace(/\./g, '').replace(',', '.')
+            : cleaned;
+        const parsed = Number.parseFloat(normalized);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    static formatPixAmount(value) {
+        const amount = FolhaUtils.parseMoedaPix(value);
+        return amount > 0 ? amount.toFixed(2) : '';
+    }
+
+    static getPixMerchantCity(funcionario = {}) {
+        const candidates = [
+            funcionario.cidade,
+            funcionario.city,
+            funcionario.municipio,
+            funcionario.localidade
+        ];
+        try {
+            if (window.companyInfo) {
+                candidates.push(
+                    window.companyInfo.cidade,
+                    window.companyInfo.city,
+                    window.companyInfo.municipio,
+                    window.companyInfo.localidade
+                );
+            }
+        } catch {}
+        try {
+            const rawCompany = localStorage.getItem('company_info');
+            if (rawCompany) {
+                const company = JSON.parse(rawCompany);
+                candidates.push(
+                    company.cidade,
+                    company.city,
+                    company.municipio,
+                    company.localidade,
+                    company.endereco && company.endereco.cidade,
+                    company.address && company.address.city
+                );
+            }
+        } catch {}
+        const city = candidates.find(item => String(item || '').trim());
+        return FolhaUtils.normalizePixBrCodeText(city || 'BRASILIA', 15) || 'BRASILIA';
+    }
+
+    static getPixTxId(ref) {
+        const normalized = String(ref || '')
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^A-Za-z0-9]/g, '')
+            .toUpperCase()
+            .slice(0, 25);
+        return normalized || '***';
+    }
+
+    static pixTlv(id, value) {
+        const text = String(value == null ? '' : value);
+        return `${id}${String(text.length).padStart(2, '0')}${text}`;
+    }
+
+    static crc16CcittFalse(payload) {
+        let crc = 0xFFFF;
+        for (let index = 0; index < payload.length; index += 1) {
+            crc ^= payload.charCodeAt(index) << 8;
+            for (let bit = 0; bit < 8; bit += 1) {
+                crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+                crc &= 0xFFFF;
+            }
+        }
+        return crc.toString(16).toUpperCase().padStart(4, '0');
+    }
+
+    static buildPixBrCode(data = {}) {
+        const pixKey = FolhaUtils.normalizePixKeyForBrCode(data.pix, data.pixTipo || data.tipoPix || data.tipoChavePix);
+        if (!pixKey) return '';
+        const favorecido = FolhaUtils.normalizePixBrCodeText(data.favorecido || 'FAVORECIDO PIX', 25) || 'FAVORECIDO PIX';
+        const cidade = FolhaUtils.getPixMerchantCity(data.funcionario || data);
+        const amount = FolhaUtils.formatPixAmount(data.liquido != null ? data.liquido : data.liquidoFormatado);
+        const txId = FolhaUtils.getPixTxId(data.txid || data.txId || '***');
+        const merchantAccount = [
+            FolhaUtils.pixTlv('00', 'br.gov.bcb.pix'),
+            FolhaUtils.pixTlv('01', pixKey)
+        ].join('');
+        const additionalData = FolhaUtils.pixTlv('05', txId);
+        const fields = [
+            FolhaUtils.pixTlv('00', '01'),
+            FolhaUtils.pixTlv('01', '11'),
+            FolhaUtils.pixTlv('26', merchantAccount),
+            FolhaUtils.pixTlv('52', '0000'),
+            FolhaUtils.pixTlv('53', '986')
+        ];
+        if (amount) fields.push(FolhaUtils.pixTlv('54', amount));
+        fields.push(
+            FolhaUtils.pixTlv('58', 'BR'),
+            FolhaUtils.pixTlv('59', favorecido),
+            FolhaUtils.pixTlv('60', cidade),
+            FolhaUtils.pixTlv('62', additionalData)
+        );
+        const payloadSemCrc = `${fields.join('')}6304`;
+        return `${payloadSemCrc}${FolhaUtils.crc16CcittFalse(payloadSemCrc)}`;
+    }
+
+    static getPixDisplayKey(data = {}) {
+        const pixKey = FolhaUtils.normalizePixKeyForBrCode(
+            data.pix,
+            data.pixTipo || data.tipoPix || data.tipoChavePix
+        );
+        return pixKey || String((data && data.pix) || '').trim();
+    }
+
+    static registerPixQrCodeData(ref, data) {
+        const store = FolhaUtils.getPixQrCodeStore();
+        const key = String(ref || `pix_${++store.seq}`);
+        const funcionarioNome = String((data && (data.funcionarioNome || data.nomeFuncionario || data.nome)) || '').trim();
+        const favorecido = FolhaUtils.resolvePixFavorecido({
+            favorecidoPix: data && data.favorecido,
+            nomeFavorecidoPix: data && data.nomeFavorecidoPix,
+            nome: funcionarioNome,
+            beneficiario: data && data.beneficiario
+        }, funcionarioNome);
+        store.items[key] = {
+            pix: String((data && data.pix) || '').trim(),
+            pixTipo: FolhaUtils.normalizePixKeyType((data && (data.pixTipo || data.tipoPix || data.tipoChavePix)) || ''),
+            funcionarioId: String((data && (data.funcionarioId || data.funcId || data.idFuncionario)) || '').trim(),
+            funcionarioNome,
+            favorecido,
+            banco: String((data && data.banco) || '').trim(),
+            liquido: Number((data && data.liquido) || 0),
+            liquidoFormatado: String((data && data.liquidoFormatado) || '').trim(),
+            valorPago: Number((data && data.valorPago) || 0),
+            valorPagoFormatado: String((data && data.valorPagoFormatado) || '').trim(),
+            pagamentoQuitado: Boolean(data && data.pagamentoQuitado),
+            cidade: String((data && data.cidade) || '').trim(),
+            txid: FolhaUtils.getPixTxId((data && (data.txid || data.txId)) || '***')
+        };
+        return key;
+    }
+
+    static findLancamentoById(ref) {
+        const id = String(ref || '').trim();
+        if (!id) return null;
+        const pools = [];
+        try { if (window.folhaLancamentos && Array.isArray(window.folhaLancamentos.lancamentos)) pools.push(window.folhaLancamentos.lancamentos); } catch {}
+        try { if (window.folhaSystem && Array.isArray(window.folhaSystem.folhas)) pools.push(window.folhaSystem.folhas); } catch {}
+        try { if (window.folhaMain && Array.isArray(window.folhaMain.folhas)) pools.push(window.folhaMain.folhas); } catch {}
+        try { if (Array.isArray(window.pendingFolhasData)) pools.push(window.pendingFolhasData); } catch {}
+        for (const pool of pools) {
+            const found = pool.find(item => item && String(item.id || item.key || item.$key || item.recordId || '') === id);
+            if (found) return found;
+        }
+        return null;
+    }
+
+    static resolveFuncionarioCadastro(funcionario) {
+        const base = (funcionario && typeof funcionario === 'object') ? funcionario : {};
+        const funcId = String(base.id || base.funcionarioId || base.key || base.$key || '').trim();
+        const nomeNorm = String(base.nome || '').toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const pools = [];
+        try { if (window.folhaSystem && Array.isArray(window.folhaSystem.funcionarios)) pools.push(window.folhaSystem.funcionarios); } catch {}
+        try { if (window.folhaFuncionarios && Array.isArray(window.folhaFuncionarios.funcionarios)) pools.push(window.folhaFuncionarios.funcionarios); } catch {}
+        for (const pool of pools) {
+            const found = pool.find(item => {
+                if (!item) return false;
+                if (funcId && String(item.id || item.funcionarioId || item.key || item.$key || '') === funcId) return true;
+                const itemNome = String(item.nome || '').toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                return !!nomeNorm && itemNome === nomeNorm;
+            });
+            if (found) return found;
+        }
+        return {};
+    }
+
+    static resolvePixQrCodeData(ref) {
+        const key = String(ref || '').trim();
+        const store = FolhaUtils.getPixQrCodeStore();
+        if (key && store.items[key]) return store.items[key];
+        const lancamento = FolhaUtils.findLancamentoById(key);
+        if (!lancamento || !lancamento.funcionario) return null;
+        const funcionarioCadastro = FolhaUtils.resolveFuncionarioCadastro(lancamento.funcionario);
+        const funcionario = { ...funcionarioCadastro, ...(lancamento.funcionario || {}) };
+        const liquido = FolhaUtils.calcularValorPixLancamento ? FolhaUtils.calcularValorPixLancamento(lancamento) : (FolhaUtils.calcularSaldoLiquidoEmAberto ? FolhaUtils.calcularSaldoLiquidoEmAberto(lancamento) : 0);
+        const valorPago = FolhaUtils.calcularValorPagoLancamento ? FolhaUtils.calcularValorPagoLancamento(lancamento) : 0;
+        return {
+            pix: String(funcionario.pix || '').trim(),
+            pixTipo: FolhaUtils.normalizePixKeyType(funcionario.pixTipo || funcionario.tipoPix || funcionario.tipoChavePix),
+            funcionarioId: String(funcionario.id || lancamento.funcionarioId || lancamento.idFuncionario || lancamento.func_id || '').trim(),
+            favorecido: FolhaUtils.resolvePixFavorecido(funcionario, funcionario.nome),
+            banco: String(funcionario.banco || '').trim(),
+            liquido,
+            liquidoFormatado: FolhaUtils.formatarMoeda(liquido),
+            valorPago,
+            valorPagoFormatado: FolhaUtils.formatarMoeda(valorPago),
+            pagamentoQuitado: FolhaUtils.isPixLancamentoQuitado ? FolhaUtils.isPixLancamentoQuitado(lancamento) : !FolhaUtils.lancamentoContaNoResumo(lancamento),
+            cidade: FolhaUtils.getPixMerchantCity(funcionario),
+            txid: '***'
+        };
+    }
+
+    static formatarFormaPagamentoLancamento(funcionario, opcoes = {}) {
+        if (!funcionario || typeof funcionario !== 'object') return '-';
+        const forma = String(funcionario.formaPagamento || '').trim();
+        if (forma !== 'PIX') return FolhaUtils.formatarFormaPagamentoDetalhada(funcionario);
+        const pix = String(funcionario.pix || '').trim();
+        if (!pix) return 'PIX';
+        const favorecido = FolhaUtils.resolvePixFavorecido(funcionario, opcoes.nomeFuncionario);
+        const pixTipo = FolhaUtils.normalizePixKeyType(funcionario.pixTipo || funcionario.tipoPix || funcionario.tipoChavePix);
+        const banco = String(funcionario.banco || '').trim();
+        const liquido = Number((opcoes.saldoAberto ?? opcoes.liquido) || 0);
+        const valorPago = Number(opcoes.valorPago || 0);
+        const liquidoFormatado = opcoes.liquidoFormatado || FolhaUtils.formatarMoeda(Number.isFinite(liquido) ? liquido : 0);
+        const valorPagoFormatado = opcoes.valorPagoFormatado || FolhaUtils.formatarMoeda(Number.isFinite(valorPago) ? valorPago : 0);
+        const pagamentoQuitado = Boolean(opcoes.pagamentoQuitado || (Number.isFinite(liquido) && liquido <= 0 && valorPago > 0));
+        const ref = FolhaUtils.registerPixQrCodeData(opcoes.id || funcionario.id, {
+            pix,
+            pixTipo,
+            funcionarioId: String(funcionario.id || opcoes.funcionarioId || '').trim(),
+            favorecido,
+            funcionarioNome: String(opcoes.nomeFuncionario || funcionario.nome || '').trim(),
+            banco,
+            liquido: Number.isFinite(liquido) ? liquido : 0,
+            liquidoFormatado,
+            valorPago: Number.isFinite(valorPago) ? valorPago : 0,
+            valorPagoFormatado,
+            pagamentoQuitado,
+            cidade: FolhaUtils.getPixMerchantCity(funcionario),
+            txid: '***'
+        });
+        const refAttr = FolhaUtils.escapeHtml(ref);
+        const clickArg = FolhaUtils.escapeHtml(JSON.stringify(ref));
+        return `
+            <button type="button" class="pix-qrcode-button" data-folha-id="${refAttr}" onclick="FolhaUtils.openPixQrCode(${clickArg})" title="Ver Qrcode">
+                <i class="fas fa-qrcode"></i>
+                <span>Ver Qrcode</span>
+            </button>
+        `;
+    }
+
+    static openPixQrCode(ref) {
+        const data = FolhaUtils.resolvePixQrCodeData(ref);
+        const modal = document.getElementById('pixQrCodeModal');
+        const container = document.getElementById('pixQrCodeContainer');
+        const fallback = document.getElementById('pixQrCodeFallback');
+        const favorecidoEl = document.getElementById('pixQrCodeFavorecido');
+        const bancoEl = document.getElementById('pixQrCodeBanco');
+        const chaveEl = document.getElementById('pixQrCodeChave');
+        const editButton = document.getElementById('pixQrCodeEditFuncionario');
+        const liquidoEl = document.getElementById('pixQrCodeLiquido');
+        if (!modal || !container || !fallback || !favorecidoEl || !bancoEl || !chaveEl || !editButton || !liquidoEl) return;
+
+        container.innerHTML = '';
+        fallback.style.display = 'none';
+        fallback.textContent = '';
+        modal.dataset.folhaId = String(ref || '');
+        const funcionarioId = String((data && data.funcionarioId) || '').trim();
+        const favorecido = FolhaUtils.resolvePixFavorecido(data, data && (data.funcionarioNome || data.nomeFuncionario || data.nome));
+        favorecidoEl.textContent = `Favorecido: ${favorecido || 'Não informado'}`;
+        bancoEl.textContent = `Banco: ${(data && data.banco) || 'Não informado'}`;
+        chaveEl.textContent = `Chave Pix: ${data ? (FolhaUtils.getPixDisplayKey(data) || 'Não informada') : 'Não informada'}`;
+        editButton.dataset.funcionarioId = funcionarioId;
+        editButton.style.display = funcionarioId ? 'inline-flex' : 'none';
+        liquidoEl.textContent = `Valor líquido: ${(data && data.liquidoFormatado) || FolhaUtils.formatarMoeda(0)}`;
+        const liquidoNumero = Number((data && data.liquido) || 0);
+        const valorPagoNumero = Number((data && data.valorPago) || 0);
+        const pagamentoQuitado = Boolean(data && data.pagamentoQuitado) || (liquidoNumero <= 0 && valorPagoNumero > 0);
+
+        if (data && data.pix && (pagamentoQuitado || liquidoNumero <= 0)) {
+            const valorPagoTexto = valorPagoNumero > 0
+                ? ` Valor pago: ${(data && data.valorPagoFormatado) || FolhaUtils.formatarMoeda(valorPagoNumero)}.`
+                : '';
+            fallback.textContent = `Pagamento já quitado. Não há saldo PIX em aberto para gerar QR Code.${valorPagoTexto}`;
+            fallback.style.display = 'block';
+            if (!modal._pixQrCloseBound) {
+                modal.addEventListener('click', (event) => {
+                    if (event.target === modal) FolhaUtils.closePixQrCodeModal();
+                });
+                modal._pixQrCloseBound = true;
+            }
+            modal.style.display = 'block';
+            return;
+        }
+        const pixPayload = data ? FolhaUtils.buildPixBrCode({
+            ...data,
+            ref,
+            id: ref,
+            funcionario: {
+                cidade: data.cidade
+            }
+        }) : '';
+
+        if (!data || !data.pix) {
+            fallback.textContent = 'Chave PIX não informada.';
+            fallback.style.display = 'block';
+        } else if (!pixPayload) {
+            fallback.textContent = 'Não foi possível montar o Pix Copia e Cola.';
+            fallback.style.display = 'block';
+        } else if (window.QRCode) {
+            try {
+                const viewportWidth = Number(window.innerWidth || (document.documentElement && document.documentElement.clientWidth) || 360);
+                const qrSize = Math.max(200, Math.min(240, Math.floor(viewportWidth * 0.64)));
+                const options = {
+                    text: pixPayload,
+                    width: qrSize,
+                    height: qrSize,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff'
+                };
+                if (window.QRCode.CorrectLevel) options.correctLevel = window.QRCode.CorrectLevel.M;
+                new window.QRCode(container, options);
+            } catch (error) {
+                console.error('Erro ao gerar QR Code PIX:', error);
+                fallback.textContent = 'Não foi possível gerar o QR Code.';
+                fallback.style.display = 'block';
+            }
+        } else {
+            fallback.textContent = 'Biblioteca de QR Code não carregada.';
+            fallback.style.display = 'block';
+        }
+
+        if (!modal._pixQrCloseBound) {
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) FolhaUtils.closePixQrCodeModal();
+            });
+            modal._pixQrCloseBound = true;
+        }
+        modal.style.display = 'block';
+    }
+
+    static openPixFuncionarioEditFromQrCode() {
+        const modal = document.getElementById('pixQrCodeModal');
+        const ref = modal && modal.dataset ? modal.dataset.folhaId : '';
+        const data = FolhaUtils.resolvePixQrCodeData(ref);
+        const button = document.getElementById('pixQrCodeEditFuncionario');
+        const funcionarioId = String(
+            (button && button.dataset && button.dataset.funcionarioId) ||
+            (data && data.funcionarioId) ||
+            ''
+        ).trim();
+        if (!funcionarioId) {
+            if (FolhaUtils.showToast) FolhaUtils.showToast('Funcionário não identificado para edição do PIX', 'warning');
+            return;
+        }
+
+        FolhaUtils.closePixQrCodeModal();
+        setTimeout(() => {
+            if (window.folhaFuncionarios && typeof window.folhaFuncionarios.openEditFuncionarioModal === 'function') {
+                window.folhaFuncionarios.openEditFuncionarioModal(funcionarioId, { focusField: 'funcionarioPix' });
+                return;
+            }
+            if (typeof window.editFuncionario === 'function') {
+                window.editFuncionario(funcionarioId);
+                setTimeout(() => {
+                    const pixField = document.getElementById('funcionarioPix');
+                    if (pixField) {
+                        pixField.focus();
+                        if (typeof pixField.select === 'function') pixField.select();
+                    }
+                }, 350);
+                return;
+            }
+            if (FolhaUtils.showToast) FolhaUtils.showToast('Cadastro de funcionários ainda não carregado', 'warning');
+        }, 80);
+    }
+
+    static closePixQrCodeModal() {
+        const modal = document.getElementById('pixQrCodeModal');
         if (modal) modal.style.display = 'none';
     }
 
@@ -999,7 +1955,7 @@ class FolhaUtils {
             irrf = 0;
         }
         
-        const vales = Number(folha.vales || c.vales || calc.vales || 0);
+        const vales = Number(FolhaUtils.calcularTotalVales ? FolhaUtils.calcularTotalVales(folha) : (folha.vales || c.vales || calc.vales || 0));
         const outrosDescontos = Number(folha.outrosDescontos || c.outrosDescontos || calc.outrosDescontos || 0);
         
         let descontoFaltas = 0;
@@ -1544,7 +2500,7 @@ class FolhaUtils {
                     adicionalNoturno: Number(folha.adicionalNoturno || 0),
                     insalubridade: folha.insalubridade ?? null,
                     faltas: Number(folha.faltas || 0),
-                    vales: Number(folha.vales || 0),
+                    vales: Number(FolhaUtils.calcularTotalVales ? FolhaUtils.calcularTotalVales(folha) : (folha.vales || 0)),
                     outrosDescontos: Number(folha.outrosDescontos || 0),
                     dependentes: Number(folha.dependentes || folha.quantidadeFilhos || 0),
                     tipoFolha: String(folha.tipo || folha.tipoPagamento || 'mes'),
@@ -1643,6 +2599,7 @@ class FolhaUtils {
             return;
         }
         window.__renderingFolhasTable = true;
+        FolhaUtils.ensureFolhaMainSectionsVisible();
         const tbody = document.getElementById('folhasTableBody');
         if (!tbody) {
             console.warn('❌ Elemento folhasTableBody não encontrado');
@@ -1859,7 +2816,7 @@ class FolhaUtils {
                     const totalQuinzena = calcularSum(lancamentosOrdenados, l => (window.FolhaUtils && window.FolhaUtils.calcularValorQuinzena) ? window.FolhaUtils.calcularValorQuinzena(l) : 0);
                     const totalAcrescimos = calcularSum(lancamentosOrdenados, l => (window.FolhaUtils && window.FolhaUtils.calcularAcrescimosDisplay) ? window.FolhaUtils.calcularAcrescimosDisplay(l) : 0);
                     const totalDescontos = calcularSum(lancamentosOrdenados, l => (window.FolhaUtils && window.FolhaUtils.calcularDescontosDisplay) ? window.FolhaUtils.calcularDescontosDisplay(l) : 0);
-                    const totalLiquido = calcularSum(lancamentosOrdenados, l => (window.FolhaUtils && window.FolhaUtils.calcularSalarioLiquidoDisplay) ? window.FolhaUtils.calcularSalarioLiquidoDisplay(l) : 0);
+                    const totalLiquido = calcularSum(lancamentosOrdenados, l => (window.FolhaUtils && window.FolhaUtils.calcularSaldoLiquidoEmAberto) ? window.FolhaUtils.calcularSaldoLiquidoEmAberto(l) : ((window.FolhaUtils && window.FolhaUtils.calcularSalarioLiquidoDisplay) ? window.FolhaUtils.calcularSalarioLiquidoDisplay(l) : 0));
                     const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = window.FolhaUtils.formatarMoeda ? window.FolhaUtils.formatarMoeda(val) : `R$ ${Number(val).toFixed(2)}`; };
                     setText('totalBruto', totalBruto);
                     setText('totalQuinzena', totalQuinzena);
@@ -1896,13 +2853,16 @@ class FolhaUtils {
         let cargoFuncionario = (lancamento.funcionario && lancamento.funcionario.cargo) || '';
         let formaPagamentoFuncionario = (lancamento.funcionario && lancamento.funcionario.formaPagamento) || '';
         let pixFuncionario = (lancamento.funcionario && lancamento.funcionario.pix) || '';
+        let pixTipoFuncionario = (lancamento.funcionario && (lancamento.funcionario.pixTipo || lancamento.funcionario.tipoPix || lancamento.funcionario.tipoChavePix)) || '';
+        let favorecidoPixFuncionario = (lancamento.funcionario && (lancamento.funcionario.favorecidoPix || lancamento.funcionario.nomeFavorecidoPix)) || '';
         let beneficiarioFuncionario = (lancamento.funcionario && lancamento.funcionario.beneficiario) || '';
         let bancoFuncionario = (lancamento.funcionario && lancamento.funcionario.banco) || '';
         let agenciaFuncionario = (lancamento.funcionario && lancamento.funcionario.agencia) || '';
         let contaFuncionario = (lancamento.funcionario && lancamento.funcionario.conta) || '';
         const funcId = (lancamento.funcionario && lancamento.funcionario.id) || lancamento.funcionarioId || lancamento.idFuncionario || lancamento.func_id || '';
         const semDetalhePagamento = !pixFuncionario && !beneficiarioFuncionario && !bancoFuncionario && !agenciaFuncionario && !contaFuncionario;
-        if ((!nomeFuncionario || !cargoFuncionario || !formaPagamentoFuncionario || semDetalhePagamento)) {
+        const precisaDetalhePix = String(formaPagamentoFuncionario || '').trim() === 'PIX' && (!favorecidoPixFuncionario || !bancoFuncionario || !pixTipoFuncionario);
+        if ((!nomeFuncionario || !cargoFuncionario || !formaPagamentoFuncionario || semDetalhePagamento || precisaDetalhePix)) {
             // Primeiro tentar na lista do sistema (podendo conter apenas ativos)
             if (window.folhaSystem && Array.isArray(window.folhaSystem.funcionarios)) {
                 const f = window.folhaSystem.funcionarios.find(ff => ff && (String(ff.id) === String(funcId)));
@@ -1911,6 +2871,8 @@ class FolhaUtils {
                     cargoFuncionario = cargoFuncionario || f.cargo || '';
                     formaPagamentoFuncionario = formaPagamentoFuncionario || f.formaPagamento || '';
                     pixFuncionario = pixFuncionario || f.pix || '';
+                    pixTipoFuncionario = pixTipoFuncionario || f.pixTipo || f.tipoPix || f.tipoChavePix || '';
+                    favorecidoPixFuncionario = favorecidoPixFuncionario || f.favorecidoPix || f.nomeFavorecidoPix || '';
                     beneficiarioFuncionario = beneficiarioFuncionario || f.beneficiario || '';
                     bancoFuncionario = bancoFuncionario || f.banco || '';
                     agenciaFuncionario = agenciaFuncionario || f.agencia || '';
@@ -1918,13 +2880,15 @@ class FolhaUtils {
                 }
             }
             // Fallback: usar lista completa do módulo de funcionários (ativos + inativos)
-            if ((!nomeFuncionario || !cargoFuncionario) && window.folhaFuncionarios && Array.isArray(window.folhaFuncionarios.funcionarios)) {
+            if ((!nomeFuncionario || !cargoFuncionario || !formaPagamentoFuncionario || semDetalhePagamento || precisaDetalhePix) && window.folhaFuncionarios && Array.isArray(window.folhaFuncionarios.funcionarios)) {
                 const f2 = window.folhaFuncionarios.funcionarios.find(ff => ff && (String(ff.id) === String(funcId)));
                 if (f2) {
                     nomeFuncionario = nomeFuncionario || f2.nome || '';
                     cargoFuncionario = cargoFuncionario || f2.cargo || '';
                     formaPagamentoFuncionario = formaPagamentoFuncionario || f2.formaPagamento || '';
                     pixFuncionario = pixFuncionario || f2.pix || '';
+                    pixTipoFuncionario = pixTipoFuncionario || f2.pixTipo || f2.tipoPix || f2.tipoChavePix || '';
+                    favorecidoPixFuncionario = favorecidoPixFuncionario || f2.favorecidoPix || f2.nomeFavorecidoPix || '';
                     beneficiarioFuncionario = beneficiarioFuncionario || f2.beneficiario || '';
                     bancoFuncionario = bancoFuncionario || f2.banco || '';
                     agenciaFuncionario = agenciaFuncionario || f2.agencia || '';
@@ -1994,48 +2958,67 @@ class FolhaUtils {
         const descontosTotalAttr = (typeof FolhaUtils.calcularDescontosDisplay === 'function') 
             ? FolhaUtils.calcularDescontosDisplay(lancamento) 
             : 0;
+        const salarioLiquidoDisplay = FolhaUtils.calcularSalarioLiquidoDisplay(lancamento);
+        const saldoLiquidoAberto = FolhaUtils.calcularSaldoLiquidoEmAberto(lancamento);
+        const valorPagoLancamento = FolhaUtils.calcularValorPagoLancamento(lancamento);
+        const valorPixLancamento = FolhaUtils.calcularValorPixLancamento(lancamento);
+        const pixQuitado = FolhaUtils.isPixLancamentoQuitado(lancamento);
+        const liquidoTabelaHtml = FolhaUtils.formatarLiquidoLancamentoTabela(lancamento, {
+            valorHistorico: salarioLiquidoDisplay,
+            saldoAberto: saldoLiquidoAberto,
+            valorPago: valorPagoLancamento
+        });
+        const formaPagamentoHtml = FolhaUtils.formatarFormaPagamentoLancamento({
+            id: funcId,
+            nome: nomeFuncionario,
+            formaPagamento: formaPagamentoFuncionario,
+            pix: pixFuncionario,
+            pixTipo: pixTipoFuncionario,
+            favorecidoPix: favorecidoPixFuncionario,
+            beneficiario: beneficiarioFuncionario,
+            banco: bancoFuncionario,
+            agencia: agenciaFuncionario,
+            conta: contaFuncionario
+        }, {
+            id,
+            nomeFuncionario,
+            liquido: valorPixLancamento,
+            liquidoFormatado: FolhaUtils.formatarMoeda(valorPixLancamento),
+            valorPago: valorPagoLancamento,
+            valorPagoFormatado: FolhaUtils.formatarMoeda(valorPagoLancamento),
+            pagamentoQuitado: pixQuitado
+        });
+        const isMesFechadoPago = FolhaUtils.isLancamentoMesFechadoPago(lancamento, tipoPagamento, statusNorm);
+        const acoesLancamentoHtml = FolhaUtils.renderizarAcoesLancamento(lancamento, botoesAcao, {
+            tipoPagamento,
+            statusNorm
+        });
         return `
             <tr data-id="${id}" ${funcionarioInativo ? 'class="funcionario-inativo-debug"' : ''} 
                 class="folha-row ${lancamento.status === 'mes_fechado' ? 'folha-fechada' : ''}" 
                 data-descontos-total="${descontosTotalAttr}">
-                <td>
+                <td data-label="Funcionário">
                     <strong>${nomeFuncionario || 'N/A'}</strong>
                     <div style="font-size: 11px; color: #666;">
                         ${cargoFuncionario || ''}
                     </div>
                 </td>
-                <td style="font-size: 12px;">${FolhaUtils.formatarFormaPagamentoDetalhada({
-                    formaPagamento: formaPagamentoFuncionario,
-                    pix: pixFuncionario,
-                    banco: bancoFuncionario,
-                    agencia: agenciaFuncionario,
-                    conta: contaFuncionario,
-                    beneficiario: beneficiarioFuncionario
-                })}</td>
-                <td>${FolhaUtils.formatarMesAno(lancamento.mesAno)}</td>
-                <td>
+                <td data-label="Forma Pgto." style="font-size: 12px;">${formaPagamentoHtml}</td>
+                <td data-label="Mês/Ano">${FolhaUtils.formatarMesAno(lancamento.mesAno)}</td>
+                <td data-label="Tipo">
                     <span class="badge-status" style="background-color: ${tipoPagamento === 'quinzena' ? '#17a2b8' : '#28a745'}">
                         ${tipoLabel}
                     </span>
                 </td>
-                <td>${percentual}</td>
-                <td>${FolhaUtils.formatarMoeda(FolhaUtils.getSalarioBaseDisplay ? FolhaUtils.getSalarioBaseDisplay(lancamento) : (calculos.salarioBase || 0))}</td>
-                <td>${FolhaUtils.formatarMoeda(FolhaUtils.calcularValorQuinzena ? FolhaUtils.calcularValorQuinzena(lancamento) : 0)}</td>
-                <td>${FolhaUtils.formatarMoeda(FolhaUtils.calcularAcrescimosDisplay ? FolhaUtils.calcularAcrescimosDisplay(lancamento) : 0)}</td>
-                <td>${FolhaUtils.formatarMoeda(FolhaUtils.calcularDescontosDisplay(lancamento))}</td>
-                <td>${FolhaUtils.formatarMoeda(lancamento.vales || 0)}</td>
-                <td class="valor-destaque">${FolhaUtils.formatarMoeda(FolhaUtils.calcularSalarioLiquidoDisplay(lancamento))}</td>
-                <td class="actions-cell">
-                    <button class="action-button btn-editar edit-button" title="Editar" data-folha-id="${id}" onclick="__onEditFolhaButtonClick('${id}')">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="action-button print-button" title="Imprimir" data-folha-id="${id}" onclick="printFolha('${id}')">
-                        <i class="fas fa-print"></i>
-                    </button>
-                    ${botoesAcao}
-                    <button class="action-button btn-excluir delete-button" title="Excluir" data-folha-id="${id}" onclick="deleteFolha('${id}')">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                <td data-label="%">${percentual}</td>
+                <td data-label="Salário Base">${FolhaUtils.formatarMoeda(FolhaUtils.getSalarioBaseDisplay ? FolhaUtils.getSalarioBaseDisplay(lancamento) : (calculos.salarioBase || 0))}</td>
+                <td data-label="1ª Quinzena">${FolhaUtils.formatarMoeda(FolhaUtils.calcularValorQuinzena ? FolhaUtils.calcularValorQuinzena(lancamento) : 0)}</td>
+                <td data-label="Acréscimos">${FolhaUtils.formatarMoeda(FolhaUtils.calcularAcrescimosDisplay ? FolhaUtils.calcularAcrescimosDisplay(lancamento) : 0)}</td>
+                <td data-label="Descontos">${FolhaUtils.formatarMoeda(FolhaUtils.calcularDescontosDisplay(lancamento))}</td>
+                <td data-label="Total Vales">${FolhaUtils.formatarMoeda(FolhaUtils.calcularTotalVales ? FolhaUtils.calcularTotalVales(lancamento) : (lancamento.vales || 0))}</td>
+                <td data-label="Líquido" class="valor-destaque liquido-cell">${liquidoTabelaHtml}</td>
+                <td data-label="Ações" class="actions-cell${isMesFechadoPago ? ' paid-actions-cell' : ''}">
+                    ${acoesLancamentoHtml}
                 </td>
             </tr>
         `;
@@ -2459,6 +3442,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         try { window.FolhaUtils.applyFolhasColumnsConfig(); } catch {}
         try { window.FolhaUtils.setupFolhasTableSorting(); } catch {}
+        try { window.FolhaUtils.setupAcoesPrincipaisToggle(); } catch {}
         
         // ✅ CRIAR INSTÂNCIA APENAS SE NECESSÁRIO
         if (!window.folhaUtilsInstance) {

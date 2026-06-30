@@ -170,7 +170,7 @@ class PushService {
 
             const defaultOptions = {
                 body: '',
-                icon: '/icons/icon-192x192.png',
+                icon: '/assets/icons/icon-192x192.png',
                 badge: '/icons/badge-72x72.png',
                 image: null,
                 tag: 'sisweb-notification',
@@ -682,4 +682,4 @@ export const {
     isEnabled,
     getStatus,
     getCurrentToken
-} = pushService; 
+} = pushService;

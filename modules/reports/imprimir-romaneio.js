@@ -39,7 +39,7 @@ window.ImprimirRomaneio = (function() {
             if (romaneio && typeof romaneio === 'object') {
                 const direta = romaneio.companyId || romaneio.empresaId || romaneio.tenantId || romaneio.company || romaneio.empresa;
                 if (typeof direta === 'object' && direta) {
-                    const idObj = direta.id || direta.companyId || direta.companyID || direta.tenantId || direta.slug;
+                    const idObj = direta.companyId || direta.companyID || direta.tenantId || direta.id;
                     if (isLikelyCompanyId(idObj)) return String(idObj);
                 } else if (direta) {
                     if (isLikelyCompanyId(direta)) return String(direta);
@@ -61,7 +61,7 @@ window.ImprimirRomaneio = (function() {
             if (window.appTenantId) return String(window.appTenantId);
             if (window.companyInfo) {
                 const raw = window.companyInfo;
-                const id = raw.id || raw.companyId || raw.companyID || raw.tenantId || raw.slug;
+                const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                 if (isLikelyCompanyId(id)) return String(id);
             }
             if (window.currentUser) {
@@ -72,7 +72,7 @@ window.ImprimirRomaneio = (function() {
             const stored = localStorage.getItem('company_info');
             if (stored) {
                 const obj = JSON.parse(stored);
-                const id = obj && (obj.id || obj.companyId || obj.companyID || obj.tenantId || obj.slug);
+                const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                 if (isLikelyCompanyId(id)) return String(id);
             }
         } catch (_) {}
@@ -83,7 +83,7 @@ window.ImprimirRomaneio = (function() {
         const src = (company && typeof company === 'object') ? company : {};
         const addressParts = [src.endereco, src.logradouro, src.numero, src.bairro].filter(Boolean).join(', ');
         return {
-            id: src.id || src.companyId || src.companyID || src.tenantId || src.slug || '',
+            id: src.companyId || src.companyID || src.tenantId || src.id || '',
             name: src.name || src.nome || src.razaoSocial || src.fantasia || src.companyName || src.empresaNome || '',
             cnpj: src.cnpj || src.cnpjCpf || src.cpfCnpj || src.documento || src.document || '',
             address: src.address || src.endereco || addressParts || src.companyAddress || src.empresaEndereco || '',
@@ -107,16 +107,29 @@ window.ImprimirRomaneio = (function() {
         return key;
     }
 
+    async function ensurePrintColumnConfig(moduleKey) {
+        try {
+            if (window.RomaneioPrintConfig && typeof window.RomaneioPrintConfig.ensureLoaded === 'function') {
+                await window.RomaneioPrintConfig.ensureLoaded(moduleKey);
+            }
+        } catch (error) {
+            console.warn(`⚠️ Configuração de impressão ${moduleKey} não carregada; usando padrão.`, error);
+        }
+    }
+
     /**
      * ✅ FUNÇÃO PRINCIPAL: Imprimir Romaneio
      */
     async function imprimirRomaneio(romaneioId, tipo = TIPOS_IMPRESSAO.COMPLETO) {
+        tipo = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizePrintMode === 'function'
+            ? window.RomaneioDataUtils.normalizePrintMode(tipo)
+            : String(tipo || TIPOS_IMPRESSAO.COMPLETO).replace(/-/g, '_').toLowerCase();
         console.log(`🖨️ Iniciando impressão do romaneio ${romaneioId} - Tipo: ${tipo}`);
         
         try {
             // Carregar dados do romaneio
             const romaneio = await carregarDadosRomaneio(romaneioId);
-            
+
             if (!romaneio) {
                 mostrarErro('Romaneio não encontrado para impressão');
                 return false;
@@ -126,12 +139,14 @@ window.ImprimirRomaneio = (function() {
             if (!validarDadosImpressao(romaneio)) {
                 return false;
             }
+
+            await ensurePrintColumnConfig('TL');
             
             // Gerar HTML do relatório
             const htmlRelatorio = await gerarHtmlRelatorio(romaneio, tipo);
             
             // Abrir janela de impressão
-            abrirJanelaImpressao(htmlRelatorio, romaneio.id);
+            abrirJanelaImpressao(htmlRelatorio, romaneio.id, 'TL');
             
             console.log('✅ Relatório gerado e enviado para impressão');
             return true;
@@ -149,6 +164,9 @@ window.ImprimirRomaneio = (function() {
      */
     async function imprimirRomaneioTora(romaneioId, tipo = TIPOS_IMPRESSAO.COMPLETO) {
         try {
+            tipo = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizePrintMode === 'function'
+                ? window.RomaneioDataUtils.normalizePrintMode(tipo)
+                : String(tipo || TIPOS_IMPRESSAO.COMPLETO).replace(/-/g, '_').toLowerCase();
             console.log(`🪵 Imprimir Romaneio Tora → id=${romaneioId} tipo=${tipo}`);
 
             const romaneio = await carregarDadosRomaneioTora(romaneioId);
@@ -161,8 +179,9 @@ window.ImprimirRomaneio = (function() {
                 return false;
             }
 
+            await ensurePrintColumnConfig('TORA');
             const html = await gerarHtmlRelatorioTora(romaneio, tipo);
-            abrirJanelaImpressao(html, romaneio.id || romaneio.romaneioId || romaneio.key || 'ROMANEIO_TORA');
+            abrirJanelaImpressao(html, romaneio.id || romaneio.romaneioId || romaneio.key || 'ROMANEIO_TORA', 'TORA');
             console.log('✅ Relatório Tora gerado e enviado para impressão');
             return true;
         } catch (error) {
@@ -208,20 +227,10 @@ window.ImprimirRomaneio = (function() {
             }
         }
 
-        // 2) Fallback: cache local
-        if (!dataset) {
-            try {
-                const storageKey = getStorageKey('romaneiosTora');
-                const allowLegacy = storageKey === 'romaneiosTora';
-                const ls = localStorage.getItem(storageKey) || (allowLegacy ? localStorage.getItem('romaneiosTora') : null);
-                dataset = ls ? JSON.parse(ls) : null;
-                console.log('📱 [Tora] Carregado do cache local:', dataset ? (Array.isArray(dataset) ? `${dataset.length} itens` : 'objeto') : 'vazio');
-            } catch (e) {
-                console.warn('⚠️ [Tora] Falha ao carregar do cache local:', e.message);
-            }
-        }
-
         if (!dataset) return null;
+        if (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function') {
+            dataset = window.RomaneioDataUtils.normalizeRomaneioCollection(dataset, { type: 'TORA' });
+        }
 
         // 3) Encontrar romaneio pelo ID em diferentes estruturas
         let romaneio = null;
@@ -330,11 +339,54 @@ window.ImprimirRomaneio = (function() {
         n.volumeLiquido = toFloatSafe(n.volumeLiquido || n.m3 || n.m3_l);
         n.valor = toFloatSafe(n.valor || (n.preco && n.volumeLiquido ? n.preco * n.volumeLiquido : 0));
         n.plaqueta = n.plaqueta || n.tag || '';
+        const geo = window.ToraGeometry && typeof window.ToraGeometry.normalizarCamposGeoItem === 'function'
+            ? window.ToraGeometry.normalizarCamposGeoItem(n)
+            : normalizarCamposGeoToraImpressao(n);
+        n.custodia = geo.custodia || n.custodia || '';
+        n.compGeo = geo.compGeo || 0;
+        n.x1 = geo.x1 || 0;
+        n.x2 = geo.x2 || 0;
+        n.x3 = geo.x3 || 0;
+        n.x4 = geo.x4 || 0;
+        n.volumeGeo = geo.volumeGeo || 0;
         return n;
     }
 
     function toIntSafe(v) { const n = parseInt(v); return isNaN(n) ? 0 : n; }
     function toFloatSafe(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+    function pickToraValue(item, keys) {
+        for (const key of keys) {
+            if (item && item[key] !== undefined && item[key] !== null && item[key] !== '') {
+                return item[key];
+            }
+        }
+        return '';
+    }
+    function normalizarCamposGeoToraImpressao(item) {
+        const compGeo = toFloatSafe(pickToraValue(item, ['compGeo', 'comprimentoGeo', 'comprimentoGeometrico', 'compGeometrico', 'Comp. Geo.', 'Comp Geo']));
+        const x1 = toFloatSafe(pickToraValue(item, ['x1', 'X1']));
+        const x2 = toFloatSafe(pickToraValue(item, ['x2', 'X2']));
+        const x3 = toFloatSafe(pickToraValue(item, ['x3', 'X3']));
+        const x4 = toFloatSafe(pickToraValue(item, ['x4', 'X4']));
+        let volumeGeo = toFloatSafe(pickToraValue(item, ['volumeGeo', 'vGeo', 'volumeGeometrico', 'V. Geo.', 'V Geo']));
+        if (!volumeGeo && compGeo > 0 && x1 > 0 && x2 > 0 && x3 > 0 && x4 > 0) {
+            const l = compGeo / 100;
+            const dBase = ((x1 + x2) / 2) / 100;
+            const dTopo = ((x3 + x4) / 2) / 100;
+            const areaBase = Math.PI * Math.pow(dBase, 2) / 4;
+            const areaTopo = Math.PI * Math.pow(dTopo, 2) / 4;
+            volumeGeo = ((areaBase + areaTopo) / 2) * l;
+        }
+        return {
+            custodia: String(pickToraValue(item, ['custodia', 'custody', 'Custodia', 'Custódia']) || '').trim(),
+            compGeo,
+            x1,
+            x2,
+            x3,
+            x4,
+            volumeGeo
+        };
+    }
 
     /**
      * Validação específica para Tora
@@ -387,52 +439,72 @@ window.ImprimirRomaneio = (function() {
             acc.vb += toFloatSafe(it.volumeBruto);
             acc.vd += toFloatSafe(it.volumeDesconto);
             acc.vl += toFloatSafe(it.volumeLiquido);
+            acc.vg += toFloatSafe(it.volumeGeo);
             acc.valor += toFloatSafe(it.valor);
             if (it.preco) { acc.precos.push(toFloatSafe(it.preco)); }
             return acc;
-        }, { qtd: 0, vb: 0, vd: 0, vl: 0, valor: 0, precos: [] });
+        }, { qtd: 0, vb: 0, vd: 0, vl: 0, vg: 0, valor: 0, precos: [] });
         const precoMedio = totals.precos.length ? (totals.precos.reduce((a,b)=>a+b,0) / totals.precos.length) : 0;
 
         const cabecalhoTabela = `
             <tr>
-                <th>Plaqueta</th>
-                <th style="min-width: 250px;">Espécie</th>
-                <th>Diâmetro</th>
-                <th>Comprimento</th>
-                <th>Oco 1</th>
-                <th>Oco 2</th>
-                <th>M³ Bruto</th>
-                <th>M³ Desc.</th>
-                <th>M³ Líq.</th>
-                ${mostrarPrecoUnitario ? '<th>Preço</th>' : ''}
-                ${mostrarPreco ? '<th>Valor</th>' : ''}
+                <th class="col-plaqueta-tora">Plaqueta</th>
+                <th class="col-custodia-tora">Custódia</th>
+                <th class="col-especie-tora">Espécie</th>
+                <th class="col-rodo-tora">Rodo</th>
+                <th class="col-comprimento-tora">Comp.</th>
+                <th class="col-oco1-tora">Oco 1</th>
+                <th class="col-oco2-tora">Oco 2</th>
+                <th class="col-vb-tora">M³ Bruto</th>
+                <th class="col-vd-tora">M³ Desc.</th>
+                <th class="col-vl-tora">M³ Líq.</th>
+                <th class="col-compgeo-tora">Comp. Geo.</th>
+                <th class="col-x1-tora">X1</th>
+                <th class="col-x2-tora">X2</th>
+                <th class="col-x3-tora">X3</th>
+                <th class="col-x4-tora">X4</th>
+                <th class="col-vgeo-tora">V. Geo.</th>
+                <th class="col-difperc-tora">Dif. %</th>
+                ${mostrarPrecoUnitario ? '<th class="col-unit-tora">Preço</th>' : ''}
+                ${mostrarPreco ? '<th class="col-total-tora">Valor</th>' : ''}
             </tr>
         `;
 
         const linhas = romaneio.items.map((item, idx) => `
             <tr>
-                <td class="text-center">${item.plaqueta || idx + 1}</td>
-                <td class="text-left">${item.especie || ''}</td>
-                <td class="text-center">${formatarNumero(item.diametro, 0)}</td>
-                <td class="text-center">${formatarNumero(item.comprimento, 0)}</td>
-                <td class="text-center">${item.oco1 > 0 ? formatarNumero(item.oco1, 0) : '-'}</td>
-                <td class="text-center">${item.oco2 > 0 ? formatarNumero(item.oco2, 0) : '-'}</td>
-                <td class="text-right">${formatarVolume(item.volumeBruto)}</td>
-                <td class="text-right">${formatarVolume(item.volumeDesconto)}</td>
-                <td class="text-right">${formatarVolume(item.volumeLiquido)}</td>
-                ${mostrarPrecoUnitario ? `<td class="text-right">${formatarMoeda(item.preco)}</td>` : ''}
-                ${mostrarPreco ? `<td class="text-right">${formatarMoeda(item.valor)}</td>` : ''}
+                <td class="text-center col-plaqueta-tora">${item.plaqueta || idx + 1}</td>
+                <td class="text-center col-custodia-tora">${item.custodia || '-'}</td>
+                <td class="text-left col-especie-tora">${item.especie || ''}</td>
+                <td class="text-center col-rodo-tora">${formatarNumero(item.diametro, 0)}</td>
+                <td class="text-center col-comprimento-tora">${formatarNumero(item.comprimento, 0)}</td>
+                <td class="text-center col-oco1-tora">${item.oco1 > 0 ? formatarNumero(item.oco1, 0) : '-'}</td>
+                <td class="text-center col-oco2-tora">${item.oco2 > 0 ? formatarNumero(item.oco2, 0) : '-'}</td>
+                <td class="text-right col-vb-tora">${formatarVolume(item.volumeBruto)}</td>
+                <td class="text-right col-vd-tora">${formatarVolume(item.volumeDesconto)}</td>
+                <td class="text-right col-vl-tora">${formatarVolume(item.volumeLiquido)}</td>
+                <td class="text-center col-compgeo-tora">${item.compGeo > 0 ? formatarNumero(item.compGeo, 0) : '-'}</td>
+                <td class="text-center col-x1-tora">${item.x1 > 0 ? formatarNumero(item.x1, 0) : '-'}</td>
+                <td class="text-center col-x2-tora">${item.x2 > 0 ? formatarNumero(item.x2, 0) : '-'}</td>
+                <td class="text-center col-x3-tora">${item.x3 > 0 ? formatarNumero(item.x3, 0) : '-'}</td>
+                <td class="text-center col-x4-tora">${item.x4 > 0 ? formatarNumero(item.x4, 0) : '-'}</td>
+                <td class="text-right col-vgeo-tora">${item.volumeGeo > 0 ? formatarVolume(item.volumeGeo) : '-'}</td>
+                <td class="text-right col-difperc-tora">${formatarDiferencaPercentualTora(item.volumeBruto, item.volumeGeo)}</td>
+                ${mostrarPrecoUnitario ? `<td class="text-right col-unit-tora">${formatarMoeda(item.preco)}</td>` : ''}
+                ${mostrarPreco ? `<td class="text-right col-total-tora">${formatarMoeda(item.valor)}</td>` : ''}
             </tr>
         `).join('');
 
         const totaisLinha = `
             <tr class="total-row">
-                <td colspan="6" class="text-right">Total:</td>
-                <td class="text-right">${formatarVolume(totals.vb)}</td>
-                <td class="text-right">${formatarVolume(totals.vd)}</td>
-                <td class="text-right">${formatarVolume(totals.vl)}</td>
-                ${mostrarPrecoUnitario ? `<td class="text-right">${formatarMoeda(precoMedio)}</td>` : ''}
-                ${mostrarPreco ? `<td class="text-right">${formatarMoeda(totals.valor)}</td>` : ''}
+                <td colspan="7" class="text-right tora-total-label">Total:</td>
+                <td class="text-right col-vb-tora">${formatarVolume(totals.vb)}</td>
+                <td class="text-right col-vd-tora">${formatarVolume(totals.vd)}</td>
+                <td class="text-right col-vl-tora">${formatarVolume(totals.vl)}</td>
+                <td colspan="5" class="tora-geo-spacer"></td>
+                <td class="text-right col-vgeo-tora">${totals.vg > 0 ? formatarVolume(totals.vg) : '-'}</td>
+                <td class="text-right col-difperc-tora">${formatarDiferencaPercentualTora(totals.vb, totals.vg)}</td>
+                ${mostrarPrecoUnitario ? `<td class="text-right col-unit-tora">${formatarMoeda(precoMedio)}</td>` : ''}
+                ${mostrarPreco ? `<td class="text-right col-total-tora">${formatarMoeda(totals.valor)}</td>` : ''}
             </tr>
         `;
 
@@ -451,16 +523,16 @@ window.ImprimirRomaneio = (function() {
             if (esp === 'Outros' && toFloatSafe(item.volumeBruto) === 0) return;
 
             if (!resumoEspecies[esp]) {
-                resumoEspecies[esp] = { qtd: 0, vb: 0, vd: 0, vl: 0 };
+                resumoEspecies[esp] = { qtd: 0, vb: 0, vl: 0, vg: 0 };
             }
             resumoEspecies[esp].qtd++;
             resumoEspecies[esp].vb += toFloatSafe(item.volumeBruto);
-            resumoEspecies[esp].vd += toFloatSafe(item.volumeDesconto);
             resumoEspecies[esp].vl += toFloatSafe(item.volumeLiquido);
+            resumoEspecies[esp].vg += toFloatSafe(item.volumeGeo);
         });
 
         // Totais do Resumo
-        let totalResumo = { qtd: 0, vb: 0, vd: 0, vl: 0 };
+        let totalResumo = { qtd: 0, vb: 0, vl: 0, vg: 0 };
         
         // Ordenar espécies alfabeticamente
         const especiesOrdenadas = Object.keys(resumoEspecies).sort((a, b) => a.localeCompare(b));
@@ -469,15 +541,15 @@ window.ImprimirRomaneio = (function() {
             const d = resumoEspecies[esp];
             totalResumo.qtd += d.qtd;
             totalResumo.vb += d.vb;
-            totalResumo.vd += d.vd;
             totalResumo.vl += d.vl;
+            totalResumo.vg += d.vg;
             return `
                 <tr>
                     <td class="text-left">${esp}</td>
                     <td class="text-center">${d.qtd}</td>
-                    <td class="text-right">${formatarVolume(d.vd)}</td>
-                    <td class="text-right">${formatarVolume(d.vb)}</td>
                     <td class="text-right">${formatarVolume(d.vl)}</td>
+                    <td class="text-right">${d.vg > 0 ? formatarVolume(d.vg) : '-'}</td>
+                    <td class="text-right">${formatarDiferencaPercentualTora(d.vb, d.vg)}</td>
                 </tr>
             `;
         }).join('');
@@ -486,9 +558,9 @@ window.ImprimirRomaneio = (function() {
             <tr class="total-row">
                 <td class="text-right"><strong>TOTAIS</strong></td>
                 <td class="text-center"><strong>${totalResumo.qtd}</strong></td>
-                <td class="text-right"><strong>${formatarVolume(totalResumo.vd)}</strong></td>
-                <td class="text-right"><strong>${formatarVolume(totalResumo.vb)}</strong></td>
                 <td class="text-right"><strong>${formatarVolume(totalResumo.vl)}</strong></td>
+                <td class="text-right"><strong>${totalResumo.vg > 0 ? formatarVolume(totalResumo.vg) : '-'}</strong></td>
+                <td class="text-right"><strong>${formatarDiferencaPercentualTora(totalResumo.vb, totalResumo.vg)}</strong></td>
             </tr>
         `;
 
@@ -523,7 +595,7 @@ window.ImprimirRomaneio = (function() {
         }
     </style>
     </head>
-<body data-print-id="${romaneio.id || ''}" data-print-mode="${tipo}" data-row-count="${(romaneio.items || []).length}" data-comp-count="0">
+<body data-print-id="${romaneio.id || ''}" data-print-mode="${tipo}" data-row-count="${(romaneio.items || []).length}" data-comp-count="0" data-tora-geo-print="1">
     <div class="relatorio-container" data-print-layout="auto">
         <div class="header">
             <div class="logo">
@@ -556,7 +628,7 @@ window.ImprimirRomaneio = (function() {
             </div>
         </div>
 
-        <table class="main-table">
+        <table class="main-table tora-main-table">
             <thead>${cabecalhoTabela}</thead>
             <tbody>${linhas}</tbody>
             <tfoot>${totaisLinha}</tfoot>
@@ -595,9 +667,9 @@ window.ImprimirRomaneio = (function() {
                     <tr>
                         <th class="text-left">Espécie</th>
                         <th class="text-center">Quantidade</th>
-                        <th class="text-right">M³ Desc.</th>
-                        <th class="text-right">M³ Bruto</th>
                         <th class="text-right">M³ Líq.</th>
+                        <th class="text-right">V. Geo.</th>
+                        <th class="text-right">Dif. %</th>
                     </tr>
                 </thead>
                 <tbody>${linhasResumo}</tbody>
@@ -669,14 +741,42 @@ window.ImprimirRomaneio = (function() {
             .info-label { font-weight: bold; color: #0d2339; }
             .info-value { border-bottom: 1px dotted #ccc; }
             table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #ccc; padding: 6px; font-size: 12px; }
+            .main-table { table-layout: fixed; }
+            th, td { border: 1px solid #ccc; padding: 4px 3px; font-size: 10px; line-height: 1.18; }
             thead th { background: #eef3f7; color: #0d2339; }
+            .col-especie-tora { width: 16%; }
             .text-right { text-align: right; }
             .text-center { text-align: center; }
             .text-left { text-align: left; }
             .total-row td { font-weight: bold; background: #f9fbfc; }
             .preco-coluna { display: ${tipo === 'sem_preco' ? 'none' : 'table-cell'}; }
             .valor-coluna { display: ${tipo === 'sem_preco' ? 'none' : 'table-cell'}; }
+            @media print {
+                @page { margin: 8mm; }
+                .relatorio-container { width: 100%; }
+                body[data-tora-geo-print="1"] th,
+                body[data-tora-geo-print="1"] td {
+                    font-size: 7.2px !important;
+                    padding: 1.5px 1px !important;
+                    line-height: 1.08 !important;
+                    word-break: break-word !important;
+                }
+                body[data-tora-geo-print="1"] .company-name { font-size: 12px !important; }
+                body[data-tora-geo-print="1"] .company-details,
+                body[data-tora-geo-print="1"] .info-label,
+                body[data-tora-geo-print="1"] .info-value { font-size: 8px !important; line-height: 1.05 !important; }
+                body[data-tora-geo-print="1"] .title { font-size: 13px !important; margin: 4px 0 !important; }
+                body[data-tora-geo-print="1"] .header { margin-bottom: 4px !important; }
+                body[data-tora-geo-print="1"] .logo { width: 72px !important; height: 72px !important; }
+                body[data-tora-geo-print="1"] .logo img { max-height: 68px !important; }
+            }
+            @media print and (orientation: landscape) {
+                body[data-tora-geo-print="1"] th,
+                body[data-tora-geo-print="1"] td {
+                    font-size: 8.2px !important;
+                    padding: 2px 1.5px !important;
+                }
+            }
         `;
     }
 
@@ -701,21 +801,26 @@ window.ImprimirRomaneio = (function() {
         }
 
         try {
-            // Tentar carregar do Firebase primeiro (Fallback)
-            if (!romaneio && window.FirebaseService) {
+            // Tentar carregar do Firebase pelo caminho canonico da empresa
+            if (!romaneio && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+                try {
+                    const result = await window.firebaseService.loadFromFirebase('romaneios/tl');
+                    const data = result && result.success ? result.data : null;
+                    const lista = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function'
+                        ? window.RomaneioDataUtils.normalizeRomaneioCollection(data, { type: 'TL' })
+                        : (Array.isArray(data) ? data : Object.entries(data || {}).map(([key, value]) => ({ id: key, firebaseKey: key, ...(value || {}) })));
+                    romaneio = lista.find(r => [r.id, r.firebaseKey, r.key, r.romaneioId, r.numero, r.numeroRomaneio].filter(Boolean).map(String).includes(String(romaneioId))) || null;
+                } catch (firebaseError) {
+                    console.warn('⚠️ Erro ao carregar do Firebase:', firebaseError);
+                }
+            }
+
+            if (!romaneio && window.FirebaseService && typeof window.FirebaseService.getData === 'function') {
                 try {
                     romaneio = await window.FirebaseService.getData(`romaneios/tl/${romaneioId}`);
                 } catch (firebaseError) {
                     console.warn('⚠️ Erro ao carregar do Firebase:', firebaseError);
                 }
-            }
-            
-            // Fallback para localStorage
-            if (!romaneio) {
-                const storageKey = getStorageKey('romaneios_tl');
-                const allowLegacy = storageKey === 'romaneios_tl';
-                const romaneiosLocal = JSON.parse(localStorage.getItem(storageKey) || (allowLegacy ? localStorage.getItem('romaneios_tl') : null) || '{}');
-                romaneio = romaneiosLocal[romaneioId];
             }
             
             if (romaneio) {
@@ -778,6 +883,8 @@ window.ImprimirRomaneio = (function() {
             nomeCliente: obterNomeClienteRomaneio(romaneio),
             dataReferencia: formatarDataCorrigida(romaneio)
         });
+        const resumoConamaHtml = gerarResumoConama(gruposItens);
+        const resumoConamaRows = (resumoConamaHtml.match(/<tr/g) || []).length;
         
         // Logo carregada com sucesso - removidos logs de debug
         
@@ -792,7 +899,7 @@ window.ImprimirRomaneio = (function() {
         ${gerarEstilosImpressao(tipo)}
     </style>
 </head>
-<body data-print-id="${romaneio.id || ''}" data-print-mode="${tipo}" data-row-count="${(romaneio.items || []).length}" data-comp-count="${MAX_COLUNAS_CL}">
+<body data-print-id="${romaneio.id || ''}" data-print-mode="${tipo}" data-row-count="${(romaneio.items || []).length}" data-comp-count="${MAX_COLUNAS_CL}" data-conama-rows="${resumoConamaRows}">
     <div class="relatorio-container" data-print-layout="auto">
         
         <!-- ✅ PRIMEIRA PÁGINA: Cabeçalho + Tabela (TUDO JUNTO) -->
@@ -841,6 +948,15 @@ window.ImprimirRomaneio = (function() {
             </div>
 
             <!-- ✅ TABELA PRINCIPAL: Sem div wrapper para evitar quebras -->
+            ${tipo === TIPOS_IMPRESSAO.COMPLETO ? `
+            <div class="tl-legend">
+                <strong>Legenda:</strong>
+                <span>ESP = Espessura</span>
+                <span>C1, C2, C3... = Comprimento da peça 1, 2, 3...</span>
+                <span>L1, L2, L3... = Largura da peça 1, 2, 3...</span>
+                <span>Todas as medidas estão em centímetros.</span>
+            </div>
+            ` : ''}
             ${estruturaTabela.html}
         </div>
 
@@ -873,7 +989,7 @@ window.ImprimirRomaneio = (function() {
         <!-- Resumo CONAMA - ÚLTIMA PÁGINA (sozinho) -->
         <div class="resumo-conama">
             <h3 class="resumo-titulo">RESUMO POR CLASSIFICAÇÃO CONAMA</h3>
-            ${gerarResumoConama(gruposItens)}
+            ${resumoConamaHtml}
         </div>
         
         <!-- ✅ BOTÃO DE IMPRESSÃO VISÍVEL -->
@@ -927,9 +1043,9 @@ window.ImprimirRomaneio = (function() {
 
             const hasOverflow = contBody.children.length > 0;
             contWrap.style.display = hasOverflow ? 'block' : 'none';
-            const useBreak = hasOverflow && !isPortrait;
-            contBreak.className = useBreak ? 'page-break' : '';
-            contBreak.style.display = useBreak ? 'block' : 'none';
+            contWrap.classList.toggle('has-continuacao', hasOverflow);
+            contBreak.className = '';
+            contBreak.style.display = 'none';
 
             if (totalRow) {
                 if (hasOverflow) contBody.appendChild(totalRow);
@@ -955,20 +1071,22 @@ window.ImprimirRomaneio = (function() {
                 body.setAttribute('data-tight-landscape', (!isPortrait && compCount >= 18) ? '1' : '0');
                 const compact = (!isPortrait && compCount >= 20) || (isPortrait && ((compCount <= 10) || compCount >= 20));
                 body.setAttribute('data-compact-labels', compact ? '1' : '0');
-                const tailVisible = 6 - (hideUnit ? 1 : 0) - (hideTotal ? 1 : 0);
+                const tailVisible = 7 - (hideUnit ? 1 : 0) - (hideTotal ? 1 : 0);
                 body.setAttribute('data-tail-visible', String(tailVisible));
                 const cl = compCount >= 28 ? 16 : (compCount >= 24 ? 18 : (compCount >= 20 ? 20 : 22));
-                const qtd = compCount >= 24 ? 38 : 44;
-                const ml = compCount >= 24 ? 46 : 54;
-                const vm2 = compCount >= 24 ? 46 : 54;
-                const vm3 = compCount >= 24 ? 46 : 54;
-                const unit = compCount >= 24 ? 52 : 60;
-                const total = compCount >= 24 ? 60 : 70;
+                const qtd = compCount >= 24 ? 34 : 40;
+                const pes = compCount >= 24 ? 42 : 48;
+                const ml = compCount >= 24 ? 42 : 48;
+                const vm3 = compCount >= 24 ? 42 : 48;
+                const vm2 = compCount >= 24 ? 42 : 48;
+                const unit = compCount >= 24 ? 54 : 60;
+                const total = compCount >= 24 ? 58 : 66;
                 body.style.setProperty('--tl-col-cl', cl + 'px');
                 body.style.setProperty('--tl-col-qtd', qtd + 'px');
+                body.style.setProperty('--tl-col-pes', pes + 'px');
                 body.style.setProperty('--tl-col-ml', ml + 'px');
-                body.style.setProperty('--tl-col-vm2', vm2 + 'px');
                 body.style.setProperty('--tl-col-vm3', vm3 + 'px');
+                body.style.setProperty('--tl-col-vm2', vm2 + 'px');
                 body.style.setProperty('--tl-col-unit', unit + 'px');
                 body.style.setProperty('--tl-col-total', total + 'px');
                 reflowFirstPageRowsTL();
@@ -1076,12 +1194,13 @@ window.ImprimirRomaneio = (function() {
                         <tr>
                             <th rowspan="2" class="col-espessura">Espessura</th>
                             <th colspan="${totalColunas}" class="col-cl-group">Comprimentos "C" Largura "L"</th>
-                            <th rowspan="2" class="col-qtd">Qtd. Peças</th>
-                            <th rowspan="2" class="col-ml">Metros Linear</th>
-                            <th rowspan="2" class="col-vm2">Volume (m²)</th>
-                            <th rowspan="2" class="col-vm3">Volume (m³)</th>
-                            <th rowspan="2" class="no-print-unit-price col-unit">Preço Unit.</th>
-                            <th rowspan="2" class="no-print-price col-total">Valor Total</th>
+                            <th rowspan="2" class="col-qtd">Qtd.</th>
+                            <th rowspan="2" class="col-pes">Pés</th>
+                            <th rowspan="2" class="col-vm3">m³</th>
+                            <th rowspan="2" class="col-vm2">m²</th>
+                            <th rowspan="2" class="col-ml">ml</th>
+                            <th rowspan="2" class="no-print-unit-price col-unit">Preço/m³</th>
+                            <th rowspan="2" class="no-print-price col-total">Valor</th>
                         </tr>
                         <tr>
                             ${(() => {
@@ -1164,7 +1283,7 @@ window.ImprimirRomaneio = (function() {
             // Se não houver itens para esta espessura, adicionar uma linha vazia
             if (todosPares.length === 0) {
                 const paresVazios = Array(maxParesPorLinha).fill({ c: "", l: "" });
-                html += gerarLinhaTabela(espessuraValor, paresVazios, "0", "-", "-", "-", 0, "-", maxParesPorLinha, '');
+                html += gerarLinhaTabela(espessuraValor, paresVazios, "0", "-", "-", "-", "-", 0, "-", maxParesPorLinha, '');
                 return;
             }
             
@@ -1241,9 +1360,10 @@ window.ImprimirRomaneio = (function() {
                     espessuraValor,
                     paresDaLinha, 
                     linhaQtdPecas.toString(), // ✅ QTD específica desta linha
-                    linhaMetrosLineares.toFixed(2), // ✅ METROS específicos desta linha
-                    formatarVolumeM2(linhaVolumeM2), // ✅ CORRIGIDO: Volume (m²) com formatação brasileira
-                    linhaVolumeTotal.toFixed(3), // ✅ Volume (m³) específico desta linha
+                    formatarPesVolumeM3(linhaVolumeTotal),
+                    linhaVolumeTotal.toFixed(3).replace('.', ','), // ✅ Volume (m³) específico desta linha
+                    formatarVolumeM2(linhaVolumeM2), // ✅ Volume (m²) com formatação brasileira
+                    linhaMetrosLineares.toFixed(2).replace('.', ','), // ✅ METROS específicos desta linha
                     precoUnitarioLinha, // ✅ PREÇO UNITÁRIO DA LINHA (movido)
                     formatarMoeda(linhaValorTotal), // ✅ VALOR específico desta linha
                     maxParesPorLinha,
@@ -1259,9 +1379,10 @@ window.ImprimirRomaneio = (function() {
                             <td class="col-espessura"><strong>TOTAIS</strong></td>
                             ${Array(totalColunas).fill('<td class="col-cl-empty">-</td>').join('')}
                             <td class="col-qtd"><strong>${totalPecasGeral}</strong></td>
-                            <td class="col-ml"><strong>${totalMetrosLineares.toFixed(2)}</strong></td>
+                            <td class="col-pes"><strong>${formatarPesVolumeM3(totalVolumeGeral)}</strong></td>
+                            <td class="col-vm3"><strong>${totalVolumeGeral.toFixed(3).replace('.', ',')}</strong></td>
                             <td class="col-vm2"><strong>${formatarVolumeM2(totalVolumeM2Geral)}</strong></td>
-                            <td class="col-vm3"><strong>${totalVolumeGeral.toFixed(3)}</strong></td>
+                            <td class="col-ml"><strong>${totalMetrosLineares.toFixed(2).replace('.', ',')}</strong></td>
                             <td class="no-print-unit-price col-unit"><strong>-</strong></td>
                             <td class="no-print-price col-total"><strong>${formatarMoeda(totalValorGeral)}</strong></td>
                         </tr>
@@ -1320,7 +1441,7 @@ window.ImprimirRomaneio = (function() {
     /**
      * Gerar linha da tabela (versão adaptativa) - REORGANIZADA COM VOLUME M² E PREÇO REPOSICIONADO
      */
-    function gerarLinhaTabela(espessura, pares, qtd, metros, volumeM2, volume, precoUnitario, valor, maxPares = 16, corGrupo = '', rowIndex = null) {
+    function gerarLinhaTabela(espessura, pares, qtd, pes, volume, volumeM2, metros, precoUnitario, valor, maxPares = 16, corGrupo = '', rowIndex = null) {
         // ✅ APLICAR CLASSE CSS PARA COR DO GRUPO DE ESPESSURA
         const rowAttr = (rowIndex === null || rowIndex === undefined) ? '' : ` data-row-index="${rowIndex}"`;
         let linha = `<tr class="${corGrupo}"${rowAttr}>`;
@@ -1334,9 +1455,10 @@ window.ImprimirRomaneio = (function() {
         }
         
         linha += `<td class="center col-qtd">${qtd}</td>`;
+        linha += `<td class="center col-pes">${pes}</td>`;
+        linha += `<td class="center col-vm3">${volume}</td>`;
+        linha += `<td class="center col-vm2">${volumeM2}</td>`;
         linha += `<td class="center col-ml">${metros}</td>`;
-        linha += `<td class="center col-vm2">${volumeM2}</td>`; // ✅ NOVA COLUNA: Volume (m²)
-        linha += `<td class="center col-vm3">${volume}</td>`; // Volume (m³)
         linha += `<td class="center no-print-unit-price col-unit">${formatarMoeda(precoUnitario)}</td>`; // ✅ MOVIDO: Preço após Volume (m³)
         linha += `<td class="center no-print-price col-total">${valor}</td>`;
         linha += `</tr>`;
@@ -1460,7 +1582,7 @@ window.ImprimirRomaneio = (function() {
     }
 
     /**
-     * ✅ AGRUPAR POR ESPÉCIE E CONAMA (baseado no original)
+     * Agrupar CONAMA sem misturar especies na mesma linha.
      */
     function agruparPorEspecieEConama(items) {
         const grupos = {};
@@ -1469,24 +1591,29 @@ window.ImprimirRomaneio = (function() {
             const espessura = parseFloat(item.espessura || item[legacyKey]) || 0;
             const largura = parseFloat(item.largura) || 0;
             const categoria = classificarProdutoConama(espessura, largura);
+            const especie = String(item.especie || item.especieNome || 'Não informada').trim() || 'Não informada';
+            const key = `${categoria}||${especie}`;
             
-            if (!grupos[categoria]) {
-                grupos[categoria] = {
+            if (!grupos[key]) {
+                grupos[key] = {
+                    categoria,
+                    especie,
                     volume: 0,
-                    pecas: 0,
-                    especies: new Set()
+                    pecas: 0
                 };
             }
             
             const volume = calcularVolumeItem(item);
             const quantidade = parseInt(item.quantidade) || 1;
             
-            grupos[categoria].volume += volume * quantidade;
-            grupos[categoria].pecas += quantidade;
-            grupos[categoria].especies.add(item.especie || item.especieNome || 'Não informada');
+            grupos[key].volume += volume * quantidade;
+            grupos[key].pecas += quantidade;
         });
         
-        return grupos;
+        return Object.values(grupos).sort((a, b) =>
+            String(a.categoria).localeCompare(String(b.categoria), 'pt-BR') ||
+            String(a.especie).localeCompare(String(b.especie), 'pt-BR')
+        );
     }
 
     /**
@@ -1499,31 +1626,48 @@ window.ImprimirRomaneio = (function() {
             )
         );
         
-        // Calcular volume total para percentuais
-        const volumeTotal = Object.values(resumoConama).reduce((total, categoria) => total + categoria.volume, 0);
+        const volumeTotal = resumoConama.reduce((total, item) => total + item.volume, 0);
+        const totaisCategoria = {};
+        resumoConama.forEach(item => {
+            if (!totaisCategoria[item.categoria]) totaisCategoria[item.categoria] = 0;
+            totaisCategoria[item.categoria] += item.volume;
+        });
         
         let html = `
             <table>
                 <thead>
                     <tr>
                         <th>Categoria CONAMA</th>
+                        <th>Espécie</th>
                         <th class="number">Volume (m³)</th>
                         <th class="text-center">Porcentagem</th>
-                        <th>Espécies</th>
+                        <th>Observação</th>
                     </tr>
                 </thead>
                 <tbody>
         `;
         
         // Gerar linhas da tabela
-        Object.entries(resumoConama).forEach(([categoria, dados]) => {
+        resumoConama.forEach((dados) => {
             const percentual = volumeTotal > 0 ? (dados.volume / volumeTotal * 100) : 0;
             html += `
                 <tr>
-                    <td class="text-left">${categoria}</td>
+                    <td class="text-left">${dados.categoria}</td>
+                    <td class="text-left">${dados.especie}</td>
                     <td class="number">${dados.volume.toFixed(3)}</td>
                     <td class="text-center">${percentual.toFixed(1)}%</td>
-                    <td class="text-left">${Array.from(dados.especies || []).sort().join(', ')}</td>
+                    <td class="text-left">${dados.pecas} peça(s)</td>
+                </tr>
+            `;
+        });
+
+        Object.entries(totaisCategoria).forEach(([categoria, volume]) => {
+            html += `
+                <tr class="subtotal-row">
+                    <td colspan="2"><strong>Total ${categoria}</strong></td>
+                    <td class="number"><strong>${volume.toFixed(3)}</strong></td>
+                    <td class="text-center"><strong>${volumeTotal > 0 ? (volume / volumeTotal * 100).toFixed(1) : '0.0'}%</strong></td>
+                    <td></td>
                 </tr>
             `;
         });
@@ -1531,7 +1675,7 @@ window.ImprimirRomaneio = (function() {
         // Linha de total
         html += `
                     <tr class="total-geral-row">
-                        <td><strong>TOTAL</strong></td>
+                        <td colspan="2"><strong>TOTAL GERAL</strong></td>
                         <td class="number"><strong>${volumeTotal.toFixed(3)}</strong></td>
                         <td class="text-center"><strong>100.0%</strong></td>
                         <td><strong>-</strong></td>
@@ -1586,64 +1730,96 @@ window.ImprimirRomaneio = (function() {
     }
 
     /**
-     * ✅ GERAR RESUMO POR ESPESSURA E ESPÉCIES (baseado no backup original)
+     * Gerar resumo operacional por dimensoes e especies.
      */
     function gerarResumoPorEspessura(items) {
-        // Agrupar por espessura e depois por espécie
-        const agrupamentoPorEspessura = {};
+        const grupos = {};
         
         items.forEach(item => {
             const espessura = parseFloat(item.espessura || item[legacyKey]) || 0;
-            const espessuraStr = espessura.toString();
-            const especie = item.especie || 'Desconhecida';
+            const largura = parseFloat(item.largura) || 0;
+            const comprimento = parseFloat(item.comprimento) || 0;
+            const especie = String(item.especie || item.especieNome || 'Desconhecida').trim() || 'Desconhecida';
             const volume = calcularVolumeItem(item);
             const quantidade = parseInt(item.quantidade) || 1;
             const volumeTotal = volume * quantidade;
-            
-            // Criar grupo para esta espessura se não existir
-            if (!agrupamentoPorEspessura[espessuraStr]) {
-                agrupamentoPorEspessura[espessuraStr] = {};
-            }
-            
-            // Criar subgrupo para esta espécie se não existir
-            if (!agrupamentoPorEspessura[espessuraStr][especie]) {
-                agrupamentoPorEspessura[espessuraStr][especie] = {
+            const metrosLineares = (comprimento / 100) * quantidade;
+            const key = `${especie}||${espessura}||${largura}||${comprimento}`;
+
+            if (!grupos[key]) {
+                grupos[key] = {
+                    especie,
+                    espessura,
+                    largura,
+                    comprimento,
                     volume: 0,
-                    pecas: 0
+                    pecas: 0,
+                    metrosLineares: 0
                 };
             }
             
-            // Somar volumes e peças
-            agrupamentoPorEspessura[espessuraStr][especie].volume += volumeTotal;
-            agrupamentoPorEspessura[espessuraStr][especie].pecas += quantidade;
+            grupos[key].volume += volumeTotal;
+            grupos[key].pecas += quantidade;
+            grupos[key].metrosLineares += metrosLineares;
         });
-        
-        let html = '<div class="resumo-grid">';
-        
-        // Ordenar espessuras (decrescente como no original)
-        const espessurasOrdenadas = Object.keys(agrupamentoPorEspessura).sort((a, b) => 
-            parseFloat(b) - parseFloat(a)
+
+        const rows = Object.values(grupos).sort((a, b) =>
+            String(a.especie).localeCompare(String(b.especie), 'pt-BR') ||
+            a.espessura - b.espessura ||
+            a.largura - b.largura ||
+            a.comprimento - b.comprimento
         );
-        
-        espessurasOrdenadas.forEach(espessura => {
-            const especies = agrupamentoPorEspessura[espessura];
-            
-            Object.entries(especies).forEach(([especie, dados]) => {
-                html += `
-                    <div class="resumo-card">
-                        <div class="resumo-card-header">
-                            ${especie} - ${espessura}cm
-                        </div>
-                        <div class="resumo-card-body">
-                            <p><strong>Volume:</strong> ${dados.volume.toFixed(3)} m³</p>
-                            <p><strong>Peças:</strong> ${dados.pecas}</p>
-                        </div>
-                    </div>
-                `;
-            });
+
+        const total = rows.reduce((acc, row) => {
+            acc.pecas += row.pecas;
+            acc.metrosLineares += row.metrosLineares;
+            acc.volume += row.volume;
+            return acc;
+        }, { pecas: 0, metrosLineares: 0, volume: 0 });
+
+        let html = `
+            <table class="resumo-dimensoes-table">
+                <thead>
+                    <tr>
+                        <th>Espécie</th>
+                        <th>Espessura</th>
+                        <th>Largura</th>
+                        <th>Comprimento</th>
+                        <th>Peças</th>
+                        <th>Metros Lineares</th>
+                        <th>Volume</th>
+                        <th>Observação/Pacote</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        rows.forEach(row => {
+            html += `
+                <tr>
+                    <td>${row.especie}</td>
+                    <td class="number">${row.espessura.toLocaleString('pt-BR')} cm</td>
+                    <td class="number">${row.largura.toLocaleString('pt-BR')} cm</td>
+                    <td class="number">${row.comprimento.toLocaleString('pt-BR')} cm</td>
+                    <td class="number">${row.pecas}</td>
+                    <td class="number">${row.metrosLineares.toFixed(2).replace('.', ',')} m</td>
+                    <td class="number">${row.volume.toFixed(3).replace('.', ',')} m³</td>
+                    <td></td>
+                </tr>
+            `;
         });
         
-        html += '</div>';
+        html += `
+                    <tr class="total-geral-row">
+                        <td colspan="4"><strong>Total Geral</strong></td>
+                        <td class="number"><strong>${total.pecas}</strong></td>
+                        <td class="number"><strong>${total.metrosLineares.toFixed(2).replace('.', ',')} m</strong></td>
+                        <td class="number"><strong>${total.volume.toFixed(3).replace('.', ',')} m³</strong></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
         return html;
     }
 
@@ -1724,22 +1900,30 @@ window.ImprimirRomaneio = (function() {
         console.log('📅 Formatando data do romaneio TL:', romaneio);
         
         let dataFormatada = 'Data não informada';
+        const dataPreferencial = romaneio.dataEmissao || romaneio.data;
 
-        // ✅ PRIORIDADE 1: Campo 'data' (usado na criação)
-        if (romaneio.data) {
+        // ✅ PRIORIDADE 1: Campo de emissão do romaneio
+        if (dataPreferencial) {
             try {
-                const data = new Date(romaneio.data);
+                const raw = String(dataPreferencial).trim();
+                const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                if (iso) {
+                    dataFormatada = `${iso[3]}/${iso[2]}/${iso[1]}`;
+                    console.log('✅ Data formatada do campo de emissão:', dataFormatada);
+                    return dataFormatada;
+                }
+                const data = new Date(raw);
                 if (!isNaN(data.getTime())) {
                     dataFormatada = data.toLocaleDateString('pt-BR', {
                         year: 'numeric', month: '2-digit', day: '2-digit'
                     });
-                    console.log('✅ Data formatada do campo "data":', dataFormatada);
+                    console.log('✅ Data formatada do campo de emissão:', dataFormatada);
                 } else {
-                    dataFormatada = romaneio.data; // Se não for data válida, usar valor original
+                    dataFormatada = raw; // Se não for data válida, usar valor original
                     console.log('⚠️ Campo "data" não é uma data válida, usando valor original:', dataFormatada);
                 }
             } catch (e) {
-                dataFormatada = romaneio.data; // Em caso de erro, usar valor original
+                dataFormatada = dataPreferencial; // Em caso de erro, usar valor original
                 console.log('❌ Erro ao processar campo "data", usando valor original:', e);
             }
         } 
@@ -1817,45 +2001,45 @@ window.ImprimirRomaneio = (function() {
      */
     async function obterDadosEmpresa(romaneio = null) {
         console.log('🏢 Carregando dados da empresa...');
-        
-        let companies = [];
-        let companiesArray = [];
+
         const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
         let companyId = resolveCompanyId(romaneio);
-        let companyFromUserProfile = null;
-        const companyFromRomaneio = normalizeCompanyData(
-            (romaneio && typeof romaneio === 'object' && (
-                (romaneio.company && typeof romaneio.company === 'object' ? romaneio.company : null) ||
-                (romaneio.empresa && typeof romaneio.empresa === 'object' ? romaneio.empresa : null) ||
-                (romaneio.companyInfo && typeof romaneio.companyInfo === 'object' ? romaneio.companyInfo : null)
-            )) || {}
-        );
-        if (!companyId && isLikelyCompanyId(companyFromRomaneio.id)) {
-            companyId = String(companyFromRomaneio.id);
-        }
-        if (!companyId) {
+        if (svc && typeof svc.getCompanyProfileForReport === 'function') {
             try {
-                const uid = (svc && svc.currentUid) ||
-                    (window.firebase && window.firebase.auth && window.firebase.auth().currentUser && window.firebase.auth().currentUser.uid) ||
-                    (window.currentUser && window.currentUser.uid) ||
-                    '';
-                if (uid) {
-                    let profile = null;
-                    if (svc && typeof svc.getData === 'function') {
-                        profile = await svc.getData(`users/${uid}`);
-                    }
-                    if (!profile && svc && typeof svc.loadFromFirebase === 'function') {
-                        const res = await svc.loadFromFirebase(`users/${uid}`);
-                        if (res && res.success && res.data) profile = res.data;
-                        else if (res && res.data) profile = res.data;
-                    }
-                    const profileObj = Array.isArray(profile) ? (profile[0] || null) : profile;
-                    if (profileObj && typeof profileObj === 'object') {
-                        companyId = profileObj.companyId || profileObj.companyID || profileObj.tenantId || '';
-                        if (companyId) companyId = String(companyId);
-                        companyFromUserProfile = construirEmpresaDoPerfilUsuario(profileObj);
-                    }
+                const centralResult = await svc.getCompanyProfileForReport({ companyId });
+                const centralData = centralResult && centralResult.success !== false
+                    ? (centralResult.data || centralResult)
+                    : null;
+                if (centralData && typeof centralData === 'object') {
+                    const centralCompany = normalizeCompanyData(centralData);
+                    companyId = centralResult.companyId || centralCompany.id || companyId;
+                    const logoUrl = centralCompany.logo || '';
+                    console.log('🏢 Empresa carregada pelo helper central de relatorios:', {
+                        companyId: companyId || null,
+                        source: centralResult.source || 'central',
+                        name: centralCompany.name || null,
+                        cnpj: centralCompany.cnpj || null,
+                        hasLogo: !!logoUrl
+                    });
+                    return {
+                        name: centralCompany.name || 'Empresa não informada',
+                        cnpj: centralCompany.cnpj || '-',
+                        address: centralCompany.address || '-',
+                        city: centralCompany.city || '-',
+                        state: centralCompany.state || '-',
+                        phone: centralCompany.phone || '-',
+                        logo: logoUrl
+                    };
                 }
+            } catch (error) {
+                console.warn('⚠️ Aviso ao obter empresa pelo helper central:', error);
+            }
+        }
+
+        if (!companyId && svc) {
+            try {
+                if (typeof svc.getTenantId === 'function') companyId = svc.getTenantId() || companyId;
+                if (!companyId && typeof svc.getCurrentTenantId === 'function') companyId = svc.getCurrentTenantId() || companyId;
             } catch (_) {}
         }
         
@@ -1879,7 +2063,7 @@ window.ImprimirRomaneio = (function() {
                 }
             } catch (_) {}
         }
-        
+
         if (!selectedCompany && companyId && typeof window.loadData === 'function') {
             try {
                 const byPath = await window.loadData(`companies/${companyId}/profile`);
@@ -1895,7 +2079,7 @@ window.ImprimirRomaneio = (function() {
                 }
             } catch (_) {}
         }
-        
+
         if (!selectedCompany && companyId && svc && typeof svc.getData === 'function') {
             try {
                 const byPath = await svc.getData(`companies/${companyId}/profile`);
@@ -1912,130 +2096,8 @@ window.ImprimirRomaneio = (function() {
             } catch (_) {}
         }
 
-        if (!selectedCompany) {
-            try {
-                if ((!companies || (Array.isArray(companies) && companies.length === 0) || (typeof companies === 'object' && Object.keys(companies).length === 0)) && svc && typeof svc.getAll === 'function') {
-                    const fromGetAll = await svc.getAll('companies');
-                    if (fromGetAll && (Array.isArray(fromGetAll) ? fromGetAll.length > 0 : Object.keys(fromGetAll).length > 0)) {
-                        companies = fromGetAll;
-                        console.log('🔥 Dados carregados via serviço getAll("companies")');
-                    }
-                }
-            } catch (error) {
-                console.warn('⚠️ Erro ao carregar companies via getAll:', error);
-            }
-            try {
-                if (typeof window.getData === 'function') {
-                    const fromGetData = await window.getData('companies');
-                    if (fromGetData && (Array.isArray(fromGetData) ? fromGetData.length > 0 : Object.keys(fromGetData).length > 0)) {
-                        companies = fromGetData;
-                        console.log('🔥 Dados carregados via window.getData("companies")');
-                    }
-                }
-            } catch (error) {
-                console.warn('⚠️ Erro ao carregar companies via window.getData:', error);
-            }
-            try {
-                if ((!companies || (Array.isArray(companies) && companies.length === 0) || (typeof companies === 'object' && Object.keys(companies).length === 0)) && window.FirebaseService && window.FirebaseService.getData) {
-                    companies = await window.FirebaseService.getData('companies') || [];
-                    console.log('🔥 Dados carregados do Firebase:', companies);
-                } else if ((!companies || (Array.isArray(companies) && companies.length === 0) || (typeof companies === 'object' && Object.keys(companies).length === 0)) && window.firebaseServiceTL && window.firebaseServiceTL.getData) {
-                    companies = await window.firebaseServiceTL.getData('companies') || [];
-                    console.log('🔥 Dados carregados do firebaseServiceTL:', companies);
-                } else if (!companies || (Array.isArray(companies) && companies.length === 0) || (typeof companies === 'object' && Object.keys(companies).length === 0)) {
-                    if (window.FirebaseService && window.FirebaseService.loadData) {
-                        companies = window.FirebaseService.loadData('companies') || [];
-                    } else if (window.firebaseServiceTL && window.firebaseServiceTL.loadData) {
-                        companies = window.firebaseServiceTL.loadData('companies') || [];
-                    }
-                    console.log('📦 Dados carregados de forma síncrona:', companies);
-                }
-            } catch (error) {
-                console.warn('⚠️ Erro ao carregar dados da empresa do Firebase:', error);
-            }
-            try {
-                if ((!companies || (Array.isArray(companies) && companies.length === 0) || (typeof companies === 'object' && Object.keys(companies).length === 0)) && svc && typeof svc.loadFromFirebase === 'function') {
-                    const res = await svc.loadFromFirebase('companies');
-                    if (res && res.success && res.data) {
-                        companies = res.data;
-                    } else if (res && res.data) {
-                        companies = res.data;
-                    }
-                }
-            } catch (error) {
-                console.warn('⚠️ Erro ao carregar companies via loadFromFirebase:', error);
-            }
-            try {
-                if ((!companies || (Array.isArray(companies) && companies.length === 0) || (typeof companies === 'object' && Object.keys(companies).length === 0))) {
-                    const resolvedCompanyId = resolveCompanyId(romaneio);
-                    const keys = [getStorageKey('companies')];
-                    if (resolvedCompanyId) {
-                        keys.push(`company_${resolvedCompanyId}__companies`);
-                        keys.push(`companies/${resolvedCompanyId}`);
-                        keys.push(`companies/${resolvedCompanyId}/companies`);
-                    }
-                    for (const k of keys) {
-                        if (!k) continue;
-                        const raw = localStorage.getItem(k);
-                        if (!raw) continue;
-                        const parsed = JSON.parse(raw);
-                        if (parsed && (Array.isArray(parsed) ? parsed.length > 0 : Object.keys(parsed).length > 0)) {
-                            companies = parsed;
-                            companiesArray = flattenCompanies(companies, []);
-                            break;
-                        }
-                    }
-                }
-            } catch (error) {
-                console.warn('⚠️ Erro ao carregar companies do localStorage:', error);
-            }
-            if (companiesArray.length === 0) {
-                companiesArray = flattenCompanies(companies, []);
-            }
-            if (companyId) {
-                companiesArray = companiesArray.filter(c => String((c && c.id) || '') === String(companyId));
-            }
-            
-            console.log('🏢 Resolver empresa impressão:', { companyId, hasRomaneio: !!romaneio });
-            if (companyId && companiesArray.length > 0) {
-                selectedCompany = companiesArray.find(c => String((c && c.id) || '') === String(companyId)) || null;
-                if (selectedCompany) selectedCompanySource = 'companies_by_companyId';
-            }
-        }
-        const companyFromRomaneioValida = hasCompanyContent(companyFromRomaneio) && (!companyId || String(companyFromRomaneio.id || '') === String(companyId));
-        if (!selectedCompany && companyFromRomaneioValida) {
-            selectedCompany = companyFromRomaneio;
-            selectedCompanySource = 'romaneio_embedded';
-        }
-        const companyFromPerfilValida = hasCompanyContent(companyFromUserProfile || {}) && (!companyId || String((companyFromUserProfile && companyFromUserProfile.id) || '') === String(companyId));
-        if (!selectedCompany && companyFromPerfilValida) {
-            selectedCompany = companyFromUserProfile;
-            selectedCompanySource = 'user_profile';
-        }
-        try {
-            if (!selectedCompany) {
-                const raw = localStorage.getItem('company_info');
-                if (raw) {
-                    const obj = JSON.parse(raw);
-                    const localNormalized = normalizeCompanyData(obj || {});
-                    const localId = localNormalized.id;
-                    if (localId && companiesArray.length > 0) {
-                        selectedCompany = companiesArray.find(c => String((c && c.id) || '') === String(localId)) || null;
-                        if (selectedCompany) selectedCompanySource = 'companies_by_local_id';
-                    }
-                    if (!selectedCompany && isCompanyLikeObject(obj) && (!companyId || String(localNormalized.id || '') === String(companyId))) {
-                        selectedCompany = localNormalized;
-                        selectedCompanySource = 'company_info_direct';
-                    }
-                }
-            }
-        } catch (_) {}
-        if (!selectedCompany && !companyId && companiesArray.length === 1) {
-            selectedCompany = companiesArray[0];
-            selectedCompanySource = 'companies_singleton';
-        }
         const companyData = normalizeCompanyData(selectedCompany || {});
-        console.log('🏢 Empresas disponíveis para impressão:', companiesArray.length);
+        console.log('🏢 Empresa resolvida para impressão pelo profile do tenant:', !!selectedCompany);
         const companySanitizedLog = {
             source: selectedCompanySource,
             id: companyData.id || null,
@@ -2092,6 +2154,7 @@ window.ImprimirRomaneio = (function() {
                 --tl-col-esp: 44px;
                 --tl-col-cl: 22px;
                 --tl-col-qtd: 44px;
+                --tl-col-pes: 48px;
                 --tl-col-ml: 54px;
                 --tl-col-vm2: 54px;
                 --tl-col-vm3: 54px;
@@ -2186,6 +2249,21 @@ window.ImprimirRomaneio = (function() {
             .info-value {
                 flex: 1;
             }
+
+            .tl-legend {
+                border: 1px solid #b8c4d0;
+                background: #f5f8fb;
+                color: #243746;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px 14px;
+                align-items: center;
+                font-size: 11px;
+                line-height: 1.35;
+                padding: 7px 9px;
+                margin: 0 0 10px 0;
+                page-break-inside: avoid;
+            }
             
             .tabela-principal h3,
             .resumo-conama h3 {
@@ -2197,7 +2275,8 @@ window.ImprimirRomaneio = (function() {
             }
             
             .tabela-dinamica,
-            .tabela-conama {
+            .tabela-conama,
+            .resumo-dimensoes-table {
                 width: 100%;
                 border-collapse: collapse;
                 margin-bottom: 15px;
@@ -2206,8 +2285,10 @@ window.ImprimirRomaneio = (function() {
             .tabela-dinamica th,
             .tabela-dinamica td,
             .tabela-conama th,
-            .tabela-conama td {
-                border: 1px solid #000;
+            .tabela-conama td,
+            .resumo-dimensoes-table th,
+            .resumo-dimensoes-table td {
+                border: 1px solid #dcdcdc;
                 padding: 4px 6px;
                 text-align: center;
                 font-size: 10px;
@@ -2219,9 +2300,21 @@ window.ImprimirRomaneio = (function() {
             }
             .tl-main-table th,
             .tl-main-table td {
+                border: 1px solid #dcdcdc;
                 overflow: hidden;
                 text-overflow: clip;
                 white-space: nowrap;
+            }
+            .tl-main-table thead tr:first-child th {
+                background-color: #0d2339;
+                color: #fff;
+                font-weight: bold;
+                text-transform: uppercase;
+            }
+            .tl-main-table thead tr:nth-child(2) th {
+                background-color: #1b4670;
+                color: #fff;
+                border-color: #dcdcdc;
             }
             .tl-main-table th.col-espessura,
             .tl-main-table td.col-espessura {
@@ -2242,6 +2335,12 @@ window.ImprimirRomaneio = (function() {
                 width: var(--tl-col-qtd);
                 min-width: var(--tl-col-qtd);
                 max-width: var(--tl-col-qtd);
+            }
+            .tl-main-table th.col-pes,
+            .tl-main-table td.col-pes {
+                width: var(--tl-col-pes);
+                min-width: var(--tl-col-pes);
+                max-width: var(--tl-col-pes);
             }
             .tl-main-table th.col-ml,
             .tl-main-table td.col-ml {
@@ -2326,7 +2425,7 @@ window.ImprimirRomaneio = (function() {
             
             .totais-finais {
                 margin-top: 20px;
-                border: 2px solid #000;
+                border: 1px solid #dcdcdc;
                 padding: 10px;
             }
             
@@ -2340,7 +2439,7 @@ window.ImprimirRomaneio = (function() {
             .total-valor {
                 font-weight: bold;
                 font-size: 14px;
-                border-top: 1px solid #000;
+                border-top: 1px solid #dcdcdc;
                 padding-top: 5px;
                 margin-top: 5px;
             }
@@ -2383,6 +2482,14 @@ window.ImprimirRomaneio = (function() {
                 }
                 #tl-cont-pagebreak {
                     display: none;
+                }
+                #tl-continuacao-wrapper {
+                    page-break-inside: auto;
+                    break-inside: auto;
+                }
+                #tl-continuacao-wrapper.has-continuacao {
+                    page-break-before: always !important;
+                    break-before: page !important;
                 }
                 body[data-dense-table="1"] .header {
                     margin-bottom: 4mm !important;
@@ -2456,9 +2563,11 @@ window.ImprimirRomaneio = (function() {
                 /* ✅ REGRAS RESPONSIVAS PARA DIFERENTES ORIENTAÇÕES (como PCT) */
                 @media print and (orientation: portrait) {
                     #tl-cont-pagebreak {
-                        display: none !important;
-                        page-break-before: auto !important;
-                        break-before: auto !important;
+                        display: none;
+                    }
+                    #tl-continuacao-wrapper.has-continuacao {
+                        page-break-before: always !important;
+                        break-before: page !important;
                     }
                     .items-table {
                         font-size: 10px;
@@ -2793,11 +2902,11 @@ window.ImprimirRomaneio = (function() {
                 width: 100%; 
                 border-collapse: collapse; 
                 margin-bottom: 20px;
-                border: 2px solid #000;
+                border: 1px solid #dcdcdc;
             }
             
             th, td { 
-                border: 1px solid #000;
+                border: 1px solid #dcdcdc;
                 padding: 3px 4px;
                 text-align: center;
                 font-size: 9px;
@@ -2916,6 +3025,21 @@ window.ImprimirRomaneio = (function() {
                 margin-bottom: 30px;
                 page-break-inside: avoid;
                 page-break-before: always;
+                break-before: page;
+                break-inside: avoid;
+                page-break-after: avoid;
+                break-after: avoid;
+            }
+
+            .resumo-conama table {
+                table-layout: fixed;
+                width: 100%;
+            }
+
+            .resumo-conama th,
+            .resumo-conama td {
+                word-break: break-word;
+                overflow-wrap: anywhere;
             }
             
             /* Quebra de página para seções principais - APENAS EM RETRATO */
@@ -2953,6 +3077,10 @@ window.ImprimirRomaneio = (function() {
                 .resumo-conama {
                     page-break-before: always !important;
                     break-before: page !important;
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                    page-break-after: avoid !important;
+                    break-after: avoid !important;
                 }
                 .resumo-titulo {
                     margin: 6px 0 8px 0 !important;
@@ -2970,8 +3098,20 @@ window.ImprimirRomaneio = (function() {
                 }
                 .resumo-conama th,
                 .resumo-conama td {
+                    font-size: 8.2px !important;
+                    line-height: 1.12 !important;
+                    padding: 2px 3px !important;
                     word-break: break-word !important;
                     white-space: normal !important;
+                }
+                body[data-conama-rows="0"] .resumo-conama,
+                body[data-conama-rows="1"] .resumo-conama,
+                body[data-conama-rows="2"] .resumo-conama,
+                body[data-conama-rows="3"] .resumo-conama,
+                body[data-conama-rows="4"] .resumo-conama,
+                body[data-conama-rows="5"] .resumo-conama,
+                body[data-conama-rows="6"] .resumo-conama {
+                    min-height: auto !important;
                 }
             }
             
@@ -3005,7 +3145,7 @@ window.ImprimirRomaneio = (function() {
     /**
      * Abrir janela de impressão
      */
-    function abrirJanelaImpressao(html, romaneioId) {
+    function abrirJanelaImpressao(html, romaneioId, printModule = 'TL') {
         // ✅ CORREÇÃO: Abrir em nova aba sem dimensões fixas para mostrar opções de layout
         const janelaImpressao = window.open('', '_blank');
         
@@ -3016,6 +3156,14 @@ window.ImprimirRomaneio = (function() {
         
         janelaImpressao.document.write(html);
         janelaImpressao.document.close();
+
+        try {
+            if (window.RomaneioPrintConfig && typeof window.RomaneioPrintConfig.applyToPrintDocument === 'function') {
+                window.RomaneioPrintConfig.applyToPrintDocument(janelaImpressao.document, printModule);
+            }
+        } catch (error) {
+            console.warn(`⚠️ Não foi possível aplicar configuração de colunas (${printModule}).`, error);
+        }
         
         // Focar na janela
         janelaImpressao.focus();
@@ -3041,12 +3189,26 @@ window.ImprimirRomaneio = (function() {
         return (parseFloat(numero) || 0).toFixed(decimais);
     }
 
+    function formatarDiferencaPercentualTora(volumeBruto, volumeGeo) {
+        const bruto = parseFloat(volumeBruto) || 0;
+        const geo = parseFloat(volumeGeo) || 0;
+        if (bruto <= 0 || geo <= 0) return '-';
+        const percentual = ((geo - bruto) / bruto) * 100;
+        const sinal = percentual > 0 ? '+' : '';
+        return `${sinal}${percentual.toFixed(2).replace('.', ',')}%`;
+    }
+
     /**
      * Formatação brasileira para Volume (m²) - padrão brasileiro com vírgula
      */
     function formatarVolumeM2(numero, decimais = 3) {
         const numeroFormatado = (parseFloat(numero) || 0).toFixed(decimais);
         return numeroFormatado.replace('.', ',');
+    }
+
+    function formatarPesVolumeM3(volumeM3, decimais = 2) {
+        const pes = (parseFloat(volumeM3) || 0) * 35.314667;
+        return pes.toFixed(decimais).replace('.', ',');
     }
 
     /**
@@ -3066,6 +3228,9 @@ window.ImprimirRomaneio = (function() {
      * ✅ IMPRIMIR ROMANEIO ATUAL (ASYNC)
      */
     async function imprimirRomaneioAtual(tipo = TIPOS_IMPRESSAO.COMPLETO) {
+        tipo = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizePrintMode === 'function'
+            ? window.RomaneioDataUtils.normalizePrintMode(tipo)
+            : String(tipo || TIPOS_IMPRESSAO.COMPLETO).replace(/-/g, '_').toLowerCase();
         console.log('🖨️ Imprimindo romaneio atual...');
         
         // Obter dados do romaneio atual

@@ -1,0 +1,4 @@
+{
+  "success": false,
+  "error": "Credencial Firebase não encontrada em GOOGLE_APPLICATION_CREDENTIALS: C:\\Secrets\\sisweb-service-account.json"
+}

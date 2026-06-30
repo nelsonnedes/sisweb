@@ -126,6 +126,22 @@ section {
     width: 16px;
 }
 
+.field-help {
+    color: #5f6f7f;
+    display: block;
+    font-size: 12px;
+    line-height: 1.35;
+    margin-top: 5px;
+    overflow-wrap: anywhere;
+}
+
+.pix-field-help {
+    background: #f7fbff;
+    border-left: 3px solid #d8e9f7;
+    border-radius: 4px;
+    padding: 6px 8px;
+}
+
 /* ✅ CAMPOS DE ENTRADA - DIMENSÕES EXATAS */
 input, select, textarea {
     height: 31px;                  /* ✅ Altura padrão do romaneiopct */
@@ -191,6 +207,99 @@ input[type="month"]::-webkit-calendar-picker-indicator {
     font-size: 16px;
     border-bottom: 1px solid #dee2e6;
     padding-bottom: 8px;
+}
+
+.vales-detalhados-section {
+    border: 1px solid #dbe3ec;
+    border-radius: 8px;
+    background: #fff;
+    padding: 12px;
+    margin: -8px 0 20px;
+}
+
+.vales-detalhados-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.vales-detalhados-header h4 {
+    margin: 0;
+    font-size: 15px;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vales-add-btn {
+    min-height: 34px;
+    padding: 7px 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.vales-detalhados-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #eef2f6;
+    border-radius: 6px;
+}
+
+.vales-detalhados-table {
+    width: 100%;
+    min-width: 640px;
+    border-collapse: collapse;
+    margin: 0;
+}
+
+.vales-detalhados-table th,
+.vales-detalhados-table td {
+    border-bottom: 1px solid #eef2f6;
+    padding: 8px;
+    vertical-align: middle;
+}
+
+.vales-detalhados-table th {
+    background: var(--primary-color);
+    color: #fff;
+    font-size: 12px;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.vales-detalhados-table td:nth-child(1) {
+    width: 150px;
+}
+
+.vales-detalhados-table td:nth-child(2) {
+    width: 150px;
+}
+
+.vales-detalhados-table td:nth-child(4) {
+    width: 78px;
+    text-align: center;
+}
+
+.vales-detalhados-table input {
+    height: 31px;
+}
+
+.vale-remover-btn {
+    width: 34px;
+    height: 31px;
+    padding: 0;
+    border-radius: 6px;
+}
+
+.vales-detalhados-empty {
+    display: none;
+    padding: 10px;
+    color: #607080;
+    font-size: 13px;
+    text-align: center;
 }
 
 input:focus, select:focus, textarea:focus {
@@ -276,11 +385,69 @@ button:focus-visible {
     margin-bottom: 20px;
 }
 
+#acoes-principais {
+    padding: 12px;
+}
+
+#acoes-principais.acoes-expandidas {
+    padding: 16px;
+}
+
+.acoes-toggle-button {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 12px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    background: #ffffff;
+    color: var(--primary-color);
+    border: 1px solid #d7dde4;
+    box-shadow: none;
+    text-align: left;
+}
+
+.acoes-toggle-button:hover {
+    opacity: 1;
+    background: #f3f6f9;
+}
+
+.acoes-toggle-title,
+.acoes-toggle-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.acoes-toggle-title {
+    font-weight: 700;
+}
+
+.acoes-toggle-title i,
+.acoes-toggle-icon {
+    width: 16px;
+    text-align: center;
+}
+
+.acoes-toggle-state {
+    margin-left: auto;
+    font-size: 14px;
+    color: #5d6d7e;
+    white-space: nowrap;
+}
+
+#acoesPrincipaisConteudo[hidden] {
+    display: none !important;
+}
+
 #acoes-principais .form-buttons {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 10px;
     align-items: stretch;
+    margin-top: 12px;
+    margin-bottom: 0;
 }
 
 #acoes-principais .form-buttons button {
@@ -355,6 +522,7 @@ tbody td {
     width: max-content;
     min-width: 100%;
     table-layout: auto;
+    overflow: visible;
 }
 
 #folhasTable thead th.sortable {
@@ -408,6 +576,12 @@ tbody tr:last-child td {
 
 /* ✅ BOTÕES DE AÇÃO NA TABELA */
 #folhasTable .actions-cell {
+    background: #fff;
+    background-clip: padding-box;
+    box-shadow: -10px 0 14px -14px rgba(15, 23, 42, 0.55);
+    position: sticky;
+    right: 0;
+    z-index: 12;
     text-align: center;
     white-space: nowrap;
     width: 176px;
@@ -421,14 +595,392 @@ tbody tr:last-child td {
 
 /* ✅ CABEÇALHO DA COLUNA AÇÕES */
 #folhasTable th[data-sort-key="acoes"] {
+    background: var(--primary-color);
+    background-clip: padding-box;
+    box-shadow: -10px 0 14px -14px rgba(15, 23, 42, 0.55);
+    position: sticky;
+    right: 0;
+    text-align: center;
     width: 176px;
     min-width: 176px;
     max-width: 176px;
+    z-index: 16;
+}
+
+#folhasTable tbody tr:hover td.actions-cell {
+    background: #f8f9fa;
+}
+
+#folhasTable tbody tr.folha-fechada td.actions-cell {
+    background: #f8f9fa;
 }
 
 #folhasTable .actions-cell .action-button {
     margin: 0;
     flex: 0 0 30px;
+}
+
+#folhasTable .paid-actions-cell {
+    align-items: flex-start;
+    white-space: normal;
+}
+
+.paid-actions-collapse {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.paid-actions-toggle {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #cfd8e3;
+    border-radius: 6px;
+    box-shadow: none;
+    color: var(--primary-color);
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 700;
+    gap: 6px;
+    justify-content: center;
+    min-height: 30px;
+    padding: 5px 9px;
+    width: auto;
+}
+
+.paid-actions-toggle:hover,
+.paid-actions-toggle:focus {
+    opacity: 1;
+    background: #eef3f7;
+}
+
+.paid-actions-toggle-icon {
+    width: 12px;
+    text-align: center;
+}
+
+.paid-actions-panel {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #dfe5ec;
+    border-radius: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+    padding: 6px;
+    width: 100%;
+}
+
+.paid-actions-panel[hidden] {
+    display: none !important;
+}
+
+@media screen and (max-width: 640px) {
+    #tabela-folhas-section .table-container {
+        overflow-x: visible;
+    }
+
+    #folhasTable {
+        width: 100%;
+        min-width: 0;
+        border-collapse: separate;
+        border-spacing: 0 12px;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    #folhasTable thead {
+        display: none;
+    }
+
+    #folhasTable,
+    #folhasTable tbody,
+    #folhasTable tr,
+    #folhasTable td {
+        display: block;
+        width: 100%;
+    }
+
+    #folhasTable tbody tr {
+        background: #fff;
+        border: 1px solid #dfe7ef;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+        margin-bottom: 12px;
+        overflow: hidden;
+        padding: 10px 12px;
+    }
+
+    #folhasTable tbody tr:hover {
+        background: #fff;
+    }
+
+    #folhasTable tbody td {
+        align-items: start;
+        border-bottom: 1px solid #eef2f6;
+        box-sizing: border-box;
+        display: grid;
+        font-size: 13px;
+        gap: 10px;
+        grid-template-columns: minmax(96px, 38%) minmax(0, 1fr);
+        line-height: 1.35;
+        padding: 8px 0;
+        text-align: right;
+        word-break: break-word;
+    }
+
+    #folhasTable tbody td::before {
+        color: #5d6d7e;
+        content: attr(data-label);
+        font-size: 12px;
+        font-weight: 700;
+        text-align: left;
+    }
+
+    #folhasTable tbody td:first-child {
+        display: block;
+        padding-top: 2px;
+        text-align: left;
+    }
+
+    #folhasTable tbody td:first-child::before,
+    #folhasTable tbody td[colspan]::before {
+        display: none;
+    }
+
+    #folhasTable tbody td[colspan] {
+        border-bottom: 0;
+        display: block;
+        text-align: center;
+    }
+
+    #folhasTable .liquido-cell {
+        font-size: 14px;
+    }
+
+    #folhasTable .actions-cell,
+    #folhasTable tbody tr:hover td.actions-cell,
+    #folhasTable tbody tr.folha-fechada td.actions-cell {
+        background: transparent;
+        border-bottom: 0;
+        box-shadow: none !important;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: flex-start;
+        max-width: none;
+        min-width: 0;
+        position: static !important;
+        right: auto;
+        text-align: left;
+        width: 100%;
+    }
+
+    #folhasTable .actions-cell::before {
+        color: #5d6d7e;
+        content: attr(data-label);
+        flex: 0 0 100%;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: left;
+    }
+
+    #folhasTable .actions-cell .action-button {
+        margin: 0;
+    }
+}
+
+@media screen and (max-width: 700px) {
+    #funcionariosListModal .table-container,
+    #cargosListModal .table-container,
+    #folhasFechadasModal .table-container {
+        border: 0;
+        overflow: visible !important;
+    }
+
+    #funcionariosListModal table,
+    #cargosListModal table,
+    #folhasFechadasModal table {
+        background: transparent;
+        border-collapse: separate;
+        border-spacing: 0 12px;
+        box-shadow: none;
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+
+    #funcionariosListModal thead,
+    #cargosListModal thead,
+    #folhasFechadasModal thead {
+        display: none;
+    }
+
+    #funcionariosListModal table,
+    #funcionariosListModal tbody,
+    #funcionariosListModal tr,
+    #funcionariosListModal td,
+    #cargosListModal table,
+    #cargosListModal tbody,
+    #cargosListModal tr,
+    #cargosListModal td,
+    #folhasFechadasModal table,
+    #folhasFechadasModal tbody,
+    #folhasFechadasModal tr,
+    #folhasFechadasModal td {
+        display: block;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+    }
+
+    #funcionariosListModal tbody tr,
+    #cargosListModal tbody tr,
+    #folhasFechadasModal tbody tr {
+        background: #fff;
+        border: 1px solid #dfe7ef;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+        margin-bottom: 12px;
+        overflow: hidden;
+        padding: 10px 12px;
+    }
+
+    #funcionariosListModal tbody td,
+    #cargosListModal tbody td,
+    #folhasFechadasModal tbody td {
+        align-items: start;
+        border-bottom: 1px solid #eef2f6;
+        box-sizing: border-box;
+        display: grid;
+        font-size: 13px;
+        gap: 10px;
+        grid-template-columns: minmax(96px, 38%) minmax(0, 1fr);
+        line-height: 1.35;
+        padding: 8px 0;
+        text-align: right;
+        white-space: normal !important;
+        word-break: break-word;
+    }
+
+    #funcionariosListModal tbody td::before,
+    #cargosListModal tbody td::before,
+    #folhasFechadasModal tbody td::before {
+        color: #5d6d7e;
+        content: attr(data-label);
+        font-size: 12px;
+        font-weight: 700;
+        text-align: left;
+    }
+
+    #funcionariosListModal tbody td:first-child,
+    #cargosListModal tbody td:first-child,
+    #folhasFechadasModal tbody td:first-child {
+        display: block;
+        padding-top: 2px;
+        text-align: left;
+    }
+
+    #funcionariosListModal tbody td:first-child::before,
+    #cargosListModal tbody td:first-child::before,
+    #folhasFechadasModal tbody td:first-child::before,
+    #funcionariosListModal tbody td[colspan]::before,
+    #cargosListModal tbody td[colspan]::before,
+    #folhasFechadasModal tbody td[colspan]::before {
+        display: none;
+    }
+
+    #funcionariosListModal tbody td[colspan],
+    #cargosListModal tbody td[colspan],
+    #folhasFechadasModal tbody td[colspan] {
+        border-bottom: 0;
+        display: block;
+        text-align: center;
+    }
+
+    #funcionariosListModal td.actions-cell,
+    #cargosListModal td.actions-cell,
+    #folhasFechadasModal td.actions-cell {
+        background: transparent;
+        border-bottom: 0;
+        box-shadow: none !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        justify-content: flex-start !important;
+        padding-top: 10px;
+        text-align: left;
+        white-space: normal !important;
+    }
+
+    #funcionariosListModal td.actions-cell::before,
+    #cargosListModal td.actions-cell::before,
+    #folhasFechadasModal td.actions-cell::before {
+        color: #5d6d7e;
+        content: attr(data-label);
+        flex: 0 0 100%;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: left;
+    }
+
+    #funcionariosListModal .paginacao-controles {
+        align-items: stretch !important;
+        flex-direction: column;
+    }
+
+    #funcionariosListModal .paginacao-navegacao,
+    #funcionariosListModal .paginacao-config {
+        justify-content: center;
+    }
+}
+
+@media screen and (max-width: 640px) {
+    #pixQrCodeModal .pix-qrcode-modal-content {
+        border-radius: 8px;
+        margin: 8px auto;
+        max-height: calc(100dvh - 16px);
+        width: calc(100vw - 16px);
+    }
+
+    #pixQrCodeModal .pix-qrcode-modal-body {
+        padding: 14px;
+    }
+
+    .pix-qrcode-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .pix-qrcode-preview {
+        width: 100%;
+    }
+
+    .pix-qrcode-container {
+        min-height: auto;
+        width: min(74vw, 270px);
+    }
+
+    .pix-qrcode-container img,
+    .pix-qrcode-container canvas {
+        max-height: min(70vw, 250px);
+        max-width: min(70vw, 250px);
+    }
+
+    .pix-qrcode-info {
+        gap: 8px;
+    }
+
+    .pix-qrcode-chave-row {
+        align-items: flex-start;
+    }
+
+    .pix-qrcode-edit-button {
+        flex: 0 0 32px;
+        height: 32px;
+        width: 32px;
+    }
 }
 
 /* ✅ CONTROLES DE PAGINAÇÃO PARA FOLHAS FECHADAS */
@@ -544,6 +1096,28 @@ tbody tr:last-child td {
     color: white;
 }
 
+.pix-qrcode-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 0;
+    background: transparent;
+    color: var(--info-color);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+    padding: 2px 0;
+    text-align: left;
+}
+
+.pix-qrcode-button:hover,
+.pix-qrcode-button:focus {
+    color: var(--primary-color);
+    text-decoration: underline;
+    outline: none;
+}
+
 /* ✅ MODAIS PADRONIZADOS */
 .modal {
     display: none;
@@ -570,6 +1144,140 @@ tbody tr:last-child td {
 
 #funcionarioModal {
     z-index: 1300; /* Sempre acima dos modais de lista */
+}
+
+#pixQrCodeModal {
+    z-index: 1600;
+}
+
+#pixQrCodeModal .pix-qrcode-modal-content {
+    max-height: calc(100dvh - 24px);
+    max-width: 560px;
+    width: min(96vw, 560px);
+    display: flex;
+    flex-direction: column;
+}
+
+#pixQrCodeModal .pix-qrcode-modal-body {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow: auto;
+    padding: 18px;
+}
+
+.pix-qrcode-layout {
+    align-items: start;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+    width: 100%;
+}
+
+.pix-qrcode-preview {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+.pix-qrcode-container {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e1e7ef;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    min-height: 260px;
+    padding: 10px;
+    width: 260px;
+}
+
+.pix-qrcode-container img,
+.pix-qrcode-container canvas {
+    display: block;
+    height: auto !important;
+    max-height: 240px;
+    max-width: 240px;
+    width: auto !important;
+}
+
+.pix-qrcode-fallback {
+    background: #fff8e6;
+    border: 1px solid #f3d28b;
+    border-radius: 6px;
+    color: #6f4b00;
+    padding: 10px 12px;
+    text-align: center;
+}
+
+.pix-qrcode-info {
+    color: #2c3e50;
+    display: grid;
+    gap: 10px;
+    line-height: 1.35;
+    text-align: left;
+    width: 100%;
+}
+
+.pix-qrcode-info > div {
+    background: #f8fafc;
+    border: 1px solid #e6edf5;
+    border-radius: 8px;
+    padding: 9px 10px;
+}
+
+.pix-qrcode-favorecido {
+    font-weight: 700;
+}
+
+.pix-qrcode-chave-row {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    min-width: 0;
+}
+
+.pix-qrcode-chave {
+    color: #1d2f43;
+    flex: 1 1 0;
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+    min-width: 0;
+    width: 100%;
+}
+
+.pix-qrcode-edit-button {
+    align-items: center;
+    background: #edf4fa;
+    border: 1px solid #d7e5ef;
+    border-radius: 6px;
+    color: var(--primary-color);
+    cursor: pointer;
+    display: inline-flex;
+    flex: 0 0 28px;
+    height: 28px;
+    justify-content: center;
+    padding: 0;
+    width: 28px;
+}
+
+.pix-qrcode-edit-button:hover,
+.pix-qrcode-edit-button:focus {
+    background: #dfeef9;
+    border-color: #b7d3e6;
+    color: var(--info-color);
+    outline: none;
+}
+
+.pix-qrcode-liquido {
+    color: var(--success-color);
+    font-weight: 700;
 }
 
 #cargoModal {
@@ -1271,6 +1979,70 @@ tbody tr:last-child td {
         grid-template-columns: 1fr;
         gap: 14px;
     }
+
+    .vales-detalhados-section {
+        padding: 10px;
+        margin-top: -4px;
+    }
+
+    .vales-detalhados-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .vales-add-btn {
+        width: 100%;
+    }
+
+    .vales-detalhados-table-wrap {
+        border: 0;
+        overflow: visible;
+    }
+
+    .vales-detalhados-table,
+    .vales-detalhados-table thead,
+    .vales-detalhados-table tbody,
+    .vales-detalhados-table tr,
+    .vales-detalhados-table td {
+        display: block;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .vales-detalhados-table thead {
+        display: none;
+    }
+
+    .vales-detalhados-table tr {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 8px;
+        margin-bottom: 10px;
+        background: #fdfefe;
+    }
+
+    .vales-detalhados-table td {
+        border-bottom: 0;
+        padding: 5px 0;
+    }
+
+    .vales-detalhados-table td::before {
+        content: attr(data-label);
+        display: block;
+        color: var(--primary-color);
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .vales-detalhados-table td:nth-child(4) {
+        width: 100%;
+        text-align: left;
+    }
+
+    .vale-remover-btn {
+        width: 100%;
+    }
 }
 
 .autocomplete-icons-container {
@@ -1590,6 +2362,12 @@ tbody tr:last-child td {
     table {
         box-shadow: none;
     }
+
+    #folhasTable th[data-sort-key="acoes"],
+    #folhasTable td.actions-cell {
+        box-shadow: none !important;
+        position: static !important;
+    }
     
     .resumo-container {
         border: 1px solid #000;
@@ -1629,6 +2407,29 @@ tbody tr:last-child td {
     font-weight: bold;
     color: var(--success-color);
     font-size: 16px;
+}
+
+.liquido-cell {
+    line-height: 1.2;
+    min-width: 112px;
+}
+
+.liquido-cell-display {
+    display: block;
+    font-weight: 700;
+}
+
+.liquido-saldo-zerado {
+    color: var(--gray-color);
+}
+
+.liquido-pago-info {
+    color: var(--success-color);
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 2px;
+    white-space: nowrap;
 }
 
 .valor-negativo {
@@ -2574,6 +3375,13 @@ tbody tr:last-child td {
 
 /* 📱 MOBILE STACK PARA BOTÕES PRINCIPAIS */
 @media (max-width: 480px) {
+    .acoes-toggle-button {
+        align-items: flex-start;
+    }
+    .acoes-toggle-state {
+        margin-left: 24px;
+        font-size: 13px;
+    }
     #acoes-principais .form-buttons {
         grid-template-columns: 1fr;
     }
@@ -2585,6 +3393,7 @@ tbody tr:last-child td {
 #funcionarioModal,
 #cargoModal,
 #folhaModal,
+#pixQrCodeModal,
 #cargosListModal,
 #folhasFechadasModal,
 #funcionariosListModal,
@@ -2596,6 +3405,7 @@ tbody tr:last-child td {
 #funcionarioModal .modal-content,
 #cargoModal .modal-content,
 #folhaModal .modal-content,
+#pixQrCodeModal .modal-content,
 #cargosListModal .modal-content,
 #folhasFechadasModal .modal-content,
 #funcionariosListModal .modal-content,
@@ -2609,6 +3419,7 @@ tbody tr:last-child td {
 #funcionarioModal .modal-body,
 #cargoModal .modal-body,
 #folhaModal .modal-body,
+#pixQrCodeModal .modal-body,
 #cargosListModal .modal-body,
 #folhasFechadasModal .modal-body,
 #funcionariosListModal .modal-body,
@@ -2621,6 +3432,7 @@ tbody tr:last-child td {
 #funcionarioModal table,
 #cargoModal table,
 #folhaModal table,
+#pixQrCodeModal table,
 #cargosListModal table,
 #folhasFechadasModal table,
 #funcionariosListModal table,
@@ -2632,6 +3444,7 @@ tbody tr:last-child td {
 #funcionarioModal .action-button,
 #cargoModal .action-button,
 #folhaModal .action-button,
+#pixQrCodeModal .action-button,
 #cargosListModal .action-button,
 #folhasFechadasModal .action-button,
 #funcionariosListModal .action-button,
@@ -2826,6 +3639,38 @@ tbody tr:last-child td {
     border: 1px solid #d8dee6;
     border-radius: 8px;
     padding: 8px 10px;
+}
+
+#resumoFolhaModal .resumo-filter-option {
+    min-width: 230px;
+}
+
+#resumoFolhaModal .resumo-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 8px 10px;
+    border: 1px solid #d8dee6;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #2c3e50;
+    font-size: 13px;
+    line-height: 1.25;
+    cursor: pointer;
+}
+
+#resumoFolhaModal .resumo-toggle input[type="checkbox"] {
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+}
+
+#resumoFolhaModal .resumo-filter-option small {
+    display: block;
+    margin-top: 4px;
+    color: #667085;
+    line-height: 1.25;
 }
 
 #resumoFolhaModal .resumo-toolbar {
@@ -3059,5 +3904,261 @@ tbody tr:last-child td {
 @media (max-width: 480px) {
     #relatorioModal .export-options {
         grid-template-columns: 1fr;
+    }
+}
+
+/* PWA: override final para modais de Folha em formato de cards no mobile. */
+@media screen and (max-width: 700px) {
+    #funcionariosListModal .table-container,
+    #cargosListModal .table-container,
+    #folhasFechadasModal .table-container {
+        border: 0 !important;
+        border-radius: 0 !important;
+        flex: 0 0 auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+    }
+
+    #funcionariosListModal .funcionarios-list-table,
+    #cargosListModal table,
+    #folhasFechadasModal .folhas-fechadas-table {
+        background: transparent !important;
+        border-collapse: separate !important;
+        border-spacing: 0 12px !important;
+        box-shadow: none !important;
+        display: block !important;
+        min-width: 0 !important;
+        table-layout: auto !important;
+        width: 100% !important;
+    }
+
+    #funcionariosListModal .funcionarios-list-table thead,
+    #cargosListModal table thead,
+    #folhasFechadasModal .folhas-fechadas-table thead {
+        display: none !important;
+    }
+
+    #funcionariosListModal .funcionarios-list-table tbody,
+    #funcionariosListModal .funcionarios-list-table tr,
+    #funcionariosListModal .funcionarios-list-table td,
+    #cargosListModal table tbody,
+    #cargosListModal table tr,
+    #cargosListModal table td,
+    #folhasFechadasModal .folhas-fechadas-table tbody,
+    #folhasFechadasModal .folhas-fechadas-table tr,
+    #folhasFechadasModal .folhas-fechadas-table td {
+        display: block !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+
+    #funcionariosListModal .funcionarios-list-table tbody tr,
+    #cargosListModal table tbody tr,
+    #folhasFechadasModal .folhas-fechadas-table tbody tr {
+        background: #fff !important;
+        border: 1px solid #dfe7ef !important;
+        border-radius: 8px !important;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
+        box-sizing: border-box !important;
+        margin-bottom: 12px !important;
+        overflow: hidden !important;
+        padding: 10px 12px !important;
+    }
+
+    #funcionariosListModal .funcionarios-list-table tbody td,
+    #cargosListModal table tbody td,
+    #folhasFechadasModal .folhas-fechadas-table tbody td {
+        align-items: start !important;
+        border-bottom: 1px solid #eef2f6 !important;
+        box-sizing: border-box !important;
+        display: grid !important;
+        font-size: 13px !important;
+        gap: 10px !important;
+        grid-template-columns: minmax(96px, 38%) minmax(0, 1fr) !important;
+        line-height: 1.35 !important;
+        padding: 8px 0 !important;
+        text-align: right !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+    }
+
+    #funcionariosListModal .funcionarios-list-table tbody td:nth-child(n),
+    #cargosListModal table tbody td:nth-child(n),
+    #folhasFechadasModal .folhas-fechadas-table tbody td:nth-child(n) {
+        max-width: none !important;
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+
+    #funcionariosListModal .funcionarios-list-table tbody td::before,
+    #cargosListModal table tbody td::before,
+    #folhasFechadasModal .folhas-fechadas-table tbody td::before {
+        color: #5d6d7e !important;
+        content: attr(data-label) !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        text-align: left !important;
+    }
+
+    #funcionariosListModal .funcionarios-list-table tbody td:first-child,
+    #cargosListModal table tbody td:first-child,
+    #folhasFechadasModal .folhas-fechadas-table tbody td:first-child {
+        display: block !important;
+        padding-top: 2px !important;
+        text-align: left !important;
+    }
+
+    #funcionariosListModal .funcionarios-list-table tbody td:first-child::before,
+    #cargosListModal table tbody td:first-child::before,
+    #folhasFechadasModal .folhas-fechadas-table tbody td:first-child::before,
+    #funcionariosListModal .funcionarios-list-table tbody td[colspan]::before,
+    #cargosListModal table tbody td[colspan]::before,
+    #folhasFechadasModal .folhas-fechadas-table tbody td[colspan]::before {
+        display: none !important;
+    }
+
+    #funcionariosListModal .funcionarios-list-table tbody td[colspan],
+    #cargosListModal table tbody td[colspan],
+    #folhasFechadasModal .folhas-fechadas-table tbody td[colspan] {
+        border-bottom: 0 !important;
+        display: block !important;
+        text-align: center !important;
+    }
+
+    #funcionariosListModal .funcionarios-list-table td.actions-cell,
+    #cargosListModal table td.actions-cell,
+    #folhasFechadasModal .folhas-fechadas-table td.actions-cell {
+        background: transparent !important;
+        border-bottom: 0 !important;
+        box-shadow: none !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        justify-content: flex-start !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        padding-top: 10px !important;
+        position: static !important;
+        right: auto !important;
+        text-align: left !important;
+        white-space: normal !important;
+        width: 100% !important;
+    }
+
+    #funcionariosListModal .funcionarios-list-table td.actions-cell::before,
+    #cargosListModal table td.actions-cell::before,
+    #folhasFechadasModal .folhas-fechadas-table td.actions-cell::before {
+        color: #5d6d7e !important;
+        content: attr(data-label) !important;
+        flex: 0 0 100% !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        text-align: left !important;
+    }
+}
+
+@media screen and (max-width: 640px) {
+    #pixQrCodeModal .pix-qrcode-modal-content {
+        border-radius: 8px !important;
+        margin: 8px auto !important;
+        max-height: calc(100dvh - 16px) !important;
+        width: calc(100vw - 16px) !important;
+    }
+
+    #pixQrCodeModal .pix-qrcode-modal-body {
+        padding: 14px !important;
+    }
+
+    #pixQrCodeModal .pix-qrcode-layout {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    #pixQrCodeModal .pix-qrcode-preview,
+    #pixQrCodeModal .pix-qrcode-info {
+        width: 100% !important;
+    }
+
+    #pixQrCodeModal .pix-qrcode-chave-row {
+        align-items: start !important;
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) 32px !important;
+    }
+
+    #pixQrCodeModal .pix-qrcode-chave {
+        display: block !important;
+        flex: 1 1 auto !important;
+        line-height: 1.35 !important;
+        min-width: 0 !important;
+        overflow-wrap: anywhere !important;
+        width: 100% !important;
+    }
+
+    #pixQrCodeModal .pix-qrcode-edit-button {
+        flex: 0 0 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        padding: 0 !important;
+        width: 32px !important;
+    }
+
+    #pixQrCodeModal .pix-qrcode-container {
+        aspect-ratio: 1 / 1 !important;
+        min-height: auto !important;
+        width: min(74vw, 270px) !important;
+    }
+
+    #pixQrCodeModal .pix-qrcode-container img,
+    #pixQrCodeModal .pix-qrcode-container canvas {
+        max-height: min(70vw, 250px) !important;
+        max-width: min(70vw, 250px) !important;
+    }
+}
+
+#pixQrCodeModal .modal-footer {
+    align-items: center;
+    justify-content: center;
+    padding: 16px 20px;
+}
+
+#pixQrCodeModal .modal-footer .footer-secondary {
+    display: flex;
+    justify-content: center;
+    margin-left: 0;
+    width: 100%;
+}
+
+#pixQrCodeModal .modal-footer .close-modal-btn {
+    justify-content: center;
+    min-width: 132px;
+    text-align: center;
+}
+
+#pixQrCodeModal .modal-header {
+    justify-content: center;
+}
+
+#pixQrCodeModal .modal-title {
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+}
+
+@media screen and (max-width: 640px) {
+    #pixQrCodeModal .modal-footer {
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 14px !important;
+    }
+
+    #pixQrCodeModal .modal-footer .footer-secondary {
+        justify-content: center !important;
+        width: 100% !important;
+    }
+
+    #pixQrCodeModal .modal-footer .close-modal-btn {
+        justify-content: center !important;
+        min-width: 132px !important;
+        width: min(100%, 180px) !important;
     }
 }

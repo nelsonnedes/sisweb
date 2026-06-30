@@ -30,6 +30,21 @@ function persistLocalValue(storageKey, data) {
     return true;
 }
 
+function readPersistedLocalValue(storageKey, fallback = null) {
+    try {
+        if (window.SiswebStorage && typeof window.SiswebStorage.read === 'function') {
+            const value = window.SiswebStorage.read(storageKey);
+            return value == null ? fallback : value;
+        }
+    } catch (_) {}
+    try {
+        const value = localStorage.getItem(storageKey);
+        return value == null ? fallback : value;
+    } catch (_) {
+        return fallback;
+    }
+}
+
 // ✅ CLASSE PRINCIPAL DE FILTROS
 class FolhaFiltros {
     constructor() {
@@ -81,31 +96,26 @@ class FolhaFiltros {
      */
     restorePersistedFilters() {
         try {
-            const saved = JSON.parse(localStorage.getItem('folha_filtros_ativos')||'{}');
+            const savedRaw = readPersistedLocalValue('folha_filtros_ativos', '{}');
+            const saved = typeof savedRaw === 'string' ? JSON.parse(savedRaw || '{}') : (savedRaw || {});
             const mesAnoFilter = document.getElementById('mesAno');
             const tipoFolhaFilter = document.getElementById('tipoFolha');
             const funcionarioFilter = document.getElementById('funcionarioFiltro');
             const normalizeMes = (val) => { if (window.FolhaUtils && typeof window.FolhaUtils.normalizeMesAno === 'function') { return window.FolhaUtils.normalizeMesAno(val); } const s = String(val||'').trim(); if (/^\d{4}-\d{2}$/.test(s)) return s; const m=s.match(/^(\d{2})\/(\d{4})$/); if(m) return `${m[2]}-${m[1]}`; const m2=s.match(/^(\d{4})[\/-](\d{2})$/); if(m2) return `${m2[1]}-${m2[2]}`; return s; };
             const now = new Date();
             const yyyyMm = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-            const folhas = (window.folhaSystem && Array.isArray(window.folhaSystem.folhas)) ? window.folhaSystem.folhas : [];
-            const existeMesSaved = saved && saved.mesAno && folhas.some(f => f && normalizeMes(f.mesAno) === normalizeMes(saved.mesAno));
+            const savedMesAno = saved && saved.mesAno ? normalizeMes(saved.mesAno) : '';
+            const mesAnoInicial = /^\d{4}-\d{2}$/.test(savedMesAno) ? savedMesAno : yyyyMm;
             const allowedTipos = ['', 'quinzena', 'mes'];
 
-            // Priorizar Mês/Ano atual se storage vazio ou incoerente
             if (mesAnoFilter) {
-                if (existeMesSaved) {
-                    mesAnoFilter.value = saved.mesAno;
-                    this.filtrosAtivos.mesAno = saved.mesAno;
-                } else {
-                    mesAnoFilter.value = yyyyMm;
-                    this.filtrosAtivos.mesAno = yyyyMm;
-                }
-            } else if (existeMesSaved) {
-                this.filtrosAtivos.mesAno = saved.mesAno;
+                mesAnoFilter.value = mesAnoInicial;
+                this.filtrosAtivos.mesAno = mesAnoInicial;
             } else {
-                this.filtrosAtivos.mesAno = yyyyMm;
+                this.filtrosAtivos.mesAno = mesAnoInicial;
             }
+            this._lastValidMesAno = mesAnoInicial;
+            this._restoredMesAnoFromStorage = !!savedMesAno;
 
             // Padronizar Tipo inicial para "Todos" quando storage estiver vazio ou inválido
             if (tipoFolhaFilter) {
@@ -168,14 +178,8 @@ class FolhaFiltros {
                 const obs = new MutationObserver(() => {
                     const v = mesAnoFilter.value;
                     if (!v && this._lastValidMesAno) {
-                        // Só restaurar se mês existir nos dados atuais
-                        const normalizeMes = (val) => { if (window.FolhaUtils && typeof window.FolhaUtils.normalizeMesAno === 'function') { return window.FolhaUtils.normalizeMesAno(val); } const s = String(val||'').trim(); if (/^\d{4}-\d{2}$/.test(s)) return s; const m=s.match(/^(\d{2})\/(\d{4})$/); if(m) return `${m[2]}-${m[1]}`; const m2=s.match(/^(\d{4})[\/-](\d{2})$/); if(m2) return `${m2[1]}-${m2[2]}`; return s; };
-                        const alvo = normalizeMes(this._lastValidMesAno);
-                        const existe = Array.isArray(this.dadosOriginais) && this.dadosOriginais.some(f => normalizeMes(f.mesAno) === alvo);
-                        if (existe) {
-                            console.log('🛡️ Restaurando Mês/Ano após limpeza não intencional:', this._lastValidMesAno);
-                            mesAnoFilter.value = this._lastValidMesAno;
-                        }
+                        console.log('🛡️ Restaurando Mês/Ano após limpeza não intencional:', this._lastValidMesAno);
+                        mesAnoFilter.value = this._lastValidMesAno;
                     }
                 });
                 obs.observe(mesAnoFilter, { attributes: true, attributeFilter: ['value'] });
@@ -373,17 +377,17 @@ class FolhaFiltros {
                                 }
                                 const base = String(p || '');
                                 if (!base) return base;
-                                if (/^companies\//.test(base) || /^users\//.test(base)) return base;
+                                if (/^companies(\/|$)/.test(base) || /^users(\/|$)/.test(base)) return base;
                                 const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
                                 if (svc && typeof svc.getNamespacedPath === 'function') {
                                     return svc.getNamespacedPath(base);
                                 }
-                                const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug || window.companyInfo.nome || window.companyInfo.name));
+                                const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
                                 if (rawTenant) return `companies/${String(rawTenant)}/${base}`;
                                 const stored = localStorage.getItem('company_info');
                                 if (stored) {
                                     const obj = JSON.parse(stored);
-                                    const t = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                                    const t = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                                     if (t) return `companies/${String(t)}/${base}`;
                                 }
                             } catch {}
@@ -944,6 +948,10 @@ class FolhaFiltros {
      * 🎨 RENDERIZAR LINHA DA TABELA
      */
     renderTableRow(lancamento) {
+        if (window.FolhaUtils && typeof window.FolhaUtils.renderizarLinhaLancamento === 'function') {
+            return window.FolhaUtils.renderizarLinhaLancamento(lancamento);
+        }
+
         const calculos = lancamento.calculos || {};
         let tipoPag = 'mes';
         // Normalizar tipoPagamento, independentemente do schema que veio do banco
@@ -963,7 +971,9 @@ class FolhaFiltros {
         let nome = (lancamento && lancamento.funcionario && lancamento.funcionario.nome) || '';
         let cargo = (lancamento && lancamento.funcionario && lancamento.funcionario.cargo) || '';
         const id = (lancamento && lancamento.funcionario && lancamento.funcionario.id) || (lancamento && lancamento.funcionarioId) || '';
-        if ((!nome || !cargo) && id) {
+        const formaPagamentoBase = (lancamento && lancamento.funcionario && lancamento.funcionario.formaPagamento) || lancamento.formaPagamento || '';
+        let funcionarioCadastro = null;
+        if ((!nome || !cargo || !formaPagamentoBase) && id) {
             const getF = () => {
                 if (window.folhaSystem && Array.isArray(window.folhaSystem.funcionarios)) {
                     const f = window.folhaSystem.funcionarios.find(x => x && String(x.id) === String(id));
@@ -977,6 +987,7 @@ class FolhaFiltros {
             };
             const found = getF();
             if (found) {
+                funcionarioCadastro = found;
                 nome = nome || found.nome || '';
                 cargo = cargo || found.cargo || '';
             }
@@ -985,29 +996,65 @@ class FolhaFiltros {
         const descontosTotalAttr = (window.FolhaUtils && typeof window.FolhaUtils.calcularDescontosDisplay === 'function')
             ? window.FolhaUtils.calcularDescontosDisplay(lancamento)
             : 0;
+        const totalVales = (window.FolhaUtils && typeof window.FolhaUtils.calcularTotalVales === 'function')
+            ? window.FolhaUtils.calcularTotalVales(lancamento)
+            : Number(lancamento.vales || 0);
         const rowId = (lancamento.id || lancamento.key || lancamento.$key || lancamento.recordId || '');
-        return `
-            <tr class="folha-row" data-id="${rowId}" data-descontos-total="${descontosTotalAttr}">
-                <td>
-                    <strong>${(nome || 'N/A')}</strong>
-                    <div style="font-size: 11px; color: #666;">
-                        ${(cargo || '')}
-                    </div>
-                </td>
-                <td>${this.formatMesAno(lancamento.mesAno)}</td>
-                <td>
-                    <span class="badge-status" style="background-color: ${this.getTipoColor(tipoPag)}">
-                        ${tipoLabel}
-                    </span>
-                </td>
-                <td>${this.getPercentualDisplay(lancamento)}</td>
-                <td>R$ ${(window.FolhaUtils && window.FolhaUtils.getSalarioBaseDisplay ? window.FolhaUtils.getSalarioBaseDisplay(lancamento) : Number(calculos.salarioBase || 0)).toFixed(2).replace('.', ',')}</td>
-                <td>R$ ${(window.FolhaUtils && window.FolhaUtils.calcularValorQuinzena ? window.FolhaUtils.calcularValorQuinzena(lancamento) : 0).toFixed(2).replace('.', ',')}</td>
-                <td>R$ ${window.FolhaUtils.formatarMoeda(window.FolhaUtils.calcularAcrescimosDisplay(lancamento))}</td>
-                <td>${window.FolhaUtils.formatarMoeda(window.FolhaUtils.calcularDescontosDisplay(lancamento))}</td>
-                <td>R$ ${Number(lancamento.vales || 0).toFixed(2).replace('.', ',')}</td>
-                <td><strong>${window.FolhaUtils.formatarMoeda(window.FolhaUtils.calcularSalarioLiquidoDisplay(lancamento))}</strong></td>
-                <td class="actions-cell">
+        const funcionarioDetalhado = {
+            ...(funcionarioCadastro || {}),
+            ...((lancamento && lancamento.funcionario) || {})
+        };
+        const salarioLiquido = (window.FolhaUtils && typeof window.FolhaUtils.calcularSalarioLiquidoDisplay === 'function')
+            ? window.FolhaUtils.calcularSalarioLiquidoDisplay(lancamento)
+            : Number(calculos.salarioLiquido || calculos.liquido || lancamento.salarioLiquido || 0);
+        const formatarMoeda = (valor) => (window.FolhaUtils && typeof window.FolhaUtils.formatarMoeda === 'function')
+            ? window.FolhaUtils.formatarMoeda(valor)
+            : `R$ ${Number(valor || 0).toFixed(2).replace('.', ',')}`;
+        const saldoLiquido = (window.FolhaUtils && typeof window.FolhaUtils.calcularSaldoLiquidoEmAberto === 'function')
+            ? window.FolhaUtils.calcularSaldoLiquidoEmAberto(lancamento)
+            : (statusNorm === 'mes_fechado' ? 0 : salarioLiquido);
+        const valorPago = (window.FolhaUtils && typeof window.FolhaUtils.calcularValorPagoLancamento === 'function')
+            ? window.FolhaUtils.calcularValorPagoLancamento(lancamento)
+            : (statusNorm === 'mes_fechado' ? salarioLiquido : 0);
+        const valorPix = (window.FolhaUtils && typeof window.FolhaUtils.calcularValorPixLancamento === 'function')
+            ? window.FolhaUtils.calcularValorPixLancamento(lancamento)
+            : saldoLiquido;
+        const pixQuitado = (window.FolhaUtils && typeof window.FolhaUtils.isPixLancamentoQuitado === 'function')
+            ? window.FolhaUtils.isPixLancamentoQuitado(lancamento)
+            : (valorPago > 0 && Math.abs(saldoLiquido) < 0.005);
+        const formaPagamentoHtml = (window.FolhaUtils && typeof window.FolhaUtils.formatarFormaPagamentoLancamento === 'function')
+            ? window.FolhaUtils.formatarFormaPagamentoLancamento({
+                id,
+                nome,
+                formaPagamento: funcionarioDetalhado.formaPagamento || lancamento.formaPagamento || '',
+                pix: funcionarioDetalhado.pix || funcionarioDetalhado.chavePix || lancamento.pix || lancamento.chavePix || '',
+                pixTipo: funcionarioDetalhado.pixTipo || funcionarioDetalhado.tipoPix || lancamento.pixTipo || '',
+                favorecidoPix: funcionarioDetalhado.favorecidoPix || funcionarioDetalhado.pixNome || lancamento.favorecidoPix || '',
+                beneficiario: funcionarioDetalhado.beneficiario || lancamento.beneficiario || '',
+                banco: funcionarioDetalhado.banco || lancamento.banco || '',
+                agencia: funcionarioDetalhado.agencia || lancamento.agencia || '',
+                conta: funcionarioDetalhado.conta || lancamento.conta || ''
+            }, {
+                id: rowId,
+                nomeFuncionario: nome,
+                liquido: valorPix,
+                liquidoFormatado: formatarMoeda(valorPix),
+                valorPago,
+                valorPagoFormatado: formatarMoeda(valorPago),
+                pagamentoQuitado: pixQuitado
+            })
+            : (funcionarioDetalhado.formaPagamento || lancamento.formaPagamento || '-');
+        const isMesFechadoPago = (window.FolhaUtils && typeof window.FolhaUtils.isLancamentoMesFechadoPago === 'function')
+            ? window.FolhaUtils.isLancamentoMesFechadoPago(lancamento, tipoPag, statusNorm)
+            : (tipoPag === 'mes' && statusNorm === 'mes_fechado');
+        const liquidoTabelaHtml = (window.FolhaUtils && typeof window.FolhaUtils.formatarLiquidoLancamentoTabela === 'function')
+            ? window.FolhaUtils.formatarLiquidoLancamentoTabela(lancamento, {
+                valorHistorico: salarioLiquido,
+                saldoAberto: saldoLiquido,
+                valorPago
+            })
+            : formatarMoeda(saldoLiquido);
+        const botoesAcaoFallback = `
                     <button class="action-button edit-button btn-editar" title="Editar" data-folha-id="${rowId}" onclick="__onEditFolhaButtonClick('${rowId}')">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -1018,6 +1065,37 @@ class FolhaFiltros {
                     <button class="action-button delete-button btn-excluir" title="Excluir" data-folha-id="${rowId}" onclick="deleteFolha('${rowId}')">
                         <i class="fas fa-trash"></i>
                     </button>
+                `;
+        const acoesLancamentoHtml = (window.FolhaUtils && typeof window.FolhaUtils.renderizarAcoesLancamento === 'function')
+            ? window.FolhaUtils.renderizarAcoesLancamento(lancamento, botoesAcaoFallback, {
+                tipoPagamento: tipoPag,
+                statusNorm
+            })
+            : botoesAcaoFallback;
+        return `
+            <tr class="folha-row ${statusNorm === 'mes_fechado' ? 'folha-fechada' : ''}" data-id="${rowId}" data-descontos-total="${descontosTotalAttr}">
+                <td>
+                    <strong>${(nome || 'N/A')}</strong>
+                    <div style="font-size: 11px; color: #666;">
+                        ${(cargo || '')}
+                    </div>
+                </td>
+                <td style="font-size: 12px;">${formaPagamentoHtml}</td>
+                <td>${this.formatMesAno(lancamento.mesAno)}</td>
+                <td>
+                    <span class="badge-status" style="background-color: ${this.getTipoColor(tipoPag)}">
+                        ${tipoLabel}
+                    </span>
+                </td>
+                <td>${this.getPercentualDisplay(lancamento)}</td>
+                <td>${formatarMoeda(window.FolhaUtils && window.FolhaUtils.getSalarioBaseDisplay ? window.FolhaUtils.getSalarioBaseDisplay(lancamento) : Number(calculos.salarioBase || 0))}</td>
+                <td>${formatarMoeda(window.FolhaUtils && window.FolhaUtils.calcularValorQuinzena ? window.FolhaUtils.calcularValorQuinzena(lancamento) : 0)}</td>
+                <td>${formatarMoeda(window.FolhaUtils && window.FolhaUtils.calcularAcrescimosDisplay ? window.FolhaUtils.calcularAcrescimosDisplay(lancamento) : 0)}</td>
+                <td>${formatarMoeda(window.FolhaUtils && window.FolhaUtils.calcularDescontosDisplay ? window.FolhaUtils.calcularDescontosDisplay(lancamento) : descontosTotalAttr)}</td>
+                <td>${formatarMoeda(totalVales)}</td>
+                <td class="valor-destaque liquido-cell">${liquidoTabelaHtml}</td>
+                <td class="actions-cell${isMesFechadoPago ? ' paid-actions-cell' : ''}">
+                    ${acoesLancamentoHtml}
                 </td>
             </tr>
         `;
@@ -1041,12 +1119,6 @@ class FolhaFiltros {
             }
             return true;
         });
-        const dadosBaixados = (this.dadosFiltrados || []).filter((lancamento) => {
-            if (window.FolhaUtils && typeof window.FolhaUtils.lancamentoContaNoResumo === 'function') {
-                return !window.FolhaUtils.lancamentoContaNoResumo(lancamento);
-            }
-            return false;
-        });
         const totais = dadosParaResumo.reduce((acc, lancamento) => {
             // ✅ CORREÇÃO CRÍTICA: Usar as mesmas funções do folha-main.js para consistência
             const salarioBase = window.FolhaUtils.getSalarioBaseDisplay ?
@@ -1056,7 +1128,9 @@ class FolhaFiltros {
             const valorQuinzena = window.FolhaUtils.calcularValorQuinzena(lancamento);
             const acrescimos = window.FolhaUtils.calcularAcrescimosDisplay(lancamento);
             const descontos = window.FolhaUtils.calcularDescontosDisplay(lancamento);
-            const liquido = window.FolhaUtils.calcularSalarioLiquidoDisplay(lancamento);
+            const liquido = window.FolhaUtils.calcularSaldoLiquidoEmAberto
+                ? window.FolhaUtils.calcularSaldoLiquidoEmAberto(lancamento)
+                : window.FolhaUtils.calcularSalarioLiquidoDisplay(lancamento);
 
             return {
                 bruto: acc.bruto + Number(salarioBase || 0),
@@ -1066,8 +1140,10 @@ class FolhaFiltros {
                 liquido: acc.liquido + Number(liquido || 0)
             };
         }, { bruto: 0, quinzena: 0, acrescimos: 0, descontos: 0, liquido: 0 });
-        totais.pagos = dadosBaixados.reduce((acc, lancamento) => {
-            const liquido = window.FolhaUtils.calcularSalarioLiquidoDisplay(lancamento);
+        totais.pagos = (this.dadosFiltrados || []).reduce((acc, lancamento) => {
+            const liquido = window.FolhaUtils.calcularValorPagoLancamento
+                ? window.FolhaUtils.calcularValorPagoLancamento(lancamento)
+                : window.FolhaUtils.calcularSalarioLiquidoDisplay(lancamento);
             return acc + Number(liquido || 0);
         }, 0);
         totais.restantes = totais.liquido;
@@ -1125,7 +1201,7 @@ class FolhaFiltros {
         }
         
         if (totalRestantes) {
-            totalRestantes.textContent = window.FolhaUtils.formatarMoeda(totais.restantes || totais.liquido || 0);
+            totalRestantes.textContent = window.FolhaUtils.formatarMoeda(totais.restantes ?? totais.liquido ?? 0);
         }
     }
     

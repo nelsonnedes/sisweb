@@ -68,6 +68,115 @@ let editingId = null;
 let currentPage = 1;
 const itemsPerPage = 10;
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escapeJsString(value) {
+    return String(value ?? '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\r?\n/g, ' ');
+}
+
+function notifyParentClientsUpdated(detail = {}) {
+    try {
+        window.dispatchEvent(new CustomEvent('clients:updated', { detail }));
+    } catch (_) {}
+    try {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+                source: 'sisweb-commerce-embedded',
+                type: 'sisweb:clients:updated',
+                detail
+            }, window.location.origin);
+        }
+    } catch (_) {}
+}
+
+function refreshResponsiveTables() {
+    try {
+        if (window.SiswebCommerceResponsive && typeof window.SiswebCommerceResponsive.enhanceAll === 'function') {
+            window.SiswebCommerceResponsive.enhanceAll();
+        }
+    } catch (_) {}
+}
+
+function textValue(...values) {
+    for (const value of values) {
+        const clean = String(value || '').trim();
+        if (clean) return clean;
+    }
+    return '';
+}
+
+function buildFiscalFields(item = {}) {
+    const documento = textValue(item.documento, item.document, item.cnpj, item.cpf);
+    const tipoPessoa = textValue(item.tipoPessoa, item.personType, item.fiscalPersonType);
+    const inscricaoEstadual = textValue(item.inscricaoEstadual, item.stateRegistration, item.ie);
+    const inscricaoMunicipal = textValue(item.inscricaoMunicipal, item.municipalRegistration, item.im);
+    const indIEDest = textValue(item.indIEDest, item.indicadorInscricaoEstadual, item.ieIndicator);
+    const cep = textValue(item.cep, item.postalCode, item.zipCode);
+    const complemento = textValue(item.complemento, item.complement);
+    const codigoMunicipio = textValue(item.codigoMunicipio, item.municipioCodigo, item.municipalityCode, item.cMun, item.ibgeCode);
+    const paisCodigo = textValue(item.paisCodigo, item.countryCode, item.cPais) || '1058';
+    const pais = textValue(item.pais, item.country, item.countryName, item.xPais) || 'Brasil';
+    const suframa = textValue(item.suframa, item.SUFRAMA);
+
+    return {
+        documento,
+        document: documento,
+        cnpj: documento,
+        tipoPessoa,
+        personType: tipoPessoa,
+        fiscalPersonType: tipoPessoa,
+        inscricaoEstadual,
+        stateRegistration: inscricaoEstadual,
+        ie: inscricaoEstadual,
+        inscricaoMunicipal,
+        municipalRegistration: inscricaoMunicipal,
+        indIEDest,
+        indicadorInscricaoEstadual: indIEDest,
+        ieIndicator: indIEDest,
+        cep,
+        postalCode: cep,
+        complemento,
+        complement: complemento,
+        codigoMunicipio,
+        municipioCodigo: codigoMunicipio,
+        municipalityCode: codigoMunicipio,
+        cMun: codigoMunicipio,
+        ibgeCode: codigoMunicipio,
+        paisCodigo,
+        countryCode: paisCodigo,
+        cPais: paisCodigo,
+        pais,
+        country: pais,
+        countryName: pais,
+        xPais: pais,
+        suframa
+    };
+}
+
+function syncSelectedMunicipalityCode() {
+    const codeInput = elements.municipalityCodeInput;
+    const citySelect = elements.citySelect;
+    if (!codeInput || !citySelect || codeInput.value) return;
+    const selected = citySelect.options[citySelect.selectedIndex];
+    const ibgeCode = selected && selected.dataset ? selected.dataset.ibgeCode : '';
+    if (ibgeCode) codeInput.value = ibgeCode;
+}
+
+function restoreFiscalDefaults() {
+    if (elements.countryCodeInput && !elements.countryCodeInput.value) elements.countryCodeInput.value = '1058';
+    if (elements.countryNameInput && !elements.countryNameInput.value) elements.countryNameInput.value = 'Brasil';
+}
+
 function normalizeClient(item, fallbackId = null) {
     const nome = String(item?.name || item?.nome || '').trim();
     const estado = String(item?.state || item?.estado || '').trim();
@@ -80,12 +189,13 @@ function normalizeClient(item, fallbackId = null) {
     const id = String(item?.id || fallbackId || '').trim();
     const createdAt = item?.createdAt || item?.created || null;
     const updatedAt = item?.updatedAt || item?.updated || null;
+    const fiscal = buildFiscalFields(item);
     return {
         id,
         nome,
         name: nome,
         nomeCompleto: String(item?.nomeCompleto || nome).trim(),
-        cnpj: String(item?.cnpj || '').trim(),
+        ...fiscal,
         estado,
         state: estado,
         cidade,
@@ -99,6 +209,8 @@ function normalizeClient(item, fallbackId = null) {
         number: numero,
         bairro,
         neighborhood: bairro,
+        complemento: fiscal.complemento,
+        complement: fiscal.complement,
         obs,
         observacoes: obs,
         observations: obs,
@@ -123,12 +235,23 @@ const elements = {
     // Form Inputs
     nameInput: document.getElementById('name'),
     cnpjInput: document.getElementById('cnpj'),
+    emailInput: document.getElementById('email'),
     phoneInput: document.getElementById('phone'),
+    personTypeInput: document.getElementById('personType'),
+    ieIndicatorInput: document.getElementById('ieIndicator'),
+    stateRegistrationInput: document.getElementById('stateRegistration'),
+    municipalRegistrationInput: document.getElementById('municipalRegistration'),
+    suframaInput: document.getElementById('suframa'),
+    postalCodeInput: document.getElementById('postalCode'),
     addressInput: document.getElementById('address'),
     numberInput: document.getElementById('number'),
     neighborhoodInput: document.getElementById('neighborhood'),
+    complementInput: document.getElementById('complement'),
     stateSelect: document.getElementById('state'),
     citySelect: document.getElementById('city'),
+    municipalityCodeInput: document.getElementById('municipalityCode'),
+    countryCodeInput: document.getElementById('countryCode'),
+    countryNameInput: document.getElementById('countryName'),
     obsInput: document.getElementById('obs'),
     
     saveBtn: document.getElementById('saveBtn'),
@@ -161,10 +284,12 @@ function setupListeners() {
     elements.stateSelect.addEventListener('change', (e) => {
         loadCities(e.target.value);
     });
+    elements.citySelect.addEventListener('change', syncSelectedMunicipalityCode);
 
     window.openNewModal = () => {
         editingId = null;
         elements.form.reset();
+        restoreFiscalDefaults();
         elements.modalTitle.textContent = 'Novo Cliente';
         elements.saveBtn.textContent = 'Salvar';
         elements.citySelect.innerHTML = '<option value="">Selecione primeiro o estado</option>';
@@ -188,6 +313,13 @@ function setupMasks() {
         let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
         e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
     });
+
+    if (elements.postalCodeInput) {
+        elements.postalCodeInput.addEventListener('input', (e) => {
+            const x = e.target.value.replace(/\D/g, '').slice(0, 8).match(/(\d{0,5})(\d{0,3})/);
+            e.target.value = !x[2] ? x[1] : `${x[1]}-${x[2]}`;
+        });
+    }
 }
 
 async function loadCities(uf, selectedCity = null) {
@@ -207,11 +339,13 @@ async function loadCities(uf, selectedCity = null) {
             const option = document.createElement('option');
             option.value = city.nome;
             option.textContent = city.nome;
+            option.dataset.ibgeCode = String(city.id || '');
             elements.citySelect.appendChild(option);
         });
 
         if (selectedCity) {
             elements.citySelect.value = selectedCity;
+            syncSelectedMunicipalityCode();
         }
     } catch (error) {
         console.error('Erro ao carregar cidades:', error);
@@ -267,6 +401,21 @@ async function handleSave(e) {
         nome: name,
         name,
         cnpj: elements.cnpjInput.value.trim(),
+        documento: elements.cnpjInput.value.trim(),
+        document: elements.cnpjInput.value.trim(),
+        email: elements.emailInput?.value.trim() || '',
+        tipoPessoa: elements.personTypeInput?.value.trim() || '',
+        personType: elements.personTypeInput?.value.trim() || '',
+        indIEDest: elements.ieIndicatorInput?.value.trim() || '',
+        indicadorInscricaoEstadual: elements.ieIndicatorInput?.value.trim() || '',
+        ieIndicator: elements.ieIndicatorInput?.value.trim() || '',
+        inscricaoEstadual: elements.stateRegistrationInput?.value.trim() || '',
+        stateRegistration: elements.stateRegistrationInput?.value.trim() || '',
+        inscricaoMunicipal: elements.municipalRegistrationInput?.value.trim() || '',
+        municipalRegistration: elements.municipalRegistrationInput?.value.trim() || '',
+        suframa: elements.suframaInput?.value.trim() || '',
+        cep: elements.postalCodeInput?.value.trim() || '',
+        postalCode: elements.postalCodeInput?.value.trim() || '',
         telefone: elements.phoneInput.value.trim(),
         phone: elements.phoneInput.value.trim(),
         endereco: elements.addressInput.value.trim(),
@@ -275,10 +424,23 @@ async function handleSave(e) {
         number: elements.numberInput.value.trim(),
         bairro: elements.neighborhoodInput.value.trim(),
         neighborhood: elements.neighborhoodInput.value.trim(),
+        complemento: elements.complementInput?.value.trim() || '',
+        complement: elements.complementInput?.value.trim() || '',
         estado: elements.stateSelect.value,
         state: elements.stateSelect.value,
         cidade: elements.citySelect.value,
         city: elements.citySelect.value,
+        codigoMunicipio: elements.municipalityCodeInput?.value.trim() || '',
+        municipioCodigo: elements.municipalityCodeInput?.value.trim() || '',
+        municipalityCode: elements.municipalityCodeInput?.value.trim() || '',
+        cMun: elements.municipalityCodeInput?.value.trim() || '',
+        paisCodigo: elements.countryCodeInput?.value.trim() || '1058',
+        countryCode: elements.countryCodeInput?.value.trim() || '1058',
+        cPais: elements.countryCodeInput?.value.trim() || '1058',
+        pais: elements.countryNameInput?.value.trim() || 'Brasil',
+        country: elements.countryNameInput?.value.trim() || 'Brasil',
+        countryName: elements.countryNameInput?.value.trim() || 'Brasil',
+        xPais: elements.countryNameInput?.value.trim() || 'Brasil',
         obs: elements.obsInput.value.trim(),
         observacoes: elements.obsInput.value.trim(),
         observations: elements.obsInput.value.trim(),
@@ -329,6 +491,7 @@ async function handleSave(e) {
         }
         
         showToast(editingId ? 'Cliente atualizado!' : 'Cliente criado!', 'success');
+        notifyParentClientsUpdated({ id: data.id || editingId || null, client: data });
         closeModal();
         await loadData();
     } catch (error) {
@@ -345,12 +508,23 @@ window.editItem = async (id) => {
 
     editingId = id;
     elements.nameInput.value = item.name || item.nome || '';
-    elements.cnpjInput.value = item.cnpj || '';
+    elements.cnpjInput.value = item.documento || item.document || item.cnpj || item.cpf || '';
+    if (elements.emailInput) elements.emailInput.value = item.email || '';
+    if (elements.personTypeInput) elements.personTypeInput.value = item.tipoPessoa || item.personType || item.fiscalPersonType || '';
+    if (elements.ieIndicatorInput) elements.ieIndicatorInput.value = item.indIEDest || item.indicadorInscricaoEstadual || item.ieIndicator || '';
+    if (elements.stateRegistrationInput) elements.stateRegistrationInput.value = item.inscricaoEstadual || item.stateRegistration || item.ie || '';
+    if (elements.municipalRegistrationInput) elements.municipalRegistrationInput.value = item.inscricaoMunicipal || item.municipalRegistration || '';
+    if (elements.suframaInput) elements.suframaInput.value = item.suframa || '';
+    if (elements.postalCodeInput) elements.postalCodeInput.value = item.cep || item.postalCode || '';
     elements.phoneInput.value = item.phone || item.telefone || '';
     elements.addressInput.value = item.address || item.endereco || '';
     elements.numberInput.value = item.number || item.numero || '';
     elements.neighborhoodInput.value = item.neighborhood || item.bairro || '';
+    if (elements.complementInput) elements.complementInput.value = item.complemento || item.complement || '';
     elements.stateSelect.value = item.state || item.estado || '';
+    if (elements.municipalityCodeInput) elements.municipalityCodeInput.value = item.codigoMunicipio || item.municipioCodigo || item.municipalityCode || item.cMun || item.ibgeCode || '';
+    if (elements.countryCodeInput) elements.countryCodeInput.value = item.paisCodigo || item.countryCode || item.cPais || '1058';
+    if (elements.countryNameInput) elements.countryNameInput.value = item.pais || item.country || item.countryName || item.xPais || 'Brasil';
     elements.obsInput.value = item.obs || '';
     
     if (item.state || item.estado) {
@@ -385,6 +559,7 @@ window.deleteItem = async (id) => {
         }
         
         showToast('Cliente excluído!', 'success');
+        notifyParentClientsUpdated({ id, deletedId: id });
         await loadData();
     } catch (error) {
         console.error('Erro ao excluir:', error);
@@ -402,17 +577,19 @@ function renderTable(list = currentList) {
     
     elements.tableBody.innerHTML = paginatedItems.map(item => `
         <tr>
-            <td><strong>${item.name || item.nome || '-'}</strong></td>
-            <td>${item.cnpj || '-'}</td>
-            <td>${item.phone || item.telefone || '-'}</td>
-            <td>${(item.city || item.cidade || '')} / ${(item.state || item.estado || '')}</td>
-            <td class="actions-cell">
-                <button onclick="editItem('${item.id}')" class="btn btn-sm btn-primary" title="Editar">
+            <td data-label="Nome / Razão Social"><strong>${escapeHtml(item.name || item.nome || '-')}</strong></td>
+            <td data-label="CNPJ / CPF">${escapeHtml(item.cnpj || '-')}</td>
+            <td data-label="Telefone">${escapeHtml(item.phone || item.telefone || '-')}</td>
+            <td data-label="Localização">${escapeHtml((item.city || item.cidade || '') + ' / ' + (item.state || item.estado || ''))}</td>
+            <td data-label="Ações" class="actions-cell commerce-actions-cell">
+                <div class="commerce-actions-wrap">
+                <button onclick="editItem('${escapeJsString(item.id)}')" class="btn btn-sm btn-primary" title="Editar" aria-label="Editar cliente">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button onclick="deleteItem('${item.id}')" class="btn btn-sm btn-danger" title="Excluir">
+                <button onclick="deleteItem('${escapeJsString(item.id)}')" class="btn btn-sm btn-danger" title="Excluir" aria-label="Excluir cliente">
                     <i class="fas fa-trash"></i>
                 </button>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -423,6 +600,7 @@ function renderTable(list = currentList) {
 
     elements.totalRecords.textContent = `Total: ${list.length}`;
     renderPagination(list.length);
+    refreshResponsiveTables();
 }
 
 function renderPagination(totalItems) {

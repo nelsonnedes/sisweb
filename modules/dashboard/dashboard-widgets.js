@@ -27,13 +27,20 @@ window.DashboardWidgets = (function() {
     // ✅ ESTADO DOS WIDGETS
     let widgetState = {
         charts: new Map(),
-        lastData: null
+        lastData: null,
+        initialized: false,
+        updateFrame: null
     };
 
     /**
      * ✅ INICIALIZAR WIDGETS
      */
     function init() {
+        if (widgetState.initialized) {
+            renderDashboardStructure();
+            return true;
+        }
+
         console.log('📊 Inicializando Dashboard Widgets...');
         
         try {
@@ -43,6 +50,7 @@ window.DashboardWidgets = (function() {
             // Renderizar estrutura inicial
             renderDashboardStructure();
             
+            widgetState.initialized = true;
             console.log('✅ Dashboard Widgets inicializados');
             return true;
             
@@ -62,13 +70,19 @@ window.DashboardWidgets = (function() {
             return;
         }
 
+        const existingRoot = document.getElementById('dashboardRoot');
+        if (existingRoot) {
+            return;
+        }
+
         // Inserir estrutura após o menu
         const dashboardHTML = `
+            <section id="dashboardRoot" class="dashboard-shell is-loading" aria-busy="true">
             <!-- Loading Indicator -->
-            <div class="dashboard-loading" style="display: none;">
+            <div class="dashboard-loading" aria-live="polite">
                 <div class="loading-spinner">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <span>Carregando dados...</span>
+                    <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+                    <span>Preparando painel...</span>
                 </div>
             </div>
 
@@ -76,7 +90,7 @@ window.DashboardWidgets = (function() {
             <div class="dashboard-header">
                 <div class="header-info">
                     <h1><i class="fas fa-tachometer-alt"></i> Dashboard Sistema</h1>
-                    <p class="last-update">Última atualização: <span id="lastUpdateTime">Carregando...</span></p>
+                    <p class="last-update">Última atualização: <span id="lastUpdateTime">Usando dados locais...</span></p>
                 </div>
                 <div class="header-actions">
                     <button class="btn-refresh" onclick="refreshDashboard()" title="Atualizar dados do dashboard">
@@ -86,26 +100,30 @@ window.DashboardWidgets = (function() {
             </div>
 
             <!-- KPI Cards -->
-            <div class="kpi-grid" id="kpiGrid">
-                <!-- Cards serão inseridos aqui -->
+            <div class="kpi-grid" id="kpiGrid" aria-live="polite">
+                <div class="kpi-card dashboard-skeleton-card"></div>
+                <div class="kpi-card dashboard-skeleton-card"></div>
+                <div class="kpi-card dashboard-skeleton-card"></div>
+                <div class="kpi-card dashboard-skeleton-card"></div>
             </div>
 
             <!-- Cotação do Dólar -->
             <div class="dollar-widget" id="dollarWidget">
-                <!-- Widget do dólar será inserido aqui -->
+                <div class="dashboard-placeholder">Cotação será carregada junto com o painel.</div>
             </div>
 
             <!-- Seção Financeira -->
             <div class="data-tables">
                 <div class="table-container">
                     <h3><i class="fas fa-arrow-down text-danger"></i> A Receber Vencidas</h3>
-                    <div id="contasReceberVencidasTable"></div>
+                    <div id="contasReceberVencidasTable"><div class="dashboard-placeholder">Aguardando dados financeiros...</div></div>
                 </div>
                 <div class="table-container">
                     <h3><i class="fas fa-arrow-up text-warning"></i> A Pagar Vencidas</h3>
-                    <div id="contasPagarVencidasTable"></div>
+                    <div id="contasPagarVencidasTable"><div class="dashboard-placeholder">Aguardando dados financeiros...</div></div>
                 </div>
             </div>
+            </section>
         `;
 
         // ✅ INSERÇÃO OTIMIZADA: Inserir após o menu para manter consistência
@@ -124,25 +142,31 @@ window.DashboardWidgets = (function() {
     function handleDataUpdate(event) {
         const data = event.detail;
         widgetState.lastData = data;
+
+        const kpiGrid = document.getElementById('kpiGrid');
+        const isFirstPaint = kpiGrid && kpiGrid.querySelector('.dashboard-skeleton-card');
+        if (isFirstPaint) {
+            renderDashboardData(data);
+            return;
+        }
         
-        // ✅ ATUALIZAÇÃO SEQUENCIAL PARA EVITAR SOBRECARGA
+        if (widgetState.updateFrame) {
+            cancelAnimationFrame(widgetState.updateFrame);
+        }
+
+        widgetState.updateFrame = requestAnimationFrame(() => {
+            widgetState.updateFrame = null;
+            renderDashboardData(data);
+        });
+    }
+
+    function renderDashboardData(data) {
         try {
             updateKPICards(data);
-        
-            // Pequeno delay entre atualizações para melhor performance
-            setTimeout(() => {
-        updateDollarWidget(data.dollarRate);
-                updateLastUpdateTime();
-            }, 100);
-            
-            setTimeout(() => {
-        updateCharts(data);
-            }, 200);
-            
-            setTimeout(() => {
-        updateDataTables(data);
-            }, 300);
-            
+            updateDollarWidget(data.dollarRate);
+            updateLastUpdateTime();
+            updateCharts(data);
+            updateDataTables(data);
         } catch (error) {
             console.error('❌ Erro ao atualizar widgets:', error);
         }
@@ -155,7 +179,7 @@ window.DashboardWidgets = (function() {
         const stats = calculateStatistics(data);
         
         const cardsHTML = `
-            <div class="kpi-card romaneios fade-in-up">
+            <div class="kpi-card romaneios">
                 <div class="kpi-icon">
                     <i class="fas fa-file-alt"></i>
                 </div>
@@ -168,7 +192,7 @@ window.DashboardWidgets = (function() {
                 </div>
             </div>
 
-            <div class="kpi-card clientes fade-in-up">
+            <div class="kpi-card clientes">
                 <div class="kpi-icon">
                     <i class="fas fa-users"></i>
                 </div>
@@ -181,7 +205,7 @@ window.DashboardWidgets = (function() {
                 </div>
             </div>
 
-            <div class="kpi-card funcionarios fade-in-up">
+            <div class="kpi-card funcionarios">
                 <div class="kpi-icon">
                     <i class="fas fa-user-tie"></i>
                 </div>
@@ -194,7 +218,7 @@ window.DashboardWidgets = (function() {
                 </div>
             </div>
 
-            <div class="kpi-card preromaneios fade-in-up">
+            <div class="kpi-card preromaneios">
                 <div class="kpi-icon">
                     <i class="fas fa-calculator"></i>
                 </div>
@@ -207,7 +231,7 @@ window.DashboardWidgets = (function() {
                 </div>
             </div>
 
-            <div class="kpi-card folha-total fade-in-up">
+            <div class="kpi-card folha-total">
                 <div class="kpi-icon">
                     <i class="fas fa-money-check-alt"></i>
                 </div>
@@ -218,7 +242,7 @@ window.DashboardWidgets = (function() {
                 </div>
             </div>
 
-            <div class="kpi-card folha-total fade-in-up">
+            <div class="kpi-card folha-total">
                 <div class="kpi-icon">
                     <i class="fas fa-hand-holding-usd"></i>
                 </div>
@@ -229,7 +253,7 @@ window.DashboardWidgets = (function() {
                 </div>
             </div>
 
-            <div class="kpi-card contas fade-in-up">
+            <div class="kpi-card contas">
                 <div class="kpi-icon">
                     <i class="fas fa-database"></i>
                     </div>
@@ -240,7 +264,7 @@ window.DashboardWidgets = (function() {
                 </div>
             </div>
 
-            <div class="kpi-card contas fade-in-up">
+            <div class="kpi-card contas">
                 <div class="kpi-icon">
                     <i class="fas fa-arrow-down"></i>
                 </div>
@@ -251,7 +275,7 @@ window.DashboardWidgets = (function() {
                 </div>
             </div>
 
-            <div class="kpi-card contas fade-in-up">
+            <div class="kpi-card contas">
                 <div class="kpi-icon">
                     <i class="fas fa-arrow-up"></i>
                     </div>
@@ -273,7 +297,13 @@ window.DashboardWidgets = (function() {
      * ✅ ATUALIZAR WIDGET DO DÓLAR
      */
     function updateDollarWidget(dollarRate) {
-        if (!dollarRate) return;
+        const dollarWidget = document.getElementById('dollarWidget');
+        if (!dollarWidget) return;
+
+        if (!dollarRate) {
+            dollarWidget.innerHTML = '<div class="dashboard-placeholder">Cotação indisponível no momento.</div>';
+            return;
+        }
         
         const variation = dollarRate.variation || 0;
         const variationClass = variation >= 0 ? 'positive' : 'negative';
@@ -309,10 +339,7 @@ window.DashboardWidgets = (function() {
             </div>
         `;
         
-        const dollarWidget = document.getElementById('dollarWidget');
-        if (dollarWidget) {
-            dollarWidget.innerHTML = widgetHTML;
-        }
+        dollarWidget.innerHTML = widgetHTML;
     }
 
     /**
@@ -342,7 +369,7 @@ window.DashboardWidgets = (function() {
                 data: [
                     data.romaneios.tl.length,
                     data.romaneios.pct.length,
-                    data.romaneios.tora.length
+                    (data.romaneios.pes || []).length
                 ],
                 backgroundColor: [
                     CHART_COLORS.primary,
@@ -404,7 +431,7 @@ window.DashboardWidgets = (function() {
                     tension: 0.4
                 },
                 {
-                    label: 'Tora',
+                    label: 'Pés',
                     data: monthlyData.tora,
                     borderColor: CHART_COLORS.warning,
                     backgroundColor: CHART_COLORS.warning + '20',
@@ -525,44 +552,97 @@ window.DashboardWidgets = (function() {
         const endIndex = startIndex + state.itemsPerPage;
         const currentItems = allItems.slice(startIndex, endIndex);
         const totalPages = Math.ceil(allItems.length / state.itemsPerPage);
+        const safeTotalPages = Math.max(1, totalPages);
+        const totalOpen = allItems.reduce((sum, item) => sum + parseMoney(item.valorRestante), 0);
+        const variant = tableType === 'contasReceber' ? 'receber' : 'pagar';
+        const rangeStart = allItems.length > 0 ? startIndex + 1 : 0;
+        const rangeEnd = allItems.length > 0 ? Math.min(endIndex, allItems.length) : 0;
+        const itemLabel = allItems.length === 1 ? 'título vencido' : 'títulos vencidos';
         
         console.log(`📊 Paginação: ${startIndex + 1}-${Math.min(endIndex, allItems.length)} de ${allItems.length} itens, página ${state.currentPage}/${totalPages}`);
 
         let html = `
-            <div class="paginated-table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                            <th>Descrição</th>
-                            <th>Valor</th>
-                            <th>Vencimento</th>
-                            <th>Status</th>
-                    </tr>
-                </thead>
-                    <tbody>`;
+            <div class="paginated-table-container overdue-table-shell overdue-table-shell--${variant}">
+                <div class="overdue-table-summary" aria-label="Resumo de ${escapeHTML(tableTitle)} vencidas">
+                    <div class="overdue-summary-main">
+                        <span class="overdue-summary-kicker">Vencidos</span>
+                        <strong>${allItems.length}</strong>
+                        <span>${itemLabel}</span>
+                    </div>
+                    <div class="overdue-summary-metric">
+                        <span>Total em aberto</span>
+                        <strong>${formatCurrency(totalOpen)}</strong>
+                    </div>
+                    <div class="overdue-summary-range">
+                        <i class="fas fa-layer-group" aria-hidden="true"></i>
+                        <span>${rangeStart}-${rangeEnd} de ${allItems.length}</span>
+                    </div>
+                </div>
+                <div class="overdue-table-scroll">
+                    <table class="data-table overdue-table">
+                        <thead>
+                            <tr>
+                                <th>Título</th>
+                                <th>Valor</th>
+                                <th>Vencimento</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
 
         if (currentItems.length === 0) {
-            html += `<tr><td colspan="4" class="no-data">Nenhum título vencido</td></tr>`;
+            html += `
+                <tr class="overdue-empty-row">
+                    <td colspan="4" class="no-data">
+                        <div class="overdue-empty-state">
+                            <i class="fas fa-check-circle" aria-hidden="true"></i>
+                            <strong>Nenhum título vencido</strong>
+                            <span>Quando houver pendências vencidas, elas aparecem aqui.</span>
+                        </div>
+                    </td>
+                </tr>`;
         } else {
             currentItems.forEach(item => {
                 const venc = getContaVencimentoValue(item);
+                const descricao = item.descricao || item.titulo || 'Sem descrição';
+                const pessoa = getContaPartyName(item, tableType);
+                const documento = getContaDocumentLabel(item);
+                const dias = getDaysOverdue(venc);
+                const atrasoLabel = formatOverdueDays(dias);
+                const urgencyClass = dias >= 30 ? 'is-critical' : dias >= 7 ? 'is-warning' : 'is-recent';
                 html += `
-                <tr class="overdue-table-row">
-                    <td>${item.descricao || item.titulo || '—'}</td>
-                    <td>${formatCurrency(parseMoney(item.valorRestante))}</td>
-                    <td>${formatDate(venc)}</td>
-                    <td class="status-vencido">VENCIDO</td>
+                <tr class="overdue-table-row ${urgencyClass}">
+                    <td class="overdue-title-cell" data-label="Título">
+                        <div class="overdue-title-stack">
+                            <strong>${escapeHTML(descricao)}</strong>
+                            <span>${escapeHTML(pessoa)}</span>
+                            ${documento ? `<small>${escapeHTML(documento)}</small>` : ''}
+                        </div>
+                    </td>
+                    <td class="overdue-value-cell" data-label="Valor">
+                        <strong>${formatCurrency(parseMoney(item.valorRestante))}</strong>
+                    </td>
+                    <td class="overdue-date-cell" data-label="Vencimento">
+                        <strong>${formatDate(venc)}</strong>
+                        <span>${escapeHTML(atrasoLabel)}</span>
+                    </td>
+                    <td class="status-vencido" data-label="Status">
+                        <span class="overdue-status-badge">Vencido</span>
+                    </td>
                 </tr>`;
             });
         }
 
-        html += `</tbody></table>`;
+        html += `
+                        </tbody>
+                    </table>
+                </div>`;
 
         html += `
                 <div class="pagination-controls">
                     <div class="pagination-info">
                         <span>Total: ${allItems.length} itens</span>
-                        <span style="margin-left:10px;">Página ${state.currentPage} de ${Math.max(1, totalPages)}</span>
+                        <span>Página ${state.currentPage} de ${safeTotalPages}</span>
                     </div>`;
 
         if (totalPages > 1) {
@@ -584,6 +664,52 @@ window.DashboardWidgets = (function() {
 
         html += `</div>`;
         container.innerHTML = html;
+    }
+
+    function getContaPartyName(item, tableType) {
+        if (tableType === 'contasReceber') {
+            const cliente = item.cliente;
+            if (cliente && typeof cliente === 'object') {
+                return cliente.nome || cliente.name || cliente.nomeCompleto || 'Cliente não informado';
+            }
+            return cliente || item.clienteNome || item.nomeCliente || 'Cliente não informado';
+        }
+
+        const fornecedor = item.fornecedor;
+        if (fornecedor && typeof fornecedor === 'object') {
+            return fornecedor.nome || fornecedor.name || fornecedor.razaoSocial || fornecedor.fantasia || 'Fornecedor não informado';
+        }
+        return fornecedor || item.funcionarioNome || item.fornecedorNome || 'Fornecedor não informado';
+    }
+
+    function getContaDocumentLabel(item) {
+        const doc = item.pedidoNumero || item.numeroPedido || item.documento || item.numero || item.id;
+        return doc ? `Doc. ${doc}` : '';
+    }
+
+    function getDaysOverdue(dateValue) {
+        const ts = normalizeDateToTimestamp(dateValue);
+        if (ts == null) return 0;
+        const due = new Date(ts);
+        const today = new Date();
+        due.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+        return Math.max(0, Math.floor((today.getTime() - due.getTime()) / 86400000));
+    }
+
+    function formatOverdueDays(days) {
+        if (!Number.isFinite(days) || days <= 0) return 'Vence hoje';
+        if (days === 1) return '1 dia em atraso';
+        return `${days} dias em atraso`;
+    }
+
+    function escapeHTML(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     // ✅ CACHE DOS DADOS PARA PAGINAÇÃO
@@ -1198,7 +1324,7 @@ window.DashboardWidgets = (function() {
             
             tl.push(countRomaneiosByMonth(data.romaneios.tl, monthKey));
             pct.push(countRomaneiosByMonth(data.romaneios.pct, monthKey));
-            tora.push(countRomaneiosByMonth(data.romaneios.tora, monthKey));
+            tora.push(countRomaneiosByMonth(data.romaneios.pes || [], monthKey));
         }
         
         return { months, tl, pct, tora };
@@ -1352,25 +1478,6 @@ window.DashboardWidgets = (function() {
         if (element) {
             element.textContent = new Date().toLocaleString('pt-BR');
         }
-
-        try {
-            const params = new URLSearchParams(window.location.search || '');
-            const badgeText = (params.get('previewEmployees') === 'true' || params.get('purgeFinance') === 'true' || params.get('purgeFolhas') === 'true')
-                ? 'Dados Reais'
-                : 'Amostras desativadas';
-            const badgeColor = (badgeText === 'Dados Reais') ? '#28a745' : '#6c757d';
-            let badge = document.getElementById('dataSourceBadge');
-            if (!badge) {
-                badge = document.createElement('span');
-                badge.id = 'dataSourceBadge';
-                badge.style.cssText = 'margin-left:10px; padding:2px 8px; border-radius:12px; font-size:11px; color:#fff; background:'+badgeColor+';';
-                if (element && element.parentElement) {
-                    element.parentElement.appendChild(badge);
-                }
-            }
-            badge.textContent = badgeText;
-            badge.style.background = badgeColor;
-        } catch (e) { /* noop */ }
     }
 
     // ✅ FUNÇÃO GLOBAL PARA REFRESH MANUAL

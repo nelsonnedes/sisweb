@@ -242,17 +242,17 @@ class FolhaFirebaseService {
                 }
                 const base = String(p || '');
                 if (!base) return base;
-                if (/^companies\//.test(base) || /^users\//.test(base)) return base;
+                if (/^companies(\/|$)/.test(base) || /^users(\/|$)/.test(base)) return base;
                 const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
                 if (svc && typeof svc.getNamespacedPath === 'function') {
                     return svc.getNamespacedPath(base);
                 }
-                const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug || window.companyInfo.nome || window.companyInfo.name));
+                const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
                 if (rawTenant) return `companies/${String(rawTenant)}/${base}`;
                 const stored = localStorage.getItem('company_info');
                 if (stored) {
                     const obj = JSON.parse(stored);
-                    const t = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                    const t = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                     if (t) return `companies/${String(t)}/${base}`;
                 }
             } catch {}
@@ -506,17 +506,17 @@ class DataSyncManager {
                     }
                     const base = String(p || '');
                     if (!base) return base;
-                    if (/^companies\//.test(base) || /^users\//.test(base)) return base;
+                    if (/^companies(\/|$)/.test(base) || /^users(\/|$)/.test(base)) return base;
                     const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
                     if (svc && typeof svc.getNamespacedPath === 'function') {
                         return svc.getNamespacedPath(base);
                     }
-                    const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug || window.companyInfo.nome || window.companyInfo.name));
+                    const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
                     if (rawTenant) return `companies/${String(rawTenant)}/${base}`;
                     const stored = localStorage.getItem('company_info');
                     if (stored) {
                         const obj = JSON.parse(stored);
-                        const t = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                        const t = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                         if (t) return `companies/${String(t)}/${base}`;
                     }
                 } catch {}

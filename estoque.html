@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
-    <script src="menu-component.js?v=20260326"></script>
+    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
     <style>
         * {
             margin: 0;
@@ -20,6 +20,210 @@
         body {
             background-color: #f5f5f5;
             padding: 20px;
+        }
+
+        /* Melhorias UX/UI */
+        .table-responsive {
+            max-height: none;
+            overflow-x: auto;
+            overflow-y: visible;
+            border-radius: 6px;
+        }
+
+        .table-wide-estoque {
+            min-width: 1760px;
+        }
+
+        .table-wide-estoque-lg {
+            min-width: 1960px;
+        }
+
+        .table-wide-estoque-compact {
+            min-width: 1320px;
+        }
+        @media (max-width: 768px) {
+            .table-responsive.mobile-cards {
+                overflow-x: visible;
+            }
+            .table-responsive.mobile-cards .table-wide-estoque,
+            .table-responsive.mobile-cards .table-wide-estoque-lg,
+            .table-responsive.mobile-cards .table-wide-estoque-compact {
+                min-width: 0;
+                width: 100%;
+            }
+            .manual-saida-grid,
+            .filtro-toras-modal-grid {
+                min-width: 0 !important;
+                flex-wrap: wrap !important;
+                align-items: stretch !important;
+            }
+            .manual-saida-grid > input,
+            .manual-saida-grid > .species-combobox-inline,
+            .filtro-toras-modal-grid > input,
+            .filtro-toras-modal-grid > .species-combobox-inline,
+            .filtro-toras-modal-grid > button {
+                width: 100% !important;
+                min-width: 0 !important;
+                flex: 1 1 180px;
+            }
+        }
+        .table thead th {
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            z-index: 10;
+            box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
+        }
+        .table th input[type="checkbox"],
+        .table td input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            padding: 0;
+            cursor: pointer;
+            accent-color: #3498db;
+        }
+        .table th.relatorio-check-col,
+        .table td.relatorio-check-col {
+            width: 42px;
+            min-width: 42px;
+            text-align: center;
+        }
+        .table th.sticky-actions,
+        .table td.sticky-actions {
+            position: sticky;
+            right: 0;
+            z-index: 12;
+            width: 120px;
+            min-width: 120px;
+            max-width: 120px;
+            text-align: center;
+            white-space: nowrap;
+            background: #fff;
+            box-shadow: -10px 0 14px -14px rgba(15, 23, 42, 0.55);
+        }
+        .table thead th.sticky-actions {
+            z-index: 16;
+            background: #f8f9fa;
+        }
+        .table tbody tr:nth-child(even) td.sticky-actions {
+            background: #fafcff;
+        }
+        .table tbody tr:not(.skeleton-row):hover td.sticky-actions {
+            background: #f4f6f8;
+        }
+        .table td.actions-cell,
+        .table th.actions-col,
+        .table th.sticky-actions {
+            text-align: center;
+            vertical-align: middle;
+        }
+        .table td.actions-cell {
+            text-align: center;
+        }
+        .table .actions-cell-inner {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .table td.actions-cell .btn-small,
+        .table td.sticky-actions .btn-small {
+            flex: 0 0 auto;
+        }
+        .table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+        .table tbody tr:not(.skeleton-row):hover {
+            background-color: #f4f6f8;
+        }
+
+        /* Skeleton Loaders */
+        .skeleton-row td {
+            position: relative;
+            background-color: transparent;
+            border-bottom: 1px solid #f0f0f0;
+            padding: 12px;
+        }
+        .skeleton-box {
+            height: 18px;
+            background: #e2e5e7;
+            border-radius: 4px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        .skeleton-box::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0, rgba(255,255,255,0.4) 20%, rgba(255,255,255,0.4) 60%, rgba(255,255,255,0) 100%);
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            100% { transform: translateX(100%); }
+        }
+
+        /* Badges e Status Melhorados */
+        .status-indicator {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .status-alto {
+            background-color: #e6f4ea !important;
+            color: #1e8e3e !important;
+            border: none !important;
+        }
+        .status-baixo {
+            background-color: #fce8e6 !important;
+            color: #d93025 !important;
+            border: none !important;
+        }
+
+        /* Offcanvas / Drawer Premium */
+        .offcanvas-drawer {
+            background: #fff;
+            border: 1px solid #e1e4e8;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            animation: slideDown 0.3s ease-out;
+        }
+        .offcanvas-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .offcanvas-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #7f8c8d;
+            cursor: pointer;
+        }
+        .btn-close:hover {
+            color: #e74c3c;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* Note: Container styles are now in layout-comum.css */
@@ -93,22 +297,36 @@
 
         #relatorios .relatorios-filters-row {
             display: grid;
-            grid-template-columns: minmax(240px, 1.35fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(120px, 0.7fr) auto;
+            grid-template-columns: minmax(260px, 1.4fr) minmax(150px, 170px) minmax(150px, 170px) minmax(130px, 150px) minmax(270px, max-content);
             gap: 12px;
             align-items: end;
+        }
+
+        #relatorios .relatorios-filters-row .form-group {
+            min-width: 0;
+            margin-bottom: 0;
         }
 
         #relatorios .relatorios-actions {
             display: flex;
             gap: 10px;
-            flex-wrap: nowrap;
+            flex-wrap: wrap;
             justify-content: flex-end;
             align-items: center;
             padding-bottom: 2px;
         }
 
+        #relatorios .relatorios-actions-group {
+            grid-column: 5;
+            min-width: 270px;
+        }
+
+        #relatorios #relFiltroTipoGroup {
+            grid-column: 4;
+        }
+
         #relatorios #relFiltroTipo {
-            max-width: 140px;
+            max-width: none;
         }
 
         #relatorios .inline-checkbox {
@@ -128,10 +346,263 @@
             margin-top: 6px;
         }
 
-        @media (max-width: 980px) {
+        #relatorioContent .table-container {
+            overflow-x: auto;
+        }
+
+        #relatorioContent .check-relatorio,
+        #relatorioContent .check-todo-relatorio {
+            width: 16px;
+            height: 16px;
+        }
+
+        #relatorioResult .table th:last-child:not(.sticky-actions),
+        #relatorioResult .table td:last-child:not(.sticky-actions) {
+            width: auto;
+            text-align: inherit;
+            white-space: normal;
+        }
+
+        #relatorioResultHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        #relatorioResultHeader h3 {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .report-columns-btn {
+            background-color: #6b7280;
+        }
+
+        .report-columns-hint {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            height: 18px;
+            padding: 0 6px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.18);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1;
+            margin-left: 4px;
+        }
+
+        #reportColumnsConfigModal,
+        #entradaColumnsConfigModal,
+        #saidaColumnsConfigModal,
+        #consultaColumnsConfigModal,
+        #produtosColumnsConfigModal,
+        #movimentacoesColumnsConfigModal,
+        #rastreabilidadeModal,
+        #confirmEstornoBaixaModal {
+            z-index: 1700;
+        }
+
+        #reportColumnsConfigModal .modal-content,
+        #entradaColumnsConfigModal .modal-content,
+        #saidaColumnsConfigModal .modal-content,
+        #consultaColumnsConfigModal .modal-content,
+        #produtosColumnsConfigModal .modal-content,
+        #movimentacoesColumnsConfigModal .modal-content,
+        #rastreabilidadeModal .modal-content,
+        #confirmEstornoBaixaModal .modal-content {
+            max-width: 720px !important;
+        }
+
+        #rastreabilidadeModal .modal-content {
+            max-width: min(1180px, 96vw) !important;
+        }
+
+        #reportColumnsConfigModal .modal-body,
+        #entradaColumnsConfigModal .modal-body,
+        #saidaColumnsConfigModal .modal-body,
+        #consultaColumnsConfigModal .modal-body,
+        #produtosColumnsConfigModal .modal-body,
+        #movimentacoesColumnsConfigModal .modal-body,
+        #rastreabilidadeModal .modal-body,
+        #confirmEstornoBaixaModal .modal-body {
+            max-height: min(70vh, 560px);
+            overflow: auto;
+        }
+
+        .rastreabilidade-filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            align-items: end;
+        }
+
+        .rastreabilidade-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin: 14px 0;
+        }
+
+        .rast-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+
+        .rast-card strong {
+            display: block;
+            color: #1f2937;
+            font-size: 16px;
+        }
+
+        .rast-card span {
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .rastreabilidade-timeline {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .rast-event {
+            border-left: 4px solid #2c3e50;
+            background: #fff;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+            padding: 10px 12px;
+        }
+
+        .rast-event.estornado {
+            border-left-color: #d97706;
+            background: #fffbeb;
+        }
+
+        .rast-event-title {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .rast-event-meta {
+            color: #64748b;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        #reportColumnsConfigModal .report-col-grid,
+        #entradaColumnsConfigModal .report-col-grid,
+        #saidaColumnsConfigModal .report-col-grid,
+        #consultaColumnsConfigModal .report-col-grid,
+        #produtosColumnsConfigModal .report-col-grid,
+        #movimentacoesColumnsConfigModal .report-col-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        #reportColumnsConfigModal .report-col-item,
+        #entradaColumnsConfigModal .report-col-item,
+        #saidaColumnsConfigModal .report-col-item,
+        #consultaColumnsConfigModal .report-col-item,
+        #produtosColumnsConfigModal .report-col-item,
+        #movimentacoesColumnsConfigModal .report-col-item {
+            display: grid;
+            grid-template-columns: 20px 1fr;
+            align-items: start;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        #reportColumnsConfigModal .report-col-label,
+        #entradaColumnsConfigModal .report-col-label,
+        #saidaColumnsConfigModal .report-col-label,
+        #consultaColumnsConfigModal .report-col-label,
+        #produtosColumnsConfigModal .report-col-label,
+        #movimentacoesColumnsConfigModal .report-col-label {
+            color: #111827;
+            font-size: 14px;
+            line-height: 1.25;
+            text-align: left;
+            word-break: break-word;
+        }
+
+        .pagination-size-control {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #475569;
+            font-size: 13px;
+            margin-right: 10px;
+        }
+
+        .entrada-list-header {
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .entrada-list-header h3 {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .entrada-table-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .entrada-table-actions .entrada-action-compact {
+            min-height: 32px;
+            padding: 6px 10px;
+            font-size: 13px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .pagination-size-control select {
+            width: auto;
+            min-width: 76px;
+            height: 34px;
+            padding: 4px 8px;
+            font-size: 13px;
+        }
+
+        .pagination-page-buttons {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 1180px) {
             #relatorios .relatorios-filters-row {
                 grid-template-columns: 1fr 1fr;
             }
+            #relatorios #relFiltroTipoGroup {
+                grid-column: auto;
+            }
+            #relatorios .relatorios-actions-group,
             #relatorios .relatorios-actions {
                 grid-column: 1 / -1;
                 justify-content: flex-start;
@@ -147,10 +618,20 @@
             }
             #relatorios .relatorios-actions {
                 width: 100%;
+                flex-wrap: wrap;
             }
             #relatorios .relatorios-actions button {
                 flex: 1;
                 justify-content: center;
+            }
+
+            #reportColumnsConfigModal .report-col-grid,
+            #entradaColumnsConfigModal .report-col-grid,
+            #saidaColumnsConfigModal .report-col-grid,
+            #consultaColumnsConfigModal .report-col-grid,
+            #produtosColumnsConfigModal .report-col-grid,
+            #movimentacoesColumnsConfigModal .report-col-grid {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -183,6 +664,230 @@
             font-size: 16px;
         }
 
+        .species-combobox-inline {
+            display: flex;
+            gap: 5px;
+            align-items: stretch;
+            position: relative;
+            width: 100%;
+        }
+
+        .species-combobox-inline input {
+            flex: 1 1 auto;
+            min-width: 0;
+            height: 36px;
+            box-sizing: border-box;
+        }
+
+        .species-combobox-inline .species-icon-btn {
+            width: 36px;
+            min-width: 36px;
+            height: 36px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .species-combobox-inline {
+                min-width: 0 !important;
+            }
+        }
+
+        .saida-plaqueta-results {
+            display: none;
+            margin: -4px 0 14px;
+            border: 1px solid #dbe3ea;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+            overflow: hidden;
+        }
+
+        .saida-plaqueta-results.is-open {
+            display: block;
+        }
+
+        .saida-plaqueta-results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 10px 12px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e5edf3;
+            color: #334155;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .saida-plaqueta-results-header-actions {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-left: auto;
+        }
+
+        .saida-plaqueta-results-close {
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            border: 0;
+            background: transparent;
+            color: #64748b;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .saida-plaqueta-results-close:hover {
+            background: #e2e8f0;
+            color: #1f2937;
+        }
+
+        .saida-plaqueta-results-scroll {
+            max-height: 280px;
+            overflow: auto;
+        }
+
+        .saida-plaqueta-results-table {
+            width: 100%;
+            min-width: 980px;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .saida-plaqueta-results-table th,
+        .saida-plaqueta-results-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #edf2f7;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .saida-plaqueta-results-table th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 700;
+        }
+
+        .saida-plaqueta-results-table .saida-plaqueta-check-col {
+            width: 44px;
+            min-width: 44px;
+            text-align: center;
+        }
+
+        .saida-plaqueta-results-table .saida-plaqueta-actions-col {
+            position: sticky;
+            right: 0;
+            z-index: 2;
+            min-width: 118px;
+            text-align: center;
+            background: #fff;
+            box-shadow: -8px 0 12px -12px rgba(15, 23, 42, 0.45);
+        }
+
+        .saida-plaqueta-results-table th.saida-plaqueta-actions-col {
+            z-index: 4;
+            background: #f8fafc;
+        }
+
+        .saida-plaqueta-results-table tbody tr:hover .saida-plaqueta-actions-col,
+        .saida-plaqueta-results-table tbody tr.is-selected .saida-plaqueta-actions-col {
+            background: #eef6ff;
+        }
+
+        .saida-plaqueta-results-table tbody tr {
+            cursor: pointer;
+        }
+
+        .saida-plaqueta-results-table tbody tr:hover,
+        .saida-plaqueta-results-table tbody tr.is-selected {
+            background: #eef6ff;
+        }
+
+        .saida-plaqueta-results-table .text-right {
+            text-align: right;
+        }
+
+        .saida-plaqueta-results-empty {
+            padding: 18px 14px;
+            color: #64748b;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .saida-plaqueta-add-btn {
+            height: 28px;
+            min-width: 86px;
+            padding: 0 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            border-radius: 6px;
+        }
+
+        .saida-plaqueta-add-selected-btn {
+            height: 28px;
+            min-width: 138px;
+            padding: 0 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            border-radius: 6px;
+        }
+
+        #torasSelecionadas {
+            max-width: 100%;
+        }
+
+        #torasSelecionadas .table-container {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: visible;
+            border-radius: 6px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #torasSelecionadas .saida-list-header {
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        #torasSelecionadas .saida-list-header h3 {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        @media (max-width: 768px) {
+            .saida-plaqueta-results-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .saida-plaqueta-results-header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .saida-plaqueta-results-table {
+                min-width: 1060px;
+            }
+        }
+
         .action-buttons {
             display: flex;
             gap: 10px;
@@ -192,7 +897,8 @@
         }
 
         #produtos .form-row button.btn-warning,
-        #produtos .form-row button.btn-secondary {
+        #produtos .form-row button.btn-secondary,
+        #entradaAlmoxarifado .form-row button.btn-secondary {
             padding: 6px 10px;
             height: 32px;
             font-size: 13px;
@@ -205,9 +911,10 @@
 
         #produtos .produtos-filters-row {
             display: grid;
-            grid-template-columns: minmax(240px, 1fr) minmax(160px, 220px) auto;
-            gap: 12px;
+            grid-template-columns: minmax(145px, 150px) minmax(145px, 150px) minmax(150px, 0.8fr) minmax(220px, 1.15fr) minmax(125px, 140px) max-content;
+            gap: 10px;
             align-items: end;
+            margin-bottom: 14px;
         }
 
         #produtos .produtos-actions {
@@ -216,41 +923,320 @@
             justify-content: flex-end;
             align-items: center;
             flex-wrap: nowrap;
+            margin: 0;
+        }
+
+        #produtos .produtos-actions-group {
+            align-self: end;
+            min-width: max-content;
+        }
+
+        #produtos .produtos-actions .btn {
+            height: 36px;
+            min-height: 36px;
+            padding: 6px 10px;
+            white-space: nowrap;
         }
 
         #produtos #produtosFiltroSaldo {
-            max-width: 220px;
+            max-width: 140px;
         }
 
-        @media (max-width: 980px) {
+        #produtos .almox-baixa-form,
+        #entradaAlmoxarifado .entrada-almox-form {
+            margin: 12px 0 18px;
+            padding: 14px;
+            border: 1px solid #dde5ee;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        #produtos .almox-section-title,
+        #entradaAlmoxarifado .almox-section-title {
+            margin: 0 0 12px;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+
+        #produtos .almox-baixa-grid {
+            display: grid;
+            grid-template-columns: minmax(135px, 145px) minmax(150px, 170px) minmax(230px, 1.2fr) minmax(170px, 0.85fr) minmax(105px, 120px) minmax(230px, 1fr);
+            gap: 10px;
+            align-items: start;
+        }
+
+        #produtos .almox-baixa-grid .form-group {
+            min-width: 0;
+            margin-bottom: 0;
+        }
+
+        #produtos .almox-baixa-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        #produtos .almox-baixa-actions-row {
+            margin-top: 10px;
+        }
+
+        #produtos #baixaProdutoQtdInline {
+            text-align: right;
+        }
+
+        #baixaProdutoInfoInline {
+            display: block;
+            min-height: 18px;
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .responsavel-autocomplete-warning {
+            display: block;
+            min-height: 18px;
+            margin-top: 5px;
+            color: #b45309;
+            font-size: 12px;
+            line-height: 1.25;
+        }
+
+        .responsavel-autocomplete-warning.is-ok {
+            color: #047857;
+        }
+
+        #entradaForm,
+        #entradaAlmoxarifado .entrada-almox-form,
+        #produtos .almox-baixa-form {
+            --estoque-control-height: 36px;
+        }
+
+        #entradaForm input,
+        #entradaForm select,
+        #entradaAlmoxarifado .entrada-almox-form input,
+        #entradaAlmoxarifado .entrada-almox-form select,
+        #produtos .almox-baixa-form input,
+        #produtos .almox-baixa-form select {
+            height: var(--estoque-control-height);
+            font-size: 14px;
+        }
+
+        #entradaForm label,
+        #entradaAlmoxarifado .entrada-almox-form label,
+        #produtos .almox-baixa-form label,
+        #produtos .produtos-filters-row label {
+            font-size: 13px;
+            line-height: 1.2;
+        }
+
+        #entrada .entrada-meta-grid,
+        #entrada .entrada-tora-grid,
+        #entrada .entrada-medidas-grid,
+        #entrada .entrada-geo-grid,
+        #entradaAlmoxarifado .entrada-produto-grid-primary,
+        #entradaAlmoxarifado .entrada-produto-grid-secondary {
+            display: grid;
+            gap: 12px;
+            align-items: end;
+            margin-bottom: 12px;
+        }
+
+        #entrada .entrada-meta-grid .form-group,
+        #entrada .entrada-tora-grid .form-group,
+        #entrada .entrada-medidas-grid .form-group,
+        #entrada .entrada-geo-grid .form-group,
+        #entradaAlmoxarifado .entrada-produto-grid-primary .form-group,
+        #entradaAlmoxarifado .entrada-produto-grid-secondary .form-group,
+        #produtos .produtos-filters-row .form-group {
+            min-width: 0;
+            margin-bottom: 0;
+        }
+
+        #entrada .entrada-meta-grid {
+            grid-template-columns: minmax(140px, 160px) minmax(240px, 0.9fr) minmax(380px, 1.5fr);
+        }
+
+        #entrada .entrada-romaneio-field {
+            display: grid;
+            grid-template-columns: minmax(240px, 1fr) max-content;
+            gap: 10px;
+            align-items: end;
+        }
+
+        #entrada .entrada-romaneio-field > div {
+            min-width: 0;
+        }
+
+        #entrada .entrada-romaneio-field .btn {
+            min-height: var(--estoque-control-height);
+            margin-bottom: 0 !important;
+            white-space: nowrap;
+        }
+
+        #entrada #entradaDadosToraTitulo {
+            margin: 16px 0 10px;
+            padding-top: 12px;
+            border-top: 1px solid #e5edf3;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+
+        #entrada .entrada-tora-grid {
+            grid-template-columns: minmax(140px, 0.8fr) minmax(120px, 0.65fr) minmax(420px, 2fr);
+        }
+
+        #entrada .entrada-medidas-grid {
+            grid-template-columns: minmax(112px, 0.65fr) minmax(132px, 0.75fr) minmax(104px, 0.58fr) minmax(104px, 0.58fr) minmax(126px, 0.72fr) minmax(126px, 0.72fr) minmax(132px, 0.76fr);
+        }
+
+        #entrada .entrada-geo-grid {
+            grid-template-columns: minmax(138px, 0.95fr) repeat(4, minmax(82px, 0.58fr)) minmax(128px, 0.85fr);
+        }
+
+        #entrada .entrada-item-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: flex-start;
+            margin: 4px 0 14px;
+            min-width: 0;
+        }
+
+        #entrada .entrada-section-divider {
+            margin: 18px 0 16px;
+            border: 0;
+            border-top: 1px solid #dde5ee;
+        }
+
+        #entrada .entrada-item-actions .btn,
+        #entrada .entrada-table-actions .btn {
+            min-height: 34px;
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+
+        #entradaAlmoxarifado .entrada-produto-grid-primary {
+            grid-template-columns: minmax(130px, 145px) minmax(150px, 170px) minmax(220px, 0.75fr) minmax(280px, 1.25fr) minmax(95px, 110px);
+        }
+
+        #entradaAlmoxarifado .entrada-produto-grid-secondary {
+            grid-template-columns: minmax(120px, 150px) minmax(130px, 160px) minmax(180px, 0.9fr) minmax(320px, 1.4fr);
+        }
+
+        #entradaAlmoxarifado .entrada-produto-actions {
+            justify-content: flex-end;
+            margin-top: 12px;
+        }
+
+        #entradaAlmoxarifado .entrada-produto-actions .btn {
+            min-height: 34px;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 1200px) {
             #produtos .produtos-filters-row {
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            #produtos .produtos-actions-group {
+                grid-column: 1 / -1;
+                min-width: 0;
             }
             #produtos .produtos-actions {
-                grid-column: 1 / -1;
-                justify-content: flex-start;
+                justify-content: flex-end;
+                flex-wrap: wrap;
             }
             #produtos #produtosFiltroSaldo {
                 max-width: none;
             }
+            #produtos .almox-baixa-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+            #produtos .almox-baixa-actions {
+                justify-content: flex-start;
+            }
+            #entradaAlmoxarifado .entrada-produto-grid-primary,
+            #entradaAlmoxarifado .entrada-produto-grid-secondary {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 820px) {
+            #produtos .produtos-filters-row,
+            #produtos .almox-baixa-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            #produtos .produtos-actions-group,
+            #produtos .almox-baixa-grid .form-group:nth-child(3),
+            #produtos .almox-baixa-grid .form-group:nth-child(6) {
+                grid-column: 1 / -1;
+            }
+            #entrada .entrada-meta-grid,
+            #entrada .entrada-tora-grid,
+            #entrada .entrada-medidas-grid,
+            #entrada .entrada-geo-grid,
+            #entradaAlmoxarifado .entrada-produto-grid-primary,
+            #entradaAlmoxarifado .entrada-produto-grid-secondary {
+                grid-template-columns: 1fr 1fr;
+            }
+            #entrada .entrada-romaneio-field {
+                grid-template-columns: 1fr;
+            }
+            #entrada .entrada-romaneio-field .btn {
+                width: 100%;
+            }
         }
 
         @media (max-width: 560px) {
-            #produtos .produtos-filters-row {
+            .tabs {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 6px;
+            }
+            .tab {
+                min-width: 0;
+                width: 100%;
+                padding: 10px 8px;
+                font-size: 14px;
+                line-height: 1.15;
+                white-space: normal;
+                overflow-wrap: anywhere;
+            }
+            #produtos .produtos-filters-row,
+            #produtos .almox-baixa-grid,
+            #entrada .entrada-meta-grid,
+            #entrada .entrada-tora-grid,
+            #entrada .entrada-medidas-grid,
+            #entrada .entrada-geo-grid,
+            #entradaAlmoxarifado .entrada-produto-grid-primary,
+            #entradaAlmoxarifado .entrada-produto-grid-secondary {
                 grid-template-columns: 1fr;
             }
             #produtos .produtos-actions {
                 width: 100%;
+                flex-wrap: wrap;
+                justify-content: flex-start;
             }
-            #produtos .produtos-actions button {
+            #entrada .entrada-item-actions,
+            #entradaAlmoxarifado .entrada-produto-actions,
+            #produtos .almox-baixa-actions {
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+            }
+            #produtos .produtos-actions button,
+            #produtos .almox-baixa-actions button,
+            #entrada .entrada-item-actions button,
+            #entradaAlmoxarifado .entrada-produto-actions button {
                 flex: 1;
                 justify-content: center;
             }
         }
 
         #produtos .table-responsive {
-            max-height: 60vh;
-            overflow: auto;
+            max-height: none;
+            overflow-x: auto;
+            overflow-y: visible;
         }
 
         #produtos .table thead th {
@@ -286,20 +1272,18 @@
             height: 28px;
         }
 
-        #produtos .actions-cell {
-            display: flex;
-            justify-content: center;
-            gap: 6px;
-            align-items: center;
+        table td.actions-cell {
+            text-align: center;
         }
 
-        table .actions-cell {
-            display: flex;
+        table .actions-cell-inner {
+            display: inline-flex;
             justify-content: center;
             align-items: center;
             gap: 6px;
         }
 
+        table td.actions-cell .btn-small,
         table td .actions-cell .btn-small {
             width: 30px !important;
             min-width: 30px !important;
@@ -315,6 +1299,7 @@
             aspect-ratio: 1 / 1;
         }
 
+        table td.actions-cell .btn-small i,
         table td .actions-cell .btn-small i {
             margin: 0 !important;
             font-size: 13px !important;
@@ -322,9 +1307,11 @@
         }
 
         #produtos .actions-cell .btn-small {
-            padding: 2px 5px;
-            min-height: 22px;
-            height: 22px;
+            width: 24px !important;
+            min-width: 24px !important;
+            padding: 2px 5px !important;
+            min-height: 24px !important;
+            height: 24px !important;
             line-height: 1;
             font-size: 11px;
             border-radius: 8px;
@@ -354,8 +1341,9 @@
         }
 
         #movimentacao .table-responsive {
-            max-height: 60vh;
-            overflow: auto;
+            max-height: none;
+            overflow-x: auto;
+            overflow-y: visible;
         }
 
         #movimentacao .table th,
@@ -478,26 +1466,9 @@
             max-width: 300px;
         }
 
-        .status-indicator {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .status-alto {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
         .status-medio {
             background-color: #fff3cd;
             color: #856404;
-        }
-
-        .status-baixo {
-            background-color: #f8d7da;
-            color: #721c24;
         }
 
         .alert {
@@ -528,6 +1499,9 @@
             margin-top: 6px;
             font-size: 12px;
             color: #6c757d;
+        }
+        .saldo-info:empty {
+            display: none;
         }
 
         .relatorio-profissional {
@@ -597,6 +1571,11 @@
         @media print {
             .no-print {
                 display: none !important;
+            }
+            .table th.sticky-actions,
+            .table td.sticky-actions {
+                position: static !important;
+                box-shadow: none !important;
             }
         }
         .stock-entry {
@@ -731,7 +1710,9 @@
             <button class="tab" onclick="showTab('consulta')">
                 <i class="fas fa-search"></i> Consultar Toras
             </button>
-            <!-- ✅ NOVA ABA: PRODUTOS/ALMOXARIFADO -->
+            <button class="tab" onclick="showTab('entradaAlmoxarifado')">
+                <i class="fas fa-dolly"></i> Entrada Almoxarifado
+            </button>
             <button class="tab" onclick="showTab('produtos')">
                 <i class="fas fa-boxes"></i> Almoxarifado
             </button>
@@ -760,8 +1741,20 @@
 
             <div class="form-row produtos-filters-row">
                 <div class="form-group">
-                    <label for="searchProdutos">Buscar Produto:</label>
-                    <input type="text" id="searchProdutos" placeholder="Nome, código..." onkeyup="filtrarProdutos()">
+                    <label for="produtosDataInicio">Data Inicial:</label>
+                    <input type="date" id="produtosDataInicio" onchange="filtrarProdutos()">
+                </div>
+                <div class="form-group">
+                    <label for="produtosDataFim">Data Final:</label>
+                    <input type="date" id="produtosDataFim" onchange="filtrarProdutos()">
+                </div>
+                <div class="form-group">
+                    <label for="produtosResponsavelFiltro">Responsável:</label>
+                    <input type="text" id="produtosResponsavelFiltro" placeholder="Nome do responsável" oninput="filtrarProdutos()">
+                </div>
+                <div class="form-group">
+                    <label for="searchProdutos">Produto:</label>
+                    <input type="text" id="searchProdutos" placeholder="Nome, código..." oninput="filtrarProdutos()">
                 </div>
                 <div class="form-group">
                     <label for="produtosFiltroSaldo">Estoque:</label>
@@ -771,94 +1764,97 @@
                         <option value="zero">Sem estoque</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>&nbsp;</label>
-                    <div class="produtos-actions">
-                        <button onclick="abrirBaixaProduto()" class="btn btn-warning">
-                            <i class="fas fa-box-open"></i> Baixa Manual / Consumo
-                        </button>
+                <div class="form-group produtos-actions-group">
+                    <div class="produtos-actions" aria-label="Ações do almoxarifado">
                         <button type="button" onclick="imprimirEstoqueProdutos()" class="btn btn-secondary">
                             <i class="fas fa-print"></i> Imprimir
+                        </button>
+                        <button type="button" onclick="abrirConfiguracaoColunasProdutos()" class="btn btn-secondary" title="Configurar colunas do almoxarifado">
+                            <i class="fas fa-list"></i> Configurar Colunas
                         </button>
                     </div>
                 </div>
             </div>
 
-            <h3>Entrada de Almoxarifado</h3>
-            <form id="entradaProdutoForm" style="margin-bottom: 20px;">
-                <div class="form-row">
+            <form id="baixaProdutoInlineForm" class="almox-baixa-form">
+                <h3 class="almox-section-title">Baixa de Produto / Consumo</h3>
+                <div class="almox-baixa-grid">
                     <div class="form-group">
-                        <label for="entradaProdutoData">Data:</label>
-                        <input type="date" id="entradaProdutoData" required>
+                        <label for="baixaProdutoDataInline">Data:</label>
+                        <input type="date" id="baixaProdutoDataInline" required>
                     </div>
                     <div class="form-group">
-                        <label for="entradaProdutoSelect">Produto (existente):</label>
-                        <select id="entradaProdutoSelect">
-                            <option value="">Novo produto</option>
+                        <label for="baixaProdutoTipoMovInline">Tipo:</label>
+                        <select id="baixaProdutoTipoMovInline" required>
+                            <option value="saida">Saída / Consumo</option>
+                            <option value="ajuste">Ajuste (-)</option>
+                            <option value="devolucao">Devolução ao Fornecedor</option>
                         </select>
-                        <div id="entradaProdutoSaldo" class="saldo-info"></div>
-                    </div>
-                    <div class="form-group form-group-large">
-                        <label for="entradaProdutoNome">Nome do Produto:</label>
-                        <input type="text" id="entradaProdutoNome" placeholder="Ex: Parafuso 6mm">
-                    </div>
-                    <div class="form-group form-group-small">
-                        <label for="entradaProdutoUnidade">Unidade:</label>
-                        <input type="text" id="entradaProdutoUnidade" placeholder="un, kg, cx">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group form-group-small">
-                        <label for="entradaProdutoQtd">Quantidade:</label>
-                        <input type="number" id="entradaProdutoQtd" step="0.01" min="0.01" required>
-                    </div>
-                    <div class="form-group form-group-small">
-                        <label for="entradaProdutoPreco">Preço Unitário:</label>
-                        <input type="text" id="entradaProdutoPreco" placeholder="R$ 0,00">
                     </div>
                     <div class="form-group">
-                        <label for="entradaProdutoDocumento">Documento:</label>
-                        <input type="text" id="entradaProdutoDocumento" placeholder="NF, pedido, ajuste">
+                        <label for="baixaProdutoSelectInline">Produto:</label>
+                        <select id="baixaProdutoSelectInline" required onchange="atualizarInfoProdutoBaixaInline()">
+                            <option value="">Selecione...</option>
+                        </select>
+                        <small id="baixaProdutoInfoInline" class="text-muted"></small>
                     </div>
-                    <div class="form-group form-group-large">
-                        <label for="entradaProdutoObs">Observações:</label>
-                        <input type="text" id="entradaProdutoObs" placeholder="Detalhes da entrada">
+                    <div class="form-group">
+                        <label for="baixaProdutoResponsavelInline">Responsável:</label>
+                        <input type="text" id="baixaProdutoResponsavelInline" list="responsaveisProdutoDatalist" placeholder="Digite ou selecione o responsável" autocomplete="off" required>
+                        <datalist id="responsaveisProdutoDatalist"></datalist>
+                        <small id="baixaProdutoResponsavelInlineAviso" class="responsavel-autocomplete-warning" aria-live="polite"></small>
+                    </div>
+                    <div class="form-group">
+                        <label for="baixaProdutoQtdInline">Quantidade:</label>
+                        <input type="number" id="baixaProdutoQtdInline" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="baixaProdutoMotivoInline">Motivo / Destino:</label>
+                        <input type="text" id="baixaProdutoMotivoInline" placeholder="Consumo interno, obra, ajuste..." required>
                     </div>
                 </div>
-                <div class="action-buttons">
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-check"></i> Registrar Entrada
+                <div class="almox-baixa-actions almox-baixa-actions-row">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-box-open"></i> Registrar Baixa
                     </button>
-                    <button type="button" class="btn btn-danger" onclick="limparEntradaProdutoForm()">
+                    <button type="button" class="btn btn-secondary" onclick="limparBaixaProdutoInlineForm()">
                         <i class="fas fa-times"></i> Limpar
                     </button>
                 </div>
             </form>
 
             <div class="table-responsive">
-                <table class="table">
+                <table class="table" id="tabelaProdutos">
                     <colgroup>
-                        <col class="nome">
-                        <col class="unidade">
-                        <col class="quantidade">
-                        <col class="preco">
-                        <col class="valor">
-                        <col class="data">
+                        <col style="width: 40px;">
+                        <col class="nome" data-col="nome">
+                        <col class="nome" data-col="responsavel">
+                        <col class="nome" data-col="motivoDestino">
+                        <col class="codigo" data-col="tipoMovimentacao">
+                        <col class="unidade" data-col="unidade">
+                        <col class="quantidade" data-col="quantidade">
+                        <col class="preco" data-col="precoMedio">
+                        <col class="valor" data-col="valorTotal">
+                        <col class="data" data-col="ultimaAtualizacao">
                         <col class="acoes">
                     </colgroup>
                     <thead>
                         <tr>
-                            <th>Produto</th>
-                            <th>Unidade</th>
-                            <th class="text-center">Quantidade</th>
-                            <th class="text-right">Preço Médio</th>
-                            <th class="text-right">Total</th>
-                            <th>Última Atualização</th>
-                            <th class="text-center">Ações</th>
+                            <th style="width: 40px;"><input type="checkbox" id="checkTodosProdutos" onchange="toggleTodosProdutos()"></th>
+                            <th data-col="nome" onclick="ordenarProdutos('nome')" style="cursor: pointer;">Produto <i class="fas fa-sort sort-icon" id="sort-produtos-nome"></i></th>
+                            <th data-col="responsavel" onclick="ordenarProdutos('responsavel')" style="cursor: pointer;">Responsável <i class="fas fa-sort sort-icon" id="sort-produtos-responsavel"></i></th>
+                            <th data-col="motivoDestino" onclick="ordenarProdutos('motivoDestino')" style="cursor: pointer;">Motivo / Destino <i class="fas fa-sort sort-icon" id="sort-produtos-motivoDestino"></i></th>
+                            <th data-col="tipoMovimentacao" onclick="ordenarProdutos('tipoMovimentacao')" style="cursor: pointer;">Última Mov. <i class="fas fa-sort sort-icon" id="sort-produtos-tipoMovimentacao"></i></th>
+                            <th data-col="unidade" onclick="ordenarProdutos('unidade')" style="cursor: pointer;">Unidade <i class="fas fa-sort sort-icon" id="sort-produtos-unidade"></i></th>
+                            <th data-col="quantidade" onclick="ordenarProdutos('quantidade')" class="text-center" style="cursor: pointer;">Quantidade <i class="fas fa-sort sort-icon" id="sort-produtos-quantidade"></i></th>
+                            <th data-col="precoMedio" onclick="ordenarProdutos('precoMedio')" class="text-right" style="cursor: pointer;">Preço Médio <i class="fas fa-sort sort-icon" id="sort-produtos-precoMedio"></i></th>
+                            <th data-col="valorTotal" onclick="ordenarProdutos('valorTotal')" class="text-right" style="cursor: pointer;">Total <i class="fas fa-sort sort-icon" id="sort-produtos-valorTotal"></i></th>
+                            <th data-col="ultimaAtualizacao" onclick="ordenarProdutos('ultimaAtualizacao')" style="cursor: pointer;">Última Atualização <i class="fas fa-sort sort-icon" id="sort-produtos-ultimaAtualizacao"></i></th>
+                            <th class="text-center actions-col sticky-actions">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="produtosTable">
-                        <tr><td colspan="7" class="text-center">Carregando...</td></tr>
+                        <tr><td colspan="11" class="text-center">Carregando...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -871,7 +1867,7 @@
             <h2>Entrada de Toras no Estoque</h2>
             
             <form id="entradaForm">
-                <div class="form-row">
+                <div class="form-row entrada-meta-grid">
                     <div class="form-group">
                         <label for="entradaData">Data:</label>
                         <input type="date" id="entradaData" required>
@@ -882,38 +1878,47 @@
                             <option value="">Selecione um fornecedor</option>
                         </select>
                     </div>
-                    <div class="form-group form-group-large" style="display: flex; align-items: flex-end; gap: 10px;">
-                        <div style="flex-grow: 1;">
+                    <div class="form-group form-group-large entrada-romaneio-field">
+                        <div>
                             <label for="romaneioEntradaSelect">Romaneio:</label>
                             <select id="romaneioEntradaSelect">
                                 <option value="">Carregando...</option>
                             </select>
                         </div>
-                        <button type="button" onclick="carregarItensDoRomaneioSelecionado()" class="btn btn-primary" style="margin-bottom: 0;">
+                        <button type="button" onclick="carregarItensDoRomaneioSelecionado()" class="btn btn-primary">
                             <i class="fas fa-download"></i> Carregar Itens
                         </button>
                     </div>
                 </div>
 
-                <h3>Dados da Tora (Adicionar Manualmente)</h3>
+                <h3 id="entradaDadosToraTitulo">Dados da Tora (Adicionar Manualmente)</h3>
                 <div id="editToraAviso" class="alert alert-warning" style="display: none;">
-                    Modo edição: dados carregados da tora selecionada. Esta ação não altera o estoque. Para registrar alterações, adicione como nova entrada.
+                    Modo edição: revise os dados e clique em Atualizar Item para gravar as alterações nesta tora do estoque. Esta ação não cria nova entrada nem duplica a plaqueta.
                 </div>
-                <div class="form-row">
+                <div class="form-row entrada-tora-grid">
                     <div class="form-group">
                         <label for="plaquetaEntrada">Plaqueta:</label>
                         <input type="text" id="plaquetaEntrada" placeholder="Identificação">
                     </div>
+                    <div class="form-group form-group-small">
+                        <label for="custodiaEntrada">Custódia:</label>
+                        <input type="text" id="custodiaEntrada" placeholder="Custódia">
+                    </div>
                     <div class="form-group">
-                        <label for="especieEntrada">Espécie:</label>
-                        <div style="display: flex; gap: 5px;">
-                            <input type="text" id="especieEntrada" placeholder="Espécie da madeira" list="listaEspecies" style="flex-grow: 1;">
-                            <button type="button" onclick="abrirNovaEspecie()" class="btn btn-success" style="padding: 0 15px;" title="Nova Espécie">
+                        <label for="especieEntrada">Espécies:</label>
+                        <div class="species-combobox-inline">
+                            <input type="text" id="especieEntrada" class="autocomplete-input" data-species-autocomplete="true" data-species-validate="true" placeholder="Espécie da madeira" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="especieSuggestions" role="combobox">
+                            <button type="button" onclick="abrirListaEspeciesEntrada('especieEntrada')" class="btn btn-secondary species-icon-btn" title="Lista de Espécies">
+                                <i class="fas fa-list"></i>
+                            </button>
+                            <button type="button" onclick="abrirNovaEspecie('especieEntrada')" class="btn btn-success species-icon-btn" title="Nova Espécie">
                                 <i class="fas fa-plus"></i>
                             </button>
                         </div>
-                        <datalist id="listaEspecies"></datalist>
                     </div>
+                </div>
+
+                <div class="form-row entrada-medidas-grid">
                     <div class="form-group form-group-small">
                         <label for="diametroEntrada">Rodo (cm):</label>
                         <input type="number" id="diametroEntrada" min="1" step="0.1">
@@ -922,9 +1927,6 @@
                         <label for="comprimentoEntrada">Comprimento (cm):</label>
                         <input type="number" id="comprimentoEntrada" min="1" step="0.1">
                     </div>
-                </div>
-
-                <div class="form-row">
                     <div class="form-group form-group-small">
                         <label for="oco1Entrada">Oco 1 (cm):</label>
                         <input type="number" id="oco1Entrada" min="0" step="0.1">
@@ -945,27 +1947,55 @@
                         <label for="m3LiquidoEntrada">M³ Líquido:</label>
                         <input type="number" id="m3LiquidoEntrada" step="0.001" placeholder="0.000">
                     </div>
-                    <div class="form-group" style="display: flex; align-items: flex-end;">
-                        <button type="button" onclick="abrirHistoricoEstoque()" class="btn btn-primary" style="width: 100%;">
-                            <i class="fas fa-history"></i> Histórico de Estoque
-                        </button>
+                </div>
+
+                <div class="form-row entrada-geo-grid">
+                    <div class="form-group form-group-small">
+                        <label for="compGeoEntrada">Comp. Geo. (cm):</label>
+                        <input type="number" id="compGeoEntrada" min="0" step="0.1" placeholder="0">
+                    </div>
+                    <div class="form-group form-group-small">
+                        <label for="x1Entrada">X1 (cm):</label>
+                        <input type="number" id="x1Entrada" min="0" step="0.1" placeholder="0">
+                    </div>
+                    <div class="form-group form-group-small">
+                        <label for="x2Entrada">X2 (cm):</label>
+                        <input type="number" id="x2Entrada" min="0" step="0.1" placeholder="0">
+                    </div>
+                    <div class="form-group form-group-small">
+                        <label for="x3Entrada">X3 (cm):</label>
+                        <input type="number" id="x3Entrada" min="0" step="0.1" placeholder="0">
+                    </div>
+                    <div class="form-group form-group-small">
+                        <label for="x4Entrada">X4 (cm):</label>
+                        <input type="number" id="x4Entrada" min="0" step="0.1" placeholder="0">
+                    </div>
+                    <div class="form-group form-group-small">
+                        <label for="volumeGeoEntrada">V. Geo. (m³):</label>
+                        <input type="number" id="volumeGeoEntrada" step="0.001" value="0.000" readonly>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <button type="button" onclick="adicionarItemEntrada()" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Adicionar Item
+                <div class="entrada-item-actions">
+                    <button type="button" id="entradaItemActionBtn" onclick="adicionarItemEntrada()" class="btn btn-primary">
+                        <i id="entradaItemActionIcon" class="fas fa-plus"></i> <span id="entradaItemActionLabel">Adicionar Item</span>
                     </button>
                     <button type="button" onclick="limparCamposEntrada()" class="btn btn-warning">
                         <i class="fas fa-eraser"></i> Limpar Campos
                     </button>
                 </div>
 
-                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;">
+                <hr class="entrada-section-divider">
 
-                <div class="action-buttons" style="justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div class="action-buttons entrada-list-header">
                     <h3>Itens para Entrada</h3>
-                    <div>
+                    <div class="entrada-table-actions">
+                        <button type="button" onclick="abrirHistoricoEstoque()" class="btn btn-secondary entrada-action-compact" title="Abrir histórico de estoque">
+                            <i class="fas fa-history"></i> Histórico
+                        </button>
+                        <button type="button" onclick="abrirConfiguracaoColunasEntrada()" class="btn btn-secondary entrada-action-compact" title="Configurar colunas da tabela de entrada">
+                            <i class="fas fa-list"></i> Configurar Colunas
+                        </button>
                         <button type="submit" class="btn btn-success">
                             <i class="fas fa-save"></i> Dar Entrada
                         </button>
@@ -976,39 +2006,53 @@
                 </div>
 
             <div class="table-responsive mobile-cards">
-                <table class="table" id="tabelaEntrada">
+                <table class="table table-wide-estoque-lg" id="tabelaEntrada">
                     <colgroup>
                         <col style="width: 40px;">
-                        <col class="codigo">
-                        <col class="nome">
-                        <col class="quantidade">
-                        <col class="quantidade">
-                        <col class="quantidade">
-                        <col class="quantidade">
-                        <col class="quantidade">
-                        <col class="volume">
-                        <col class="preco">
-                        <col class="valor">
+                        <col class="codigo" data-col="plaqueta">
+                        <col class="codigo" data-col="custodia">
+                        <col class="nome" data-col="especie">
+                        <col class="quantidade" data-col="diametro">
+                        <col class="quantidade" data-col="comprimento">
+                        <col class="quantidade" data-col="oco1">
+                        <col class="quantidade" data-col="oco2">
+                        <col class="quantidade" data-col="desconto">
+                        <col class="volume" data-col="volumeLiquido">
+                        <col class="quantidade" data-col="compGeo">
+                        <col class="quantidade" data-col="x1">
+                        <col class="quantidade" data-col="x2">
+                        <col class="quantidade" data-col="x3">
+                        <col class="quantidade" data-col="x4">
+                        <col class="volume" data-col="volumeGeo">
+                        <col class="preco" data-col="preco">
+                        <col class="valor" data-col="valor">
                         <col class="acoes">
                     </colgroup>
                     <thead>
                         <tr>
                             <th style="width: 40px;"><input type="checkbox" id="checkTodosEntrada" onchange="toggleTodosEntrada()"></th>
-                            <th>Plaqueta</th>
-                            <th>Espécie</th>
-                            <th>Rodo</th>
-                            <th>Comprimento</th>
-                            <th>Oco 1</th>
-                            <th>Oco 2</th>
-                            <th>Desconto</th>
-                            <th>M³ Líquido</th>
-                            <th>Preço</th>
-                            <th>Valor</th>
-                            <th>Ações</th>
+                            <th data-col="plaqueta" onclick="ordenarEntrada('plaqueta')" style="cursor: pointer;">Plaqueta <i class="fas fa-sort sort-icon" id="sort-entrada-plaqueta"></i></th>
+                            <th data-col="custodia" onclick="ordenarEntrada('custodia')" style="cursor: pointer;">Custódia <i class="fas fa-sort sort-icon" id="sort-entrada-custodia"></i></th>
+                            <th data-col="especie" onclick="ordenarEntrada('especie')" style="cursor: pointer;">Espécie <i class="fas fa-sort sort-icon" id="sort-entrada-especie"></i></th>
+                            <th data-col="diametro" onclick="ordenarEntrada('diametro')" style="cursor: pointer;">Rodo <i class="fas fa-sort sort-icon" id="sort-entrada-diametro"></i></th>
+                            <th data-col="comprimento" onclick="ordenarEntrada('comprimento')" style="cursor: pointer;">Comprimento <i class="fas fa-sort sort-icon" id="sort-entrada-comprimento"></i></th>
+                            <th data-col="oco1" onclick="ordenarEntrada('oco1')" style="cursor: pointer;">Oco 1 <i class="fas fa-sort sort-icon" id="sort-entrada-oco1"></i></th>
+                            <th data-col="oco2" onclick="ordenarEntrada('oco2')" style="cursor: pointer;">Oco 2 <i class="fas fa-sort sort-icon" id="sort-entrada-oco2"></i></th>
+                            <th data-col="desconto" onclick="ordenarEntrada('desconto')" style="cursor: pointer;">Desconto <i class="fas fa-sort sort-icon" id="sort-entrada-desconto"></i></th>
+                            <th data-col="volumeLiquido" onclick="ordenarEntrada('volumeLiquido')" style="cursor: pointer;">M³ Líquido <i class="fas fa-sort sort-icon" id="sort-entrada-volumeLiquido"></i></th>
+                            <th data-col="compGeo" onclick="ordenarEntrada('compGeo')" style="cursor: pointer;">Comp. Geo. <i class="fas fa-sort sort-icon" id="sort-entrada-compGeo"></i></th>
+                            <th data-col="x1" onclick="ordenarEntrada('x1')" style="cursor: pointer;">X1 <i class="fas fa-sort sort-icon" id="sort-entrada-x1"></i></th>
+                            <th data-col="x2" onclick="ordenarEntrada('x2')" style="cursor: pointer;">X2 <i class="fas fa-sort sort-icon" id="sort-entrada-x2"></i></th>
+                            <th data-col="x3" onclick="ordenarEntrada('x3')" style="cursor: pointer;">X3 <i class="fas fa-sort sort-icon" id="sort-entrada-x3"></i></th>
+                            <th data-col="x4" onclick="ordenarEntrada('x4')" style="cursor: pointer;">X4 <i class="fas fa-sort sort-icon" id="sort-entrada-x4"></i></th>
+                            <th data-col="volumeGeo" onclick="ordenarEntrada('volumeGeo')" style="cursor: pointer;">V. Geo. <i class="fas fa-sort sort-icon" id="sort-entrada-volumeGeo"></i></th>
+                            <th data-col="preco" onclick="ordenarEntrada('preco')" style="cursor: pointer;">Preço <i class="fas fa-sort sort-icon" id="sort-entrada-preco"></i></th>
+                            <th data-col="valor" onclick="ordenarEntrada('valor')" style="cursor: pointer;">Valor <i class="fas fa-sort sort-icon" id="sort-entrada-valor"></i></th>
+                            <th class="actions-col sticky-actions">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="tbodyEntrada">
-                        <tr><td colspan="12" class="text-center">Nenhum item adicionado</td></tr>
+                        <tr><td colspan="19" class="text-center">Nenhum item adicionado</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1027,6 +2071,9 @@
                 <button onclick="abrirBaixaIndividual()" class="btn btn-primary">
                     <i class="fas fa-minus"></i> Baixa Individual
                 </button>
+                <button type="button" onclick="abrirRastreabilidadeSaida()" class="btn btn-secondary">
+                    <i class="fas fa-route"></i> Rastreabilidade
+                </button>
             </div>
 
             <div id="saidaFormContainer" style="display: none;">
@@ -1038,7 +2085,7 @@
                         </div>
                         <div class="form-group">
                             <label for="saidaPlaquetaBusca">Buscar por Plaqueta:</label>
-                            <input type="text" id="saidaPlaquetaBusca" placeholder="Digite a plaqueta" onkeyup="buscarToraPorPlaqueta()" onkeydown="onSaidaPlaquetaKeydown(event)">
+                            <input type="text" id="saidaPlaquetaBusca" placeholder="Digite a plaqueta" autocomplete="off" aria-expanded="false" aria-controls="saidaPlaquetaResultadosPanel" oninput="buscarToraPorPlaqueta()" onfocus="abrirResultadosPlaquetaSaida()" onblur="agendarRecolherResultadosPlaquetaSaida()" onkeydown="onSaidaPlaquetaKeydown(event)">
                             <div id="saidaToraInfo" class="saldo-info"></div>
                         </div>
                         <div class="form-group">
@@ -1063,6 +2110,44 @@
                             </div>
                         </div>
                     </div>
+                    <div id="saidaPlaquetaResultadosPanel" class="saida-plaqueta-results" aria-hidden="true">
+                        <div class="saida-plaqueta-results-header">
+                            <span id="saidaPlaquetaResultadosResumo">Digite uma plaqueta para localizar toras disponíveis</span>
+                            <div class="saida-plaqueta-results-header-actions">
+                                <button type="button" id="saidaPlaquetaAdicionarSelecionadasBtn" class="btn btn-primary btn-small saida-plaqueta-add-selected-btn" onclick="adicionarTorasPlaquetaSelecionadas()" disabled>
+                                    <i class="fas fa-plus"></i> Adicionar Selecionadas
+                                </button>
+                                <button type="button" class="saida-plaqueta-results-close" onclick="recolherResultadosPlaquetaSaida()" title="Recolher resultados">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="saida-plaqueta-results-scroll">
+                            <table class="saida-plaqueta-results-table">
+                                <thead>
+                                    <tr>
+                                        <th class="saida-plaqueta-check-col">
+                                            <input type="checkbox" id="checkTodasPlaquetaSaida" onchange="toggleTodasPlaquetaSaida(this.checked)" aria-label="Selecionar todas as toras filtradas">
+                                        </th>
+                                        <th>Plaqueta</th>
+                                        <th>Custódia</th>
+                                        <th>Espécie</th>
+                                        <th>Rodo</th>
+                                        <th>Comprimento</th>
+                                        <th class="text-right">M³ Líquido</th>
+                                        <th class="text-right">V. Geo.</th>
+                                        <th>Localização</th>
+                                        <th class="saida-plaqueta-actions-col">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="saidaPlaquetaResultadosBody">
+                                    <tr>
+                                        <td colspan="10" class="saida-plaqueta-results-empty">Digite uma plaqueta para localizar toras disponíveis.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                     <div class="romaneios-selecionados-row">
                         <div id="romaneiosSaidaSelecionados" class="romaneios-selecionados-list"></div>
                     </div>
@@ -1085,13 +2170,28 @@
                     <div class="form-group">
                         <label>Adicionar Tora Manual (fora do estoque):</label>
                         <div style="overflow-x:auto;">
-                            <div style="display:flex; gap:8px; flex-wrap:nowrap; align-items:flex-end; min-width:980px;">
-                                <input type="text" id="manualPlaquetaSaida" placeholder="Plaqueta" onkeydown="onManualSaidaKeydown(event, 'manualEspecieSaida')" style="width:140px; min-width:140px; height:36px; box-sizing:border-box;">
-                                <input type="text" id="manualEspecieSaida" placeholder="Espécie" onkeydown="onManualSaidaKeydown(event, 'manualRodoSaida')" style="width:190px; min-width:190px; height:36px; box-sizing:border-box;">
+                            <div class="manual-saida-grid" style="display:flex; gap:8px; flex-wrap:nowrap; align-items:flex-end; min-width:1780px;">
+                                <input type="text" id="manualPlaquetaSaida" placeholder="Plaqueta" onkeydown="onManualSaidaKeydown(event, 'manualCustodiaSaida')" style="width:140px; min-width:140px; height:36px; box-sizing:border-box;">
+                                <input type="text" id="manualCustodiaSaida" placeholder="Custódia" onkeydown="onManualSaidaKeydown(event, 'manualEspecieSaida')" style="width:130px; min-width:130px; height:36px; box-sizing:border-box;">
+                                <div class="species-combobox-inline" style="width:270px; min-width:270px;">
+                                    <input type="text" id="manualEspecieSaida" class="autocomplete-input" data-species-autocomplete="true" data-species-validate="true" placeholder="Espécie" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="especieSuggestions" role="combobox" onkeydown="onManualSaidaKeydown(event, 'manualRodoSaida')">
+                                    <button type="button" onclick="abrirListaEspeciesEntrada('manualEspecieSaida')" class="btn btn-secondary species-icon-btn" title="Lista de Espécies">
+                                        <i class="fas fa-list"></i>
+                                    </button>
+                                    <button type="button" onclick="abrirNovaEspecie('manualEspecieSaida')" class="btn btn-success species-icon-btn" title="Nova Espécie">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                                 <input type="number" id="manualRodoSaida" placeholder="Rodo" step="0.1" min="0" onkeydown="onManualSaidaKeydown(event, 'manualComprimentoSaida')" style="width:120px; min-width:120px; height:36px; box-sizing:border-box;">
                                 <input type="number" id="manualComprimentoSaida" placeholder="Comprimento" step="0.1" min="0" onkeydown="onManualSaidaKeydown(event, 'manualOco1Saida')" style="width:140px; min-width:140px; height:36px; box-sizing:border-box;">
                                 <input type="number" id="manualOco1Saida" placeholder="Oco 1" step="0.1" min="0" onkeydown="onManualSaidaKeydown(event, 'manualOco2Saida')" style="width:110px; min-width:110px; height:36px; box-sizing:border-box;">
-                                <input type="number" id="manualOco2Saida" placeholder="Oco 2" step="0.1" min="0" onkeydown="onManualSaidaKeydown(event)" style="width:110px; min-width:110px; height:36px; box-sizing:border-box;">
+                                <input type="number" id="manualOco2Saida" placeholder="Oco 2" step="0.1" min="0" onkeydown="onManualSaidaKeydown(event, 'manualCompGeoSaida')" style="width:110px; min-width:110px; height:36px; box-sizing:border-box;">
+                                <input type="number" id="manualCompGeoSaida" placeholder="Comp. Geo." step="0.1" min="0" onkeydown="onManualSaidaKeydown(event, 'manualX1Saida')" style="width:120px; min-width:120px; height:36px; box-sizing:border-box;">
+                                <input type="number" id="manualX1Saida" placeholder="X1" step="0.1" min="0" onkeydown="onManualSaidaKeydown(event, 'manualX2Saida')" style="width:90px; min-width:90px; height:36px; box-sizing:border-box;">
+                                <input type="number" id="manualX2Saida" placeholder="X2" step="0.1" min="0" onkeydown="onManualSaidaKeydown(event, 'manualX3Saida')" style="width:90px; min-width:90px; height:36px; box-sizing:border-box;">
+                                <input type="number" id="manualX3Saida" placeholder="X3" step="0.1" min="0" onkeydown="onManualSaidaKeydown(event, 'manualX4Saida')" style="width:90px; min-width:90px; height:36px; box-sizing:border-box;">
+                                <input type="number" id="manualX4Saida" placeholder="X4" step="0.1" min="0" onkeydown="onManualSaidaKeydown(event)" style="width:90px; min-width:90px; height:36px; box-sizing:border-box;">
+                                <input type="number" id="manualVolumeGeoSaida" placeholder="V. Geo." step="0.001" value="0.000" readonly style="width:110px; min-width:110px; height:36px; box-sizing:border-box;">
                                 <button type="button" onclick="adicionarToraManualSaida()" class="btn-primary btn-small" style="white-space:nowrap; min-width:150px; height:36px; box-sizing:border-box; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
                                     <i class="fas fa-plus"></i> Adicionar Manual
                                 </button>
@@ -1103,42 +2203,63 @@
                     </div>
 
                     <div id="torasSelecionadas">
-                        <h3>Toras Selecionadas para Baixa</h3>
+                        <div class="action-buttons saida-list-header">
+                            <h3>Toras Selecionadas para Baixa</h3>
+                            <button type="button" onclick="abrirConfiguracaoColunasSaida()" class="btn btn-secondary entrada-action-compact" title="Configurar colunas da tabela de saída">
+                                <i class="fas fa-list"></i> Configurar Colunas
+                            </button>
+                        </div>
                         <div class="table-container">
-                            <table class="table">
+                            <table class="table table-wide-estoque-lg" id="tabelaSaidaToras">
                                 <colgroup>
-                                    <col class="codigo">
-                                    <col class="nome">
-                                    <col class="quantidade">
-                                    <col class="quantidade">
-                                    <col class="quantidade">
-                                    <col class="quantidade">
-                                    <col class="quantidade">
-                                    <col class="volume">
-                                    <col class="preco">
-                                    <col class="valor">
-                                    <col class="local">
+                                    <col style="width: 40px;">
+                                    <col class="codigo" data-col="plaqueta">
+                                    <col class="codigo" data-col="custodia">
+                                    <col class="nome" data-col="especie">
+                                    <col class="quantidade" data-col="diametro">
+                                    <col class="quantidade" data-col="comprimento">
+                                    <col class="quantidade" data-col="oco1">
+                                    <col class="quantidade" data-col="oco2">
+                                    <col class="quantidade" data-col="volumeDesconto">
+                                    <col class="volume" data-col="volumeLiquido">
+                                    <col class="quantidade" data-col="compGeo">
+                                    <col class="quantidade" data-col="x1">
+                                    <col class="quantidade" data-col="x2">
+                                    <col class="quantidade" data-col="x3">
+                                    <col class="quantidade" data-col="x4">
+                                    <col class="volume" data-col="volumeGeo">
+                                    <col class="preco" data-col="precoCusto">
+                                    <col class="valor" data-col="valor">
+                                    <col class="local" data-col="localizacao">
                                     <col class="acoes">
                                 </colgroup>
                                 <thead>
                                     <tr>
-                                        <th>Plaqueta</th>
-                                        <th>Espécie</th>
-                                        <th>Rodo</th>
-                                        <th>Comprimento</th>
-                                        <th>Oco 1</th>
-                                        <th>Oco 2</th>
-                                        <th>Desconto</th>
-                                        <th>Volume</th>
-                                        <th>Preço</th>
-                                        <th>Valor</th>
-                                        <th>Localização</th>
-                                        <th>Ações</th>
+                                        <th style="width: 40px;"><input type="checkbox" id="checkTodasSaida" onchange="toggleTodasSaida()"></th>
+                                        <th data-col="plaqueta" onclick="ordenarSaida('plaqueta')" style="cursor: pointer;">Plaqueta <i class="fas fa-sort sort-icon" id="sort-saida-plaqueta"></i></th>
+                                        <th data-col="custodia" onclick="ordenarSaida('custodia')" style="cursor: pointer;">Custódia <i class="fas fa-sort sort-icon" id="sort-saida-custodia"></i></th>
+                                        <th data-col="especie" onclick="ordenarSaida('especie')" style="cursor: pointer;">Espécie <i class="fas fa-sort sort-icon" id="sort-saida-especie"></i></th>
+                                        <th data-col="diametro" onclick="ordenarSaida('diametro')" style="cursor: pointer;">Rodo <i class="fas fa-sort sort-icon" id="sort-saida-diametro"></i></th>
+                                        <th data-col="comprimento" onclick="ordenarSaida('comprimento')" style="cursor: pointer;">Comprimento <i class="fas fa-sort sort-icon" id="sort-saida-comprimento"></i></th>
+                                        <th data-col="oco1" onclick="ordenarSaida('oco1')" style="cursor: pointer;">Oco 1 <i class="fas fa-sort sort-icon" id="sort-saida-oco1"></i></th>
+                                        <th data-col="oco2" onclick="ordenarSaida('oco2')" style="cursor: pointer;">Oco 2 <i class="fas fa-sort sort-icon" id="sort-saida-oco2"></i></th>
+                                        <th data-col="volumeDesconto" onclick="ordenarSaida('volumeDesconto')" style="cursor: pointer;">Desconto <i class="fas fa-sort sort-icon" id="sort-saida-volumeDesconto"></i></th>
+                                        <th data-col="volumeLiquido" onclick="ordenarSaida('volumeLiquido')" style="cursor: pointer;">Volume <i class="fas fa-sort sort-icon" id="sort-saida-volumeLiquido"></i></th>
+                                        <th data-col="compGeo" onclick="ordenarSaida('compGeo')" style="cursor: pointer;">Comp. Geo. <i class="fas fa-sort sort-icon" id="sort-saida-compGeo"></i></th>
+                                        <th data-col="x1" onclick="ordenarSaida('x1')" style="cursor: pointer;">X1 <i class="fas fa-sort sort-icon" id="sort-saida-x1"></i></th>
+                                        <th data-col="x2" onclick="ordenarSaida('x2')" style="cursor: pointer;">X2 <i class="fas fa-sort sort-icon" id="sort-saida-x2"></i></th>
+                                        <th data-col="x3" onclick="ordenarSaida('x3')" style="cursor: pointer;">X3 <i class="fas fa-sort sort-icon" id="sort-saida-x3"></i></th>
+                                        <th data-col="x4" onclick="ordenarSaida('x4')" style="cursor: pointer;">X4 <i class="fas fa-sort sort-icon" id="sort-saida-x4"></i></th>
+                                        <th data-col="volumeGeo" onclick="ordenarSaida('volumeGeo')" style="cursor: pointer;">V. Geo. <i class="fas fa-sort sort-icon" id="sort-saida-volumeGeo"></i></th>
+                                        <th data-col="precoCusto" onclick="ordenarSaida('precoCusto')" style="cursor: pointer;">Preço <i class="fas fa-sort sort-icon" id="sort-saida-precoCusto"></i></th>
+                                        <th data-col="valor" onclick="ordenarSaida('valor')" style="cursor: pointer;">Valor <i class="fas fa-sort sort-icon" id="sort-saida-valor"></i></th>
+                                        <th data-col="localizacao" onclick="ordenarSaida('localizacao')" style="cursor: pointer;">Localização <i class="fas fa-sort sort-icon" id="sort-saida-localizacao"></i></th>
+                                        <th class="actions-col sticky-actions">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody id="torasSaidaTable">
                                     <tr>
-                                        <td colspan="7" style="text-align: center;">Nenhuma tora selecionada</td>
+                                        <td colspan="20" style="text-align: center;">Nenhuma tora selecionada</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1170,7 +2291,20 @@
 
         <!-- Tab Consultar Estoque -->
         <div id="consulta" class="tab-content">
-            <h2>Consultar Estoque</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <h2 style="margin: 0;">Consultar Estoque</h2>
+                <div class="actions-inline">
+                    <button type="button" onclick="toggleOffcanvas('filtrosEstoqueDrawer')" class="btn btn-secondary">
+                        <i class="fas fa-filter"></i> Filtros
+                    </button>
+                    <button type="button" onclick="abrirConfiguracaoColunasConsulta()" class="btn btn-secondary" title="Configurar colunas da consulta">
+                        <i class="fas fa-list"></i> Configurar Colunas
+                    </button>
+                    <button type="button" onclick="imprimirConsultaEstoque()" class="btn btn-primary" title="Imprimir Estoque">
+                        <i class="fas fa-print"></i>
+                    </button>
+                </div>
+            </div>
             
             <div class="stats-grid">
                 <div class="stat-card">
@@ -1191,56 +2325,76 @@
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="filtroEspecie">Filtrar por Espécie:</label>
-                    <select id="filtroEspecie" onchange="filtrarEstoque()">
-                        <option value="">Todas as espécies</option>
-                    </select>
+            <div id="filtrosEstoqueDrawer" class="offcanvas-drawer" style="display: none;">
+                <div class="offcanvas-header">
+                    <h3>Filtros de Consulta</h3>
+                    <button type="button" onclick="toggleOffcanvas('filtrosEstoqueDrawer')" class="btn-close"><i class="fas fa-times"></i></button>
                 </div>
-                <div class="form-group">
-                    <label for="filtroLocalizacao">Filtrar por Localização:</label>
-                    <select id="filtroLocalizacao" onchange="filtrarEstoque()">
-                        <option value="">Todas as localizações</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="searchEstoque">Buscar:</label>
-                    <input type="text" id="searchEstoque" placeholder="Plaqueta, espécie..." onkeyup="filtrarEstoque()">
-                </div>
-                <div class="form-group" style="align-self: flex-end;">
-                    <button type="button" onclick="imprimirConsultaEstoque()" class="btn btn-secondary">
-                        <i class="fas fa-print"></i> Imprimir
-                    </button>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="filtroEspecie">Filtrar por Espécie:</label>
+                        <div class="species-combobox-inline">
+                            <input type="text" id="filtroEspecie" class="autocomplete-input" data-species-autocomplete="true" placeholder="Todas as espécies" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="especieSuggestions" role="combobox" oninput="filtrarEstoque()">
+                            <button type="button" onclick="abrirListaEspeciesEntrada('filtroEspecie')" class="btn btn-secondary species-icon-btn" title="Lista de Espécies">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="filtroLocalizacao">Filtrar por Localização:</label>
+                        <select id="filtroLocalizacao" onchange="filtrarEstoque()">
+                            <option value="">Todas as localizações</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="searchEstoque">Buscar:</label>
+                        <input type="text" id="searchEstoque" placeholder="Plaqueta, espécie..." onkeyup="filtrarEstoque()" onkeydown="onBuscaEstoqueEnter(event)">
+                    </div>
                 </div>
             </div>
 
             <div class="table-responsive">
-                <table class="table">
+                <table class="table table-wide-estoque-lg" id="tabelaEstoque">
                     <colgroup>
-                        <col class="codigo">
-                        <col class="nome">
-                        <col class="quantidade">
-                        <col class="quantidade">
-                        <col class="volume">
-                        <col class="volume">
-                        <col class="preco">
-                        <col class="local">
-                        <col class="data">
+                        <col style="width: 40px;">
+                        <col class="codigo" data-col="plaqueta">
+                        <col class="codigo" data-col="custodia">
+                        <col class="nome" data-col="especie">
+                        <col class="quantidade" data-col="diametro">
+                        <col class="quantidade" data-col="comprimento">
+                        <col class="volume" data-col="volumeBruto">
+                        <col class="volume" data-col="volumeLiquido">
+                        <col class="quantidade" data-col="compGeo">
+                        <col class="quantidade" data-col="x1">
+                        <col class="quantidade" data-col="x2">
+                        <col class="quantidade" data-col="x3">
+                        <col class="quantidade" data-col="x4">
+                        <col class="volume" data-col="volumeGeo">
+                        <col class="preco" data-col="precoCusto">
+                        <col class="local" data-col="localizacao">
+                        <col class="data" data-col="data">
                         <col class="acoes">
                     </colgroup>
                     <thead>
                         <tr>
-                            <th>Plaqueta</th>
-                            <th>Espécie</th>
-                            <th>Diâmetro (cm)</th>
-                            <th>Comprimento (cm)</th>
-                            <th>Volume Bruto (m³)</th>
-                            <th>Volume Líquido (m³)</th>
-                            <th>Preço Custo</th>
-                            <th>Localização</th>
-                            <th>Data Entrada</th>
-                            <th class="actions-col">Ações</th>
+                            <th style="width: 40px;"><input type="checkbox" id="checkTodoEstoque" onchange="toggleTodoEstoque()"></th>
+                            <th data-col="plaqueta" onclick="ordenarEstoque('plaqueta')" style="cursor: pointer;">Plaqueta <i class="fas fa-sort sort-icon" id="sort-estoque-plaqueta"></i></th>
+                            <th data-col="custodia" onclick="ordenarEstoque('custodia')" style="cursor: pointer;">Custódia <i class="fas fa-sort sort-icon" id="sort-estoque-custodia"></i></th>
+                            <th data-col="especie" onclick="ordenarEstoque('especie')" style="cursor: pointer;">Espécie <i class="fas fa-sort sort-icon" id="sort-estoque-especie"></i></th>
+                            <th data-col="diametro" onclick="ordenarEstoque('diametro')" style="cursor: pointer;">Rodo (cm) <i class="fas fa-sort sort-icon" id="sort-estoque-diametro"></i></th>
+                            <th data-col="comprimento" onclick="ordenarEstoque('comprimento')" style="cursor: pointer;">Comprimento (cm) <i class="fas fa-sort sort-icon" id="sort-estoque-comprimento"></i></th>
+                            <th data-col="volumeBruto" onclick="ordenarEstoque('volumeBruto')" style="cursor: pointer;">Volume Bruto (m³) <i class="fas fa-sort sort-icon" id="sort-estoque-volumeBruto"></i></th>
+                            <th data-col="volumeLiquido" onclick="ordenarEstoque('volumeLiquido')" style="cursor: pointer;">Volume Líquido (m³) <i class="fas fa-sort sort-icon" id="sort-estoque-volumeLiquido"></i></th>
+                            <th data-col="compGeo" onclick="ordenarEstoque('compGeo')" style="cursor: pointer;">Comp. Geo. <i class="fas fa-sort sort-icon" id="sort-estoque-compGeo"></i></th>
+                            <th data-col="x1" onclick="ordenarEstoque('x1')" style="cursor: pointer;">X1 <i class="fas fa-sort sort-icon" id="sort-estoque-x1"></i></th>
+                            <th data-col="x2" onclick="ordenarEstoque('x2')" style="cursor: pointer;">X2 <i class="fas fa-sort sort-icon" id="sort-estoque-x2"></i></th>
+                            <th data-col="x3" onclick="ordenarEstoque('x3')" style="cursor: pointer;">X3 <i class="fas fa-sort sort-icon" id="sort-estoque-x3"></i></th>
+                            <th data-col="x4" onclick="ordenarEstoque('x4')" style="cursor: pointer;">X4 <i class="fas fa-sort sort-icon" id="sort-estoque-x4"></i></th>
+                            <th data-col="volumeGeo" onclick="ordenarEstoque('volumeGeo')" style="cursor: pointer;">V. Geo. <i class="fas fa-sort sort-icon" id="sort-estoque-volumeGeo"></i></th>
+                            <th data-col="precoCusto" onclick="ordenarEstoque('precoCusto')" style="cursor: pointer;">Preço Custo <i class="fas fa-sort sort-icon" id="sort-estoque-precoCusto"></i></th>
+                            <th data-col="localizacao" onclick="ordenarEstoque('localizacao')" style="cursor: pointer;">Localização <i class="fas fa-sort sort-icon" id="sort-estoque-localizacao"></i></th>
+                            <th data-col="data" onclick="ordenarEstoque('data')" style="cursor: pointer;">Data Entrada <i class="fas fa-sort sort-icon" id="sort-estoque-data"></i></th>
+                            <th class="actions-col sticky-actions">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="estoqueTable"></tbody>
@@ -1252,63 +2406,102 @@
 
         <!-- Tab Movimentações -->
         <div id="movimentacao" class="tab-content">
-            <h2>Histórico de Movimentações</h2>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="filtroDataInicio">Data Início:</label>
-                    <input type="date" id="filtroDataInicio" onchange="filtrarMovimentacoes()">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <h2 style="margin: 0;">Histórico de Movimentações</h2>
+                <div class="actions-inline">
+                    <button type="button" onclick="toggleOffcanvas('filtrosMovimentacoesDrawer')" class="btn btn-secondary">
+                        <i class="fas fa-filter"></i> Filtros
+                    </button>
+                    <button type="button" onclick="abrirConfiguracaoColunasMovimentacoes()" class="btn btn-secondary" title="Configurar colunas das movimentações">
+                        <i class="fas fa-list"></i> Configurar Colunas
+                    </button>
+                    <button type="button" onclick="imprimirMovimentacoesEstoque()" class="btn btn-primary" title="Imprimir histórico">
+                        <i class="fas fa-print"></i>
+                    </button>
+                    <button type="button" onclick="abrirRastreabilidadeMovimentacoes()" class="btn btn-secondary" title="Ver rastreabilidade de toras e romaneios">
+                        <i class="fas fa-route"></i> Rastreabilidade
+                    </button>
+                    <button type="button" onclick="estornarRemessaBaixa()" class="btn btn-warning" title="Estornar remessa de baixa">
+                        <i class="fas fa-undo"></i> Estornar
+                    </button>
                 </div>
-                <div class="form-group">
-                    <label for="filtroDataFim">Data Fim:</label>
-                    <input type="date" id="filtroDataFim" onchange="filtrarMovimentacoes()">
+            </div>
+
+            <div id="filtrosMovimentacoesDrawer" class="offcanvas-drawer" style="display: none;">
+                <div class="offcanvas-header">
+                    <h3>Filtros Avançados</h3>
+                    <button type="button" onclick="toggleOffcanvas('filtrosMovimentacoesDrawer')" class="btn-close"><i class="fas fa-times"></i></button>
                 </div>
-                <div class="form-group">
-                    <label for="filtroTipoMov">Tipo:</label>
-                    <select id="filtroTipoMov" onchange="filtrarMovimentacoes()">
-                        <option value="">Selecione o Tipo</option>
-                        <option value="entrada">Entrada</option>
-                        <option value="saida">Saída</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="filtroRemessaBaixa">Remessa de Baixa:</label>
-                    <input type="text" id="filtroRemessaBaixa" placeholder="Ex: REM..." oninput="filtrarMovimentacoes()">
-                </div>
-                <div class="form-group" style="align-self: flex-end;">
-                    <div class="actions-inline">
-                        <button type="button" onclick="imprimirMovimentacoesEstoque()" class="btn btn-secondary" title="Imprimir histórico">
-                            <i class="fas fa-print"></i>
-                        </button>
-                        <button type="button" onclick="estornarRemessaBaixa()" class="btn btn-warning" title="Estornar remessa de baixa">
-                            <i class="fas fa-undo"></i>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="filtroDataInicio">Data Início:</label>
+                        <input type="date" id="filtroDataInicio" onchange="filtrarMovimentacoes()">
+                    </div>
+                    <div class="form-group">
+                        <label for="filtroDataFim">Data Fim:</label>
+                        <input type="date" id="filtroDataFim" onchange="filtrarMovimentacoes()">
+                    </div>
+                    <div class="form-group">
+                        <label for="filtroTipoMov">Tipo:</label>
+                        <select id="filtroTipoMov" onchange="filtrarMovimentacoes()">
+                            <option value="">Selecione o Tipo</option>
+                            <option value="entrada">Entrada</option>
+                            <option value="saida">Saída</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filtroRemessaBaixa">Remessa de Baixa:</label>
+                        <input type="text" id="filtroRemessaBaixa" placeholder="Ex: REM..." oninput="filtrarMovimentacoes()">
+                    </div>
+                    <div class="form-group">
+                        <label for="filtroObservacoesMov">Romaneio Vinculado:</label>
+                        <input type="text" id="filtroObservacoesMov" placeholder="Filtrar romaneio, motivo ou observação..." oninput="filtrarMovimentacoes()">
+                    </div>
+                    <div class="form-group" style="align-self: flex-end;">
+                        <button type="button" onclick="limparFiltrosMovimentacoes()" class="btn btn-secondary" title="Limpar filtros" style="width: 100%;">
+                            <i class="fas fa-eraser"></i> Limpar Filtros
                         </button>
                     </div>
                 </div>
             </div>
 
+            <style>
+                .obs-col {
+                    max-width: 200px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+            </style>
+
             <div class="table-responsive">
-                <table class="table">
+                <table class="table table-wide-estoque-compact" id="tabelaMovimentacoes">
                     <colgroup>
-                        <col class="data">
-                        <col class="codigo">
-                        <col class="codigo">
-                        <col class="nome">
-                        <col class="volume">
-                        <col class="codigo">
-                        <col class="codigo">
-                        <col class="nome">
+                        <col style="width: 40px;">
+                        <col class="data" data-col="data">
+                        <col class="codigo" data-col="tipo">
+                        <col class="codigo" data-col="plaqueta">
+                        <col class="codigo" data-col="custodia">
+                        <col class="nome" data-col="especie">
+                        <col class="volume" data-col="volume">
+                        <col class="volume" data-col="volumeGeo">
+                        <col class="codigo" data-col="documento">
+                        <col class="codigo" data-col="remessaId">
+                        <col class="nome" data-col="observacoes">
                     </colgroup>
                     <thead>
                         <tr>
-                            <th>Data</th>
-                            <th>Tipo</th>
-                            <th>Plaqueta</th>
-                            <th>Espécie</th>
-                            <th>Volume</th>
-                            <th>Documento</th>
-                            <th>Remessa</th>
-                            <th>Observações</th>
+                            <th><input type="checkbox" id="checkTodasMovimentacoes" onchange="toggleTodasMovimentacoes()"></th>
+                            <th data-col="data" onclick="ordenarMovimentacoes('data')" style="cursor: pointer;">Data <i class="fas fa-sort sort-icon" id="sort-data"></i></th>
+                            <th data-col="tipo" onclick="ordenarMovimentacoes('tipo')" style="cursor: pointer;">Tipo <i class="fas fa-sort sort-icon" id="sort-tipo"></i></th>
+                            <th data-col="plaqueta" onclick="ordenarMovimentacoes('plaqueta')" style="cursor: pointer;">Plaqueta <i class="fas fa-sort sort-icon" id="sort-plaqueta"></i></th>
+                            <th data-col="custodia" onclick="ordenarMovimentacoes('custodia')" style="cursor: pointer;">Custódia <i class="fas fa-sort sort-icon" id="sort-custodia"></i></th>
+                            <th data-col="especie" onclick="ordenarMovimentacoes('especie')" style="cursor: pointer;">Espécie <i class="fas fa-sort sort-icon" id="sort-especie"></i></th>
+                            <th data-col="volume" onclick="ordenarMovimentacoes('volume')" style="cursor: pointer;">Volume <i class="fas fa-sort sort-icon" id="sort-volume"></i></th>
+                            <th data-col="volumeGeo" onclick="ordenarMovimentacoes('volumeGeo')" style="cursor: pointer;">V. Geo. <i class="fas fa-sort sort-icon" id="sort-volumeGeo"></i></th>
+                            <th data-col="documento" onclick="ordenarMovimentacoes('documento')" style="cursor: pointer;">Documento <i class="fas fa-sort sort-icon" id="sort-documento"></i></th>
+                            <th data-col="remessaId" onclick="ordenarMovimentacoes('remessaId')" style="cursor: pointer;">Remessa <i class="fas fa-sort sort-icon" id="sort-remessaId"></i></th>
+                            <th data-col="observacoes" onclick="ordenarMovimentacoes('observacoes')" style="cursor: pointer;">Romaneio Vinculado <i class="fas fa-sort sort-icon" id="sort-observacoes"></i></th>
                         </tr>
                     </thead>
                     <tbody id="movimentacaoTable"></tbody>
@@ -1328,6 +2521,7 @@
                     <select id="tipoRelatorio">
                         <option value="posicao">Posição do Estoque</option>
                         <option value="movimentacao">Movimentação por Período</option>
+                        <option value="rastreabilidade">Rastreabilidade de Toras</option>
                         <option value="especies">Estoque por Espécie</option>
                         <option value="localizacao">Estoque por Localização</option>
                         <option value="produtos_saldo">Saldo Atual de Produtos (Almoxarifado)</option>
@@ -1348,9 +2542,11 @@
                         <option value="">Todos</option>
                         <option value="entrada">Entrada</option>
                         <option value="saida">Saída</option>
+                        <option value="ajuste">Ajuste</option>
+                        <option value="devolucao">Devolução</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group relatorios-actions-group">
                     <label>&nbsp;</label>
                     <div class="relatorios-actions">
                         <button onclick="gerarRelatorio()" class="btn btn-primary">
@@ -1358,6 +2554,10 @@
                         </button>
                         <button onclick="imprimirRelatorioEstoque()" class="btn btn-secondary">
                             <i class="fas fa-print"></i> Imprimir
+                        </button>
+                        <button type="button" onclick="abrirConfiguracaoColunasRelatorio()" id="btnConfigColunasRelatorio" class="btn btn-secondary report-columns-btn" title="Configurar colunas deste relatório">
+                            <i class="fas fa-list"></i> Colunas
+                            <span id="relatorioColumnsHint" class="report-columns-hint"></span>
                         </button>
                     </div>
                 </div>
@@ -1371,76 +2571,79 @@
             </div>
 
             <div id="relatorioResult" style="display: none;">
-                <h3>Resultado do Relatório</h3>
+                <div id="relatorioResultHeader">
+                    <h3>Resultado do Relatório</h3>
+                </div>
                 <div id="relatorioContent"></div>
             </div>
         </div>
 
-        <!-- Tab Entradas por Compras -->
-        <div id="compras" class="tab-content">
-            <h2>Entradas por Compras</h2>
-            <div class="filters" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 12px;">
-                <div class="form-group">
-                    <label for="comprasDataInicio">Data Início</label>
-                    <input type="date" id="comprasDataInicio">
+        <!-- Tab Entrada Almoxarifado -->
+        <div id="entradaAlmoxarifado" class="tab-content">
+            <h2>Entrada Almoxarifado</h2>
+            <form id="entradaProdutoForm" class="entrada-almox-form">
+                <h3 class="almox-section-title" id="entradaProdutoTitulo">Registrar Entrada de Produto</h3>
+                <div id="entradaProdutoEditAviso" class="alert alert-warning" style="display: none;">
+                    Modo edição: os dados do produto selecionado foram carregados no formulário. Alterações cadastrais atualizam o produto; se a quantidade for alterada, será registrada uma movimentação de Ajuste no histórico.
                 </div>
-                <div class="form-group">
-                    <label for="comprasDataFim">Data Fim</label>
-                    <input type="date" id="comprasDataFim">
+                <div class="form-row entrada-produto-grid-primary">
+                    <div class="form-group">
+                        <label for="entradaProdutoData">Data:</label>
+                        <input type="date" id="entradaProdutoData" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="entradaProdutoTipoMov">Tipo:</label>
+                        <select id="entradaProdutoTipoMov" required>
+                            <option value="entrada">Entrada</option>
+                            <option value="ajuste">Ajuste (+)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="entradaProdutoSelect">Produto (existente):</label>
+                        <select id="entradaProdutoSelect">
+                            <option value="">Novo produto</option>
+                        </select>
+                        <div id="entradaProdutoSaldo" class="saldo-info"></div>
+                    </div>
+                    <div class="form-group form-group-large">
+                        <label for="entradaProdutoNome">Nome do Produto:</label>
+                        <input type="text" id="entradaProdutoNome" placeholder="Ex: Parafuso 6mm">
+                    </div>
+                    <div class="form-group form-group-small">
+                        <label for="entradaProdutoUnidade">Unidade:</label>
+                        <input type="text" id="entradaProdutoUnidade" placeholder="un, kg, cx">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="comprasFornecedorFiltro">Fornecedor</label>
-                    <input type="text" id="comprasFornecedorFiltro" placeholder="Nome do fornecedor">
+                <div class="form-row entrada-produto-grid-secondary">
+                    <div class="form-group form-group-small">
+                        <label for="entradaProdutoQtd">Quantidade:</label>
+                        <input type="number" id="entradaProdutoQtd" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group form-group-small">
+                        <label for="entradaProdutoPreco">Preço Unitário:</label>
+                        <input type="text" id="entradaProdutoPreco" placeholder="R$ 0,00">
+                    </div>
+                    <div class="form-group">
+                        <label for="entradaProdutoDocumento">Documento:</label>
+                        <input type="text" id="entradaProdutoDocumento" placeholder="NF, pedido, ajuste">
+                    </div>
+                    <div class="form-group form-group-large">
+                        <label for="entradaProdutoObs">Observações:</label>
+                        <input type="text" id="entradaProdutoObs" placeholder="Detalhes da entrada">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="comprasStatusFiltro">Status</label>
-                    <select id="comprasStatusFiltro">
-                        <option value="pendente" selected>Pendente</option>
-                        <option value="aprovado">Aprovado</option>
-                        <option value="entregue">Entregue</option>
-                        <option value="cancelado">Cancelado</option>
-                    </select>
+                <div class="action-buttons entrada-produto-actions">
+                    <button type="submit" class="btn btn-success" id="entradaProdutoSubmitBtn">
+                        <i class="fas fa-check" id="entradaProdutoSubmitIcon"></i> <span id="entradaProdutoSubmitLabel">Registrar Entrada</span>
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="limparEntradaProdutoForm()">
+                        <i class="fas fa-times"></i> Limpar
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="showTab('produtos')">
+                        <i class="fas fa-boxes"></i> Ver Almoxarifado
+                    </button>
                 </div>
-                <div class="form-group form-group-small" style="align-self: end;">
-                    <button class="btn btn-primary" onclick="filtrarComprasMov()"><i class="fas fa-filter"></i> Aplicar Filtros</button>
-                </div>
-            </div>
-
-            <div class="summary-box" style="margin-bottom: 10px;">
-                <div class="summary-row">
-                    <span>Total Volume:</span>
-                    <span id="comprasTotalVolume">0,000 m³</span>
-                </div>
-                <div class="summary-row">
-                    <span>Total Valor:</span>
-                    <span id="comprasTotalValor">R$ 0,00</span>
-                </div>
-            </div>
-
-            <div class="table-responsive mobile-cards">
-                <table class="table">
-                    <colgroup>
-                        <col class="data">
-                        <col class="nome">
-                        <col class="volume">
-                        <col class="valor">
-                        <col class="codigo">
-                        <col class="codigo">
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Fornecedor</th>
-                            <th>Volume (m³)</th>
-                            <th>Valor Total (R$)</th>
-                            <th>Origem</th>
-                            <th>Status Pedido</th>
-                        </tr>
-                    </thead>
-                    <tbody id="comprasMovTable"></tbody>
-                </table>
-            </div>
-            <div id="paginacaoComprasMov" class="pagination-controls"></div>
+            </form>
         </div>
     </div>
 
@@ -1455,26 +2658,39 @@
             <div class="modal-body" style="padding: 20px; flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column;">
                 <div class="search-box" style="flex: 0 0 auto;">
                     <div style="overflow-x:auto;">
-                        <div style="display:flex; gap:8px; flex-wrap:nowrap; align-items:center; min-width:1030px;">
-                            <input type="text" id="filtroTorasEspecieModal" placeholder="Espécie ou Plaqueta" oninput="filtrarTorasDisponiveis()" onkeydown="onBuscaTorasEnter(event)" style="width:360px; min-width:360px;">
+                        <div class="filtro-toras-modal-grid" style="display:flex; gap:8px; flex-wrap:nowrap; align-items:center; min-width:1090px;">
+                            <div class="species-combobox-inline" style="width:420px; min-width:420px;">
+                                <input type="text" id="filtroTorasEspecieModal" class="autocomplete-input" data-species-autocomplete="true" data-species-layout="reserved" data-species-reserve="filtroTorasEspecieModalSuggestionsReserve" placeholder="Espécie ou Plaqueta" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="especieSuggestions" role="combobox" oninput="filtrarTorasDisponiveis()" onkeydown="onBuscaTorasEnter(event)">
+                                <button type="button" onclick="abrirListaEspeciesEntrada('filtroTorasEspecieModal')" class="btn btn-secondary species-icon-btn" title="Lista de Espécies">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                            </div>
                             <input type="text" id="filtroTorasRodoModal" placeholder="Rodo (ex.: 250)" oninput="filtrarTorasDisponiveis()" style="width:220px; min-width:220px;">
                             <input type="text" id="filtroTorasComprimentoModal" placeholder="Comprimento (ex.: 350)" oninput="filtrarTorasDisponiveis()" style="width:240px; min-width:240px;">
                             <button type="button" class="btn-secondary btn-small" onclick="limparFiltrosTorasDisponiveisModal()" style="white-space:nowrap; min-width:140px;">
                                 Limpar Filtros
                             </button>
                         </div>
-                        <div style="font-size:12px; color:#666; margin-top:6px; white-space:nowrap;">
-                            Dica: no campo Espécie ou Plaqueta, pressione Enter para selecionar os itens filtrados e limpar a busca.
-                        </div>
+                    </div>
+                    <div id="filtroTorasEspecieModalSuggestionsReserve" class="species-suggestions-reserve" aria-hidden="true"></div>
+                    <div style="font-size:12px; color:#666; margin-top:6px; white-space:nowrap;">
+                        Dica: no campo Espécie ou Plaqueta, pressione Enter para selecionar os itens filtrados e limpar a busca.
                     </div>
                 </div>
                 
                 <div class="table-container" style="flex: 1 1 auto; overflow: auto; margin-bottom: 0;">
-                    <table class="table">
+                    <table class="table table-wide-estoque-lg" id="tabelaTorasDisponiveis">
                         <colgroup>
                             <col style="width: 40px;">
                             <col class="codigo">
+                            <col class="codigo">
                             <col class="nome">
+                            <col class="quantidade">
+                            <col class="quantidade">
+                            <col class="quantidade">
+                            <col class="quantidade">
+                            <col class="quantidade">
+                            <col class="volume">
                             <col class="quantidade">
                             <col class="quantidade">
                             <col class="quantidade">
@@ -1491,6 +2707,7 @@
                                     <input type="checkbox" id="selecionarTodas" onchange="selecionarTodasToras()">
                                 </th>
                                 <th>Plaqueta</th>
+                                <th>Custódia</th>
                                 <th>Espécie</th>
                                 <th>Rodo</th>
                                 <th>Comprimento</th>
@@ -1498,6 +2715,12 @@
                                 <th>Oco 2</th>
                                 <th>Desconto</th>
                                 <th>Volume</th>
+                                <th>Comp. Geo.</th>
+                                <th>X1</th>
+                                <th>X2</th>
+                                <th>X3</th>
+                                <th>X4</th>
+                                <th>V. Geo.</th>
                                 <th>Preço</th>
                                 <th>Valor</th>
                                 <th>Localização</th>
@@ -1542,13 +2765,22 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="baixaProdutoResponsavel">Responsável:</label>
-                            <input type="text" id="baixaProdutoResponsavel" placeholder="Nome do responsável" autocomplete="name">
+                            <input type="text" id="baixaProdutoResponsavel" list="responsaveisProdutoDatalist" placeholder="Digite ou selecione o responsável" autocomplete="off" required>
+                            <small id="baixaProdutoResponsavelAviso" class="responsavel-autocomplete-warning" aria-live="polite"></small>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="baixaProdutoQtd">Quantidade:</label>
                             <input type="number" id="baixaProdutoQtd" step="0.01" min="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="baixaProdutoTipoMov">Tipo:</label>
+                            <select id="baixaProdutoTipoMov" required>
+                                <option value="saida">Saída / Consumo</option>
+                                <option value="ajuste">Ajuste (-)</option>
+                                <option value="devolucao">Devolução ao Fornecedor</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label for="baixaProdutoData">Data:</label>
@@ -1572,6 +2804,121 @@
         </div>
     </div>
 
+    <!-- Modal de Rastreabilidade -->
+    <div id="rastreabilidadeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-route"></i> Rastreabilidade de Toras</h3>
+                <span class="close-modal" onclick="fecharRastreabilidadeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="rastreabilidade-filters-grid">
+                    <div class="form-group">
+                        <label for="rastFiltroDataInicio">Data Início:</label>
+                        <input type="date" id="rastFiltroDataInicio">
+                    </div>
+                    <div class="form-group">
+                        <label for="rastFiltroDataFim">Data Fim:</label>
+                        <input type="date" id="rastFiltroDataFim">
+                    </div>
+                    <div class="form-group">
+                        <label for="rastFiltroPlaqueta">Plaqueta:</label>
+                        <input type="text" id="rastFiltroPlaqueta" placeholder="Plaqueta">
+                    </div>
+                    <div class="form-group">
+                        <label for="rastFiltroRomaneio">Romaneio:</label>
+                        <input type="text" id="rastFiltroRomaneio" placeholder="Número ou ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="rastFiltroRemessa">Remessa:</label>
+                        <input type="text" id="rastFiltroRemessa" placeholder="REM...">
+                    </div>
+                    <div class="form-group">
+                        <label for="rastFiltroMovimentacao">Movimentação:</label>
+                        <input type="text" id="rastFiltroMovimentacao" placeholder="MOV...">
+                    </div>
+                    <div class="form-group">
+                        <label for="rastFiltroEspecie">Espécie:</label>
+                        <input type="text" id="rastFiltroEspecie" placeholder="Espécie">
+                    </div>
+                    <div class="form-group">
+                        <label for="rastFiltroCliente">Cliente/Fornecedor:</label>
+                        <input type="text" id="rastFiltroCliente" placeholder="Nome">
+                    </div>
+                    <div class="form-group">
+                        <label for="rastFiltroUsuario">Usuário:</label>
+                        <input type="text" id="rastFiltroUsuario" placeholder="Usuário">
+                    </div>
+                    <div class="form-group">
+                        <label for="rastFiltroStatus">Status:</label>
+                        <select id="rastFiltroStatus">
+                            <option value="ativo">Ativos</option>
+                            <option value="todos">Todos</option>
+                            <option value="estornado">Estornados</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn btn-primary" onclick="aplicarFiltrosRastreabilidade()" style="width: 100%;">
+                            <i class="fas fa-search"></i> Aplicar
+                        </button>
+                    </div>
+                </div>
+                <div id="rastreabilidadeResumo" class="rastreabilidade-summary"></div>
+                <div id="rastreabilidadeTimeline" class="rastreabilidade-timeline"></div>
+                <div class="table-responsive">
+                    <table class="table table-wide-estoque-compact">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Remessa</th>
+                                <th>Plaqueta</th>
+                                <th>Espécie</th>
+                                <th>Romaneio</th>
+                                <th>Cliente/Fornecedor</th>
+                                <th>Vol. Tora</th>
+                                <th>Vol. Produzido</th>
+                                <th>Rendimento</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rastreabilidadeTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer" style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                <button type="button" onclick="limparFiltrosRastreabilidade()" class="btn btn-secondary">
+                    <i class="fas fa-eraser"></i> Limpar
+                </button>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button type="button" onclick="imprimirRastreabilidadeEstoque()" class="btn btn-primary">
+                        <i class="fas fa-print"></i> Imprimir
+                    </button>
+                    <button type="button" onclick="fecharRastreabilidadeModal()" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Preview de Relatório -->
+    <div id="relatorioPreviewModal" class="modal" style="z-index: 1050;">
+        <div class="modal-content" style="max-width: 900px; width: 95%; height: 90vh; display: flex; flex-direction: column; padding: 0;">
+            <div class="modal-header" style="background-color: #2c3e50; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="color: #fff; margin: 0; font-size: 1.25rem;">Pré-visualização de Relatório</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button type="button" onclick="imprimirDoIframe()" class="btn btn-primary" style="background-color: #3498db; border: none; padding: 8px 16px;">
+                        <i class="fas fa-print"></i> Imprimir
+                    </button>
+                    <span class="close" onclick="fecharRelatorioPreview()" style="color: #fff; opacity: 0.8; font-size: 28px; line-height: 1;">&times;</span>
+                </div>
+            </div>
+            <div class="modal-body" style="flex: 1; padding: 0; overflow: hidden; background-color: #f5f6fa;">
+                <iframe id="relatorioPreviewIframe" style="width: 100%; height: 100%; border: none;"></iframe>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Carregamento -->
     <div id="loadingModal" class="modal" style="z-index: 2000; background-color: rgba(0,0,0,0.7);">
         <div class="modal-content" style="background: transparent; border: none; box-shadow: none; color: white; text-align: center; margin-top: 20vh;">
@@ -1582,11 +2929,14 @@
     </div>
 
     <script src="auth.js"></script>
-    <script src="species-manager.js"></script>
+    <script src="species-utils.js"></script>
+    <script src="species-manager.js?v=20260601b"></script>
+    <script src="tora-geometry-utils.js"></script>
+    <script src="romaneio-table-enhancements.js"></script>
     
     <script type="module">
         // Importar todo o firebaseService para garantir que todos os métodos estejam disponíveis
-        import * as fbService from './firebaseService.js';
+        import * as fbService from './firebaseService.js?v=2026-06-08-estoque-print-pwa-v1';
         
         // Garantir que esteja globalmente disponível
         if (!window.firebaseService) {
@@ -1652,8 +3002,9 @@
         
         console.log("✅ firebaseService carregado no estoque.html completo");
     </script>
-    <script src="estoque_produtos.js"></script>
-    <script src="estoque.js"></script>
+    <script src="commerce-pdf-share.js?v=2026-06-23-logo-print-dataurl-v1"></script>
+    <script src="estoque_produtos.js?v=2026-06-08-estoque-print-pwa-v1"></script>
+    <script src="estoque.js?v=2026-06-16-tenant-safe-v1"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

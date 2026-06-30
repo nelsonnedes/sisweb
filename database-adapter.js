@@ -47,13 +47,13 @@ class DatabaseAdapter {
             if (window.appTenantId) return String(window.appTenantId);
             if (window.companyInfo) {
                 const raw = window.companyInfo;
-                const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                 if (id) return String(id);
             }
             const stored = localStorage.getItem('company_info');
             if (stored) {
                 const obj = JSON.parse(stored);
-                const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                 if (id) return String(id);
             }
         } catch (_) {}
@@ -297,8 +297,10 @@ class DatabaseAdapter {
             'clients': 'data/clients',
             'clientesTora': 'data/clients',
             'clientes': 'data/clients',
-            'species': 'data/species',
-            'especies': 'data/species',
+            'species': 'especies',
+            'especies': 'especies',
+            'especiesPct': 'especies',
+            'data/species': 'especies',
             'romaneiosPct': 'data/romaneiosPct',
             'romaneiosTora': 'data/romaneios/tora',
             'romaneiosTl': 'data/romaneios/tl',
@@ -362,7 +364,7 @@ class DatabaseAdapter {
             
             // Lista de chaves principais para sincronizar
             const keysToSync = [
-                'clients', 'species', 'romaneiosPct', 'romaneiosTora', 
+                'clients', 'especies', 'romaneiosPct', 'romaneiosTora',
                 'romaneiosTl', 'companies', 'systemConfig'
             ];
             

@@ -31,13 +31,13 @@ window.GerenciarClientes = (function() {
             if (window.appTenantId) return String(window.appTenantId);
             if (window.companyInfo) {
                 const raw = window.companyInfo;
-                const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                 if (id) return String(id);
             }
             const stored = localStorage.getItem('company_info');
             if (stored) {
                 const obj = JSON.parse(stored);
-                const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                 if (id) return String(id);
             }
         } catch (_) {}
@@ -198,6 +198,49 @@ window.GerenciarClientes = (function() {
                                 <input type="tel" id="clientPhone">
                             </div>
                         </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="clientCnpj">CPF / CNPJ</label>
+                                <input type="text" id="clientCnpj">
+                            </div>
+                            <div class="form-group">
+                                <label for="clientPersonType">Tipo de pessoa</label>
+                                <select id="clientPersonType">
+                                    <option value="">Não informado</option>
+                                    <option value="juridica">Pessoa jurídica</option>
+                                    <option value="fisica">Pessoa física</option>
+                                    <option value="estrangeiro">Estrangeiro</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="clientIndIEDest">Indicador IE</label>
+                                <select id="clientIndIEDest">
+                                    <option value="">Não informado</option>
+                                    <option value="1">Contribuinte ICMS</option>
+                                    <option value="2">Contribuinte isento</option>
+                                    <option value="9">Não contribuinte</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="clientStateRegistration">Inscrição Estadual</label>
+                                <input type="text" id="clientStateRegistration">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="clientMunicipalRegistration">Inscrição Municipal</label>
+                                <input type="text" id="clientMunicipalRegistration">
+                            </div>
+                            <div class="form-group">
+                                <label for="clientSuframa">SUFRAMA</label>
+                                <input type="text" id="clientSuframa">
+                            </div>
+                        </div>
                         
                         <div class="form-row">
                             <div class="form-group">
@@ -205,8 +248,30 @@ window.GerenciarClientes = (function() {
                                 <input type="email" id="clientEmail">
                             </div>
                             <div class="form-group">
+                                <label for="clientCep">CEP</label>
+                                <input type="text" id="clientCep">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
                                 <label for="clientAddress">Endereço</label>
                                 <input type="text" id="clientAddress">
+                            </div>
+                            <div class="form-group">
+                                <label for="clientNumber">Número</label>
+                                <input type="text" id="clientNumber">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="clientNeighborhood">Bairro</label>
+                                <input type="text" id="clientNeighborhood">
+                            </div>
+                            <div class="form-group">
+                                <label for="clientComplement">Complemento</label>
+                                <input type="text" id="clientComplement">
                             </div>
                         </div>
                         
@@ -222,6 +287,21 @@ window.GerenciarClientes = (function() {
                                 <select id="clientCity">
                                     <option value="">Selecione primeiro o estado</option>
                                 </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="clientMunicipalityCode">Código IBGE do município</label>
+                                <input type="text" id="clientMunicipalityCode">
+                            </div>
+                            <div class="form-group">
+                                <label for="clientCountryCode">Código do país</label>
+                                <input type="text" id="clientCountryCode" value="1058">
+                            </div>
+                            <div class="form-group">
+                                <label for="clientCountryName">País</label>
+                                <input type="text" id="clientCountryName" value="Brasil">
                             </div>
                         </div>
                         
@@ -409,11 +489,24 @@ window.GerenciarClientes = (function() {
         // Mapear campos do cliente para compatibilidade
         const mapeamento = {
             clientName: cliente.nome || cliente.name || '',
+            clientCnpj: cliente.documento || cliente.document || cliente.cnpj || cliente.cpf || '',
+            clientPersonType: cliente.tipoPessoa || cliente.personType || cliente.fiscalPersonType || '',
+            clientIndIEDest: cliente.indIEDest || cliente.indicadorInscricaoEstadual || cliente.ieIndicator || '',
+            clientStateRegistration: cliente.inscricaoEstadual || cliente.stateRegistration || cliente.ie || '',
+            clientMunicipalRegistration: cliente.inscricaoMunicipal || cliente.municipalRegistration || '',
+            clientSuframa: cliente.suframa || '',
             clientPhone: cliente.telefone || cliente.phone || '',
             clientEmail: cliente.email || '',
+            clientCep: cliente.cep || cliente.postalCode || '',
             clientAddress: cliente.endereco || cliente.address || '',
+            clientNumber: cliente.numero || cliente.number || '',
+            clientNeighborhood: cliente.bairro || cliente.neighborhood || '',
+            clientComplement: cliente.complemento || cliente.complement || '',
             clientState: cliente.estado || cliente.state || '',
             clientCity: cliente.cidade || cliente.city || '',
+            clientMunicipalityCode: cliente.codigoMunicipio || cliente.municipioCodigo || cliente.municipalityCode || cliente.cMun || cliente.ibgeCode || '',
+            clientCountryCode: cliente.paisCodigo || cliente.countryCode || cliente.cPais || '1058',
+            clientCountryName: cliente.pais || cliente.country || cliente.countryName || cliente.xPais || 'Brasil',
             clientObservations: cliente.observacoes || cliente.observations || '',
             clientId: cliente.id || ''
         };
@@ -567,14 +660,58 @@ window.GerenciarClientes = (function() {
      * ✅ COLETAR DADOS DO FORMULÁRIO
      */
     function coletarDadosFormulario() {
+        const documento = document.getElementById('clientCnpj')?.value?.trim() || '';
+        const tipoPessoa = document.getElementById('clientPersonType')?.value || '';
+        const indIEDest = document.getElementById('clientIndIEDest')?.value || '';
+        const inscricaoEstadual = document.getElementById('clientStateRegistration')?.value?.trim() || '';
+        const inscricaoMunicipal = document.getElementById('clientMunicipalRegistration')?.value?.trim() || '';
+        const cep = document.getElementById('clientCep')?.value?.trim() || '';
+        const complemento = document.getElementById('clientComplement')?.value?.trim() || '';
+        const codigoMunicipio = document.getElementById('clientMunicipalityCode')?.value?.trim() || '';
+        const paisCodigo = document.getElementById('clientCountryCode')?.value?.trim() || '1058';
+        const pais = document.getElementById('clientCountryName')?.value?.trim() || 'Brasil';
         const campos = {
             id: document.getElementById('clientId')?.value || '',
             nome: document.getElementById('clientName')?.value?.trim() || '',
+            cnpj: documento,
+            documento,
+            document: documento,
+            tipoPessoa,
+            personType: tipoPessoa,
+            fiscalPersonType: tipoPessoa,
+            indIEDest,
+            indicadorInscricaoEstadual: indIEDest,
+            ieIndicator: indIEDest,
+            inscricaoEstadual,
+            stateRegistration: inscricaoEstadual,
+            inscricaoMunicipal,
+            municipalRegistration: inscricaoMunicipal,
+            suframa: document.getElementById('clientSuframa')?.value?.trim() || '',
+            cep,
+            postalCode: cep,
             telefone: document.getElementById('clientPhone')?.value?.trim() || '',
             email: document.getElementById('clientEmail')?.value?.trim() || '',
             endereco: document.getElementById('clientAddress')?.value?.trim() || '',
+            address: document.getElementById('clientAddress')?.value?.trim() || '',
+            numero: document.getElementById('clientNumber')?.value?.trim() || '',
+            number: document.getElementById('clientNumber')?.value?.trim() || '',
+            bairro: document.getElementById('clientNeighborhood')?.value?.trim() || '',
+            neighborhood: document.getElementById('clientNeighborhood')?.value?.trim() || '',
+            complemento,
+            complement: complemento,
             estado: document.getElementById('clientState')?.value || '',
             cidade: document.getElementById('clientCity')?.value || '',
+            codigoMunicipio,
+            municipioCodigo: codigoMunicipio,
+            municipalityCode: codigoMunicipio,
+            cMun: codigoMunicipio,
+            paisCodigo,
+            countryCode: paisCodigo,
+            cPais: paisCodigo,
+            pais,
+            country: pais,
+            countryName: pais,
+            xPais: pais,
             observacoes: document.getElementById('clientObservations')?.value?.trim() || ''
         };
         

@@ -173,7 +173,7 @@ async function saveData(key, data) {
         }
         
         // ✅ VERIFICAR SE ESTAMOS EM OPERAÇÃO DE EXCLUSÃO
-        if (window.deletingRomaneio && key === 'romaneiosTora') {
+        if (window.deletingRomaneio && (key === 'romaneiosTora' || key === 'romaneios/tora')) {
             console.log("⛔ BLOQUEANDO SALVAMENTO durante operação de exclusão");
             return false;
         }
@@ -185,7 +185,6 @@ async function saveData(key, data) {
             console.log(`🔧 Normalizando chave '${key}' → 'fornecedores'`);
         }
         const storageKey = getStorageKey(finalKey);
-        const allowLegacy = storageKey === finalKey;
         
         // ✅ SERIALIZAR DADOS ANTECIPADAMENTE PARA DETECTAR PROBLEMAS
         let serializedData;
@@ -246,24 +245,23 @@ function getStorageKey(baseKey) {
             const t = svc.getCurrentTenantId();
             if (t) return `companies/${t}/${baseKey}`;
         }
-        if (svc && typeof svc.getCurrentUid === 'function') {
-            const uid = svc.getCurrentUid();
-            if (uid) return `users/${uid}/${baseKey}`;
-        }
     } catch (_) {}
     try {
+        if (/^companies\//.test(String(baseKey || ''))) return baseKey;
+        if (/^users\//.test(String(baseKey || ''))) return null;
         if (window.appTenantId) return `companies/${String(window.appTenantId)}/${baseKey}`;
         const stored = localStorage.getItem('company_info');
         if (stored) {
             const obj = JSON.parse(stored);
-            const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+            const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
             if (id) return `companies/${String(id)}/${baseKey}`;
         }
     } catch (_) {}
-    return baseKey;
+    return null;
 }
 
 function persistLocalValue(storageKey, data) {
+    if (!storageKey || !/^companies\//.test(String(storageKey))) return false;
     try {
         if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {
             return window.SiswebStorage.write(storageKey, data) !== false;
@@ -271,6 +269,16 @@ function persistLocalValue(storageKey, data) {
     } catch (_) {}
     localStorage.setItem(storageKey, JSON.stringify(data));
     return true;
+}
+
+function readCompanyCache(storageKey) {
+    if (!storageKey || !/^companies\//.test(String(storageKey))) return null;
+    return localStorage.getItem(storageKey);
+}
+
+function removeCompanyCache(storageKey) {
+    if (!storageKey || !/^companies\//.test(String(storageKey))) return;
+    localStorage.removeItem(storageKey);
 }
 
 async function getData(key) {
@@ -324,7 +332,7 @@ async function getData(key) {
                 // âœ… FALLBACK PARA CACHE LOCAL APENAS EM CASO DE ERRO
                 try {
                     console.log(`🔧 Tentando cache local para ${finalKey}...`);
-                    const localData = localStorage.getItem(storageKey) || (allowLegacy ? localStorage.getItem(finalKey) : null);
+                    const localData = readCompanyCache(storageKey);
                     
                     if (localData) {
                         try {
@@ -332,8 +340,7 @@ async function getData(key) {
                             console.log(`âœ… ${finalKey} carregado do cache local:`, Array.isArray(data) ? `${data.length} itens` : 'dados vÃ¡lidos');
                         } catch (parseError) {
                             console.error(`âŒ Erro ao parsear ${finalKey} do cache local:`, parseError);
-                            localStorage.removeItem(storageKey);
-                            if (allowLegacy) localStorage.removeItem(finalKey);
+                            removeCompanyCache(storageKey);
                             data = [];
                         }
                     } else {
@@ -351,7 +358,7 @@ async function getData(key) {
             // âœ… ÃšLTIMO RECURSO: CACHE LOCAL
             try {
                 console.log(`🔧 Usando cache local como último recurso para ${finalKey}...`);
-                const localData = localStorage.getItem(storageKey) || (allowLegacy ? localStorage.getItem(finalKey) : null);
+                const localData = readCompanyCache(storageKey);
                 
                 if (localData) {
                     try {
@@ -442,7 +449,6 @@ async function openFornecedorListModal() {
         `;
         
         document.body.appendChild(modal);
-        console.log("âœ… Modal criado com sucesso");
         
         // Configurar eventos de fechamento
         const closeBtn = modal.querySelector('.close-modal');
@@ -499,7 +505,6 @@ async function openFornecedorListModal() {
         if (filterInput) filterInput.focus();
     }, 100);
     
-    console.log("âœ… Modal de fornecedores aberto com sucesso");
 }
 
 // FunÃ§Ã£o para renderizar lista de fornecedores (especÃ­fica para romaneio de tora)
@@ -535,14 +540,9 @@ async function renderFornecedorList(filter = '') {
                     const count = result.data ? Object.keys(result.data).length : 0;
                     console.log(`✅ Dados carregados de fornecedores: ${count} registro(s)`);
                 }
-                console.log("âœ… loadFromFirebase resultado completo:", result);
                 
                 if (result && result.success && result.data) {
                     const firebaseData = result.data;
-                    console.log("âœ… Dados do Firebase encontrados:", firebaseData);
-                    console.log("âœ… Tipo dos dados:", typeof firebaseData);
-                    console.log("âœ… Ã‰ array?", Array.isArray(firebaseData));
-                    console.log("âœ… Chaves do objeto:", Object.keys(firebaseData));
                     
                     // âœ… PROCESSAMENTO CORRETO - APENAS VALORES DIRETOS
                     Object.keys(firebaseData).forEach(clientId => {
@@ -562,7 +562,6 @@ async function renderFornecedorList(filter = '') {
                     
                     console.log(`âœ… ${fornecedorList.length} fornecedores carregados do Firebase`);
                 } else {
-                    console.log("âš ï¸ Nenhum dado encontrado no Firebase ou estrutura invÃ¡lida");
                 }
             } catch (error) {
                 console.error("âŒ Erro no carregamento Firebase:", error);
@@ -614,7 +613,7 @@ async function renderFornecedorList(filter = '') {
             '<i class="fas fa-plus" style="margin-right: 8px;"></i>Nenhum fornecedor encontrado. Use "Novo Fornecedor" para cadastrar.';
         tr.appendChild(td);
         tableBody.appendChild(tr);
-        console.log("ðŸ" Exibindo mensagem: nenhum fornecedor encontrado");
+        console.log("Exibindo mensagem: nenhum fornecedor encontrado");
         return;
     }
     
@@ -709,8 +708,6 @@ async function renderFornecedorList(filter = '') {
 
 // FunÃ§Ã£o para selecionar fornecedor da lista (especÃ­fica para romaneio de tora)
 async function selectFornecedorFromList(id) {
-    console.log("ðŸ"„ === SELECIONANDO FORNECEDOR ===");
-    console.log("ðŸ"„ ID recebido:", id);
     
     try {
         let fornecedor = null;
@@ -719,13 +716,10 @@ async function selectFornecedorFromList(id) {
         // âœ… CARREGAMENTO SIMPLIFICADO DO FIREBASE
         if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
             try {
-                console.log("ðŸ\"¥ Carregando fornecedores da coleção 'fornecedores'...");
                 const result = await window.firebaseService.loadFromFirebase('fornecedores');
-                console.log("âœ… loadFromFirebase resultado:", result);
                 
                 if (result && result.success && result.data) {
                     const firebaseData = result.data;
-                    console.log("âœ… Dados do Firebase encontrados:", firebaseData);
                     
                     // âœ… PROCESSAMENTO CORRETO - APENAS VALORES DIRETOS
                     Object.keys(firebaseData).forEach(clientId => {
@@ -765,18 +759,15 @@ async function selectFornecedorFromList(id) {
                     const index = parseInt(id.replace('temp_', ''));
                     if (!isNaN(index) && index >= 0 && index < fornecedorList.length) {
                         fornecedor = fornecedorList[index];
-                        console.log("âœ… Encontrado por Ã­ndice temp:", fornecedor);
                     }
                 }
             }
         }
         
         if (fornecedor) {
-            console.log("âœ… Fornecedor encontrado para seleÃ§Ã£o:", fornecedor.nome || fornecedor.name);
             selectFornecedor(fornecedor);
         } else {
             console.error("âŒ Fornecedor nÃ£o encontrado com ID:", id);
-            console.log("ðŸ"‹ IDs disponÃ­veis:", fornecedorList.map(f => f.id));
             alert('Fornecedor nÃ£o encontrado. A lista foi atualizada do Firebase.');
         }
         
@@ -788,8 +779,6 @@ async function selectFornecedorFromList(id) {
 
 // âœ… FUNÃ‡ÃƒO DE EDIÃ‡ÃƒO CORRIGIDA
 async function editFornecedorFromList(id) {
-    console.log("ðŸ"„ === EDITANDO FORNECEDOR ===");
-    console.log("ðŸ"„ ID recebido:", id);
     
     try {
         let fornecedor = null;
@@ -798,13 +787,10 @@ async function editFornecedorFromList(id) {
         // âœ… CARREGAMENTO SIMPLIFICADO DO FIREBASE
         if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
             try {
-                console.log("ðŸ\"¥ Carregando fornecedores da coleção 'fornecedores'...");
                 const result = await window.firebaseService.loadFromFirebase('fornecedores');
-                console.log("âœ… loadFromFirebase resultado:", result);
                 
                 if (result && result.success && result.data) {
                     const firebaseData = result.data;
-                    console.log("âœ… Dados do Firebase encontrados:", firebaseData);
                     
                     // âœ… PROCESSAMENTO CORRETO - APENAS VALORES DIRETOS
                     Object.keys(firebaseData).forEach(clientId => {
@@ -842,27 +828,23 @@ async function editFornecedorFromList(id) {
                     const index = parseInt(id.replace('temp_', ''));
                     if (!isNaN(index) && index >= 0 && index < fornecedorList.length) {
                         fornecedor = fornecedorList[index];
-                        console.log("âœ… Encontrado por Ã­ndice temp:", fornecedor);
                     }
                 }
             }
         }
         
         if (fornecedor) {
-            console.log("âœ… Fornecedor encontrado para ediÃ§Ã£o:", fornecedor.nome || fornecedor.name);
             
             // âœ… FECHAR MODAL DE LISTA
             const listModal = document.getElementById('clientListModal');
             if (listModal) {
                 listModal.style.display = 'none';
-                console.log("âœ… Modal de lista fechado");
             }
             
             // âœ… CARREGAR FORNECEDOR NO CAMPO (igual ao Ã­cone do campo)
             const clientInput = document.getElementById('clienteInput');
             if (clientInput) {
                 clientInput.value = fornecedor.nome || fornecedor.name || '';
-                console.log("âœ… Fornecedor carregado no campo de entrada");
             }
             
             // âœ… DEFINIR FORNECEDOR GLOBAL PARA openEditClientModal FUNCIONAR
@@ -870,12 +852,10 @@ async function editFornecedorFromList(id) {
             window.selectedFornecedor = fornecedor;
             
             // âœ… USAR A MESMA LÃ"GICA DO ÃCONE DO CAMPO - openEditClientModal
-            console.log("âœ… Chamando openEditClientModal (mesma funÃ§Ã£o do Ã­cone do campo)");
             await openEditClientModal();
             
         } else {
             console.error("âŒ Fornecedor nÃ£o encontrado com ID:", id);
-            console.log("ðŸ"‹ IDs disponÃ­veis:", fornecedorList.map(f => f.id));
             alert('Fornecedor nÃ£o encontrado. A lista foi atualizada do Firebase.');
         }
         
@@ -887,7 +867,6 @@ async function editFornecedorFromList(id) {
 
 // FunÃ§Ã£o para selecionar um fornecedor (especÃ­fica para romaneio de tora)
 function selectFornecedor(fornecedor) {
-    console.log("ðŸ"„ Selecionando fornecedor na interface:", fornecedor.nome || fornecedor.name);
     
     window.selectedFornecedor = fornecedor;
     window.selectedClient = fornecedor; // Manter compatibilidade
@@ -901,41 +880,62 @@ function selectFornecedor(fornecedor) {
     const modal = document.getElementById('clientListModal');
     if (modal) {
         modal.style.display = 'none';
-        console.log("âœ… Modal de lista fechado");
     }
     
-    console.log("âœ… Fornecedor selecionado no romaneio de tora:", fornecedor.nome || fornecedor.name);
 }
 
 // âœ… MANTER COMPATIBILIDADE COM FUNÃ‡Ã•ES ANTIGAS (por compatibilidade apenas)
 async function openClientListModal() {
-    console.log("ðŸ"„ Redirecionando openClientListModal para openFornecedorListModal");
     return await openFornecedorListModal();
 }
 
 async function renderClientList(filter = '') {
-    console.log("ðŸ"„ Redirecionando renderClientList para renderFornecedorList");
     return await renderFornecedorList(filter);
 }
 
 async function selectClientFromList(id) {
-    console.log("ðŸ"„ Redirecionando selectClientFromList para selectFornecedorFromList");
     return await selectFornecedorFromList(id);
 }
 
 async function editClientFromList(id) {
-    console.log("ðŸ"„ Redirecionando editClientFromList para editFornecedorFromList");
     return await editFornecedorFromList(id);
 }
 
 function selectClient(fornecedor) {
-    console.log("ðŸ"„ Redirecionando selectClient para selectFornecedor");
     return selectFornecedor(fornecedor);
+}
+
+function getSpeciesNameTora(specie) {
+    if (window.SiswebSpecies && typeof window.SiswebSpecies.getDisplayName === 'function') {
+        return window.SiswebSpecies.getDisplayName(specie);
+    }
+    return String((specie && (specie.especie || specie.nome || specie.name || specie.nomeComum)) || '').trim();
+}
+
+function getSpeciesScientificTora(specie) {
+    if (window.SiswebSpecies && typeof window.SiswebSpecies.getScientificName === 'function') {
+        return window.SiswebSpecies.getScientificName(specie);
+    }
+    return String((specie && (specie.nomeCientifico || specie.scientificName || specie.scientific || specie.descricao || specie.description || specie.decription)) || '').trim();
+}
+
+function toCanonicalSpeciesTora(specie, index = 0, options = {}) {
+    if (window.SiswebSpecies && typeof window.SiswebSpecies.toCanonicalRecord === 'function') {
+        return window.SiswebSpecies.toCanonicalRecord(specie, index, options);
+    }
+    const now = options.updatedAt || new Date().toISOString();
+    return {
+        id: specie.id || options.id || `ESP_${Date.now()}_${index}`,
+        especie: getSpeciesNameTora(specie),
+        nomeCientifico: getSpeciesScientificTora(specie),
+        ativo: specie.ativo !== false,
+        createdAt: specie.createdAt || now,
+        updatedAt: now
+    };
 }
 
 // FunÃ§Ã£o para abrir o modal de lista de espÃ©cies
 async function openSpeciesListModal() {
-    console.log("ðŸ" Abrindo modal de lista de espÃ©cies");
     
     let modal = document.getElementById('speciesListModal');
     
@@ -947,24 +947,27 @@ async function openSpeciesListModal() {
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 class="modal-title">Lista de Espécies</h3>
+                    <h3 class="modal-title">🌳 Lista de Espécies</h3>
                     <span class="close-modal">&times;</span>
                 </div>
                 <div class="modal-body">
-                    <input type="text" id="speciesListFilter" placeholder="Filtrar espÃ©cies..." 
-                           style="margin: 10px 0; width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Descrição</th>
-                                <th style="text-align: center; width: 120px;">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="speciesListTable">
-                            <!-- Preenchido via JavaScript -->
-                        </tbody>
-                    </table>
+                    <div style="margin-bottom: 15px;">
+                        <input type="text" id="speciesListFilter" placeholder="🔍 Filtrar por espécie ou nome científico...">
+                    </div>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Nome Científico</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="speciesListTable">
+                                <!-- Preenchido via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="back-button close-modal-btn">Fechar</button>
@@ -1002,8 +1005,6 @@ async function openSpeciesListModal() {
 
 // FunÃ§Ã£o para renderizar lista de espÃ©cies
 async function renderSpeciesList(filter = '') {
-    console.log("ðŸ" === RENDERIZANDO LISTA DE ESPÃ‰CIES - ROMANEIO TORA ===");
-    console.log("ðŸ" Filtro aplicado:", filter);
     
     const tableBody = document.getElementById('speciesListTable');
     if (!tableBody) {
@@ -1014,21 +1015,17 @@ async function renderSpeciesList(filter = '') {
     let speciesList = [];
     
     try {
-        console.log("ðŸ"¥ === CARREGAMENTO DIRETO DO FIREBASE - ESPÃ‰CIES ===");
+        if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.getAll === 'function') {
+            speciesList = await window.SiswebSpeciesStore.getAll({ waitRemote: true, timeoutMs: 5000 });
+        }
         
         // âœ… CARREGAMENTO CORRETO DO FIREBASE
-        if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+        if (!speciesList.length && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
             try {
-                console.log("ðŸ"¥ Carregando espÃ©cies da coleÃ§Ã£o 'species'...");
-                const result = await window.firebaseService.loadFromFirebase('species');
-                console.log("âœ… loadFromFirebase resultado completo:", result);
+                const result = await window.firebaseService.loadFromFirebase('especies');
                 
                 if (result && result.success && result.data) {
                     const firebaseData = result.data;
-                    console.log("âœ… Dados do Firebase encontrados:", firebaseData);
-                    console.log("âœ… Tipo dos dados:", typeof firebaseData);
-                    console.log("âœ… Ã‰ array?", Array.isArray(firebaseData));
-                    console.log("âœ… Chaves do objeto:", Object.keys(firebaseData));
                     
                     // âœ… PROCESSAMENTO CORRETO - APENAS VALORES DIRETOS
             if (typeof firebaseData === 'object' && !Array.isArray(firebaseData)) {
@@ -1037,13 +1034,15 @@ async function renderSpeciesList(filter = '') {
                             const speciesData = firebaseData[speciesId];
                             console.log(`ðŸ"¦ Processando espÃ©cie ${speciesId}:`, speciesData);
                             
-                            if (speciesData && typeof speciesData === 'object' && (speciesData.nome || speciesData.name)) {
+                            if (speciesData && typeof speciesData === 'object' && getSpeciesNameTora(speciesData)) {
                                 const especie = {
+                                    ...speciesData,
                                     id: speciesId,
-                                    originalId: speciesData.id || speciesId,
-                                    ...speciesData
+                                    key: speciesId,
+                                    firebaseKey: speciesId,
+                                    originalId: speciesData.id || speciesData.key || speciesId
                                 };
-                                console.log(`âœ… EspÃ©cie adicionada: ${especie.nome || especie.name}`);
+                                console.log(`âœ… EspÃ©cie adicionada: ${getSpeciesNameTora(especie)}`);
                                 return especie;
                             }
                             return null;
@@ -1051,13 +1050,22 @@ async function renderSpeciesList(filter = '') {
                         
                         console.log(`âœ… ${speciesList.length} espÃ©cies convertidas do objeto Firebase`);
             } else if (Array.isArray(firebaseData)) {
-                speciesList = firebaseData;
+                speciesList = firebaseData.map((item, index) => {
+                    const value = item || {};
+                    const key = String(index);
+                    return {
+                        ...value,
+                        id: key,
+                        key,
+                        firebaseKey: key,
+                        originalId: value.id || value.key || key
+                    };
+                });
                         console.log(`âœ… ${speciesList.length} espÃ©cies jÃ¡ em formato array`);
         }
         
                     console.log(`âœ… ${speciesList.length} espÃ©cies carregadas do Firebase`);
                 } else {
-                    console.log("âš ï¸ Nenhum dado encontrado no Firebase ou estrutura invÃ¡lida");
                 }
     } catch (error) {
                 console.error("âŒ Erro no carregamento Firebase:", error);
@@ -1069,10 +1077,8 @@ async function renderSpeciesList(filter = '') {
         // âœ… FALLBACK PARA CACHE LOCAL APENAS EM CASO DE ERRO
     if (!Array.isArray(speciesList) || speciesList.length === 0) {
             try {
-                console.log("ðŸ"„ Tentando cache local para espÃ©cies...");
-                const storageKey = getStorageKey('species');
-                const allowLegacy = storageKey === 'species';
-                const localData = localStorage.getItem(storageKey) || (allowLegacy ? localStorage.getItem('species') : null);
+                const storageKey = getStorageKey('especies');
+                const localData = readCompanyCache(storageKey);
                 
                 if (localData) {
                     try {
@@ -1081,11 +1087,10 @@ async function renderSpeciesList(filter = '') {
                         console.log(`âœ… ${speciesList.length} espÃ©cies carregadas do cache local`);
                     } catch (parseError) {
                         console.error("âŒ Erro ao parsear espÃ©cies do cache local:", parseError);
-                        localStorage.removeItem(storageKey);
+                        removeCompanyCache(storageKey);
                         speciesList = [];
                     }
             } else {
-                    console.log("ðŸ"± EspÃ©cies nÃ£o encontradas no cache local");
                 speciesList = [];
             }
             } catch (localError) {
@@ -1098,23 +1103,19 @@ async function renderSpeciesList(filter = '') {
         console.error("âŒ Erro geral na obtenÃ§Ã£o de dados:", error);
     }
     
-    console.log(`ðŸ"Š RESULTADO FINAL: ${speciesList.length} espÃ©cies para renderizar`);
-    
     // Aplicar filtro
     if (filter && filter.trim() !== '') {
         const searchTerm = filter.toLowerCase();
-        const originalLength = speciesList.length;
         speciesList = speciesList.filter(specie => 
-            (specie.nome || specie.name || '').toLowerCase().includes(searchTerm) || 
-            (specie.descricao || specie.description || '').toLowerCase().includes(searchTerm)
+            getSpeciesNameTora(specie).toLowerCase().includes(searchTerm) ||
+            getSpeciesScientificTora(specie).toLowerCase().includes(searchTerm)
         );
-        console.log(`ðŸ" Filtro aplicado: ${originalLength} -> ${speciesList.length} espÃ©cies`);
     }
     
     // Ordenar por nome
     speciesList.sort((a, b) => {
-        const nameA = (a.nome || a.name || '').toLowerCase();
-        const nameB = (b.nome || b.name || '').toLowerCase();
+        const nameA = getSpeciesNameTora(a).toLowerCase();
+        const nameB = getSpeciesNameTora(b).toLowerCase();
         return nameA.localeCompare(nameB, 'pt-BR');
     });
     
@@ -1133,16 +1134,11 @@ async function renderSpeciesList(filter = '') {
             '<i class="fas fa-plus" style="margin-right: 8px;"></i>Nenhuma espÃ©cie encontrada. Use "Importar Especies" no menu Cadastros.';
         tr.appendChild(td);
         tableBody.appendChild(tr);
-        console.log("ðŸ" Exibindo mensagem: nenhuma espÃ©cie encontrada");
         return;
     }
     
-    console.log(`âœ… Renderizando ${speciesList.length} espÃ©cies na tabela`);
-    
     // âœ… RENDERIZAR TABELA COM DADOS ORGANIZADOS CORRETAMENTE
     speciesList.forEach((specie, index) => {
-        console.log(`  Renderizando espÃ©cie ${index + 1}:`, specie);
-        
         const tr = document.createElement('tr');
         tr.style.transition = 'background-color 0.2s ease';
         
@@ -1154,22 +1150,24 @@ async function renderSpeciesList(filter = '') {
         tdNome.style.padding = '12px';
         tdNome.style.verticalAlign = 'middle';
         tdNome.style.fontWeight = '600';
-        tdNome.textContent = specie?.nome || specie?.name || 'Sem nome';
+        tdNome.textContent = getSpeciesNameTora(specie) || 'Sem nome';
         tr.appendChild(tdNome);
         
-        // DescriÃ§Ã£o (segunda coluna)
+        // Nome científico (segunda coluna)
         const tdDescricao = document.createElement('td');
         tdDescricao.style.padding = '12px';
         tdDescricao.style.verticalAlign = 'middle';
-        tdDescricao.textContent = specie?.descricao || specie?.description || '';
+        tdDescricao.textContent = getSpeciesScientificTora(specie) || '';
         tr.appendChild(tdDescricao);
         
         // AÃ§Ãµes (terceira coluna)
         const tdAcoes = document.createElement('td');
-        tdAcoes.className = 'action-buttons-container';
+        tdAcoes.className = 'species-actions-cell';
         tdAcoes.style.padding = '12px';
         tdAcoes.style.verticalAlign = 'middle';
         tdAcoes.style.textAlign = 'center';
+        const actionContainer = document.createElement('div');
+        actionContainer.className = 'action-buttons-container';
         
         // âœ… PADRONIZAÃ‡ÃƒO: Usar os mesmos estilos dos fornecedores
         const btnSelecionar = document.createElement('button');
@@ -1184,8 +1182,9 @@ async function renderSpeciesList(filter = '') {
         btnEditar.innerHTML = '<i class="fas fa-edit"></i>';
         btnEditar.onclick = () => editSpeciesFromList(specieId);
         
-        tdAcoes.appendChild(btnSelecionar);
-        tdAcoes.appendChild(btnEditar);
+        actionContainer.appendChild(btnSelecionar);
+        actionContainer.appendChild(btnEditar);
+        tdAcoes.appendChild(actionContainer);
         tr.appendChild(tdAcoes);
         
         // Hover effect
@@ -1199,44 +1198,57 @@ async function renderSpeciesList(filter = '') {
         tableBody.appendChild(tr);
     });
     
-    console.log("ðŸŽ‰ === RENDERIZAÃ‡ÃƒO DE ESPÃ‰CIES CONCLUÃDA ===");
 }
 
 // FunÃ§Ã£o para selecionar espÃ©cie da lista (100% Firebase)
 async function selectSpeciesFromList(id) {
-    console.log("ðŸ"„ === SELECIONANDO ESPÃ‰CIE ===");
-    console.log("ðŸ"„ ID recebido:", id);
     
     try {
         let especie = null;
         let especiesList = [];
+
+        if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.getAll === 'function') {
+            especiesList = await window.SiswebSpeciesStore.getAll({ waitRemote: false, timeoutMs: 3000 });
+            if (!especiesList.length) {
+                especiesList = await window.SiswebSpeciesStore.getAll({ waitRemote: true, timeoutMs: 5000 });
+            }
+        }
         
         // âœ… CARREGAMENTO SIMPLIFICADO DO FIREBASE
-        if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+        if (!especiesList.length && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
             try {
-                console.log("ðŸ"¥ Carregando espÃ©cies da coleÃ§Ã£o 'species'...");
-                const result = await window.firebaseService.loadFromFirebase('species');
-                console.log("âœ… loadFromFirebase resultado:", result);
+                const result = await window.firebaseService.loadFromFirebase('especies');
                 
                 if (result && result.success && result.data) {
                     const firebaseData = result.data;
-                    console.log("âœ… Dados do Firebase encontrados:", firebaseData);
                     
                     // âœ… PROCESSAMENTO CORRETO - APENAS VALORES DIRETOS
                     if (typeof firebaseData === 'object' && !Array.isArray(firebaseData)) {
                         especiesList = Object.keys(firebaseData).map(speciesId => {
                             const speciesData = firebaseData[speciesId];
-                            if (speciesData && typeof speciesData === 'object' && (speciesData.nome || speciesData.name)) {
+                            if (speciesData && typeof speciesData === 'object' && getSpeciesNameTora(speciesData)) {
                                 return {
+                                    ...speciesData,
                                     id: speciesId,
-                                    originalId: speciesData.id || speciesId,
-                                    ...speciesData
+                                    key: speciesId,
+                                    firebaseKey: speciesId,
+                                    originalId: speciesData.id || speciesData.key || speciesId
                                 };
                             }
                             return null;
                         }).filter(Boolean);
                     } else if (Array.isArray(firebaseData)) {
-                        especiesList = firebaseData;
+                        especiesList = firebaseData.map((item, index) => {
+                            const value = item || {};
+                            const key = String(index);
+                            return {
+                                ...value,
+                                id: key,
+                                key,
+                                firebaseKey: key,
+                                originalId: value.id || value.key || key
+                            };
+                        });
                     }
                     
                     console.log(`âœ… ${especiesList.length} espÃ©cies carregadas para seleÃ§Ã£o`);
@@ -1249,9 +1261,8 @@ async function selectSpeciesFromList(id) {
         // âœ… FALLBACK PARA CACHE LOCAL
         if (!Array.isArray(especiesList) || especiesList.length === 0) {
             try {
-                const storageKey = getStorageKey('species');
-                const allowLegacy = storageKey === 'species';
-                const localData = localStorage.getItem(storageKey) || (allowLegacy ? localStorage.getItem('species') : null);
+                const storageKey = getStorageKey('especies');
+                const localData = readCompanyCache(storageKey);
                 if (localData) {
                     especiesList = JSON.parse(localData);
                     if (!Array.isArray(especiesList)) especiesList = [];
@@ -1266,13 +1277,17 @@ async function selectSpeciesFromList(id) {
         
         // âœ… BUSCAR ESPÃ‰CIE COM ID CORRETO
         if (especiesList.length > 0) {
-            // Busca por ID direto
-            especie = especiesList.find(s => String(s.id) === String(id));
-            
-            if (!especie) {
-                // Busca por ID original
-                especie = especiesList.find(s => s.originalId && String(s.originalId) === String(id));
-            }
+            const normalizedId = String(id || '').trim();
+            const matchesSpeciesId = (specie, targetId) => {
+                const normalizedTargetId = String(targetId || '').trim();
+                return Boolean(normalizedTargetId && [specie && specie.id, specie && specie.key, specie && specie.firebaseKey, specie && specie.originalId]
+                    .map(value => String(value || '').trim())
+                    .filter(Boolean)
+                    .includes(normalizedTargetId));
+            };
+
+            // Busca por ID direto, chave Firebase ou ID legado
+            especie = especiesList.find(s => matchesSpeciesId(s, normalizedId));
             
             if (!especie) {
                 // Busca por Ã­ndice (fallback para temp_X)
@@ -1280,40 +1295,34 @@ async function selectSpeciesFromList(id) {
                     const index = parseInt(id.replace('temp_', ''));
                     if (!isNaN(index) && index >= 0 && index < especiesList.length) {
                         especie = especiesList[index];
-                        console.log("âœ… Encontrado por Ã­ndice temp:", especie);
                     }
                 }
             }
         }
         
         if (especie) {
-            console.log("âœ… EspÃ©cie encontrada para seleÃ§Ã£o:", especie.nome || especie.name);
             
             // âœ… SELECIONAR A ESPÃ‰CIE
             window.selectedSpecies = especie;
         const especieInput = document.getElementById('especieInput');
         if (especieInput) {
-                let nome = especie.nome || especie.name || '';
+                let nome = getSpeciesNameTora(especie);
                 if (window.isAllCaps && window.toTitleCasePt && window.isAllCaps(nome)) {
                     nome = window.toTitleCasePt(nome);
                 }
                 especieInput.value = nome;
-                console.log("âœ… Campo especieInput preenchido:", especieInput.value);
             }
             
             // âœ… FECHAR O MODAL DE LISTA DE ESPÃ‰CIES
             const speciesListModal = document.getElementById('speciesListModal');
             if (speciesListModal) {
                 speciesListModal.style.display = 'none';
-                console.log("âœ… Modal de lista de espÃ©cies fechado");
             }
             
             // âœ… NOTIFICAR SUCESSO
-            console.log("ðŸŽ‰ EspÃ©cie selecionada com sucesso!");
             
         } else {
             console.error("âŒ EspÃ©cie nÃ£o encontrada com ID:", id);
-            console.log("ðŸ"‹ IDs disponÃ­veis:", especiesList.map(s => s.id));
             alert('EspÃ©cie nÃ£o encontrada. A lista foi atualizada do Firebase.');
         }
         
@@ -1325,46 +1334,51 @@ async function selectSpeciesFromList(id) {
 
 // âœ… FUNÃ‡ÃƒO DE EDIÃ‡ÃƒO CORRIGIDA PARA ESPÃ‰CIES
 async function editSpeciesFromList(speciesId) {
-    console.log("ðŸ"„ === EDITANDO ESPÃ‰CIE ===");
-    console.log("ðŸ"„ ID recebido:", speciesId);
     
     try {
         // âœ… VERIFICAR SE FORNECEDOR ESTÃ SELECIONADO PRIMEIRO
-        console.log("ðŸ" Verificando se fornecedor estÃ¡ selecionado...");
         const clienteInput = document.getElementById('clienteInput');
-        console.log("ðŸ" Campo clienteInput valor:", clienteInput ? clienteInput.value : 'campo nÃ£o encontrado');
-        console.log("ðŸ" Nome do fornecedor salvo:", window.selectedClient ? window.selectedClient.nome : 'undefined');
         
         if (!window.selectedClient || !window.selectedClient.nome) {
             const mensagemErro = 'Por favor, selecione um fornecedor antes de editar a espÃ©cie.';
-            console.log("âš ï¸ Fornecedor nÃ£o selecionado:", mensagemErro);
             alert(mensagemErro);
             return;
         }
         
         // âœ… CARREGAR ESPÃ‰CIES DO FIREBASE
-        console.log("ðŸ"¥ Carregando espÃ©cies da coleÃ§Ã£o 'species'...");
         let especiesList = [];
         
         if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
             try {
-                const result = await window.firebaseService.loadFromFirebase('species');
-                console.log("âœ… loadFromFirebase resultado:", result);
+                const result = await window.firebaseService.loadFromFirebase('especies');
                 
                 if (result && result.success && result.data) {
                     const firebaseData = result.data;
-                    console.log("âœ… Dados do Firebase encontrados:", firebaseData);
                     
                     // âœ… PROCESSAMENTO CORRETO
                     if (typeof firebaseData === 'object' && !Array.isArray(firebaseData)) {
-                        especiesList = Object.keys(firebaseData).map(key => ({
-                            id: key,
-                            ...firebaseData[key]
-                        }));
-                        console.log("âœ… Objeto convertido em array:", especiesList.length);
+                        especiesList = Object.keys(firebaseData).map(key => {
+                            const item = firebaseData[key] || {};
+                            return {
+                                ...item,
+                                id: key,
+                                key,
+                                firebaseKey: key,
+                                originalId: item.id || item.key || key
+                            };
+                        });
                     } else if (Array.isArray(firebaseData)) {
-                        especiesList = firebaseData;
-                        console.log("âœ… Array de espÃ©cies:", especiesList.length);
+                        especiesList = firebaseData.map((item, index) => {
+                            const value = item || {};
+                            const key = String(index);
+                            return {
+                                ...value,
+                                id: key,
+                                key,
+                                firebaseKey: key,
+                                originalId: value.id || value.key || key
+                            };
+                        });
                     }
                 }
                 } catch (error) {
@@ -1374,13 +1388,10 @@ async function editSpeciesFromList(speciesId) {
         
         // âœ… FALLBACK PARA LOCALSTORAGE
         if (!Array.isArray(especiesList) || especiesList.length === 0) {
-            console.log("âš ï¸ Dados do Firebase nÃ£o encontrados, tentando localStorage...");
-            const storageKey = getStorageKey('species');
-            const allowLegacy = storageKey === 'species';
-            const localData = localStorage.getItem(storageKey) || (allowLegacy ? localStorage.getItem('species') : null);
+            const storageKey = getStorageKey('especies');
+            const localData = readCompanyCache(storageKey);
             if (localData) {
                 especiesList = JSON.parse(localData) || [];
-                console.log("âœ… Dados do localStorage:", especiesList.length);
             }
         }
         
@@ -1389,11 +1400,18 @@ async function editSpeciesFromList(speciesId) {
         // âœ… ENCONTRAR A ESPÃ‰CIE
         let selectedSpecies = null;
         
+        const normalizedSpeciesId = String(speciesId || '').trim();
+        const getSpeciesRecordId = (species) => String((species && (species.firebaseKey || species.key || species.id || species.originalId)) || '').trim();
+        const matchesSpeciesId = (species, targetId) => {
+            const normalizedTargetId = String(targetId || '').trim();
+            return Boolean(normalizedTargetId && [species && species.id, species && species.key, species && species.firebaseKey, species && species.originalId]
+                .map(value => String(value || '').trim())
+                .filter(Boolean)
+                .includes(normalizedTargetId));
+        };
+
         // Tentar encontrar por ID exato
-        selectedSpecies = especiesList.find(species => 
-            species.id === speciesId || 
-            species.key === speciesId
-        );
+        selectedSpecies = especiesList.find(species => matchesSpeciesId(species, normalizedSpeciesId));
         
         // Se nÃ£o encontrou, tentar por Ã­ndice
         if (!selectedSpecies && !isNaN(speciesId)) {
@@ -1410,45 +1428,51 @@ async function editSpeciesFromList(speciesId) {
             return;
         }
         
-        console.log("âœ… EspÃ©cie encontrada para ediÃ§Ã£o:", selectedSpecies.nome);
         
         // âœ… FECHAR MODAL DE LISTA
         const listModal = document.getElementById('speciesListModal');
         if (listModal) {
             listModal.style.display = 'none';
-            console.log("âœ… Modal de lista fechado");
         }
         
         // âœ… ABRIR MODAL DE EDIÃ‡ÃƒO DE ESPÃ‰CIE
-        console.log("ðŸ"„ Abrindo modal de ediÃ§Ã£o de espÃ©cie...");
         const editModal = document.getElementById('speciesModal');
         if (editModal) {
-            editModal.style.display = 'block';
-            console.log("âœ… Modal de ediÃ§Ã£o aberto");
+            if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.enhance === 'function') {
+                window.SiswebSpeciesModal.enhance({ modal: editModal });
+            }
+            if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.showModal === 'function') {
+                window.SiswebSpeciesModal.showModal(editModal);
+            } else {
+                editModal.style.display = 'flex';
+                editModal.setAttribute('aria-hidden', 'false');
+            }
             
             // âœ… PREENCHER CAMPOS DO MODAL COM DADOS DA ESPÃ‰CIE
+            const speciesRecordId = getSpeciesRecordId(selectedSpecies) || normalizedSpeciesId;
+            const idField = document.getElementById('speciesId');
             const nomeField = document.getElementById('speciesName');
             const descricaoField = document.getElementById('speciesDescription');
+            if (idField) idField.value = speciesRecordId;
             
             if (nomeField) {
-                nomeField.value = selectedSpecies.nome || selectedSpecies.name || '';
-                console.log("âœ… Campo nome preenchido:", nomeField.value);
+                nomeField.value = getSpeciesNameTora(selectedSpecies);
             }
             
             if (descricaoField) {
-                descricaoField.value = selectedSpecies.descricao || selectedSpecies.description || '';
-                console.log("âœ… Campo descriÃ§Ã£o preenchido:", descricaoField.value);
+                descricaoField.value = getSpeciesScientificTora(selectedSpecies);
             }
             
             // âœ… MARCAR COMO EDIÃ‡ÃƒO
-            window.editingSpeciesId = selectedSpecies.id || selectedSpecies.key;
-            console.log("âœ… ID da espÃ©cie em ediÃ§Ã£o:", window.editingSpeciesId);
+            window.editingSpeciesId = speciesRecordId;
             
             // âœ… ALTERAR TÃTULO DO MODAL
-            const modalTitle = editModal.querySelector('h2');
+            const modalTitle = editModal.querySelector('#speciesModalTitle, h2, h3');
             if (modalTitle) {
-                modalTitle.textContent = 'Editar EspÃ©cie';
+                modalTitle.textContent = 'Editar Espécie';
             }
+            const saveButton = document.getElementById('saveSpeciesBtn') || editModal.querySelector('.btn-save, button[type="submit"]');
+            if (saveButton) saveButton.textContent = 'Atualizar Espécie';
             
             // âœ… FOCAR NO PRIMEIRO CAMPO
             if (nomeField) {
@@ -1468,41 +1492,42 @@ async function editSpeciesFromList(speciesId) {
 
 // âœ… FUNÃ‡ÃƒO PARA ABRIR MODAL DE NOVA ESPÃ‰CIE
 function openNewSpeciesModal() {
-    console.log("ðŸŒ± Abrindo modal de nova espÃ©cie");
     
     // Verificar se o modal jÃ¡ existe ou criar novo
     let modal = document.getElementById('speciesModal');
     
     if (!modal) {
-        console.log("ðŸ"§ Criando novo modal de espÃ©cies");
         modal = document.createElement('div');
         modal.id = 'speciesModal';
-        modal.className = 'modal';
+        modal.className = 'modal species-standard-modal';
+        modal.setAttribute('aria-hidden', 'true');
         
         modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
+            <div class="modal-content species-standard-modal-content">
+                <div class="modal-header species-standard-header">
                     <h3 id="speciesModalTitle" class="modal-title">Nova EspÃ©cie</h3>
                     <span class="close-modal">&times;</span>
                 </div>
                 <div class="modal-body">
-                    <form id="speciesForm">
+                    <form id="speciesForm" class="species-standard-form">
                         <input type="hidden" id="speciesId" name="speciesId">
                         
-                        <div class="form-group">
-                            <label for="speciesName">Nome da EspÃ©cie:</label>
-                            <input type="text" id="speciesName" name="speciesName" required placeholder="Ex: Eucalipto">
-                    </div>
+                        <div class="form-group species-standard-field">
+                            <label for="speciesName" class="species-standard-label">Nome da EspÃ©cie:</label>
+                            <input type="text" id="speciesName" name="speciesName" class="species-standard-input" required placeholder="Ex: Eucalipto">
+                            <div id="speciesNameSuggestionsReserve" class="species-name-suggestions-reserve" aria-hidden="true"></div>
+                            <div id="speciesNameDuplicateHint" class="species-duplicate-hint" aria-live="polite"></div>
+                        </div>
                         
-                        <div class="form-group">
-                            <label for="speciesDescription">DescriÃ§Ã£o:</label>
-                            <textarea id="speciesDescription" name="speciesDescription" rows="3" placeholder="DescriÃ§Ã£o opcional da espÃ©cie"></textarea>
+                        <div class="form-group species-standard-field">
+                            <label for="speciesDescription" class="species-standard-label">Nome Científico:</label>
+                            <textarea id="speciesDescription" name="speciesDescription" class="species-standard-textarea" rows="3" placeholder="Ex.: Handroanthus albus"></textarea>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer species-standard-actions">
                     <button type="button" class="back-button close-modal-btn">Cancelar</button>
-                    <button type="button" class="btn-save" onclick="saveSpecies()">Salvar</button>
+                    <button type="button" class="btn-save" id="saveSpeciesBtn" onclick="saveSpecies()">Salvar Espécie</button>
                 </div>
             </div>
         `;
@@ -1542,10 +1567,20 @@ function openNewSpeciesModal() {
     
     // Atualizar tÃ­tulo
     const title = document.getElementById('speciesModalTitle');
-    if (title) title.textContent = 'Nova EspÃ©cie';
+    if (title) title.textContent = 'Nova Espécie';
+    const saveButton = document.getElementById('saveSpeciesBtn') || modal.querySelector('.btn-save, button[type="submit"]');
+    if (saveButton) saveButton.textContent = 'Salvar Espécie';
     
     // Exibir o modal
-    modal.style.display = 'block';
+    if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.enhance === 'function') {
+        window.SiswebSpeciesModal.enhance({ modal });
+    }
+    if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.showModal === 'function') {
+        window.SiswebSpeciesModal.showModal(modal);
+    } else {
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+    }
     
     // Focar no campo de nome
     setTimeout(() => {
@@ -1553,21 +1588,23 @@ function openNewSpeciesModal() {
         if (nameInput) nameInput.focus();
     }, 100);
     
-    console.log("âœ… Modal de nova espÃ©cie aberto");
 }
 
 // âœ… FUNÃ‡ÃƒO PARA FECHAR MODAL DE ESPÃ‰CIE
 function closeSpeciesModal() {
     const modal = document.getElementById('speciesModal');
     if (modal) {
-        modal.style.display = 'none';
-        console.log("âœ… Modal de espÃ©cie fechado");
+        if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.hideModal === 'function') {
+            window.SiswebSpeciesModal.hideModal(modal);
+        } else {
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        }
     }
 }
 
 // âœ… FUNÃ‡ÃƒO PARA SALVAR ESPÃ‰CIE (NOVA OU EDIÃ‡ÃƒO)
 async function saveSpecies() {
-    console.log("ðŸ'¾ === SALVANDO ESPÃ‰CIE ===");
     
     try {
         const form = document.getElementById('speciesForm');
@@ -1578,7 +1615,7 @@ async function saveSpecies() {
         // Obter dados do formulÃ¡rio
         const id = document.getElementById('speciesId').value.trim();
         const nome = document.getElementById('speciesName').value.trim();
-        const descricao = document.getElementById('speciesDescription').value.trim();
+        const nomeCientifico = document.getElementById('speciesDescription').value.trim();
         
         // ValidaÃ§Ãµes
         if (!nome) {
@@ -1586,65 +1623,67 @@ async function saveSpecies() {
             document.getElementById('speciesName').focus();
             return false;
         }
+
+        if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
+            const duplicate = window.SiswebSpeciesModal.getExactDuplicate(nome, id);
+            if (duplicate) {
+                alert(`Espécie já cadastrada: ${getSpeciesNameTora(duplicate)}. Use o cadastro existente para evitar duplicidade.`);
+                document.getElementById('speciesName').focus();
+                return false;
+            }
+        }
         
         const isEdit = Boolean(id);
+        const idToSave = id || `species_${Date.now()}`;
         console.log(`ðŸ" ${isEdit ? 'Editando' : 'Criando nova'} espÃ©cie:`, nome);
         
         // Preparar dados
-        const speciesData = {
-            nome: nome,
-            descricao: descricao,
-            timestamp: new Date().toISOString()
-        };
+        const now = new Date().toISOString();
+        const speciesData = toCanonicalSpeciesTora({
+            id: idToSave,
+            especie: nome,
+            nomeCientifico,
+            timestamp: now,
+            updatedAt: now
+        }, 0, { id: idToSave, updatedAt: now });
         
-        if (isEdit) {
-            speciesData.id = id;
-        }
-        
-        console.log("ðŸ"¦ Dados da espÃ©cie:", speciesData);
         
         // Salvar no Firebase
         let saveResult;
         if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            console.log("ðŸ"¥ Salvando no Firebase...");
             
-            if (isEdit) {
-                // Para ediÃ§Ã£o, usar o ID existente
-                saveResult = await window.firebaseService.saveToFirebase('species', id, speciesData);
-        } else {
-                // Para nova espÃ©cie, deixar o Firebase gerar o ID
-                saveResult = await window.firebaseService.saveToFirebase('species', null, speciesData);
-            }
+            saveResult = await window.firebaseService.saveToFirebase('especies', idToSave, { ...speciesData, id: idToSave });
             
-            console.log("âœ… Resultado do salvamento:", saveResult);
             
             if (saveResult && saveResult.success) {
-                console.log("âœ… EspÃ©cie salva no Firebase com sucesso");
                 
                 // Atualizar cache local
                 try {
                     let especies = [];
-                    const storageKey = getStorageKey('species');
-                    const allowLegacy = storageKey === 'species';
-                    const localData = localStorage.getItem(storageKey) || (allowLegacy ? localStorage.getItem('species') : null);
+                    const storageKey = getStorageKey('especies');
+                    const localData = readCompanyCache(storageKey);
                     if (localData) {
                         especies = JSON.parse(localData) || [];
                     }
                     
                     if (isEdit) {
                         // Atualizar espÃ©cie existente
-                        const index = especies.findIndex(s => s.id === id);
+                        const normalizedIdToSave = String(idToSave || '').trim();
+                        const index = especies.findIndex(s => [s && s.id, s && s.key, s && s.firebaseKey, s && s.originalId]
+                            .map(value => String(value || '').trim())
+                            .filter(Boolean)
+                            .includes(normalizedIdToSave));
                         if (index !== -1) {
-                            especies[index] = { ...especies[index], ...speciesData };
+                            especies[index] = { ...especies[index], ...speciesData, id: idToSave };
+                        } else {
+                            especies.push({ ...speciesData, id: idToSave });
                         }
                     } else {
                         // Adicionar nova espÃ©cie
-                        const newId = saveResult.id || `species_${Date.now()}`;
-                        especies.push({ id: newId, ...speciesData });
+                        especies.push({ ...speciesData, id: idToSave });
                     }
                     
                     persistLocalValue(storageKey, especies);
-                    console.log("âœ… Cache local atualizado");
                 } catch (cacheError) {
                     console.warn("âš ï¸ Erro ao atualizar cache local:", cacheError);
                 }
@@ -1655,13 +1694,11 @@ async function saveSpecies() {
                 // Recarregar lista se estiver aberta
                 const listModal = document.getElementById('speciesListModal');
                 if (listModal && listModal.style.display === 'block') {
-                    console.log("ðŸ"„ Recarregando lista de espÃ©cies...");
                     await renderSpeciesList('');
                 }
                 
                 // Recarregar dados globais
                 if (typeof window.carregarEspecies === 'function') {
-                    console.log("ðŸ"„ Recarregando espÃ©cies globalmente...");
                     await window.carregarEspecies();
                 }
                 
@@ -1695,17 +1732,14 @@ window.renderSpeciesList = renderSpeciesList;
 window.saveSpecies = saveSpecies;
 window.closeSpeciesModal = closeSpeciesModal;
 
-console.log("âœ… FunÃ§Ãµes de espÃ©cies exportadas globalmente para romaneio de tora");
 
 // âœ… FUNÃ‡ÃƒO PARA ABRIR MODAL DE NOVO FORNECEDOR (CLIENTE)
 function openNewClientModal() {
-    console.log("ðŸ†• Abrindo modal de novo fornecedor");
     
     // Verificar se o modal jÃ¡ existe ou criar novo
     let modal = document.getElementById('clientModal');
     
     if (!modal) {
-        console.log("ðŸ"§ Criando novo modal de fornecedor");
         modal = document.createElement('div');
         modal.id = 'clientModal';
         modal.className = 'modal';
@@ -1729,20 +1763,62 @@ function openNewClientModal() {
                             <label for="clientCnpj">CNPJ:</label>
                             <input type="text" id="clientCnpj" name="clientCnpj" placeholder="00.000.000/0000-00">
                         </div>
+
+                        <div class="form-group">
+                            <label for="clientPersonType">Tipo de pessoa:</label>
+                            <select id="clientPersonType" name="clientPersonType">
+                                <option value="">Nao informado</option>
+                                <option value="juridica">Pessoa juridica</option>
+                                <option value="fisica">Pessoa fisica</option>
+                                <option value="estrangeiro">Estrangeiro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="clientIndIEDest">Indicador IE:</label>
+                            <select id="clientIndIEDest" name="clientIndIEDest">
+                                <option value="">Nao informado</option>
+                                <option value="1">Contribuinte ICMS</option>
+                                <option value="2">Contribuinte isento</option>
+                                <option value="9">Nao contribuinte</option>
+                            </select>
+                        </div>
                         
                         <div class="form-group">
                             <label for="clientStateRegistration">InscriÃ§Ã£o Estadual:</label>
                             <input type="text" id="clientStateRegistration" name="clientStateRegistration" placeholder="000.000.000.000">
                         </div>
+
+                        <div class="form-row">
+                            <div class="form-group half-width">
+                                <label for="clientMunicipalRegistration">Inscricao Municipal:</label>
+                                <input type="text" id="clientMunicipalRegistration" name="clientMunicipalRegistration" placeholder="Opcional">
+                            </div>
+                            <div class="form-group half-width">
+                                <label for="clientSuframa">SUFRAMA:</label>
+                                <input type="text" id="clientSuframa" name="clientSuframa" placeholder="Opcional">
+                            </div>
+                        </div>
                         
                         <div class="form-row">
                             <div class="form-group half-width">
-                                <label for="clientState">Estado: *</label>
-                                <input type="text" id="clientState" name="clientState" required placeholder="Ex: SP">
+                                <label for="clientState">Estado:</label>
+                                <input type="text" id="clientState" name="clientState" placeholder="Ex: SP">
                             </div>
                             <div class="form-group half-width">
-                                <label for="clientCity">Cidade: *</label>
-                                <input type="text" id="clientCity" name="clientCity" required placeholder="Ex: SÃ£o Paulo">
+                                <label for="clientCity">Cidade:</label>
+                                <input type="text" id="clientCity" name="clientCity" placeholder="Ex: Sao Paulo">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group half-width">
+                                <label for="clientMunicipalityCode">Codigo IBGE do municipio:</label>
+                                <input type="text" id="clientMunicipalityCode" name="clientMunicipalityCode" placeholder="Ex: 1501402">
+                            </div>
+                            <div class="form-group half-width">
+                                <label for="clientCep">CEP:</label>
+                                <input type="text" id="clientCep" name="clientCep" placeholder="00000-000">
                             </div>
                         </div>
                         
@@ -1771,6 +1847,22 @@ function openNewClientModal() {
                         <div class="form-group">
                             <label for="clientNeighborhood">Bairro:</label>
                             <input type="text" id="clientNeighborhood" name="clientNeighborhood" placeholder="Centro">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="clientComplement">Complemento:</label>
+                            <input type="text" id="clientComplement" name="clientComplement" placeholder="Sala, lote, referencia">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group half-width">
+                                <label for="clientCountryCode">Codigo do pais:</label>
+                                <input type="text" id="clientCountryCode" name="clientCountryCode" value="1058" placeholder="1058">
+                            </div>
+                            <div class="form-group half-width">
+                                <label for="clientCountryName">Pais:</label>
+                                <input type="text" id="clientCountryName" name="clientCountryName" value="Brasil" placeholder="Brasil">
+                            </div>
                         </div>
                         
                         <div class="form-group">
@@ -1833,7 +1925,6 @@ function openNewClientModal() {
         if (nameInput) nameInput.focus();
     }, 100);
     
-    console.log("âœ… Modal de novo fornecedor aberto");
 }
 
 // âœ… FUNÃ‡ÃƒO PARA FECHAR MODAL DE FORNECEDOR
@@ -1841,13 +1932,11 @@ function closeClientModal() {
     const modal = document.getElementById('clientModal');
     if (modal) {
         modal.style.display = 'none';
-        console.log("âœ… Modal de fornecedor fechado");
     }
 }
 
 // âœ… FUNÃ‡ÃƒO PARA ABRIR MODAL DE EDIÃ‡ÃƒO DE FORNECEDOR
 async function openEditClientModal() {
-    console.log("âœï¸ Abrindo modal de ediÃ§Ã£o de fornecedor");
     
     // Usar a mesma funÃ§Ã£o do modal de novo, mas preencher com dados
     openNewClientModal();
@@ -1856,29 +1945,36 @@ async function openEditClientModal() {
     setTimeout(() => {
         if (window.selectedClient || window.selectedFornecedor) {
             const client = window.selectedClient || window.selectedFornecedor;
-            console.log("ðŸ" Preenchendo dados do fornecedor:", client.nome || client.name);
             
             // Preencher campos
             const form = document.getElementById('clientForm');
             if (form) {
                 document.getElementById('clientId').value = client.id || '';
                 document.getElementById('clientName').value = client.nome || client.name || '';
-                document.getElementById('clientCnpj').value = client.cnpj || '';
-                document.getElementById('clientStateRegistration').value = client.inscricaoEstadual || client.stateRegistration || '';
+                document.getElementById('clientCnpj').value = client.documento || client.document || client.cnpj || client.cpf || '';
+                document.getElementById('clientPersonType').value = client.tipoPessoa || client.personType || client.fiscalPersonType || '';
+                document.getElementById('clientIndIEDest').value = client.indIEDest || client.indicadorInscricaoEstadual || client.ieIndicator || '';
+                document.getElementById('clientStateRegistration').value = client.inscricaoEstadual || client.stateRegistration || client.ie || '';
+                document.getElementById('clientMunicipalRegistration').value = client.inscricaoMunicipal || client.municipalRegistration || '';
+                document.getElementById('clientSuframa').value = client.suframa || '';
                 document.getElementById('clientState').value = client.estado || client.state || '';
                 document.getElementById('clientCity').value = client.cidade || client.city || '';
+                document.getElementById('clientMunicipalityCode').value = client.codigoMunicipio || client.municipioCodigo || client.municipalityCode || client.cMun || client.ibgeCode || '';
+                document.getElementById('clientCep').value = client.cep || client.postalCode || '';
                 document.getElementById('clientPhone').value = client.telefone || client.phone || '';
                 document.getElementById('clientEmail').value = client.email || '';
                 document.getElementById('clientAddress').value = client.endereco || client.address || '';
                 document.getElementById('clientNumber').value = client.numero || client.number || '';
                 document.getElementById('clientNeighborhood').value = client.bairro || client.neighborhood || '';
+                document.getElementById('clientComplement').value = client.complemento || client.complement || '';
+                document.getElementById('clientCountryCode').value = client.paisCodigo || client.countryCode || client.cPais || '1058';
+                document.getElementById('clientCountryName').value = client.pais || client.country || client.countryName || client.xPais || 'Brasil';
                 document.getElementById('clientObs').value = client.observacoes || client.observations || client.obs || '';
                 
                 // Atualizar tÃ­tulo
                 const title = document.getElementById('clientModalTitle');
                 if (title) title.textContent = 'Editar Fornecedor';
                 
-                console.log("âœ… Dados do fornecedor preenchidos no formulÃ¡rio");
             }
         } else {
             console.warn("âš ï¸ Nenhum fornecedor selecionado para ediÃ§Ã£o");
@@ -1888,7 +1984,6 @@ async function openEditClientModal() {
 
 // âœ… FUNÃ‡ÃƒO PARA SALVAR FORNECEDOR (NOVA OU EDIÃ‡ÃƒO)
 async function saveClient() {
-    console.log("ðŸ'¾ === SALVANDO FORNECEDOR ===");
     
     try {
         const form = document.getElementById('clientForm');
@@ -1900,32 +1995,29 @@ async function saveClient() {
         const id = document.getElementById('clientId').value.trim();
         const nome = document.getElementById('clientName').value.trim();
         const cnpj = document.getElementById('clientCnpj').value.trim();
+        const tipoPessoa = document.getElementById('clientPersonType').value.trim();
+        const indIEDest = document.getElementById('clientIndIEDest').value.trim();
         const inscricaoEstadual = document.getElementById('clientStateRegistration').value.trim();
+        const inscricaoMunicipal = document.getElementById('clientMunicipalRegistration').value.trim();
+        const suframa = document.getElementById('clientSuframa').value.trim();
         const estado = document.getElementById('clientState').value.trim();
         const cidade = document.getElementById('clientCity').value.trim();
+        const codigoMunicipio = document.getElementById('clientMunicipalityCode').value.trim();
+        const cep = document.getElementById('clientCep').value.trim();
         const telefone = document.getElementById('clientPhone').value.trim();
         const email = document.getElementById('clientEmail').value.trim();
         const endereco = document.getElementById('clientAddress').value.trim();
         const numero = document.getElementById('clientNumber').value.trim();
         const bairro = document.getElementById('clientNeighborhood').value.trim();
+        const complemento = document.getElementById('clientComplement').value.trim();
+        const paisCodigo = document.getElementById('clientCountryCode').value.trim() || '1058';
+        const pais = document.getElementById('clientCountryName').value.trim() || 'Brasil';
         const observacoes = document.getElementById('clientObs').value.trim();
         
         // ValidaÃ§Ãµes
         if (!nome) {
             alert('Nome do fornecedor Ã© obrigatÃ³rio!');
             document.getElementById('clientName').focus();
-            return false;
-        }
-        
-        if (!estado) {
-            alert('Estado Ã© obrigatÃ³rio!');
-            document.getElementById('clientState').focus();
-            return false;
-        }
-        
-        if (!cidade) {
-            alert('Cidade Ã© obrigatÃ³ria!');
-            document.getElementById('clientCity').focus();
             return false;
         }
         
@@ -1938,12 +2030,31 @@ async function saveClient() {
             nome: nome,
             name: nome, // Compatibilidade
             cnpj: cnpj,
+            documento: cnpj,
+            document: cnpj,
+            tipoPessoa: tipoPessoa,
+            personType: tipoPessoa,
+            fiscalPersonType: tipoPessoa,
             inscricaoEstadual: inscricaoEstadual,
             stateRegistration: inscricaoEstadual, // Compatibilidade
+            ie: inscricaoEstadual,
+            indIEDest: indIEDest,
+            indicadorInscricaoEstadual: indIEDest,
+            ieIndicator: indIEDest,
+            inscricaoMunicipal: inscricaoMunicipal,
+            municipalRegistration: inscricaoMunicipal,
+            suframa: suframa,
             estado: estado,
             state: estado, // Compatibilidade
             cidade: cidade,
             city: cidade, // Compatibilidade
+            codigoMunicipio: codigoMunicipio,
+            municipioCodigo: codigoMunicipio,
+            municipalityCode: codigoMunicipio,
+            cMun: codigoMunicipio,
+            ibgeCode: codigoMunicipio,
+            cep: cep,
+            postalCode: cep,
             telefone: telefone,
             phone: telefone, // Compatibilidade
             email: email,
@@ -1953,6 +2064,15 @@ async function saveClient() {
             number: numero, // Compatibilidade
             bairro: bairro,
             neighborhood: bairro, // Compatibilidade
+            complemento: complemento,
+            complement: complemento,
+            paisCodigo: paisCodigo,
+            countryCode: paisCodigo,
+            cPais: paisCodigo,
+            pais: pais,
+            country: pais,
+            countryName: pais,
+            xPais: pais,
             observacoes: observacoes,
             observations: observacoes, // Compatibilidade
             obs: observacoes, // Compatibilidade adicional
@@ -1963,12 +2083,10 @@ async function saveClient() {
             clientData.createdAt = new Date().toISOString();
         }
         
-        console.log("ðŸ"¦ Dados do fornecedor:", clientData);
         
         // Salvar no Firebase
         let saveResult;
         if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            console.log("ðŸ"¥ Salvando no Firebase...");
             
             if (isEdit) {
                 console.log(`🔥 Salvando em: fornecedores/${String(id)}`);
@@ -1980,17 +2098,14 @@ async function saveClient() {
                 saveResult = await window.firebaseService.saveToFirebase('fornecedores', String(newId), clientData);
             }
             
-            console.log("âœ… Resultado do salvamento:", saveResult);
             
             if (saveResult && saveResult.success) {
-                console.log("âœ… Fornecedor salvo no Firebase com sucesso");
                 
                 // Atualizar cache local (fornecedores)
                 try {
                     let fornecedores = [];
                     const storageKey = getStorageKey('fornecedores');
-                    const allowLegacy = storageKey === 'fornecedores';
-                    const localData = localStorage.getItem(storageKey) || (allowLegacy ? localStorage.getItem('fornecedores') : null);
+                    const localData = readCompanyCache(storageKey);
                     if (localData) {
                         fornecedores = JSON.parse(localData) || [];
                     }
@@ -2009,7 +2124,6 @@ async function saveClient() {
                     
                     persistLocalValue(storageKey, fornecedores);
                     window.fornecedores = fornecedores;
-                    console.log("âœ… Cache local de fornecedores atualizado");
                 } catch (cacheError) {
                     console.warn("âš ï¸ Erro ao atualizar cache local de fornecedores:", cacheError);
                 }
@@ -2026,7 +2140,6 @@ async function saveClient() {
                 
                 // Recarregar dados globais
                 if (typeof window.carregarClientes === 'function') {
-                    console.log("ðŸ"„ Recarregando fornecedores globalmente...");
                     await window.carregarClientes();
                 }
                 
@@ -2036,7 +2149,6 @@ async function saveClient() {
                     clientInput.value = clientData.nome;
                     window.selectedClient = clientData;
                     window.selectedFornecedor = clientData;
-                    console.log("âœ… Campo de fornecedor atualizado na interface");
                 }
                 
                 // Notificar usuÃ¡rio
@@ -2066,7 +2178,6 @@ window.openEditClientModal = openEditClientModal;
 window.saveClient = saveClient;
 window.closeClientModal = closeClientModal;
 
-console.log("âœ… FunÃ§Ãµes de fornecedores exportadas globalmente para romaneio de tora");
 
 // Exportar funções de lista de fornecedores
 window.openFornecedorListModal = openFornecedorListModal;
@@ -2119,11 +2230,9 @@ if (!window.enterNavigationSystem) {
 function configureEnterKeyNavigation() {
     // Verificar se jÃ¡ foi inicializado
     if (window.enterNavigationSystem.initialized) {
-        console.log("âš ï¸ NavegaÃ§Ã£o com Enter jÃ¡ foi configurada anteriormente");
         return;
     }
     
-    console.log("ðŸš€ Configurando navegaÃ§Ã£o com tecla Enter entre campos...");
     
     const fieldSequence = window.enterNavigationSystem.fieldSequence;
     let configuredCount = 0;
@@ -2166,7 +2275,6 @@ function configureEnterKeyNavigation() {
                     }
                 } else {
                     // Se for o Ãºltimo campo (oco2), adicionar o item Ã  tabela
-                    console.log("ðŸŽ¯ Enter pressionado no Ãºltimo campo (oco2) - adicionando item");
                     
                     if (typeof window.adicionarItem === 'function') {
                         window.adicionarItem();
@@ -2177,7 +2285,6 @@ function configureEnterKeyNavigation() {
                             if (firstField) {
                                 firstField.focus();
                                 firstField.select(); // Selecionar texto para facilitar ediÃ§Ã£o
-                                console.log("ðŸ"„ Foco retornou para o campo 'plaqueta'");
                             }
                         }, 150); // Delay pequeno para permitir que a adiÃ§Ã£o seja concluÃ­da
                         
@@ -2219,11 +2326,9 @@ function setupPriceFieldFormatting() {
         
     // Verificar se jÃ¡ foi configurado
     if (priceField.hasAttribute('data-price-formatting-configured')) {
-        console.log("ðŸ" FormataÃ§Ã£o do campo de preÃ§o jÃ¡ foi configurada");
         return;
     }
     
-    console.log("ðŸ'° Configurando formataÃ§Ã£o do campo de preÃ§o...");
     
     // Formatar como moeda ao perder o foco
     priceField.addEventListener('blur', function() {
@@ -2259,14 +2364,12 @@ function setupPriceFieldFormatting() {
     
     // Marcar como configurado
     priceField.setAttribute('data-price-formatting-configured', 'true');
-    console.log("âœ… FormataÃ§Ã£o do campo de preÃ§o configurada");
 }
 
 /**
  * FunÃ§Ã£o principal de inicializaÃ§Ã£o do sistema de navegaÃ§Ã£o
  */
 function initializeEnterNavigation() {
-    console.log("ðŸ"§ Inicializando sistema de navegaÃ§Ã£o com Enter...");
     
     // Configurar navegaÃ§Ã£o entre campos
     configureEnterKeyNavigation();
@@ -2274,7 +2377,6 @@ function initializeEnterNavigation() {
     // Configurar formataÃ§Ã£o do campo de preÃ§o
     setupPriceFieldFormatting();
     
-    console.log("ðŸŽ‰ Sistema de navegaÃ§Ã£o com Enter inicializado com sucesso!");
 }
 
 // ======================================
@@ -2308,61 +2410,47 @@ window.configureEnterKeyNavigation = configureEnterKeyNavigation;
 window.setupPriceFieldFormatting = setupPriceFieldFormatting;
 window.initializeEnterNavigation = initializeEnterNavigation;
 
-console.log("ðŸš€ Sistema de navegaÃ§Ã£o com Enter exportado globalmente");
 
 // ===== SISTEMA DE LISTAGEM DE ROMANEIOS =====
 
 // âœ… FUNÃ‡ÃƒO DE DEBUG PARA TESTAR CONEXÃƒO COM FIREBASE
 async function debugFirebaseConnection() {
-    console.log("ðŸ" === DEBUG FIREBASE CONNECTION ===");
     
     // Verificar se Firebase Service existe
-    console.log("ðŸ"¥ Firebase Service:", !!window.firebaseService);
     
     if (window.firebaseService) {
-        console.log("ðŸ"§ Firebase Service methods:", Object.keys(window.firebaseService));
-        console.log("ðŸ"§ loadFromFirebase:", typeof window.firebaseService.loadFromFirebase);
-        console.log("ðŸ"§ isOperational:", typeof window.firebaseService.isOperational);
         
         if (typeof window.firebaseService.isOperational === 'function') {
-            console.log("âœ… Firebase Operational:", window.firebaseService.isOperational());
         }
     }
     
     // Verificar localStorage como backup
     try {
         const storageKey = getStorageKey('romaneiosTora');
-        const allowLegacy = storageKey === 'romaneiosTora';
-        const localData = localStorage.getItem(storageKey) || (allowLegacy ? localStorage.getItem('romaneiosTora') : null);
+        const localData = readCompanyCache(storageKey);
         if (localData) {
             const parsed = JSON.parse(localData);
-            console.log("ðŸ"± localStorage romaneiosTora:", Array.isArray(parsed) ? `${parsed.length} itens` : typeof parsed);
         } else {
-            console.log("ðŸ"± localStorage romaneiosTora: vazio");
         }
     } catch (error) {
         console.error("âŒ Erro ao acessar localStorage:", error);
     }
     
-    console.log("ðŸ" === FIM DEBUG ===");
 }
 
 // FunÃ§Ã£o para abrir a lista de romaneios
 async function abrirListaRomaneios() {
-    console.log("ðŸ"¥ === ABRINDO LISTA DE ROMANEIOS (100% FIREBASE) ===");
     
     // âœ… EXECUTAR DEBUG PRIMEIRO
     await debugFirebaseConnection();
     
     try {
         // âœ… EXECUTAR LIMPEZA AUTOMÃTICA DE ROMANEIOS INVÃLIDOS
-        console.log("ðŸ§¹ Executando limpeza automÃ¡tica de romaneios invÃ¡lidos...");
         try {
             const cleanupResult = await limparRomaneiosInvalidos();
             if (cleanupResult.removed > 0) {
                 console.log(`ðŸ§¹ Limpeza concluÃ­da: ${cleanupResult.removed} romaneios invÃ¡lidos removidos`);
             } else {
-                console.log("âœ… Nenhum romaneio invÃ¡lido encontrado");
             }
         } catch (cleanupError) {
             console.warn("âš ï¸ Erro na limpeza automÃ¡tica:", cleanupError);
@@ -2373,7 +2461,6 @@ async function abrirListaRomaneios() {
         let modal = document.getElementById('listaModal');
     
     if (!modal) {
-            console.log("ðŸ"‹ Modal nÃ£o encontrado no HTML, criando novo...");
             // Criar o modal apenas se nÃ£o existir
         modal = document.createElement('div');
             modal.id = 'listaModal';
@@ -2421,7 +2508,6 @@ async function abrirListaRomaneios() {
         
         document.body.appendChild(modal);
         } else {
-            console.log("âœ… Usando modal existente no HTML");
             
             // âœ… ATUALIZAR O CONTEÃšDO DO MODAL EXISTENTE PARA INCLUIR TABELA DE ROMANEIOS
             const modalBody = modal.querySelector('.modal-body');
@@ -2538,13 +2624,11 @@ async function renderRomaneioList(filter = '') {
         // âœ… FUNÃ‡ÃƒO AUXILIAR PARA VALIDAR ROMANEIO (mesma da excluirRomaneio)
         function isValidRomaneio(romaneio) {
             if (!romaneio || typeof romaneio !== 'object') {
-                console.log("âŒ Romaneio invÃ¡lido: nÃ£o Ã© objeto");
                 return false;
             }
             
             // Verificar se tem ID vÃ¡lido
             if (!romaneio.id && !romaneio.firebaseKey) {
-                console.log("âŒ Romaneio invÃ¡lido: sem ID");
                 return false;
             }
             
@@ -2555,7 +2639,6 @@ async function renderRomaneioList(filter = '') {
                                 (romaneio.itens && Array.isArray(romaneio.itens) && romaneio.itens.length > 0);
             
             if (!hasBasicData) {
-                console.log("âŒ Romaneio invÃ¡lido: sem dados bÃ¡sicos", romaneio);
                 return false;
             }
             
@@ -2566,12 +2649,10 @@ async function renderRomaneioList(filter = '') {
         let romaneios = [];
         
         try {
-            console.log("ðŸ" Iniciando carregamento de romaneiosTora...");
             let romaneiosData = await getData('romaneios/tora');
             try {
                 const tombKey = getStorageKey('romaneiosTora_deletedIds');
-                const allowLegacy = tombKey === 'romaneiosTora_deletedIds';
-                const tomb = JSON.parse(localStorage.getItem(tombKey) || (allowLegacy ? localStorage.getItem('romaneiosTora_deletedIds') : null) || '[]').map(String);
+                const tomb = JSON.parse(readCompanyCache(tombKey) || '[]').map(String);
                 if (Array.isArray(tomb) && tomb.length > 0) {
                     if (Array.isArray(romaneiosData)) {
                         romaneiosData = romaneiosData.filter(r => !tomb.includes(String(r.id)) && !tomb.includes(String(r.firebaseKey)));
@@ -2590,7 +2671,6 @@ async function renderRomaneioList(filter = '') {
             
             // âœ… CONVERTER OBJETO FIREBASE PARA ARRAY COM VALIDAÃ‡ÃƒO RIGOROSA
             if (romaneiosData && typeof romaneiosData === 'object' && !Array.isArray(romaneiosData)) {
-                console.log("ðŸ"„ Convertendo objeto Firebase para array...");
                 
                 Object.keys(romaneiosData).forEach(key => {
                     const romaneio = romaneiosData[key];
@@ -2634,7 +2714,6 @@ async function renderRomaneioList(filter = '') {
                 romaneios = romaneiosData.filter(romaneio => {
                     const isValid = isValidRomaneio(romaneio);
                     if (!isValid) {
-                        console.log("âš ï¸ Romaneio invÃ¡lido removido do array:", romaneio);
                     }
                     return isValid;
                 });
@@ -2643,7 +2722,6 @@ async function renderRomaneioList(filter = '') {
             // Se Ã© null ou undefined
             else {
                 romaneios = [];
-                console.log("ðŸ"­ Nenhum dado encontrado (null/undefined)");
             }
             
         } catch (getDataError) {
@@ -2665,7 +2743,6 @@ async function renderRomaneioList(filter = '') {
         }
         
         if (romaneios.length === 0) {
-            console.log("ðŸ"­ Nenhum romaneio VÃLIDO encontrado");
             tbody.innerHTML = `
                 <tr>
                     <td colspan="7" style="text-align: center; padding: 20px; color: #7f8c8d;">
@@ -2704,12 +2781,31 @@ async function renderRomaneioList(filter = '') {
             });
         }
         
-        // Ordenar romaneios por data (mais recentes primeiro)
-        romaneiosFiltrados.sort((a, b) => {
-            const dateA = new Date(a.data || 0);
-            const dateB = new Date(b.data || 0);
-            return dateB - dateA;
-        });
+        // Ordenar romaneios por recencia (mais recentes primeiro)
+        const getRomaneioSortTime = (romaneio) => {
+            const candidates = [
+                romaneio && romaneio._metadata && romaneio._metadata.lastUpdated,
+                romaneio && romaneio.updatedAt,
+                romaneio && romaneio.updated,
+                romaneio && romaneio.lastModified,
+                romaneio && romaneio.dataEmissao,
+                romaneio && romaneio.data,
+                romaneio && romaneio.dataHora,
+                romaneio && romaneio.dataCriacao,
+                romaneio && romaneio.createdAt,
+                romaneio && romaneio.created,
+                romaneio && romaneio.timestamp
+            ];
+            for (const candidate of candidates) {
+                if (!candidate) continue;
+                const time = typeof candidate === 'number' ? candidate : Date.parse(candidate);
+                if (!isNaN(time)) return time;
+            }
+            const id = String(romaneio && (romaneio.id || romaneio.romaneioId || romaneio.firebaseKey || romaneio.key || romaneio.numero || romaneio.numeroRomaneio) || '');
+            const match = id.match(/(\d{10,})/);
+            return match ? Number(match[1]) || 0 : 0;
+        };
+        romaneiosFiltrados.sort((a, b) => getRomaneioSortTime(b) - getRomaneioSortTime(a));
         
         console.log(`ðŸ"Š ${romaneiosFiltrados.length} romaneios VÃLIDOS apÃ³s filtro`);
         
@@ -2918,8 +3014,7 @@ async function editarRomaneio(romaneioId) {
         let romaneiosData = await getData('romaneios/tora') || {};
         try {
             const tombKey = getStorageKey('romaneiosTora_deletedIds');
-            const allowLegacy = tombKey === 'romaneiosTora_deletedIds';
-            const tomb = JSON.parse(localStorage.getItem(tombKey) || (allowLegacy ? localStorage.getItem('romaneiosTora_deletedIds') : null) || '[]').map(String);
+            const tomb = JSON.parse(readCompanyCache(tombKey) || '[]').map(String);
             if (Array.isArray(tomb) && tomb.length > 0) {
                 if (Array.isArray(romaneiosData)) {
                     romaneiosData = romaneiosData.filter(r => !tomb.includes(String(r.id)) && !tomb.includes(String(r.firebaseKey)));
@@ -2976,21 +3071,17 @@ async function editarRomaneio(romaneioId) {
             return;
         }
         
-        console.log("âœ… Romaneio encontrado para ediÃ§Ã£o:", romaneioParaEditar);
         
         // âœ… FECHAR MODAL DE LISTA PRIMEIRO
         const listaModal = document.getElementById('listaModal');
         if (listaModal) {
             listaModal.style.display = 'none';
-            console.log("âœ… Modal de lista fechado");
         }
         
         // âœ… LIMPAR FORMULÃRIO ATUAL USANDO A FUNÃ‡ÃƒO GLOBAL SE DISPONÃVEL
         if (typeof window.limparFormulario === 'function') {
-            console.log("ðŸ§¹ Limpando formulÃ¡rio atual...");
             window.limparFormulario();
         } else {
-            console.log("âš ï¸ FunÃ§Ã£o limparFormulario nÃ£o encontrada, limpeza manual...");
             // Limpeza manual bÃ¡sica
             const inputs = ['preco', 'plaqueta', 'rodo', 'comprimento', 'oco1', 'oco2', 'especieInput'];
             inputs.forEach(id => {
@@ -3012,7 +3103,6 @@ async function editarRomaneio(romaneioId) {
                 clienteInput.value = nome;
                 window.selectedClient = fornecedorData;
                 window.selectedFornecedor = fornecedorData;
-                console.log("âœ… Fornecedor configurado:", fornecedorData.nome || fornecedorData.name);
             }
         }
         
@@ -3028,7 +3118,6 @@ async function editarRomaneio(romaneioId) {
                         const month = String(data.getMonth() + 1).padStart(2, '0');
                         const day = String(data.getDate()).padStart(2, '0');
                         dataInput.value = `${year}-${month}-${day}`;
-                        console.log("âœ… Data configurada:", dataInput.value);
                     }
                 } catch (error) {
                     console.warn("âš ï¸ Erro ao configurar data:", error);
@@ -3088,23 +3177,18 @@ async function editarRomaneio(romaneioId) {
             // âœ… ATUALIZAR TABELA NA INTERFACE
             const tbody = document.querySelector('#romaneioTable tbody');
             if (tbody && typeof window.updateTableBody === 'function') {
-                console.log("ðŸ"„ Atualizando tabela na interface...");
                 window.updateTableBody(tbody);
-                console.log("âœ… Tabela atualizada");
             } else {
                 console.warn("âš ï¸ Elemento tbody ou funÃ§Ã£o updateTableBody nÃ£o encontrados");
             }
             
             // âœ… ATUALIZAR TOTAIS
             if (typeof window.atualizarTotais === 'function') {
-                console.log("ðŸ"„ Atualizando totais...");
                 window.atualizarTotais();
-                console.log("âœ… Totais atualizados");
             } else {
                 console.warn("âš ï¸ FunÃ§Ã£o atualizarTotais nÃ£o encontrada");
             }
         } else {
-            console.log("ðŸ"­ Nenhum item encontrado no romaneio");
             window.romaneioItems = [];
         }
         
@@ -3118,7 +3202,6 @@ async function editarRomaneio(romaneioId) {
         const title = document.querySelector('.main-title');
         if (title) {
             title.textContent = `Editando Romaneio - ${romaneioParaEditar.id}`;
-            console.log("âœ… TÃ­tulo da pÃ¡gina atualizado");
         }
         
         // âœ… RESETAR PÃGINA ATUAL PARA A PRIMEIRA
@@ -3157,16 +3240,6 @@ window.toggleImprimirDropdownAvancado = toggleImprimirDropdownAvancado;
 window.exportarRomaneioExcelFirebase = exportarRomaneioExcelFirebase;
 window.gerarRelatorioCompleto = gerarRelatorioCompleto;
 
-console.log("âœ… === TODAS AS FUNÃ‡Ã•ES EXPORTADAS GLOBALMENTE ===");
-console.log("ðŸ"§ FunÃ§Ãµes principais:");
-console.log("   â€¢ detectarECorrigirIdsDuplicados");
-console.log("   â€¢ limparRomaneiosInvalidos");
-console.log("   â€¢ gerarLinhaTotalGeral");
-console.log("   â€¢ gerarResumoPorEspecie");
-console.log("   â€¢ gerarResumoGeralEstatisticas");
-console.log("   â€¢ editarRomaneio (corrigida)");
-console.log("   â€¢ todas as funÃ§Ãµes de formataÃ§Ã£o");
-console.log("   â€¢ todas as funÃ§Ãµes de impressÃ£o avanÃ§ada");
 
 // FunÃ§Ã£o para excluir um romaneio
 async function excluirRomaneio(romaneioId) {
@@ -3175,19 +3248,16 @@ async function excluirRomaneio(romaneioId) {
     try {
         // âœ… BLOQUEAR MÃšLTIPLAS EXECUÃ‡Ã•ES SIMULTÃ‚NEAS
         if (window.deletingRomaneio) {
-            console.log("âš ï¸ OperaÃ§Ã£o de exclusÃ£o jÃ¡ em andamento");
             return;
         }
         window.deletingRomaneio = true;
         
         // Confirmar exclusÃ£o
         if (!confirm("Tem certeza que deseja excluir este romaneio? Esta aÃ§Ã£o nÃ£o pode ser desfeita.")) {
-            console.log("âŒ ExclusÃ£o cancelada pelo usuÃ¡rio");
             window.deletingRomaneio = false;
             return;
         }
         
-        console.log("âœ… UsuÃ¡rio confirmou exclusÃ£o, prosseguindo...");
         
         // Fechar dropdowns/menus para evitar artefatos visuais
         try {
@@ -3202,7 +3272,6 @@ async function excluirRomaneio(romaneioId) {
         }
         
         // âœ… CARREGAR DADOS DIRETAMENTE DO FIREBASE PARA ENCONTRAR A CHAVE CORRETA
-        console.log("ðŸ"‚ Carregando romaneios DIRETAMENTE do Firebase...");
         let romaneiosData = null;
         
         if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
@@ -3210,9 +3279,7 @@ async function excluirRomaneio(romaneioId) {
                 const result = await window.firebaseService.loadFromFirebase('romaneios/tora');
                 if (result && result.success) {
                     romaneiosData = result.data || {};
-                    console.log("âœ… Dados carregados diretamente do Firebase:", romaneiosData);
                 } else {
-                    console.log("âš ï¸ Firebase retornou dados vazios ou erro");
                     romaneiosData = {};
                 }
             } catch (firebaseError) {
@@ -3228,7 +3295,6 @@ async function excluirRomaneio(romaneioId) {
         let romaneioParaExcluir = null;
         
         if (romaneiosData && typeof romaneiosData === 'object' && !Array.isArray(romaneiosData)) {
-            console.log("ðŸ" Procurando romaneio especÃ­fico por chave Firebase...");
             
             // âœ… BUSCAR POR TODAS AS CHAVES FIREBASE PARA ENCONTRAR O ROMANEIO CORRETO
             Object.keys(romaneiosData).forEach(chaveFirebase => {
@@ -3282,7 +3348,6 @@ async function excluirRomaneio(romaneioId) {
         // âœ… VERIFICAR SE ENCONTRAMOS O ROMANEIO PARA EXCLUIR
         if (!chaveFirebaseParaExcluir || !romaneioParaExcluir) {
             console.error(`âŒ Romaneio ${romaneioId} NÃO ENCONTRADO na lista!`);
-            console.log("ðŸ"‹ Chaves Firebase disponíveis:", Object.keys(romaneiosData || {}));
             if (window.Utils && window.Utils.showToast) window.Utils.showToast(`Romaneio ${romaneioId} não encontrado! Atualizando lista...`, 'warning');
             await renderRomaneioList('');
             window.deletingRomaneio = false;
@@ -3295,10 +3360,21 @@ async function excluirRomaneio(romaneioId) {
         });
         
         // USAR FUNÇÃO ESPECÍFICA DE EXCLUSÃO DO FIREBASE
-        if (window.firebaseService && typeof window.firebaseService.removeFromFirebase === 'function') {
+        if (window.firebaseService && (
+            typeof window.firebaseService.saveToFirebase === 'function' ||
+            typeof window.firebaseService.deleteFromFirebase === 'function' ||
+            typeof window.firebaseService.removeFromFirebase === 'function'
+        )) {
             try {
-                console.log(`🔥 Excluindo romaneio DIRETAMENTE do Firebase: romaneiosTora/${chaveFirebaseParaExcluir}`);
-                const deleteResult = await window.firebaseService.deleteFromFirebase('romaneiosTora', chaveFirebaseParaExcluir);
+                console.log(`🔥 Excluindo romaneio DIRETAMENTE do Firebase: romaneios/tora/${chaveFirebaseParaExcluir}`);
+                let deleteResult = null;
+                if (typeof window.firebaseService.saveToFirebase === 'function') {
+                    deleteResult = await window.firebaseService.saveToFirebase('romaneios/tora', String(chaveFirebaseParaExcluir), null);
+                } else if (typeof window.firebaseService.deleteFromFirebase === 'function') {
+                    deleteResult = await window.firebaseService.deleteFromFirebase('romaneios/tora', chaveFirebaseParaExcluir);
+                } else if (typeof window.firebaseService.removeFromFirebase === 'function') {
+                    deleteResult = await window.firebaseService.removeFromFirebase(`romaneios/tora/${chaveFirebaseParaExcluir}`);
+                }
                 console.log("📄 Resultado da exclusão:", deleteResult);
                 
                 if (deleteResult && deleteResult.success) {
@@ -3339,7 +3415,6 @@ async function excluirRomaneio(romaneioId) {
         }
         
         // âœ… VERIFICAR SE A EXCLUSÃƒO FOI REALMENTE EFETIVADA
-        console.log("ðŸ" Verificando se a exclusÃ£o foi efetivada...");
         
         // Aguardar um pouco para o Firebase sincronizar
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -3366,26 +3441,23 @@ async function excluirRomaneio(romaneioId) {
         }
         
         // âœ… LIMPAR TODOS OS CACHES APÃ“S EXCLUSÃƒO
-        console.log("ðŸ§¹ Limpando caches apÃ³s exclusÃ£o...");
         try {
-            const storageKey = getStorageKey('romaneiosTora');
-            localStorage.removeItem(storageKey);
+            const storageKey = getStorageKey('romaneios/tora');
+            removeCompanyCache(storageKey);
             sessionStorage.removeItem('romaneiosTora');
             
             // Limpar qualquer cache do Firebase Service se existir
             if (window.firebaseService && typeof window.firebaseService.clearCache === 'function') {
-                window.firebaseService.clearCache('romaneiosTora');
+                window.firebaseService.clearCache('romaneios/tora');
             }
         } catch (cacheError) {
             console.warn("âš ï¸ Erro ao limpar cache apÃ³s exclusÃ£o:", cacheError);
         }
         
         // âœ… AGUARDAR ANTES DE ATUALIZAR A LISTA
-        console.log("â±ï¸ Aguardando sincronizaÃ§Ã£o...");
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         // âœ… ATUALIZAR A LISTA NA INTERFACE
-        console.log("ðŸ"„ Atualizando lista na interface...");
         await renderRomaneioList('');
         
         console.log(`âœ… SUCESSO: Romaneio na chave ${chaveFirebaseParaExcluir} excluído com sucesso!`);
@@ -3397,7 +3469,6 @@ async function excluirRomaneio(romaneioId) {
     } finally {
         // âœ… SEMPRE DESBLOQUEAR A OPERAÃ‡ÃƒO
         window.deletingRomaneio = false;
-        console.log("ðŸ" " OperaÃ§Ã£o de exclusÃ£o desbloqueada");
     }
 }
 
@@ -3410,8 +3481,7 @@ async function imprimirRomaneio(romaneioId, modoImpressao = 'completo') {
         let romaneiosData = await getData('romaneios/tora') || {};
         try {
             const tombKey = getStorageKey('romaneiosTora_deletedIds');
-            const allowLegacy = tombKey === 'romaneiosTora_deletedIds';
-            const tomb = JSON.parse(localStorage.getItem(tombKey) || (allowLegacy ? localStorage.getItem('romaneiosTora_deletedIds') : null) || '[]').map(String);
+            const tomb = JSON.parse(readCompanyCache(tombKey) || '[]').map(String);
             if (Array.isArray(tomb) && tomb.length > 0) {
                 if (Array.isArray(romaneiosData)) {
                     romaneiosData = romaneiosData.filter(r => !tomb.includes(String(r.id)) && !tomb.includes(String(r.firebaseKey)));
@@ -3468,7 +3538,6 @@ async function imprimirRomaneio(romaneioId, modoImpressao = 'completo') {
             return;
         }
         
-        console.log("âœ… Romaneio encontrado:", romaneioParaImprimir);
         
         // âœ… OBTER DADOS DA EMPRESA DO FIREBASE
         const dadosEmpresa = await getCompanyDataFirebase();
@@ -3695,7 +3764,6 @@ async function imprimirRomaneio(romaneioId, modoImpressao = 'completo') {
             // Aguardar carregamento e focar na nova janela
             novaJanela.onload = () => {
                 novaJanela.focus();
-                console.log("âœ… Janela de impressÃ£o aberta com sucesso");
             };
         } else {
             console.error("âŒ Erro ao abrir nova janela - pode estar sendo bloqueada pelo navegador");
@@ -3709,7 +3777,6 @@ async function imprimirRomaneio(romaneioId, modoImpressao = 'completo') {
             } catch (_) {}
         }
         
-        console.log("âœ… ImpressÃ£o de romaneio concluÃ­da com sucesso");
         
     } catch (error) {
         console.error("âŒ Erro ao imprimir romaneio:", error);
@@ -3827,14 +3894,52 @@ window.imprimirRomaneio = imprimirRomaneio;
 window.excluirItem = excluirItem;
 window.calcularEstatisticasPorEspecie = calcularEstatisticasPorEspecie;
 
-console.log("âœ… Sistema de listagem de romaneios carregado com sucesso (100% Firebase)");
+
+function resolveCompanyIdForReportLegacy() {
+    try {
+        const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+        if (svc && typeof svc.getCurrentTenantId === 'function') {
+            const id = svc.getCurrentTenantId();
+            if (id) return String(id);
+        }
+        if (svc && typeof svc.getTenantId === 'function') {
+            const id = svc.getTenantId();
+            if (id) return String(id);
+        }
+    } catch (_) {}
+    try {
+        if (window.appTenantId) return String(window.appTenantId);
+        const current = JSON.parse(localStorage.getItem('currentUser') || 'null') || {};
+        const persistent = JSON.parse(localStorage.getItem('persistentUser') || 'null') || {};
+        const id = current.companyId || current.companyID || current.tenantId || persistent.companyId || persistent.companyID || persistent.tenantId;
+        if (id) return String(id);
+    } catch (_) {}
+    try {
+        const raw = localStorage.getItem('company_info');
+        const info = raw ? JSON.parse(raw) : {};
+        const id = info.companyId || info.companyID || info.tenantId || info.id;
+        if (id) return String(id);
+    } catch (_) {}
+    return '';
+}
 
 // âœ… FUNÃ‡ÃƒO PARA OBTER DADOS DA EMPRESA (FIREBASE)
 async function getCompanyDataFirebase() {
     try {
-        // Tentar obter dados da empresa do Firebase
-        const companies = await getData('companies') || [];
-        const companyData = companies.length > 0 ? companies[0] : {};
+        const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+        let companyData = {};
+        if (svc && typeof svc.getCompanyProfileForReport === 'function') {
+            try {
+                const centralResult = await svc.getCompanyProfileForReport();
+                companyData = centralResult && centralResult.success !== false ? (centralResult.data || centralResult) : {};
+            } catch (_) {}
+        }
+        if (!companyData || Object.keys(companyData).length === 0) {
+            const tenantId = resolveCompanyIdForReportLegacy();
+            if (tenantId && typeof getData === 'function') {
+                companyData = await getData(`companies/${tenantId}/profile`) || {};
+            }
+        }
         
         // Valores padrÃ£o baseados na anÃ¡lise
         const dadosPadrao = {
@@ -4838,7 +4943,6 @@ async function exportarRomaneioExcelFirebase(romaneioId) {
             const script = document.createElement('script');
             script.src = 'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js';
             script.onload = () => {
-                console.log("âœ… XLSX carregado dinamicamente");
                 exportarRomaneioExcelFirebase(romaneioId); // Retry
             };
             script.onerror = () => {
@@ -4852,8 +4956,7 @@ async function exportarRomaneioExcelFirebase(romaneioId) {
         let romaneiosData = await getData('romaneios/tora') || {};
         try {
             const tombKey = getStorageKey('romaneiosTora_deletedIds');
-            const allowLegacy = tombKey === 'romaneiosTora_deletedIds';
-            const tomb = JSON.parse(localStorage.getItem(tombKey) || (allowLegacy ? localStorage.getItem('romaneiosTora_deletedIds') : null) || '[]').map(String);
+            const tomb = JSON.parse(readCompanyCache(tombKey) || '[]').map(String);
             if (Array.isArray(tomb) && tomb.length > 0) {
                 if (Array.isArray(romaneiosData)) {
                     romaneiosData = romaneiosData.filter(r => !tomb.includes(String(r.id)) && !tomb.includes(String(r.firebaseKey)));
@@ -4994,4 +5097,44 @@ async function exportarRomaneioExcelFirebase(romaneioId) {
         
         // âœ… OBTER DADOS DA EMPRESA
         const dadosEmpresa = await getCompanyDataFirebase();
+        const nomeEmpresa = dadosEmpresa && (dadosEmpresa.nome || dadosEmpresa.name) ? (dadosEmpresa.nome || dadosEmpresa.name) : 'Empresa';
+        const fornecedorNome = fornecedor && typeof fornecedor === 'object'
+            ? (fornecedor.nome || fornecedor.name || fornecedor.razaoSocial || '')
+            : String(fornecedor || cliente || '');
+        const linhas = itensNormalizados.map(item => ({
+            Plaqueta: item.plaqueta,
+            Especie: item.especie,
+            Diametro: item.diametro,
+            Comprimento: item.comprimento,
+            Oco1: item.oco1,
+            Oco2: item.oco2,
+            VolumeBruto: item.volumeBruto,
+            VolumeDesconto: item.volumeDesconto,
+            VolumeLiquido: item.volumeLiquido,
+            Preco: item.preco,
+            Valor: item.valor
+        }));
+        const resumo = [
+            ['Empresa', nomeEmpresa],
+            ['Romaneio', romaneioParaExportar.numeroRomaneio || romaneioParaExportar.id || romaneioId],
+            ['Fornecedor/Cliente', fornecedorNome || '-'],
+            ['Data', dataFormatada],
+            ['Volume bruto total', volumeBrutoTotal],
+            ['Volume desconto total', volumeDescontoTotal],
+            ['Volume liquido total', volumeLiquidoTotal],
+            ['Valor total', valorTotal],
+            []
+        ];
+        const worksheet = XLSX.utils.aoa_to_sheet(resumo);
+        XLSX.utils.sheet_add_json(worksheet, linhas, { origin: -1 });
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Romaneio');
+        XLSX.writeFile(workbook, `romaneio_${romaneioId || 'tora'}.xlsx`);
+    } catch (error) {
+        console.error('Erro ao exportar romaneio para Excel:', error);
+        alert('Erro ao exportar romaneio para Excel: ' + (error && error.message ? error.message : error));
+    }
+}
+
+window.exportarRomaneioExcelFirebase = exportarRomaneioExcelFirebase;
         

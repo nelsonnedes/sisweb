@@ -6,7 +6,11 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
     <title>Portal de Acesso - SisWeb</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     
@@ -102,7 +106,7 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: radial-gradient(circle at 10% 10%, rgba(52, 152, 219, 0.35), transparent 40%), radial-gradient(circle at 90% 90%, rgba(39, 174, 96, 0.35), transparent 40%), linear-gradient(135deg, #1f2937, #334155 45%, #1d4ed8);
+            background: radial-gradient(circle at 10% 10%, rgba(52, 152, 219, 0.25), transparent 40%), radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.25), transparent 40%), linear-gradient(135deg, #0f172a, #1e293b 45%, #0f172a);
             position: relative;
             overflow-x: hidden;
             padding: 24px;
@@ -115,25 +119,25 @@
             left: 0;
             width: 100%;
             height: 100%;
-    /* Removido Unsplash externo para evitar ORB e problemas de CORS */
-    background: linear-gradient(135deg, #2c3e50 0%, #3498db 50%, #27ae60 100%);
+            background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
             opacity: 0.15;
             z-index: -1;
         }
 
         .container {
-            background: rgba(255, 255, 255, 0.96);
+            background: rgba(255, 255, 255, 0.85);
             padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 24px 55px rgba(0, 0, 0, 0.26);
+            border-radius: 24px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
             width: 100%;
             max-width: 460px;
             text-align: center;
-            animation: fadeIn 0.5s ease-out;
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
         }
 
         .container::before {
@@ -141,7 +145,7 @@
             position: absolute;
             inset: 0;
             pointer-events: none;
-            background: linear-gradient(140deg, rgba(255,255,255,0.45), rgba(255,255,255,0));
+            background: linear-gradient(140deg, rgba(255,255,255,0.6), rgba(255,255,255,0) 60%);
         }
         
         @keyframes fadeIn {
@@ -654,7 +658,7 @@
             <div class="form-group">
                 <label for="email">Email</label>
                 <div class="input-group">
-                    <input type="email" id="email" autocomplete="email" required placeholder="Seu email">
+                    <input type="email" id="email" name="email" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" required placeholder="Seu email">
                     <i class="fas fa-envelope"></i>
                 </div>
             </div>
@@ -662,7 +666,7 @@
             <div class="form-group">
                 <label for="password">Senha</label>
                 <div class="input-group">
-                    <input type="password" id="password" autocomplete="current-password" required placeholder="Sua senha">
+                    <input type="password" id="password" name="password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" required placeholder="Sua senha">
                     <i class="fas fa-lock"></i>
                 </div>
                 <div id="errorMessage" class="error-message"></div>
@@ -703,7 +707,7 @@
                 <div class="form-group">
                     <label for="regEmail">E-mail</label>
                     <div class="input-group">
-                        <input type="email" id="regEmail" autocomplete="email" required placeholder="Seu melhor email">
+                        <input type="email" id="regEmail" name="email" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" required placeholder="Seu melhor email">
                         <i class="fas fa-envelope"></i>
                     </div>
                 </div>
@@ -711,7 +715,7 @@
                 <div class="form-group">
                     <label for="regPassword">Senha</label>
                     <div class="input-group">
-                        <input type="password" id="regPassword" autocomplete="new-password" required placeholder="Mínimo 6 caracteres">
+                        <input type="password" id="regPassword" name="new-password" autocomplete="new-password" autocapitalize="none" autocorrect="off" spellcheck="false" required placeholder="Mínimo 6 caracteres">
                         <i class="fas fa-lock"></i>
                     </div>
                 </div>
@@ -719,7 +723,7 @@
                 <div class="form-group">
                     <label for="regConfirmPassword">Confirmar Senha</label>
                     <div class="input-group">
-                        <input type="password" id="regConfirmPassword" autocomplete="new-password" required placeholder="Repita sua senha">
+                        <input type="password" id="regConfirmPassword" name="new-password-confirmation" autocomplete="new-password" autocapitalize="none" autocorrect="off" spellcheck="false" required placeholder="Repita sua senha">
                         <i class="fas fa-lock"></i>
                     </div>
                     <div id="regErrorMessage" class="error-message"></div>
@@ -743,7 +747,7 @@
                 <div class="form-group">
                     <label for="resetEmail">Email da Conta</label>
                     <div class="input-group">
-                        <input type="email" id="resetEmail" autocomplete="email" required placeholder="Email cadastrado">
+                        <input type="email" id="resetEmail" name="email" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" required placeholder="Email cadastrado">
                         <i class="fas fa-envelope"></i>
                     </div>
                     <div id="resetErrorMessage" class="error-message"></div>
@@ -774,8 +778,14 @@
 
     <!-- Carregar auth.js tradicional primeiro -->
     <script src="js/deep-clean.js"></script>
-    <script src="auth.js"></script>
+    <script src="auth.js?v=2026-06-10-subscription-status-ux-v1"></script>
     <script>
+        window.__siswebLoginInitialSearch = window.location.search || '';
+
+        function getLoginInitialParams() {
+            return new URLSearchParams(window.__siswebLoginInitialSearch || window.location.search || '');
+        }
+
         function hideSystemHealth() {
             const container = document.getElementById('systemHealth');
             if (container) container.style.display = 'none';
@@ -812,6 +822,35 @@
             if (maintenanceMessage) maintenanceMessage.style.display = 'none';
         }
 
+        function hasExplicitMaintenanceContext() {
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                return params.get('reset') === 'true'
+                    || params.get('offline') === 'true'
+                    || params.get('error') === 'true'
+                    || params.get('logout') === '1';
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function clearTransientConnectionWarnings() {
+            if (hasExplicitMaintenanceContext()) return;
+            hideMaintenanceMessage();
+            const errorMessage = document.getElementById('errorMessage');
+            if (errorMessage && /conex|offline|firebase|autentica[cç][aã]o indispon/i.test(errorMessage.textContent || '')) {
+                errorMessage.textContent = '';
+                errorMessage.style.display = 'none';
+            }
+            runLoginHealthCheck(false);
+        }
+
+        window.addEventListener('sisweb:firebase-connection', function(event) {
+            if (event && event.detail && event.detail.connected === true) {
+                clearTransientConnectionWarnings();
+            }
+        });
+
         function getLoginExecutor() {
             if (typeof window.login === 'function') return window.login;
             if (window.firebaseService && window.firebaseService.authService && typeof window.firebaseService.authService.login === 'function') {
@@ -833,7 +872,10 @@
         async function waitForFirebaseConnection(maxWaitMs = 4500, intervalMs = 250) {
             const startedAt = Date.now();
             while (Date.now() - startedAt < maxWaitMs) {
-                if (window._FIREBASE_CONNECTED === true) return true;
+                if (window._FIREBASE_CONNECTED === true) {
+                    clearTransientConnectionWarnings();
+                    return true;
+                }
                 await new Promise((resolve) => setTimeout(resolve, intervalMs));
             }
             return window._FIREBASE_CONNECTED === true;
@@ -863,16 +905,59 @@
             return { issues, warnings };
         }
 
+        function sanitizeInternalRedirectTarget(value, fallback = '') {
+            if (window.normalizeInternalRedirectTarget) {
+                return window.normalizeInternalRedirectTarget(value, fallback);
+            }
+
+            let candidate = String(value || '').trim();
+            if (!candidate) return fallback;
+            for (let attempt = 0; attempt < 2; attempt += 1) {
+                try {
+                    const decoded = decodeURIComponent(candidate).trim();
+                    if (decoded === candidate) break;
+                    candidate = decoded;
+                } catch (_) {
+                    break;
+                }
+            }
+
+            if (!candidate || /[\u0000-\u001f\u007f]/.test(candidate) || candidate.includes('\\')) return fallback;
+            const compact = candidate.replace(/\s+/g, '').toLowerCase();
+            if (compact.startsWith('http://')
+                || compact.startsWith('https://')
+                || compact.startsWith('//')
+                || compact.startsWith('javascript:')
+                || compact.startsWith('data:')
+                || compact.startsWith('vbscript:')) {
+                return fallback;
+            }
+
+            const pathCandidate = candidate.split(/[?#]/)[0].replace(/^\/+/, '');
+            if (pathCandidate.split('/').includes('..')) return fallback;
+
+            try {
+                const url = new URL(candidate, `${window.location.origin}/`);
+                if (url.origin !== window.location.origin) return fallback;
+                const pathname = url.pathname.replace(/^\/+/, '') || 'index.html';
+                if (pathname.split('/').includes('..')) return fallback;
+                if (!/^[a-z0-9_./-]+\.html$/i.test(pathname)) return fallback;
+                return `${pathname}${url.search}${url.hash}`;
+            } catch (_) {
+                return fallback;
+            }
+        }
+
         async function getRedirectTarget(result) {
-            const params = new URLSearchParams(window.location.search);
+            const params = getLoginInitialParams();
             const redirect = params.get('redirect');
-            const requested = redirect ? decodeURIComponent(redirect) : 'index.html';
+            const requested = sanitizeInternalRedirectTarget(redirect || 'index.html', 'index.html');
             const details = window.getCurrentUserDetails ? await window.getCurrentUserDetails() : null;
             const isAdmin = window.isSuperAdminSession ? await window.isSuperAdminSession() : false;
             const isAdminPanelUser = window.hasAnyAdminPanelAccess ? await window.hasAnyAdminPanelAccess() : false;
             const statusKey = (result && result.subscriptionStatus)
                 || (window.resolveSubscriptionStatus ? window.resolveSubscriptionStatus(details || {}) : 'expired');
-            const flowRedirect = result && result.flowRedirect ? String(result.flowRedirect) : '';
+            const flowRedirect = result && result.flowRedirect ? sanitizeInternalRedirectTarget(result.flowRedirect) : '';
             if (flowRedirect) return flowRedirect;
             if (window.resolvePostLoginRoute) {
                 try {
@@ -889,14 +974,17 @@
                 } catch (_) {}
             }
             const loweredRequested = String(requested || '').toLowerCase();
+            const requestedIsSubscriptionSelfService = loweredRequested.includes('subscription.html') || loweredRequested.includes('subscription-status.html');
             if (isAdmin) {
-                if (!requested || loweredRequested === 'index.html' || loweredRequested.includes('subscription.html') || loweredRequested.includes('subscription-status.html') || loweredRequested.includes('login.html')) {
+                if (requestedIsSubscriptionSelfService) return requested;
+                if (!requested || loweredRequested === 'index.html' || loweredRequested.includes('login.html')) {
                     return 'admin.html?tab=dashboard';
                 }
                 return requested;
             }
             if (isAdminPanelUser) {
-                if (!requested || loweredRequested === 'index.html' || loweredRequested.includes('subscription.html') || loweredRequested.includes('subscription-status.html') || loweredRequested.includes('login.html')) {
+                if (requestedIsSubscriptionSelfService) return requested;
+                if (!requested || loweredRequested === 'index.html' || loweredRequested.includes('login.html')) {
                     return 'admin.html?tab=dashboard';
                 }
                 if (loweredRequested.includes('admin-') || loweredRequested.includes('admin.html')) return requested;
@@ -908,6 +996,7 @@
                     if (requested) return requested;
                     return 'index.html';
                 }
+                if (requestedIsSubscriptionSelfService) return requested;
                 if (statusKey === 'expired') return 'subscription.html?reason=expired';
                 if (statusKey === 'blocked') return 'subscription.html?reason=blocked';
                 if (statusKey === 'pending' || statusKey === 'pending_grace') return 'subscription.html?reason=pending';
@@ -921,8 +1010,13 @@
         // Função para login
         window.handleLogin = async function(event) {
             event.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const email = String((emailInput && emailInput.value) || '').trim().toLowerCase();
+            const password = passwordInput ? passwordInput.value : '';
+            if (emailInput && emailInput.value !== email) {
+                emailInput.value = email;
+            }
             const errorMessage = document.getElementById('errorMessage');
             const loadingSpinner = document.getElementById('loading-spinner');
 
@@ -953,11 +1047,18 @@
 
                 if (result.success) {
                     console.log("Login successful!");
+                    try {
+                        if (typeof window.markSiswebSessionAuthenticated === 'function') {
+                            window.markSiswebSessionAuthenticated(result.user || result.currentUser || { email }, { source: 'login_page' });
+                        }
+                    } catch (_) {}
                     setSystemHealth('ok', 'Login realizado', 'Redirecionando para o sistema...');
                     window.location.href = await getRedirectTarget(result);
                 } else {
                     let errorMsg = result.error || 'Erro desconhecido ao fazer login.';
-                    if (result.error && result.error.includes('auth/user-not-found')) {
+                    if (result.error && /invalid-credential|invalid-login-credentials|email ou senha inv[aá]lidos/i.test(result.error)) {
+                        errorMsg = 'Email ou senha inválidos. Confira o email digitado e tente novamente.';
+                    } else if (result.error && result.error.includes('auth/user-not-found')) {
                         errorMsg = 'Usuário não encontrado. Verifique seu email.';
                     } else if (result.error && result.error.includes('auth/wrong-password')) {
                         errorMsg = 'Senha incorreta.';
@@ -973,7 +1074,9 @@
             } catch (error) {
                 console.error("Login error:", error);
                 let errorMsg = error.message || 'Erro inesperado ao fazer login.';
-                if (error.code === 'auth/user-not-found') {
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') {
+                    errorMsg = 'Email ou senha inválidos. Confira o email digitado e tente novamente.';
+                } else if (error.code === 'auth/user-not-found') {
                     errorMsg = 'Usuário não encontrado. Verifique seu email.';
                 } else if (error.code === 'auth/wrong-password') {
                     errorMsg = 'Senha incorreta.';
@@ -1016,7 +1119,11 @@
                 
                 // Obter dados do formulário
                 const username = document.getElementById('regUsername').value;
-                const email = document.getElementById('regEmail').value;
+                const regEmailInput = document.getElementById('regEmail');
+                const email = String((regEmailInput && regEmailInput.value) || '').trim().toLowerCase();
+                if (regEmailInput && regEmailInput.value !== email) {
+                    regEmailInput.value = email;
+                }
                 const password = document.getElementById('regPassword').value;
                 const confirmPassword = document.getElementById('regConfirmPassword').value;
                 
@@ -1119,7 +1226,11 @@
                 successMessage.style.display = 'none';
                 
                 // Obter email do formulário
-                const email = document.getElementById('resetEmail').value;
+                const resetEmailInput = document.getElementById('resetEmail');
+                const email = String((resetEmailInput && resetEmailInput.value) || '').trim().toLowerCase();
+                if (resetEmailInput && resetEmailInput.value !== email) {
+                    resetEmailInput.value = email;
+                }
                 
                 if (!email) {
                     errorMessage.textContent = 'Por favor, informe seu email';
@@ -1201,10 +1312,10 @@
         } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
         import { getApps } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getDatabase, ref, set, get, remove, child, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js';
+        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=2026-06-10-subscription-status-ux-v1';
         
         // Disponibilizar firebaseService globalmente para auth.js
-        window.firebaseService = { authService, isFirebaseOperational, setCompanyClaim };
+        window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim };
         if (typeof window.runLoginHealthCheck === 'function') {
             window.runLoginHealthCheck();
         }
@@ -1268,6 +1379,9 @@
                     });
                 
                 console.log("✅ Firebase operacional e autenticação disponível");
+                if (window._FIREBASE_CONNECTED === true) {
+                    clearTransientConnectionWarnings();
+                }
                 return true;
             } catch (error) {
                 console.error("🔥 Erro crítico de autenticação:", error);
@@ -1286,9 +1400,10 @@
         // Utilitário legado: alvo de redirecionamento básico
         function getLegacyRedirectTarget() {
             try {
-                const params = new URLSearchParams(window.location.search || '');
+                const params = getLoginInitialParams();
                 const p = params.get('redirect');
-                if (p) { return p; }
+                const requested = sanitizeInternalRedirectTarget(p);
+                if (requested) { return requested; }
                 const reason = (params.get('reason') || '').toLowerCase();
                 // Caso não haja redirect explícito, usar referência de origem
                 const ref = document.referrer || '';
@@ -1309,15 +1424,16 @@
             try {
                 if (typeof window.getRedirectTarget === 'function') {
                     const target = await window.getRedirectTarget(options);
+                    const safeTarget = sanitizeInternalRedirectTarget(target);
                     const lowered = String(target || '').toLowerCase();
-                    if (!target) return getLegacyRedirectTarget();
+                    if (!safeTarget) return getLegacyRedirectTarget();
                     if (lowered.includes('login.html')) return getLegacyRedirectTarget();
                     if (options && options.preventSubscriptionLoop && (lowered.includes('subscription.html') || lowered.includes('subscription-status.html'))) {
                         const isAdmin = window.isSuperAdminSession ? await window.isSuperAdminSession() : false;
                         const isAdminPanelUser = window.hasAnyAdminPanelAccess ? await window.hasAnyAdminPanelAccess() : false;
                         if (isAdmin || isAdminPanelUser) return 'admin.html?tab=dashboard';
                     }
-                    return target;
+                    return safeTarget;
                 }
             } catch (_) {}
             return getLegacyRedirectTarget();
@@ -1325,10 +1441,9 @@
 
         function shouldForceHomeFromLoginContext() {
             try {
-                const params = new URLSearchParams(window.location.search || '');
+                const params = getLoginInitialParams();
                 const redirect = String(params.get('redirect') || '').toLowerCase();
                 if (!redirect) return false;
-                if (redirect.includes('subscription.html') || redirect.includes('subscription-status.html')) return true;
                 if (redirect.includes('login.html')) return true;
                 return false;
             } catch (_) {
@@ -1364,7 +1479,11 @@
                 
                 // Obter dados do formulário
                 const username = document.getElementById('regUsername').value;
-                const email = document.getElementById('regEmail').value;
+                const regEmailInput = document.getElementById('regEmail');
+                const email = String((regEmailInput && regEmailInput.value) || '').trim().toLowerCase();
+                if (regEmailInput && regEmailInput.value !== email) {
+                    regEmailInput.value = email;
+                }
                 const password = document.getElementById('regPassword').value;
                 const confirmPassword = document.getElementById('regConfirmPassword').value;
                 
@@ -1467,7 +1586,11 @@
                 successMessage.style.display = 'none';
                 
                 // Obter email do formulário
-                const email = document.getElementById('resetEmail').value;
+                const resetEmailInput = document.getElementById('resetEmail');
+                const email = String((resetEmailInput && resetEmailInput.value) || '').trim().toLowerCase();
+                if (resetEmailInput && resetEmailInput.value !== email) {
+                    resetEmailInput.value = email;
+                }
                 
                 if (!email) {
                     errorMessage.textContent = 'Por favor, informe seu email';
@@ -1553,6 +1676,18 @@
                 console.log("🔄 Parâmetro 'reset' detectado, limpando dados de sessão");
                 sessionStorage.clear();
                 localStorage.removeItem('firebaseInitialized');
+                if (typeof window.clearSiswebDurableAuthSession === 'function') {
+                    window.clearSiswebDurableAuthSession();
+                } else {
+                    localStorage.removeItem('siswebAuthSession');
+                }
+                if (typeof window.clearSiswebCompanyContextCache === 'function') {
+                    window.clearSiswebCompanyContextCache();
+                } else {
+                    localStorage.removeItem('company_info');
+                    window.companyInfo = null;
+                    window.appTenantId = null;
+                }
                 // Remover parâmetro da URL para evitar loops
                 window.history.replaceState({}, document.title, 'login.html');
                 // Mostrar mensagem
@@ -1580,6 +1715,18 @@
                         localStorage.removeItem('persistentUser');
                         localStorage.removeItem('auth');
                         localStorage.removeItem('firebaseInitialized');
+                        if (typeof window.clearSiswebDurableAuthSession === 'function') {
+                            window.clearSiswebDurableAuthSession();
+                        } else {
+                            localStorage.removeItem('siswebAuthSession');
+                        }
+                        if (typeof window.clearSiswebCompanyContextCache === 'function') {
+                            window.clearSiswebCompanyContextCache();
+                        } else {
+                            localStorage.removeItem('company_info');
+                            window.companyInfo = null;
+                            window.appTenantId = null;
+                        }
                     } catch(_) {}
                     // Limpar parâmetro da URL
                     urlParams.delete('logout');
@@ -1634,7 +1781,9 @@
             
             if (noRedirect) {
                 console.log("🚫 Parâmetro noRedirect detectado");
-                window.history.replaceState({}, document.title, 'login.html');
+                urlParams.delete('noRedirect');
+                const cleanUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+                window.history.replaceState({}, document.title, cleanUrl);
             }
             
             try {
@@ -1670,9 +1819,13 @@
                             displayName: user.displayName || existingCurrent.displayName || existingCurrent.username || (user.email ? user.email.split('@')[0] : '')
                         };
                         localStorage.setItem('currentUser', JSON.stringify(normalizedCurrent));
-                        sessionStorage.setItem('userAuthenticated', 'true');
-                        sessionStorage.setItem('lastLogin', Date.now().toString());
-                        sessionStorage.setItem('redirectCount', '0');
+                        if (typeof window.markSiswebSessionAuthenticated === 'function') {
+                            window.markSiswebSessionAuthenticated(normalizedCurrent, { source: 'login_existing_session' });
+                        } else {
+                            sessionStorage.setItem('userAuthenticated', 'true');
+                            sessionStorage.setItem('lastLogin', Date.now().toString());
+                            sessionStorage.setItem('redirectCount', '0');
+                        }
                     } catch (_) {}
                     if (autoForceHome && isAdminSession) {
                         setSystemHealth('ok', 'Sessão ativa detectada', 'Redirecionando automaticamente para o gerenciamento...');
@@ -1692,6 +1845,15 @@
                     console.log("👤 Nenhum usuário autenticado");
                     hideMaintenanceMessage();
                     runLoginHealthCheck(false);
+                    try {
+                        const initialParams = getLoginInitialParams();
+                        if (String(initialParams.get('mode') || '').toLowerCase() === 'register') {
+                            setSystemHealth('ok', 'Crie sua conta', 'Após o registro, você será direcionado para cadastrar a empresa.');
+                            setTimeout(function() {
+                                if (typeof showRegisterModal === 'function') showRegisterModal();
+                            }, 0);
+                        }
+                    } catch (_) {}
                 }
             } catch (error) {
                 console.error("❌ Erro ao verificar autenticação:", error);
@@ -1784,7 +1946,10 @@
                     event.stopPropagation();
                     
                     const emailInput = document.getElementById('resetEmail');
-                    const email = emailInput.value.trim();
+                    const email = String((emailInput && emailInput.value) || '').trim().toLowerCase();
+                    if (emailInput && emailInput.value !== email) {
+                        emailInput.value = email;
+                    }
                     
                     if (!email) {
                         alert('Por favor, digite um email para testar.');
@@ -1911,6 +2076,18 @@
                 localStorage.removeItem('currentUser');
                 localStorage.removeItem('persistentUser');
                 localStorage.removeItem('auth');
+                if (typeof window.clearSiswebDurableAuthSession === 'function') {
+                    window.clearSiswebDurableAuthSession();
+                } else {
+                    localStorage.removeItem('siswebAuthSession');
+                }
+                if (typeof window.clearSiswebCompanyContextCache === 'function') {
+                    window.clearSiswebCompanyContextCache();
+                } else {
+                    localStorage.removeItem('company_info');
+                    window.companyInfo = null;
+                    window.appTenantId = null;
+                }
                 localStorage.removeItem('userAuthenticated');
                 localStorage.removeItem('redirectCount');
                 localStorage.removeItem('pageLoadCount');

@@ -36,13 +36,13 @@ function resolveTenantId() {
         if (window.appTenantId) return String(window.appTenantId);
         if (window.companyInfo) {
             const raw = window.companyInfo;
-            const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+            const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
             if (id) return String(id);
         }
         const stored = localStorage.getItem('company_info');
         if (stored) {
             const obj = JSON.parse(stored);
-            const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+            const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
             if (id) return String(id);
         }
     } catch (_) {}
@@ -535,10 +535,46 @@ function corrigirSaveClientGlobal() {
                 }
             }
 
+            const firstText = (...values) => {
+                for (const value of values) {
+                    const clean = String(value || '').trim();
+                    if (clean) return clean;
+                }
+                return '';
+            };
+            const documento = firstText(clientData.documento, clientData.document, clientData.cnpj, clientData.cpf);
+            const tipoPessoa = firstText(clientData.tipoPessoa, clientData.personType, clientData.fiscalPersonType);
+            const inscricaoEstadual = firstText(clientData.inscricaoEstadual, clientData.stateRegistration, clientData.ie);
+            const inscricaoMunicipal = firstText(clientData.inscricaoMunicipal, clientData.municipalRegistration, clientData.im);
+            const indIEDest = firstText(clientData.indIEDest, clientData.indicadorInscricaoEstadual, clientData.ieIndicator);
+            const cep = firstText(clientData.cep, clientData.postalCode, clientData.zipCode);
+            const complemento = firstText(clientData.complemento, clientData.complement);
+            const codigoMunicipio = firstText(clientData.codigoMunicipio, clientData.municipioCodigo, clientData.municipalityCode, clientData.cMun, clientData.ibgeCode);
+            const paisCodigo = firstText(clientData.paisCodigo, clientData.countryCode, clientData.cPais) || '1058';
+            const pais = firstText(clientData.pais, clientData.country, clientData.countryName, clientData.xPais) || 'Brasil';
+            const suframa = firstText(clientData.suframa, clientData.SUFRAMA);
+
             const normalizedClient = {
                 id: resolvedId,
                 name: clientData.name || clientData.nome,
                 nome: clientData.name || clientData.nome, // Compatibilidade
+                documento,
+                document: documento,
+                cnpj: documento,
+                tipoPessoa,
+                personType: tipoPessoa,
+                fiscalPersonType: tipoPessoa,
+                inscricaoEstadual,
+                stateRegistration: inscricaoEstadual,
+                ie: inscricaoEstadual,
+                inscricaoMunicipal,
+                municipalRegistration: inscricaoMunicipal,
+                indIEDest,
+                indicadorInscricaoEstadual: indIEDest,
+                ieIndicator: indIEDest,
+                suframa,
+                cep,
+                postalCode: cep,
                 city: clientData.city || clientData.cidade || '',
                 cidade: clientData.city || clientData.cidade || '',
                 state: clientData.state || clientData.estado || '',
@@ -548,7 +584,27 @@ function corrigirSaveClientGlobal() {
                 email: clientData.email || '',
                 address: clientData.address || clientData.endereco || '',
                 endereco: clientData.address || clientData.endereco || '',
+                number: clientData.number || clientData.numero || '',
+                numero: clientData.number || clientData.numero || '',
+                neighborhood: clientData.neighborhood || clientData.bairro || '',
+                bairro: clientData.neighborhood || clientData.bairro || '',
+                complemento,
+                complement: complemento,
+                codigoMunicipio,
+                municipioCodigo: codigoMunicipio,
+                municipalityCode: codigoMunicipio,
+                cMun: codigoMunicipio,
+                ibgeCode: codigoMunicipio,
+                paisCodigo,
+                countryCode: paisCodigo,
+                cPais: paisCodigo,
+                pais,
+                country: pais,
+                countryName: pais,
+                xPais: pais,
                 obs: clientData.obs || clientData.observacoes || '',
+                observacoes: clientData.obs || clientData.observacoes || '',
+                observations: clientData.observations || clientData.obs || clientData.observacoes || '',
                 createdAt: clientData.createdAt || Date.now(),
                 updatedAt: Date.now()
             };

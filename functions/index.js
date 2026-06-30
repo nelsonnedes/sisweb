@@ -1,15 +1,114 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const { onCall: onCallV2, onRequest: onRequestV2, HttpsError: HttpsErrorV2 } = require('firebase-functions/v2/https');
+const { onMessagePublished } = require('firebase-functions/v2/pubsub');
 const { defineSecret } = require('firebase-functions/params');
-admin.initializeApp();
+let BigQuery = null;
+try {
+    ({ BigQuery } = require('@google-cloud/bigquery'));
+} catch (_) {
+    BigQuery = null;
+}
 
-const { auth, https } = require('firebase-functions/v1');
+function resolveDefaultStorageBucketName() {
+    const explicit = String(
+        process.env.FIREBASE_STORAGE_BUCKET
+        || process.env.STORAGE_BUCKET
+        || process.env.GCLOUD_STORAGE_BUCKET
+        || ''
+    ).trim();
+    if (explicit) return explicit.replace(/^gs:\/\//i, '').replace(/\/+$/, '');
+    try {
+        const firebaseConfig = process.env.FIREBASE_CONFIG ? JSON.parse(process.env.FIREBASE_CONFIG) : {};
+        const configBucket = String(firebaseConfig.storageBucket || '').trim();
+        if (configBucket) return configBucket.replace(/^gs:\/\//i, '').replace(/\/+$/, '');
+        const projectId = String(firebaseConfig.projectId || process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || '').trim();
+        if (projectId) return `${projectId}.firebasestorage.app`;
+    } catch (_) {
+        const projectId = String(process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || '').trim();
+        if (projectId) return `${projectId}.firebasestorage.app`;
+    }
+    return '';
+}
+
+function resolveDefaultDatabaseURL() {
+    const explicit = String(
+        process.env.FIREBASE_DATABASE_URL
+        || process.env.DATABASE_URL
+        || process.env.RTDB_URL
+        || ''
+    ).trim();
+    if (explicit) return explicit.replace(/\/+$/, '');
+    try {
+        const firebaseConfig = process.env.FIREBASE_CONFIG ? JSON.parse(process.env.FIREBASE_CONFIG) : {};
+        const configDatabaseURL = String(firebaseConfig.databaseURL || '').trim();
+        if (configDatabaseURL) return configDatabaseURL.replace(/\/+$/, '');
+        const projectId = String(firebaseConfig.projectId || process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || '').trim();
+        if (projectId === 'sisweb-7ce82') return 'https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app';
+    } catch (_) {
+        const projectId = String(process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || '').trim();
+        if (projectId === 'sisweb-7ce82') return 'https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app';
+    }
+    return '';
+}
+
+function readStorageFileStreamToBuffer(file, maxBytes) {
+    return new Promise((resolve, reject) => {
+        const chunks = [];
+        let total = 0;
+        const stream = file.createReadStream();
+        stream.on('data', (chunk) => {
+            const safeChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+            total += safeChunk.length;
+            if (total > maxBytes) {
+                stream.destroy(new Error('Logo da empresa excede o tamanho permitido para impressão.'));
+                return;
+            }
+            chunks.push(safeChunk);
+        });
+        stream.on('error', reject);
+        stream.on('end', () => resolve(Buffer.concat(chunks, total)));
+    });
+}
+
+const DEFAULT_STORAGE_BUCKET = resolveDefaultStorageBucketName();
+const DEFAULT_DATABASE_URL = resolveDefaultDatabaseURL();
+const adminAppOptions = {};
+if (DEFAULT_STORAGE_BUCKET) adminAppOptions.storageBucket = DEFAULT_STORAGE_BUCKET;
+if (DEFAULT_DATABASE_URL) adminAppOptions.databaseURL = DEFAULT_DATABASE_URL;
+admin.initializeApp(Object.keys(adminAppOptions).length ? adminAppOptions : undefined);
+
+const functionsV1 = require('firebase-functions/v1');
+const { auth, https } = functionsV1;
 const SUPER_ADMIN_EMAILS_RAW = process.env.SUPERADMIN_EMAILS || 'nedes1@hotmail.com';
 const SUPER_ADMIN_UIDS_RAW = process.env.SUPERADMIN_UIDS || 'HfrQ6ObQq2aSEoeEE4Ng9jpAolB3';
 const ADMIN_CORE_COMPANY_ID = 'sisweb_admin_core';
 const SUBSCRIPTION_SETTINGS_PATH = 'system/subscriptionSettings';
+const CLOUD_BILLING_BUDGET_TOPIC = 'sisweb-cloud-billing-budget-alerts';
+const CLOUD_BILLING_PROJECT_ID = 'sisweb-7ce82';
+const CLOUD_BILLING_DATASET_ID = 'billing_export';
+const CLOUD_BILLING_CUD_DATASET_ID = 'billing_export1';
+const CLOUD_BILLING_ACCOUNT_ID = '010952-939008-9EF759';
+const CLOUD_BILLING_LINKED_ACCOUNT_URL = `https://console.cloud.google.com/billing/linkedaccount?project=${CLOUD_BILLING_PROJECT_ID}`;
+const CLOUD_BILLING_BUDGETS_URL = `https://console.cloud.google.com/billing/budgets?project=${CLOUD_BILLING_PROJECT_ID}`;
+const CLOUD_BILLING_EXPORT_URL = `https://console.cloud.google.com/billing/export?project=${CLOUD_BILLING_PROJECT_ID}`;
+const CLOUD_BILLING_REPORTS_URL = `https://console.cloud.google.com/billing/${CLOUD_BILLING_ACCOUNT_ID}/reports?organizationId=0`;
+const CLOUD_BILLING_COST_BREAKDOWN_URL = `https://console.cloud.google.com/billing/${CLOUD_BILLING_ACCOUNT_ID}/reports/cost-breakdown?organizationId=0`;
+const CLOUD_BILLING_CUD_ANALYSIS_URL = `https://console.cloud.google.com/billing/${CLOUD_BILLING_ACCOUNT_ID}/commitments/analysis;timeRange=LAST_30_DAYS;commitment=subscriptionDefinitions%2Fae656bee-1eaf-4b54-a206-1b5be60f942c;timeGrouping=DAILY_GRANULARITY`;
+const CLOUD_BILLING_DOCUMENTS_URL = 'https://console.cloud.google.com/billing/invoices';
+const CLOUD_BILLING_TRANSACTIONS_URL = 'https://console.cloud.google.com/billing/history';
+const SMTP_PASS_SECRET = defineSecret('SMTP_PASS');
+const SMTP_SECRET_RUNTIME_OPTIONS = functionsV1.runWith({ secrets: [SMTP_PASS_SECRET] });
+const CLOUD_BILLING_BIGQUERY_LOCATION = String(process.env.CLOUD_BILLING_BIGQUERY_LOCATION || '').trim();
+const CLOUD_BILLING_TABLE_SUFFIX = CLOUD_BILLING_ACCOUNT_ID.replace(/-/g, '_');
+const CLOUD_BILLING_STANDARD_TABLE_ID = `gcp_billing_export_v1_${CLOUD_BILLING_TABLE_SUFFIX}`;
+const CLOUD_BILLING_DETAILED_TABLE_ID = `gcp_billing_export_resource_v1_${CLOUD_BILLING_TABLE_SUFFIX}`;
+const CLOUD_BILLING_CUD_TABLE_ID = 'cud_subscriptions_export';
+const CLOUD_BILLING_OPERATIONAL_BUDGET_NAMES = new Set([
+    'firebase project sisweb-7ce82'
+]);
 
 function buildSuperAdminEmailSet() {
     const tokens = String(SUPER_ADMIN_EMAILS_RAW || '')
@@ -49,8 +148,8 @@ async function ensureSuperAdminClaimIfAllowed(uid) {
     const userRecord = await admin.auth().getUser(uid);
     const currentClaims = userRecord.customClaims || {};
     const email = String(userRecord.email || '').trim().toLowerCase();
-    if (currentClaims.superadmin === true) return true;
     if (!isSuperAdminEmail(email) && !isSuperAdminUidAllowed(uid)) return false;
+    if (currentClaims.superadmin === true) return true;
     await admin.auth().setCustomUserClaims(uid, { ...currentClaims, superadmin: true });
     await admin.auth().revokeRefreshTokens(uid);
     return true;
@@ -146,17 +245,14 @@ async function isCallerSuperAdmin(context) {
     const token = context.auth.token || {};
     try {
         const uid = context.auth.uid;
-        if (token.superadmin === true && !isSuperAdminUidAllowed(uid)) return true;
+        if (token.superadmin === true && isSuperAdminUidAllowed(uid)) return true;
         if (isSuperAdminUidAllowed(uid)) {
             const promoted = await promoteSuperAdminByUid(uid, { removeCompanyIdClaim: true });
             return promoted && promoted.success === true;
         }
         const byEmail = await ensureSuperAdminClaimIfAllowed(uid);
         if (byEmail) return true;
-        const byDbMarker = await isDbMarkedSuperAdmin(uid);
-        if (!byDbMarker) return false;
-        const promoted = await promoteSuperAdminByUid(uid, { removeCompanyIdClaim: true });
-        return promoted && promoted.success === true;
+        return false;
     } catch (_) {
         return false;
     }
@@ -264,6 +360,100 @@ async function resolveCompanyIdForOperationalSync(uid, preferredCompanyId, exist
     return String(inferred || '').trim();
 }
 
+function permissionAllowsCompanyProfileWrite(source) {
+    const permissions = source && typeof source === 'object'
+        ? (source.permissions || source.adminPermissions || {})
+        : {};
+    if (!permissions || typeof permissions !== 'object') return false;
+    if (permissions.settings === true) return true;
+    if (permissions.companyProfile === true) return true;
+    if (permissions.companyProfile && permissions.companyProfile.write === true) return true;
+    if (permissions.empresa === true) return true;
+    if (permissions.empresa && permissions.empresa.write === true) return true;
+    return false;
+}
+
+function roleAllowsCompanyProfileWrite(source) {
+    const role = String(source && source.role || '').trim().toLowerCase();
+    return role === 'owner' || role === 'admin' || role === 'company_admin';
+}
+
+function isPrimaryCompanyAccountForProfile(uid, tenant, userData, token, companyData) {
+    const userCompanyId = String(
+        userData && (userData.companyId || userData.companyID || userData.tenantId) || ''
+    ).trim();
+    if (!uid || !tenant || userCompanyId !== tenant) return false;
+    const profile = companyData && companyData.profile && typeof companyData.profile === 'object'
+        ? companyData.profile
+        : {};
+    const ownerUid = String(
+        (companyData && (companyData.ownerUid || companyData.adminOwnerUid || companyData.primaryUserUid || companyData.createdBy || companyData.createdByUid))
+        || profile.ownerUid
+        || profile.adminOwnerUid
+        || profile.primaryUserUid
+        || profile.createdBy
+        || profile.createdByUid
+        || ''
+    ).trim();
+    if (ownerUid && ownerUid === uid) return true;
+    const authEmail = sanitizeText((token && token.email) || (userData && userData.email) || '', '').toLowerCase();
+    const companyEmail = sanitizeText(
+        profile.email
+        || profile.emailContato
+        || profile.contactEmail
+        || (companyData && (companyData.email || companyData.emailContato || companyData.contactEmail))
+        || '',
+        ''
+    ).toLowerCase();
+    return !!authEmail && !!companyEmail && authEmail === companyEmail;
+}
+
+async function assertCompanyProfileWriteAccess(context, companyId, userData, token) {
+    if (await isCallerSuperAdmin(context)) return true;
+    const uid = context && context.auth ? String(context.auth.uid || '') : '';
+    const tenant = String(companyId || '').trim();
+    if (!uid || !tenant) {
+        throw new functions.https.HttpsError('permission-denied', 'Empresa inválida para alteração de perfil.');
+    }
+    const resolvedCompanyId = await resolveCompanyIdForUser(
+        uid,
+        sanitizeText((token && token.email) || (userData && userData.email) || '', ''),
+        token || {},
+        userData || {}
+    );
+    if (resolvedCompanyId !== tenant) {
+        throw new functions.https.HttpsError('permission-denied', 'Usuário não pertence à empresa informada.');
+    }
+
+    const [memberSnap, roleSnap, companySnap] = await Promise.all([
+        admin.database().ref(`companies/${tenant}/users/${uid}`).get().catch(() => null),
+        admin.database().ref(`roles/${uid}`).get().catch(() => null),
+        admin.database().ref(`companies/${tenant}`).get().catch(() => null)
+    ]);
+    const memberData = memberSnap && memberSnap.exists() && memberSnap.val() && typeof memberSnap.val() === 'object' ? memberSnap.val() : {};
+    const roleData = roleSnap && roleSnap.exists() && roleSnap.val() && typeof roleSnap.val() === 'object' ? roleSnap.val() : {};
+    const companyData = companySnap && companySnap.exists() && companySnap.val() && typeof companySnap.val() === 'object' ? companySnap.val() : {};
+    if (memberData.active === false || roleData.active === false || userData.adminActive === false) {
+        throw new functions.https.HttpsError('permission-denied', 'Administrador da empresa está inativo.');
+    }
+    const primaryCompanyAccount = isPrimaryCompanyAccountForProfile(uid, tenant, userData, token, companyData);
+    const roleCompanyId = String(roleData.companyId || roleData.companyID || roleData.tenantId || '').trim();
+    const profileData = companyData.profile && typeof companyData.profile === 'object' ? companyData.profile : {};
+    const createdBy = String(companyData.createdBy || companyData.createdByUid || profileData.createdBy || profileData.createdByUid || '').trim();
+    const allowed = roleAllowsCompanyProfileWrite(userData)
+        || roleAllowsCompanyProfileWrite(memberData)
+        || (roleCompanyId === tenant && roleAllowsCompanyProfileWrite(roleData))
+        || permissionAllowsCompanyProfileWrite(userData)
+        || permissionAllowsCompanyProfileWrite(memberData)
+        || permissionAllowsCompanyProfileWrite(roleData)
+        || createdBy === uid
+        || primaryCompanyAccount;
+    if (!allowed) {
+        throw new functions.https.HttpsError('permission-denied', 'Apenas admin da empresa pode alterar o perfil.');
+    }
+    return true;
+}
+
 function buildMirrorUserPatch(baseUser, patch, companyId) {
     const base = baseUser && typeof baseUser === 'object' ? baseUser : {};
     const incoming = patch && typeof patch === 'object' ? patch : {};
@@ -275,7 +465,7 @@ function buildMirrorUserPatch(baseUser, patch, companyId) {
         companyId: String(companyId || ''),
         updatedAt: incoming.updatedAt || new Date().toISOString()
     };
-    const keys = ['subscriptionStatus', 'accountStatus', 'statusReason', 'pendingPayment', 'subscription', 'payments', 'campaignLedger', 'updatedBy', 'role', 'adminPermissions', 'adminActive', 'superadmin', 'readOnlyUntil', 'readOnlyGrantedAt', 'readOnlyGrantedBy', 'readOnlyGraceConsumed', 'readOnlyReason'];
+    const keys = ['subscriptionStatus', 'accountStatus', 'statusReason', 'pendingPayment', 'subscription', 'subscriptionStart', 'subscriptionEnd', 'subscriptionEndDate', 'trialStart', 'trialEnd', 'trialUsed', 'trialConsumed', 'freeTrialUsed', 'adminTrialGrant', 'payments', 'campaignLedger', 'updatedBy', 'role', 'adminPermissions', 'adminActive', 'superadmin', 'readOnlyUntil', 'readOnlyGrantedAt', 'readOnlyGrantedBy', 'readOnlyGraceConsumed', 'readOnlyReason'];
     keys.forEach((k) => {
         if (Object.prototype.hasOwnProperty.call(incoming, k)) out[k] = incoming[k];
         else if (Object.prototype.hasOwnProperty.call(base, k)) out[k] = base[k];
@@ -363,10 +553,162 @@ function toMoney(value, fallback = 0) {
     return Math.round(parsed * 100) / 100;
 }
 
+function toSignedMoney(value, fallback = 0) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.round(parsed * 100) / 100;
+}
+
+function toRatio(value, fallback = 0) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.round(parsed * 10000) / 10000;
+}
+
 function sanitizeText(value, fallback = '') {
     if (value === undefined || value === null) return fallback;
     const out = String(value).trim();
     return out.slice(0, 300);
+}
+
+function normalizePromoCodeValue(value) {
+    return sanitizeText(value || '', '')
+        .toUpperCase()
+        .replace(/[^A-Z0-9_-]/g, '')
+        .slice(0, 40);
+}
+
+const PROMO_ALLOWED_PLAN_KEYS = new Set(['monthly', 'quarterly', 'annual', 'premium']);
+
+function normalizePromoPlanKey(value) {
+    const plan = sanitizeText(value || '', '').toLowerCase();
+    if (plan === 'trimestral') return 'quarterly';
+    if (plan === 'mensal') return 'monthly';
+    if (plan === 'anual') return 'annual';
+    return PROMO_ALLOWED_PLAN_KEYS.has(plan) ? plan : '';
+}
+
+function normalizePromoAllowedPlans(value) {
+    const source = Array.isArray(value)
+        ? value
+        : String(value || '')
+            .split(/[,\s;|]+/)
+            .map((item) => item.trim())
+            .filter(Boolean);
+    const out = [];
+    source.forEach((item) => {
+        const key = normalizePromoPlanKey(item);
+        if (key && !out.includes(key)) out.push(key);
+    });
+    return out;
+}
+
+function promoAppliesToPlan(promo, planId) {
+    const planKey = normalizePromoPlanKey(planId);
+    const allowedPlans = normalizePromoAllowedPlans(
+        promo && (promo.allowedPlans || promo.plans || promo.planIds)
+    );
+    if (!allowedPlans.length) return true;
+    if (allowedPlans.includes(planKey)) return true;
+    if (planKey === 'annual' && allowedPlans.includes('quarterly')) return true;
+    if (planKey === 'quarterly' && allowedPlans.includes('annual')) return true;
+    return false;
+}
+
+function normalizePromoExpiresAt(value, active) {
+    if (value === undefined || value === null || value === '') return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        throw new functions.https.HttpsError('invalid-argument', 'Validade do cupom inválida.');
+    }
+    if (active === true && date.getTime() < Date.now()) {
+        throw new functions.https.HttpsError('failed-precondition', 'Cupom ativo não pode ter validade vencida.');
+    }
+    return date.toISOString();
+}
+
+function normalizePromoCodeAdminPayload(payload, current, actorUid) {
+    const source = payload && typeof payload === 'object' ? payload : {};
+    const existing = current && typeof current === 'object' ? current : {};
+    const nowIso = new Date().toISOString();
+    const code = normalizePromoCodeValue(source.code || existing.code || '');
+    if (code.length < 3) {
+        throw new functions.https.HttpsError('invalid-argument', 'Código do cupom deve ter pelo menos 3 caracteres.');
+    }
+
+    const type = String(source.type || existing.type || 'percent').trim().toLowerCase();
+    if (!['percent', 'fixed'].includes(type)) {
+        throw new functions.https.HttpsError('invalid-argument', 'Tipo de cupom inválido.');
+    }
+
+    const value = toMoney(source.value !== undefined ? source.value : existing.value, 0);
+    if (value <= 0) {
+        throw new functions.https.HttpsError('invalid-argument', 'Valor do cupom deve ser maior que zero.');
+    }
+    if (type === 'percent' && value > 100) {
+        throw new functions.https.HttpsError('invalid-argument', 'Desconto percentual não pode passar de 100%.');
+    }
+    if (type === 'fixed' && value > 100000) {
+        throw new functions.https.HttpsError('invalid-argument', 'Desconto fixo acima do limite permitido.');
+    }
+
+    const maxUsesRaw = source.maxUses !== undefined ? source.maxUses : existing.maxUses;
+    const maxUses = Math.max(0, Math.min(100000, parseInt(maxUsesRaw, 10) || 0));
+    const currentUses = Math.max(0, parseInt(existing.currentUses, 10) || 0);
+    if (maxUses > 0 && currentUses > maxUses) {
+        throw new functions.https.HttpsError('failed-precondition', 'Limite de usos não pode ser menor que o total já utilizado.');
+    }
+
+    const active = source.active === undefined ? existing.active === true : source.active === true;
+    const expiresAt = normalizePromoExpiresAt(
+        source.expiresAt !== undefined ? source.expiresAt : existing.expiresAt,
+        active
+    );
+    const allowedPlans = normalizePromoAllowedPlans(source.allowedPlans || source.plans || source.planIds || existing.allowedPlans || []);
+
+    return {
+        code,
+        type,
+        value,
+        maxUses,
+        currentUses,
+        expiresAt,
+        active,
+        allowedPlans,
+        archived: false,
+        createdAt: existing.createdAt || nowIso,
+        createdBy: existing.createdBy || sanitizeText(actorUid || ''),
+        updatedAt: nowIso,
+        updatedBy: sanitizeText(actorUid || '')
+    };
+}
+
+function compactPromoCodeAuditShape(promo) {
+    const source = promo && typeof promo === 'object' ? promo : {};
+    return {
+        code: normalizePromoCodeValue(source.code || ''),
+        type: sanitizeText(source.type || ''),
+        value: toMoney(source.value || 0, 0),
+        maxUses: Math.max(0, parseInt(source.maxUses, 10) || 0),
+        currentUses: Math.max(0, parseInt(source.currentUses, 10) || 0),
+        active: source.active === true,
+        archived: source.archived === true,
+        expiresAt: source.expiresAt || null,
+        allowedPlans: normalizePromoAllowedPlans(source.allowedPlans || [])
+    };
+}
+
+async function appendPromoCodeAudit(action, actorUid, code, beforePromo, afterPromo) {
+    const payload = {
+        type: 'promo_code',
+        action: sanitizeText(action || 'UNKNOWN', 'UNKNOWN'),
+        promoCode: normalizePromoCodeValue(code || ''),
+        actorUid: sanitizeText(actorUid || ''),
+        at: new Date().toISOString(),
+        before: compactPromoCodeAuditShape(beforePromo || {}),
+        after: compactPromoCodeAuditShape(afterPromo || {})
+    };
+    await admin.database().ref('subscriptionPromoCodeAudit').push(payload);
 }
 
 function normalizeDocumentDigits(value) {
@@ -433,6 +775,225 @@ function sanitizeLongText(value, fallback = '', maxLen = 2_500_000) {
     const out = String(value).trim();
     if (!out) return fallback;
     return out.slice(0, Math.max(0, maxLen));
+}
+
+function stripHtmlTags(value) {
+    return String(value || '')
+        .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function sanitizeSupportText(value, fallback = '', maxLen = 2000) {
+    const clean = stripHtmlTags(value);
+    if (!clean) return fallback;
+    return clean.slice(0, Math.max(0, maxLen));
+}
+
+function isBase64LikeLogo(value) {
+    const raw = String(value || '').trim();
+    return raw.startsWith('data:') || (/^[A-Za-z0-9+/=]+$/.test(raw) && raw.length > 1000);
+}
+
+function sanitizeLogoProfilePayload(payload = {}, current = {}) {
+    const source = payload && typeof payload === 'object' ? payload : {};
+    const existing = current && typeof current === 'object' ? current : {};
+    const logoCandidate = sanitizeLongText(source.logoUrl || source.logoURL || source.logo || existing.logoUrl || existing.logo || '', '', 4096);
+    const logoStoragePath = sanitizeLongText(source.logoStoragePath || source.logoPath || source.storagePath || existing.logoStoragePath || existing.logoPath || '', '', 1024);
+    const logoUrl = sanitizeLongText(source.logoUrl || source.logoURL || (/^https?:\/\//i.test(logoCandidate) ? logoCandidate : '') || existing.logoUrl || '', '', 4096);
+    return {
+        logo: isBase64LikeLogo(logoCandidate) ? '' : (logoUrl || logoStoragePath || logoCandidate),
+        logoUrl: isBase64LikeLogo(logoUrl) ? '' : logoUrl,
+        logoStoragePath,
+        logoPath: logoStoragePath,
+        logoFileName: sanitizeText(source.logoFileName || source.logoName || existing.logoFileName || existing.logoName || '', ''),
+        logoContentType: sanitizeText(source.logoContentType || source.logoMimeType || existing.logoContentType || existing.logoMimeType || '', ''),
+        logoSize: Number(source.logoSize || existing.logoSize || 0) || null,
+        logoUpdatedAt: sanitizeText(source.logoUpdatedAt || existing.logoUpdatedAt || '', '')
+    };
+}
+
+function sanitizeCompanyProfileExtraPayload(payload = {}, current = {}) {
+    const source = payload && typeof payload === 'object' ? payload : {};
+    const existing = current && typeof current === 'object' ? current : {};
+    const email = sanitizeText(source.email || source.emailContato || source.contactEmail || existing.email || existing.emailContato || existing.contactEmail || '', '').toLowerCase();
+    const responsibleName = sanitizeText(
+        source.responsibleName
+        || source.responsavel
+        || source.nomeResponsavel
+        || source.owner
+        || existing.responsibleName
+        || existing.responsavel
+        || existing.nomeResponsavel
+        || existing.owner
+        || '',
+        ''
+    );
+    const zip = sanitizeText(source.zip || source.cep || source.postalCode || existing.zip || existing.cep || existing.postalCode || '', '');
+    const neighborhood = sanitizeText(source.neighborhood || source.bairro || source.district || existing.neighborhood || existing.bairro || existing.district || '', '');
+    const number = sanitizeText(source.number || source.numero || existing.number || existing.numero || '', '');
+    const complement = sanitizeText(source.complement || source.complemento || existing.complement || existing.complemento || '', '');
+    
+    // Novos campos PIX/Bancários para Lâmina de Cobrança
+    const pixChaveCobranca = sanitizeText(source.pixChaveCobranca || existing.pixChaveCobranca || '', '');
+    const pixTipoChaveCobranca = sanitizeText(source.pixTipoChaveCobranca || existing.pixTipoChaveCobranca || '', '');
+    const pixFavorecidoCobranca = sanitizeText(source.pixFavorecidoCobranca || existing.pixFavorecidoCobranca || '', '');
+    const pixBancoCobranca = sanitizeText(source.pixBancoCobranca || existing.pixBancoCobranca || '', '');
+
+    return {
+        email,
+        emailContato: email,
+        responsibleName,
+        responsavel: responsibleName,
+        zip,
+        cep: zip,
+        neighborhood,
+        bairro: neighborhood,
+        number,
+        numero: number,
+        complement,
+        complemento: complement,
+        pixChaveCobranca,
+        pixTipoChaveCobranca,
+        pixFavorecidoCobranca,
+        pixBancoCobranca
+    };
+}
+
+function firstDefinedGeoValue(...values) {
+    for (const value of values) {
+        if (value !== undefined && value !== null) return value;
+    }
+    return '';
+}
+
+function sanitizeGeoCoordinateText(value, min, max) {
+    const raw = sanitizeText(value, '', 40).replace(',', '.');
+    if (!raw) return '';
+    const number = Number(raw);
+    if (!Number.isFinite(number) || number < min || number > max) return null;
+    return number.toFixed(6);
+}
+
+function buildCompanyNavigationUrlServer(latitude, longitude) {
+    const lat = sanitizeGeoCoordinateText(latitude, -90, 90);
+    const lng = sanitizeGeoCoordinateText(longitude, -180, 180);
+    if (!lat || !lng) return '';
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${lat},${lng}`)}`;
+}
+
+function sanitizeCompanyGeolocationPayload(payload = {}, current = {}) {
+    const source = payload && typeof payload === 'object' ? payload : {};
+    const existing = current && typeof current === 'object' ? current : {};
+    const sourceGeo = source.geolocation && typeof source.geolocation === 'object' ? source.geolocation : {};
+    const sourceLocation = source.location && typeof source.location === 'object' ? source.location : {};
+    const existingGeo = existing.geolocation && typeof existing.geolocation === 'object' ? existing.geolocation : {};
+    const existingLocation = existing.location && typeof existing.location === 'object' ? existing.location : {};
+    const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj || {}, key);
+    const hasIncomingGeo = [
+        'latitude',
+        'geoLatitude',
+        'lat',
+        'longitude',
+        'geoLongitude',
+        'lng',
+        'lon',
+        'mapUrl',
+        'navigationUrl',
+        'geolocation',
+        'location'
+    ].some((key) => hasOwn(source, key));
+
+    const rawLatitude = hasIncomingGeo
+        ? firstDefinedGeoValue(source.latitude, source.geoLatitude, source.lat, sourceGeo.latitude, sourceGeo.geoLatitude, sourceGeo.lat, sourceLocation.latitude, sourceLocation.lat)
+        : firstDefinedGeoValue(existing.latitude, existing.geoLatitude, existing.lat, existingGeo.latitude, existingGeo.geoLatitude, existingGeo.lat, existingLocation.latitude, existingLocation.lat);
+    const rawLongitude = hasIncomingGeo
+        ? firstDefinedGeoValue(source.longitude, source.geoLongitude, source.lng, source.lon, sourceGeo.longitude, sourceGeo.geoLongitude, sourceGeo.lng, sourceGeo.lon, sourceLocation.longitude, sourceLocation.lng, sourceLocation.lon)
+        : firstDefinedGeoValue(existing.longitude, existing.geoLongitude, existing.lng, existing.lon, existingGeo.longitude, existingGeo.geoLongitude, existingGeo.lng, existingGeo.lon, existingLocation.longitude, existingLocation.lng, existingLocation.lon);
+
+    const latitudeRawText = sanitizeText(rawLatitude, '', 40);
+    const longitudeRawText = sanitizeText(rawLongitude, '', 40);
+    if (!hasIncomingGeo && !latitudeRawText && !longitudeRawText) return {};
+    if (!latitudeRawText && !longitudeRawText) {
+        return {
+            latitude: '',
+            longitude: '',
+            geoLatitude: '',
+            geoLongitude: '',
+            geoAccuracy: '',
+            geoUpdatedAt: '',
+            geoSource: '',
+            mapUrl: '',
+            navigationUrl: '',
+            geolocation: null
+        };
+    }
+
+    const latitude = sanitizeGeoCoordinateText(rawLatitude, -90, 90);
+    const longitude = sanitizeGeoCoordinateText(rawLongitude, -180, 180);
+    if (!latitude || !longitude) {
+        throw new functions.https.HttpsError('invalid-argument', 'Coordenadas geográficas inválidas.');
+    }
+
+    const mapUrl = buildCompanyNavigationUrlServer(latitude, longitude);
+    const accuracy = sanitizeText(
+        firstDefinedGeoValue(source.geoAccuracy, sourceGeo.accuracy, sourceGeo.geoAccuracy, sourceLocation.accuracy, existing.geoAccuracy, existingGeo.accuracy),
+        '',
+        40
+    );
+    const updatedAt = sanitizeText(
+        firstDefinedGeoValue(source.geoUpdatedAt, sourceGeo.updatedAt, sourceGeo.geoUpdatedAt, sourceLocation.updatedAt, existing.geoUpdatedAt, existingGeo.updatedAt),
+        new Date().toISOString(),
+        80
+    );
+    const geoSource = sanitizeText(
+        firstDefinedGeoValue(source.geoSource, sourceGeo.source, sourceLocation.source, existing.geoSource, existingGeo.source),
+        hasIncomingGeo ? 'manual' : '',
+        80
+    );
+    return {
+        latitude,
+        longitude,
+        geoLatitude: latitude,
+        geoLongitude: longitude,
+        geoAccuracy: accuracy,
+        geoUpdatedAt: updatedAt,
+        geoSource,
+        mapUrl,
+        navigationUrl: mapUrl,
+        geolocation: {
+            latitude: Number(latitude),
+            longitude: Number(longitude),
+            accuracy,
+            updatedAt,
+            source: geoSource,
+            mapUrl,
+            navigationUrl: mapUrl
+        }
+    };
+}
+
+function extractFirebaseStoragePathFromUrlServer(pathOrUrl) {
+    const raw = sanitizeLongText(pathOrUrl, '', 2048);
+    if (!raw) return '';
+    if (/^gs:\/\//i.test(raw)) {
+        return raw.replace(/^gs:\/\/[^/]+\//i, '').replace(/^\/+/, '');
+    }
+    if (!/^https?:\/\//i.test(raw)) return raw.replace(/^\/+/, '');
+    try {
+        const url = new URL(raw);
+        const host = String(url.hostname || '').toLowerCase();
+        const isStorageHost = host.includes('firebasestorage.googleapis.com') || host.endsWith('.firebasestorage.app');
+        if (!isStorageHost) return '';
+        const marker = '/o/';
+        const index = url.pathname.indexOf(marker);
+        if (index < 0) return '';
+        return decodeURIComponent(url.pathname.slice(index + marker.length)).replace(/^\/+/, '');
+    } catch (_) {
+        return '';
+    }
 }
 
 function sanitizeTransactionMeta(rawMeta) {
@@ -555,6 +1116,23 @@ function normalizeSubscriptionSettings(input) {
         freeTrialDays,
         lateGraceDays,
         updatedAt: new Date().toISOString()
+    };
+}
+
+function publicSubscriptionSettingsShape(input) {
+    const settings = normalizeSubscriptionSettings(input || {});
+    return {
+        plans: settings.plans,
+        paymentMethods: settings.paymentMethods,
+        paymentMeta: {
+            supportEmail: settings.paymentMeta && settings.paymentMeta.supportEmail ? settings.paymentMeta.supportEmail : ''
+        },
+        promotion: settings.promotion,
+        campaign: settings.campaign,
+        freeTrialDays: settings.freeTrialDays,
+        lateGraceDays: settings.lateGraceDays,
+        updatedAt: settings.updatedAt,
+        __public: true
     };
 }
 
@@ -698,7 +1276,7 @@ async function pushUserNotification(uid, payload) {
         type: sanitizeText(payload && payload.type ? payload.type : 'info', 'info'),
         read: false,
         createdAt: new Date().toISOString(),
-        source: 'subscription'
+        source: sanitizeText(payload && payload.source ? payload.source : 'subscription', 'subscription')
     };
     await admin.database().ref(`users/${uid}/notifications`).push(item);
 }
@@ -782,7 +1360,7 @@ exports.setCompanyClaim = https.onCall(async (data, context) => {
     const payload = data || {};
     const targetUid = payload.targetUid ? String(payload.targetUid) : '';
     const requestedCompanyId = payload.companyId ? String(payload.companyId) : '';
-    
+
     if (!targetUid) {
         throw new functions.https.HttpsError('invalid-argument', 'targetUid é obrigatório.');
     }
@@ -802,13 +1380,13 @@ exports.setCompanyClaim = https.onCall(async (data, context) => {
         if (callerUid !== targetUid) {
             throw new functions.https.HttpsError('permission-denied', 'Sem permissão para alterar claims de outro usuário.');
         }
-        
+
         // A Fonte da Verdade agora é APENAS o Banco de Dados. O usuário NÃO pode forjar o próprio nó users/$uid devido as novas regras .write
         const storedCompanyId = await getStoredCompanyId(targetUid);
         if (!storedCompanyId) {
             throw new functions.https.HttpsError('permission-denied', 'Usuário não possui uma empresa válida no sistema (companyId ausente).');
         }
-        
+
         // Sobrepõe qualquer tentativa do Frontend de ditar sua empresa se for diferente do Backend (Security Patched)
         resolvedCompanyId = storedCompanyId;
 
@@ -827,28 +1405,28 @@ exports.setCompanyClaim = https.onCall(async (data, context) => {
     try {
         const targetUserRecord = await admin.auth().getUser(targetUid);
         const targetClaims = targetUserRecord.customClaims || {};
-        
+
         // Superadmins nunca assinam como uma empresa padrão no seu claim root (a não ser explicitamente injetado como test)
         const targetLooksSuperAdmin = (
             targetClaims.superadmin === true
             || isSuperAdminUidAllowed(targetUid)
             || isSuperAdminEmail(targetUserRecord.email)
         );
-        
+
         if (targetLooksSuperAdmin) {
             throw new functions.https.HttpsError('failed-precondition', 'Superadmin não deve receber companyId associado a tenant comum.');
         }
 
         // Injeção de Segurança Tripla: companyId + tenantId + subscriptionStatus
-        const nextClaims = { 
-            ...targetClaims, 
+        const nextClaims = {
+            ...targetClaims,
             companyId: resolvedCompanyId,
             tenantId: resolvedCompanyId,
             subscriptionStatus: subscriptionStatus
         };
 
         await admin.auth().setCustomUserClaims(targetUid, nextClaims);
-        
+
         // Sincronizando metadados apenas, pois não permitimos que o usuário manipule o tenant no DB via front
         await applyUserPatchAcrossScopes(targetUid, {
             companyId: resolvedCompanyId,
@@ -856,10 +1434,10 @@ exports.setCompanyClaim = https.onCall(async (data, context) => {
             updatedAt: new Date().toISOString(),
             updatedBy: callerUid
         }, { email: targetUserRecord.email || '' });
-        
-        // Desloga sessoes ociosas/invalidas para forçar atualização do token no client 
+
+        // Desloga sessoes ociosas/invalidas para forçar atualização do token no client
         await admin.auth().revokeRefreshTokens(targetUid);
-        
+
         return { success: true, message: `Custom claim e Assinatura renovadas para o usuário ${targetUid}.`, companyId: resolvedCompanyId, subscriptionStatus };
     } catch (error) {
         console.error(`Erro ao definir custom claim para ${targetUid}:`, error);
@@ -890,32 +1468,36 @@ exports.createCompanyOnboarding = https.onCall(async (data, context) => {
     if (existingCompanyId) {
         throw new functions.https.HttpsError('failed-precondition', 'Usuário já possui empresa vinculada.');
     }
-    let companyId = String(input.id || input.companyId || input.companyID || '').trim();
-    if (!companyId) {
-        companyId = String(Date.now());
-    }
+    let companyId = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
     let companyRef = admin.database().ref(`companies/${companyId}`);
     let companySnap = await companyRef.get();
-    if (companySnap.exists()) {
+    let attempts = 0;
+    while (companySnap.exists() && attempts < 5) {
         companyId = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
         companyRef = admin.database().ref(`companies/${companyId}`);
         companySnap = await companyRef.get();
-        if (companySnap.exists()) {
-            throw new functions.https.HttpsError('already-exists', 'Não foi possível gerar um ID único para empresa.');
-        }
+        attempts += 1;
+    }
+    if (companySnap.exists()) {
+        throw new functions.https.HttpsError('already-exists', 'Não foi possível gerar um ID único para empresa.');
     }
     const nowIso = new Date().toISOString();
+    const logoPayload = sanitizeLogoProfilePayload(input, {});
+    const extraProfilePayload = sanitizeCompanyProfileExtraPayload({ ...input, email }, {});
+    const geoProfilePayload = sanitizeCompanyGeolocationPayload(input, {});
     const companyPayload = {
         id: companyId,
         companyId,
         name,
         cnpj: sanitizeText(input.cnpj || '', ''),
+        stateRegistration: sanitizeText(input.stateRegistration || input.inscricaoEstadual || input.ie || '', ''),
         address: sanitizeText(input.address || '', ''),
         city: sanitizeText(input.city || '', ''),
         state: sanitizeText(input.state || '', ''),
         phone: sanitizeText(input.phone || '', ''),
-        logo: sanitizeText(input.logo || '', ''),
-        logoBase64: sanitizeText(input.logoBase64 || '', ''),
+        ...extraProfilePayload,
+        ...geoProfilePayload,
+        ...logoPayload,
         timestamp: nowIso,
         createdAt: nowIso,
         updatedAt: nowIso,
@@ -924,7 +1506,7 @@ exports.createCompanyOnboarding = https.onCall(async (data, context) => {
     await companyRef.update(companyPayload);
     const userRecord = await admin.auth().getUser(uid);
     const currentClaims = userRecord.customClaims || {};
-    const nextClaims = { ...currentClaims, companyId };
+    const nextClaims = { ...currentClaims, companyId, tenantId: companyId };
     await admin.auth().setCustomUserClaims(uid, nextClaims);
     await applyUserPatchAcrossScopes(uid, {
         companyId,
@@ -935,6 +1517,9 @@ exports.createCompanyOnboarding = https.onCall(async (data, context) => {
         uid,
         email: email || userRecord.email || '',
         companyId,
+        tenantId: companyId,
+        role: 'admin',
+        adminActive: true,
         username: sanitizeText(input.username || userRecord.displayName || '', ''),
         displayName: sanitizeText(input.username || userRecord.displayName || '', ''),
         updatedAt: nowIso
@@ -1029,8 +1614,8 @@ exports.syncMyAdminClaims = https.onCall(async (_data, context) => {
     }
     const uid = context.auth.uid;
     const token = context.auth.token || {};
-    if (token.superadmin === true && !isSuperAdminUidAllowed(uid)) {
-        return { success: true, superadmin: true, changed: false, source: 'token' };
+    if (token.superadmin === true && isSuperAdminUidAllowed(uid)) {
+        return { success: true, superadmin: true, changed: false, source: 'uid_allowlist_token' };
     }
     if (isSuperAdminUidAllowed(uid)) {
         const promoted = await promoteSuperAdminByUid(uid, { removeCompanyIdClaim: true });
@@ -1039,11 +1624,6 @@ exports.syncMyAdminClaims = https.onCall(async (_data, context) => {
     const byEmail = await ensureSuperAdminClaimIfAllowed(uid);
     if (byEmail) {
         return { success: true, superadmin: true, changed: true, source: 'email_allowlist' };
-    }
-    const byDb = await isDbMarkedSuperAdmin(uid);
-    if (byDb) {
-        const promoted = await promoteSuperAdminByUid(uid, { removeCompanyIdClaim: true });
-        return { success: true, superadmin: true, changed: !!(promoted && promoted.changed), source: 'db_marker' };
     }
     return { success: true, superadmin: false, changed: false, source: 'none' };
 });
@@ -1066,7 +1646,10 @@ exports.auditAdminClaimsInconsistencies = https.onCall(async (data, context) => 
         const hasSuperadmin = claims.superadmin === true;
         const hasCompanyIdClaim = !!(claims.companyId || claims.companyID || claims.tenantId);
         const isAdminPanelUser = claims.adminPanelUser === true;
-        const isGlobalAllowlisted = isSuperAdminEmail(email);
+        const isGlobalAllowlisted = isSuperAdminEmail(email) || isSuperAdminUidAllowed(userRecord.uid);
+        if (hasSuperadmin && !isGlobalAllowlisted) {
+            issues.push('superadmin=true fora da allowlist global');
+        }
         if (isAdminPanelUser && !hasSuperadmin) {
             issues.push('adminPanelUser=true sem superadmin=true');
         }
@@ -1307,11 +1890,11 @@ exports.updateAdminSubUserPermissions = https.onCall(async (data, context) => {
 });
 
 exports.getSubscriptionSettings = https.onCall(async (_data, context) => {
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem consultar configurações.');
-    }
     const snapshot = await admin.database().ref(SUBSCRIPTION_SETTINGS_PATH).get();
     const normalized = normalizeSubscriptionSettings(snapshot.exists() ? snapshot.val() : {});
+    if (!context.auth) {
+        return { success: true, settings: publicSubscriptionSettingsShape(normalized), public: true };
+    }
     return { success: true, settings: normalized };
 });
 
@@ -1368,6 +1951,9 @@ exports.upsertCompanyProfile = https.onCall(async (data, context) => {
             );
         }
     }
+    const logoPayload = sanitizeLogoProfilePayload(payload, current);
+    const extraProfilePayload = sanitizeCompanyProfileExtraPayload(payload, current);
+    const geoProfilePayload = sanitizeCompanyGeolocationPayload(payload, current);
     const nextProfile = {
         ...current,
         id: companyId,
@@ -1379,8 +1965,9 @@ exports.upsertCompanyProfile = https.onCall(async (data, context) => {
         city: sanitizeText(payload.city || payload.cidade || current.city || current.cidade || '', ''),
         state: sanitizeText(payload.state || payload.estado || payload.uf || current.state || current.estado || current.uf || '', ''),
         phone: sanitizeText(payload.phone || payload.telefone || current.phone || current.telefone || '', ''),
-        logo: sanitizeLongText(payload.logo || current.logo || '', ''),
-        logoBase64: sanitizeLongText(payload.logoBase64 || current.logoBase64 || '', ''),
+        ...extraProfilePayload,
+        ...geoProfilePayload,
+        ...logoPayload,
         updatedAt: new Date().toISOString(),
         updatedBy: context.auth.uid
     };
@@ -1399,37 +1986,24 @@ exports.updateMyCompanyProfile = https.onCall(async (data, context) => {
     const userData = userSnap.exists() && userSnap.val() && typeof userSnap.val() === 'object'
         ? userSnap.val()
         : {};
-    const companyId = sanitizeText(
-        payload.companyId
-        || payload.id
-        || userData.companyId
-        || userData.companyID
-        || userData.tenantId
-        || token.companyId
-        || token.companyID
-        || token.tenantId
-        || '',
-        ''
-    );
+    const requestedCompanyId = sanitizeText(payload.companyId || payload.id || payload.companyID || payload.tenantId || '', '');
+    const companyId = await resolveCompanyIdForUser(uid, sanitizeText(token.email || userData.email || '', ''), token, userData);
     if (!companyId) {
         throw new functions.https.HttpsError('failed-precondition', 'Usuário sem companyId válido.');
     }
-    const subscriptionStatus = String(
-        userData.subscriptionStatus
-        || token.subscriptionStatus
-        || userData.status
-        || ''
-    ).trim().toLowerCase();
-    const canWrite = token.superadmin === true || subscriptionStatus === 'active' || subscriptionStatus === 'trial_active';
-    if (!canWrite) {
-        throw new functions.https.HttpsError('permission-denied', `Assinatura sem permissão de escrita: ${subscriptionStatus || 'vazio'}`);
+    if (requestedCompanyId && requestedCompanyId !== companyId) {
+        throw new functions.https.HttpsError('permission-denied', 'companyId informado não pertence ao usuário autenticado.');
     }
+    await assertCompanyProfileWriteAccess(context, companyId, userData, token);
     const profileRef = admin.database().ref(`companies/${companyId}/profile`);
     const currentSnap = await profileRef.get();
     const current = currentSnap.exists() && currentSnap.val() && typeof currentSnap.val() === 'object'
         ? currentSnap.val()
         : {};
     const preservedCnpj = sanitizeText(current.cnpj || current.cnpjCpf || current.cpfCnpj || current.documento || '', '');
+    const logoPayload = sanitizeLogoProfilePayload(payload, current);
+    const extraProfilePayload = sanitizeCompanyProfileExtraPayload(payload, current);
+    const geoProfilePayload = sanitizeCompanyGeolocationPayload(payload, current);
     const nextProfile = {
         ...current,
         id: companyId,
@@ -1441,13 +2015,1571 @@ exports.updateMyCompanyProfile = https.onCall(async (data, context) => {
         city: sanitizeText(payload.city || payload.cidade || current.city || current.cidade || '', ''),
         state: sanitizeText(payload.state || payload.estado || payload.uf || current.state || current.estado || current.uf || '', ''),
         phone: sanitizeText(payload.phone || payload.telefone || current.phone || current.telefone || '', ''),
-        logo: sanitizeLongText(payload.logo || current.logo || '', ''),
-        logoBase64: sanitizeLongText(payload.logoBase64 || current.logoBase64 || '', ''),
+        ...extraProfilePayload,
+        ...geoProfilePayload,
+        ...logoPayload,
         updatedAt: new Date().toISOString(),
         updatedBy: uid
     };
     await profileRef.set(nextProfile);
     return { success: true, companyId, profile: nextProfile };
+});
+
+function normalizeSelfProfilePayload(payload) {
+    const source = payload && typeof payload === 'object' ? payload : {};
+    const hasOwn = (key) => Object.prototype.hasOwnProperty.call(source, key);
+    const trimTo = (value, max) => {
+        if (value === undefined || value === null) return '';
+        return String(value).trim().slice(0, max);
+    };
+    const patch = {};
+    const authPatch = {};
+
+    if (hasOwn('displayName') || hasOwn('name')) {
+        const displayName = trimTo(source.displayName || source.name || '', 120);
+        if (!displayName) {
+            throw new functions.https.HttpsError('invalid-argument', 'Nome completo é obrigatório para atualizar o perfil.');
+        }
+        patch.displayName = displayName;
+        patch.name = displayName;
+        authPatch.displayName = displayName;
+    }
+    if (hasOwn('username')) {
+        const username = trimTo(source.username || '', 80);
+        if (!username) {
+            throw new functions.https.HttpsError('invalid-argument', 'Nome de usuário é obrigatório para atualizar o perfil.');
+        }
+        patch.username = username;
+    }
+    if (hasOwn('phone')) {
+        const phone = trimTo(source.phone || '', 40);
+        patch.phone = phone;
+        patch.telefone = phone;
+    }
+    if (hasOwn('whatsapp')) {
+        patch.whatsapp = trimTo(source.whatsapp || '', 40);
+    }
+    if (hasOwn('photoURL')) {
+        const photoURL = trimTo(source.photoURL || '', 2048);
+        patch.photoURL = photoURL || null;
+        authPatch.photoURL = photoURL || null;
+    }
+
+    const editableKeys = Object.keys(patch);
+    if (!editableKeys.length) {
+        throw new functions.https.HttpsError('invalid-argument', 'Nenhum campo cadastral seguro foi informado.');
+    }
+
+    const now = new Date().toISOString();
+    patch.updatedAt = now;
+    patch.lastUpdated = now;
+    patch.profileUpdatedAt = now;
+    return { patch, authPatch };
+}
+
+exports.updateMyUserProfile = https.onCall(async (data, context) => {
+    if (!context.auth || !context.auth.uid) {
+        throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem atualizar o próprio perfil.');
+    }
+    const uid = String(context.auth.uid || '').trim();
+    const token = context.auth.token || {};
+    const { patch, authPatch } = normalizeSelfProfilePayload(data);
+
+    if (Object.keys(authPatch).length) {
+        await admin.auth().updateUser(uid, authPatch);
+    }
+
+    const sync = await applyUserPatchAcrossScopes(uid, patch, {
+        email: sanitizeText(token.email || '', '')
+    });
+    return {
+        success: true,
+        uid,
+        companyId: sync && sync.companyId ? sync.companyId : '',
+        profile: patch
+    };
+});
+
+exports.getCompanyLogoDataUrl = https.onCall(async (data, context) => {
+    if (!context.auth || !context.auth.uid) {
+        throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem carregar a logo da empresa.');
+    }
+
+    const uid = context.auth.uid;
+    const token = context.auth.token || {};
+    const payload = data && typeof data === 'object' ? data : {};
+    const userSnap = await admin.database().ref(`users/${uid}`).get();
+    const userData = userSnap.exists() && userSnap.val() && typeof userSnap.val() === 'object'
+        ? userSnap.val()
+        : {};
+    const isSuperAdmin = await isCallerSuperAdmin(context);
+    const requestedCompanyId = sanitizeText(payload.companyId || payload.companyID || payload.tenantId || '', '');
+    const companyId = isSuperAdmin && requestedCompanyId
+        ? requestedCompanyId
+        : await resolveCompanyIdForUser(uid, sanitizeText(token.email || userData.email || '', ''), token, userData);
+
+    if (!companyId) {
+        throw new functions.https.HttpsError('failed-precondition', 'Usuário sem companyId/tenantId válido para carregar logo.');
+    }
+
+    const storagePath = extractFirebaseStoragePathFromUrlServer(
+        payload.storagePath || payload.path || payload.logoStoragePath || payload.logoPath || payload.logoUrl || payload.url || ''
+    );
+    if (!storagePath || storagePath.includes('..') || storagePath.includes('//')) {
+        throw new functions.https.HttpsError('invalid-argument', 'Caminho da logo é inválido.');
+    }
+
+    const expectedPrefix = `companies/${companyId}/profile/logo/`;
+    if (!storagePath.startsWith(expectedPrefix)) {
+        throw new functions.https.HttpsError('permission-denied', 'Logo solicitada não pertence ao tenant autenticado.');
+    }
+
+    const maxBytes = Math.max(1, Math.min(parseInt(payload.maxBytes, 10) || (2 * 1024 * 1024), 2 * 1024 * 1024));
+    let file;
+    try {
+        file = admin.storage().bucket().file(storagePath);
+    } catch (error) {
+        throw new functions.https.HttpsError(
+            'failed-precondition',
+            'Bucket de Storage não configurado para carregar logo da empresa.',
+            { storageBucket: DEFAULT_STORAGE_BUCKET || null }
+        );
+    }
+    let metadata;
+    try {
+        const result = await file.getMetadata();
+        metadata = result && result[0] ? result[0] : {};
+    } catch (error) {
+        throw new functions.https.HttpsError('not-found', 'Logo da empresa não encontrada no Storage.');
+    }
+
+    const contentType = sanitizeText(metadata.contentType || '', '');
+    if (!/^image\/(png|jpe?g|webp)$/i.test(contentType)) {
+        throw new functions.https.HttpsError('failed-precondition', 'Logo da empresa precisa ser PNG, JPG ou WEBP.');
+    }
+    const size = Number(metadata.size || 0);
+    if (size > maxBytes) {
+        throw new functions.https.HttpsError('failed-precondition', 'Logo da empresa excede o tamanho permitido para impressão.');
+    }
+
+    let buffer;
+    try {
+        const result = await file.download();
+        buffer = result && result[0] ? result[0] : Buffer.alloc(0);
+    } catch (downloadError) {
+        try {
+            buffer = await readStorageFileStreamToBuffer(file, maxBytes);
+        } catch (streamError) {
+            console.error('Falha ao baixar logo da empresa do Storage', {
+                companyId,
+                storagePath,
+                storageBucket: DEFAULT_STORAGE_BUCKET || null,
+                downloadMessage: downloadError && downloadError.message ? downloadError.message : String(downloadError),
+                downloadCode: downloadError && downloadError.code ? downloadError.code : null,
+                streamMessage: streamError && streamError.message ? streamError.message : String(streamError),
+                streamCode: streamError && streamError.code ? streamError.code : null
+            });
+            throw new functions.https.HttpsError(
+                'failed-precondition',
+                'Falha ao baixar logo da empresa do Storage para impressão. Verifique as permissões do bucket e tente novamente.',
+                {
+                    storageBucket: DEFAULT_STORAGE_BUCKET || null,
+                    code: streamError && streamError.code ? String(streamError.code) : (downloadError && downloadError.code ? String(downloadError.code) : '')
+                }
+            );
+        }
+    }
+    if (!buffer.length || buffer.length > maxBytes) {
+        console.error('Falha ao baixar logo da empresa do Storage', {
+            companyId,
+            storagePath,
+            storageBucket: DEFAULT_STORAGE_BUCKET || null,
+            message: 'Buffer vazio ou acima do limite depois do download.',
+            size: buffer.length,
+            maxBytes
+        });
+        throw new functions.https.HttpsError(
+            'failed-precondition',
+            'Logo da empresa inválida para impressão.',
+            {
+                storageBucket: DEFAULT_STORAGE_BUCKET || null
+            }
+        );
+    }
+
+    return {
+        success: true,
+        companyId,
+        storagePath,
+        contentType,
+        size: buffer.length,
+        dataUrl: `data:${contentType};base64,${buffer.toString('base64')}`
+    };
+});
+
+const SUPPORT_STATUS_VALUES = new Set(['open', 'waiting_support', 'waiting_customer', 'resolved', 'closed']);
+const SUPPORT_PRIORITY_VALUES = new Set(['low', 'normal', 'high', 'critical']);
+const SUPPORT_CREATE_LIMIT_PER_DAY = 20;
+const SUPPORT_MESSAGE_LIMIT_PER_DAY = 120;
+const SUPPORT_ATTACHMENT_MAX_COUNT = 3;
+const SUPPORT_ATTACHMENT_MAX_BYTES = 6 * 1024 * 1024;
+const SUPPORT_ATTACHMENT_ALLOWED_TYPES = new Set([
+    'image/png',
+    'image/jpeg',
+    'image/jpg',
+    'image/webp',
+    'image/gif',
+    'application/pdf'
+]);
+const PUBLIC_SUPPORT_EMAIL_LIMIT_PER_DAY = 8;
+const SUPPORT_ADMIN_URL = process.env.SUPPORT_ADMIN_URL || 'https://sisweb-7ce82.web.app/admin.html?tab=support';
+
+function parseSupportEmailList(value) {
+    return String(value || '')
+        .split(/[,\s;]+/)
+        .map((item) => item.trim().toLowerCase())
+        .filter((item) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item));
+}
+
+function normalizeCloudBillingBudgetMessage(message) {
+    let payload = {};
+    try {
+        if (message && message.json && typeof message.json === 'object') payload = message.json;
+    } catch (_) {}
+    if (!payload || !Object.keys(payload).length) {
+        try {
+            const raw = message && message.data ? Buffer.from(message.data, 'base64').toString('utf8') : '';
+            payload = raw ? JSON.parse(raw) : {};
+        } catch (_) {
+            payload = {};
+        }
+    }
+    const costAmount = Number(payload.costAmount || payload.cost_amount || 0);
+    const budgetAmount = Number(payload.budgetAmount || payload.budget_amount || 0);
+    const alertThresholdExceeded = Number(payload.alertThresholdExceeded || payload.alert_threshold_exceeded || 0);
+    const forecastThresholdExceeded = Number(payload.forecastThresholdExceeded || payload.forecast_threshold_exceeded || 0);
+    const usagePercent = budgetAmount > 0 ? costAmount / budgetAmount : Math.max(alertThresholdExceeded, forecastThresholdExceeded, 0);
+    let severity = 'info';
+    if (Math.max(usagePercent, alertThresholdExceeded, forecastThresholdExceeded) >= 1) severity = 'error';
+    else if (Math.max(usagePercent, alertThresholdExceeded, forecastThresholdExceeded) >= 0.8) severity = 'warning';
+    return {
+        raw: payload,
+        budgetDisplayName: sanitizeText(payload.budgetDisplayName || payload.budget_display_name || 'Google Cloud Billing', 'Google Cloud Billing'),
+        costAmount: Number.isFinite(costAmount) ? costAmount : 0,
+        budgetAmount: Number.isFinite(budgetAmount) ? budgetAmount : 0,
+        budgetAmountType: sanitizeText(payload.budgetAmountType || payload.budget_amount_type || '', ''),
+        currencyCode: sanitizeText(payload.currencyCode || payload.currency_code || 'BRL', 'BRL'),
+        costIntervalStart: sanitizeText(payload.costIntervalStart || payload.cost_interval_start || '', ''),
+        alertThresholdExceeded: Number.isFinite(alertThresholdExceeded) ? alertThresholdExceeded : 0,
+        forecastThresholdExceeded: Number.isFinite(forecastThresholdExceeded) ? forecastThresholdExceeded : 0,
+        usagePercent: Number.isFinite(usagePercent) ? usagePercent : 0,
+        severity,
+        receivedAt: new Date().toISOString()
+    };
+}
+
+function normalizeBudgetNameKey(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+}
+
+function isOperationalCloudBillingBudgetName(value) {
+    return CLOUD_BILLING_OPERATIONAL_BUDGET_NAMES.has(normalizeBudgetNameKey(value));
+}
+
+function shouldPreferIncomingBillingBudget(previousSummary, normalized) {
+    const incomingName = normalizeBudgetNameKey(normalized && normalized.budgetDisplayName);
+    if (!isOperationalCloudBillingBudgetName(incomingName)) return false;
+    if (!previousSummary || typeof previousSummary !== 'object') return true;
+    if (!previousSummary.budgetDisplayName) return true;
+    const previousName = normalizeBudgetNameKey(previousSummary.budgetDisplayName);
+    if (!isOperationalCloudBillingBudgetName(previousName)) return true;
+    if (incomingName === 'firebase project sisweb-7ce82') return true;
+    if (previousName === 'firebase project sisweb-7ce82' && incomingName !== previousName) return false;
+    const incomingCost = toMoney(normalized && normalized.costAmount, 0);
+    const previousBudgetCost = toMoney(previousSummary.budgetReportedCostAmount || previousSummary.costAmount || 0, 0);
+    if (incomingCost > 0 && previousBudgetCost <= 0) return true;
+    if (incomingCost <= 0 && previousBudgetCost > 0) return false;
+    return true;
+}
+
+function normalizeBigQueryNumber(value, fallback = 0) {
+    if (value && typeof value === 'object' && Object.prototype.hasOwnProperty.call(value, 'value')) {
+        return normalizeBigQueryNumber(value.value, fallback);
+    }
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeCloudBillingCostRow(row, index) {
+    const service = sanitizeText(row && row.service, 'Google Cloud');
+    const sku = sanitizeText(row && row.sku, 'SKU');
+    const region = sanitizeText(row && row.region, '');
+    return {
+        id: `svc_${String(index + 1).padStart(3, '0')}`,
+        service,
+        sku,
+        region,
+        grossCost: toMoney(normalizeBigQueryNumber(row && row.grossCost), 0),
+        credits: toSignedMoney(normalizeBigQueryNumber(row && row.credits), 0),
+        netCost: toSignedMoney(normalizeBigQueryNumber(row && row.netCost), 0),
+        currencyCode: sanitizeText(row && row.currency, 'BRL')
+    };
+}
+
+function normalizeCloudBillingSeriesRow(row) {
+    return {
+        label: sanitizeText(row && row.label, ''),
+        amount: toSignedMoney(normalizeBigQueryNumber(row && row.amount), 0),
+        currencyCode: sanitizeText(row && row.currency, 'BRL')
+    };
+}
+
+function objectByKey(rows, keyBuilder) {
+    const out = {};
+    (Array.isArray(rows) ? rows : []).forEach((row, index) => {
+        const key = sanitizeFirebaseKey(typeof keyBuilder === 'function' ? keyBuilder(row, index) : `item_${index + 1}`);
+        if (key) out[key] = row;
+    });
+    return out;
+}
+
+function sanitizeFirebaseKey(value) {
+    return String(value || '')
+        .trim()
+        .replace(/[.#$/[\]]/g, '_')
+        .replace(/\s+/g, '_')
+        .slice(0, 120);
+}
+
+async function bigQueryTableExists(bigquery, datasetId, tableId) {
+    try {
+        const [exists] = await bigquery.dataset(datasetId).table(tableId).exists();
+        return !!exists;
+    } catch (error) {
+        const message = String((error && error.message) || error || '');
+        if (/access denied|permission/i.test(message)) {
+            throw new HttpsErrorV2('permission-denied', `Sem permissão para ler BigQuery: ${message}`);
+        }
+        return false;
+    }
+}
+
+function buildCloudBillingServiceCostQuery(days) {
+    const safeDays = Math.max(7, Math.min(370, parseInt(days, 10) || 30));
+    return `
+SELECT
+  service.description AS service,
+  sku.description AS sku,
+  IFNULL(location.region, '') AS region,
+  ROUND(SUM(cost), 2) AS grossCost,
+  ROUND(SUM(IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) AS c), 0)), 2) AS credits,
+  ROUND(SUM(cost) + SUM(IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) AS c), 0)), 2) AS netCost,
+  ANY_VALUE(currency) AS currency
+FROM \`${CLOUD_BILLING_PROJECT_ID}.${CLOUD_BILLING_DATASET_ID}.${CLOUD_BILLING_STANDARD_TABLE_ID}\`
+WHERE project.id = @projectId
+  AND usage_start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL ${safeDays} DAY)
+GROUP BY service, sku, region
+HAVING ABS(grossCost) > 0 OR ABS(netCost) > 0
+ORDER BY netCost DESC
+LIMIT 50`;
+}
+
+function buildCloudBillingDailySeriesQuery(days) {
+    const safeDays = Math.max(7, Math.min(90, parseInt(days, 10) || 45));
+    return `
+SELECT
+  FORMAT_DATE('%Y-%m-%d', DATE(usage_start_time)) AS label,
+  ROUND(SUM(cost) + SUM(IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) AS c), 0)), 2) AS amount,
+  ANY_VALUE(currency) AS currency
+FROM \`${CLOUD_BILLING_PROJECT_ID}.${CLOUD_BILLING_DATASET_ID}.${CLOUD_BILLING_STANDARD_TABLE_ID}\`
+WHERE project.id = @projectId
+  AND usage_start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL ${safeDays} DAY)
+GROUP BY label
+ORDER BY label ASC`;
+}
+
+function buildCloudBillingMonthlySeriesQuery() {
+    return `
+SELECT
+  invoice.month AS label,
+  ROUND(SUM(cost) + SUM(IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) AS c), 0)), 2) AS amount,
+  ANY_VALUE(currency) AS currency
+FROM \`${CLOUD_BILLING_PROJECT_ID}.${CLOUD_BILLING_DATASET_ID}.${CLOUD_BILLING_STANDARD_TABLE_ID}\`
+WHERE project.id = @projectId
+  AND usage_start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 370 DAY)
+GROUP BY label
+ORDER BY label DESC
+LIMIT 12`;
+}
+
+function getNestedObjectValue(source, path) {
+    return String(path || '').split('.').filter(Boolean).reduce((current, key) => {
+        if (!current || typeof current !== 'object') return null;
+        return current[key];
+    }, source || {});
+}
+
+function countCollectionItems(value) {
+    if (!value) return 0;
+    if (Array.isArray(value)) return value.filter((item) => item !== undefined && item !== null).length;
+    if (typeof value === 'object') return Object.keys(value).filter((key) => value[key] !== undefined && value[key] !== null).length;
+    return 0;
+}
+
+function normalizeCompanyBillingName(companyId, company) {
+    const profile = company && company.profile && typeof company.profile === 'object' ? company.profile : {};
+    const legacy = company && company.companies && typeof company.companies === 'object' && !Array.isArray(company.companies)
+        ? company.companies
+        : {};
+    return sanitizeText(
+        (profile && (profile.name || profile.companyName || profile.fantasyName || profile.razaoSocial))
+        || (legacy && (legacy.name || legacy.companyName || legacy.fantasyName || legacy.razaoSocial))
+        || (company && (company.name || company.companyName || company.fantasyName || company.razaoSocial))
+        || companyId,
+        companyId
+    );
+}
+
+function buildEmptyCompanyUsageMetrics() {
+    return {
+        users: 0,
+        masterData: 0,
+        transactions: 0,
+        inventory: 0,
+        payroll: 0,
+        support: 0,
+        totalRecords: 0,
+        weightedUsageUnits: 0
+    };
+}
+
+function buildCompanyUsageCostRows(companiesMap, usersMap, supportMap, baseCostAmount, currencyCode) {
+    const companies = companiesMap && typeof companiesMap === 'object' ? companiesMap : {};
+    const users = usersMap && typeof usersMap === 'object' ? usersMap : {};
+    const supportTickets = supportMap && typeof supportMap === 'object' ? supportMap : {};
+    const companyIds = new Set(Object.keys(companies));
+    Object.keys(users).forEach((uid) => {
+        const user = users[uid] || {};
+        const companyId = sanitizeText(user.companyId || user.companyID || user.tenantId || '', '');
+        if (companyId) companyIds.add(companyId);
+    });
+    Object.keys(supportTickets).forEach((companyId) => {
+        if (companyId) companyIds.add(companyId);
+    });
+
+    const userCountByCompany = {};
+    Object.keys(users).forEach((uid) => {
+        const user = users[uid] || {};
+        const companyId = sanitizeText(user.companyId || user.companyID || user.tenantId || '', '');
+        if (!companyId) return;
+        userCountByCompany[companyId] = (userCountByCompany[companyId] || 0) + 1;
+    });
+
+    const rows = Array.from(companyIds).map((companyId) => {
+        const company = companies[companyId] && typeof companies[companyId] === 'object' ? companies[companyId] : {};
+        const metrics = buildEmptyCompanyUsageMetrics();
+        const companyUsersCount = countCollectionItems(company.users);
+        metrics.users = Math.max(companyUsersCount, userCountByCompany[companyId] || 0);
+        metrics.masterData = [
+            'clients',
+            'fornecedores',
+            'produtos',
+            'especies'
+        ].reduce((sum, path) => sum + countCollectionItems(getNestedObjectValue(company, path)), 0);
+        metrics.transactions = [
+            'romaneios.tora',
+            'romaneios.pct',
+            'romaneios.tl',
+            'romaneios.pes',
+            'romaneiosTora',
+            'romaneiosPct',
+            'pedidosVenda',
+            'pedidosCompra',
+            'vendas.pedidos',
+            'vendas.pagamentos_carrego',
+            'financas.receber',
+            'financas.pagar'
+        ].reduce((sum, path) => sum + countCollectionItems(getNestedObjectValue(company, path)), 0);
+        metrics.inventory = [
+            'estoqueTorasAtual',
+            'estoqueProdutos',
+            'movimentacoesToras',
+            'movimentacoesProdutos',
+            'rastreabilidade'
+        ].reduce((sum, path) => sum + countCollectionItems(getNestedObjectValue(company, path)), 0);
+        metrics.payroll = [
+            'funcionarios',
+            'folhas',
+            'folha.funcionarios',
+            'folha.bancoHoras',
+            'folha.cargos'
+        ].reduce((sum, path) => sum + countCollectionItems(getNestedObjectValue(company, path)), 0);
+        metrics.support = countCollectionItems(supportTickets[companyId]);
+        metrics.totalRecords = metrics.users + metrics.masterData + metrics.transactions + metrics.inventory + metrics.payroll + metrics.support;
+        metrics.weightedUsageUnits = toSignedMoney(
+            (metrics.users * 10)
+            + (metrics.masterData * 1)
+            + (metrics.transactions * 4)
+            + (metrics.inventory * 2)
+            + (metrics.payroll * 3)
+            + (metrics.support * 2),
+            0
+        );
+        return {
+            companyId,
+            companyName: normalizeCompanyBillingName(companyId, company),
+            currencyCode: currencyCode || 'BRL',
+            ...metrics
+        };
+    });
+
+    const activeRows = rows.filter((row) => row.totalRecords > 0 || row.weightedUsageUnits > 0);
+    const totalWeightedUsageUnits = activeRows.reduce((sum, row) => sum + Number(row.weightedUsageUnits || 0), 0);
+    activeRows.forEach((row) => {
+        const share = totalWeightedUsageUnits > 0 ? Number(row.weightedUsageUnits || 0) / totalWeightedUsageUnits : 0;
+        row.usageShare = toRatio(share, 0);
+        row.estimatedCostAmount = toSignedMoney(Math.max(0, Number(baseCostAmount || 0)) * share, 0);
+    });
+    activeRows.sort((a, b) => {
+        const costDiff = Number(b.estimatedCostAmount || 0) - Number(a.estimatedCostAmount || 0);
+        if (costDiff) return costDiff;
+        return Number(b.weightedUsageUnits || 0) - Number(a.weightedUsageUnits || 0);
+    });
+    return { rows: activeRows, totalWeightedUsageUnits };
+}
+
+exports.ingestCloudBillingBudgetNotification = onMessagePublished(
+    { topic: CLOUD_BILLING_BUDGET_TOPIC, region: 'us-central1' },
+    async (event) => {
+        const message = event && event.data && event.data.message ? event.data.message : (event && event.data ? event.data : {});
+        const normalized = normalizeCloudBillingBudgetMessage(message);
+        const eventId = sanitizeText((event && event.id) || crypto.randomBytes(8).toString('hex'), crypto.randomBytes(8).toString('hex'));
+        const previousSummarySnap = await admin.database().ref('system/googleCloudBilling/summary').get().catch(() => null);
+        const previousSummary = previousSummarySnap && previousSummarySnap.exists() ? (previousSummarySnap.val() || {}) : {};
+        const preferIncomingBudget = shouldPreferIncomingBillingBudget(previousSummary, normalized);
+        const isIncomingOperationalBudget = isOperationalCloudBillingBudgetName(normalized.budgetDisplayName);
+        const budgetForSummary = preferIncomingBudget ? normalized : {
+            ...normalized,
+            budgetDisplayName: previousSummary.budgetDisplayName || normalized.budgetDisplayName,
+            budgetAmount: toMoney(previousSummary.budgetAmount || normalized.budgetAmount, normalized.budgetAmount),
+            budgetAmountType: previousSummary.budgetAmountType || normalized.budgetAmountType,
+            currencyCode: previousSummary.currencyCode || normalized.currencyCode,
+            costIntervalStart: previousSummary.costIntervalStart || normalized.costIntervalStart,
+            alertThresholdExceeded: toMoney(previousSummary.alertThresholdExceeded || 0, normalized.alertThresholdExceeded),
+            forecastThresholdExceeded: toMoney(previousSummary.forecastThresholdExceeded || 0, normalized.forecastThresholdExceeded),
+            usagePercent: toMoney(previousSummary.usagePercent || 0, normalized.usagePercent),
+            severity: previousSummary.severity || normalized.severity
+        };
+        const hasBigQueryCost = !!(previousSummary && previousSummary.lastBigQuerySyncAt);
+        const summaryCostAmount = hasBigQueryCost ? toMoney(previousSummary.costAmount || budgetForSummary.costAmount, budgetForSummary.costAmount) : budgetForSummary.costAmount;
+        const summaryUsagePercent = budgetForSummary.budgetAmount > 0 ? summaryCostAmount / budgetForSummary.budgetAmount : budgetForSummary.usagePercent;
+        let summarySeverity = budgetForSummary.severity;
+        if (summaryUsagePercent >= 1) summarySeverity = 'error';
+        else if (summaryUsagePercent >= 0.8) summarySeverity = 'warning';
+        const updates = {};
+        updates[`system/googleCloudBilling/budgetNotifications/${eventId}`] = normalized;
+        updates['system/googleCloudBilling/summary'] = {
+            ...(previousSummary && typeof previousSummary === 'object' ? previousSummary : {}),
+            source: hasBigQueryCost ? 'cloud-billing-budget-pubsub+bigquery-export' : 'cloud-billing-budget-pubsub',
+            topic: CLOUD_BILLING_BUDGET_TOPIC,
+            projectId: CLOUD_BILLING_PROJECT_ID,
+            lastNotificationAt: normalized.receivedAt,
+            budgetDisplayName: budgetForSummary.budgetDisplayName,
+            budgetReportedCostAmount: budgetForSummary.costAmount,
+            ignoredBudgetDisplayName: preferIncomingBudget ? '' : normalized.budgetDisplayName,
+            ignoredBudgetCostAmount: preferIncomingBudget ? 0 : normalized.costAmount,
+            ignoredBudgetNotificationAt: preferIncomingBudget ? '' : normalized.receivedAt,
+            costAmount: summaryCostAmount,
+            budgetAmount: budgetForSummary.budgetAmount,
+            budgetAmountType: budgetForSummary.budgetAmountType,
+            currencyCode: budgetForSummary.currencyCode,
+            costIntervalStart: budgetForSummary.costIntervalStart,
+            alertThresholdExceeded: budgetForSummary.alertThresholdExceeded,
+            forecastThresholdExceeded: budgetForSummary.forecastThresholdExceeded,
+            usagePercent: summaryUsagePercent,
+            severity: summarySeverity,
+            billingUrl: CLOUD_BILLING_LINKED_ACCOUNT_URL,
+            budgetsUrl: CLOUD_BILLING_BUDGETS_URL,
+            reportsUrl: CLOUD_BILLING_REPORTS_URL,
+            costBreakdownUrl: CLOUD_BILLING_COST_BREAKDOWN_URL,
+            cudAnalysisUrl: CLOUD_BILLING_CUD_ANALYSIS_URL,
+            documentsUrl: CLOUD_BILLING_DOCUMENTS_URL,
+            transactionsUrl: CLOUD_BILLING_TRANSACTIONS_URL
+        };
+        if (preferIncomingBudget && isIncomingOperationalBudget && (normalized.severity === 'warning' || normalized.severity === 'error')) {
+            updates['system/operationalAlerts/firebaseBilling/cloudBudget'] = {
+                status: normalized.severity === 'error' ? 'blocked' : 'open',
+                severity: normalized.severity,
+                source: 'cloud-billing-budget-pubsub',
+                message: `Orçamento ${normalized.budgetDisplayName} atingiu ${(normalized.usagePercent * 100).toFixed(1)}% do limite configurado.`,
+                budgetDisplayName: normalized.budgetDisplayName,
+                costAmount: normalized.costAmount,
+                budgetAmount: normalized.budgetAmount,
+                usagePercent: normalized.usagePercent,
+                billingUrl: CLOUD_BILLING_BUDGETS_URL,
+                updatedAt: normalized.receivedAt
+            };
+        } else if (preferIncomingBudget && isIncomingOperationalBudget) {
+            updates['system/operationalAlerts/firebaseBilling/cloudBudget'] = null;
+        }
+        await admin.database().ref().update(updates);
+        return null;
+    }
+);
+
+exports.syncGoogleCloudBillingCostExport = onCallV2(
+    { region: 'us-central1' },
+    async (request) => {
+        if (!(await isCallerSuperAdmin(request))) {
+            throw new HttpsErrorV2('permission-denied', 'Apenas SuperAdmin pode sincronizar custos do Google Cloud Billing.');
+        }
+        if (!BigQuery) {
+            throw new HttpsErrorV2('failed-precondition', 'Dependência @google-cloud/bigquery indisponível nas Functions.');
+        }
+        const days = Math.max(7, Math.min(370, parseInt(request && request.data && request.data.days, 10) || 30));
+        const nowIso = new Date().toISOString();
+        const bigquery = new BigQuery({ projectId: CLOUD_BILLING_PROJECT_ID });
+        try {
+            const [standardExists, detailedExists, cudExists] = await Promise.all([
+                bigQueryTableExists(bigquery, CLOUD_BILLING_DATASET_ID, CLOUD_BILLING_STANDARD_TABLE_ID),
+                bigQueryTableExists(bigquery, CLOUD_BILLING_DATASET_ID, CLOUD_BILLING_DETAILED_TABLE_ID),
+                bigQueryTableExists(bigquery, CLOUD_BILLING_CUD_DATASET_ID, CLOUD_BILLING_CUD_TABLE_ID)
+            ]);
+            const exportStatus = {
+                status: standardExists ? 'ready' : 'waiting_for_standard_usage_table',
+                projectId: CLOUD_BILLING_PROJECT_ID,
+                datasetId: CLOUD_BILLING_DATASET_ID,
+                cudDatasetId: CLOUD_BILLING_CUD_DATASET_ID,
+                standardTableId: CLOUD_BILLING_STANDARD_TABLE_ID,
+                detailedTableId: CLOUD_BILLING_DETAILED_TABLE_ID,
+                cudTableId: CLOUD_BILLING_CUD_TABLE_ID,
+                standardTableExists: standardExists,
+                detailedTableExists: detailedExists,
+                cudTableExists: cudExists,
+                bigQueryLocation: CLOUD_BILLING_BIGQUERY_LOCATION || 'auto',
+                lastCheckedAt: nowIso
+            };
+            if (!standardExists) {
+                await admin.database().ref('system/googleCloudBilling/exportStatus').set(exportStatus);
+                return {
+                    success: false,
+                    waiting: true,
+                    reason: 'standard_usage_table_not_ready',
+                    exportStatus
+                };
+            }
+
+            const queryOptions = {
+                params: { projectId: CLOUD_BILLING_PROJECT_ID }
+            };
+            if (CLOUD_BILLING_BIGQUERY_LOCATION) queryOptions.location = CLOUD_BILLING_BIGQUERY_LOCATION;
+            const [[serviceRows], [dailyRows], [monthlyRows]] = await Promise.all([
+                bigquery.query({ ...queryOptions, query: buildCloudBillingServiceCostQuery(days) }),
+                bigquery.query({ ...queryOptions, query: buildCloudBillingDailySeriesQuery(Math.min(days, 90)) }),
+                bigquery.query({ ...queryOptions, query: buildCloudBillingMonthlySeriesQuery() })
+            ]);
+            const serviceCosts = (serviceRows || []).map(normalizeCloudBillingCostRow);
+            const dailySeries = (dailyRows || []).map(normalizeCloudBillingSeriesRow).filter((row) => row.label);
+            const monthlySeries = (monthlyRows || []).map(normalizeCloudBillingSeriesRow).filter((row) => row.label);
+            const previousSummarySnap = await admin.database().ref('system/googleCloudBilling/summary').get().catch(() => null);
+            const previousSummary = previousSummarySnap && previousSummarySnap.exists() ? (previousSummarySnap.val() || {}) : {};
+            const hasMeaningfulCostData = serviceCosts.length > 0
+                || dailySeries.some((row) => Math.abs(toSignedMoney(row.amount, 0)) > 0.000001)
+                || monthlySeries.some((row) => Math.abs(toSignedMoney(row.amount, 0)) > 0.000001);
+            if (!hasMeaningfulCostData) {
+                exportStatus.status = 'ready_no_cost_data';
+                const fallbackSummary = {
+                    ...(previousSummary && typeof previousSummary === 'object' ? previousSummary : {}),
+                    source: previousSummary && previousSummary.lastNotificationAt ? 'cloud-billing-budget-pubsub' : 'bigquery-billing-export-no-cost-data',
+                    projectId: CLOUD_BILLING_PROJECT_ID,
+                    bigQueryNoCostDataAt: nowIso,
+                    bigQueryDatasetId: CLOUD_BILLING_DATASET_ID,
+                    bigQueryTableId: CLOUD_BILLING_STANDARD_TABLE_ID,
+                    bigQueryDays: days,
+                    billingUrl: CLOUD_BILLING_LINKED_ACCOUNT_URL,
+                    budgetsUrl: CLOUD_BILLING_BUDGETS_URL,
+                    bigQueryExportUrl: CLOUD_BILLING_EXPORT_URL,
+                    reportsUrl: CLOUD_BILLING_REPORTS_URL,
+                    costBreakdownUrl: CLOUD_BILLING_COST_BREAKDOWN_URL,
+                    cudAnalysisUrl: CLOUD_BILLING_CUD_ANALYSIS_URL,
+                    documentsUrl: CLOUD_BILLING_DOCUMENTS_URL,
+                    transactionsUrl: CLOUD_BILLING_TRANSACTIONS_URL
+                };
+                if (!toMoney(fallbackSummary.costAmount, 0) && toMoney(fallbackSummary.budgetReportedCostAmount, 0)) {
+                    fallbackSummary.costAmount = toMoney(fallbackSummary.budgetReportedCostAmount, 0);
+                    if (toMoney(fallbackSummary.budgetAmount, 0) > 0) {
+                        fallbackSummary.usagePercent = fallbackSummary.costAmount / toMoney(fallbackSummary.budgetAmount, 0);
+                    }
+                }
+                delete fallbackSummary.lastBigQuerySyncAt;
+                delete fallbackSummary.serviceCostsUpdatedAt;
+                await admin.database().ref().update({
+                    'system/googleCloudBilling/exportStatus': exportStatus,
+                    'system/googleCloudBilling/summary': fallbackSummary
+                });
+                return {
+                    success: false,
+                    waiting: true,
+                    noCostData: true,
+                    reason: 'billing_export_has_no_cost_rows',
+                    exportStatus,
+                    summary: fallbackSummary,
+                    serviceCostsCount: 0,
+                    costSeriesCount: 0,
+                    monthlyCostSeriesCount: 0
+                };
+            }
+            const currentMonthKey = new Date().toISOString().slice(0, 7).replace('-', '');
+            const currentMonth = monthlySeries.find((row) => row.label === currentMonthKey) || monthlySeries[0] || null;
+            const totalCost = currentMonth ? currentMonth.amount : serviceCosts.reduce((sum, item) => sum + item.netCost, 0);
+            const currencyCode = (currentMonth && currentMonth.currencyCode) || (serviceCosts[0] && serviceCosts[0].currencyCode) || 'BRL';
+            const budgetAmount = toMoney(previousSummary.budgetAmount || 0, 0);
+            const usagePercent = budgetAmount > 0 ? Math.max(0, totalCost) / budgetAmount : toMoney(previousSummary.usagePercent || 0, 0);
+            const severity = usagePercent >= 1 ? 'error' : (usagePercent >= 0.8 ? 'warning' : 'info');
+            const updates = {};
+            updates['system/googleCloudBilling/exportStatus'] = exportStatus;
+            updates['system/googleCloudBilling/serviceCosts'] = objectByKey(serviceCosts, (row) => row.id);
+            updates['system/googleCloudBilling/costSeries'] = objectByKey(dailySeries, (row) => row.label);
+            updates['system/googleCloudBilling/monthlyCostSeries'] = objectByKey(monthlySeries, (row) => row.label);
+            updates['system/googleCloudBilling/summary'] = {
+                ...(previousSummary && typeof previousSummary === 'object' ? previousSummary : {}),
+                source: previousSummary && previousSummary.lastNotificationAt ? 'cloud-billing-budget-pubsub+bigquery-export' : 'bigquery-billing-export',
+                projectId: CLOUD_BILLING_PROJECT_ID,
+                costAmount: toSignedMoney(totalCost, 0),
+                currencyCode,
+                usagePercent,
+                severity,
+                lastBigQuerySyncAt: nowIso,
+                bigQueryDatasetId: CLOUD_BILLING_DATASET_ID,
+                bigQueryTableId: CLOUD_BILLING_STANDARD_TABLE_ID,
+                bigQueryDays: days,
+                serviceCostsUpdatedAt: nowIso,
+                billingUrl: CLOUD_BILLING_LINKED_ACCOUNT_URL,
+                budgetsUrl: CLOUD_BILLING_BUDGETS_URL,
+                bigQueryExportUrl: CLOUD_BILLING_EXPORT_URL,
+                reportsUrl: CLOUD_BILLING_REPORTS_URL,
+                costBreakdownUrl: CLOUD_BILLING_COST_BREAKDOWN_URL,
+                cudAnalysisUrl: CLOUD_BILLING_CUD_ANALYSIS_URL,
+                documentsUrl: CLOUD_BILLING_DOCUMENTS_URL,
+                transactionsUrl: CLOUD_BILLING_TRANSACTIONS_URL
+            };
+            await admin.database().ref().update(updates);
+            return {
+                success: true,
+                exportStatus,
+                summary: updates['system/googleCloudBilling/summary'],
+                serviceCostsCount: serviceCosts.length,
+                costSeriesCount: dailySeries.length,
+                monthlyCostSeriesCount: monthlySeries.length
+            };
+        } catch (error) {
+            if (error && ['permission-denied', 'failed-precondition', 'not-found'].includes(error.code)) throw error;
+            const message = String((error && error.message) || error || 'Falha ao consultar BigQuery.');
+            if (/access denied|permission/i.test(message)) {
+                throw new HttpsErrorV2('permission-denied', `Sem permissão para consultar BigQuery Billing Export: ${message}`);
+            }
+            throw new HttpsErrorV2('internal', `Falha ao sincronizar Billing Export: ${message}`);
+        }
+    }
+);
+
+exports.estimateGoogleCloudBillingCompanyUsageCosts = onCallV2(
+    { region: 'us-central1', timeoutSeconds: 120, memory: '512MiB' },
+    async (request) => {
+        if (!(await isCallerSuperAdmin(request))) {
+            throw new HttpsErrorV2('permission-denied', 'Apenas SuperAdmin pode calcular custos por empresa.');
+        }
+        const nowIso = new Date().toISOString();
+        const [summarySnap, companiesSnap, usersSnap, supportSnap] = await Promise.all([
+            admin.database().ref('system/googleCloudBilling/summary').get().catch(() => null),
+            admin.database().ref('companies').get().catch(() => null),
+            admin.database().ref('users').get().catch(() => null),
+            admin.database().ref('supportTicketsByCompany').get().catch(() => null)
+        ]);
+        const summary = summarySnap && summarySnap.exists() ? (summarySnap.val() || {}) : {};
+        const companies = companiesSnap && companiesSnap.exists() ? (companiesSnap.val() || {}) : {};
+        const users = usersSnap && usersSnap.exists() ? (usersSnap.val() || {}) : {};
+        const supportTickets = supportSnap && supportSnap.exists() ? (supportSnap.val() || {}) : {};
+        const baseCostAmount = Math.max(0, toSignedMoney(summary.costAmount || summary.budgetReportedCostAmount || 0, 0));
+        const currencyCode = sanitizeText(summary.currencyCode || 'BRL', 'BRL');
+        const source = summary.lastBigQuerySyncAt
+            ? 'bigquery-billing-export'
+            : (summary.lastNotificationAt ? 'cloud-billing-budget-pubsub' : 'usage-volume-only');
+        const { rows, totalWeightedUsageUnits } = buildCompanyUsageCostRows(
+            companies,
+            users,
+            supportTickets,
+            baseCostAmount,
+            currencyCode
+        );
+        const topRows = rows.slice(0, 80);
+        const allocationSummary = {
+            source,
+            sourceCostAmount: baseCostAmount,
+            currencyCode,
+            companiesCount: rows.length,
+            totalWeightedUsageUnits: toSignedMoney(totalWeightedUsageUnits, 0),
+            weights: {
+                users: 10,
+                masterData: 1,
+                transactions: 4,
+                inventory: 2,
+                payroll: 3,
+                support: 2
+            },
+            periodLabel: summary.costIntervalStart || new Date().toISOString().slice(0, 7),
+            lastCalculatedAt: nowIso,
+            lastBigQuerySyncAt: summary.lastBigQuerySyncAt || '',
+            lastNotificationAt: summary.lastNotificationAt || ''
+        };
+        const updates = {};
+        updates['system/googleCloudBilling/companyUsageCostAllocation/summary'] = allocationSummary;
+        updates['system/googleCloudBilling/companyUsageCostAllocation/rows'] = objectByKey(topRows, (row) => row.companyId);
+        updates['system/googleCloudBilling/summary/companyUsageCostAllocationAt'] = nowIso;
+        await admin.database().ref().update(updates);
+        return {
+            success: true,
+            summary: allocationSummary,
+            rows: topRows
+        };
+    }
+);
+
+function getSmtpRuntimeConfig() {
+    const smtpHost = String(process.env.SMTP_HOST || '').trim();
+    const smtpPort = parseInt(process.env.SMTP_PORT || '465', 10) || 465;
+    const smtpUser = String(process.env.SMTP_USER || '').trim();
+    const smtpPass = String(readSecretValue(SMTP_PASS_SECRET) || readLocalSecretEnv('SMTP_PASS') || readLocalSecretEnv('SMTP_PASS_LOCAL') || '').trim();
+    return {
+        host: smtpHost || 'smtp.gmail.com',
+        port: smtpPort,
+        secure: smtpPort === 465,
+        user: smtpUser,
+        pass: smtpPass,
+        ready: !!(smtpUser && smtpPass)
+    };
+}
+
+async function sendSystemEmail({ to, subject, text }) {
+    const recipients = Array.isArray(to) ? to : parseSupportEmailList(to);
+    const cleanSubject = sanitizeSupportText(subject || '', 'Sisweb', 180);
+    const cleanText = sanitizeLongText(text || '', '', 12000);
+    const smtp = getSmtpRuntimeConfig();
+    if (!smtp.ready) {
+        throw new Error('SMTP não configurado no backend.');
+    }
+    if (!recipients.length || !cleanSubject || !cleanText) {
+        throw new Error('Destinatário, assunto e corpo são obrigatórios.');
+    }
+    const transporter = nodemailer.createTransport({
+        host: smtp.host,
+        port: smtp.port,
+        secure: smtp.secure,
+        auth: {
+            user: smtp.user,
+            pass: smtp.pass
+        }
+    });
+    await transporter.sendMail({
+        from: `"Equipe Sisweb" <${smtp.user}>`,
+        to: recipients.join(','),
+        subject: cleanSubject,
+        text: cleanText
+    });
+    return { success: true, recipients };
+}
+
+async function resolveSupportAdminEmails() {
+    const envRecipients = parseSupportEmailList(process.env.SUPPORT_ADMIN_EMAIL || process.env.SUPPORT_EMAIL || '');
+    if (envRecipients.length) return envRecipients;
+    try {
+        const settingsSnapshot = await admin.database().ref(SUBSCRIPTION_SETTINGS_PATH).get();
+        const settings = normalizeSubscriptionSettings(settingsSnapshot.exists() ? settingsSnapshot.val() : {});
+        const supportEmail = settings && settings.paymentMeta ? settings.paymentMeta.supportEmail : '';
+        const configured = parseSupportEmailList(supportEmail);
+        if (configured.length) return configured;
+    } catch (_) {}
+    return Array.from(SUPER_ADMIN_EMAILS).filter(Boolean);
+}
+
+function buildSupportAdminEmailBody(ticket, messagePayload, actor, event) {
+    const eventLabel = event === 'created' ? 'Novo ticket criado' : 'Nova mensagem do cliente';
+    return [
+        `${eventLabel} no Suporte Sisweb`,
+        '',
+        `Ticket: ${ticket.id || messagePayload.ticketId || '-'}`,
+        `Assunto: ${ticket.subject || 'Suporte Sisweb'}`,
+        `Status: ${ticket.status || '-'}`,
+        `Prioridade: ${ticket.priority || 'normal'}`,
+        `Empresa/Tenant: ${ticket.companyName || ticket.companyId || '-'}`,
+        `Módulo: ${ticket.module || '-'}`,
+        `Solicitante: ${ticket.createdByName || actor.name || ticket.createdByEmail || actor.email || '-'}`,
+        `E-mail: ${ticket.createdByEmail || actor.email || '-'}`,
+        `Data: ${messagePayload.createdAt || new Date().toISOString()}`,
+        '',
+        'Mensagem:',
+        messagePayload.message || ticket.lastMessagePreview || '',
+        ...supportAttachmentEmailLines(messagePayload.attachments || ticket.attachments || []),
+        '',
+        `Abrir fila no Admin: ${SUPPORT_ADMIN_URL}`
+    ].join('\n');
+}
+
+async function notifySupportAdminByEmail(ticket, messagePayload, actor, event) {
+    const ticketId = sanitizeSupportText(ticket && ticket.id ? ticket.id : messagePayload && messagePayload.ticketId, '', 140);
+    const notificationRef = admin.database().ref(`supportTicketNotifications/${ticketId || 'unknown'}`).push();
+    const basePayload = {
+        id: notificationRef.key,
+        ticketId,
+        companyId: sanitizeSupportText(ticket && ticket.companyId, '', 140),
+        event: sanitizeSupportText(event || 'message', 'message', 60),
+        channel: 'email',
+        createdAt: new Date().toISOString()
+    };
+    try {
+        const recipients = await resolveSupportAdminEmails();
+        if (!recipients.length) {
+            await notificationRef.set({ ...basePayload, status: 'skipped', reason: 'support_admin_email_not_configured' });
+            return { success: false, skipped: true };
+        }
+        const subjectPrefix = event === 'created' ? 'Novo ticket' : 'Nova mensagem';
+        const subject = `${subjectPrefix} Suporte Sisweb - ${ticket.subject || ticket.module || ticketId || 'Sisweb'}`;
+        await sendSystemEmail({
+            to: recipients,
+            subject,
+            text: buildSupportAdminEmailBody(ticket, messagePayload, actor, event)
+        });
+        await notificationRef.set({
+            ...basePayload,
+            status: 'sent',
+            recipients: recipients.map((email) => email.replace(/^(.{2}).*(@.*)$/, '$1***$2'))
+        });
+        return { success: true };
+    } catch (error) {
+        await notificationRef.set({
+            ...basePayload,
+            status: 'failed',
+            error: sanitizeSupportText(error && error.message ? error.message : String(error), 'Falha ao enviar e-mail', 240)
+        });
+        console.error('[support-email-notification]', error);
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+exports.sendPublicSupportEmail = SMTP_SECRET_RUNTIME_OPTIONS.https.onCall(async (data, context) => {
+    const payload = data && typeof data === 'object' ? data : {};
+    const honeypot = sanitizeSupportText(payload.website || payload.companyWebsite || '', '', 200);
+    if (honeypot) {
+        return { success: true, skipped: true };
+    }
+    const message = sanitizeLongText(payload.message || '', '', 4000);
+    if (!message || message.length < 8) {
+        throw new functions.https.HttpsError('invalid-argument', 'Mensagem pública é obrigatória.');
+    }
+    const publicKey = await assertPublicSupportEmailRateLimit(context, payload);
+    const recipients = await resolveSupportAdminEmails();
+    if (!recipients.length) {
+        throw new functions.https.HttpsError('failed-precondition', 'E-mail de suporte não configurado no backend.');
+    }
+    const moduleName = sanitizeSupportText(payload.module || payload.moduleName || 'Assinatura pública', 'Assinatura pública', 120);
+    const subject = `Contato público Sisweb - ${moduleName}`;
+    const logRef = admin.database().ref('publicSupportEmailLogs').push();
+    const baseLog = {
+        id: logRef.key,
+        source: sanitizeSupportText(payload.source || 'subscription-public', 'subscription-public', 80),
+        module: moduleName,
+        url: sanitizeLongText(payload.url || '', '', 2048),
+        promoCode: sanitizeSupportText(payload.promoCode || payload.coupon || '', '', 80),
+        contactEmail: sanitizeSupportText(payload.email || '', '', 180),
+        contactName: sanitizeSupportText(payload.name || '', '', 120),
+        publicKey,
+        createdAt: new Date().toISOString()
+    };
+    try {
+        await sendSystemEmail({
+            to: recipients,
+            subject,
+            text: buildPublicSupportEmailBody({ ...payload, message }, context, publicKey)
+        });
+        await logRef.set({
+            ...baseLog,
+            status: 'sent',
+            recipients: recipients.map((email) => email.replace(/^(.{2}).*(@.*)$/, '$1***$2'))
+        });
+        return { success: true, sent: true };
+    } catch (error) {
+        await logRef.set({
+            ...baseLog,
+            status: 'failed',
+            error: sanitizeSupportText(error && error.message ? error.message : String(error), 'Falha ao enviar e-mail', 240)
+        });
+        console.error('[public-support-email]', error);
+        throw new functions.https.HttpsError('internal', 'Falha ao enviar e-mail público. Use WhatsApp ou tente novamente em alguns minutos.');
+    }
+});
+
+async function notifySupportCustomer(ticket, messagePayload) {
+    const uid = sanitizeSupportText(ticket && ticket.createdByUid, '', 140);
+    if (!uid || String(messagePayload && messagePayload.visibility || 'customer') === 'internal') return;
+    await pushUserNotification(uid, {
+        source: 'support',
+        type: 'info',
+        title: 'Nova resposta do Suporte Sisweb',
+        message: `Ticket ${ticket.id || ''}: ${sanitizeSupportText(messagePayload.message || '', '', 180)}`
+    });
+}
+
+function normalizeSupportStatus(value, fallback = 'open') {
+    const raw = String(value || '').trim().toLowerCase();
+    return SUPPORT_STATUS_VALUES.has(raw) ? raw : fallback;
+}
+
+function normalizeSupportPriority(value, fallback = 'normal') {
+    const raw = String(value || '').trim().toLowerCase();
+    return SUPPORT_PRIORITY_VALUES.has(raw) ? raw : fallback;
+}
+
+function supportDayKey(date = new Date()) {
+    return date.toISOString().slice(0, 10).replace(/-/g, '');
+}
+
+async function resolveSupportCaller(context, payload = {}, options = {}) {
+    if (!context || !context.auth || !context.auth.uid) {
+        throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem acessar suporte.');
+    }
+    const uid = String(context.auth.uid || '').trim();
+    const token = context.auth.token || {};
+    const email = sanitizeSupportText(token.email || '', '', 180);
+    const isSuperAdmin = await isCallerSuperAdmin(context);
+    const userSnap = await admin.database().ref(`users/${uid}`).get();
+    const userData = userSnap.exists() && userSnap.val() && typeof userSnap.val() === 'object' ? userSnap.val() : {};
+    let companyId = '';
+    if (isSuperAdmin && options.allowRequestedCompanyId) {
+        companyId = sanitizeText(payload.companyId || payload.companyID || payload.tenantId || '', '');
+    }
+    if (!companyId) {
+        companyId = await resolveCompanyIdForUser(uid, email, token, userData);
+    }
+    if (!companyId && isSuperAdmin && options.fallbackAdminCompany !== false) {
+        companyId = ADMIN_CORE_COMPANY_ID;
+    }
+    if (!companyId) {
+        throw new functions.https.HttpsError('failed-precondition', 'Usuário sem companyId/tenantId válido para suporte.');
+    }
+    return {
+        uid,
+        email: sanitizeSupportText(userData.email || email || '', '', 180),
+        name: sanitizeSupportText(userData.displayName || userData.username || userData.nome || token.name || '', '', 120),
+        companyId: String(companyId),
+        isSuperAdmin
+    };
+}
+
+async function getSupportCompanyName(companyId) {
+    try {
+        const snap = await admin.database().ref(`companies/${companyId}/profile`).get();
+        if (snap.exists()) {
+            const profile = snap.val() || {};
+            return sanitizeSupportText(profile.name || profile.nome || profile.razaoSocial || profile.fantasyName || '', '', 160);
+        }
+    } catch (_) {}
+    try {
+        const snap = await admin.database().ref(`companies/${companyId}`).get();
+        if (snap.exists()) {
+            const company = snap.val() || {};
+            return sanitizeSupportText(company.name || company.nome || company.razaoSocial || company.fantasyName || '', '', 160);
+        }
+    } catch (_) {}
+    return '';
+}
+
+async function assertSupportRateLimit(companyId, uid, kind) {
+    const safeKind = kind === 'message' ? 'message' : 'create';
+    const limit = safeKind === 'message' ? SUPPORT_MESSAGE_LIMIT_PER_DAY : SUPPORT_CREATE_LIMIT_PER_DAY;
+    const field = safeKind === 'message' ? 'messageCount' : 'createdCount';
+    const ref = admin.database().ref(`supportTicketRateLimits/${companyId}/${uid}/${supportDayKey()}`);
+    const result = await ref.transaction((current) => {
+        const next = current && typeof current === 'object' ? { ...current } : {};
+        const currentValue = Number(next[field] || 0);
+        if (currentValue >= limit) return;
+        next[field] = currentValue + 1;
+        next.updatedAt = new Date().toISOString();
+        return next;
+    });
+    if (!result.committed) {
+        throw new functions.https.HttpsError('resource-exhausted', 'Limite diário de solicitações de suporte atingido.');
+    }
+}
+
+function sanitizeSupportAttachmentPath(value) {
+    const path = sanitizeLongText(value || '', '', 1024).replace(/^\/+/, '');
+    if (!path || path.includes('..') || path.includes('//')) return '';
+    if (!/^companies\/[^/]+\/support\/tickets\//.test(path)) return '';
+    return path;
+}
+
+function supportAttachmentCompanyId(storagePath) {
+    const match = String(storagePath || '').match(/^companies\/([^/]+)\/support\/tickets\//);
+    return match ? match[1] : '';
+}
+
+function sanitizeSupportAttachmentUrl(value) {
+    const raw = sanitizeLongText(value || '', '', 2048);
+    if (!raw || /^(data|blob|file):/i.test(raw)) return '';
+    try {
+        const url = new URL(raw);
+        const host = String(url.hostname || '').toLowerCase();
+        const isFirebaseStorage =
+            host === 'firebasestorage.googleapis.com' ||
+            host === 'storage.googleapis.com' ||
+            host.endsWith('.firebasestorage.app');
+        if (url.protocol !== 'https:' || !isFirebaseStorage) return '';
+        return raw;
+    } catch (_) {
+        return '';
+    }
+}
+
+function normalizeSupportAttachments(value, companyId, actor) {
+    const source = Array.isArray(value) ? value : (value ? [value] : []);
+    if (source.length > SUPPORT_ATTACHMENT_MAX_COUNT) {
+        throw new functions.https.HttpsError('invalid-argument', `Envie no máximo ${SUPPORT_ATTACHMENT_MAX_COUNT} anexos por mensagem.`);
+    }
+    const normalized = [];
+    source.forEach((item, index) => {
+        const raw = item && typeof item === 'object' ? item : {};
+        const storagePath = sanitizeSupportAttachmentPath(raw.storagePath || raw.path || raw.fullPath || '');
+        const pathCompanyId = supportAttachmentCompanyId(storagePath);
+        if (pathCompanyId && String(pathCompanyId) !== String(companyId || '')) {
+            throw new functions.https.HttpsError('permission-denied', 'Anexo pertence a outro tenant.');
+        }
+        const url = sanitizeSupportAttachmentUrl(raw.url || raw.downloadURL || raw.link || '');
+        if (!storagePath || !url) {
+            throw new functions.https.HttpsError('invalid-argument', 'Anexo de suporte inválido ou sem URL segura.');
+        }
+        const contentType = sanitizeSupportText(raw.contentType || raw.mimeType || '', '', 120).toLowerCase();
+        if (!SUPPORT_ATTACHMENT_ALLOWED_TYPES.has(contentType)) {
+            throw new functions.https.HttpsError('invalid-argument', 'Tipo de anexo não permitido para suporte.');
+        }
+        const size = Math.max(0, Math.round(Number(raw.size || raw.bytes || 0) || 0));
+        if (size > SUPPORT_ATTACHMENT_MAX_BYTES) {
+            throw new functions.https.HttpsError('invalid-argument', 'Anexo de suporte acima do limite de 6MB.');
+        }
+        const name = sanitizeSupportText(raw.name || raw.fileName || `anexo-${index + 1}`, `anexo-${index + 1}`, 140);
+        normalized.push({
+            id: crypto.createHash('sha256').update(`${storagePath}|${url}|${index}`).digest('hex').slice(0, 16),
+            name,
+            fileName: name,
+            url,
+            downloadURL: url,
+            storagePath,
+            contentType,
+            size,
+            originalSize: Math.max(0, Math.round(Number(raw.originalSize || 0) || 0)),
+            compressed: raw.compressed === true || String(raw.compressed || '').toLowerCase() === 'true',
+            uploadedAt: sanitizeSupportText(raw.uploadedAt || '', '', 80) || new Date().toISOString(),
+            uploadedByUid: actor && actor.uid ? actor.uid : '',
+            uploadedByRole: actor && actor.isSuperAdmin ? 'superadmin' : 'customer'
+        });
+    });
+    return normalized;
+}
+
+function supportAttachmentCountLabel(count) {
+    const total = Math.max(0, Number(count || 0));
+    if (!total) return '';
+    return `${total} anexo${total === 1 ? '' : 's'}`;
+}
+
+function supportAttachmentEmailLines(attachments) {
+    const list = Array.isArray(attachments) ? attachments : [];
+    if (!list.length) return [];
+    return [
+        '',
+        'Anexos:',
+        ...list.map((item, index) => {
+            const name = sanitizeSupportText(item && (item.name || item.fileName), `Anexo ${index + 1}`, 140);
+            const url = sanitizeSupportAttachmentUrl(item && (item.url || item.downloadURL));
+            return `- ${name}${url ? `: ${url}` : ''}`;
+        })
+    ];
+}
+
+function publicSupportRateLimitKey(context, payload) {
+    const ip = normalizeRequestIp(context);
+    const userAgent = normalizeRequestUserAgent(context);
+    const fingerprint = sanitizeSupportText(payload && payload.clientFingerprint, '', 160);
+    const raw = [ip || 'no-ip', userAgent || 'no-ua', fingerprint || 'no-fp'].join('|');
+    return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 40);
+}
+
+async function assertPublicSupportEmailRateLimit(context, payload) {
+    const key = publicSupportRateLimitKey(context, payload);
+    const ref = admin.database().ref(`publicSupportEmailRateLimits/${supportDayKey()}/${key}`);
+    const result = await ref.transaction((current) => {
+        const next = current && typeof current === 'object' ? { ...current } : {};
+        const currentValue = Number(next.count || 0);
+        if (currentValue >= PUBLIC_SUPPORT_EMAIL_LIMIT_PER_DAY) return;
+        next.count = currentValue + 1;
+        next.updatedAt = new Date().toISOString();
+        return next;
+    });
+    if (!result.committed) {
+        throw new functions.https.HttpsError('resource-exhausted', 'Limite diário de contatos públicos atingido. Use WhatsApp ou tente novamente amanhã.');
+    }
+    return key;
+}
+
+function buildSupportClientContext(payload, context) {
+    const source = payload && payload.clientContext && typeof payload.clientContext === 'object'
+        ? payload.clientContext
+        : {};
+    return {
+        displayMode: sanitizeSupportText(source.displayMode || source.pwaMode || '', '', 40),
+        viewport: sanitizeSupportText(source.viewport || '', '', 80),
+        userAgent: sanitizeSupportText(source.userAgent || normalizeRequestUserAgent(context), '', 240),
+        platform: sanitizeSupportText(source.platform || '', '', 80),
+        language: sanitizeSupportText(source.language || '', '', 40),
+        ip: normalizeRequestIp(context)
+    };
+}
+
+function buildPublicSupportEmailBody(payload, context, publicKey) {
+    const client = buildSupportClientContext(payload, context);
+    return [
+        'Contato público enviado pela Central de Mensagens Sisweb',
+        '',
+        `Origem: ${sanitizeSupportText(payload.source || 'subscription-public', 'subscription-public', 80)}`,
+        `Módulo: ${sanitizeSupportText(payload.module || payload.moduleName || 'Assinatura pública', 'Assinatura pública', 120)}`,
+        `Nome informado: ${sanitizeSupportText(payload.name || '', '-', 120)}`,
+        `E-mail informado: ${sanitizeSupportText(payload.email || '', '-', 180)}`,
+        `Telefone informado: ${sanitizeSupportText(payload.phone || '', '-', 80)}`,
+        `URL: ${sanitizeLongText(payload.url || '', '-', 2048)}`,
+        `Cupom: ${sanitizeSupportText(payload.promoCode || payload.coupon || '', '-', 80)}`,
+        `Gerado em: ${new Date().toISOString()}`,
+        `Origem tecnica: ${publicKey || '-'}`,
+        `Viewport: ${client.viewport || '-'}`,
+        `Plataforma: ${client.platform || '-'}`,
+        `Idioma: ${client.language || '-'}`,
+        `User-Agent: ${client.userAgent || '-'}`,
+        '',
+        'Mensagem:',
+        sanitizeLongText(payload.message || '', '', 4000)
+    ].join('\n');
+}
+
+async function appendSupportAudit(ticketId, companyId, actor, event, before, after) {
+    const auditRef = admin.database().ref(`supportTicketAudit/${ticketId}`).push();
+    const payload = {
+        id: auditRef.key,
+        event: sanitizeSupportText(event, 'updated', 60),
+        ticketId,
+        companyId,
+        actorUid: actor.uid || '',
+        actorEmail: actor.email || '',
+        actorRole: actor.isSuperAdmin ? 'superadmin' : 'customer',
+        before: before || null,
+        after: after || null,
+        createdAt: new Date().toISOString()
+    };
+    await auditRef.set(payload);
+    return payload;
+}
+
+async function loadSupportTicketOrThrow(ticketId) {
+    const safeTicketId = sanitizeText(ticketId || '', '');
+    if (!safeTicketId) {
+        throw new functions.https.HttpsError('invalid-argument', 'ticketId é obrigatório.');
+    }
+    const globalSnap = await admin.database().ref(`supportTickets/${safeTicketId}`).get();
+    if (!globalSnap.exists()) {
+        throw new functions.https.HttpsError('not-found', 'Ticket de suporte não encontrado.');
+    }
+    const globalTicket = globalSnap.val() || {};
+    const companyId = sanitizeText(globalTicket.companyId || '', '');
+    const ticketSnap = companyId
+        ? await admin.database().ref(`supportTicketsByCompany/${companyId}/${safeTicketId}`).get()
+        : null;
+    const ticket = ticketSnap && ticketSnap.exists() ? ticketSnap.val() || {} : globalTicket;
+    return { ticketId: safeTicketId, companyId, ticket: { ...globalTicket, ...ticket } };
+}
+
+function assertCanAccessSupportTicket(caller, ticket, options = {}) {
+    if (caller.isSuperAdmin) return;
+    const ticketCompanyId = String(ticket.companyId || '').trim();
+    if (!ticketCompanyId || ticketCompanyId !== String(caller.companyId || '').trim()) {
+        throw new functions.https.HttpsError('permission-denied', 'Ticket pertence a outro tenant.');
+    }
+    if (options.requireOwner !== false && String(ticket.createdByUid || '') !== String(caller.uid || '')) {
+        throw new functions.https.HttpsError('permission-denied', 'Ticket pertence a outro usuário.');
+    }
+}
+
+async function writeSupportTicketMirrors(ticketId, companyId, ticketPayload, globalPayload) {
+    const updates = {};
+    updates[`supportTicketsByCompany/${companyId}/${ticketId}`] = ticketPayload;
+    updates[`supportTickets/${ticketId}`] = globalPayload;
+    updates[`supportTicketsByUser/${ticketPayload.createdByUid}/${ticketId}`] = globalPayload;
+    await admin.database().ref().update(updates);
+}
+
+exports.createSupportTicket = SMTP_SECRET_RUNTIME_OPTIONS.https.onCall(async (data, context) => {
+    const payload = data && typeof data === 'object' ? data : {};
+    const caller = await resolveSupportCaller(context, payload, { allowRequestedCompanyId: true });
+    if (!caller.isSuperAdmin) await assertSupportRateLimit(caller.companyId, caller.uid, 'create');
+    const subject = sanitizeSupportText(payload.subject || payload.title || payload.module || 'Suporte Sisweb', 'Suporte Sisweb', 140);
+    const attachments = normalizeSupportAttachments(payload.attachments, caller.companyId, caller);
+    const message = sanitizeSupportText(payload.message || '', attachments.length ? 'Anexo enviado para análise.' : '', 3000);
+    if ((!message || message.length < 4) && !attachments.length) {
+        throw new functions.https.HttpsError('invalid-argument', 'Mensagem de suporte é obrigatória.');
+    }
+    const nowIso = new Date().toISOString();
+    const ticketRef = admin.database().ref(`supportTicketsByCompany/${caller.companyId}`).push();
+    const ticketId = ticketRef.key;
+    const companyName = await getSupportCompanyName(caller.companyId);
+    const moduleName = sanitizeSupportText(payload.module || payload.moduleName || '', '', 120);
+    const rawUrl = sanitizeLongText(payload.url || '', '', 2048);
+    let urlHost = '';
+    try { urlHost = rawUrl ? new URL(rawUrl).host : ''; } catch (_) { urlHost = ''; }
+    const ticketPayload = {
+        id: ticketId,
+        companyId: caller.companyId,
+        companyName,
+        createdByUid: caller.uid,
+        createdByEmail: caller.email,
+        createdByName: caller.name,
+        status: 'waiting_support',
+        priority: normalizeSupportPriority(payload.priority),
+        module: moduleName,
+        path: sanitizeSupportText(payload.path || '', '', 240),
+        urlHost: sanitizeSupportText(urlHost, '', 180),
+        subject,
+        lastMessagePreview: message.slice(0, 220),
+        attachmentCount: attachments.length,
+        lastAttachmentLabel: supportAttachmentCountLabel(attachments.length),
+        messageCount: 1,
+        assignedToUid: '',
+        assignedToName: '',
+        clientContext: buildSupportClientContext(payload, context),
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        closedAt: ''
+    };
+    const globalPayload = {
+        id: ticketId,
+        companyId: caller.companyId,
+        companyName,
+        createdByUid: caller.uid,
+        createdByEmail: caller.email,
+        status: ticketPayload.status,
+        priority: ticketPayload.priority,
+        module: ticketPayload.module,
+        subject: ticketPayload.subject,
+        lastMessagePreview: ticketPayload.lastMessagePreview,
+        attachmentCount: attachments.length,
+        lastAttachmentLabel: ticketPayload.lastAttachmentLabel,
+        assignedToUid: '',
+        createdAt: nowIso,
+        updatedAt: nowIso
+    };
+    const messageRef = admin.database().ref(`supportTicketMessagesByCompany/${caller.companyId}/${ticketId}`).push();
+    const messagePayload = {
+        id: messageRef.key,
+        ticketId,
+        companyId: caller.companyId,
+        authorUid: caller.uid,
+        authorEmail: caller.email,
+        authorName: caller.name,
+        authorRole: caller.isSuperAdmin ? 'superadmin' : 'customer',
+        message,
+        attachments,
+        visibility: 'customer',
+        createdAt: nowIso
+    };
+    const updates = {};
+    updates[`supportTicketsByCompany/${caller.companyId}/${ticketId}`] = ticketPayload;
+    updates[`supportTickets/${ticketId}`] = globalPayload;
+    updates[`supportTicketsByUser/${caller.uid}/${ticketId}`] = globalPayload;
+    updates[`supportTicketMessagesByCompany/${caller.companyId}/${ticketId}/${messageRef.key}`] = messagePayload;
+    await admin.database().ref().update(updates);
+    await appendSupportAudit(ticketId, caller.companyId, caller, 'created', null, globalPayload);
+    await notifySupportAdminByEmail(ticketPayload, messagePayload, caller, 'created');
+    return { success: true, ticketId, ticket: ticketPayload };
+});
+
+exports.addSupportTicketMessage = SMTP_SECRET_RUNTIME_OPTIONS.https.onCall(async (data, context) => {
+    const payload = data && typeof data === 'object' ? data : {};
+    const { ticketId, companyId, ticket } = await loadSupportTicketOrThrow(payload.ticketId);
+    const caller = await resolveSupportCaller(context, { companyId }, { allowRequestedCompanyId: true });
+    assertCanAccessSupportTicket(caller, ticket);
+    if (!caller.isSuperAdmin) await assertSupportRateLimit(companyId, caller.uid, 'message');
+    const attachments = normalizeSupportAttachments(payload.attachments, companyId, caller);
+    const message = sanitizeSupportText(payload.message || '', attachments.length ? 'Anexo enviado para análise.' : '', 3000);
+    if ((!message || message.length < 2) && !attachments.length) {
+        throw new functions.https.HttpsError('invalid-argument', 'Mensagem é obrigatória.');
+    }
+    const visibility = caller.isSuperAdmin && payload.visibility === 'internal' ? 'internal' : 'customer';
+    const nowIso = new Date().toISOString();
+    const nextStatus = caller.isSuperAdmin ? 'waiting_customer' : 'waiting_support';
+    const messageRef = admin.database().ref(`supportTicketMessagesByCompany/${companyId}/${ticketId}`).push();
+    const messagePayload = {
+        id: messageRef.key,
+        ticketId,
+        companyId,
+        authorUid: caller.uid,
+        authorEmail: caller.email,
+        authorName: caller.name,
+        authorRole: caller.isSuperAdmin ? 'superadmin' : 'customer',
+        message,
+        attachments,
+        visibility,
+        createdAt: nowIso
+    };
+    const patch = {
+        status: nextStatus,
+        lastMessagePreview: message.slice(0, 220),
+        attachmentCount: Math.max(0, Number(ticket.attachmentCount || 0)) + attachments.length,
+        lastAttachmentLabel: supportAttachmentCountLabel(attachments.length) || ticket.lastAttachmentLabel || '',
+        messageCount: Number(ticket.messageCount || 0) + 1,
+        updatedAt: nowIso,
+        closedAt: ''
+    };
+    const updatedTicket = { ...ticket, ...patch };
+    const globalPayload = {
+        id: ticketId,
+        companyId,
+        companyName: ticket.companyName || '',
+        createdByUid: ticket.createdByUid || '',
+        createdByEmail: ticket.createdByEmail || '',
+        status: updatedTicket.status,
+        priority: updatedTicket.priority || 'normal',
+        module: updatedTicket.module || '',
+        subject: updatedTicket.subject || '',
+        lastMessagePreview: updatedTicket.lastMessagePreview || '',
+        attachmentCount: updatedTicket.attachmentCount || 0,
+        lastAttachmentLabel: updatedTicket.lastAttachmentLabel || '',
+        assignedToUid: updatedTicket.assignedToUid || '',
+        createdAt: updatedTicket.createdAt || '',
+        updatedAt: updatedTicket.updatedAt
+    };
+    const updates = {};
+    updates[`supportTicketMessagesByCompany/${companyId}/${ticketId}/${messageRef.key}`] = messagePayload;
+    updates[`supportTicketsByCompany/${companyId}/${ticketId}`] = updatedTicket;
+    updates[`supportTickets/${ticketId}`] = globalPayload;
+    updates[`supportTicketsByUser/${ticket.createdByUid}/${ticketId}`] = globalPayload;
+    await admin.database().ref().update(updates);
+    await appendSupportAudit(ticketId, companyId, caller, visibility === 'internal' ? 'internal_note_added' : 'message_added', null, { status: nextStatus });
+    if (caller.isSuperAdmin && visibility !== 'internal') {
+        await notifySupportCustomer(updatedTicket, messagePayload).catch((error) => {
+            console.error('[support-customer-notification]', error);
+        });
+    }
+    if (!caller.isSuperAdmin) {
+        await notifySupportAdminByEmail(updatedTicket, messagePayload, caller, 'customer_message');
+    }
+    return { success: true, ticketId, message: messagePayload, ticket: updatedTicket };
+});
+
+exports.listMySupportTickets = https.onCall(async (data, context) => {
+    const payload = data && typeof data === 'object' ? data : {};
+    if (!context || !context.auth || !context.auth.uid) {
+        throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem listar tickets de suporte.');
+    }
+    const uid = String(context.auth.uid || '').trim();
+    const limit = Math.max(1, Math.min(50, parseInt(payload.limit, 10) || 25));
+    const snap = await admin.database().ref(`supportTicketsByUser/${uid}`).orderByChild('updatedAt').limitToLast(limit).get();
+    const items = snap.exists() ? Object.values(snap.val() || {}) : [];
+    items.sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+    return { success: true, items, count: items.length };
+});
+
+exports.getSupportTicket = https.onCall(async (data, context) => {
+    const payload = data && typeof data === 'object' ? data : {};
+    const { ticketId, companyId, ticket } = await loadSupportTicketOrThrow(payload.ticketId);
+    const caller = await resolveSupportCaller(context, { companyId }, { allowRequestedCompanyId: true });
+    assertCanAccessSupportTicket(caller, ticket);
+    const msgSnap = await admin.database().ref(`supportTicketMessagesByCompany/${companyId}/${ticketId}`).get();
+    const messages = msgSnap.exists() ? Object.values(msgSnap.val() || {}) : [];
+    let visibleMessages = caller.isSuperAdmin ? messages : messages.filter((m) => String(m.visibility || 'customer') !== 'internal');
+    visibleMessages.sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+    visibleMessages = visibleMessages.slice(-200);
+    let audit = [];
+    if (caller.isSuperAdmin) {
+        const auditSnap = await admin.database().ref(`supportTicketAudit/${ticketId}`).get();
+        audit = auditSnap.exists() ? Object.values(auditSnap.val() || {}) : [];
+        audit.sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+        audit = audit.slice(-100);
+    }
+    return { success: true, ticket, messages: visibleMessages, audit };
+});
+
+exports.updateSupportTicketStatus = https.onCall(async (data, context) => {
+    const payload = data && typeof data === 'object' ? data : {};
+    const { ticketId, companyId, ticket } = await loadSupportTicketOrThrow(payload.ticketId);
+    const caller = await resolveSupportCaller(context, { companyId }, { allowRequestedCompanyId: true });
+    assertCanAccessSupportTicket(caller, ticket);
+    const before = {
+        status: ticket.status || '',
+        priority: ticket.priority || '',
+        assignedToUid: ticket.assignedToUid || ''
+    };
+    const nowIso = new Date().toISOString();
+    const patch = { updatedAt: nowIso };
+    if (caller.isSuperAdmin) {
+        if (payload.status) patch.status = normalizeSupportStatus(payload.status, ticket.status || 'waiting_support');
+        if (payload.priority) patch.priority = normalizeSupportPriority(payload.priority, ticket.priority || 'normal');
+        if (payload.assignedToUid !== undefined) patch.assignedToUid = sanitizeSupportText(payload.assignedToUid, '', 120);
+        if (payload.assignedToName !== undefined) patch.assignedToName = sanitizeSupportText(payload.assignedToName, '', 120);
+    } else {
+        const requestedStatus = normalizeSupportStatus(payload.status, '');
+        if (!['closed', 'waiting_support', 'open'].includes(requestedStatus)) {
+            throw new functions.https.HttpsError('permission-denied', 'Status não permitido para usuário comum.');
+        }
+        patch.status = requestedStatus === 'open' ? 'waiting_support' : requestedStatus;
+    }
+    if (patch.status === 'closed' || patch.status === 'resolved') patch.closedAt = nowIso;
+    if (patch.status === 'waiting_support' || patch.status === 'waiting_customer' || patch.status === 'open') patch.closedAt = '';
+    const updatedTicket = { ...ticket, ...patch };
+    const globalPayload = {
+        id: ticketId,
+        companyId,
+        companyName: updatedTicket.companyName || '',
+        createdByUid: updatedTicket.createdByUid || '',
+        createdByEmail: updatedTicket.createdByEmail || '',
+        status: updatedTicket.status,
+        priority: updatedTicket.priority || 'normal',
+        module: updatedTicket.module || '',
+        subject: updatedTicket.subject || '',
+        lastMessagePreview: updatedTicket.lastMessagePreview || '',
+        assignedToUid: updatedTicket.assignedToUid || '',
+        createdAt: updatedTicket.createdAt || '',
+        updatedAt: updatedTicket.updatedAt
+    };
+    await writeSupportTicketMirrors(ticketId, companyId, updatedTicket, globalPayload);
+    await appendSupportAudit(ticketId, companyId, caller, 'status_changed', before, patch);
+    return { success: true, ticket: updatedTicket };
+});
+
+exports.listSupportTicketsAdmin = https.onCall(async (data, context) => {
+    await assertSuperAdmin(context, 'Apenas superadmin pode listar a fila global de suporte.');
+    const payload = data && typeof data === 'object' ? data : {};
+    const limit = Math.max(1, Math.min(100, parseInt(payload.limit, 10) || 50));
+    const snap = await admin.database().ref('supportTickets').orderByChild('updatedAt').limitToLast(limit).get();
+    let items = snap.exists() ? Object.values(snap.val() || {}) : [];
+    const status = sanitizeSupportText(payload.status || '', '', 40);
+    const priority = sanitizeSupportText(payload.priority || '', '', 40);
+    const companyId = sanitizeSupportText(payload.companyId || payload.tenantId || '', '', 120);
+    const moduleName = sanitizeSupportText(payload.module || '', '', 120).toLowerCase();
+    if (status) items = items.filter((item) => String(item.status || '') === status);
+    if (priority) items = items.filter((item) => String(item.priority || '') === priority);
+    if (companyId) items = items.filter((item) => String(item.companyId || '') === companyId);
+    if (moduleName) items = items.filter((item) => String(item.module || '').toLowerCase().includes(moduleName));
+    items.sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+    return { success: true, items, count: items.length };
 });
 
 exports.submitSubscriptionRequest = https.onCall(async (data, context) => {
@@ -1494,6 +3626,7 @@ exports.submitSubscriptionRequest = https.onCall(async (data, context) => {
         : true;
     settings.__runtimeIsNewClient = payload.isNewClient === true || isNewClient;
     const pricing = resolvePricingFromSettings(payload.plan, settings);
+    await applyPromoCodeIfAny(payload.promoCode, pricing, uid);
     const nowIso = new Date().toISOString();
     const requestIp = normalizeRequestIp(context);
     const requestUserAgent = normalizeRequestUserAgent(context);
@@ -1519,7 +3652,8 @@ exports.submitSubscriptionRequest = https.onCall(async (data, context) => {
         proofStoragePath,
         proofUrl,
         proofFileName,
-        proofMimeType
+        proofMimeType,
+        promoCode: pricing.promoCode || ''
     };
     if (transactionMeta && typeof transactionMeta === 'object') pendingPayment.transactionMeta = transactionMeta;
     if (referralEmail) pendingPayment.referralEmail = referralEmail;
@@ -1775,6 +3909,355 @@ exports.activateFreeTrial = https.onCall(async (_data, context) => {
     return { success: true, status: 'trial_active', trialDays, trialStart: patch.trialStart };
 });
 
+function formatTrialDatePtBR(value) {
+    const parsed = parseDateSafe(value);
+    if (!parsed) return '';
+    return parsed.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+}
+
+function buildAdminTrialBonusMessage(customerName, trialDays, endDateIso) {
+    const name = sanitizeText(customerName || 'cliente', 'cliente');
+    const endLabel = formatTrialDatePtBR(endDateIso);
+    const endText = endLabel ? ` até ${endLabel}` : '';
+    return `Boas notícias, ${name}! O SuperAdmin concedeu um bônus de ${trialDays} dias de acesso completo ao Sisweb${endText}. Aproveite este período para testar com calma os recursos de gestão madeireira, estoque, vendas, compras, financeiro, relatórios e rotinas do dia a dia.`;
+}
+
+function buildAdminTrialBonusEmailBody(user, trialDays, endDateIso, reviewNote) {
+    const customerName = sanitizeText(user && (user.displayName || user.username || user.nome || user.realName || ''), 'cliente');
+    const endLabel = formatTrialDatePtBR(endDateIso) || 'o fim do período liberado';
+    const note = sanitizeText(reviewNote || '', '');
+    const lines = [
+        `Olá ${customerName},`,
+        '',
+        'Temos uma boa notícia para você.',
+        '',
+        `Liberamos um bônus de ${trialDays} dias de acesso completo ao Sisweb para que você possa testar o sistema com tranquilidade e conhecer melhor as ferramentas criadas para o segmento madeireiro.`,
+        '',
+        `Seu acesso de teste fica disponível até ${endLabel}.`,
+        '',
+        'Durante esse período, aproveite para avaliar:',
+        '- gestão de estoque e produtos;',
+        '- vendas, compras e controles comerciais;',
+        '- financeiro e relatórios;',
+        '- recursos para rotinas do segmento madeireiro;',
+        '- acesso pelo computador e PWA no celular.',
+        '',
+        'Acesse o Sisweb por aqui:',
+        'https://sisweb-7ce82.web.app/',
+        '',
+        'Se surgir qualquer dúvida durante o teste, fale conosco pela Central de Mensagens do sistema ou responda este e-mail.',
+        note ? '' : null,
+        note ? `Observação do atendimento: ${note}` : null,
+        '',
+        'Atenciosamente,',
+        'Equipe Sisweb'
+    ].filter((line) => line !== null);
+    return lines.join('\n');
+}
+
+function isRequestOpenForAdminTrial(request) {
+    const req = request && typeof request === 'object' ? request : {};
+    const status = String(req.status || '').toLowerCase();
+    const approvalState = String(req.approvalState || '').toLowerCase();
+    return status === 'pending'
+        || status === 'pending_review'
+        || approvalState === 'pending_review'
+        || approvalState === 'awaiting_double_confirmation';
+}
+
+async function supersedeOpenSubscriptionRequestsForAdminTrial(uid, companyId, actorUid, grantId, nowIso, reviewNote) {
+    const userUid = String(uid || '').trim();
+    if (!userUid) return 0;
+    const snap = await admin.database().ref(`subscriptionRequests/${userUid}`).get();
+    const byUid = snap.exists() ? (snap.val() || {}) : {};
+    const tasks = [];
+    const seen = new Set();
+    const queueRequest = (requestId, request, hintedCompanyId) => {
+        const reqId = String(requestId || '').trim();
+        if (!reqId || seen.has(reqId)) return;
+        if (!isRequestOpenForAdminTrial(request)) return;
+        seen.add(reqId);
+        const payload = {
+            approvalState: 'superseded',
+            status: 'superseded',
+            supersededBy: 'admin_free_trial',
+            supersededByGrantId: grantId,
+            supersededAt: nowIso,
+            reviewedBy: actorUid,
+            reviewedAt: nowIso,
+            reviewNote: reviewNote || 'Solicitação substituída por bônus Trial 30 dias concedido pelo SuperAdmin.',
+            approvalChallenge: null
+        };
+        tasks.push((async () => {
+            const requestCompanyId = await resolveCompanyIdForOperationalSync(userUid, (request && request.companyId) || hintedCompanyId || companyId || '', {}, '');
+            await syncRequestInScopes(userUid, reqId, requestCompanyId, payload);
+            await appendSubscriptionAuditLog(userUid, reqId, 'REQUEST_SUPERSEDED_BY_ADMIN_TRIAL', actorUid, {
+                grantId,
+                reviewNote
+            });
+        })());
+    };
+    Object.entries(byUid || {}).forEach(([requestId, request]) => {
+        queueRequest(requestId, request, companyId);
+    });
+    const tenant = String(companyId || '').trim();
+    if (tenant) {
+        const companySnap = await admin.database().ref(`companies/${tenant}/subscriptionRequests/${userUid}`).get();
+        const companyRequests = companySnap.exists() ? (companySnap.val() || {}) : {};
+        Object.entries(companyRequests || {}).forEach(([requestId, request]) => {
+            queueRequest(requestId, request, tenant);
+        });
+    }
+    if (tasks.length) await Promise.all(tasks);
+    return tasks.length;
+}
+
+exports.grantAdminFreeTrial = SMTP_SECRET_RUNTIME_OPTIONS.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem conceder trial administrativo.');
+    }
+    const callerUid = context.auth.uid;
+    await assertSuperAdmin(context, 'Apenas superadmin pode conceder trial administrativo.');
+    const payload = data && typeof data === 'object' ? data : {};
+    const targetUid = sanitizeText(payload.targetUid || payload.uid || '');
+    const trialDays = Math.max(1, Math.min(90, parseInt(payload.days || payload.trialDays || 30, 10) || 30));
+    const reviewNote = sanitizeText(payload.reviewNote || payload.note || 'Bônus comercial para testar o Sisweb por 30 dias.', '');
+    if (!targetUid) {
+        throw new functions.https.HttpsError('invalid-argument', 'targetUid é obrigatório.');
+    }
+
+    const userRef = admin.database().ref(`users/${targetUid}`);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists()) {
+        throw new functions.https.HttpsError('not-found', 'Usuário não encontrado para concessão de trial.');
+    }
+    const user = userSnap.val() || {};
+    let userRecord;
+    try {
+        userRecord = await admin.auth().getUser(targetUid);
+    } catch (error) {
+        console.error('[admin-free-trial-auth-user]', {
+            targetUid,
+            code: error && error.code ? error.code : '',
+            message: error && error.message ? error.message : String(error)
+        });
+        throw new functions.https.HttpsError(
+            'not-found',
+            'Cliente existe no banco, mas não foi localizado no Firebase Auth. Revise o cadastro antes de conceder Trial 30d.'
+        );
+    }
+    const targetClaims = userRecord.customClaims || {};
+    const targetEmail = sanitizeText(user.email || userRecord.email || '');
+    const targetLooksSuperAdmin = (
+        targetClaims.superadmin === true
+        || isSuperAdminUidAllowed(targetUid)
+        || isSuperAdminEmail(targetEmail)
+        || user.superadmin === true
+    );
+    if (targetLooksSuperAdmin) {
+        throw new functions.https.HttpsError('failed-precondition', 'Superadmin não deve receber trial de cliente.');
+    }
+
+    const existingSubscription = user.subscription && typeof user.subscription === 'object' ? user.subscription : {};
+    const currentStatus = String(user.subscriptionStatus || user.status || '').toLowerCase();
+    const currentEnd = parseDateSafe(existingSubscription.endDate || user.subscriptionEndDate || user.subscriptionEnd || user.trialEnd || '');
+    if (currentStatus === 'active' && (!currentEnd || currentEnd.getTime() > Date.now())) {
+        throw new functions.https.HttpsError('failed-precondition', 'Cliente já possui assinatura ativa. Use prorrogação se precisar estender acesso pago.');
+    }
+    if (currentStatus === 'trial_active' && currentEnd && currentEnd.getTime() > Date.now()) {
+        return {
+            success: true,
+            alreadyActive: true,
+            targetUid,
+            status: 'trial_active',
+            trialDays,
+            endDate: currentEnd.toISOString(),
+            emailSent: false,
+            message: 'Cliente já possui trial ativo.'
+        };
+    }
+
+    const now = new Date();
+    const endDate = new Date(now.getTime());
+    endDate.setDate(endDate.getDate() + trialDays);
+    const nowIso = now.toISOString();
+    const endIso = endDate.toISOString();
+    const companyId = await resolveCompanyIdForUser(targetUid, targetEmail, targetClaims, user);
+    const grantId = `admin-trial-${now.getTime()}`;
+    const notificationMessage = buildAdminTrialBonusMessage(
+        user.displayName || user.username || targetEmail,
+        trialDays,
+        endIso
+    );
+    const previousPendingPayment = user.pendingPayment && typeof user.pendingPayment === 'object'
+        ? user.pendingPayment
+        : null;
+    const patch = {
+        uid: targetUid,
+        email: targetEmail,
+        username: user.username || user.displayName || (targetEmail ? String(targetEmail).split('@')[0] : 'cliente'),
+        displayName: user.displayName || user.username || '',
+        companyId: companyId || user.companyId || '',
+        trialStart: nowIso,
+        trialEnd: endIso,
+        trialUsed: true,
+        trialConsumed: true,
+        freeTrialUsed: true,
+        subscriptionStart: nowIso,
+        subscriptionEnd: endIso,
+        subscriptionEndDate: endIso,
+        subscriptionStatus: 'trial_active',
+        accountStatus: 'active',
+        statusReason: 'Bônus Trial 30 dias concedido pelo SuperAdmin.',
+        pendingPayment: null,
+        readOnlyUntil: null,
+        readOnlyGrantedAt: null,
+        readOnlyGrantedBy: null,
+        readOnlyGraceConsumed: null,
+        readOnlyReason: null,
+        subscription: {
+            ...existingSubscription,
+            active: false,
+            type: 'free_trial',
+            planKey: 'free_trial',
+            startDate: nowIso,
+            endDate: endIso,
+            trialUsed: true,
+            freeTrialUsed: true,
+            grantedBy: callerUid,
+            grantedAt: nowIso,
+            source: 'admin_grant_free_trial'
+        },
+        adminTrialGrant: {
+            grantId,
+            grantedBy: callerUid,
+            grantedAt: nowIso,
+            days: trialDays,
+            startDate: nowIso,
+            endDate: endIso,
+            reviewNote,
+            previousStatus: currentStatus || '',
+            previousSubscriptionEndDate: currentEnd ? currentEnd.toISOString() : '',
+            previousPendingPayment
+        },
+        updatedAt: nowIso,
+        updatedBy: callerUid
+    };
+
+    let syncResult;
+    try {
+        syncResult = await applyUserPatchAcrossScopes(targetUid, patch, { companyId, email: targetEmail });
+    } catch (error) {
+        console.error('[admin-free-trial-sync]', {
+            targetUid,
+            companyId,
+            code: error && error.code ? error.code : '',
+            message: error && error.message ? error.message : String(error)
+        });
+        throw new functions.https.HttpsError(
+            'internal',
+            'Não foi possível gravar o Trial 30d no banco de dados. Tente novamente e confira os logs da Function.'
+        );
+    }
+    const nextClaims = {
+        ...targetClaims,
+        subscriptionStatus: 'trial_active'
+    };
+    if (syncResult.companyId || companyId) {
+        nextClaims.companyId = syncResult.companyId || companyId;
+        nextClaims.tenantId = syncResult.companyId || companyId;
+    }
+    try {
+        await admin.auth().setCustomUserClaims(targetUid, nextClaims);
+        await admin.auth().revokeRefreshTokens(targetUid);
+    } catch (error) {
+        console.error('[admin-free-trial-claims]', {
+            targetUid,
+            companyId: syncResult.companyId || companyId || '',
+            code: error && error.code ? error.code : '',
+            message: error && error.message ? error.message : String(error)
+        });
+        throw new functions.https.HttpsError(
+            'internal',
+            'Trial gravado, mas houve falha ao atualizar permissões do usuário. Recarregue o painel e confira o cadastro antes de tentar novamente.'
+        );
+    }
+
+    const supersededRequests = await supersedeOpenSubscriptionRequestsForAdminTrial(
+        targetUid,
+        syncResult.companyId || companyId || '',
+        callerUid,
+        grantId,
+        nowIso,
+        reviewNote
+    );
+
+    await pushUserNotification(targetUid, {
+        type: 'success',
+        title: 'Bônus Trial 30 dias liberado',
+        message: notificationMessage,
+        source: 'admin-free-trial'
+    });
+
+    let emailSent = false;
+    let emailError = '';
+    if (targetEmail) {
+        try {
+            await sendSystemEmail({
+                to: targetEmail,
+                subject: 'Bônus Sisweb: 30 dias para testar o sistema',
+                text: buildAdminTrialBonusEmailBody(user, trialDays, endIso, reviewNote)
+            });
+            emailSent = true;
+        } catch (error) {
+            emailError = sanitizeText(error && error.message ? error.message : String(error), 'Falha ao enviar e-mail');
+            console.warn('[admin-free-trial-email]', error);
+        }
+    } else {
+        emailError = 'Cliente sem e-mail cadastrado.';
+    }
+
+    await appendSubscriptionAuditLog(targetUid, grantId, 'ADMIN_FREE_TRIAL_GRANTED', callerUid, {
+        trialDays,
+        endDate: endIso,
+        companyId: syncResult.companyId || companyId || '',
+        previousStatus: currentStatus || '',
+        supersededRequests,
+        notificationSent: true,
+        emailSent,
+        emailError,
+        reviewNote
+    });
+    await admin.database().ref('adminAudit').push({
+        eventType: 'ADMIN_FREE_TRIAL_GRANTED',
+        actorUid: callerUid,
+        targetUid,
+        at: nowIso,
+        details: {
+            trialDays,
+            endDate: endIso,
+            companyId: syncResult.companyId || companyId || '',
+            supersededRequests,
+            emailSent,
+            emailError
+        }
+    });
+
+    return {
+        success: true,
+        targetUid,
+        status: 'trial_active',
+        trialDays,
+        startDate: nowIso,
+        endDate: endIso,
+        companyId: syncResult.companyId || companyId || '',
+        supersededRequests,
+        notificationSent: true,
+        emailSent,
+        emailError
+    };
+});
+
 exports.grantReadOnlyGrace = https.onCall(async (_data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem ativar o modo leitura.');
@@ -1839,13 +4322,57 @@ exports.grantReadOnlyGrace = https.onCall(async (_data, context) => {
     await pushUserNotification(uid, {
         type: 'info',
         title: 'Modo leitura ativado',
-        message: `Acesso de consulta liberado por ${graceDays} dia(s).` 
+        message: `Acesso de consulta liberado por ${graceDays} dia(s).`
     });
     await appendSubscriptionAuditLog(uid, 'readonly-' + now.getTime(), 'READ_ONLY_GRANTED', uid, {
         graceDays,
         readOnlyUntil: untilIso
     });
     return { success: true, readOnlyUntil: untilIso, graceDays };
+});
+
+exports.sendSubscriptionEmail = SMTP_SECRET_RUNTIME_OPTIONS.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem enviar notificações.');
+    }
+    await assertSuperAdmin(context, 'Apenas superadmin pode enviar notificações comerciais.');
+
+    const payload = data || {};
+    const email = String(payload.email || '').trim();
+    const subject = String(payload.subject || '').trim();
+    const body = String(payload.body || '').trim();
+    const targetUid = sanitizeText(payload.targetUid || payload.uid || '');
+    const notificationMessage = sanitizeText(payload.notificationMessage || body || '');
+
+    if (!email || !subject || !body) {
+        throw new functions.https.HttpsError('invalid-argument', 'email, subject e body são obrigatórios.');
+    }
+
+    try {
+        await sendSystemEmail({ to: email, subject, text: body });
+        if (targetUid) {
+            await pushUserNotification(targetUid, {
+                type: 'info',
+                title: subject,
+                message: notificationMessage,
+                source: 'subscription-admin-email'
+            }).catch((notificationError) => {
+                console.warn('Falha ao gravar notificacao interna de assinatura:', notificationError);
+            });
+        }
+
+        await admin.database().ref('adminAudit').push({
+            eventType: 'SUBSCRIPTION_NOTIFICATION_SENT',
+            actorUid: context.auth.uid,
+            at: new Date().toISOString(),
+            details: { targetEmail: email, targetUid, subject: subject, internalNotification: !!targetUid }
+        });
+
+        return { success: true, internalNotification: !!targetUid };
+    } catch (error) {
+        console.error('Erro ao enviar email:', error);
+        throw new functions.https.HttpsError('internal', 'Falha ao enviar e-mail. Verifique as credenciais SMTP no backend.');
+    }
 });
 
 exports.extendSubscriptionAccess = https.onCall(async (data, context) => {
@@ -2305,6 +4832,15 @@ exports.confirmSubscriptionApproval = https.onCall(async (data, context) => {
             totalPaid: toMoney((ledger.totalPaid || 0) + paidAmount, 0),
             updatedAt: new Date().toISOString()
         };
+
+        if (pendingPayment.promoCode) {
+            const code = normalizePromoCodeValue(pendingPayment.promoCode);
+            if (code) {
+                await admin.database().ref(`system/promocode_usage/${code}/${resolved.uid}`).set(true);
+                const promoRef = admin.database().ref(`system/promocodes/${code}/currentUses`);
+                await promoRef.transaction((current) => (current || 0) + 1);
+            }
+        }
         paymentHistory.push({
             date: new Date().toISOString(),
             amount: pendingPayment.amount || 0,
@@ -2525,8 +5061,17 @@ function readSecretValue(secretHandle) {
     }
 }
 
+function isLocalFunctionsRuntime() {
+    return process.env.FUNCTIONS_EMULATOR === 'true' || process.env.FIREBASE_FUNCTIONS_EMULATOR === 'true';
+}
+
+function readLocalSecretEnv(name) {
+    if (!isLocalFunctionsRuntime()) return '';
+    return String(process.env[name] || '').trim();
+}
+
 function getMercadoPagoAccessToken() {
-    const token = String(readSecretValue(MERCADO_PAGO_ACCESS_TOKEN_SECRET) || process.env.MERCADO_PAGO_ACCESS_TOKEN_LOCAL || '').trim();
+    const token = String(readSecretValue(MERCADO_PAGO_ACCESS_TOKEN_SECRET) || readLocalSecretEnv('MERCADO_PAGO_ACCESS_TOKEN_LOCAL') || '').trim();
     if (!token) {
         throw new HttpsErrorV2('failed-precondition', 'MERCADO_PAGO_ACCESS_TOKEN não configurado.');
     }
@@ -2534,11 +5079,11 @@ function getMercadoPagoAccessToken() {
 }
 
 function getMercadoPagoWebhookToken() {
-    return String(readSecretValue(MERCADO_PAGO_WEBHOOK_TOKEN_SECRET) || process.env.MERCADO_PAGO_WEBHOOK_TOKEN_LOCAL || '').trim();
+    return String(readSecretValue(MERCADO_PAGO_WEBHOOK_TOKEN_SECRET) || readLocalSecretEnv('MERCADO_PAGO_WEBHOOK_TOKEN_LOCAL') || '').trim();
 }
 
 function getMercadoPagoWebhookUrl() {
-    return String(readSecretValue(MERCADO_PAGO_WEBHOOK_URL_SECRET) || process.env.MERCADO_PAGO_WEBHOOK_URL_LOCAL || '').trim();
+    return String(readSecretValue(MERCADO_PAGO_WEBHOOK_URL_SECRET) || readLocalSecretEnv('MERCADO_PAGO_WEBHOOK_URL_LOCAL') || '').trim();
 }
 
 function mapMercadoPagoStatus(statusRaw) {
@@ -2572,7 +5117,7 @@ async function mercadoPagoApiRequest(path, options = {}) {
     }
     if (!response.ok) {
         const msg = payload && payload.message ? payload.message : `Mercado Pago HTTP ${response.status}`;
-        throw new Error(msg);
+        throw new HttpsErrorV2('failed-precondition', msg);
     }
     return payload || {};
 }
@@ -2652,7 +5197,7 @@ function computeSubscriptionEndDateByPlan(plan) {
     return { startDateIso: now.toISOString(), endDateIso: endDate.toISOString() };
 }
 
-async function activateSubscriptionByAutoPix(record, providerPayment) {
+async function activateSubscriptionByAutoPayment(record, providerPayment) {
     const uid = String(record && record.uid || '').trim();
     if (!uid) return { success: false, reason: 'uid_missing' };
     const paymentId = String(record && record.paymentId || '').trim();
@@ -2663,10 +5208,13 @@ async function activateSubscriptionByAutoPix(record, providerPayment) {
     const paidAmount = toMoney(record.amount || 0, 0);
     const period = computeSubscriptionEndDateByPlan(plan);
     const payments = Array.isArray(user && user.payments) ? user.payments.slice(0) : [];
+
+    const paymentMethod = String(providerPayment && providerPayment.payment_type_id || record.method || 'online').toLowerCase();
+
     payments.push({
         date: new Date().toISOString(),
         amount: paidAmount,
-        method: 'pix',
+        method: paymentMethod,
         status: 'approved',
         reference: paymentId || String(record.reference || ''),
         provider: 'mercado_pago',
@@ -2690,20 +5238,30 @@ async function activateSubscriptionByAutoPix(record, providerPayment) {
         subscriptionStart: period.startDateIso,
         subscriptionEnd: period.endDateIso,
         updatedAt: new Date().toISOString(),
-        updatedBy: 'system:auto_pix'
+        updatedBy: 'system:auto_payment'
     };
     await applyUserPatchAcrossScopes(uid, patch, { companyId: String(record.companyId || user.companyId || '').trim(), email: String(user && user.email || '').trim() });
+
+    // Process Promo Code Usage
+    if (record.promoCode) {
+        const code = normalizePromoCodeValue(record.promoCode);
+        if (code) {
+            await admin.database().ref(`system/promocode_usage/${code}/${uid}`).set(true);
+            const promoRef = admin.database().ref(`system/promocodes/${code}/currentUses`);
+            await promoRef.transaction((current) => (current || 0) + 1);
+        }
+    }
     await pushUserNotification(uid, {
         type: 'success',
-        title: 'Pagamento PIX confirmado',
+        title: 'Pagamento confirmado',
         message: 'Seu pagamento foi confirmado automaticamente e sua assinatura está ativa.'
     });
-    await appendSubscriptionAuditLog(uid, paymentId || `pix-${Date.now()}`, 'PIX_AUTO_CONFIRMED', 'system:auto_pix', {
+    await appendSubscriptionAuditLog(uid, paymentId || `pay-${Date.now()}`, 'PAYMENT_AUTO_CONFIRMED', 'system:auto_payment', {
         providerPaymentId: String(providerPayment && providerPayment.id || record.providerPaymentId || ''),
         amount: paidAmount,
         plan
     });
-    await appendAdminAudit('PIX_AUTO_CONFIRMED', 'system:auto_pix', {
+    await appendAdminAudit('PAYMENT_AUTO_CONFIRMED', 'system:auto_payment', {
         uid,
         paymentId,
         providerPaymentId: String(providerPayment && providerPayment.id || record.providerPaymentId || ''),
@@ -2716,9 +5274,40 @@ async function activateSubscriptionByAutoPix(record, providerPayment) {
 async function syncMercadoPagoPayment(providerPayment, contextInfo = {}) {
     const providerPaymentId = String(providerPayment && providerPayment.id || '').trim();
     if (!providerPaymentId) throw new Error('providerPaymentId ausente.');
-    const found = await findSubscriptionPaymentRecordByProviderId(providerPaymentId);
+    let found = await findSubscriptionPaymentRecordByProviderId(providerPaymentId);
     if (!found || !found.paymentId) {
-        throw new Error('Pagamento PIX não localizado no Sisweb.');
+        // Tentar criar a partir dos metadados caso tenha vindo do Checkout Bricks
+        const meta = providerPayment.metadata || {};
+        let metaUid = meta.uid || meta.uid_ || meta.user_id;
+        let metaPlan = meta.planKey || meta.plan_key || meta.plan;
+
+        if (!metaUid && providerPayment.external_reference) {
+            const parts = String(providerPayment.external_reference).split(':');
+            if (parts.length >= 2) {
+                metaUid = parts[0];
+                metaPlan = parts[1];
+            }
+        }
+
+        if (metaUid && metaPlan) {
+            const paymentRef = admin.database().ref('subscriptionPayments').push();
+            const paymentId = String(paymentRef.key || randomToken().slice(0, 20));
+            const newRecord = {
+                paymentId,
+                uid: String(metaUid),
+                companyId: String(meta.companyId || meta.company_id || ''),
+                plan: String(metaPlan),
+                amount: toMoney(providerPayment.transaction_amount || 0, 0),
+                method: String(providerPayment.payment_type_id || 'bricks').toLowerCase(),
+                provider: 'mercado_pago',
+                providerPaymentId,
+                providerStatus: String(providerPayment.status || '')
+            };
+            await persistSubscriptionPaymentRecord(newRecord);
+            found = { paymentId, record: newRecord };
+        } else {
+            throw new Error('Pagamento não localizado no Sisweb e sem metadados para criação automática.');
+        }
     }
     const current = found.record && typeof found.record === 'object' ? found.record : {};
     const statusMapped = mapMercadoPagoStatus(providerPayment.status);
@@ -2742,21 +5331,21 @@ async function syncMercadoPagoPayment(providerPayment, contextInfo = {}) {
     }
     await persistSubscriptionPaymentRecord(nextRecord);
     if (statusMapped === 'approved' && !current.confirmedAt) {
-        await activateSubscriptionByAutoPix(nextRecord, providerPayment);
+        await activateSubscriptionByAutoPayment(nextRecord, providerPayment);
     } else if (statusMapped === 'rejected') {
         const uid = String(nextRecord.uid || '').trim();
         if (uid) {
             await pushUserNotification(uid, {
                 type: 'warning',
-                title: 'Pagamento PIX não aprovado',
-                message: 'Seu pagamento PIX não foi aprovado. Você pode reenviar ou usar o comprovante manual.'
+                title: 'Pagamento não aprovado',
+                message: 'Seu pagamento online não foi aprovado. Verifique os dados e tente novamente.'
             });
         }
-        await appendSubscriptionAuditLog(uid || 'unknown', String(nextRecord.paymentId || `pix-${Date.now()}`), 'PIX_AUTO_REJECTED', 'system:auto_pix', {
+        await appendSubscriptionAuditLog(uid || 'unknown', String(nextRecord.paymentId || `pay-${Date.now()}`), 'PAYMENT_AUTO_REJECTED', 'system:auto_payment', {
             providerPaymentId,
             providerStatus: String(providerPayment.status || '')
         });
-        await appendAdminAudit('PIX_AUTO_REJECTED', 'system:auto_pix', {
+        await appendAdminAudit('PAYMENT_AUTO_REJECTED', 'system:auto_payment', {
             uid: uid || '',
             paymentId: String(nextRecord.paymentId || ''),
             providerPaymentId,
@@ -2764,6 +5353,36 @@ async function syncMercadoPagoPayment(providerPayment, contextInfo = {}) {
         });
     }
     return nextRecord;
+}
+
+async function applyPromoCodeIfAny(code, pricing, uid) {
+    const safeCode = normalizePromoCodeValue(code);
+    if (!safeCode) return;
+    const promoRef = admin.database().ref(`system/promocodes/${safeCode}`);
+    const promoSnap = await promoRef.get();
+    if (!promoSnap.exists()) return;
+    const promo = promoSnap.val() || {};
+    if (promo.active !== true) return;
+    if (promo.archived === true) return;
+    if (promo.expiresAt && new Date(promo.expiresAt).getTime() < Date.now()) return;
+    if (!promoAppliesToPlan(promo, pricing && pricing.planKey)) return;
+    const maxUses = parseInt(promo.maxUses, 10) || 0;
+    const currentUses = parseInt(promo.currentUses, 10) || 0;
+    if (maxUses > 0 && currentUses >= maxUses) return;
+    if (uid) {
+        const usageRef = admin.database().ref(`system/promocode_usage/${safeCode}/${uid}`);
+        const usageSnap = await usageRef.get();
+        if (usageSnap.exists()) return;
+    }
+
+    let discountAmount = 0;
+    let type = promo.type || 'percent';
+    let value = parseFloat(promo.value) || 0;
+    if (type === 'percent') { discountAmount = pricing.amount * (value / 100); }
+    else if (type === 'fixed') { discountAmount = value; }
+
+    pricing.amount = Math.max(0, pricing.amount - discountAmount);
+    pricing.promoCode = safeCode; // Register it to deduct usages later
 }
 
 exports.createPixPayment = onCallV2({
@@ -2793,6 +5412,7 @@ exports.createPixPayment = onCallV2({
     settings.__runtimeHasReferral = false;
     settings.__runtimeIsNewClient = true;
     const pricing = resolvePricingFromSettings(planInput, settings);
+    await applyPromoCodeIfAny(payload.promoCode, pricing, uid);
     const idempotencyKey = sha256(`${uid}|${pricing.planKey}|${pricing.amount}|${Date.now()}|${Math.random().toString(36).slice(2, 10)}`);
     const externalReference = `${uid}:${pricing.planKey}:${Date.now()}`;
     const mpPayload = {
@@ -2851,7 +5471,8 @@ exports.createPixPayment = onCallV2({
         ticketUrl: sanitizeLongText(txData.ticket_url || '', '', 2048),
         expiration: sanitizeText(providerPayment.date_of_expiration || ''),
         createdAt: nowIso,
-        updatedAt: nowIso
+        updatedAt: nowIso,
+        promoCode: pricing.promoCode || ''
     };
     await persistSubscriptionPaymentRecord(record);
     await appendSubscriptionAuditLog(uid, paymentId, 'PIX_PAYMENT_CREATED', uid, {
@@ -2879,6 +5500,160 @@ exports.createPixPayment = onCallV2({
             amount: record.amount,
             plan: record.plan
         }
+    };
+});
+
+exports.createPaymentPreference = onCallV2({
+    region: 'us-central1',
+    secrets: [MERCADO_PAGO_ACCESS_TOKEN_SECRET, MERCADO_PAGO_WEBHOOK_TOKEN_SECRET, MERCADO_PAGO_WEBHOOK_URL_SECRET]
+}, async (request) => {
+    const data = request && typeof request.data === 'object' ? request.data : {};
+    const context = request;
+    if (!context || !context.auth || !context.auth.uid) {
+        throw new HttpsErrorV2('unauthenticated', 'Apenas usuários autenticados podem criar preferência de pagamento.');
+    }
+    const uid = context.auth.uid;
+    const payload = data;
+    const planInput = sanitizeText(payload.plan || payload.planKey || 'monthly', 'monthly');
+    const settingsSnapshot = await admin.database().ref(SUBSCRIPTION_SETTINGS_PATH).get();
+    const settings = normalizeSubscriptionSettings(settingsSnapshot.exists() ? settingsSnapshot.val() : {});
+
+    const userRef = admin.database().ref(`users/${uid}`);
+    const userSnap = await userRef.get();
+    const user = userSnap.exists() ? userSnap.val() : {};
+    const email = String((user && user.email) || (context.auth.token && context.auth.token.email) || '').trim().toLowerCase();
+    const companyId = await resolveCompanyIdForUser(uid, email, context.auth.token || {}, user || {});
+
+    settings.__runtimeReferralCount = 0;
+    settings.__runtimeHasReferral = false;
+    settings.__runtimeIsNewClient = true;
+    const pricing = resolvePricingFromSettings(planInput, settings);
+    await applyPromoCodeIfAny(payload.promoCode, pricing, uid);
+
+    const externalReference = `${uid}:${pricing.planKey}:${Date.now()}`;
+    const webhookUrl = getMercadoPagoWebhookUrl();
+    const webhookToken = getMercadoPagoWebhookToken();
+
+    const mpPayload = {
+        items: [
+            {
+                id: pricing.planKey,
+                title: `Assinatura Sisweb - ${pricing.planKey}`,
+                quantity: 1,
+                unit_price: toMoney(pricing.amount, 0),
+            }
+        ],
+        payer: {
+            email: email || `${uid}@sisweb.local`
+        },
+        external_reference: externalReference
+    };
+
+    if (webhookUrl) {
+        if (webhookToken) {
+            const separator = webhookUrl.includes('?') ? '&' : '?';
+            mpPayload.notification_url = `${webhookUrl}${separator}token=${encodeURIComponent(webhookToken)}`;
+        } else {
+            mpPayload.notification_url = webhookUrl;
+        }
+    }
+
+    const providerPreference = await mercadoPagoApiRequest('/checkout/preferences', {
+        method: 'POST',
+        body: mpPayload
+    });
+
+    const preferenceId = String(providerPreference && providerPreference.id || '').trim();
+    if (!preferenceId) {
+        throw new HttpsErrorV2('failed-precondition', 'Mercado Pago não retornou preference_id.');
+    }
+
+    return {
+        success: true,
+        preferenceId,
+        amount: pricing.amount
+    };
+});
+
+exports.processPaymentBrick = onCallV2({
+    region: 'us-central1',
+    secrets: [MERCADO_PAGO_ACCESS_TOKEN_SECRET, MERCADO_PAGO_WEBHOOK_URL_SECRET, MERCADO_PAGO_WEBHOOK_TOKEN_SECRET]
+}, async (request) => {
+    const data = request && typeof request.data === 'object' ? request.data : {};
+    const context = request;
+    if (!context || !context.auth || !context.auth.uid) {
+        throw new HttpsErrorV2('unauthenticated', 'Apenas usuários autenticados podem processar pagamentos.');
+    }
+    const uid = context.auth.uid;
+    const { formData, plan } = data;
+
+    if (!formData || !plan) {
+        throw new HttpsErrorV2('invalid-argument', 'formData e plan são obrigatórios.');
+    }
+
+    // Identificar a empresa e o plano
+    const userSnap = await admin.database().ref(`users/${uid}`).once('value');
+    let companyId = '';
+    if (userSnap.exists() && userSnap.val().companyId) {
+        companyId = userSnap.val().companyId;
+    }
+
+    const settingsSnapshot = await admin.database().ref(SUBSCRIPTION_SETTINGS_PATH).get();
+    const settings = normalizeSubscriptionSettings(settingsSnapshot.exists() ? settingsSnapshot.val() : {});
+    const pricing = resolvePricingFromSettings(plan, settings);
+
+    if (!pricing || !pricing.planKey) {
+        throw new HttpsErrorV2('failed-precondition', 'Plano inválido.');
+    }
+
+    const email = context.auth.token && context.auth.token.email ? context.auth.token.email : `${uid}@sisweb.local`;
+    const idempotencyKey = `brick_${uid}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const externalReference = `${uid}:${pricing.planKey}:${Date.now()}`;
+
+    const mpPayload = {
+        ...formData,
+        transaction_amount: toMoney(pricing.amount, 0),
+        description: `Assinatura Sisweb - ${pricing.planKey}`,
+        external_reference: externalReference,
+        payer: {
+            ...(formData.payer || {}),
+            email: formData.payer && formData.payer.email ? formData.payer.email : email
+        },
+        metadata: {
+            uid,
+            companyId: String(companyId || ''),
+            planKey: pricing.planKey
+        }
+    };
+
+    const webhookUrl = getMercadoPagoWebhookUrl();
+    const webhookToken = getMercadoPagoWebhookToken();
+    if (webhookUrl) {
+        if (webhookToken) {
+            const separator = webhookUrl.includes('?') ? '&' : '?';
+            mpPayload.notification_url = `${webhookUrl}${separator}token=${encodeURIComponent(webhookToken)}`;
+        } else {
+            mpPayload.notification_url = webhookUrl;
+        }
+    }
+
+    const providerPayment = await mercadoPagoApiRequest('/v1/payments', {
+        method: 'POST',
+        idempotencyKey,
+        body: mpPayload
+    });
+
+    const providerPaymentId = String(providerPayment && providerPayment.id || '').trim();
+    if (!providerPaymentId) {
+        throw new HttpsErrorV2('failed-precondition', 'Mercado Pago não retornou ID do pagamento.');
+    }
+
+    return {
+        success: true,
+        paymentId: providerPaymentId,
+        status: providerPayment.status,
+        statusDetail: providerPayment.status_detail,
+        providerPayment
     };
 });
 
@@ -2955,12 +5730,14 @@ exports.mercadoPagoWebhook = onRequestV2({
         return;
     }
     const requiredWebhookToken = getMercadoPagoWebhookToken();
-    if (requiredWebhookToken) {
-        const incomingToken = String((req.query && req.query.token) || '').trim();
-        if (!incomingToken || incomingToken !== requiredWebhookToken) {
-            res.status(401).json({ success: false, error: 'invalid_webhook_token' });
-            return;
-        }
+    if (!requiredWebhookToken) {
+        res.status(503).json({ success: false, error: 'webhook_token_not_configured' });
+        return;
+    }
+    const incomingToken = String(req.get('x-sisweb-webhook-token') || (req.query && req.query.token) || '').trim();
+    if (!incomingToken || incomingToken !== requiredWebhookToken) {
+        res.status(401).json({ success: false, error: 'invalid_webhook_token' });
+        return;
     }
     try {
         const query = req.query && typeof req.query === 'object' ? req.query : {};
@@ -3024,3 +5801,221 @@ exports.mercadoPagoWebhook = onRequestV2({
         res.status(500).json({ success: false, error: String(error && error.message ? error.message : error || 'internal_error') });
     }
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PROMOCODES - Validação
+// ═══════════════════════════════════════════════════════════════════════════
+exports.listPromoCodesAdmin = https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem listar cupons.');
+    }
+    await assertSuperAdmin(context, 'Apenas superadmin pode listar cupons promocionais.');
+    const payload = data && typeof data === 'object' ? data : {};
+    const includeArchived = payload.includeArchived === true;
+    const snapshot = await admin.database().ref('system/promocodes').get();
+    const raw = snapshot.exists() ? snapshot.val() : {};
+    const items = Object.entries(raw || {})
+        .map(([id, promo]) => {
+            const source = promo && typeof promo === 'object' ? promo : {};
+            const code = normalizePromoCodeValue(source.code || id);
+            const normalized = compactPromoCodeAuditShape({ ...source, code });
+            const isExpired = !!normalized.expiresAt && new Date(normalized.expiresAt).getTime() < Date.now();
+            const isExhausted = normalized.maxUses > 0 && normalized.currentUses >= normalized.maxUses;
+            return {
+                ...source,
+                ...normalized,
+                id: code,
+                code,
+                isExpired,
+                isExhausted,
+                isActive: normalized.active === true && normalized.archived !== true && !isExpired && !isExhausted,
+                createdAt: source.createdAt || '',
+                updatedAt: source.updatedAt || ''
+            };
+        })
+        .filter((promo) => promo.code && (includeArchived || promo.archived !== true));
+    items.sort((a, b) => new Date(b.createdAt || b.updatedAt || 0).getTime() - new Date(a.createdAt || a.updatedAt || 0).getTime());
+    return { success: true, items };
+});
+
+exports.getPromoCodeAdmin = https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem consultar cupom.');
+    }
+    await assertSuperAdmin(context, 'Apenas superadmin pode consultar cupom promocional.');
+    const payload = data && typeof data === 'object' ? data : {};
+    const code = normalizePromoCodeValue(payload.code);
+    if (!code) {
+        throw new functions.https.HttpsError('invalid-argument', 'Código do cupom é obrigatório.');
+    }
+    const snapshot = await admin.database().ref(`system/promocodes/${code}`).get();
+    if (!snapshot.exists()) {
+        throw new functions.https.HttpsError('not-found', 'Cupom não encontrado.');
+    }
+    const promoCode = { ...(snapshot.val() || {}), code };
+    return { success: true, promoCode };
+});
+
+exports.upsertPromoCodeAdmin = https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem salvar cupom.');
+    }
+    const actorUid = context.auth.uid;
+    await assertSuperAdmin(context, 'Apenas superadmin pode salvar cupom promocional.');
+    const payload = data && typeof data === 'object' ? data : {};
+    const code = normalizePromoCodeValue(payload.code);
+    if (!code) {
+        throw new functions.https.HttpsError('invalid-argument', 'Código do cupom é obrigatório.');
+    }
+    const promoRef = admin.database().ref(`system/promocodes/${code}`);
+    const beforeSnap = await promoRef.get();
+    const before = beforeSnap.exists() ? beforeSnap.val() : {};
+    const nextPromo = normalizePromoCodeAdminPayload({ ...payload, code }, before, actorUid);
+    await promoRef.set(nextPromo);
+    await appendPromoCodeAudit(beforeSnap.exists() ? 'UPDATE_PROMO_CODE' : 'CREATE_PROMO_CODE', actorUid, code, before, nextPromo);
+    return { success: true, promoCode: nextPromo };
+});
+
+exports.archivePromoCodeAdmin = https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem arquivar cupom.');
+    }
+    const actorUid = context.auth.uid;
+    await assertSuperAdmin(context, 'Apenas superadmin pode arquivar cupom promocional.');
+    const payload = data && typeof data === 'object' ? data : {};
+    const code = normalizePromoCodeValue(payload.code);
+    if (!code) {
+        throw new functions.https.HttpsError('invalid-argument', 'Código do cupom é obrigatório.');
+    }
+    const promoRef = admin.database().ref(`system/promocodes/${code}`);
+    const beforeSnap = await promoRef.get();
+    if (!beforeSnap.exists()) {
+        throw new functions.https.HttpsError('not-found', 'Cupom não encontrado.');
+    }
+    const before = beforeSnap.val() || {};
+    const archivedAt = new Date().toISOString();
+    const patch = {
+        active: false,
+        archived: true,
+        archivedAt,
+        archivedBy: sanitizeText(actorUid || ''),
+        updatedAt: archivedAt,
+        updatedBy: sanitizeText(actorUid || '')
+    };
+    await promoRef.update(patch);
+    await appendPromoCodeAudit('ARCHIVE_PROMO_CODE', actorUid, code, before, { ...before, ...patch });
+    return { success: true, code, archived: true };
+});
+
+exports.validatePromoCode = https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem validar cupons.');
+    }
+    const payload = data || {};
+    const code = normalizePromoCodeValue(payload.code);
+    const planId = String(payload.planId || payload.plan || payload.planKey || '').trim().toLowerCase();
+
+    if (!code || !planId) {
+        throw new functions.https.HttpsError('invalid-argument', 'Código e Plano são obrigatórios.');
+    }
+
+    const promoRef = admin.database().ref(`system/promocodes/${code}`);
+    const promoSnap = await promoRef.get();
+
+    if (!promoSnap.exists()) {
+        throw new functions.https.HttpsError('not-found', 'Cupom inválido ou inexistente.');
+    }
+
+    const promo = promoSnap.val() || {};
+
+    if (promo.active !== true) {
+        throw new functions.https.HttpsError('failed-precondition', 'Cupom inativo.');
+    }
+
+    if (promo.archived === true) {
+        throw new functions.https.HttpsError('failed-precondition', 'Cupom arquivado.');
+    }
+
+    if (!promoAppliesToPlan(promo, planId)) {
+        throw new functions.https.HttpsError('failed-precondition', 'Cupom não disponível para este plano.');
+    }
+
+    if (promo.expiresAt) {
+        const expires = new Date(promo.expiresAt);
+        if (expires.getTime() < Date.now()) {
+            throw new functions.https.HttpsError('failed-precondition', 'Cupom expirado.');
+        }
+    }
+
+    const maxUses = parseInt(promo.maxUses, 10) || 0;
+    const currentUses = parseInt(promo.currentUses, 10) || 0;
+
+    if (maxUses > 0 && currentUses >= maxUses) {
+        throw new functions.https.HttpsError('failed-precondition', 'Cupom esgotado.');
+    }
+
+    const uid = context.auth.uid;
+    const usageRef = admin.database().ref(`system/promocode_usage/${code}/${uid}`);
+    const usageSnap = await usageRef.get();
+
+    if (usageSnap.exists()) {
+        throw new functions.https.HttpsError('failed-precondition', 'Você já utilizou este cupom.');
+    }
+
+    const settingsSnapshot = await admin.database().ref(SUBSCRIPTION_SETTINGS_PATH).get();
+    const settings = normalizeSubscriptionSettings(settingsSnapshot.exists() ? settingsSnapshot.val() : {});
+
+    let listPrice = 0;
+    if (planId === 'annual' || planId === 'quarterly') {
+        listPrice = toMoney(settings.plans && settings.plans.quarterly ? settings.plans.quarterly.amount : 59.9, 59.9);
+    } else if (planId === 'premium') {
+        listPrice = toMoney(settings.plans && settings.plans.premium ? settings.plans.premium.amount : 228.0, 228.0);
+    } else {
+        listPrice = toMoney(settings.plans && settings.plans.monthly ? settings.plans.monthly.amount : 19.9, 19.9);
+    }
+
+    let discountAmount = 0;
+    let type = promo.type || 'percent';
+    let value = parseFloat(promo.value) || 0;
+
+    if (type === 'percent') {
+        discountAmount = toMoney(listPrice * (value / 100), 0);
+    } else if (type === 'fixed') {
+        discountAmount = toMoney(value, 0);
+    }
+
+    if (discountAmount > listPrice) {
+        discountAmount = listPrice;
+    }
+
+    const finalPrice = toMoney(listPrice - discountAmount, 0);
+
+    return {
+        success: true,
+        code,
+        listPrice,
+        discountAmount,
+        finalPrice,
+        type,
+        value
+    };
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NF-e CLOUD FUNCTIONS — Módulo Fiscal (Sisweb)
+// Assinatura XML, Envio SEFAZ, Consulta, Cancelamento, Certificado
+// ═══════════════════════════════════════════════════════════════════════════
+const nfFunctions = require('./nf-functions');
+exports.nf_assinarXML        = nfFunctions.nf_assinarXML;
+exports.nf_enviarSEFAZ       = nfFunctions.nf_enviarSEFAZ;
+exports.nf_consultarNFe      = nfFunctions.nf_consultarNFe;
+exports.nf_cancelarNFe       = nfFunctions.nf_cancelarNFe;
+exports.nf_cartaCorrecaoNFe  = nfFunctions.nf_cartaCorrecaoNFe;
+exports.nf_inutilizarNumeracao = nfFunctions.nf_inutilizarNumeracao;
+exports.nf_uploadCertificadoA1 = nfFunctions.nf_uploadCertificadoA1;
+exports.nf_removerCertificado = nfFunctions.nf_removerCertificado;
+exports.nf_salvarReferenciaCertificado = nfFunctions.nf_salvarReferenciaCertificado;
+exports.nf_salvarConfiguracaoFiscal = nfFunctions.nf_salvarConfiguracaoFiscal;
+exports.nf_configurarCertNuvem = nfFunctions.nf_configurarCertNuvem;
+exports.nf_obterResumoCertificadoFiscal = nfFunctions.nf_obterResumoCertificadoFiscal;
+exports.nf_obterConfiguracaoFiscal = nfFunctions.nf_obterConfiguracaoFiscal;

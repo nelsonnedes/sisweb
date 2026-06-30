@@ -1,0 +1,77 @@
+[
+  { "id": "inicio-1", "path": "index.html", "actions": [
+    { "type": "training", "name": "inicio" }
+  ] },
+  { "id": "navegacao-1", "path": "index.html", "actions": [
+    { "type": "training", "name": "suporte" }
+  ] },
+  { "id": "empresa-1", "path": "company.html", "actions": [
+    { "type": "training", "name": "empresa" }
+  ] },
+  { "id": "empresa-2", "path": "company.html", "actions": [
+    { "type": "training", "name": "empresa-lista" }
+  ] },
+  { "id": "cadastros-1", "path": "client.html", "actions": [
+    { "type": "training", "name": "cadastros" }
+  ] },
+  { "id": "romaneios-1", "path": "preromaneio.html", "actions": [
+    { "type": "training", "name": "romaneios" }
+  ] },
+  { "id": "romaneios-2", "path": "romaneiotora.html", "actions": [
+    { "type": "training", "name": "romaneios-lista" }
+  ] },
+  { "id": "vendas-1", "path": "vendas.html", "actions": [
+    { "type": "training", "name": "vendas" }
+  ] },
+  { "id": "vendas-2", "path": "vendas.html", "actions": [
+    { "type": "training", "name": "vendas-lista" }
+  ] },
+  { "id": "vendas-3", "path": "vendas.html", "actions": [
+    { "type": "training", "name": "vendas-detalhe" }
+  ] },
+  { "id": "compras-1", "path": "compras.html", "actions": [
+    { "type": "training", "name": "compras" }
+  ] },
+  { "id": "compras-2", "path": "compras.html", "actions": [
+    { "type": "training", "name": "compras-lista" }
+  ] },
+  { "id": "estoque-1", "path": "estoque.html", "actions": [
+    { "type": "training", "name": "estoque" }
+  ] },
+  { "id": "estoque-2", "path": "estoque.html", "actions": [
+    { "type": "training", "name": "estoque-rastreabilidade" }
+  ] },
+  { "id": "financas-1", "path": "financas.html", "actions": [
+    { "type": "training", "name": "financas" }
+  ] },
+  { "id": "financas-2", "path": "financas.html", "actions": [
+    { "type": "training", "name": "financas-pagamento" }
+  ] },
+  { "id": "folha-1", "path": "folha_pagamento/folha.html", "actions": [
+    { "type": "training", "name": "folha" }
+  ] },
+  { "id": "folha-2", "path": "folha_pagamento/folha.html", "actions": [
+    { "type": "training", "name": "folha-funcionario" }
+  ] },
+  { "id": "folha-3", "path": "folha_pagamento/folha.html", "actions": [
+    { "type": "training", "name": "folha-qr" }
+  ] },
+  { "id": "fiscal-1", "path": "notas-fiscais.html", "actions": [
+    { "type": "training", "name": "fiscal" }
+  ] },
+  { "id": "assinatura-1", "path": "subscription-status.html", "actions": [
+    { "type": "training", "name": "assinatura" }
+  ] },
+  { "id": "assinatura-2", "path": "subscription.html", "actions": [
+    { "type": "training", "name": "assinatura-pagamento" }
+  ] },
+  { "id": "perfil-1", "path": "user-profile.html", "actions": [
+    { "type": "training", "name": "perfil" }
+  ] },
+  { "id": "perfil-2", "path": "user-profile.html", "actions": [
+    { "type": "training", "name": "perfil-editar" }
+  ] },
+  { "id": "suporte-1", "path": "index.html", "actions": [
+    { "type": "training", "name": "suporte" }
+  ] }
+]

@@ -55,10 +55,58 @@ async function initFirebase() {
     }
 }
 
+function resolveTenantId() {
+    try {
+        const services = [window.firebaseService, window.FirebaseService, window.firebaseServiceTL].filter(Boolean);
+        for (const service of services) {
+            if (typeof service.getCurrentTenantId === 'function') {
+                const id = service.getCurrentTenantId();
+                if (id) return String(id);
+            }
+            if (typeof service.getTenantId === 'function') {
+                const id = service.getTenantId();
+                if (id) return String(id);
+            }
+        }
+        if (window.appTenantId) return String(window.appTenantId);
+        if (window.companyInfo) {
+            const id = window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id;
+            if (id) return String(id);
+        }
+        for (const key of ['company_info', 'companyInfo', 'currentUser', 'persistentUser']) {
+            const raw = localStorage.getItem(key);
+            if (!raw) continue;
+            const info = JSON.parse(raw);
+            const id = info && (info.companyId || info.companyID || info.tenantId || info.id || info.company_id);
+            if (id) return String(id);
+        }
+    } catch (_) {}
+    return '';
+}
+
+function getSpeciesPath() {
+    const tenantId = resolveTenantId();
+    if (!tenantId) {
+        throw new Error('Tenant/companyId indisponível. Importação bloqueada para evitar gravação global de espécies.');
+    }
+    return `companies/${tenantId}/especies`;
+}
+
+function getSpeciesStorageKeys() {
+    const tenantId = resolveTenantId();
+    if (!tenantId) return ['companies/__no_tenant__/especies'];
+    return [
+        `companies/${tenantId}/especies`,
+        `company_${tenantId}__especies`,
+        `company_${tenantId}__especies_cache`
+    ];
+}
+
 // Função para recuperar espécies do Firebase
 async function getSpeciesFromFirebase(db) {
     try {
-        const snapshot = await db.ref('species').once('value');
+        const speciesPath = getSpeciesPath();
+        const snapshot = await db.ref(speciesPath).once('value');
         if (!snapshot.exists()) return [];
         
         const species = [];
@@ -69,7 +117,7 @@ async function getSpeciesFromFirebase(db) {
             });
         });
         
-        console.log(`Recuperadas ${species.length} espécies do Firebase`);
+        console.log(`Recuperadas ${species.length} espécies do Firebase em ${speciesPath}`);
         return species;
     } catch (error) {
         console.error("Erro ao recuperar espécies do Firebase:", error);
@@ -80,8 +128,14 @@ async function getSpeciesFromFirebase(db) {
 // Função para recuperar espécies do localStorage
 function getSpecies() {
     try {
-        const data = localStorage.getItem('species');
-        return data ? JSON.parse(data) : [];
+        for (const key of getSpeciesStorageKeys()) {
+            const data = localStorage.getItem(key);
+            if (!data) continue;
+            const parsed = JSON.parse(data);
+            if (Array.isArray(parsed)) return parsed;
+            if (parsed && typeof parsed === 'object') return Object.keys(parsed).map(id => ({ id, key: id, firebaseKey: id, ...parsed[id] }));
+        }
+        return [];
     } catch (e) {
         console.error('Erro ao recuperar espécies:', e);
         return [];
@@ -91,7 +145,12 @@ function getSpecies() {
 // Função para salvar espécies no localStorage
 function saveSpecies(species) {
     try {
-        localStorage.setItem('species', JSON.stringify(species));
+        const payload = JSON.stringify(species);
+        getSpeciesStorageKeys().forEach(key => localStorage.setItem(key, payload));
+        localStorage.removeItem('species');
+        localStorage.removeItem('especies');
+        localStorage.removeItem('especiesPct');
+        localStorage.removeItem('data/species');
         return true;
     } catch (e) {
         console.error('Erro ao salvar espécies:', e);
@@ -102,6 +161,7 @@ function saveSpecies(species) {
 // Função para salvar espécies no Firebase
 async function saveSpeciesToFirebase(db, species) {
     try {
+        const speciesPath = getSpeciesPath();
         // Para cada espécie
         let successCount = 0;
         
@@ -110,24 +170,24 @@ async function saveSpeciesToFirebase(db, species) {
                 if (!specie) continue;
                 
                 // Usar o key se disponível, ou gerar um novo ID
-                const itemKey = specie.key || specie.id || `species_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-                delete specie.key; // Remover a propriedade key antes de salvar
+                const itemKey = specie.key || specie.id || `ESP_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                const payload = toCanonicalSpecies(specie, itemKey);
                 
                 // Adicionar timestamp se for nova ou atualizada
-                if (!specie.createdAt) {
-                    specie.createdAt = new Date().toISOString();
+                if (!payload.createdAt) {
+                    payload.createdAt = new Date().toISOString();
                 }
-                specie.updatedAt = new Date().toISOString();
+                payload.updatedAt = new Date().toISOString();
                 
                 // Salvar no Firebase
-                await db.ref(`species/${itemKey}`).set(specie);
+                await db.ref(`${speciesPath}/${itemKey}`).set(payload);
                 successCount++;
             } catch (itemError) {
                 console.error(`Erro ao salvar espécie no Firebase:`, itemError, specie);
             }
         }
         
-        console.log(`✅ ${successCount} espécies salvas no Firebase`);
+        console.log(`✅ ${successCount} espécies salvas no Firebase em ${speciesPath}`);
         return successCount > 0;
     } catch (error) {
         console.error('Erro ao salvar no Firebase:', error);
@@ -138,15 +198,35 @@ async function saveSpeciesToFirebase(db, species) {
 // Função para verificar se uma espécie já existe
 function speciesExists(species, name) {
     return species.some(s => 
-        s.name && s.name.toLowerCase() === name.toLowerCase()
+        getSpeciesName(s).toLowerCase() === name.toLowerCase()
     );
 }
 
 // Função para encontrar o índice de uma espécie existente
 function findSpeciesIndex(species, name) {
     return species.findIndex(s => 
-        s.name && s.name.toLowerCase() === name.toLowerCase()
+        getSpeciesName(s).toLowerCase() === name.toLowerCase()
     );
+}
+
+function getSpeciesName(specie) {
+    return String((specie && (specie.especie || specie.nome || specie.name || specie.nomeComum)) || '').trim();
+}
+
+function getScientificName(specie) {
+    return String((specie && (specie.nomeCientifico || specie.scientificName || specie.scientific || specie.descricao || specie.description || specie.decription)) || '').trim();
+}
+
+function toCanonicalSpecies(specie, id) {
+    const now = new Date().toISOString();
+    return {
+        id: id || specie.id || specie.key || `ESP_${Date.now()}`,
+        especie: getSpeciesName(specie),
+        nomeCientifico: getScientificName(specie),
+        ativo: specie.ativo !== false,
+        createdAt: specie.createdAt || now,
+        updatedAt: specie.updatedAt || now
+    };
 }
 
 // Função para processar as linhas de texto
@@ -166,7 +246,7 @@ function processSpeciesData(text) {
             return;
         }
         
-        const description = line.substring(0, dashIndex).trim();
+        const nomeCientifico = line.substring(0, dashIndex).trim();
         const name = line.substring(dashIndex + 3).trim();
         
         if (!name) {
@@ -174,7 +254,7 @@ function processSpeciesData(text) {
             return;
         }
         
-        if (!description) {
+        if (!nomeCientifico) {
             invalidLines.push({ line, index: index + 1, reason: 'Nome científico ausente' });
             return;
         }
@@ -188,7 +268,7 @@ function processSpeciesData(text) {
         
         // Adiciona o nome à lista de processados
         processedNames.add(nameLower);
-        validLines.push({ name, description, index: index + 1 });
+        validLines.push({ name, nomeCientifico, index: index + 1 });
     });
     
     return { validLines, invalidLines };
@@ -199,9 +279,16 @@ async function importSpecies() {
     // Inicializar Firebase
     const firebaseResult = await initFirebase();
     const useFirebase = firebaseResult !== null;
+    const tenantId = resolveTenantId();
+
+    if (!tenantId) {
+        alert('Empresa/tenant não identificado. Importação cancelada para evitar gravação global de espécies.');
+        console.error('Importação de espécies bloqueada: tenant/companyId indisponível.');
+        return;
+    }
     
     if (useFirebase) {
-        console.log("Firebase disponível, usando para a importação");
+        console.log(`Firebase disponível, usando importação tenant-scoped para ${tenantId}`);
     } else {
         console.log("Firebase não disponível, usando localStorage como fallback");
     }
@@ -270,7 +357,7 @@ async function importSpecies() {
     if (duplicates.length > 0) {
         console.log('\n=== ESPÉCIES JÁ EXISTENTES (SERÃO ATUALIZADAS) ===');
         duplicates.forEach(item => {
-            console.log(`- ${item.name} (${item.description})`);
+            console.log(`- ${item.name} (${item.nomeCientifico})`);
         });
     }
     
@@ -278,7 +365,7 @@ async function importSpecies() {
     if (newSpecies.length > 0) {
         console.log('\n=== NOVAS ESPÉCIES ===');
         newSpecies.forEach(item => {
-            console.log(`- ${item.name} (${item.description})`);
+            console.log(`- ${item.name} (${item.nomeCientifico})`);
         });
     }
     
@@ -299,9 +386,9 @@ async function importSpecies() {
             // Adiciona as novas espécies
             newSpecies.forEach(item => {
                 updatedSpecies.push({
-                    id: `species_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                    name: item.name,
-                    description: item.description,
+                    id: `ESP_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    especie: item.name,
+                    nomeCientifico: item.nomeCientifico,
                     createdAt: new Date().toISOString()
                 });
                 importCount++;
@@ -318,8 +405,8 @@ async function importSpecies() {
                     updatedSpecies[speciesIndex] = {
                         ...existingData,
                         id: existingId, // Mantém o ID original
-                        name: item.name, // Substitui pelo nome da lista
-                        description: item.description, // Substitui pela descrição da lista
+                        especie: item.name,
+                        nomeCientifico: item.nomeCientifico,
                         updatedAt: new Date().toISOString()
                     };
                     updateCount++;

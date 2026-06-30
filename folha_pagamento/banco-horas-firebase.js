@@ -27,6 +27,73 @@ function parseLocalDateFlexible(value) {
 	return null;
 }
 
+const BH_LANCAMENTOS_BATCH_CACHE_TTL_MS = 30 * 1000;
+let bhLancamentosBatchCache = {
+	timestamp: 0,
+	data: null
+};
+
+function bhNormalizeIds(funcIds = []) {
+	const source = Array.isArray(funcIds) ? funcIds : [funcIds];
+	return Array.from(new Set(source
+		.map(id => String(id || '').trim())
+		.filter(Boolean)));
+}
+
+function bhMapToArray(data) {
+	if (Array.isArray(data)) {
+		return data
+			.map((value, index) => ({ id: (value && value.id) || String(index), ...(value || {}) }))
+			.filter(Boolean);
+	}
+	return Object.entries(data || {}).map(([id, value]) => ({ id, ...(value || {}) }));
+}
+
+function bhFilterAndSortLancamentos(list = [], { inicioISO, fimISO } = {}) {
+	const arr = Array.isArray(list) ? list : [];
+	const start = inicioISO ? parseLocalDateFlexible(inicioISO) : null;
+	const endBase = fimISO ? parseLocalDateFlexible(fimISO) : null;
+	const end = endBase ? new Date(endBase.getTime() + 24 * 60 * 60 * 1000 - 1) : null;
+	return arr.filter(lancamento => {
+		const d = parseLocalDateFlexible(lancamento.data || lancamento.createdAt);
+		if (!d) return false;
+		const okIni = start ? start <= d : true;
+		const okFim = end ? d <= end : true;
+		return okIni && okFim;
+	}).sort((a, b) => (parseLocalDateFlexible(a.data) || 0) - (parseLocalDateFlexible(b.data) || 0));
+}
+
+function bhInvalidateLancamentosBatchCache() {
+	bhLancamentosBatchCache = { timestamp: 0, data: null };
+}
+
+async function bhLoadAllLancamentos(m, { fresh } = {}) {
+	const now = Date.now();
+	if (!fresh && bhLancamentosBatchCache.data && (now - bhLancamentosBatchCache.timestamp) < BH_LANCAMENTOS_BATCH_CACHE_TTL_MS) {
+		return bhLancamentosBatchCache.data;
+	}
+	const data = await m.loadData('folha/bancoHoras/lancamentos', {
+		useCache: fresh ? false : true,
+		debounceMs: 0,
+		skipLocalStorage: true
+	});
+	const normalized = (data && typeof data === 'object') ? data : {};
+	bhLancamentosBatchCache = { timestamp: now, data: normalized };
+	return normalized;
+}
+
+async function bhRunLimited(items, limit, worker) {
+	const queue = Array.isArray(items) ? items.slice() : [];
+	const size = Math.max(1, Number(limit || 1));
+	const workers = Array.from({ length: Math.min(size, queue.length) }, async () => {
+		while (queue.length > 0) {
+			const item = queue.shift();
+			await worker(item);
+		}
+	});
+	await Promise.allSettled(workers);
+}
+
 // Utilitário: recalcular e persistir saldo global a partir de todos os lançamentos
 async function bhRecalcAndPersistSaldo(funcId) {
     try {
@@ -83,48 +150,30 @@ window.BHFirebase.bhSetSaldo = async function bhSetSaldo(funcId, saldoMinutos) {
 window.BHFirebase.bhListLancamentos = async function bhListLancamentos(funcId, { inicioISO, fimISO, fresh } = {}) {
 	const m = mgr();
 	if (!m || !funcId) return [];
-	const data = await m.loadData(`folha/bancoHoras/lancamentos/${funcId}`, { useCache: fresh ? false : true });
-	const arr = Object.entries(data||{}).map(([id, v]) => ({ id, ...(v||{}) }));
-	const start = inicioISO ? parseLocalDateFlexible(inicioISO) : null;
-	const endBase = fimISO ? parseLocalDateFlexible(fimISO) : null;
-	const end = endBase ? new Date(endBase.getTime() + 24*60*60*1000 - 1) : null;
-	return arr.filter(l => {
-		const d = parseLocalDateFlexible(l.data || l.createdAt);
-		if (!d) return false;
-		const okIni = start ? start <= d : true;
-		const okFim = end ? d <= end : true;
-		return okIni && okFim;
-	}).sort((a,b) => (parseLocalDateFlexible(a.data) || 0) - (parseLocalDateFlexible(b.data) || 0));
+	const data = await m.loadData(`folha/bancoHoras/lancamentos/${funcId}`, { useCache: fresh ? false : true, debounceMs: 0 });
+	return bhFilterAndSortLancamentos(bhMapToArray(data), { inicioISO, fimISO });
 };
 
 window.BHFirebase.bhListLancamentosBatch = async function bhListLancamentosBatch(funcIds = [], { inicioISO, fimISO, fresh } = {}) {
 	const m = mgr();
 	if (!m) return {};
-	const ids = Array.isArray(funcIds) ? funcIds.filter(Boolean).map(id => String(id)) : [];
+	const ids = bhNormalizeIds(funcIds);
 	if (!ids.length) return {};
 	let all = null;
+	let loadedRoot = false;
 	try {
-		all = await m.loadData('folha/bancoHoras/lancamentos', { useCache: fresh ? false : true });
+		all = await bhLoadAllLancamentos(m, { fresh });
+		loadedRoot = true;
 	} catch {}
 	const out = {};
-	const start = inicioISO ? parseLocalDateFlexible(inicioISO) : null;
-	const endBase = fimISO ? parseLocalDateFlexible(fimISO) : null;
-	const end = endBase ? new Date(endBase.getTime() + 24*60*60*1000 - 1) : null;
-	if (all && typeof all === 'object' && Object.keys(all).length > 0) {
+	if (loadedRoot && all && typeof all === 'object') {
 		for (const id of ids) {
 			const data = all[id] || {};
-			const arr = Object.entries(data||{}).map(([lid, v]) => ({ id: lid, ...(v||{}) }));
-			out[id] = arr.filter(l => {
-				const d = parseLocalDateFlexible(l.data || l.createdAt);
-				if (!d) return false;
-				const okIni = start ? start <= d : true;
-				const okFim = end ? d <= end : true;
-				return okIni && okFim;
-			}).sort((a,b) => (parseLocalDateFlexible(a.data) || 0) - (parseLocalDateFlexible(b.data) || 0));
+			out[id] = bhFilterAndSortLancamentos(bhMapToArray(data), { inicioISO, fimISO });
 		}
 		return out;
 	}
-	const tasks = ids.map(async (id) => {
+	await bhRunLimited(ids, 6, async (id) => {
 		try {
 			const list = await window.BHFirebase.bhListLancamentos(id, { inicioISO, fimISO, fresh });
 			out[id] = list || [];
@@ -132,7 +181,6 @@ window.BHFirebase.bhListLancamentosBatch = async function bhListLancamentosBatch
 			out[id] = [];
 		}
 	});
-	await Promise.allSettled(tasks);
 	return out;
 };
 
@@ -150,6 +198,7 @@ window.BHFirebase.bhAddLancamento = async function bhAddLancamento(funcId, lanc)
 		compensado: Number(lanc.compensado||0)
 	};
     await m.saveData(`folha/bancoHoras/lancamentos/${funcId}/${id}`, payload, { requireAuth: false });
+    bhInvalidateLancamentosBatchCache();
     // recalc saldo global
     await bhRecalcAndPersistSaldo(funcId);
     return payload;
@@ -160,6 +209,7 @@ window.BHFirebase.bhUpdateLancamento = async function bhUpdateLancamento(funcId,
 	if (!m || !funcId || !id) return false;
 	const curr = await m.loadData(`folha/bancoHoras/lancamentos/${funcId}/${id}`, { useCache: true });
     await m.saveData(`folha/bancoHoras/lancamentos/${funcId}/${id}`, { ...(curr||{}), ...(lanc||{}) }, { requireAuth: false });
+    bhInvalidateLancamentosBatchCache();
     await bhRecalcAndPersistSaldo(funcId);
     return true;
 };
@@ -179,12 +229,14 @@ window.BHFirebase.bhDeleteLancamento = async function bhDeleteLancamento(funcId,
 		const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
 		await remove(ref(m.database, resolvedPath));
 	}
+    bhInvalidateLancamentosBatchCache();
     await bhRecalcAndPersistSaldo(funcId);
     return true;
 };
 
 // Expor utilitário de recálculo no namespace
 window.BHFirebase.bhRecalcSaldo = bhRecalcAndPersistSaldo;
+window.BHFirebase.bhClearLancamentosBatchCache = bhInvalidateLancamentosBatchCache;
 
 // ÍNDICE DE EXPIRAÇÕES (auxiliar para relatórios)
 window.BHFirebase.bhListExpiracoes = async function bhListExpiracoes(anoMes) {

@@ -13,7 +13,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Função para salvar dados no localStorage (versão simplificada)
             window.saveData = function(key, data, checkSpace = true) {
                 try {
-                    localStorage.setItem(key, JSON.stringify(data));
+                    const canonicalKey = String(key || '')
+                        .replace(/^data\/species(\/|$)/, 'especies$1')
+                        .replace(/^species(\/|$)/, 'especies$1')
+                        .replace(/^especiesPct(\/|$)/, 'especies$1');
+                    localStorage.setItem(canonicalKey, JSON.stringify(data));
                     return true;
                 } catch (e) {
                     console.error('Erro ao salvar dados:', e);
@@ -29,7 +33,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Função para recuperar dados do localStorage (versão simplificada)
             window.getData = function(key) {
                 try {
-                    const data = localStorage.getItem(key);
+                    const canonicalKey = String(key || '')
+                        .replace(/^data\/species(\/|$)/, 'especies$1')
+                        .replace(/^species(\/|$)/, 'especies$1')
+                        .replace(/^especiesPct(\/|$)/, 'especies$1');
+                    const data = localStorage.getItem(canonicalKey);
                     return data ? JSON.parse(data) : null;
                 } catch (e) {
                     console.error('Erro ao recuperar dados:', e);

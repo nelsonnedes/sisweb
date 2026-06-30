@@ -6,10 +6,10 @@
       ".read": true,
       ".write": true
     },
-    "species": {
+    "especies": {
       ".read": true,
       ".write": true,
-      "$speciesId": {
+      "$especieId": {
         ".read": true,
         ".write": true
       }

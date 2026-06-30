@@ -1,0 +1,1870 @@
+{
+  "generatedAt": "2026-06-06T23:58:05.956Z",
+  "menu": {
+    "routes": [
+      {
+        "href": "admin.html?tab=dashboard",
+        "label": "/* Estilos inline para garantir consistência */",
+        "category": "internal"
+      },
+      {
+        "href": "vendas.html",
+        "label": "Sistema de Vendas",
+        "category": "public-operational"
+      },
+      {
+        "href": "notas-fiscais.html",
+        "label": "Notas Fiscais",
+        "category": "public-operational"
+      },
+      {
+        "href": "mdf-e.html",
+        "label": "Emissão de MDF-e",
+        "category": "public-operational"
+      },
+      {
+        "href": "compras.html",
+        "label": "Sistema de Compras",
+        "category": "public-operational"
+      },
+      {
+        "href": "estoque.html",
+        "label": "Controle de Estoque",
+        "category": "public-operational"
+      },
+      {
+        "href": "financas.html",
+        "label": "Sistema Financeiro",
+        "category": "public-operational"
+      },
+      {
+        "href": "folha_pagamento/folha.html",
+        "label": "Folha de Pagamento",
+        "category": "public-operational"
+      },
+      {
+        "href": "client.html",
+        "label": "Cliente",
+        "category": "public-operational"
+      },
+      {
+        "href": "fornecedor.html",
+        "label": "Fornecedor",
+        "category": "public-operational"
+      },
+      {
+        "href": "species.html",
+        "label": "Espécie",
+        "category": "public-operational"
+      },
+      {
+        "href": "importar_especies.html",
+        "label": "Importar Especies",
+        "category": "public-operational"
+      },
+      {
+        "href": "preromaneio.html",
+        "label": "Pré-Romaneio",
+        "category": "public-operational"
+      },
+      {
+        "href": "romaneiotl.html",
+        "label": "Romaneio TL",
+        "category": "public-operational"
+      },
+      {
+        "href": "romaneiopct.html",
+        "label": "Romaneio PC",
+        "category": "public-operational"
+      },
+      {
+        "href": "romaneiopes.html",
+        "label": "Romaneio Pés",
+        "category": "public-operational"
+      },
+      {
+        "href": "romaneiotora.html",
+        "label": "Romaneio Tora",
+        "category": "public-operational"
+      },
+      {
+        "href": "ajudabitolas.html",
+        "label": "Ajuda com Espessura",
+        "category": "account-support"
+      },
+      {
+        "href": "user-profile.html",
+        "label": "Meu Perfil",
+        "category": "account-support"
+      },
+      {
+        "href": "admin.html?tab=status",
+        "label": "Diagnóstico / Migração",
+        "category": "internal"
+      },
+      {
+        "href": "subscription-status.html",
+        "label": "Assinatura",
+        "category": "account-support"
+      },
+      {
+        "href": "company.html",
+        "label": "Empresa",
+        "category": "account-support"
+      },
+      {
+        "href": "ajuda.html",
+        "label": "Ajuda",
+        "category": "account-support"
+      },
+      {
+        "href": "admin.html?tab=dashboard",
+        "label": "Painel Admin",
+        "category": "internal"
+      },
+      {
+        "href": "admin.html?tab=subscriptions",
+        "label": "Gerenciar Assinaturas",
+        "category": "internal"
+      },
+      {
+        "href": "admin.html?tab=settings",
+        "label": "Configurações Admin",
+        "category": "internal"
+      },
+      {
+        "href": "admin.html?tab=support",
+        "label": "Fila de Suporte",
+        "category": "internal"
+      },
+      {
+        "href": "admin-access-governance.html",
+        "label": "Governança de Acesso",
+        "category": "internal"
+      },
+      {
+        "href": "subscription-status.html",
+        "label": "{",
+        "category": "account-support"
+      },
+      {
+        "href": "financas.html",
+        "label": "{",
+        "category": "public-operational"
+      },
+      {
+        "href": "folha_pagamento/folha.html",
+        "label": "new Date(a.data) - new Date(b.data));",
+        "category": "public-operational"
+      },
+      {
+        "href": "folha_pagamento/folha.html",
+        "label": "{",
+        "category": "public-operational"
+      },
+      {
+        "href": "estoque.html#produtos",
+        "label": "x && x.status === 'pago').map(x => String(x.pedidoId)));",
+        "category": "public-operational"
+      },
+      {
+        "href": "vendas.html",
+        "label": "[String(a && a.id), !!(a && a.read)]));",
+        "category": "public-operational"
+      }
+    ],
+    "looseActions": [
+      {
+        "kind": "pwa-install-link",
+        "label": "Instalar aplicativo"
+      },
+      {
+        "kind": "support-link",
+        "label": "Suporte"
+      },
+      {
+        "kind": "about-link",
+        "label": "Sobre"
+      },
+      {
+        "kind": "logout-link",
+        "label": "Sair"
+      },
+      {
+        "kind": "global-footer-contact",
+        "label": "Fale Conosco"
+      }
+    ]
+  },
+  "summary": {
+    "totalPages": 58,
+    "publicOperational": 17,
+    "accountSupport": 8,
+    "internal": 33,
+    "tabs": 66,
+    "modals": 86,
+    "reportAndWindowActions": 47
+  },
+  "pages": [
+    {
+      "route": "admin-access-governance.html",
+      "category": "internal",
+      "title": "Governança de Acesso - Sisweb",
+      "h1": "Governança de Acesso",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "admin-settings.html",
+      "category": "internal",
+      "title": "Configurações Administrativas - Sistema",
+      "h1": "Configurações Administrativas",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "admin-subscriptions.html",
+      "category": "internal",
+      "title": "Gerenciar Assinaturas - Sistema",
+      "h1": "Gerenciar Assinaturas",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "subscriptionModal",
+          "title": "Detalhes da Assinatura"
+        }
+      ],
+      "reportAndWindowActions": [],
+      "links": [
+        {
+          "href": "#",
+          "label": "Abrir comprovante"
+        }
+      ]
+    },
+    {
+      "route": "admin.html",
+      "category": "internal",
+      "title": "Admin Unificado - SISWEB",
+      "h1": "Admin Unificado",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "reviewExtensionModal",
+          "title": "Analisar Solicitação de Prorrogação"
+        }
+      ],
+      "reportAndWindowActions": [
+        {
+          "label": "Exportar CSV",
+          "onclick": ""
+        },
+        {
+          "label": "Exportar",
+          "onclick": ""
+        }
+      ],
+      "links": [
+        {
+          "href": "#",
+          "label": "Ajustar configuração comercial"
+        },
+        {
+          "href": "#",
+          "label": "Gerenciar assinaturas"
+        },
+        {
+          "href": "#",
+          "label": "Recarregar histórico"
+        }
+      ]
+    },
+    {
+      "route": "ajuda.html",
+      "category": "account-support",
+      "title": "Manual e Ajuda | Sisweb",
+      "h1": "Livro ilustrado do sistema",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "ajudabitolas.html",
+      "category": "account-support",
+      "title": "Classificação CONAMA - Sistema",
+      "h1": "Classificação de Madeira Serrada - CONAMA",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "aplicar_correcao_vendas.html",
+      "category": "internal",
+      "title": "🔧 Aplicar Correção - Vendas Romaneios",
+      "h1": "🔧 Aplicar Correção - Romaneios PCT no Vendas",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "aplicar_estrategia_hibrida_v2.html",
+      "category": "internal",
+      "title": "🔧 Aplicar Estratégia Híbrida V2 - SISWEB",
+      "h1": "🔧 Aplicar Estratégia Híbrida V2",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "aplicar_estrategia_hibrida.html",
+      "category": "internal",
+      "title": "🔧 Aplicar Estratégia Híbrida - SISWEB",
+      "h1": "🔧 Aplicar Estratégia Híbrida",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "auto_sync_firebase.html",
+      "category": "internal",
+      "title": "🔄 Auto-Sync Firebase → localStorage",
+      "h1": "🔄 Auto-Sync Firebase → localStorage",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "client.html",
+      "category": "public-operational",
+      "title": "Gerenciar Clientes - Sistema Sisweb",
+      "h1": "Gerenciar Clientes",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "modalForm",
+          "title": "Novo Cliente"
+        }
+      ],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "company.html",
+      "category": "account-support",
+      "title": "Cadastro de Empresa",
+      "h1": "Cadastro de Empresa",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "companyModal",
+          "title": "Lista de Empresas"
+        },
+        {
+          "id": "aboutModal",
+          "title": "Sobre o Desenvolvedor"
+        },
+        {
+          "id": "helpModal",
+          "title": "Ajuda do Sistema"
+        }
+      ],
+      "reportAndWindowActions": [
+        {
+          "label": "Listar Empresas",
+          "onclick": ""
+        }
+      ],
+      "links": [
+        {
+          "href": "mailto:nedes1@hotmail.com",
+          "label": "nedes1@hotmail.com"
+        },
+        {
+          "href": "tel:+5591991311049",
+          "label": "(91) 9 9131-1049"
+        }
+      ]
+    },
+    {
+      "route": "compras_legacy.html",
+      "category": "internal",
+      "title": "Sistema de Compras",
+      "h1": "Sistema de Compras",
+      "tabs": [
+        {
+          "id": "",
+          "label": "Pedido de Compras",
+          "trigger": "showTabCompra("
+        },
+        {
+          "id": "",
+          "label": "Fornecedores",
+          "trigger": "showTabCompra("
+        },
+        {
+          "id": "",
+          "label": "Produtos",
+          "trigger": "showTabCompra("
+        },
+        {
+          "id": "",
+          "label": "Relatórios",
+          "trigger": "showTabCompra("
+        }
+      ],
+      "modals": [],
+      "reportAndWindowActions": [
+        {
+          "label": "Relatórios",
+          "onclick": ""
+        },
+        {
+          "label": "Listar Pedidos",
+          "onclick": ""
+        },
+        {
+          "label": "Gerar Relatório",
+          "onclick": ""
+        },
+        {
+          "label": "Exportar CSV",
+          "onclick": ""
+        }
+      ],
+      "links": []
+    },
+    {
+      "route": "compras.html",
+      "category": "public-operational",
+      "title": "Sistema de Compras",
+      "h1": "Sistema de Compras",
+      "tabs": [
+        {
+          "id": "",
+          "label": "Pedidos de Compras",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Fornecedores",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Produtos",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Relatórios",
+          "trigger": "showTab("
+        },
+        {
+          "id": "pedidos",
+          "label": "pedidos",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "clientes",
+          "label": "clientes",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "produtos",
+          "label": "produtos",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "relatorios",
+          "label": "relatorios",
+          "trigger": "tab-content"
+        }
+      ],
+      "modals": [
+        {
+          "id": "customizarColunasComprasModal",
+          "title": "Configurar colunas"
+        },
+        {
+          "id": "listaPedidosModal",
+          "title": "Lista de Pedidos"
+        },
+        {
+          "id": "produtoModal",
+          "title": "Novo Produto"
+        },
+        {
+          "id": "visualizarPedidoModal",
+          "title": "Detalhes do Pedido"
+        },
+        {
+          "id": "modalFornecedor",
+          "title": "Novo Fornecedor"
+        },
+        {
+          "id": "clientModal",
+          "title": "Novo Fornecedor"
+        }
+      ],
+      "reportAndWindowActions": [
+        {
+          "label": "Relatórios",
+          "onclick": ""
+        },
+        {
+          "label": "Listar Pedidos",
+          "onclick": ""
+        },
+        {
+          "label": "Listar Produtos",
+          "onclick": ""
+        },
+        {
+          "label": "Gerar Relatório de Compras",
+          "onclick": ""
+        },
+        {
+          "label": "Exportar CSV",
+          "onclick": ""
+        },
+        {
+          "label": "Exportar PDF",
+          "onclick": ""
+        },
+        {
+          "label": "Imprimir (0)",
+          "onclick": ""
+        },
+        {
+          "label": "Imprimir",
+          "onclick": ""
+        }
+      ],
+      "links": []
+    },
+    {
+      "route": "corrigir_fornecedores.html",
+      "category": "internal",
+      "title": "🔧 Correção de Fornecedores",
+      "h1": "🔧 Correção de Fornecedores",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "corrigir_romaneios.html",
+      "category": "internal",
+      "title": "Correção de Romaneios PCT",
+      "h1": "🔧 Correção de Romaneios PCT",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [
+        {
+          "label": "💾 Exportar Dados",
+          "onclick": ""
+        }
+      ],
+      "links": []
+    },
+    {
+      "route": "estoque.html",
+      "category": "public-operational",
+      "title": "Controle de Estoque - Sistema",
+      "h1": "Controle de Estoque de Toras",
+      "tabs": [
+        {
+          "id": "",
+          "label": "Entrada Toras",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Saída Toras",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Consultar Toras",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Entrada Almoxarifado",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Almoxarifado",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Movimentações",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Relatórios",
+          "trigger": "showTab("
+        },
+        {
+          "id": "produtos",
+          "label": "produtos",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "entrada",
+          "label": "entrada",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "saida",
+          "label": "saida",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "consulta",
+          "label": "consulta",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "movimentacao",
+          "label": "movimentacao",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "relatorios",
+          "label": "relatorios",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "entradaAlmoxarifado",
+          "label": "entradaAlmoxarifado",
+          "trigger": "tab-content"
+        }
+      ],
+      "modals": [
+        {
+          "id": "selecaoTorasModal",
+          "title": "Selecionar Toras para Baixa"
+        },
+        {
+          "id": "modalBaixaProduto",
+          "title": "Baixa de Produto / Consumo"
+        },
+        {
+          "id": "rastreabilidadeModal",
+          "title": "Rastreabilidade de Toras"
+        },
+        {
+          "id": "relatorioPreviewModal",
+          "title": "Pré-visualização de Relatório"
+        },
+        {
+          "id": "loadingModal",
+          "title": "Processando..."
+        }
+      ],
+      "reportAndWindowActions": [
+        {
+          "label": "Relatórios",
+          "onclick": ""
+        },
+        {
+          "label": "Imprimir",
+          "onclick": ""
+        },
+        {
+          "label": "Configurar Colunas",
+          "onclick": ""
+        },
+        {
+          "label": "Gerar Relatório",
+          "onclick": ""
+        },
+        {
+          "label": "Colunas",
+          "onclick": ""
+        }
+      ],
+      "links": []
+    },
+    {
+      "route": "extrator_dados_dashboard.html",
+      "category": "internal",
+      "title": "🔍 Extrator Inteligente de Dados",
+      "h1": "🔍 Extrator Inteligente de Dados",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "financas.html",
+      "category": "public-operational",
+      "title": "Finanças - Sistema de Gestão",
+      "h1": "Sistema Financeiro",
+      "tabs": [
+        {
+          "id": "",
+          "label": "Dashboard",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Contas a Receber",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Contas a Pagar",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Fluxo de Caixa",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Relatórios",
+          "trigger": "showTab("
+        },
+        {
+          "id": "dashboard",
+          "label": "dashboard",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "receber",
+          "label": "receber",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "pagar",
+          "label": "pagar",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "fluxo",
+          "label": "fluxo",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "relatorios",
+          "label": "relatorios",
+          "trigger": "tab-content"
+        }
+      ],
+      "modals": [
+        {
+          "id": "pagamentoModal",
+          "title": "Registrar Pagamento"
+        },
+        {
+          "id": "anexosModal",
+          "title": "Anexos"
+        },
+        {
+          "id": "printColumnsModal",
+          "title": "Configurar colunas"
+        }
+      ],
+      "reportAndWindowActions": [
+        {
+          "label": "Relatórios",
+          "onclick": ""
+        },
+        {
+          "label": "Gerar Relatório",
+          "onclick": ""
+        },
+        {
+          "label": "PDF",
+          "onclick": ""
+        }
+      ],
+      "links": []
+    },
+    {
+      "route": "firebase-rules-update.html",
+      "category": "internal",
+      "title": "Atualizar Regras de Segurança do Firebase",
+      "h1": "Atualizar Regras de Segurança do Firebase",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "fix-firebase-rules.html",
+      "category": "internal",
+      "title": "Corrigir Regras do Firebase",
+      "h1": "Corrigir Regras do Firebase",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": [
+        {
+          "href": "https://console.firebase.google.com/",
+          "label": "Console do Firebase"
+        }
+      ]
+    },
+    {
+      "route": "folha_pagamento/folha.html",
+      "category": "public-operational",
+      "title": "Folha de Pagamento - Sistema SisWeb",
+      "h1": "Folha de Pagamento",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "funcionarioModal",
+          "title": "Novo Funcionário"
+        },
+        {
+          "id": "pixQrCodeModal",
+          "title": "QR Code PIX"
+        },
+        {
+          "id": "cargoModal",
+          "title": "Novo Cargo"
+        },
+        {
+          "id": "folhaModal",
+          "title": "Nova Folha de Pagamento"
+        },
+        {
+          "id": "cargosListModal",
+          "title": "📋 Lista de Cargos"
+        },
+        {
+          "id": "folhasFechadasModal",
+          "title": "📁 Folhas Fechadas"
+        }
+      ],
+      "reportAndWindowActions": [
+        {
+          "label": "Relatórios",
+          "onclick": ""
+        },
+        {
+          "label": "Folhas Fechadas",
+          "onclick": ""
+        },
+        {
+          "label": "Resumo da Folha",
+          "onclick": ""
+        }
+      ],
+      "links": [
+        {
+          "href": "../financas.html",
+          "label": "Ver no Sistema Financeiro"
+        }
+      ]
+    },
+    {
+      "route": "folha_pagamento/normalizar-quinzena.html",
+      "category": "internal",
+      "title": "Normalizar Folhas Quinzena (tipoPagamento)",
+      "h1": "Normalizar Folhas de Quinzena (tipoPagamento)",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "folha_pagamento/teste-firebase-simples.html",
+      "category": "internal",
+      "title": "Teste Firebase - Folha de Pagamento",
+      "h1": "🧪 Teste Firebase - Folha de Pagamento",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "folha_pagamento/teste-modal-integrado.html",
+      "category": "internal",
+      "title": "Teste Modal Integrado - Folha de Pagamento",
+      "h1": "Teste Modal Integrado",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [
+        {
+          "label": "Testar Modal Quinzena",
+          "onclick": ""
+        },
+        {
+          "label": "Testar Modal Mês",
+          "onclick": ""
+        }
+      ],
+      "links": [
+        {
+          "href": "../financas.html",
+          "label": "Ver no Sistema Financeiro"
+        }
+      ]
+    },
+    {
+      "route": "fornecedor.html",
+      "category": "public-operational",
+      "title": "Gerenciar Fornecedores - Sistema",
+      "h1": "Gerenciar Fornecedores",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "modalForm",
+          "title": "Novo Fornecedor"
+        }
+      ],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "importar_especies.html",
+      "category": "public-operational",
+      "title": "Importação de Espécies - Sistema",
+      "h1": "Importação de Espécies",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "index_bak.html",
+      "category": "internal",
+      "title": "Dashboard - Sistema",
+      "h1": "",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "index.html",
+      "category": "public-operational",
+      "title": "Dashboard - Sistema Sisweb",
+      "h1": "Dashboard Sistema",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "limpar_clientes.html",
+      "category": "internal",
+      "title": "Limpar e Corrigir Clientes - SisWeb",
+      "h1": "Limpar e Corrigir Clientes",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "limpar_especies.html",
+      "category": "internal",
+      "title": "Limpeza de Espécies Undefined",
+      "h1": "Limpeza de Espécies Undefined",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "login.html",
+      "category": "account-support",
+      "title": "Portal de Acesso - SisWeb",
+      "h1": "SisWeb",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "registerModal",
+          "title": "Criar Conta"
+        },
+        {
+          "id": "forgotPasswordModal",
+          "title": "Recuperar Senha"
+        }
+      ],
+      "reportAndWindowActions": [],
+      "links": [
+        {
+          "href": "#",
+          "label": "Esqueceu a senha?"
+        },
+        {
+          "href": "#",
+          "label": "Registre-se"
+        }
+      ]
+    },
+    {
+      "route": "mdf-e.html",
+      "category": "public-operational",
+      "title": "MDF-e - Manifesto de Documentos Fiscais",
+      "h1": "MDF-e - Manifesto de Documentos Fiscais",
+      "tabs": [
+        {
+          "id": "",
+          "label": "Emissão",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Consulta",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Encerramento",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Dashboard",
+          "trigger": "showTab("
+        },
+        {
+          "id": "emissao",
+          "label": "emissao",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "consulta",
+          "label": "consulta",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "encerramento",
+          "label": "encerramento",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "dashboard",
+          "label": "dashboard",
+          "trigger": "tab-content"
+        }
+      ],
+      "modals": [],
+      "reportAndWindowActions": [
+        {
+          "label": "Emitir MDF-e",
+          "onclick": ""
+        },
+        {
+          "label": "Encerrar MDF-e",
+          "onclick": ""
+        },
+        {
+          "label": "Gerar Relatório",
+          "onclick": ""
+        }
+      ],
+      "links": []
+    },
+    {
+      "route": "migrar_rastreabilidade.html",
+      "category": "internal",
+      "title": "Migrar Rastreabilidade - SisWeb",
+      "h1": "Migrar Rastreabilidade de Toras",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "migrar-contas.html",
+      "category": "internal",
+      "title": "Migração de Tabelas de Contas",
+      "h1": "🔄 Migração de Tabelas de Contas",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "migrar-financas-mensal.html",
+      "category": "internal",
+      "title": "Migração Financeiro (Mensal)",
+      "h1": "🔄 Migração Financeiro (Mensal)",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "migrate-to-firebase.html",
+      "category": "internal",
+      "title": "Migração para Firebase - Romaneio TL",
+      "h1": "🔄 Migração para Firebase",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "migration-tool.html",
+      "category": "internal",
+      "title": "Ferramenta de Migração - localStorage para Firebase",
+      "h1": "🔄 Migração localStorage → Firebase",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "notas-fiscais.html",
+      "category": "public-operational",
+      "title": "Notas Fiscais - Sistema de Gestão",
+      "h1": "Sistema de Notas Fiscais",
+      "tabs": [
+        {
+          "id": "",
+          "label": "Emissão",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Consulta",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Dashboard",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Configuração",
+          "trigger": "showTab("
+        },
+        {
+          "id": "emissao",
+          "label": "emissao",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "consulta",
+          "label": "consulta",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "dashboard",
+          "label": "dashboard",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "configuracao",
+          "label": "configuracao",
+          "trigger": "tab-content"
+        }
+      ],
+      "modals": [],
+      "reportAndWindowActions": [
+        {
+          "label": "Gerar Relatório",
+          "onclick": ""
+        }
+      ],
+      "links": []
+    },
+    {
+      "route": "oauth-callback.html",
+      "category": "account-support",
+      "title": "Autenticação — Sisweb",
+      "h1": "",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "preromaneio.html",
+      "category": "public-operational",
+      "title": "Pré-Romaneio - Sistema",
+      "h1": "Pré-Romaneio",
+      "tabs": [
+        {
+          "id": "",
+          "label": "Pacote",
+          "trigger": "mudarAba("
+        },
+        {
+          "id": "",
+          "label": "Toda Largura",
+          "trigger": "mudarAba("
+        },
+        {
+          "id": "",
+          "label": "Pés",
+          "trigger": "mudarAba("
+        },
+        {
+          "id": "",
+          "label": "Toras",
+          "trigger": "mudarAba("
+        },
+        {
+          "id": "content-serrados",
+          "label": "content-serrados",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "content-toras",
+          "label": "content-toras",
+          "trigger": "tab-content"
+        }
+      ],
+      "modals": [
+        {
+          "id": "clientListModal",
+          "title": "Selecionar Cliente"
+        },
+        {
+          "id": "clientModal",
+          "title": "Novo Cliente"
+        },
+        {
+          "id": "fornecedorListModal",
+          "title": "Selecionar Fornecedor"
+        },
+        {
+          "id": "fornecedorModal",
+          "title": "Novo Fornecedor"
+        },
+        {
+          "id": "speciesListModal",
+          "title": "🌳 Lista de Espécies"
+        },
+        {
+          "id": "speciesModal",
+          "title": "Nova Espécie"
+        },
+        {
+          "id": "listaModal",
+          "title": "Meus Pré-Romaneios"
+        }
+      ],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "reset-client.html",
+      "category": "internal",
+      "title": "Limpeza Local do Navegador",
+      "h1": "⚠️ Limpeza de Cache Local",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "reset-system.html",
+      "category": "internal",
+      "title": "Reset de Sistema - Produção",
+      "h1": "⚠️ Reset Total do Sistema",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "romaneiopct_back.html",
+      "category": "internal",
+      "title": "Romaneio PCT - Sistema",
+      "h1": "Romaneio Pacote",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "aboutModal",
+          "title": "Sobre o Desenvolvedor"
+        },
+        {
+          "id": "helpModal",
+          "title": "Ajuda do Sistema"
+        },
+        {
+          "id": "listaModal",
+          "title": "Lista de Romaneios Pacote"
+        },
+        {
+          "id": "clientListModal",
+          "title": "Lista de Clientes"
+        },
+        {
+          "id": "clientModal",
+          "title": "Novo Cliente"
+        },
+        {
+          "id": "speciesListModal",
+          "title": "Lista de Espécies"
+        }
+      ],
+      "reportAndWindowActions": [
+        {
+          "label": "Listar Romaneios",
+          "onclick": ""
+        }
+      ],
+      "links": [
+        {
+          "href": "mailto:nedes1@hotmail.com",
+          "label": "nedes1@hotmail.com"
+        },
+        {
+          "href": "tel:+5591991311049",
+          "label": "(91) 9 9131-1049"
+        }
+      ]
+    },
+    {
+      "route": "romaneiopct.html",
+      "category": "public-operational",
+      "title": "Romaneio PCT - Sistema Sisweb",
+      "h1": "Romaneio Pacote",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "aboutModal",
+          "title": "Sobre o Desenvolvedor"
+        },
+        {
+          "id": "helpModal",
+          "title": "Ajuda do Sistema"
+        },
+        {
+          "id": "listaModal",
+          "title": "📋 Lista de Romaneios"
+        },
+        {
+          "id": "clientListModal",
+          "title": "📋 Lista de Clientes"
+        },
+        {
+          "id": "clientModal",
+          "title": "Novo Cliente"
+        },
+        {
+          "id": "speciesListModal",
+          "title": "🌳 Lista de Espécies"
+        },
+        {
+          "id": "speciesModal",
+          "title": "Nova Espécie"
+        }
+      ],
+      "reportAndWindowActions": [
+        {
+          "label": "Listar",
+          "onclick": ""
+        }
+      ],
+      "links": [
+        {
+          "href": "mailto:nedes1@hotmail.com",
+          "label": "nedes1@hotmail.com"
+        },
+        {
+          "href": "tel:+5591991311049",
+          "label": "(91) 9 9131-1049"
+        }
+      ]
+    },
+    {
+      "route": "romaneiopes.html",
+      "category": "public-operational",
+      "title": "Romaneio PES - Sistema Sisweb",
+      "h1": "Romaneio PES",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "helpModal",
+          "title": "Ajuda do Sistema"
+        },
+        {
+          "id": "clientModal",
+          "title": "Novo Cliente"
+        },
+        {
+          "id": "speciesModal",
+          "title": "Nova Espécie"
+        }
+      ],
+      "reportAndWindowActions": [
+        {
+          "label": "Listar",
+          "onclick": ""
+        },
+        {
+          "label": "Imprimir",
+          "onclick": ""
+        }
+      ],
+      "links": []
+    },
+    {
+      "route": "romaneiotl.html",
+      "category": "public-operational",
+      "title": "Romaneio TL - Sistema Sisweb",
+      "h1": "Romaneio TL",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "clientListModal",
+          "title": "📋 Lista de Clientes"
+        },
+        {
+          "id": "speciesListModal",
+          "title": "🌳 Lista de Espécies"
+        },
+        {
+          "id": "listaModal",
+          "title": "📋 Lista de Romaneios"
+        }
+      ],
+      "reportAndWindowActions": [
+        {
+          "label": "Listar",
+          "onclick": ""
+        }
+      ],
+      "links": []
+    },
+    {
+      "route": "romaneiotora_otimizado.html",
+      "category": "internal",
+      "title": "Romaneio de Toras",
+      "h1": "Romaneio de Tora",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "aboutModal",
+          "title": "Sobre o Desenvolvedor"
+        },
+        {
+          "id": "helpModal",
+          "title": "Ajuda do Sistema"
+        },
+        {
+          "id": "listaModal",
+          "title": "Lista de Romaneios Tora"
+        },
+        {
+          "id": "speciesModal",
+          "title": "Nova Espécie"
+        },
+        {
+          "id": "clientListModal",
+          "title": "Lista de Fornecedores"
+        },
+        {
+          "id": "clientModal",
+          "title": "Novo Fornecedor"
+        }
+      ],
+      "reportAndWindowActions": [
+        {
+          "label": "Listar",
+          "onclick": ""
+        }
+      ],
+      "links": [
+        {
+          "href": "mailto:nedes1@hotmail.com",
+          "label": "nedes1@hotmail.com"
+        },
+        {
+          "href": "tel:+5591991311049",
+          "label": "(91) 9 9131-1049"
+        }
+      ]
+    },
+    {
+      "route": "romaneiotora_versao_dev.html",
+      "category": "internal",
+      "title": "Romaneio de Toras",
+      "h1": "Romaneio de Tora",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "aboutModal",
+          "title": "Sobre o Desenvolvedor"
+        },
+        {
+          "id": "helpModal",
+          "title": "Ajuda do Sistema"
+        },
+        {
+          "id": "listaModal",
+          "title": "Lista de Romaneios Tora"
+        },
+        {
+          "id": "speciesModal",
+          "title": "Nova Espécie"
+        },
+        {
+          "id": "clientListModal",
+          "title": "Lista de Fornecedores"
+        },
+        {
+          "id": "clientModal",
+          "title": "Novo Fornecedor"
+        },
+        {
+          "id": "speciesListModal",
+          "title": "🌳 Lista de Espécies"
+        },
+        {
+          "id": "romaneioListModal",
+          "title": "Lista de Romaneios Tora"
+        }
+      ],
+      "reportAndWindowActions": [
+        {
+          "label": "Listar",
+          "onclick": ""
+        }
+      ],
+      "links": [
+        {
+          "href": "mailto:nedes1@hotmail.com",
+          "label": "nedes1@hotmail.com"
+        },
+        {
+          "href": "tel:+5591991311049",
+          "label": "(91) 9 9131-1049"
+        }
+      ]
+    },
+    {
+      "route": "romaneiotora.html",
+      "category": "public-operational",
+      "title": "Romaneio de Toras",
+      "h1": "Romaneio de Tora",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "aboutModal",
+          "title": "Sobre o Desenvolvedor"
+        },
+        {
+          "id": "helpModal",
+          "title": "Ajuda do Sistema"
+        },
+        {
+          "id": "speciesModal",
+          "title": "Nova Espécie"
+        },
+        {
+          "id": "fornecedorListModal",
+          "title": "Lista de Fornecedores"
+        },
+        {
+          "id": "speciesListModal",
+          "title": "🌳 Lista de Espécies"
+        },
+        {
+          "id": "fornecedorModal",
+          "title": "Novo Fornecedor"
+        }
+      ],
+      "reportAndWindowActions": [
+        {
+          "label": "Listar",
+          "onclick": ""
+        }
+      ],
+      "links": [
+        {
+          "href": "mailto:nedes1@hotmail.com",
+          "label": "nedes1@hotmail.com"
+        },
+        {
+          "href": "tel:+5591991311049",
+          "label": "(91) 9 9131-1049"
+        }
+      ]
+    },
+    {
+      "route": "sincronizar.html",
+      "category": "internal",
+      "title": "🔄 Sincronização Multi-Navegador",
+      "h1": "🔄 Sincronização Multi-Navegador",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "species.html",
+      "category": "public-operational",
+      "title": "Gerenciar Espécies - Sistema",
+      "h1": "Gerenciar Espécies",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "speciesModal",
+          "title": "Nova Espécie"
+        }
+      ],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "subscription-status.html",
+      "category": "account-support",
+      "title": "Status da Assinatura - Sistema",
+      "h1": "",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "aboutModal",
+          "title": "Sobre o Desenvolvedor"
+        },
+        {
+          "id": "helpModal",
+          "title": "Ajuda do Sistema"
+        }
+      ],
+      "reportAndWindowActions": [],
+      "links": [
+        {
+          "href": "ajuda.html",
+          "label": "Manual completo"
+        },
+        {
+          "href": "ajuda.html#empresa",
+          "label": "Ver capítulo Empresa"
+        },
+        {
+          "href": "ajuda.html#cadastros",
+          "label": "Ver capítulo Cadastros"
+        },
+        {
+          "href": "ajuda.html#romaneios",
+          "label": "Ver capítulo Romaneios"
+        },
+        {
+          "href": "ajuda.html#vendas",
+          "label": "Ver capítulo Vendas"
+        },
+        {
+          "href": "ajuda.html#compras",
+          "label": "Ver capítulo Compras"
+        },
+        {
+          "href": "ajuda.html#financas",
+          "label": "Ver capítulo Financeiro"
+        },
+        {
+          "href": "ajuda.html#estoque",
+          "label": "Ver capítulo Estoque"
+        },
+        {
+          "href": "ajuda.html#folha",
+          "label": "Ver capítulo Folha"
+        },
+        {
+          "href": "ajuda.html#fiscal",
+          "label": "Ver capítulo Fiscal"
+        },
+        {
+          "href": "ajuda.html#assinatura",
+          "label": "Ver capítulo Assinatura"
+        },
+        {
+          "href": "ajuda.html#perfil",
+          "label": "Ver capítulo Perfil"
+        },
+        {
+          "href": "mailto:nedes1@hotmail.com",
+          "label": "nedes1@hotmail.com"
+        },
+        {
+          "href": "tel:+5591991311049",
+          "label": "(91) 9 9131-1049"
+        },
+        {
+          "href": "ajuda.html",
+          "label": "Abrir manual completo com busca"
+        }
+      ]
+    },
+    {
+      "route": "subscription.html",
+      "category": "account-support",
+      "title": "Assinatura - Sistema",
+      "h1": "",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "paymentModal",
+          "title": "Pagamento da Assinatura"
+        }
+      ],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "template.html",
+      "category": "internal",
+      "title": "Sistema",
+      "h1": "",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "aboutModal",
+          "title": "Sobre o Desenvolvedor"
+        },
+        {
+          "id": "helpModal",
+          "title": "Ajuda do Sistema"
+        }
+      ],
+      "reportAndWindowActions": [],
+      "links": [
+        {
+          "href": "mailto:nedes1@hotmail.com",
+          "label": "nedes1@hotmail.com"
+        },
+        {
+          "href": "tel:+5591991311049",
+          "label": "(91) 9 9131-1049"
+        }
+      ]
+    },
+    {
+      "route": "user-profile.html",
+      "category": "account-support",
+      "title": "Meu Perfil - Sistema",
+      "h1": "Carregando...",
+      "tabs": [],
+      "modals": [
+        {
+          "id": "editPersonalModal",
+          "title": "Editar Informações Pessoais"
+        }
+      ],
+      "reportAndWindowActions": [],
+      "links": []
+    },
+    {
+      "route": "vendas.html",
+      "category": "public-operational",
+      "title": "Sistema de Vendas",
+      "h1": "Sistema de Vendas",
+      "tabs": [
+        {
+          "id": "",
+          "label": "Pedidos de Venda",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Clientes",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Produtos",
+          "trigger": "showTab("
+        },
+        {
+          "id": "",
+          "label": "Relatórios",
+          "trigger": "showTab("
+        },
+        {
+          "id": "pedidos",
+          "label": "pedidos",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "clientes",
+          "label": "clientes",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "produtos",
+          "label": "produtos",
+          "trigger": "tab-content"
+        },
+        {
+          "id": "relatorios",
+          "label": "relatorios",
+          "trigger": "tab-content"
+        }
+      ],
+      "modals": [
+        {
+          "id": "listaPedidosModal",
+          "title": "Lista de Pedidos"
+        },
+        {
+          "id": "produtoModal",
+          "title": "Novo Produto"
+        },
+        {
+          "id": "customizarColunasModal",
+          "title": "Configurar colunas"
+        },
+        {
+          "id": "visualizarPedidoModal",
+          "title": "Detalhes do Pedido"
+        }
+      ],
+      "reportAndWindowActions": [
+        {
+          "label": "Relatórios",
+          "onclick": ""
+        },
+        {
+          "label": "Listar Pedidos",
+          "onclick": ""
+        },
+        {
+          "label": "Listar Produtos",
+          "onclick": ""
+        },
+        {
+          "label": "Imprimir",
+          "onclick": ""
+        },
+        {
+          "label": "Imprimir (0)",
+          "onclick": ""
+        }
+      ],
+      "links": []
+    },
+    {
+      "route": "verificar_romaneios.html",
+      "category": "internal",
+      "title": "Verificador de Romaneios - LocalStorage",
+      "h1": "🔍 Verificador de Romaneios no LocalStorage",
+      "tabs": [],
+      "modals": [],
+      "reportAndWindowActions": [
+        {
+          "label": "Exportar Dados",
+          "onclick": ""
+        }
+      ],
+      "links": []
+    }
+  ]
+}

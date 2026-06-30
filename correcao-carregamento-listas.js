@@ -32,11 +32,11 @@ async function diagnosticarSistema() {
         // 4. Testar carregamento de cada coleção
         const resultados = {};
         
-        // Testar species
-        console.log('🧪 Testando carregamento de species...');
-        const speciesResult = await window.firebaseService.loadData('species');
-        resultados.species = speciesResult;
-        console.log('📊 Resultado species:', speciesResult);
+        // Testar especies
+        console.log('🧪 Testando carregamento de especies...');
+        const especiesResult = await window.firebaseService.loadData('especies');
+        resultados.especies = especiesResult;
+        console.log('📊 Resultado especies:', especiesResult);
         
         // Testar clients
         console.log('🧪 Testando carregamento de clients...');
@@ -71,7 +71,7 @@ async function verificarDadosFirebase() {
         await window.firebaseService.ensureReady();
         
         // Verificar cada coleção
-        const colecoes = ['species', 'clients', 'romaneiosTora'];
+        const colecoes = ['especies', 'clients', 'romaneiosTora'];
         const resultados = {};
         
         for (const colecao of colecoes) {
@@ -225,7 +225,7 @@ async function testarTodasAsListas() {
     // 1. Testar Espécies
     console.log('🌿 Testando carregamento de espécies...');
     try {
-        const speciesResult = await window.firebaseService.loadData('species');
+        const speciesResult = await window.firebaseService.loadData('especies');
         resultados.especies = {
             sucesso: speciesResult.success,
             count: speciesResult.data ? (Array.isArray(speciesResult.data) ? speciesResult.data.length : Object.keys(speciesResult.data).length) : 0,
@@ -303,7 +303,7 @@ async function gerarRelatorioCompleto() {
     }
     
     // Verificar dados em cada coleção
-    ['species', 'clients', 'romaneiosTora'].forEach(colecao => {
+    ['especies', 'clients', 'romaneiosTora'].forEach(colecao => {
         const dados = verificacao[colecao];
         if (dados?.existe) {
             console.log(`✅ ${colecao}: ${dados.count} registros`);
@@ -366,4 +366,4 @@ if (document.readyState === 'loading') {
     inicializarCorrecao();
 }
 
-console.log('✅ Script de correção de listas carregado'); 
+console.log('✅ Script de correção de listas carregado');

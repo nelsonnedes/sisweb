@@ -244,7 +244,7 @@ class RomaneioFirebaseService {
     getDataType(key) {
         if (key.includes('romaneio')) return 'romaneio';
         if (key.includes('client')) return 'client';
-        if (key.includes('species') || key.includes('especie')) return 'species';
+        if (key.includes('species') || key.includes('especie')) return 'especies';
         if (key.includes('company')) return 'company';
         return 'general';
     }
@@ -390,4 +390,4 @@ window.getData = async function(key) {
 };
 
 export { romaneioFirebaseService };
-export default romaneioFirebaseService; 
+export default romaneioFirebaseService;

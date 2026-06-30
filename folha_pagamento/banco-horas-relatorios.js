@@ -84,27 +84,90 @@ window.BHReports.bhGetHeaderCSS = function bhGetHeaderCSS() {
 };
 
 window.BHReports.bhBuildHeaderHTML = function bhBuildHeaderHTML(empresa) {
+    const nome = empresa.nome || empresa.name || '';
+    const iniciais = nome.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase() || '?';
 	const logoHtml = (empresa.logo && String(empresa.logo).trim() !== '')
 		? `<img src="${empresa.logo}" alt="Logo da Empresa" />`
-		: `<svg viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"45\" fill=\"#2c3e50\" stroke=\"#34495e\" stroke-width=\"2\"/><text x=\"50\" y=\"60\" text-anchor=\"middle\" fill=\"white\" font-size=\"24\" font-weight=\"bold\">JN</text></svg>`;
+		: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#2c3e50" stroke="#34495e" stroke-width="2"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="24" font-weight="bold">${iniciais}</text></svg>`;
 	return `
-		<div class=\"header\">
-			<div class=\"logo\">${logoHtml}</div>
-			<div class=\"company-info\">
-				<div class=\"company-name\">${empresa.nome || empresa.name || ''}</div>
-				<div class=\"company-details\">CNPJ: ${maskCNPJ(empresa.cnpj) || ''}</div>
-				<div class=\"company-details\">${empresa.endereco || empresa.address || ''}</div>
-				<div class=\"company-details\">${(empresa.cidade||empresa.city)||''} - ${(empresa.estado||empresa.state)||''}</div>
-				<div class=\"company-details\">Fone: ${(empresa.telefone||empresa.phone)||''}</div>
-				${empresa.email ? `<div class=\"company-details\">Email: ${empresa.email}</div>` : ''}
+		<div class="header">
+			<div class="logo">${logoHtml}</div>
+			<div class="company-info">
+				<div class="company-name">${nome}</div>
+				<div class="company-details">CNPJ: ${maskCNPJ(empresa.cnpj) || ''}</div>
+				<div class="company-details">${empresa.endereco || empresa.address || ''}</div>
+				<div class="company-details">${(empresa.cidade||empresa.city)||''} - ${(empresa.estado||empresa.state)||''}</div>
+				<div class="company-details">Fone: ${(empresa.telefone||empresa.phone)||''}</div>
+				${empresa.email ? `<div class="company-details">Email: ${empresa.email}</div>` : ''}
 			</div>
 		</div>
 	`;
 };
 
+/**
+ * Resolução multi-stage de dados da empresa para relatórios BH
+ * Ordem: helper central -> svc /profile -> localStorage company_info
+ */
+async function bhResolveEmpresa() {
+    const normLogo = (v) => {
+        if (!v) return '';
+        const s = String(v).trim();
+        if (!s) return '';
+        if (/^(data:|blob:|file:|https?:\/\/)/.test(s)) return s;
+        if (/^[A-Za-z0-9+/=]{80,}$/.test(s)) return `data:image/png;base64,${s}`;
+        return s;
+    };
+    const centralSvc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+    if (centralSvc && typeof centralSvc.getCompanyProfileForReport === 'function') {
+        try {
+            const centralResult = await centralSvc.getCompanyProfileForReport();
+            const centralData = centralResult && centralResult.success !== false
+                ? (centralResult.data || centralResult)
+                : null;
+            if (centralData && typeof centralData === 'object') {
+                const logoCandidate = centralData.logoUrl || centralData.logoURL || centralData.logoDownloadURL || centralData.logoStoragePath || centralData.logoPath || centralData.logo || centralData.logoBase64 || centralData.logoData || '';
+                return { ...centralData, logo: normLogo(logoCandidate) };
+            }
+        } catch (error) {
+            console.warn('Aviso ao obter empresa pelo helper central:', error);
+        }
+    }
+    const getTenantId = () => {
+        try {
+            const cu = JSON.parse(localStorage.getItem('currentUser') || 'null') || {};
+            const pu = JSON.parse(localStorage.getItem('persistentUser') || 'null') || {};
+            const id = cu.companyId || cu.tenantId || pu.companyId || pu.tenantId;
+            if (id) return String(id);
+        } catch (_) {}
+        try {
+            const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+            if (svc && typeof svc.getCurrentTenantId === 'function') { const t = svc.getCurrentTenantId(); if (t) return String(t); }
+            if (svc && typeof svc.getTenantId === 'function') { const t = svc.getTenantId(); if (t) return String(t); }
+        } catch (_) {}
+        try { if (window.appTenantId) return String(window.appTenantId); } catch (_) {}
+        try { const raw = localStorage.getItem('company_info'); if (raw) { const o = JSON.parse(raw); const id = o && (o.companyId || o.companyID || o.tenantId || o.id); if (id) return String(id); } } catch (_) {}
+        return null;
+    };
+    const tenantId = getTenantId();
+    let data = {};
+    // Estágio 1: /profile. Evita carregar a raiz inteira do tenant em relatórios.
+    if (tenantId && typeof window.getData === 'function') {
+        try { const r = await window.getData(`companies/${tenantId}/profile`, { debounceMs: 0 }); if (r && typeof r === 'object' && (r.nome || r.name)) data = { ...data, ...r, id: tenantId }; } catch (_) {}
+    }
+    // Estágio 2: localStorage
+    if (!data.nome && !data.name) {
+        try { const raw = localStorage.getItem('company_info'); if (raw) { const p = JSON.parse(raw); data = { ...data, ...p }; } } catch (_) {}
+    }
+    // Normalizar logo
+    const logoCandidate = data.logoUrl || data.logoURL || data.logoDownloadURL || data.logoStoragePath || data.logoPath || data.logo || data.logoBase64 || data.logoData || '';
+    data.logo = normLogo(logoCandidate);
+    return data;
+}
+
 // Extrato individual simples por período
 window.BHReports.bhGerarExtratoIndividual = async function bhGerarExtratoIndividual(funcionario, periodo) {
-    const empresa = (window.getCompanyData && await window.getCompanyData()) || {};
+    const empresa = await bhResolveEmpresa();
+
     const headerCSS = window.BHReports.bhGetHeaderCSS();
     const headerHTML = window.BHReports.bhBuildHeaderHTML(empresa);
     const fmt = (iso) => { if(!iso) return '-'; const s=String(iso).slice(0,10); const [y,m,d]=s.split('-'); return (y&&m&&d)?`${d}/${m}/${y}`:s; };
@@ -125,7 +188,8 @@ window.BHReports.bhGerarExtratoIndividual = async function bhGerarExtratoIndivid
 };
 
 window.BHReports.bhGerarEspelhoDiario = async function bhGerarEspelhoDiario(funcionario, periodo) {
-    const empresa = (window.getCompanyData && await window.getCompanyData()) || {};
+    const empresa = await bhResolveEmpresa();
+
     const headerCSS = window.BHReports.bhGetHeaderCSS();
     const headerHTML = window.BHReports.bhBuildHeaderHTML(empresa);
     const fmt = (iso) => { if(!iso) return '-'; const s=String(iso).slice(0,10); const [y,m,d]=s.split('-'); return (y&&m&&d)?`${d}/${m}/${y}`:s; };
@@ -146,7 +210,8 @@ window.BHReports.bhGerarEspelhoDiario = async function bhGerarEspelhoDiario(func
 };
 
 window.BHReports.bhRelatorioVencimentos = async function bhRelatorioVencimentos(funcionarioOuGeral, periodo) {
-    const empresa = (window.getCompanyData && await window.getCompanyData()) || {};
+    const empresa = await bhResolveEmpresa();
+
     const headerCSS = window.BHReports.bhGetHeaderCSS();
     const headerHTML = window.BHReports.bhBuildHeaderHTML(empresa);
     const fmt = (iso) => { if(!iso) return '-'; const s=String(iso).slice(0,10); const [y,m,d]=s.split('-'); return (y&&m&&d)?`${d}/${m}/${y}`:s; };
@@ -173,7 +238,8 @@ window.BHReports.bhGerarContratoAdesao = async function bhGerarContratoAdesao(fu
     const art59 = (cfg.artigosCLT && cfg.artigosCLT.art59) || 'Art. 59 da CLT';
     const art59A = (cfg.artigosCLT && cfg.artigosCLT.art59A) || 'Art. 59-A da CLT';
     const art59B = (cfg.artigosCLT && cfg.artigosCLT.art59B) || 'Art. 59-B da CLT';
-    const empresa = (window.getCompanyData && await window.getCompanyData()) || {};
+    const empresa = await bhResolveEmpresa();
+
 
     const headerCSS = window.BHReports.bhGetHeaderCSS();
     const headerHTML = window.BHReports.bhBuildHeaderHTML(empresa);
@@ -394,4 +460,3 @@ window.BHReports.bhGerarContratoAdesao = async function bhGerarContratoAdesao(fu
 };
 
 console.log('// [BH] banco-horas-relatorios.js carregado');
-

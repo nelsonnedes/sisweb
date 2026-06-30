@@ -27,6 +27,8 @@ let pedidosListPage = 1;
 const pedidosListItemsPerPage = 10;
 let pedidosListFiltered = [];
 let pedidosSelecionados = new Set();
+let vendasClientesEditingId = null;
+let vendasClientesFiltered = [];
 const DEBOUNCE_DIAS_MS = Number((window.SiswebUiConfig && window.SiswebUiConfig.DEBOUNCE_DIAS_MS) || 180);
 const debounceDiasContaTimers = new Map();
 const debounceValorContaTimers = new Map();
@@ -71,7 +73,7 @@ function getStorageKey(key) {
         const raw = localStorage.getItem('company_info');
         if (raw) {
             const obj = JSON.parse(raw);
-            const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+            const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
             if (id) return `company_${id}__${key}`;
         }
     } catch (_) {}
@@ -143,6 +145,22 @@ async function obterDadosEmpresa() {
             return s;
         };
 
+        const centralSvc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+        if (centralSvc && typeof centralSvc.getCompanyProfileForReport === 'function') {
+            try {
+                const centralResult = await centralSvc.getCompanyProfileForReport();
+                const centralData = centralResult && centralResult.success !== false
+                    ? (centralResult.data || centralResult)
+                    : null;
+                if (centralData && typeof centralData === 'object') {
+                    const logoCandidate = centralData.logoUrl || centralData.logoURL || centralData.logoDownloadURL || centralData.logoStoragePath || centralData.logoPath || centralData.logo || centralData.logoBase64 || centralData.logoData || '';
+                    return { ...centralData, logo: normalizeLogo(logoCandidate) };
+                }
+            } catch (error) {
+                console.warn('Aviso ao obter empresa pelo helper central:', error);
+            }
+        }
+
         const resolveCompanyId = () => {
             try {
                 const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
@@ -160,7 +178,7 @@ async function obterDadosEmpresa() {
                 const stored = localStorage.getItem('company_info');
                 if (stored) {
                     const obj = JSON.parse(stored);
-                    const id = obj && (obj.id || obj.companyId || obj.companyID || obj.tenantId || obj.slug);
+                    const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                     if (id) return String(id);
                 }
             } catch (_) {}
@@ -173,15 +191,6 @@ async function obterDadosEmpresa() {
             return null;
         };
 
-        const pickCompanyFromPayload = (payload) => {
-            if (!payload) return {};
-            if (Array.isArray(payload)) return payload[0] || {};
-            if (typeof payload !== 'object') return {};
-            const values = Object.values(payload).filter(v => v && typeof v === 'object');
-            if (values.length > 0) return values[0] || {};
-            return payload;
-        };
-
         const tenantId = resolveCompanyId();
         const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
         let companyData = {};
@@ -190,17 +199,36 @@ async function obterDadosEmpresa() {
         }
         if (tenantId && svc && typeof svc.loadFromFirebase === 'function') {
             try {
-                const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
-                const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
-                if (byPathData && typeof byPathData === 'object') {
-                    companyData = { ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
+                const byPathRoot = await svc.loadFromFirebase(`companies/${tenantId}`);
+                const byPathRootData = byPathRoot && (byPathRoot.success ? byPathRoot.data : byPathRoot.data);
+                if (byPathRootData && typeof byPathRootData === 'object' && (byPathRootData.nome || byPathRootData.name)) {
+                    companyData = { ...byPathRootData, id: tenantId, companyId: tenantId, tenantId: tenantId };
                 }
             } catch (_) {}
+
+            if (!companyData || (!companyData.nome && !companyData.name)) {
+                try {
+                    const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
+                    const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
+                    if (byPathData && typeof byPathData === 'object') {
+                        companyData = { ...companyData, ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
+                    }
+                } catch (_) {}
+            }
         }
 
         if (!companyData || (!companyData.nome && !companyData.name)) {
-            const companiesPayload = await getData('companies');
-            companyData = pickCompanyFromPayload(companiesPayload);
+            try {
+                let payload = null;
+                if (typeof window.getData === 'function') {
+                    payload = tenantId ? await window.getData(`companies/${tenantId}/profile`) : null;
+                } else if (typeof window.getDataAsync === 'function') {
+                    payload = tenantId ? await window.getDataAsync(`companies/${tenantId}/profile`) : null;
+                }
+                if (payload && typeof payload === 'object') {
+                    companyData = { ...companyData, ...payload, id: tenantId, companyId: tenantId, tenantId: tenantId };
+                }
+            } catch (_) {}
         }
 
         if (!companyData || (!companyData.nome && !companyData.name)) {
@@ -256,7 +284,7 @@ async function obterDadosEmpresa() {
             empresaFinal.phone = phoneResolved;
         }
 
-        const logoCandidate = empresaFinal.logoBase64 || empresaFinal.logoUrl || empresaFinal.logoURL || empresaFinal.logoData || empresaFinal.logo || '';
+        const logoCandidate = empresaFinal.logoUrl || empresaFinal.logoURL || empresaFinal.logoDownloadURL || empresaFinal.logoStoragePath || empresaFinal.logoPath || empresaFinal.logo || empresaFinal.logoBase64 || empresaFinal.logoData || '';
         empresaFinal.logo = normalizeLogo(logoCandidate);
         
         return empresaFinal;
@@ -282,10 +310,284 @@ async function obterDadosEmpresa() {
 
 
 
+function aguardarFirebaseServiceVendas(timeoutMs = 8000) {
+    return new Promise(async (resolve) => {
+        const startedAt = Date.now();
+        try {
+            if (window.__siswebFirebaseServiceReady && typeof window.__siswebFirebaseServiceReady.then === 'function') {
+                await window.__siswebFirebaseServiceReady;
+            }
+        } catch (error) {
+            console.warn('⚠️ Vendas: falha aguardando firebaseServiceReady:', error && error.message ? error.message : error);
+        }
+        const check = () => {
+            const svc = window.firebaseService || window.FirebaseService;
+            if (svc && typeof svc.loadFromFirebase === 'function' && typeof svc.resolveAuthenticatedTenant === 'function') {
+                resolve(svc);
+                return;
+            }
+            if ((Date.now() - startedAt) >= timeoutMs) {
+                resolve(svc || null);
+                return;
+            }
+            setTimeout(check, 100);
+        };
+        check();
+    });
+}
+
+function obterTenantServicoVendas() {
+    try {
+        const svc = window.firebaseService || window.FirebaseService;
+        if (svc && typeof svc.getCurrentTenantId === 'function') {
+            const t = svc.getCurrentTenantId();
+            if (t) return String(t);
+        }
+        if (svc && typeof svc.getTenantId === 'function') {
+            const t = svc.getTenantId();
+            if (t) return String(t);
+        }
+    } catch (_) {}
+    try {
+        if (window.appTenantId) return String(window.appTenantId);
+    } catch (_) {}
+    return '';
+}
+
+function limparContextoEmpresaVendasInseguro() {
+    try { window.appTenantId = null; } catch (_) {}
+    try { window.companyInfo = null; } catch (_) {}
+    try { localStorage.removeItem('company_info'); } catch (_) {}
+    try {
+        const svc = window.firebaseService || window.FirebaseService;
+        if (svc && typeof svc.setTenantId === 'function') svc.setTenantId(null);
+    } catch (_) {}
+}
+
+function isFirebaseOfflineModeVendas() {
+    try {
+        if (window._FIREBASE_CONNECTED === false || window.firebaseConnected === false) return true;
+    } catch (_) {}
+    try {
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) return true;
+    } catch (_) {}
+    return false;
+}
+
+function escapeOperationalHtmlVendas(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function buildOperationalLoginUrlVendas() {
+    try {
+        const target = `${window.location.pathname.split('/').pop() || 'vendas.html'}${window.location.search || ''}${window.location.hash || ''}`;
+        return `login.html?reason=tenant_required&redirect=${encodeURIComponent(target)}`;
+    } catch (_) {
+        return 'login.html?reason=tenant_required&redirect=vendas.html';
+    }
+}
+
+function ensureOperationalAccessStylesVendas() {
+    if (document.getElementById('siswebOperationalAccessStateStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'siswebOperationalAccessStateStyles';
+    style.textContent = `
+        .sisweb-operational-state {
+            display: grid;
+            grid-template-columns: 48px minmax(0, 1fr);
+            gap: 16px;
+            align-items: start;
+            margin: 16px 0 20px;
+            padding: 18px;
+            border: 1px solid #dbe4ef;
+            border-left: 4px solid #2563eb;
+            border-radius: 8px;
+            background: #f8fafc;
+            color: #1f2937;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        }
+        .sisweb-operational-state-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #e0ecff;
+            color: #1d4ed8;
+            font-size: 20px;
+        }
+        .sisweb-operational-state h2 {
+            margin: 0 0 6px;
+            font-size: 1.05rem;
+            line-height: 1.3;
+            color: #111827;
+        }
+        .sisweb-operational-state p {
+            margin: 0 0 8px;
+            color: #4b5563;
+            line-height: 1.45;
+        }
+        .sisweb-operational-state-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .sisweb-operational-state-actions a {
+            text-decoration: none;
+        }
+        @media (max-width: 640px) {
+            .sisweb-operational-state {
+                grid-template-columns: 1fr;
+                padding: 16px;
+            }
+            .sisweb-operational-state-actions a,
+            .sisweb-operational-state-actions button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function setOperationalActionsDisabledVendas(disabled) {
+    document.querySelectorAll('#pedidos > .action-buttons button').forEach((button) => {
+        button.disabled = !!disabled;
+        if (disabled) {
+            button.dataset.siswebOperationalLocked = 'true';
+            button.title = 'Entre novamente com uma empresa ativa para usar Vendas.';
+        } else if (button.dataset.siswebOperationalLocked === 'true') {
+            button.removeAttribute('disabled');
+            button.removeAttribute('title');
+            delete button.dataset.siswebOperationalLocked;
+        }
+    });
+}
+
+function renderOperationalAccessStateVendas(contexto = {}) {
+    ensureOperationalAccessStylesVendas();
+    window.__siswebVendasOperationalReady = false;
+    window.__siswebVendasLastContext = contexto || {};
+    setOperationalActionsDisabledVendas(true);
+    const form = document.getElementById('pedidoForm');
+    if (form) form.style.display = 'none';
+
+    const container = document.getElementById('pedidos');
+    if (!container) return;
+    let panel = document.getElementById('vendasOperationalAccessState');
+    if (!panel) {
+        panel = document.createElement('section');
+        panel.id = 'vendasOperationalAccessState';
+        panel.className = 'sisweb-operational-state';
+        panel.setAttribute('role', 'status');
+        panel.setAttribute('aria-live', 'polite');
+        const afterActions = container.querySelector('.action-buttons');
+        if (afterActions && afterActions.nextSibling) container.insertBefore(panel, afterActions.nextSibling);
+        else container.prepend(panel);
+    }
+
+    const isSuperAdmin = contexto && contexto.superAdmin === true;
+    const title = isSuperAdmin ? 'Conta SuperAdmin sem empresa operacional' : 'Vendas indisponivel nesta sessao';
+    const message = isSuperAdmin
+        ? 'Use um usuario vinculado a uma empresa para trabalhar com pedidos de venda. O painel administrativo continua disponivel.'
+        : 'Nao foi possivel confirmar uma empresa ativa para carregar pedidos, clientes e financeiro com seguranca.';
+    const detail = contexto && contexto.error
+        ? `<p>${escapeOperationalHtmlVendas(contexto.error)}</p>`
+        : '<p>Entre novamente para renovar a sessao e evitar leitura de dados de outra empresa.</p>';
+    const secondaryHref = isSuperAdmin ? 'admin.html?tab=dashboard' : 'index.html';
+    const secondaryText = isSuperAdmin ? 'Abrir Admin' : 'Ir para inicio';
+
+    panel.innerHTML = `
+        <div class="sisweb-operational-state-icon" aria-hidden="true"><i class="fas fa-lock"></i></div>
+        <div>
+            <h2>${escapeOperationalHtmlVendas(title)}</h2>
+            <p>${escapeOperationalHtmlVendas(message)}</p>
+            ${detail}
+            <div class="sisweb-operational-state-actions">
+                <a class="btn-primary" href="${escapeOperationalHtmlVendas(buildOperationalLoginUrlVendas())}">
+                    <i class="fas fa-right-to-bracket"></i> Entrar novamente
+                </a>
+                <a class="btn-secondary" href="${escapeOperationalHtmlVendas(secondaryHref)}">
+                    <i class="fas fa-arrow-left"></i> ${escapeOperationalHtmlVendas(secondaryText)}
+                </a>
+            </div>
+        </div>
+    `;
+}
+
+function clearOperationalAccessStateVendas() {
+    window.__siswebVendasOperationalReady = true;
+    window.__siswebVendasLastContext = null;
+    setOperationalActionsDisabledVendas(false);
+    const panel = document.getElementById('vendasOperationalAccessState');
+    if (panel) panel.remove();
+}
+
+function guardOperationalAccessVendas() {
+    if (window.__siswebVendasOperationalReady === true) return true;
+    renderOperationalAccessStateVendas(window.__siswebVendasLastContext || { error: 'Empresa da sessao nao identificada.' });
+    if (typeof ToastManager !== 'undefined') ToastManager.warning('Entre novamente com uma empresa ativa para usar Vendas.');
+    return false;
+}
+
+async function garantirContextoEmpresaVendas() {
+    const svc = await aguardarFirebaseServiceVendas();
+    try {
+        if (svc && svc.authPersistenceReady) await svc.authPersistenceReady;
+    } catch (_) {}
+
+    if (svc && typeof svc.resolveAuthenticatedTenant === 'function') {
+        const isOffline = isFirebaseOfflineModeVendas();
+        const resolved = await svc.resolveAuthenticatedTenant({ timeoutMs: 4500, allowCached: isOffline });
+        if (resolved && resolved.success && resolved.companyId) return resolved;
+        if (resolved && resolved.success && resolved.superAdmin) {
+            limparContextoEmpresaVendasInseguro();
+            return resolved;
+        }
+    }
+
+    if (typeof window.checkAuth === 'function') {
+        try {
+            const ok = await window.checkAuth();
+            if (!ok) {
+                limparContextoEmpresaVendasInseguro();
+                return { success: false, code: 'auth-redirected', error: 'Autenticação não confirmada.' };
+            }
+        } catch (_) {}
+    }
+
+    if (svc && typeof svc.resolveAuthenticatedTenant === 'function') {
+        const isOffline = isFirebaseOfflineModeVendas();
+        const retried = await svc.resolveAuthenticatedTenant({ timeoutMs: 2500, allowCached: isOffline });
+        if (retried && retried.success) return retried;
+    }
+
+    const tenant = obterTenantServicoVendas();
+    if (tenant && isFirebaseOfflineModeVendas()) return { success: true, companyId: tenant, fallback: true, offline: true };
+
+    limparContextoEmpresaVendasInseguro();
+    return { success: false, code: 'missing-company-context', error: 'Empresa da sessão não identificada.' };
+}
+
 // Inicialização
-document.addEventListener('DOMContentLoaded', function() {
+function iniciarSistemaVendasUmaVez() {
+    if (window.__siswebVendasInitStarted) return;
+    window.__siswebVendasInitStarted = true;
     inicializarSistema();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', iniciarSistemaVendasUmaVez);
+} else {
+    iniciarSistemaVendasUmaVez();
+}
 
 // Funções de inicialização
 async function inicializarSistema() {
@@ -311,8 +613,22 @@ async function inicializarSistema() {
             campoVencimento.value = hoje;
         }
         
-        // Carregar dados
-        await carregarDados();
+        const contextoEmpresa = await garantirContextoEmpresaVendas();
+        if (contextoEmpresa && contextoEmpresa.success && contextoEmpresa.companyId) {
+            clearOperationalAccessStateVendas();
+            await carregarDados();
+        } else {
+            window.pedidos = [];
+            window.produtos = [];
+            window.clientes = [];
+            const isSuperAdmin = contextoEmpresa && contextoEmpresa.superAdmin === true;
+            const msg = isSuperAdmin
+                ? 'Acesse Vendas com um usuário vinculado a uma empresa para carregar dados operacionais.'
+                : 'Sessão sem empresa ativa. Entre novamente para carregar Vendas com segurança.';
+            console.warn(`⚠️ Vendas sem tenant operacional: ${msg}`, contextoEmpresa || {});
+            if (typeof ToastManager !== 'undefined') ToastManager.warning(msg);
+            renderOperationalAccessStateVendas(contextoEmpresa || { error: 'Empresa da sessão não identificada.' });
+        }
         
         // Configurar eventos
         configurarEventos();
@@ -335,6 +651,7 @@ async function inicializarSistema() {
     } catch (error) {
         console.error("Erro fatal na inicialização:", error);
         if (typeof ToastManager !== 'undefined') ToastManager.error("Erro ao inicializar: " + error.message);
+        renderOperationalAccessStateVendas({ error: error && error.message ? error.message : 'Erro ao inicializar Vendas.' });
     } finally {
         if (typeof LoadingManager !== 'undefined') LoadingManager.hide();
     }
@@ -399,7 +716,7 @@ async function carregarDados() {
              console.log("📥 [Lazy Load] Carregando auxiliares para Vendas em background...");
              try {
                  const [species, produtos_raw, cliRes] = await Promise.all([
-                     getData('species').catch(() => []),
+                     getData('especies').catch(() => []),
                      getData('produtos').catch(() => []),
                      (window.clientService && window.clientService.getClients) ? window.clientService.getClients(true).catch(() => []) : getData('clients').catch(() => [])
                  ]);
@@ -412,6 +729,7 @@ async function carregarDados() {
                  atualizarSelectProdutos();
                  popularFiltrosRelatoriosVenda();
                  if (typeof popularFiltrosPedidosVenda === 'function') popularFiltrosPedidosVenda();
+                 renderizarClientesVenda();
              } catch (e) {
                  console.warn("⚠️ Falha no Lazy Load de vendas:", e);
              }
@@ -507,11 +825,37 @@ function configurarEventos() {
                 
                 atualizarSelectClientes(novoId);
                 popularFiltrosRelatoriosVenda();
+                renderizarClientesVenda();
             } catch (err) {
                 console.warn('Erro ao processar atualização de clientes:', err);
             }
         });
+        window.addEventListener('message', function(event) {
+            if (event.origin !== window.location.origin) return;
+            const data = event.data || {};
+            if (!data || data.source !== 'sisweb-commerce-embedded') return;
+            if (data.type !== 'sisweb:clients:updated') return;
+            window.dispatchEvent(new CustomEvent('clients:updated', { detail: data.detail || {} }));
+        });
     } catch (_) {}
+
+    const vendasClientesBusca = document.getElementById('vendasClientesBusca');
+    if (vendasClientesBusca) {
+        vendasClientesBusca.addEventListener('input', () => renderizarClientesVenda());
+    }
+    const vendasClientesFiltroStatus = document.getElementById('vendasClientesFiltroStatus');
+    if (vendasClientesFiltroStatus) {
+        vendasClientesFiltroStatus.addEventListener('change', () => renderizarClientesVenda());
+    }
+    const vendasClienteForm = document.getElementById('vendasClienteForm');
+    if (vendasClienteForm && !vendasClienteForm.dataset.boundVendasClientes) {
+        vendasClienteForm.addEventListener('submit', vendasClientesSalvar);
+        vendasClienteForm.dataset.boundVendasClientes = '1';
+    }
+    const vendasClienteState = document.getElementById('vendasClienteState');
+    if (vendasClienteState) {
+        vendasClienteState.addEventListener('change', () => vendasClientesCarregarCidades(vendasClienteState.value));
+    }
 }
 
 // Filtrar clientes do select conforme texto digitado
@@ -603,22 +947,451 @@ function showTab(tabName) {
     tabs.forEach(tab => tab.classList.remove('active'));
     
     // Mostrar tab selecionada
-    document.getElementById(tabName).classList.add('active');
+    const content = document.getElementById(tabName);
+    if (content) content.classList.add('active');
     
     // Adicionar classe active na tab clicada
-    event.target.classList.add('active');
+    const clickedTab = (typeof event !== 'undefined' && event && event.target) ? event.target.closest('.tab') : null;
+    const tabButton = clickedTab || document.querySelector(`.tab[onclick="showTab('${tabName}')"]`);
+    if (tabButton) tabButton.classList.add('active');
     
     // Carregar dados específicos da tab
     if (tabName === 'produtos') {
         listarProdutos();
+    } else if (tabName === 'clientes') {
+        carregarClientesAbaVenda(false);
     } else if (tabName === 'relatorios') {
         popularFiltrosRelatoriosVenda();
         gerarRelatorio();
     }
 }
 
+function vendasClientesGetService() {
+    return window.clientService || {
+        getClients: (forceRefresh) => (typeof window.getClients === 'function' ? window.getClients(forceRefresh) : getData('clients')),
+        saveClient: (client) => (typeof window.saveClient === 'function' ? window.saveClient(client) : Promise.reject(new Error('Serviço de clientes indisponível'))),
+        deleteClient: (id) => (typeof window.deleteClient === 'function' ? window.deleteClient(id) : Promise.reject(new Error('Serviço de clientes indisponível'))),
+        normalizeClient: (client) => client
+    };
+}
+
+function vendasClientesNome(cliente) {
+    return String((cliente && (cliente.nome || cliente.name || cliente.nomeCompleto)) || '').trim();
+}
+
+function vendasClientesDocumento(cliente) {
+    return String((cliente && (cliente.cnpj || cliente.cpf || cliente.document || cliente.documento)) || '').trim();
+}
+
+function vendasClientesCampo(id) {
+    return String(document.getElementById(id)?.value || '').trim();
+}
+
+function vendasClientesStatus(cliente) {
+    const status = String((cliente && cliente.status) || 'ativo').trim().toLowerCase();
+    return status === 'inativo' ? 'inativo' : 'ativo';
+}
+
+function vendasClientesMostrarEstado(message, icon = 'fa-circle-info') {
+    const tbody = document.getElementById('vendasClientesTableBody');
+    if (tbody) {
+        tbody.innerHTML = `
+            <tr>
+                <td class="sales-clients-empty" colspan="6"><i class="fas ${icon}"></i> ${escapeOperationalHtmlVendas(message)}</td>
+            </tr>
+        `;
+    }
+}
+
+function vendasClientesAtualizarResumo(lista) {
+    const clientes = Array.isArray(lista) ? lista : [];
+    const ativos = clientes.filter((cliente) => vendasClientesStatus(cliente) === 'ativo').length;
+    const documentados = clientes.filter((cliente) => vendasClientesDocumento(cliente)).length;
+    const cidades = new Set(clientes.map((cliente) => String(cliente.city || cliente.cidade || '').trim()).filter(Boolean));
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = String(value);
+    };
+    setText('vendasClientesTotal', clientes.length);
+    setText('vendasClientesAtivos', ativos);
+    setText('vendasClientesDocumentados', documentados);
+    setText('vendasClientesCidades', cidades.size);
+}
+
+async function carregarClientesAbaVenda(forceRefresh = false) {
+    const activePanel = document.getElementById('clientes');
+    if (window.__siswebVendasOperationalReady !== true) {
+        vendasClientesAtualizarResumo([]);
+        vendasClientesMostrarEstado('Empresa da sessão não identificada. Faça login novamente para carregar clientes.', 'fa-lock');
+        return [];
+    }
+    vendasClientesMostrarEstado('Carregando clientes...', 'fa-spinner');
+    try {
+        const service = vendasClientesGetService();
+        const result = service && typeof service.getClients === 'function'
+            ? await service.getClients(forceRefresh)
+            : await getData('clients');
+        const normalize = service && typeof service.normalizeClient === 'function'
+            ? service.normalizeClient
+            : (client) => client;
+        const byKey = new Map();
+        (Array.isArray(result) ? result : []).forEach((item) => {
+            if (!item || typeof item !== 'object') return;
+            const normalized = normalize(item);
+            const name = vendasClientesNome(normalized);
+            if (!name) return;
+            const id = String(normalized.id || '').trim();
+            const key = id || `name:${name.toLowerCase()}`;
+            if (!byKey.has(key)) byKey.set(key, normalized);
+        });
+        window.clientes = Array.from(byKey.values())
+            .sort((a, b) => vendasClientesNome(a).localeCompare(vendasClientesNome(b), 'pt-BR'));
+        atualizarSelectClientes();
+        popularFiltrosRelatoriosVenda();
+        if (typeof popularFiltrosPedidosVenda === 'function') popularFiltrosPedidosVenda();
+        renderizarClientesVenda();
+        if (activePanel && activePanel.classList.contains('active') && forceRefresh && typeof ToastManager !== 'undefined') {
+            ToastManager.success('Clientes atualizados.', 'Clientes', 1800);
+        }
+        return window.clientes;
+    } catch (error) {
+        console.error('Erro ao carregar clientes na aba de vendas:', error);
+        vendasClientesMostrarEstado('Erro ao carregar clientes. Verifique a sessão e tente novamente.', 'fa-triangle-exclamation');
+        if (typeof ToastManager !== 'undefined') ToastManager.error('Erro ao carregar clientes: ' + (error && error.message ? error.message : error), 'Clientes');
+        return [];
+    }
+}
+
+function renderizarClientesVenda() {
+    const tbody = document.getElementById('vendasClientesTableBody');
+    if (!tbody) return;
+    const source = Array.isArray(window.clientes) ? window.clientes : [];
+    vendasClientesAtualizarResumo(source);
+    const busca = String(document.getElementById('vendasClientesBusca')?.value || '').trim().toLowerCase();
+    const statusFiltro = String(document.getElementById('vendasClientesFiltroStatus')?.value || '').trim().toLowerCase();
+    vendasClientesFiltered = source.filter((cliente) => {
+        const status = vendasClientesStatus(cliente);
+        if (statusFiltro && status !== statusFiltro) return false;
+        if (!busca) return true;
+        const haystack = [
+            vendasClientesNome(cliente),
+            vendasClientesDocumento(cliente),
+            cliente.telefone,
+            cliente.phone,
+            cliente.email,
+            cliente.cidade,
+            cliente.city,
+            cliente.estado,
+            cliente.state,
+            cliente.bairro,
+            cliente.neighborhood
+        ].map((value) => String(value || '').toLowerCase()).join(' ');
+        return haystack.includes(busca);
+    });
+
+    if (vendasClientesFiltered.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td class="sales-clients-empty" colspan="6">Nenhum cliente encontrado.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = vendasClientesFiltered.map((cliente) => {
+        const id = String(cliente.id || '').trim();
+        const encodedId = escapeOperationalHtmlVendas(encodeURIComponent(id).replace(/'/g, '%27'));
+        const nome = escapeOperationalHtmlVendas(vendasClientesNome(cliente) || 'Sem nome');
+        const email = escapeOperationalHtmlVendas(cliente.email || '');
+        const documento = escapeOperationalHtmlVendas(vendasClientesDocumento(cliente) || '-');
+        const telefone = escapeOperationalHtmlVendas(cliente.telefone || cliente.phone || '-');
+        const cidadeUf = [cliente.city || cliente.cidade, cliente.state || cliente.estado].filter(Boolean).join(' / ') || '-';
+        const endereco = [cliente.address || cliente.endereco, cliente.number || cliente.numero, cliente.neighborhood || cliente.bairro].filter(Boolean).join(', ');
+        const status = vendasClientesStatus(cliente);
+        const statusLabel = status === 'inativo' ? 'Inativo' : 'Ativo';
+        return `
+            <tr>
+                <td data-label="Cliente" class="sales-clients-name-cell">
+                    <strong>${nome}</strong>
+                    ${email ? `<small>${email}</small>` : ''}
+                </td>
+                <td data-label="Documento">${documento}</td>
+                <td data-label="Contato">${telefone}</td>
+                <td data-label="Localização">
+                    <span>${escapeOperationalHtmlVendas(cidadeUf)}</span>
+                    ${endereco ? `<small style="display:block;color:#64748b;margin-top:3px;">${escapeOperationalHtmlVendas(endereco)}</small>` : ''}
+                </td>
+                <td data-label="Status"><span class="status-badge status-${status}">${statusLabel}</span></td>
+                <td data-label="Ações" class="sales-clients-actions-cell commerce-actions-cell">
+                    <div class="commerce-actions-wrap">
+                        <button type="button" class="btn-primary btn-small" onclick="vendasClientesEditar(decodeURIComponent('${encodedId}'))" title="Editar cliente" aria-label="Editar cliente">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn-danger btn-small" onclick="vendasClientesExcluir(decodeURIComponent('${encodedId}'))" title="Excluir cliente" aria-label="Excluir cliente">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    refreshCommerceResponsiveTables();
+}
+
+async function vendasClientesCarregarCidades(uf, selectedCity = '') {
+    const citySelect = document.getElementById('vendasClienteCity');
+    if (!citySelect) return;
+    const cleanUf = String(uf || '').trim().slice(0, 2).toUpperCase();
+    if (!cleanUf) {
+        citySelect.innerHTML = '<option value="">Selecione primeiro o estado</option>';
+        return;
+    }
+    try {
+        if (typeof window.populateCitySelect === 'function') {
+            await window.populateCitySelect(cleanUf, 'vendasClienteCity');
+        } else if (typeof window.loadCitiesFromIBGE === 'function') {
+            const cidades = await window.loadCitiesFromIBGE(cleanUf);
+            citySelect.innerHTML = '<option value="">Selecione a cidade</option>';
+            (Array.isArray(cidades) ? cidades : []).forEach((cidade) => {
+                const option = document.createElement('option');
+                option.value = cidade;
+                option.textContent = cidade;
+                citySelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.warn('Falha ao carregar cidades para cliente de vendas:', error);
+    }
+    if (selectedCity) {
+        const exists = Array.from(citySelect.options).some((option) => option.value === selectedCity);
+        if (!exists) {
+            const option = document.createElement('option');
+            option.value = selectedCity;
+            option.textContent = selectedCity;
+            citySelect.appendChild(option);
+        }
+        citySelect.value = selectedCity;
+    }
+}
+
+function vendasClientesPreencherForm(cliente = null) {
+    const data = cliente || {};
+    const setValue = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value || '';
+    };
+    const title = document.getElementById('vendasClienteFormTitle');
+    if (title) title.textContent = cliente ? 'Editar Cliente' : 'Novo Cliente';
+    setValue('vendasClienteId', data.id || '');
+    setValue('vendasClienteName', data.nome || data.name || '');
+    setValue('vendasClienteCnpj', vendasClientesDocumento(data));
+    setValue('vendasClienteTipoPessoa', data.tipoPessoa || data.personType || data.fiscalPersonType || '');
+    setValue('vendasClienteIndIEDest', data.indIEDest || data.indicadorInscricaoEstadual || data.ieIndicator || '');
+    setValue('vendasClienteInscricaoEstadual', data.inscricaoEstadual || data.stateRegistration || data.ie || '');
+    setValue('vendasClienteInscricaoMunicipal', data.inscricaoMunicipal || data.municipalRegistration || data.im || '');
+    setValue('vendasClienteSuframa', data.suframa || '');
+    setValue('vendasClientePhone', data.telefone || data.phone || '');
+    setValue('vendasClienteEmail', data.email || '');
+    setValue('vendasClienteStatus', vendasClientesStatus(data));
+    setValue('vendasClienteCep', data.cep || data.postalCode || data.zipCode || '');
+    setValue('vendasClienteAddress', data.endereco || data.address || '');
+    setValue('vendasClienteNumber', data.numero || data.number || '');
+    setValue('vendasClienteNeighborhood', data.bairro || data.neighborhood || '');
+    setValue('vendasClienteComplement', data.complemento || data.complement || '');
+    setValue('vendasClienteState', data.estado || data.state || '');
+    setValue('vendasClienteMunicipalityCode', data.codigoMunicipio || data.municipioCodigo || data.municipalityCode || data.cMun || data.ibgeCode || '');
+    setValue('vendasClienteCountryCode', data.paisCodigo || data.countryCode || data.cPais || '1058');
+    setValue('vendasClienteCountryName', data.pais || data.country || data.countryName || data.xPais || 'Brasil');
+    setValue('vendasClienteObs', data.obs || data.observacoes || data.observations || '');
+}
+
+function vendasClientesNovo() {
+    if (window.__siswebVendasOperationalReady !== true) {
+        vendasClientesMostrarEstado('Empresa da sessão não identificada. Faça login novamente para cadastrar clientes.', 'fa-lock');
+        return;
+    }
+    vendasClientesEditingId = null;
+    const form = document.getElementById('vendasClienteForm');
+    if (form) {
+        form.reset();
+        form.hidden = false;
+    }
+    vendasClientesPreencherForm(null);
+    vendasClientesCarregarCidades('');
+    setTimeout(() => document.getElementById('vendasClienteName')?.focus(), 50);
+}
+
+async function vendasClientesEditar(id) {
+    const clientId = String(id || '').trim();
+    const cliente = (Array.isArray(window.clientes) ? window.clientes : []).find((item) => String(item.id || '') === clientId);
+    if (!cliente) {
+        if (typeof ToastManager !== 'undefined') ToastManager.warning('Cliente não encontrado.', 'Clientes');
+        return;
+    }
+    vendasClientesEditingId = clientId;
+    const form = document.getElementById('vendasClienteForm');
+    if (form) form.hidden = false;
+    vendasClientesPreencherForm(cliente);
+    await vendasClientesCarregarCidades(cliente.estado || cliente.state || '', cliente.cidade || cliente.city || '');
+    setTimeout(() => document.getElementById('vendasClienteName')?.focus(), 50);
+}
+
+function vendasClientesCancelar() {
+    vendasClientesEditingId = null;
+    const form = document.getElementById('vendasClienteForm');
+    if (form) {
+        form.reset();
+        form.hidden = true;
+    }
+}
+
+async function vendasClientesSalvar(event) {
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    if (window.__siswebVendasOperationalReady !== true) {
+        vendasClientesMostrarEstado('Empresa da sessão não identificada. Faça login novamente para salvar clientes.', 'fa-lock');
+        return;
+    }
+    const name = String(document.getElementById('vendasClienteName')?.value || '').trim();
+    if (!name) {
+        if (typeof ToastManager !== 'undefined') ToastManager.warning('Informe o nome do cliente.', 'Clientes');
+        document.getElementById('vendasClienteName')?.focus();
+        return;
+    }
+    const saveBtn = document.getElementById('vendasClienteSaveBtn');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando';
+    }
+    try {
+        const existing = vendasClientesEditingId
+            ? (Array.isArray(window.clientes) ? window.clientes : []).find((item) => String(item.id || '') === String(vendasClientesEditingId))
+            : null;
+        const nowIso = new Date().toISOString();
+        const documento = vendasClientesCampo('vendasClienteCnpj');
+        const tipoPessoa = vendasClientesCampo('vendasClienteTipoPessoa');
+        const indIEDest = vendasClientesCampo('vendasClienteIndIEDest');
+        const inscricaoEstadual = vendasClientesCampo('vendasClienteInscricaoEstadual');
+        const inscricaoMunicipal = vendasClientesCampo('vendasClienteInscricaoMunicipal');
+        const suframa = vendasClientesCampo('vendasClienteSuframa');
+        const cep = vendasClientesCampo('vendasClienteCep');
+        const complemento = vendasClientesCampo('vendasClienteComplement');
+        const codigoMunicipio = vendasClientesCampo('vendasClienteMunicipalityCode');
+        const paisCodigo = vendasClientesCampo('vendasClienteCountryCode') || '1058';
+        const pais = vendasClientesCampo('vendasClienteCountryName') || 'Brasil';
+        const payload = {
+            ...(existing || {}),
+            id: vendasClientesEditingId || undefined,
+            nome: name,
+            name,
+            documento,
+            document: documento,
+            cnpj: documento,
+            tipoPessoa,
+            personType: tipoPessoa,
+            fiscalPersonType: tipoPessoa,
+            indIEDest,
+            indicadorInscricaoEstadual: indIEDest,
+            ieIndicator: indIEDest,
+            inscricaoEstadual,
+            stateRegistration: inscricaoEstadual,
+            ie: inscricaoEstadual,
+            inscricaoMunicipal,
+            municipalRegistration: inscricaoMunicipal,
+            suframa,
+            cep,
+            postalCode: cep,
+            telefone: vendasClientesCampo('vendasClientePhone'),
+            phone: vendasClientesCampo('vendasClientePhone'),
+            email: vendasClientesCampo('vendasClienteEmail'),
+            status: vendasClientesCampo('vendasClienteStatus') || 'ativo',
+            endereco: vendasClientesCampo('vendasClienteAddress'),
+            address: vendasClientesCampo('vendasClienteAddress'),
+            numero: vendasClientesCampo('vendasClienteNumber'),
+            number: vendasClientesCampo('vendasClienteNumber'),
+            bairro: vendasClientesCampo('vendasClienteNeighborhood'),
+            neighborhood: vendasClientesCampo('vendasClienteNeighborhood'),
+            complemento,
+            complement: complemento,
+            estado: vendasClientesCampo('vendasClienteState'),
+            state: vendasClientesCampo('vendasClienteState'),
+            cidade: vendasClientesCampo('vendasClienteCity'),
+            city: vendasClientesCampo('vendasClienteCity'),
+            codigoMunicipio,
+            municipioCodigo: codigoMunicipio,
+            municipalityCode: codigoMunicipio,
+            cMun: codigoMunicipio,
+            ibgeCode: codigoMunicipio,
+            paisCodigo,
+            countryCode: paisCodigo,
+            cPais: paisCodigo,
+            pais,
+            country: pais,
+            countryName: pais,
+            xPais: pais,
+            obs: vendasClientesCampo('vendasClienteObs'),
+            observacoes: vendasClientesCampo('vendasClienteObs'),
+            observations: vendasClientesCampo('vendasClienteObs'),
+            createdAt: existing?.createdAt || existing?.created || nowIso,
+            updatedAt: nowIso,
+            updated: nowIso
+        };
+        const service = vendasClientesGetService();
+        const saved = await service.saveClient(payload);
+        const normalized = service && typeof service.normalizeClient === 'function'
+            ? service.normalizeClient(saved || payload)
+            : (saved || payload);
+        const savedId = String(normalized.id || payload.id || vendasClientesEditingId || '').trim();
+        const current = Array.isArray(window.clientes) ? window.clientes.slice() : [];
+        const index = savedId ? current.findIndex((item) => String(item.id || '') === savedId) : -1;
+        if (index >= 0) current[index] = normalized;
+        else current.push(normalized);
+        window.clientes = current.sort((a, b) => vendasClientesNome(a).localeCompare(vendasClientesNome(b), 'pt-BR'));
+        atualizarSelectClientes(savedId || null);
+        popularFiltrosRelatoriosVenda();
+        if (typeof popularFiltrosPedidosVenda === 'function') popularFiltrosPedidosVenda();
+        renderizarClientesVenda();
+        vendasClientesCancelar();
+        if (typeof ToastManager !== 'undefined') ToastManager.success('Cliente salvo com sucesso.', 'Clientes');
+    } catch (error) {
+        console.error('Erro ao salvar cliente na aba de vendas:', error);
+        if (typeof ToastManager !== 'undefined') ToastManager.error('Erro ao salvar cliente: ' + (error && error.message ? error.message : error), 'Clientes');
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Cliente';
+        }
+    }
+}
+
+async function vendasClientesExcluir(id) {
+    const clientId = String(id || '').trim();
+    if (!clientId) return;
+    const cliente = (Array.isArray(window.clientes) ? window.clientes : []).find((item) => String(item.id || '') === clientId);
+    const nome = vendasClientesNome(cliente) || 'este cliente';
+    if (!window.confirm(`Excluir ${nome}?`)) return;
+    try {
+        const service = vendasClientesGetService();
+        await service.deleteClient(clientId);
+        window.clientes = (Array.isArray(window.clientes) ? window.clientes : []).filter((item) => String(item.id || '') !== clientId);
+        atualizarSelectClientes();
+        popularFiltrosRelatoriosVenda();
+        if (typeof popularFiltrosPedidosVenda === 'function') popularFiltrosPedidosVenda();
+        renderizarClientesVenda();
+        if (vendasClientesEditingId === clientId) vendasClientesCancelar();
+        if (typeof ToastManager !== 'undefined') ToastManager.success('Cliente excluído.', 'Clientes');
+    } catch (error) {
+        console.error('Erro ao excluir cliente na aba de vendas:', error);
+        if (typeof ToastManager !== 'undefined') ToastManager.error('Erro ao excluir cliente: ' + (error && error.message ? error.message : error), 'Clientes');
+    }
+}
+
+function vendasClientesRecarregar() {
+    carregarClientesAbaVenda(true);
+}
+
 // Funções de pedidos
 async function novoPedido() {
+    if (!guardOperationalAccessVendas()) return;
     editandoPedidoId = null;
     pedidoAtual = null;
     itensCarrinho = [];
@@ -683,6 +1456,119 @@ function cancelarPedido() {
     editandoPedidoId = null;
     pedidoAtual = null;
     itensCarrinho = [];
+}
+
+function getPedidoVendaRef(pedidoOuId) {
+    if (pedidoOuId && typeof pedidoOuId === 'object') {
+        return {
+            id: String(pedidoOuId.id || pedidoOuId.firebaseKey || ''),
+            numero: String(pedidoOuId.numero || pedidoOuId.pedidoNumero || '')
+        };
+    }
+    return { id: String(pedidoOuId || ''), numero: '' };
+}
+
+function normalizePedidoVendaNumero(value) {
+    return String(value || '').trim().replace(/^0+(\d)/, '$1');
+}
+
+function isContaReceberComRecebimento(conta) {
+    const st = String(conta && conta.status ? conta.status : '').toLowerCase();
+    const hasRec = Array.isArray(conta && conta.recebimentos ? conta.recebimentos : null) && conta.recebimentos.length > 0;
+    const vo = typeof (conta && conta.valorOriginal) === 'number' ? conta.valorOriginal : parseFloat((conta && conta.valorOriginal) || '');
+    const vr = typeof (conta && conta.valorRestante) === 'number' ? conta.valorRestante : parseFloat((conta && conta.valorRestante) || '');
+    const parcial = !isNaN(vo) && !isNaN(vr) && vr < vo;
+    return st === 'pago' || st === 'parcial' || hasRec || parcial;
+}
+
+function isContaReceberLike(value) {
+    if (!value || typeof value !== 'object') return false;
+    return value.origemId || value.pedidoNumero || value.dataVencimento || value.vencimento || value.valor !== undefined || value.valorOriginal !== undefined || value.descricao;
+}
+
+function flattenContasReceberData(data) {
+    const out = [];
+    const seen = new Set();
+    const walk = (node, path = []) => {
+        if (!node || typeof node !== 'object') return;
+        if (Array.isArray(node)) {
+            node.forEach((item, idx) => walk(item, path.concat(String(idx))));
+            return;
+        }
+        if (isContaReceberLike(node)) {
+            const fallbackId = path.length ? path[path.length - 1] : '';
+            const item = { id: node.id || node.firebaseKey || fallbackId, ...node };
+            const sid = String(item.id || `${item.origemId || ''}|${item.pedidoNumero || ''}|${item.descricao || ''}|${item.vencimento || item.dataVencimento || ''}`);
+            if (!seen.has(sid)) {
+                seen.add(sid);
+                out.push(item);
+            }
+            return;
+        }
+        Object.entries(node).forEach(([key, value]) => walk(value, path.concat(String(key))));
+    };
+    walk(data);
+    return out;
+}
+
+function contaReceberPertenceAoPedidoVenda(conta, pedidoOuId) {
+    const ref = getPedidoVendaRef(pedidoOuId);
+    if (!conta || typeof conta !== 'object') return false;
+    const pedidoId = ref.id;
+    const pedidoNumero = ref.numero;
+    if (pedidoId && String(conta.origemId || '') === pedidoId) return true;
+    if (pedidoId && String(conta.id || '').startsWith(`CR_${pedidoId}_`)) return true;
+    if (pedidoNumero && String(conta.pedidoNumero || '') === pedidoNumero) return true;
+    if (pedidoNumero) {
+        const desc = String(conta.descricao || conta.observacoes || '');
+        const numeroNorm = normalizePedidoVendaNumero(pedidoNumero);
+        if (desc.includes(`Pedido ${pedidoNumero}`)) return true;
+        if (numeroNorm && desc.includes(`Pedido ${numeroNorm}`)) return true;
+    }
+    return false;
+}
+
+async function carregarContasReceberVinculadasPedidoVenda(pedidoOuId) {
+    const vinculadas = [];
+    if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+        try {
+            const res = await window.firebaseService.loadFromFirebase('financas/receber');
+            if (res && res.success && res.data) {
+                vinculadas.push(...flattenContasReceberData(res.data).filter(c => contaReceberPertenceAoPedidoVenda(c, pedidoOuId)));
+            }
+        } catch (_) {}
+    }
+    if (vinculadas.length === 0) {
+        try {
+            const local = await getData('financas/receber') || [];
+            vinculadas.push(...flattenContasReceberData(local).filter(c => contaReceberPertenceAoPedidoVenda(c, pedidoOuId)));
+        } catch (_) {}
+    }
+    const seen = new Set();
+    return vinculadas.filter(c => {
+        const id = String(c && c.id ? c.id : '');
+        const key = id || `${c && c.origemId || ''}|${c && c.pedidoNumero || ''}|${c && c.descricao || ''}|${c && (c.vencimento || c.dataVencimento) || ''}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
+function montarUpdatesRemocaoContasReceberVenda(lista, options = {}) {
+    const updates = {};
+    const includeLegacy = options.includeLegacy !== false;
+    (lista || []).forEach(c => {
+        if (!c || !c.id) return;
+        const id = String(c.id);
+        const mk = toMonthKey(c.dataVencimento || c.vencimento);
+        updates[`financas/receber/${mk}/${id}`] = null;
+        updates[`financas/receber/${id}`] = null;
+        if (includeLegacy) {
+            updates[`contasReceber/${mk}/${id}`] = null;
+            updates[`contasReceber/${id}`] = null;
+        }
+    });
+    return updates;
 }
 
 /**
@@ -884,7 +1770,8 @@ function atualizarTabelaItens() {
     const tbody = document.getElementById('itensTable');
     
     if (itensCarrinho.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhum item adicionado</td></tr>';
+        tbody.innerHTML = '<tr><td class="commerce-full-row" data-label="" colspan="5" style="text-align: center;">Nenhum item adicionado</td></tr>';
+        refreshCommerceResponsiveTables();
         return;
     }
     
@@ -908,11 +1795,11 @@ function atualizarTabelaItens() {
         
         return `
             <tr>
-                <td>${produtoDescricao}</td>
-                <td style="text-align: center;">${quantidadeFormatada}</td>
-                <td style="text-align: right;">${formatCurrency(item.precoUnitario)}</td>
-                <td style="text-align: right;">${formatCurrency(item.total)}</td>
-                <td style="text-align: center;">
+                <td data-label="Produto">${produtoDescricao}</td>
+                <td data-label="Quantidade" style="text-align: center;">${quantidadeFormatada}</td>
+                <td data-label="Preço Unit." style="text-align: right;">${formatCurrency(item.precoUnitario)}</td>
+                <td data-label="Total" style="text-align: right;">${formatCurrency(item.total)}</td>
+                <td data-label="Ações" class="commerce-actions-cell" style="text-align: center;">
                     <button type="button" onclick="editarItem(${item.id})" class="btn-primary btn-small">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -923,6 +1810,7 @@ function atualizarTabelaItens() {
             </tr>
         `;
     }).join('');
+    refreshCommerceResponsiveTables();
 }
 
 function atualizarTotais() {
@@ -1127,91 +2015,34 @@ async function salvarPedido(event) {
         let pedidoAnterior = null;
         if (editandoPedidoId) {
             pedidoAnterior = (window.pedidos || []).find(p => String(p.id) === String(editandoPedidoId)) || null;
-            // Preferir contas vinculadas embutidas no pedido anterior
-            if (pedidoAnterior && Array.isArray(pedidoAnterior.contasReceber) && pedidoAnterior.contasReceber.length > 0) {
-                removiveis = pedidoAnterior.contasReceber.map((conta, idx) => ({
-                    id: conta && conta.id ? conta.id : `CR_${String(editandoPedidoId)}_${String(idx + 1).padStart(3,'0')}`,
-                    valor: conta.valor,
-                    valorOriginal: conta.valorOriginal || conta.valor,
-                    valorRestante: conta.valorRestante ?? conta.valor,
-                    dataVencimento: conta.vencimento || conta.dataVencimento,
-                    vencimento: conta.vencimento || conta.dataVencimento,
-                    origemId: editandoPedidoId,
-                    status: conta.status || 'pendente'
-                }));
-            } else {
-                try {
-                    const todas = await getData('financas/receber') || [];
-                    const vinculadas = (todas || []).filter(c => String(c.origemId) === String(editandoPedidoId));
-                    const hasAlgumRecebimento = vinculadas.some(c => {
-                        const st = String(c.status || '').toLowerCase();
-                        const hasRec = Array.isArray(c.recebimentos) && c.recebimentos.length > 0;
-                        const vo = typeof c.valorOriginal === 'number' ? c.valorOriginal : parseFloat(c.valorOriginal || '');
-                        const vr = typeof c.valorRestante === 'number' ? c.valorRestante : parseFloat(c.valorRestante || '');
-                        const parcial = !isNaN(vo) && !isNaN(vr) && vr < vo;
-                        return st === 'pago' || hasRec || parcial;
-                    });
-                    removiveis = hasAlgumRecebimento ? await listarContasReceberSemRecebimento(editandoPedidoId) : vinculadas.slice();
-                    if (removiveis.length > 0) ToastManager.info(`Parcelas anteriores estornadas: ${removiveis.length}`, 'Edição de Pedido');
-                } catch (e) {
-                    removiveis = await listarContasReceberSemRecebimento(editandoPedidoId);
-                }
-            }
+            const pedidoRefFinanceiro = {
+                id: editandoPedidoId,
+                numero: pedidoData.numero || (pedidoAnterior && pedidoAnterior.numero) || ''
+            };
+            const vinculadas = await carregarContasReceberVinculadasPedidoVenda(pedidoRefFinanceiro);
+            const semRecebimento = vinculadas.filter(c => !isContaReceberComRecebimento(c));
+            removiveis = semRecebimento.slice();
 
             if (!shouldGenerateFinance) {
-                const loadVinculadas = async (pedidoId) => {
-                    let todas = [];
-                    if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-                        try {
-                            const res = await window.firebaseService.loadFromFirebase('financas/receber');
-                            if (res && res.success && res.data) {
-                                const obj = res.data;
-                                if (Array.isArray(obj)) {
-                                    todas = obj;
-                                } else if (typeof obj === 'object') {
-                                    const months = Object.keys(obj || {});
-                                    for (const mk of months) {
-                                        const monthVal = obj[mk];
-                                        if (Array.isArray(monthVal)) {
-                                            todas.push(...monthVal);
-                                        } else if (typeof monthVal === 'object') {
-                                            Object.keys(monthVal || {}).forEach(id => {
-                                                const it = monthVal[id];
-                                                if (it) todas.push({ id, ...it });
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (_) {}
-                    }
-                    if (!Array.isArray(todas) || todas.length === 0) {
-                        const local = await getData('financas/receber') || [];
-                        todas = Array.isArray(local) ? local : [];
-                    }
-                    return (todas || []).filter(c => String(c && c.origemId) === String(pedidoId));
-                };
-                const vinculadas = await loadVinculadas(editandoPedidoId);
-                const temRecebimento = vinculadas.some(c => {
-                    const st = String(c && c.status ? c.status : '').toLowerCase();
-                    const hasRec = Array.isArray(c && c.recebimentos ? c.recebimentos : null) && c.recebimentos.length > 0;
-                    const vo = typeof c.valorOriginal === 'number' ? c.valorOriginal : parseFloat((c && c.valorOriginal) || '');
-                    const vr = typeof c.valorRestante === 'number' ? c.valorRestante : parseFloat((c && c.valorRestante) || '');
-                    const parcial = !isNaN(vo) && !isNaN(vr) && vr < vo;
-                    return st === 'pago' || st === 'parcial' || hasRec || parcial;
-                });
+                const temRecebimento = vinculadas.some(c => isContaReceberComRecebimento(c));
                 if (temRecebimento) {
                     LoadingManager.hide();
                     ToastManager.error(`Não é possível alterar para "${getStatusLabel(statusNext)}": existem recebimentos vinculados.`, 'Ação bloqueada', 8000);
                     return;
                 }
                 removiveis = vinculadas.slice();
+                if (removiveis.length > 0) {
+                    ToastManager.info(`Financeiro do pedido ${pedidoData.numero} estornado: ${removiveis.length} parcela(s).`, 'Edição de Pedido');
+                }
             }
         }
 
         if (editandoPedidoId && shouldGenerateFinance) {
             try {
-                const safeRemoviveis = await listarContasReceberSemRecebimento(editandoPedidoId);
+                const safeRemoviveis = await listarContasReceberSemRecebimento({
+                    id: editandoPedidoId,
+                    numero: pedidoData.numero || (pedidoAnterior && pedidoAnterior.numero) || ''
+                });
                 if (Array.isArray(safeRemoviveis) && safeRemoviveis.length > 0) {
                     removiveis = safeRemoviveis;
                 }
@@ -1257,7 +2088,7 @@ async function salvarPedido(event) {
                 try { if (conta && typeof conta === 'object') conta.id = crId; } catch (_) {}
                 return ({
                 id: crId,
-                tipo: 'receber',
+                tipo: conta.tipo || 'receber',
                 categoria: 'vendas',
                 origem: 'pedido_venda',
                 origemId: pedidoData.id,
@@ -1285,16 +2116,7 @@ async function salvarPedido(event) {
             }) : [];
 
             // Executar remoções primeiro (evitar colisão de ID), depois adições
-            const updatesRem = {};
-            (removiveis || []).forEach(c => {
-                if (c && c.id) {
-                    const mk = toMonthKey(c.dataVencimento || c.vencimento);
-                    // ✅ CORREÇÃO: Financeiro padrão usa financas/receber/{YYYY-MM}/{id}
-                    updatesRem[`financas/receber/${mk}/${String(c.id)}`] = null;
-                    // Limpeza defensiva: remover do caminho antigo usado por engano em versões anteriores
-                    updatesRem[`contasReceber/${mk}/${String(c.id)}`] = null;
-                }
-            });
+            const updatesRem = montarUpdatesRemocaoContasReceberVenda(removiveis, { includeLegacy: false });
             
             // Não chamar updatePaths apenas para remoções se vamos fazer adições logo depois
             // Melhor combinar tudo num único updatePaths atômico se possível, mas aqui estamos separando logicamente
@@ -1321,6 +2143,9 @@ async function salvarPedido(event) {
         }
         
         if (!multiUpdateDone) {
+            if (editandoPedidoId && !shouldGenerateFinance && removiveis.length > 0) {
+                throw new Error('Não foi possível estornar o financeiro vinculado. Nenhuma alteração foi concluída.');
+            }
             // Fallback para salvamento individual
             await saveData('vendas/pedidos', window.pedidos);
             
@@ -1398,7 +2223,6 @@ async function verifyReceberAccountsConsistency(pedido) {
                         const expected = expectedByMonth.get(okMonth);
                         if (!expected || !expected.has(String(it.id))) {
                             residualUpdates[`financas/receber/${mk}/${String(it.id)}`] = null;
-                            residualUpdates[`contasReceber/${mk}/${String(it.id)}`] = null;
                         }
                     }
                 });
@@ -1413,53 +2237,10 @@ async function verifyReceberAccountsConsistency(pedido) {
 // Função para remover contas a receber anteriores (evitar duplicação)
 async function removerContasReceberAnteriores(pedidoId) {
     try {
-        // Carregar todas contas do RTDB (flatten mensal) ou fallback local
-        let todas = [];
-        if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-            try {
-                const res = await window.firebaseService.loadFromFirebase('financas/receber');
-                if (res && res.success && res.data) {
-                    const obj = res.data;
-                    if (Array.isArray(obj)) {
-                        todas = obj;
-                    } else if (typeof obj === 'object') {
-                        const months = Object.keys(obj || {});
-                        for (const mk of months) {
-                            const monthVal = obj[mk];
-                            if (Array.isArray(monthVal)) {
-                                todas.push(...monthVal);
-                            } else if (typeof monthVal === 'object') {
-                                Object.keys(monthVal || {}).forEach(id => {
-                                    const it = monthVal[id];
-                                    if (it) todas.push({ id, ...it });
-                                });
-                            }
-                        }
-                    }
-                }
-            } catch (_) {}
-        }
-        if (!Array.isArray(todas) || todas.length === 0) {
-            const local = await getData('financas/receber') || [];
-            todas = Array.isArray(local) ? local : [];
-        }
-        const vinculadas = (todas || []).filter(c => String(c.origemId) === String(pedidoId));
-        const semRecebimento = vinculadas.filter(c => {
-            const st = String(c.status || '').toLowerCase();
-            const hasRec = Array.isArray(c.recebimentos) && c.recebimentos.length > 0;
-            const vo = typeof c.valorOriginal === 'number' ? c.valorOriginal : parseFloat(c.valorOriginal || '');
-            const vr = typeof c.valorRestante === 'number' ? c.valorRestante : parseFloat(c.valorRestante || '');
-            const parcial = !isNaN(vo) && !isNaN(vr) && vr < vo;
-            return !(st === 'pago' || st === 'parcial' || hasRec || parcial);
-        });
+        const vinculadas = await carregarContasReceberVinculadasPedidoVenda(pedidoId);
+        const semRecebimento = vinculadas.filter(c => !isContaReceberComRecebimento(c));
         if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
-            const updates = {};
-            semRecebimento.forEach(c => {
-                if (c && c.id) {
-                    const mk = toMonthKey(c.dataVencimento || c.vencimento);
-                    updates[`financas/receber/${mk}/${String(c.id)}`] = null;
-                }
-            });
+            const updates = montarUpdatesRemocaoContasReceberVenda(semRecebimento, { includeLegacy: false });
             if (Object.keys(updates).length > 0) {
                 await window.firebaseService.updatePaths(updates);
                 console.log(`🗑️ Removidas ${semRecebimento.length} contas anteriores do pedido ${pedidoId} (firebase)`);
@@ -1471,19 +2252,13 @@ async function removerContasReceberAnteriores(pedidoId) {
                 if (c && c.id) {
                     const mk = toMonthKey(c.dataVencimento || c.vencimento);
                     await window.firebaseService.saveToFirebase(`financas/receber/${mk}`, String(c.id), null);
+                    await window.firebaseService.saveToFirebase('financas/receber', String(c.id), null);
                 }
             }
             if (semRecebimento.length > 0) console.log(`🗑️ Removidas ${semRecebimento.length} contas anteriores do pedido ${pedidoId}`);
         } else {
-            const atualizadas = (todas || []).filter(c => {
-                if (String(c.origemId) !== String(pedidoId)) return true;
-                const st = String(c.status || '').toLowerCase();
-                const hasRec = Array.isArray(c.recebimentos) && c.recebimentos.length > 0;
-                const vo = typeof c.valorOriginal === 'number' ? c.valorOriginal : parseFloat(c.valorOriginal || '');
-                const vr = typeof c.valorRestante === 'number' ? c.valorRestante : parseFloat(c.valorRestante || '');
-                const parcial = !isNaN(vo) && !isNaN(vr) && vr < vo;
-                return st === 'pago' || st === 'parcial' || hasRec || parcial ? true : false;
-            });
+            const atual = await getData('financas/receber') || [];
+            const atualizadas = flattenContasReceberData(atual).filter(c => !semRecebimento.some(r => String(r.id) === String(c.id)));
             await saveData('contasReceber', atualizadas);
             console.log(`Contas anteriores do pedido ${pedidoId} removidas (fallback): ${semRecebimento.length}`);
         }
@@ -1494,56 +2269,24 @@ async function removerContasReceberAnteriores(pedidoId) {
 
 async function listarContasReceberSemRecebimento(pedidoId) {
     try {
-        let todas = [];
-        if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-            try {
-                const res = await window.firebaseService.loadFromFirebase('financas/receber');
-                if (res && res.success && res.data) {
-                    const obj = res.data;
-                    if (Array.isArray(obj)) {
-                        todas = obj;
-                    } else if (typeof obj === 'object') {
-                        const months = Object.keys(obj || {});
-                        for (const mk of months) {
-                            const monthVal = obj[mk];
-                            if (Array.isArray(monthVal)) {
-                                todas.push(...monthVal);
-                            } else if (typeof monthVal === 'object') {
-                                Object.keys(monthVal || {}).forEach(id => {
-                                    const it = monthVal[id];
-                                    if (it) todas.push({ id, ...it });
-                                });
-                            }
-                        }
-                    }
-                }
-            } catch (_) {}
-        }
-        if (!Array.isArray(todas) || todas.length === 0) {
-            const local = await getData('financas/receber') || [];
-            todas = Array.isArray(local) ? local : [];
-        }
-        const vinculadas = (todas || []).filter(c => String(c.origemId) === String(pedidoId));
-        const semRecebimento = vinculadas.filter(c => {
-            const st = String(c.status || '').toLowerCase();
-            const hasRec = Array.isArray(c.recebimentos) && c.recebimentos.length > 0;
-            const vo = typeof c.valorOriginal === 'number' ? c.valorOriginal : parseFloat(c.valorOriginal || '');
-            const vr = typeof c.valorRestante === 'number' ? c.valorRestante : parseFloat(c.valorRestante || '');
-            const parcial = !isNaN(vo) && !isNaN(vr) && vr < vo;
-            return !(st === 'pago' || st === 'parcial' || hasRec || parcial);
-        });
-        return semRecebimento;
+        const vinculadas = await carregarContasReceberVinculadasPedidoVenda(pedidoId);
+        return vinculadas.filter(c => !isContaReceberComRecebimento(c));
     } catch (_) { return []; }
 }
 
 async function removerContasReceberPorLista(lista) {
     try {
         if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
-            const updates = {};
-            (lista || []).forEach(c => { if (c && c.id) { const mk = toMonthKey(c.dataVencimento || c.vencimento); updates[`financas/receber/${mk}/${String(c.id)}`] = null; } });
+            const updates = montarUpdatesRemocaoContasReceberVenda(lista, { includeLegacy: false });
             if (Object.keys(updates).length > 0) await window.firebaseService.updatePaths(updates);
         } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            for (const c of (lista || [])) { if (c && c.id) { const mk = toMonthKey(c.dataVencimento || c.vencimento); await window.firebaseService.saveToFirebase(`financas/receber/${mk}`, String(c.id), null); } }
+            for (const c of (lista || [])) {
+                if (c && c.id) {
+                    const mk = toMonthKey(c.dataVencimento || c.vencimento);
+                    await window.firebaseService.saveToFirebase(`financas/receber/${mk}`, String(c.id), null);
+                    await window.firebaseService.saveToFirebase('financas/receber', String(c.id), null);
+                }
+            }
         } else {
             const atual = await getData('financas/receber') || [];
             const filtrado = (atual || []).filter(c => !(lista || []).some(r => String(r.id) === String(c.id)));
@@ -1716,6 +2459,7 @@ async function atualizarEstoqueProdutos(itens, tipo) {
 
 // Funções de listagem de pedidos
 async function listarPedidos() {
+    if (!guardOperationalAccessVendas()) return;
     try {
         LoadingManager.show('Carregando pedidos...');
         pedidosListPage = 1;
@@ -1779,7 +2523,7 @@ async function carregarTabelaPedidos(filtro = '') {
         pedidosFiltrados = pedidosFiltrados.filter(pedido => {
             const nomeCliente = pedido.cliente ? (pedido.cliente.nome || pedido.cliente.name || '') : '';
             const st = getPedidoStatus(pedido);
-            return pedido.numero.toLowerCase().includes(filtroLower) ||
+            return String(pedido.numero || '').toLowerCase().includes(filtroLower) ||
                    nomeCliente.toLowerCase().includes(filtroLower) ||
                    (st && st.includes(filtroLower));
         });
@@ -1809,17 +2553,18 @@ async function carregarTabelaPedidos(filtro = '') {
         return true;
     });
     pedidosSelecionados = new Set(Array.from(pedidosSelecionados).filter(id =>
-        pedidosFiltrados.some(p => String(p.id) === String(id))
+        pedidosFiltrados.some(p => getPedidoVendaId(p) === String(id))
     ));
 
     // Ordenar por recência (último pedido adicionado no topo)
     pedidosFiltrados.sort(comparePedidosByRecencyDesc);
     
     if (pedidosFiltrados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Nenhum pedido encontrado</td></tr>';
+        tbody.innerHTML = '<tr><td class="commerce-full-row" data-label="" colspan="7" style="text-align: center;">Nenhum pedido encontrado</td></tr>';
         pedidosListFiltered = [];
         atualizarCabecalhoSelecaoPedidos();
         renderPedidosPagination(0);
+        refreshCommerceResponsiveTables();
         return;
     }
 
@@ -1846,37 +2591,41 @@ async function carregarTabelaPedidos(filtro = '') {
         
         const updatedStr = pedido.updated ? formatDate(pedido.updated) : '-';
         const st = getPedidoStatus(pedido) || 'pendente';
+        const safeId = getPedidoVendaId(pedido);
+        const numeroPedido = pedido.numero || safeId || '-';
         const hasCarrego = (Array.isArray(pedido.itens) ? pedido.itens : []).some(it => isCarregoItem(it));
         const carregoBadge = hasCarrego
             ? ' <span style="display:inline-block;padding:2px 6px;border-radius:10px;background:#fff3cd;color:#856404;font-size:11px;font-weight:600;">Carrego</span>'
             : '';
         return `
         <tr>
-            <td>
+            <td data-label="Número">
                 <label class="pedido-numero-cell">
-                    <input type="checkbox" class="pedido-select-item" ${pedidosSelecionados.has(String(pedido.id)) ? 'checked' : ''} onchange="toggleSelecionarPedido('${pedido.id}', this.checked)">
-                    <span>${pedido.numero}${carregoBadge}</span>
+                    <input type="checkbox" class="pedido-select-item" ${pedidosSelecionados.has(safeId) ? 'checked' : ''} onchange="toggleSelecionarPedido('${safeId}', this.checked)">
+                    <span>${numeroPedido}${carregoBadge}</span>
                 </label>
             </td>
-            <td>${formatDate(pedido.data)}</td>
-            <td>${nomeCliente}</td>
-            <td style="text-align: right;">${formatCurrency(pedido.total)}</td>
-            <td>
+            <td data-label="Data">${formatDate(pedido.data)}</td>
+            <td data-label="Cliente">${nomeCliente}</td>
+            <td data-label="Total" style="text-align: right;"><span class="commerce-card-value commerce-card-money">${formatCurrency(pedido.total)}</span></td>
+            <td data-label="Status">
                 <span class="status-badge status-${st}">
                     ${getStatusLabel(st)}
                 </span>
             </td>
-            <td>${updatedStr}</td>
-            <td class="acoes-cell">
-                <button onclick="editarPedido('${pedido.id}')" class="btn-primary btn-small">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button onclick="visualizarPedido('${pedido.id}')" class="btn-primary btn-small">
-                    <i class="fas fa-eye"></i>
-                </button>
-                <button onclick="excluirPedido('${pedido.id}')" class="btn-danger btn-small">
-                    <i class="fas fa-trash"></i>
-                </button>
+            <td data-label="Atualizado" class="atualizado-cell">${updatedStr}</td>
+            <td data-label="Ações" class="acoes-cell commerce-actions-cell">
+                <div class="acoes-buttons">
+                    <button type="button" onclick="editarPedido('${safeId}')" class="btn-primary btn-small" title="Editar" aria-label="Editar pedido">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" onclick="visualizarPedido('${safeId}')" class="btn-primary btn-small" title="Visualizar" aria-label="Visualizar pedido">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button type="button" onclick="excluirPedido('${safeId}')" class="btn-danger btn-small" title="Excluir" aria-label="Excluir pedido">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </td>
         </tr>
         `;
@@ -1884,6 +2633,7 @@ async function carregarTabelaPedidos(filtro = '') {
 
     atualizarCabecalhoSelecaoPedidos();
     renderPedidosPagination(pedidosListFiltered.length);
+    refreshCommerceResponsiveTables();
 }
 
 function atualizarCabecalhoSelecaoPedidos() {
@@ -1899,7 +2649,7 @@ function atualizarCabecalhoSelecaoPedidos() {
         atualizarContadorImpressaoPedidos();
         return;
     }
-    const selecionados = pedidosListFiltered.filter(p => pedidosSelecionados.has(String(p.id))).length;
+    const selecionados = pedidosListFiltered.filter(p => pedidosSelecionados.has(getPedidoVendaId(p))).length;
     chk.checked = selecionados === total;
     chk.indeterminate = selecionados > 0 && selecionados < total;
     atualizarContadorImpressaoPedidos();
@@ -1909,7 +2659,7 @@ function atualizarContadorImpressaoPedidos() {
     const countEl = document.getElementById('pedidosPrintSelectedCount');
     if (!countEl) return;
     const printBtn = countEl.closest('button');
-    const selecionados = pedidosListFiltered.filter(p => pedidosSelecionados.has(String(p.id))).length;
+    const selecionados = pedidosListFiltered.filter(p => pedidosSelecionados.has(getPedidoVendaId(p))).length;
     countEl.textContent = `(${selecionados})`;
     if (printBtn) {
         printBtn.disabled = selecionados === 0;
@@ -1926,26 +2676,168 @@ function toggleSelecionarPedido(pedidoId, checked) {
 
 function toggleSelecionarTodosPedidos(checked) {
     if (checked) {
-        pedidosListFiltered.forEach(p => pedidosSelecionados.add(String(p.id)));
+        pedidosListFiltered.forEach(p => pedidosSelecionados.add(getPedidoVendaId(p)));
     } else {
-        pedidosListFiltered.forEach(p => pedidosSelecionados.delete(String(p.id)));
+        pedidosListFiltered.forEach(p => pedidosSelecionados.delete(getPedidoVendaId(p)));
     }
     carregarTabelaPedidos(document.getElementById('searchPedidos')?.value || '');
 }
 
+function getPedidoVendaId(pedido) {
+    return String(pedido && (pedido.id || pedido.firebaseKey || '') || '');
+}
+
+function getPedidosVendaSelecionadosParaImpressao() {
+    return pedidosListFiltered.filter(p => pedidosSelecionados.has(getPedidoVendaId(p)));
+}
+
+function isCommercePwaPrintContext() {
+    try {
+        const standalone = (window.matchMedia && (
+            window.matchMedia('(display-mode: standalone)').matches ||
+            window.matchMedia('(display-mode: fullscreen)').matches ||
+            window.matchMedia('(display-mode: minimal-ui)').matches
+        )) || window.navigator.standalone === true;
+        const smallTouchScreen = window.matchMedia
+            && window.matchMedia('(pointer: coarse)').matches
+            && window.innerWidth <= 768;
+        return !!(standalone || smallTouchScreen);
+    } catch (_) {
+        return window.navigator.standalone === true;
+    }
+}
+
+function notificarEntregaPdfPedido(result) {
+    if (!result || result.mode === 'cancelled') return;
+    const msg = result.mode === 'share'
+        ? 'PDF pronto para compartilhar ou imprimir pelo aparelho.'
+        : `PDF gerado: ${result.fileName}`;
+    ToastManager.success(msg, 'PDF');
+}
+
+async function exportarPedidosVendaPdf(pedidosParaImprimir) {
+    if (!window.SiswebCommercePdf || typeof window.SiswebCommercePdf.exportOrdersPdf !== 'function') {
+        throw new Error('Gerador de PDF indisponivel.');
+    }
+    const pedidos = Array.isArray(pedidosParaImprimir) ? pedidosParaImprimir.filter(Boolean) : [];
+    if (!pedidos.length) throw new Error('Nenhum pedido selecionado para PDF.');
+
+    const dadosEmpresa = await obterDadosEmpresa();
+    const pedidoUnico = pedidos.length === 1 ? pedidos[0] : null;
+    const fileBase = pedidoUnico
+        ? `pedido-venda-${pedidoUnico.numero || getPedidoVendaId(pedidoUnico) || 'selecionado'}`
+        : `pedidos-venda-${pedidos.length}`;
+
+    return window.SiswebCommercePdf.exportOrdersPdf({
+        company: dadosEmpresa,
+        orders: pedidos,
+        documentTitle: pedidoUnico ? 'Pedido de Venda' : 'Pedidos de Venda',
+        orderTitle: 'Pedido de Venda',
+        partyLabel: 'Cliente',
+        paymentTitle: 'Forma de pagamento',
+        fileName: `${fileBase}.pdf`,
+        shareText: 'PDF de pedido de venda gerado pelo Sisweb.',
+        formatDate,
+        formatCurrency,
+        formatNumber,
+        getStatusLabel,
+        getPaymentTypeLabel: getTipoContaLabel,
+        getPartyName: (pedido) => pedido.cliente
+            ? (pedido.cliente.nome || pedido.cliente.name || 'Cliente nao informado')
+            : 'Cliente nao informado',
+        getPayments: (pedido) => typeof normalizarContasReceberLista === 'function'
+            ? normalizarContasReceberLista(pedido.contasReceber || [])
+            : (pedido.contasReceber || []),
+        getSubtotal: (pedido) => pedido.subtotal,
+        getDiscount: (pedido) => pedido.desconto,
+        getTotal: (pedido) => pedido.total
+    });
+}
+
 async function imprimirPedidosSelecionados() {
-    const ids = pedidosListFiltered
-        .filter(p => pedidosSelecionados.has(String(p.id)))
-        .map(p => String(p.id));
-    if (ids.length === 0) {
+    const pedidosParaImprimir = getPedidosVendaSelecionadosParaImpressao();
+    if (pedidosParaImprimir.length === 0) {
         ToastManager.warning('Selecione ao menos um pedido para imprimir.', 'Atenção');
         return;
     }
-    for (const id of ids) {
-        // Pequeno intervalo para reduzir bloqueio de popup em sequência.
-        await imprimirPedido(id);
-        await new Promise(resolve => setTimeout(resolve, 250));
+    try {
+        if (isCommercePwaPrintContext()) {
+            LoadingManager.show('Gerando PDF dos pedidos...');
+            const result = await exportarPedidosVendaPdf(pedidosParaImprimir);
+            notificarEntregaPdfPedido(result);
+            return;
+        }
+
+        await imprimirPedidosVendaSelecionadosDesktop(pedidosParaImprimir);
+    } catch (error) {
+        console.error('Erro ao imprimir pedidos selecionados:', error);
+        ToastManager.error('Erro ao imprimir: ' + error.message, 'Erro');
+    } finally {
+        LoadingManager.hide();
     }
+}
+
+async function imprimirPedidosVendaSelecionadosDesktop(pedidosParaImprimir) {
+    const pedidos = Array.isArray(pedidosParaImprimir) ? pedidosParaImprimir.filter(Boolean) : [];
+    if (!pedidos.length) return;
+
+    if (pedidos.length === 1) {
+        await imprimirPedido(getPedidoVendaId(pedidos[0]));
+        return;
+    }
+
+    LoadingManager.show('Preparando impressão...');
+    const documentos = [];
+    for (const pedido of pedidos) {
+        documentos.push(await gerarHTMLImpressaoPedido(pedido));
+    }
+    const html = montarHTMLImpressaoLotePedidos(documentos, 'Pedidos de Venda');
+    if (window.SiswebCommercePdf && typeof window.SiswebCommercePdf.printHtmlDocument === 'function') {
+        window.SiswebCommercePdf.printHtmlDocument({
+            html,
+            windowFeatures: 'width=900,height=700'
+        });
+    } else {
+        const janela = window.open('', '_blank', 'width=900,height=700');
+        if (janela) {
+            janela.document.write(html);
+            janela.document.close();
+            janela.onload = function() {
+                setTimeout(() => janela.print(), 250);
+            };
+        } else {
+            window.print();
+        }
+    }
+}
+
+function montarHTMLImpressaoLotePedidos(documentos, title = 'Pedidos') {
+    const lista = Array.isArray(documentos) ? documentos.filter(Boolean) : [];
+    const primeiro = lista[0] || '';
+    const styleMatch = primeiro.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+    const styles = styleMatch ? styleMatch[1] : 'body{font-family:Arial,sans-serif;padding:20px;color:#111827}';
+    const mains = lista.map((html, index) => {
+        const match = String(html || '').match(/<main\b[^>]*class="([^"]*)"[^>]*>([\s\S]*?)<\/main>/i);
+        const bodyMatch = String(html || '').match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        const content = match ? match[2] : (bodyMatch ? bodyMatch[1] : String(html || ''));
+        const className = match ? match[1] : 'sisweb-print-page';
+        const breakClass = index < lista.length - 1 ? ' sisweb-print-batch-page' : '';
+        return `<main class="${className}${breakClass}">${content}</main>`;
+    }).join('\n');
+    return `<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <style>${styles}
+        .sisweb-print-batch-page { break-after: page; page-break-after: always; margin-bottom: 18px; }
+    </style>
+</head>
+<body class="sisweb-commerce-print">
+    ${mains}
+</body>
+</html>`;
 }
 
 function renderPedidosPagination(totalItems) {
@@ -2045,7 +2937,7 @@ async function popularFiltrosPedidosVenda() {
                     }
                 });
             });
-            const baseSpecies = (window.species && Array.isArray(window.species)) ? window.species.map(s => s.nome || s.nomeComum || s.name).filter(Boolean) : [];
+            const baseSpecies = (window.species && Array.isArray(window.species)) ? window.species.map(s => s.especie || s.nome || s.nomeComum || s.name).filter(Boolean) : [];
             baseSpecies.forEach(n => set.add(String(n)));
             const arr = Array.from(set).sort((a,b)=>a.localeCompare(b));
             espEl.innerHTML = '<option value="">Todas</option>';
@@ -2066,7 +2958,7 @@ function filtrarPedidos() {
 }
 
 async function editarPedido(pedidoId) {
-    const pedido = window.pedidos.find(p => p.id === pedidoId);
+    const pedido = window.pedidos.find(p => getPedidoVendaId(p) === String(pedidoId));
     if (!pedido) return;
     
     // Fechar modal
@@ -2118,8 +3010,7 @@ async function editarPedido(pedidoId) {
         contasReceber = normalizarContasReceberLista(pedido.contasReceber);
     } else {
         try {
-            const crFinanceiroAll = await getData('financas/receber') || [];
-            const vinculadas = (crFinanceiroAll || []).filter(c => String(c.origemId) === String(pedidoId));
+            const vinculadas = await carregarContasReceberVinculadasPedidoVenda(pedido);
             contasReceber = vinculadas.map(c => ({
                 id: c.id,
                 valor: typeof c.valor === 'number' ? c.valor : parseCurrencyValue(c.valor),
@@ -2139,13 +3030,9 @@ async function editarPedido(pedidoId) {
     contasReceberEdicaoBloqueada = false;
 
     try {
-        const crFinanceiro = await getData('financas/receber') || [];
-        const vinculadas = (crFinanceiro || []).filter(c => String(c.origemId) === String(pedidoId));
+        const vinculadas = await carregarContasReceberVinculadasPedidoVenda(pedido);
         const vinculadasReceber = vinculadas.filter(c => (c.tipo || 'receber') === 'receber');
-        const hasRecebimentos = vinculadasReceber.some(c => {
-            const st = (c.status || 'pendente').toLowerCase();
-            return st === 'pago' || st === 'parcial';
-        });
+        const hasRecebimentos = vinculadasReceber.some(c => isContaReceberComRecebimento(c));
         if (hasRecebimentos) {
             contasReceberEdicaoBloqueada = true;
             ToastManager.warning('Este pedido possui recebimentos (parciais ou totais). Cancele os recebimentos antes de editar a Forma de Pagamento.', 'Atenção', 6000);
@@ -2169,28 +3056,27 @@ async function excluirPedido(pedidoId) {
     }
     
     try {
-        const pedido = window.pedidos.find(p => p.id === pedidoId);
+        const pedido = window.pedidos.find(p => getPedidoVendaId(p) === String(pedidoId));
         if (pedido) {
             // Reverter estoque
             await atualizarEstoqueProdutos(pedido.itens, 'entrada');
             
             // Remover contas a receber relacionadas
-            const contasReceberLista = await getData('financas/receber') || [];
-            const vinculadas = contasReceberLista.filter(conta => String(conta.origemId) === String(pedidoId));
-            if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-                for (const conta of vinculadas) {
-                    if (conta && conta.id) {
-                        await window.firebaseService.saveToFirebase('financas/receber', String(conta.id), null);
-                    }
-                }
+            const vinculadas = await carregarContasReceberVinculadasPedidoVenda(pedido);
+            if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
+                const updates = montarUpdatesRemocaoContasReceberVenda(vinculadas, { includeLegacy: false });
+                if (Object.keys(updates).length > 0) await window.firebaseService.updatePaths(updates);
+            } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+                await removerContasReceberPorLista(vinculadas);
             } else {
-                const contasAtualizadas = contasReceberLista.filter(conta => String(conta.origemId) !== String(pedidoId));
+                const contasReceberLista = await getData('financas/receber') || [];
+                const contasAtualizadas = flattenContasReceberData(contasReceberLista).filter(conta => !contaReceberPertenceAoPedidoVenda(conta, pedido));
                 await saveData('contasReceber', contasAtualizadas);
             }
         }
         
         // Remover pedido
-        window.pedidos = window.pedidos.filter(p => p.id !== pedidoId);
+        window.pedidos = window.pedidos.filter(p => getPedidoVendaId(p) !== String(pedidoId));
         if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
             await window.firebaseService.saveToFirebase('vendas/pedidos', String(pedidoId), null);
         } else {
@@ -2420,26 +3306,30 @@ function carregarTabelaProdutos(filtro = '') {
     }
     
     if (produtosFiltrados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhum produto encontrado</td></tr>';
+        tbody.innerHTML = '<tr><td class="commerce-full-row" data-label="" colspan="5" style="text-align: center;">Nenhum produto encontrado</td></tr>';
+        refreshCommerceResponsiveTables();
         return;
     }
     
     tbody.innerHTML = produtosFiltrados.map(produto => `
         <tr>
-            <td>${produto.codigo || '-'}</td>
-            <td>${produto.nome || 'Produto sem nome'}</td>
-            <td style="text-align: right;">${formatCurrency(produto.preco || 0)}</td>
-            <td style="text-align: center;">${formatNumber(produto.estoque || 0)} ${produto.unidade || 'UN'}</td>
-            <td style="text-align: center;">
-                <button onclick="editarProduto('${produto.id}')" class="btn-primary btn-small">
+            <td data-label="Código">${produto.codigo || '-'}</td>
+            <td data-label="Nome">${produto.nome || 'Produto sem nome'}</td>
+            <td data-label="Preço" style="text-align: right;"><span class="commerce-card-value commerce-card-money">${formatCurrency(produto.preco || 0)}</span></td>
+            <td data-label="Estoque" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${formatNumber(produto.estoque || 0)} ${produto.unidade || 'UN'}</span></td>
+            <td data-label="Ações" class="commerce-actions-cell" style="text-align: center;">
+                <div class="acoes-buttons commerce-actions-wrap">
+                <button type="button" onclick="editarProduto('${produto.id}')" class="btn-primary btn-small" title="Editar" aria-label="Editar produto">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button onclick="excluirProduto('${produto.id}')" class="btn-danger btn-small">
+                <button type="button" onclick="excluirProduto('${produto.id}')" class="btn-danger btn-small" title="Excluir" aria-label="Excluir produto">
                     <i class="fas fa-trash"></i>
                 </button>
+                </div>
             </td>
         </tr>
     `).join('');
+    refreshCommerceResponsiveTables();
 }
 
 function filtrarProdutos() {
@@ -2570,7 +3460,9 @@ function gerarRelatorio() {
         || document.getElementById('relatorioResult');
     if (!tbody) return;
     if (pedidosPeriodo.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Nenhum pedido encontrado</td></tr>';
+        tbody.innerHTML = '<tr><td class="commerce-full-row" data-label="" colspan="8" style="text-align: center;">Nenhum pedido encontrado</td></tr>';
+        window._relPedidosPeriodo = [];
+        window.relCarregoSelection = new Set();
         if (container && container.style) container.style.display = 'block';
         aplicarColunasEstadoInicialRelatorio();
         const footerCarregoEl = document.getElementById('relFooterTotalCarrego');
@@ -2578,15 +3470,41 @@ function gerarRelatorio() {
         const elVTCZero = document.getElementById('relFooterValorTotalCarrego');
         if (elVTCZero) elVTCZero.textContent = formatCurrency(0);
         aplicarOrdemColunasRelatorio(window.relatorioColunasOrdem || ['numero','data','cliente','total','status','carrego','atualizado','acoes']);
+        updateRelCarregoSelectionCount();
+        refreshCommerceResponsiveTables();
         return;
     }
     const latestMap = getCarregoLatestStatusMap();
     const pagosSet = new Set(Array.from(latestMap.values()).filter(x => x && x.status === 'pago').map(x => String(x.pedidoId)));
+    const isPedidoCarregoPago = (pedido) => pagosSet.has(getPedidoVendaId(pedido)) || pedido?.carregoPago === true;
     if (filtroStatus === 'carregos_pagos') {
-        pedidosPeriodo = pedidosPeriodo.filter(p => pagosSet.has(String(p.id)));
+        pedidosPeriodo = pedidosPeriodo.filter(isPedidoCarregoPago);
+        if (pedidosPeriodo.length === 0) {
+            tbody.innerHTML = '<tr><td class="commerce-full-row" data-label="" colspan="8" style="text-align: center;">Nenhum pedido encontrado</td></tr>';
+            window._relPedidosPeriodo = [];
+            window.relCarregoSelection = new Set();
+            if (container && container.style) container.style.display = 'block';
+            const footerTotalPedidosEl = document.getElementById('relFooterTotalPedidos');
+            const footerValorTotalEl = document.getElementById('relFooterValorTotal');
+            const footerTicketMedioEl = document.getElementById('relFooterTicketMedio');
+            const footerCarregoEl = document.getElementById('relFooterTotalCarrego');
+            const footerValorCarregoEl = document.getElementById('relFooterValorTotalCarrego');
+            if (footerTotalPedidosEl) footerTotalPedidosEl.textContent = '0';
+            if (footerValorTotalEl) footerValorTotalEl.textContent = formatCurrency(0);
+            if (footerTicketMedioEl) footerTicketMedioEl.textContent = formatCurrency(0);
+            if (footerCarregoEl) footerCarregoEl.textContent = `${formatNumber(0, 3)}`;
+            if (footerValorCarregoEl) footerValorCarregoEl.textContent = formatCurrency(0);
+            aplicarColunasEstadoInicialRelatorio();
+            aplicarOrdemColunasRelatorio(window.relatorioColunasOrdem || ['numero','data','cliente','total','status','carrego','atualizado','acoes']);
+            updateRelCarregoSelectionCount();
+            refreshCommerceResponsiveTables();
+            return;
+        }
     }
     window._relPedidosPeriodo = pedidosPeriodo;
     window.relCarregoSelection = window.relCarregoSelection || new Set();
+    const idsRelatorioAtual = new Set(pedidosPeriodo.map(getPedidoVendaId).filter(Boolean));
+    window.relCarregoSelection = new Set(Array.from(window.relCarregoSelection).filter(id => idsRelatorioAtual.has(String(id))));
     let totalCarrego = 0;
     tbody.innerHTML = pedidosPeriodo.map(pedido => {
         let nomeCliente = 'Cliente não encontrado';
@@ -2610,7 +3528,8 @@ function gerarRelatorio() {
             carregoVol = 0;
         }
         totalCarrego += carregoVol || 0;
-        const isPago = pagosSet.has(String(pedido.id));
+        const safeId = getPedidoVendaId(pedido);
+        const isPago = isPedidoCarregoPago(pedido);
         const hasCarrego = !!carregoItem;
         const disabledAttr = '';
         let titleReason = '';
@@ -2618,26 +3537,26 @@ function gerarRelatorio() {
         else if (!hasCarrego) titleReason = 'Sem carrego';
         else if (!(carregoVol > 0)) titleReason = 'Carrego sem volume';
         const titleAttr = titleReason ? `title="${titleReason}"` : '';
-        const checkedAttr = (!disabledAttr && window.relCarregoSelection.has(String(pedido.id))) ? 'checked' : '';
+        const checkedAttr = (!disabledAttr && window.relCarregoSelection.has(safeId)) ? 'checked' : '';
         const filtroDisponivelAtivo = !!document.getElementById('relFiltroDisponivel')?.checked;
         const carregoDisplay = carregoVol
             ? `${formatNumber(carregoVol, 3)} m³${isPago ? ' <i class=\"fas fa-check-circle badge-paid\"></i>' : ''}`
             : (filtroDisponivelAtivo ? '-' : `- <span class=\"badge-no-carrego\">sem carrego</span>`);
         return (
-            `<tr data-pedido-id="${pedido.id}" data-carrego-vol="${carregoVol}" data-carrego-pago="${isPago ? '1' : '0'}" data-has-carrego="${hasCarrego ? '1' : '0'}" class="${isPago ? 'paid-carrego' : ''}">` +
-            `<td data-col="numero"><input type="checkbox" class="sel-carrego" id="selCarrego_${pedido.id}" onchange="onRelCarregoSelectChange(this)" aria-label="Selecionar carrego do pedido #${pedido.numero}" ${disabledAttr} ${checkedAttr} ${titleAttr}> ${pedido.numero}</td>` +
-            `<td data-col="data">${formatDate(pedido.data)}</td>` +
-            `<td data-col="cliente">${nomeCliente}</td>` +
-            `<td data-col="total" style="text-align: right;">${formatCurrency(pedido.total)}</td>` +
-            `<td data-col="status"><span class="status-badge status-${pedido.status}">${getStatusLabel(pedido.status)}</span></td>` +
-            `<td data-col="carrego" style="text-align: right;">${carregoDisplay}</td>` +
-            `<td data-col="atualizado">${updatedStr}</td>` +
-            `<td data-col="acoes" style="text-align: center;">` +
-                `<button onclick=\"visualizarPedido('${pedido.id}')\" class=\"btn-primary btn-small\" title=\"Visualizar\"><i class=\"fas fa-eye\"></i></button>` +
-                ` ` +
-                `<button onclick=\"imprimirPedido('${pedido.id}')\" class=\"btn-primary btn-small\" title=\"Imprimir\"><i class=\"fas fa-print\"></i></button>` +
-                ` ` +
-                `<button onclick=\"excluirCarrego('${pedido.id}')\" class=\"btn-danger btn-small\" title=\"Excluir Carrego\"><i class=\"fas fa-trash\"></i></button>` +
+            `<tr data-pedido-id="${safeId}" data-carrego-vol="${carregoVol}" data-carrego-pago="${isPago ? '1' : '0'}" data-has-carrego="${hasCarrego ? '1' : '0'}" class="${isPago ? 'paid-carrego' : ''}">` +
+            `<td data-col="numero" data-label="Número"><span class="numero-cell"><input type="checkbox" class="sel-carrego" id="selCarrego_${safeId}" onchange="onRelCarregoSelectChange(this)" aria-label="Selecionar carrego do pedido #${pedido.numero}" ${disabledAttr} ${checkedAttr} ${titleAttr}> <span>${pedido.numero}</span></span></td>` +
+            `<td data-col="data" data-label="Data">${formatDate(pedido.data)}</td>` +
+            `<td data-col="cliente" data-label="Cliente">${nomeCliente}</td>` +
+            `<td data-col="total" data-label="Total" style="text-align: right;"><span class="commerce-card-value commerce-card-money">${formatCurrency(pedido.total)}</span></td>` +
+            `<td data-col="status" data-label="Status"><span class="status-badge status-${pedido.status}">${getStatusLabel(pedido.status)}</span></td>` +
+            `<td data-col="carrego" data-label="Carrego" style="text-align: right;"><span class="commerce-card-value commerce-card-number">${carregoDisplay}</span></td>` +
+            `<td data-col="atualizado" data-label="Atualizado">${updatedStr}</td>` +
+            `<td data-col="acoes" data-label="Ações" class="relatorio-acoes-cell commerce-actions-cell">` +
+                `<div class="relatorio-acoes-buttons acoes-buttons commerce-actions-wrap">` +
+                `<button type=\"button\" onclick=\"visualizarPedido('${safeId}')\" class=\"btn-primary btn-small\" title=\"Visualizar\" aria-label=\"Visualizar\"><i class=\"fas fa-eye\"></i></button>` +
+                `<button type=\"button\" onclick=\"imprimirPedido('${safeId}')\" class=\"btn-primary btn-small\" title=\"Imprimir\" aria-label=\"Imprimir\"><i class=\"fas fa-print\"></i></button>` +
+                `<button type=\"button\" onclick=\"excluirCarrego('${safeId}')\" class=\"btn-danger btn-small\" title=\"Excluir Carrego\" aria-label=\"Excluir Carrego\"><i class=\"fas fa-trash\"></i></button>` +
+                `</div>` +
             `</td>` +
             '</tr>'
         );
@@ -2649,6 +3568,7 @@ function gerarRelatorio() {
     aplicarOrdemColunasRelatorio(window.relatorioColunasOrdem || ['numero','data','cliente','total','status','carrego','atualizado','acoes']);
     updateRelCarregoSelectionCount();
     try { toggleFiltroCarregoDisponivel(!!document.getElementById('relFiltroDisponivel')?.checked); } catch (_) {}
+    refreshCommerceResponsiveTables();
 }
 
 // Funções auxiliares
@@ -2750,7 +3670,7 @@ function popularFiltrosRelatoriosVenda() {
                     }
                 });
             });
-            const baseSpecies = (window.species && Array.isArray(window.species)) ? window.species.map(s => s.nome || s.nomeComum || s.name).filter(Boolean) : [];
+            const baseSpecies = (window.species && Array.isArray(window.species)) ? window.species.map(s => s.especie || s.nome || s.nomeComum || s.name).filter(Boolean) : [];
             baseSpecies.forEach(n => set.add(String(n)));
             const arr = Array.from(set).sort((a,b)=>a.localeCompare(b));
             espEl.innerHTML = '<option value="">Todas</option>';
@@ -2993,7 +3913,7 @@ async function imprimirRelatorio() {
                 return `<tr>${tds}</tr>`;
             }).join('') + '</tbody>';
             ids.forEach(id => {
-                const p = (window._relPedidosPeriodo || []).find(pp => String(pp.id) === String(id)) || (window.pedidos || []).find(pp => String(pp.id) === String(id));
+                const p = (window._relPedidosPeriodo || []).find(pp => getPedidoVendaId(pp) === String(id)) || (window.pedidos || []).find(pp => getPedidoVendaId(pp) === String(id));
                 valorTotalCarrego += calcularValorCarregoPedido(p);
             });
             tabela = `<table class="table" id="relatoriosTable">${headerHtml}${bodyHtml}</table>`;
@@ -3044,7 +3964,7 @@ async function imprimirRelatorio() {
                 return `<tr>${tds}</tr>`;
             }).join('') + '</tbody>';
             ids.forEach(id => {
-                const p = (window._relPedidosPeriodo || []).find(pp => String(pp.id) === String(id)) || (window.pedidos || []).find(pp => String(pp.id) === String(id));
+                const p = (window._relPedidosPeriodo || []).find(pp => getPedidoVendaId(pp) === String(id)) || (window.pedidos || []).find(pp => getPedidoVendaId(pp) === String(id));
                 valorTotalCarrego += calcularValorCarregoPedido(p);
             });
             tabela = `<table class="table" id="relatoriosTable">${headerHtml}${bodyHtml}</table>`;
@@ -3065,47 +3985,43 @@ async function imprimirRelatorio() {
             tabela = '';
             resumoFooter = '';
         }
-        const logoSrc = (dadosEmpresa && dadosEmpresa.logo) ? String(dadosEmpresa.logo) : '';
-        const headerHtml = `
-            <div class="print-header">
-                <div class="print-logo">${logoSrc ? `<img src="${logoSrc}" alt="Logo">` : ''}</div>
-                <div class="print-company">
-                    <div class="print-company-name">${(dadosEmpresa.nome || dadosEmpresa.name || 'Empresa')}</div>
-                    <div class="print-company-line">${dadosEmpresa.cnpj && dadosEmpresa.cnpj !== '-' ? `CNPJ: ${dadosEmpresa.cnpj}` : ''}</div>
-                    <div class="print-company-line">${(dadosEmpresa.endereco || dadosEmpresa.address || '-') !== '-' ? (dadosEmpresa.endereco || dadosEmpresa.address) : ''}</div>
-                    <div class="print-company-line">${[(dadosEmpresa.cidade || dadosEmpresa.city), (dadosEmpresa.estado || dadosEmpresa.state)].filter(Boolean).join(' - ')}</div>
-                    <div class="print-company-line">${(dadosEmpresa.telefone || dadosEmpresa.phone || '-') !== '-' ? `Fone: ${dadosEmpresa.telefone || dadosEmpresa.phone}` : ''}</div>
-                </div>
-                <div class="print-meta">
-                    <div class="print-title">${titulo}</div>
-                    <div class="print-date">${new Date().toLocaleDateString('pt-BR')}</div>
-                </div>
-            </div>
+        const periodoInicio = document.getElementById('periodoInicio')?.value || '';
+        const periodoFim = document.getElementById('periodoFim')?.value || '';
+        const periodoLabel = periodoInicio || periodoFim
+            ? `Periodo: ${periodoInicio ? formatDate(periodoInicio) : 'inicio'} a ${periodoFim ? formatDate(periodoFim) : 'fim'}`
+            : 'Periodo: todos';
+        const bodyHtml = `
+            <section class="sisweb-print-section">
+                <h2 class="sisweb-print-section-title">Pedidos</h2>
+                ${tabela}
+            </section>
+            ${resumoFooter ? `<section class="sisweb-print-section">${resumoFooter}</section>` : ''}
         `;
-
-        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${titulo}</title><style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            .print-header { display: grid; grid-template-columns: 120px 1fr 220px; gap: 12px; align-items: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 12px; }
-            .print-logo img { max-width: 120px; max-height: 80px; object-fit: contain; }
-            .print-company-name { font-size: 16px; font-weight: 700; text-transform: uppercase; color: #111827; }
-            .print-company-line { font-size: 11px; color: #374151; line-height: 1.35; }
-            .print-meta { text-align: right; }
-            .print-title { font-size: 16px; font-weight: 700; color: #111827; }
-            .print-date { font-size: 11px; color: #6b7280; }
-            .summary-box { border: 1px solid #ddd; border-radius: 6px; padding: 10px; margin-top: 15px; }
-            .summary-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; }
-            .summary-row:last-child { border-bottom: none; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #ddd; padding: 8px; }
-            th { background: #f4f6f8; text-align: left; }
-            .status-badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 12px; }
-            [data-col="acoes"] { display: none; }
-            .sel-carrego, .sel-carrego-all { display: none; }
-        </style></head><body>${headerHtml}${tabela}${resumoFooter}</body></html>`;
-        const win = window.open('', '_blank', 'width=800,height=600');
-        win.document.write(html);
-        win.document.close();
-        win.onload = function() { setTimeout(() => win.print(), 250); };
+        const helper = window.SiswebCommercePdf;
+        if (helper && typeof helper.printHtmlDocument === 'function') {
+            const printOptions = {
+                title: titulo,
+                company: dadosEmpresa,
+                badgeText: 'Vendas',
+                subtitle: periodoLabel,
+                metaRows: [`Emissao: ${new Date().toLocaleDateString('pt-BR')}`],
+                bodyHtml
+            };
+            const preparedOptions = typeof helper.preparePrintOptions === 'function'
+                ? await helper.preparePrintOptions(printOptions)
+                : printOptions;
+            helper.printHtmlDocument(preparedOptions);
+        } else {
+            const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>${titulo}</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111827}table{width:100%;border-collapse:collapse}th,td{border:1px solid #d6dde8;padding:8px}th{background:#2c3e50;color:#fff}[data-col="acoes"],.sel-carrego,.sel-carrego-all{display:none!important}</style></head><body><h1>${titulo}</h1>${bodyHtml}</body></html>`;
+            const win = window.open('', '_blank', 'width=800,height=600');
+            if (win) {
+                win.document.write(html);
+                win.document.close();
+                win.onload = function() { setTimeout(() => win.print(), 250); };
+            } else {
+                window.print();
+            }
+        }
     } catch (e) {
         ToastManager.error('Erro ao imprimir relatório', 'Erro');
     } finally {
@@ -3185,7 +4101,11 @@ function configurarBuscaProdutoSelect() {
 }
 
 function abrirModalCliente() {
-    window.open('client.html', '_blank');
+    showTab('clientes');
+    try {
+        const search = document.getElementById('vendasClientesBusca');
+        if (search) search.focus();
+    } catch (_) {}
 }
 
 function fecharModal(modalId) {
@@ -3395,6 +4315,14 @@ function toTimestamp(value) {
     return d ? d.getTime() : 0;
 }
 
+function refreshCommerceResponsiveTables() {
+    try {
+        if (window.SiswebCommerceResponsive && typeof window.SiswebCommerceResponsive.enhanceAll === 'function') {
+            window.SiswebCommerceResponsive.enhanceAll();
+        }
+    } catch (_) {}
+}
+
 function getPedidoRecencyTimestamp(pedido) {
     if (!pedido || typeof pedido !== 'object') return 0;
     return (
@@ -3429,45 +4357,34 @@ function formatDate(dateString) {
 function extractRomaneioTimestamp(romaneio) {
     try {
         if (!romaneio || typeof romaneio !== 'object') return 0;
-        // Preferência: timestamp numérico
-        if (typeof romaneio.timestamp === 'number') return romaneio.timestamp;
-        // lastModified pode ser número
-        if (typeof romaneio.lastModified === 'number') return romaneio.lastModified;
-        // timestamp/lastModified/dataHora como string ISO
-        if (romaneio.timestamp) {
-            const t = new Date(romaneio.timestamp).getTime();
-            if (!isNaN(t)) return t;
-        }
-        if (romaneio.lastModified) {
-            const t = new Date(romaneio.lastModified).getTime();
-            if (!isNaN(t)) return t;
-        }
-        if (romaneio.dataHora) {
-            const t = new Date(romaneio.dataHora).getTime();
-            if (!isNaN(t)) return t;
-        }
-        // data pode ser string ISO ou parseável
-        if (romaneio.data) {
-            const d = new Date(romaneio.data);
-            const t = d.getTime();
-            if (!isNaN(t)) return t;
-        }
-        // createdAt ou dataRomaneio (fallbacks comuns)
-        if (romaneio.createdAt) {
-            const t = new Date(romaneio.createdAt).getTime();
-            if (!isNaN(t)) return t;
-        }
-        if (romaneio.dataRomaneio) {
-            const t = new Date(romaneio.dataRomaneio).getTime();
+        const candidates = [
+            romaneio?._metadata?.lastUpdated,
+            romaneio.updatedAt,
+            romaneio.updated,
+            romaneio.lastModified,
+            romaneio.dataEmissao,
+            romaneio.data,
+            romaneio.dataRomaneio,
+            romaneio.dataHora,
+            romaneio.dataCriacao,
+            romaneio.createdAt,
+            romaneio.created,
+            romaneio.timestamp
+        ];
+        for (const candidate of candidates) {
+            if (!candidate) continue;
+            const t = typeof candidate === 'number' ? candidate : new Date(candidate).getTime();
             if (!isNaN(t)) return t;
         }
     } catch (_) {}
-    return 0;
+    const id = String(romaneio && (romaneio.id || romaneio.romaneioId || romaneio.firebaseKey || romaneio.key || romaneio.numero || romaneio.numeroRomaneio) || '');
+    const match = id.match(/(\d{10,})/);
+    return match ? Number(match[1]) || 0 : 0;
 }
 
 // Utilitário: formatar data do romaneio para exibição no dropdown
 function formatRomaneioDateLabel(romaneio) {
-    const candidates = [romaneio.data, romaneio.dataHora, romaneio.createdAt, romaneio.dataRomaneio, romaneio.timestamp, romaneio.lastModified];
+    const candidates = [romaneio.dataEmissao, romaneio.data, romaneio.dataHora, romaneio.createdAt, romaneio.created, romaneio.dataRomaneio, romaneio.timestamp, romaneio.updatedAt, romaneio.updated, romaneio.lastModified];
     for (const c of candidates) {
         if (c) {
             const d = new Date(c);
@@ -3600,103 +4517,39 @@ async function getData(key) {
 }
 
 // ==========================
-// Carregamento mesclado de romaneios (Firebase + localStorage) com prioridade local
+// Carregamento canônico de romaneios (somente companies/{companyId})
 // ==========================
 async function getRomaneiosMerged(tipoKey) {
     try {
-        const canonicalKey = tipoKey === 'romaneiosTora' ? 'romaneios/tora' : tipoKey;
-        let remote = [];
-        let remote2 = [];
-        if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-            try {
-                const res1 = await window.firebaseService.loadFromFirebase(tipoKey);
-                const d1 = res1 && res1.success ? res1.data : null;
-                if (Array.isArray(d1)) {
-                    remote = d1;
-                } else if (d1 && typeof d1 === 'object') {
-                    remote = Object.entries(d1).map(([k, v]) => ({ id: k, firebaseKey: k, ...(v || {}) }));
-                }
-            } catch (e) {}
-            try {
-                if (canonicalKey !== tipoKey) {
-                    const res2 = await window.firebaseService.loadFromFirebase(canonicalKey);
-                    const d2 = res2 && res2.success ? res2.data : null;
-                    if (Array.isArray(d2)) {
-                        remote2 = d2;
-                    } else if (d2 && typeof d2 === 'object') {
-                        remote2 = Object.entries(d2).map(([k, v]) => ({ id: k, firebaseKey: k, ...(v || {}) }));
-                    }
-                }
-            } catch (e) {}
+        const canonicalMap = {
+            romaneiosTora: 'romaneios/tora',
+            romaneiosPct: 'romaneios/pct',
+            romaneiosPCT: 'romaneios/pct',
+            romaneiosTL: 'romaneios/tl',
+            romaneiosTl: 'romaneios/tl',
+            romaneios_tl: 'romaneios/tl',
+            romaneiosPes: 'romaneios/pes',
+            romaneiosPES: 'romaneios/pes',
+            romaneios_pes: 'romaneios/pes'
+        };
+        const canonicalKey = canonicalMap[tipoKey] || tipoKey;
+        if (!window.firebaseService || typeof window.firebaseService.loadFromFirebase !== 'function') {
+            console.warn('Vendas: firebaseService indisponível para carregar romaneios.');
+            return [];
         }
-        let local = [];
-        let local2 = [];
-        try {
-            const storageKey = getStorageKey(tipoKey);
-            const allowLegacy = storageKey === tipoKey;
-            const raw1 = localStorage.getItem(storageKey) || (allowLegacy ? localStorage.getItem(tipoKey) : null);
-            if (raw1) {
-                const p1 = JSON.parse(raw1);
-                if (Array.isArray(p1)) {
-                    local = p1;
-                } else if (p1 && typeof p1 === 'object') {
-                    local = Object.entries(p1).map(([k, v]) => ({ id: k, firebaseKey: k, ...(v || {}) }));
-                }
-            }
-        } catch (e) {}
-        try {
-            if (canonicalKey !== tipoKey) {
-                const storageKey = getStorageKey(canonicalKey);
-                const allowLegacy = storageKey === canonicalKey;
-                const raw2 = localStorage.getItem(storageKey) || (allowLegacy ? localStorage.getItem(canonicalKey) : null);
-                if (raw2) {
-                    const p2 = JSON.parse(raw2);
-                    if (Array.isArray(p2)) {
-                        local2 = p2;
-                    } else if (p2 && typeof p2 === 'object') {
-                        local2 = Object.entries(p2).map(([k, v]) => ({ id: k, firebaseKey: k, ...(v || {}) }));
-                    }
-                }
-            }
-        } catch (e) {}
-        const primary = (remote2 && remote2.length > 0) ? remote2 : remote;
-        const secondary = (primary === remote2) ? remote : remote2;
-        const map = new Map();
-        (primary || []).forEach(r => {
-            const k = String(r.id || r.numero || r.firebaseKey || '');
-            if (!k) return;
-            map.set(k, r);
-        });
-        if (!primary || primary.length === 0) {
-            (secondary || []).forEach(r => {
-                const k = String(r.id || r.numero || r.firebaseKey || '');
-                if (!k || map.has(k)) return;
-                map.set(k, r);
-            });
+        const result = await window.firebaseService.loadFromFirebase(canonicalKey);
+        const rawData = result && result.success ? result.data : null;
+        let merged = [];
+        if (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function') {
+            const type = canonicalKey.split('/').pop();
+            merged = window.RomaneioDataUtils.normalizeRomaneioCollection(rawData, { type });
+        } else if (Array.isArray(rawData)) {
+            merged = rawData.filter(r => r && typeof r === 'object' && (r.id || r.numero || r.firebaseKey || r.itens || r.items));
+        } else if (rawData && typeof rawData === 'object') {
+            merged = Object.entries(rawData)
+                .filter(([k, v]) => k !== '_metadata' && k !== 'metadata' && v && typeof v === 'object')
+                .map(([k, v]) => ({ id: v.id || k, firebaseKey: k, ...(v || {}) }));
         }
-        const overlayLocals = [].concat(local || [], local2 || []);
-        overlayLocals.forEach(r => {
-            const k = String(r.id || r.numero || r.firebaseKey || '');
-            if (!k) return;
-            const cur = map.get(k);
-            if (cur) {
-                map.set(k, { ...cur, ...r, id: cur.id || r.id || k });
-            } else if (!primary || primary.length === 0) {
-                map.set(k, r);
-            }
-        });
-        let merged = Array.from(map.values());
-        try {
-            const tombKey = getStorageKey('romaneiosTora_deletedIds');
-            const allowLegacy = tombKey === 'romaneiosTora_deletedIds';
-            const tomb = JSON.parse(localStorage.getItem(tombKey) || (allowLegacy ? localStorage.getItem('romaneiosTora_deletedIds') : null) || '[]').map(String);
-            if (Array.isArray(tomb) && tomb.length > 0) {
-                merged = merged.filter(r => {
-                    const k = String(r.id || r.firebaseKey || r.numero || '');
-                    return k && !tomb.includes(k);
-                });
-            }
-        } catch (_) {}
         const getItens = r => Array.isArray(r.items) ? r.items : (Array.isArray(r.itens) ? r.itens : []);
         const isTora = r => {
             const itens = getItens(r);
@@ -3729,7 +4582,7 @@ async function getRomaneiosMerged(tipoKey) {
         }
         merged.sort((a, b) => extractRomaneioTimestamp(b) - extractRomaneioTimestamp(a));
         const sampleIds = merged.slice(0, 5).map(r => String(r.id || r.numero));
-        console.log(`Vendas: ${tipoKey} mesclado. Total=${merged.length}. Amostra IDs:`, sampleIds);
+        console.log(`Vendas: ${canonicalKey} carregado. Total=${merged.length}. Amostra IDs:`, sampleIds);
         return merged;
     } catch (err) {
         console.error('Vendas: erro inesperado ao mesclar romaneios:', err);
@@ -3804,6 +4657,12 @@ window.abrirModalCliente = abrirModalCliente;
 window.fecharModal = fecharModal;
 window.formatCurrency = formatCurrency;
 window.parseCurrencyValue = parseCurrencyValue;
+window.atualizarSelectClientes = atualizarSelectClientes;
+window.vendasClientesNovo = vendasClientesNovo;
+window.vendasClientesEditar = vendasClientesEditar;
+window.vendasClientesExcluir = vendasClientesExcluir;
+window.vendasClientesCancelar = vendasClientesCancelar;
+window.vendasClientesRecarregar = vendasClientesRecarregar;
 
 // ===== NOVAS FUNCIONALIDADES =====
 
@@ -4765,7 +5624,8 @@ function atualizarTabelaContasReceber() {
     const tbody = document.getElementById('contasReceberTable');
     const activeId = document.activeElement && document.activeElement.id ? document.activeElement.id : null;
     if (contasReceber.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666;">Nenhuma conta adicionada</td></tr>';
+        tbody.innerHTML = '<tr><td class="commerce-full-row" data-label="" colspan="6" style="text-align: center; color: #666;">Nenhuma conta adicionada</td></tr>';
+        refreshCommerceResponsiveTables();
         return;
     }
     
@@ -4786,7 +5646,7 @@ function atualizarTabelaContasReceber() {
         const displayValor = (parcelaEditandoId && String(parcelaEditandoId) === String(conta.id)) ? (parcelaEditandoDisplay || '') : formatCurrency(conta.valor);
         html += `
             <tr>
-                <td>
+                <td data-label="Valor">
                     <input type="text" 
                            value="${displayValor}" 
                            id="conta-valor-${safeId}"
@@ -4795,7 +5655,7 @@ function atualizarTabelaContasReceber() {
                            onblur="atualizarValorConta('${safeId}', this.value)"
                            style="width: 100%; border: 1px solid #ddd; padding: 4px; border-radius: 3px;" ${disabledAttr}>
                 </td>
-                <td>
+                <td data-label="Dias">
                     <input type="number"
                            value="${conta.dias}"
                            id="conta-dias-${safeId}"
@@ -4803,7 +5663,7 @@ function atualizarTabelaContasReceber() {
                            onchange="atualizarDiasConta('${safeId}', this.value)"
                            style="width: 100%; border: 1px solid #ddd; padding: 4px; border-radius: 3px;" ${disabledAttr}>
                 </td>
-                <td>
+                <td data-label="Vencimento">
                     <input type="date" 
                            value="${(parcelaEditandoDateId && String(parcelaEditandoDateId) === String(conta.id)) ? (parcelaEditandoDateValue || conta.vencimento) : conta.vencimento}" 
                             id="conta-venc-${safeId}" autocomplete="off"
@@ -4811,7 +5671,7 @@ function atualizarTabelaContasReceber() {
                             onblur="onParcelaDateBlur('${safeId}', this)"
                            style="width: 100%; border: 1px solid #ddd; padding: 4px; border-radius: 3px;" ${disabledAttr}>
                 </td>
-                <td>
+                <td data-label="Tipo">
                     <select onchange="atualizarTipoConta('${safeId}', this.value)"
                             id="conta-tipo-${safeId}"
                             style="width: 100%; border: 1px solid #ddd; padding: 4px; border-radius: 3px;" ${disabledAttr}>
@@ -4826,7 +5686,7 @@ function atualizarTabelaContasReceber() {
                         <option value="permuta" ${conta.tipo === 'permuta' ? 'selected' : ''}>Permuta</option>
                     </select>
                 </td>
-                <td>
+                <td data-label="Observação">
                     <input type="text" 
                            value="${conta.observacao || ''}" 
                            id="conta-obs-${safeId}"
@@ -4834,8 +5694,8 @@ function atualizarTabelaContasReceber() {
                            placeholder="Observação"
                            style="width: 100%; border: 1px solid #ddd; padding: 4px; border-radius: 3px;" ${disabledAttr}>
                 </td>
-                <td style="text-align: center;">
-                    <button type="button" onclick="removerContaReceber('${safeId}')" class="btn-danger btn-small" ${disabledAttr}>
+                <td data-label="Ações" class="commerce-actions-cell" style="text-align: center;">
+                    <button type="button" onclick="removerContaReceber('${safeId}')" class="btn-danger btn-small" title="Remover" aria-label="Remover parcela" ${disabledAttr}>
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -4844,6 +5704,7 @@ function atualizarTabelaContasReceber() {
     });
     
     tbody.innerHTML = html;
+    refreshCommerceResponsiveTables();
     if (activeId) {
         const el = document.getElementById(activeId);
         if (el) {
@@ -5328,7 +6189,7 @@ window.onParcelaDiasInput = onParcelaDiasInput;
  * @param {string} pedidoId - ID do pedido a visualizar
  */
 async function visualizarPedido(pedidoId) {
-    const pedido = window.pedidos.find(p => p.id === pedidoId);
+    const pedido = window.pedidos.find(p => getPedidoVendaId(p) === String(pedidoId));
     
     if (!pedido) {
         ToastManager.error('Pedido não encontrado', 'Erro');
@@ -5364,36 +6225,42 @@ async function visualizarPedido(pedidoId) {
     
     // Itens do pedido
     const tbodyItens = document.getElementById('viewPedidoItensTable');
-    tbodyItens.innerHTML = pedido.itens.map((item, index) => {
-        const nomeLimpo = (item.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
-        if (item.tipo === 'manual' || item.tipo === 'romaneio' || item.tipo === 'romaneio_agrupado') {
-            produtoDescricao = nomeLimpo;
-        } else {
-            produtoDescricao = item.produtoCodigo ? `${item.produtoCodigo} - ${nomeLimpo}` : nomeLimpo;
-        }
-        produtoDescricao += getCarregoBadgeHtml(item);
-        
-        // Formatar quantidade com unidade
-        const quantidadeFormatada = item.unidade 
-            ? `${formatNumber(item.quantidade)} ${item.unidade}`
-            : formatNumber(item.quantidade);
-        
-        return `
-            <tr>
-                <td>${produtoDescricao}</td>
-                <td style="text-align: center;">${quantidadeFormatada}</td>
-                <td style="text-align: right;">${formatCurrency(item.precoUnitario)}</td>
-                <td style="text-align: right; font-weight: bold;">${formatCurrency(item.total)}</td>
-            </tr>
-        `;
-    }).join('');
+    const itensPedido = Array.isArray(pedido.itens) ? pedido.itens : [];
+    if (itensPedido.length > 0) {
+        tbodyItens.innerHTML = itensPedido.map((item, index) => {
+            const nomeLimpo = (item.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
+            let produtoDescricao;
+            if (item.tipo === 'manual' || item.tipo === 'romaneio' || item.tipo === 'romaneio_agrupado') {
+                produtoDescricao = nomeLimpo;
+            } else {
+                produtoDescricao = item.produtoCodigo ? `${item.produtoCodigo} - ${nomeLimpo}` : nomeLimpo;
+            }
+            produtoDescricao += getCarregoBadgeHtml(item);
+
+            // Formatar quantidade com unidade
+            const quantidadeFormatada = item.unidade
+                ? `${formatNumber(item.quantidade)} ${item.unidade}`
+                : formatNumber(item.quantidade);
+
+            return `
+                <tr>
+                    <td data-label="Produto"><span class="commerce-card-value commerce-card-title">${produtoDescricao}</span></td>
+                    <td data-label="Quantidade"><span class="commerce-card-value commerce-card-number">${quantidadeFormatada}</span></td>
+                    <td data-label="Preço Unit."><span class="commerce-card-value commerce-card-money">${formatCurrency(item.precoUnitario)}</span></td>
+                    <td data-label="Total"><span class="commerce-card-value commerce-card-money commerce-card-strong">${formatCurrency(item.total)}</span></td>
+                </tr>
+            `;
+        }).join('');
+    } else {
+        tbodyItens.innerHTML = '<tr><td class="commerce-full-row" data-label="" colspan="4" style="text-align: center;">Nenhum item encontrado</td></tr>';
+    }
     
     // Totais
     document.getElementById('viewPedidoSubtotal').textContent = formatCurrency(pedido.subtotal);
     document.getElementById('viewPedidoDesconto').textContent = formatCurrency(pedido.desconto);
     document.getElementById('viewPedidoTotal').textContent = formatCurrency(pedido.total);
     // Total Geral (Qtd.)
-    const totalQtdModal = (pedido.itens || []).reduce((acc, it) => {
+    const totalQtdModal = itensPedido.reduce((acc, it) => {
         if (isCarregoItem(it)) return acc;
         return acc + (parseFloat(it.quantidade) || 0);
     }, 0);
@@ -5422,20 +6289,20 @@ async function visualizarPedido(pedidoId) {
         tbodyPagamento.innerHTML = contas.map(conta => {
             return `
                 <tr>
-                    <td>${formatCurrency(conta.valor)}</td>
-                    <td>${formatDate(conta.vencimento)}</td>
-                    <td>${getTipoContaLabel(conta.tipo)}</td>
-                    <td>${conta.observacao || '-'}</td>
-                    <td>
+                    <td data-label="Valor"><span class="commerce-card-value commerce-card-money">${formatCurrency(conta.valor)}</span></td>
+                    <td data-label="Vencimento"><span class="commerce-card-value commerce-card-number">${formatDate(conta.vencimento)}</span></td>
+                    <td data-label="Tipo"><span class="commerce-card-value">${getTipoContaLabel(conta.tipo)}</span></td>
+                    <td data-label="Observação"><span class="commerce-card-value">${conta.observacao || '-'}</span></td>
+                    <td data-label="Status"><span class="commerce-card-value">
                         <span class="status-badge status-${conta.status || 'pendente'}">
                             ${getStatusLabel(conta.status || 'pendente')}
                         </span>
-                    </td>
+                    </span></td>
                 </tr>
             `;
         }).join('');
     } else {
-        tbodyPagamento.innerHTML = '<tr><td colspan="5" style="text-align: center;">Sem informações de pagamento</td></tr>';
+        tbodyPagamento.innerHTML = '<tr><td class="commerce-full-row" data-label="" colspan="5" style="text-align: center;">Sem informações de pagamento</td></tr>';
     }
     
     // Metadados
@@ -5459,6 +6326,7 @@ async function visualizarPedido(pedidoId) {
     
     // Abrir modal
     document.getElementById('visualizarPedidoModal').style.display = 'block';
+    refreshCommerceResponsiveTables();
     
     console.log('✅ Modal de visualização aberto para pedido:', pedido.numero);
 }
@@ -5468,7 +6336,7 @@ async function visualizarPedido(pedidoId) {
  * @param {string} pedidoId - ID do pedido a imprimir
  */
 async function imprimirPedido(pedidoId) {
-    const pedido = window.pedidos.find(p => p.id === pedidoId);
+    const pedido = window.pedidos.find(p => getPedidoVendaId(p) === String(pedidoId));
     
     if (!pedido) {
         ToastManager.error('Pedido não encontrado', 'Erro');
@@ -5478,21 +6346,36 @@ async function imprimirPedido(pedidoId) {
     try {
         // Mostrar loading enquanto carrega dados da empresa
         LoadingManager.show('Preparando impressão...');
+
+        if (isCommercePwaPrintContext() && window.SiswebCommercePdf) {
+            const result = await exportarPedidosVendaPdf([pedido]);
+            notificarEntregaPdfPedido(result);
+            return;
+        }
         
         // Criar conteúdo HTML para impressão (assíncrono)
         const conteudoImpressao = await gerarHTMLImpressaoPedido(pedido);
         
-        // Abrir janela de impressão
-        const janelaImpressao = window.open('', '_blank', 'width=800,height=600');
-        janelaImpressao.document.write(conteudoImpressao);
-        janelaImpressao.document.close();
-        
-        // Aguardar carregamento e imprimir
-        janelaImpressao.onload = function() {
-            setTimeout(() => {
-                janelaImpressao.print();
-            }, 250);
-        };
+        if (window.SiswebCommercePdf && typeof window.SiswebCommercePdf.printHtmlDocument === 'function') {
+            window.SiswebCommercePdf.printHtmlDocument({
+                html: conteudoImpressao,
+                windowFeatures: 'width=900,height=700'
+            });
+        } else {
+            // Abrir janela de impressão
+            const janelaImpressao = window.open('', '_blank', 'width=800,height=600');
+            if (janelaImpressao) {
+                janelaImpressao.document.write(conteudoImpressao);
+                janelaImpressao.document.close();
+                janelaImpressao.onload = function() {
+                    setTimeout(() => {
+                        janelaImpressao.print();
+                    }, 250);
+                };
+            } else {
+                window.print();
+            }
+        }
         
         console.log('✅ Janela de impressão aberta para pedido:', pedido.numero);
         
@@ -5511,77 +6394,70 @@ async function imprimirPedido(pedidoId) {
  * @returns {Promise<string>} HTML formatado
  */
 async function gerarHTMLImpressaoPedido(pedido) {
-    const nomeCliente = pedido.cliente ? 
-        (pedido.cliente.nome || pedido.cliente.name || 'Cliente não informado') : 
-        'Cliente não informado';
-    
+    const helper = window.SiswebCommercePdf || {};
+    const htmlEscape = typeof helper.escapeHtml === 'function'
+        ? helper.escapeHtml
+        : (value) => String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    const nomeCliente = pedido.cliente
+        ? (pedido.cliente.nome || pedido.cliente.name || 'Cliente não informado')
+        : 'Cliente não informado';
     const statusLabel = getStatusLabel(pedido.status);
-    
-    // ✅ BUSCAR DADOS REAIS DA EMPRESA (PADRÃO DO SISTEMA)
     const dadosEmpresa = await obterDadosEmpresa();
-    
-    // Montar tabela de itens
-    let htmlItens = '';
-    pedido.itens.forEach((item, index) => {
-        const nomeLimpo = (item.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
+
+    const htmlItens = (pedido.itens || []).map((item, index) => {
+        const nomeLimpo = String(item.produtoNome || item.produto || item.nome || item.descricao || '')
+            .replace(/^\s*[-–—]\s*/, '')
+            .trim() || 'Produto não informado';
+        let produtoDescricao;
         if (item.tipo === 'manual' || item.tipo === 'romaneio' || item.tipo === 'romaneio_agrupado') {
-            // Exibir apenas o nome para produtos manuais ou de romaneio
-            produtoDescricao = `${nomeLimpo}`;
+            produtoDescricao = nomeLimpo;
         } else {
-            // Para outros (cadastrados), incluir o código se existir
             produtoDescricao = item.produtoCodigo ? `${item.produtoCodigo} - ${nomeLimpo}` : nomeLimpo;
         }
-        
-        const quantidadeFormatada = item.unidade 
-            ? `${formatNumber(item.quantidade)} ${item.unidade}`
-            : formatNumber(item.quantidade);
-        
-        htmlItens += `
+
+        const quantidadeFormatada = item.unidade
+            ? `${formatNumber(item.quantidade || 0)} ${item.unidade}`
+            : formatNumber(item.quantidade || 0);
+
+        return `
             <tr>
-                <td>${index + 1}</td>
-                <td>${produtoDescricao}</td>
-                <td style="text-align: center;">${quantidadeFormatada}</td>
-                <td style="text-align: right;">${formatCurrency(item.precoUnitario)}</td>
-                <td style="text-align: right;"><strong>${formatCurrency(item.total)}</strong></td>
+                <td class="text-center" style="width: 38px;">${index + 1}</td>
+                <td>${htmlEscape(produtoDescricao)}</td>
+                <td class="text-center" style="width: 110px;">${htmlEscape(quantidadeFormatada)}</td>
+                <td class="text-right" style="width: 100px;">${htmlEscape(formatCurrency(item.precoUnitario || item.preco || 0))}</td>
+                <td class="text-right" style="width: 100px;"><strong>${htmlEscape(formatCurrency(item.total || 0))}</strong></td>
             </tr>
         `;
-    });
-    
-    // Montar tabela de pagamento
-    let htmlPagamento = '';
-    if (pedido.contasReceber && pedido.contasReceber.length > 0) {
-        pedido.contasReceber.forEach((conta, index) => {
-            htmlPagamento += `
-                <tr>
-                    <td>${index + 1}ª parcela</td>
-                    <td>${formatCurrency(conta.valor)}</td>
-                    <td>${formatDate(conta.vencimento)}</td>
-                    <td>${getTipoContaLabel(conta.tipo)}</td>
-                    <td>${conta.observacao || '-'}</td>
-                </tr>
-            `;
-        });
-    } else {
-        htmlPagamento = '<tr><td colspan="5" style="text-align: center;">Sem informações de pagamento</td></tr>';
-    }
-    
-    // Detalhes do cliente
+    }).join('');
+
+    const contasReceberBase = typeof normalizarContasReceberLista === 'function'
+        ? normalizarContasReceberLista(pedido.contasReceber || [])
+        : (pedido.contasReceber || []);
+    const contasReceberPedido = Array.isArray(contasReceberBase) ? contasReceberBase : [];
+    const htmlPagamento = contasReceberPedido.length > 0
+        ? contasReceberPedido.map((conta, index) => `
+            <tr>
+                <td>${index + 1}ª parcela</td>
+                <td class="text-right">${htmlEscape(formatCurrency(conta.valor || 0))}</td>
+                <td>${htmlEscape(formatDate(conta.vencimento || conta.dataVencimento))}</td>
+                <td>${htmlEscape(getTipoContaLabel(conta.tipo || conta.tipoPagamento))}</td>
+                <td>${htmlEscape(conta.observacao || conta.observacoes || '-')}</td>
+            </tr>
+        `).join('')
+        : '<tr><td colspan="5" class="text-center">Sem informações de pagamento</td></tr>';
+
     let detalhesCliente = '';
     if (pedido.cliente) {
-        if (pedido.cliente.email) detalhesCliente += `<p style="margin: 3px 0;"><strong>Email:</strong> ${pedido.cliente.email}</p>`;
-        if (pedido.cliente.telefone) detalhesCliente += `<p style="margin: 3px 0;"><strong>Telefone:</strong> ${pedido.cliente.telefone}</p>`;
-        if (pedido.cliente.endereco) detalhesCliente += `<p style="margin: 3px 0;"><strong>Endereço:</strong> ${pedido.cliente.endereco}</p>`;
+        if (pedido.cliente.email) detalhesCliente += `<p><strong>Email:</strong> ${htmlEscape(pedido.cliente.email)}</p>`;
+        if (pedido.cliente.telefone) detalhesCliente += `<p><strong>Telefone:</strong> ${htmlEscape(pedido.cliente.telefone)}</p>`;
+        if (pedido.cliente.endereco) detalhesCliente += `<p><strong>Endereço:</strong> ${htmlEscape(pedido.cliente.endereco)}</p>`;
     }
-    
-    // ✅ GERAR LOGO (PADRÃO DO SISTEMA)
-    const logoHtml = (dadosEmpresa.logo && dadosEmpresa.logo.trim() !== '') 
-        ? `<img src="${dadosEmpresa.logo}" alt="Logo da Empresa" style="max-width: 100px; max-height: 100px; object-fit: contain;" />` 
-        : `<svg viewBox="0 0 100 100" style="width: 80px; height: 80px;">
-            <circle cx="50" cy="50" r="45" fill="#2c3e50" stroke="#34495e" stroke-width="2"/>
-            <text x="50" y="60" text-anchor="middle" fill="white" font-size="24" font-weight="bold">JN</text>
-        </svg>`;
-    
-    // Calcular Total Geral (Qtd.) com formatação de casas decimais por unidade
+
     const totalQuantidade = (pedido.itens || []).reduce((acc, item) => {
         if (isCarregoItem(item)) return acc;
         const q = parseFloat(item.quantidade);
@@ -5608,365 +6484,100 @@ async function gerarHTMLImpressaoPedido(pedido) {
     const unidadeLabel = unidades.length === 1 ? ` ${unidades[0]}` : '';
     const totalQuantidadeFormatada = `${formatNumber(totalQuantidade, decimalsQtd)}${unidadeLabel}`;
 
-    // Definir modo compacto considerando itens e parcelas
     const itemCount = (pedido.itens || []).length;
-    const pagamentoCount = (pedido.contasReceber || []).length;
-    // Heurística: cada parcela além da 3ª contribui para compactar
+    const pagamentoCount = contasReceberPedido.length;
     const contentScore = itemCount + Math.max(0, pagamentoCount - 3);
-    const compactClass = contentScore > 20 ? 'compact' : '';
+    const bodyHtml = `
+        <section class="sisweb-print-info-grid">
+            <div class="sisweb-print-info-box">
+                <h3>Dados do pedido</h3>
+                <p><strong>Número:</strong> ${htmlEscape(pedido.numero || '-')}</p>
+                <p><strong>Data:</strong> ${htmlEscape(formatDate(pedido.data))}</p>
+                <p><strong>Status:</strong> ${htmlEscape(statusLabel)}</p>
+                <p><strong>Emissão:</strong> ${htmlEscape(new Date().toLocaleDateString('pt-BR'))} ${htmlEscape(new Date().toLocaleTimeString('pt-BR'))}</p>
+            </div>
+            <div class="sisweb-print-info-box">
+                <h3>Dados do cliente</h3>
+                <p><strong>Nome:</strong> ${htmlEscape(nomeCliente)}</p>
+                ${detalhesCliente || '<p><strong>Contato:</strong> -</p>'}
+            </div>
+        </section>
 
-    // Template HTML completo (PADRÃO DO SISTEMA)
-    return `
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pedido ${pedido.numero}</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            color: #333;
-            font-size: 11px;
-            line-height: 1.25;
-        }
-        
-        .container {
-            max-width: 19cm;
-            margin: 0 auto;
-        }
-        
-        /* ✅ CABEÇALHO PADRÃO DO SISTEMA (igual aos outros relatórios) */
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 20px;
-            flex-wrap: nowrap; /* evita quebra para baixo, mantém lado a lado */
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 3px solid #2c3e50;
-        }
-        
-        .logo {
-            flex: 0 0 100px;
-            text-align: center;
-        }
-        
-        .logo img, .logo svg {
-            max-width: 100px;
-            max-height: 100px;
-            object-fit: contain;
-        }
-        
-        .company-info {
-            flex: 1 1 auto;
-            text-align: left;
-            margin-left: 20px;
-            min-width: 0; /* permite encolher sem empurrar para baixo */
-            word-break: break-word; /* quebra textos longos para manter posição */
-        }
-        
-        .company-name {
-            font-size: 18px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-        
-        .company-details {
-            font-size: 11px;
-            color: #666;
-            margin: 2px 0;
-        }
-        
-        .title {
-            text-align: center;
-            font-size: 16px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin: 15px 0 10px 0;
-        }
-        
-        .subtitle {
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 20px;
-        }
-        
-        .pedido-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .info-box {
-            border: 1px solid #dee2e6;
-            padding: 15px;
-            border-radius: 5px;
-        }
-        
-        .info-box h3 {
-            font-size: 14px;
-            color: #2c3e50;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #dee2e6;
-            padding-bottom: 5px;
-        }
-        
-        .info-box p {
-            margin: 5px 0;
-            font-size: 13px;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        
-        table th,
-        table td {
-            border: 1px solid #333;
-            padding: 6px;
-            font-size: 11px;
-        }
-        
-        table th {
-            background: #f0f0f0;
-            font-weight: bold;
-            text-align: left;
-        }
-        
-        .totais {
-            float: right;
-            width: 280px;
-            border: 2px solid #2c3e50;
-            padding: 12px;
-            margin-top: 15px;
-        }
-        
-        .totais-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-        }
-        
-        .totais-row.total {
-            border-top: 2px solid #2c3e50;
-            margin-top: 10px;
-            padding-top: 10px;
-            font-size: 16px;
-            font-weight: bold;
-        }
-        
-        .footer {
-            clear: both;
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 1px solid #dee2e6;
-            text-align: center;
-            font-size: 10px;
-            color: #666;
-        }
-        
-        .assinatura {
-            margin-top: 40px;
-            text-align: center;
-        }
-        
-        .assinatura-linha {
-            border-top: 1px solid #333;
-            width: 300px;
-            margin: 0 auto 10px auto;
-        }
-        
-        @page {
-            size: A4;
-            margin: 10mm;
-        }
-        @media print {
-            body {
-                padding: 0;
-            }
-            /* Evitar quebras internas em blocos-chave */
-            .container,
-            .pedido-info,
-            .totais,
-            .assinatura,
-            .footer,
-            table {
-                page-break-inside: avoid;
-            }
-            /* Garantir largura máxima na impressão */
-            .container {
-                max-width: 19cm;
-            }
-        }
+        <section class="sisweb-print-section">
+            <h2 class="sisweb-print-section-title">Itens do pedido</h2>
+            <table class="sisweb-print-table">
+                <thead>
+                    <tr>
+                        <th style="width: 38px;" class="text-center">#</th>
+                        <th>Produto</th>
+                        <th style="width: 110px;" class="text-center">Quantidade</th>
+                        <th style="width: 100px;" class="text-right">Preço Unit.</th>
+                        <th style="width: 100px;" class="text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${htmlItens || '<tr><td colspan="5" class="text-center">Nenhum item informado.</td></tr>'}
+                </tbody>
+            </table>
+        </section>
 
-        /* Modo compacto quando há muitos itens */
-        .compact .company-name { font-size: 16px; }
-        .compact .company-details { font-size: 10px; }
-        .compact .title { font-size: 14px; margin: 10px 0 8px 0; }
-        .compact .subtitle { font-size: 10px; margin-bottom: 12px; }
-        .compact .pedido-info { gap: 12px; margin-bottom: 20px; }
-        .compact .info-box { padding: 10px; }
-        .compact .info-box h3 { font-size: 12px; }
-        .compact table th, .compact table td { padding: 4px; font-size: 10px; }
-        .compact .totais { width: 260px; padding: 10px; }
-    </style>
-</head>
-<body>
-    <div class="container ${compactClass}">
-        <!-- ✅ CABEÇALHO PADRÃO DO SISTEMA (igual aos outros relatórios) -->
-        <div class="header">
-            <div class="logo">
-                ${logoHtml}
+        <section class="sisweb-print-section">
+            <div class="sisweb-print-totals">
+                <div class="sisweb-print-total-row">
+                    <span>Total Geral (Qtd.)</span>
+                    <strong>${htmlEscape(totalQuantidadeFormatada)}</strong>
+                </div>
+                <div class="sisweb-print-total-row">
+                    <span>Subtotal</span>
+                    <strong>${htmlEscape(formatCurrency(pedido.subtotal || 0))}</strong>
+                </div>
+                <div class="sisweb-print-total-row">
+                    <span>Desconto</span>
+                    <strong>${htmlEscape(formatCurrency(pedido.desconto || 0))}</strong>
+                </div>
+                <div class="sisweb-print-total-row total">
+                    <span>TOTAL</span>
+                    <span>${htmlEscape(formatCurrency(pedido.total || 0))}</span>
+                </div>
             </div>
-            <div class="company-info">
-                <div class="company-name">${dadosEmpresa.nome || dadosEmpresa.name}</div>
-                <div class="company-details">CNPJ: ${dadosEmpresa.cnpj}</div>
-                <div class="company-details">${dadosEmpresa.endereco || dadosEmpresa.address}</div>
-                <div class="company-details">${dadosEmpresa.cidade || dadosEmpresa.city} - ${dadosEmpresa.estado || dadosEmpresa.state}</div>
-                <div class="company-details">Fone: ${dadosEmpresa.telefone || dadosEmpresa.phone}</div>
-                ${dadosEmpresa.email ? `<div class="company-details">Email: ${dadosEmpresa.email}</div>` : ''}
-            </div>
-        </div>
-        
-        <!-- ✅ TÍTULO E SUBTÍTULO PADRÃO -->
-        <div class="title">PEDIDO DE VENDA N° ${pedido.numero}</div>
-        <div class="subtitle">Data de Emissão: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</div>
-        
-        <!-- Informações do Pedido e Cliente -->
-        <div class="pedido-info">
-            <div class="info-box">
-                <h3>DADOS DO PEDIDO</h3>
-                <p><strong>Número:</strong> ${pedido.numero}</p>
-                <p><strong>Data:</strong> ${formatDate(pedido.data)}</p>
-                <p><strong>Status:</strong> ${statusLabel}</p>
-                <p><strong>Emissão:</strong> ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}</p>
-            </div>
-            
-            <div class="info-box">
-                <h3>DADOS DO CLIENTE</h3>
-                <p><strong>Nome:</strong> ${nomeCliente}</p>
-                ${detalhesCliente}
-            </div>
-        </div>
-        
-        <!-- Itens do Pedido -->
-        <h3 style="margin-bottom: 10px;">ITENS DO PEDIDO</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 40px;">#</th>
-                    <th>Produto</th>
-                    <th style="width: 120px; text-align: center;">Quantidade</th>
-                    <th style="width: 100px; text-align: right;">Preço Unit.</th>
-                    <th style="width: 100px; text-align: right;">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${htmlItens}
-            </tbody>
-        </table>
-        
-        <!-- Totais -->
-        <div class="totais">
-            <div class="totais-row">
-                <span>Total Geral (Qtd.):</span>
-                <span>${totalQuantidadeFormatada}</span>
-            </div>
-            <div class="totais-row">
-                <span>Subtotal:</span>
-                <span>${formatCurrency(pedido.subtotal)}</span>
-            </div>
-            <div class="totais-row">
-                <span>Desconto:</span>
-                <span style="color: #e74c3c;">${formatCurrency(pedido.desconto)}</span>
-            </div>
-            <div class="totais-row total">
-                <span>TOTAL:</span>
-                <span>${formatCurrency(pedido.total)}</span>
-            </div>
-        </div>
-        
-        <!-- Forma de Pagamento -->
-        <div style="clear: both; margin-top: 30px;">
-            <h3 style="margin-bottom: 10px;">FORMA DE PAGAMENTO</h3>
-            <table>
+        </section>
+
+        <section class="sisweb-print-section">
+            <h2 class="sisweb-print-section-title">Forma de pagamento</h2>
+            <table class="sisweb-print-table">
                 <thead>
                     <tr>
                         <th>Parcela</th>
-                        <th>Valor</th>
+                        <th class="text-right">Valor</th>
                         <th>Vencimento</th>
                         <th>Tipo</th>
                         <th>Observação</th>
                     </tr>
                 </thead>
-                <tbody>
-                    ${htmlPagamento}
-                </tbody>
+                <tbody>${htmlPagamento}</tbody>
             </table>
-        </div>
-        
-        <!-- Assinatura -->
-        <div class="assinatura">
-            <div class="assinatura-linha"></div>
-            <p>Assinatura do Cliente</p>
-        </div>
-        
-        <!-- Rodapé -->
-        <div class="footer">
-            <p>Este documento foi gerado eletronicamente pelo sistema SISWEB</p>
-            <p>Impresso em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
-        </div>
-    </div>
-</body>
-<script>
-// Ajuste adaptativo para caber em uma única página A4
-(function() {
-    function mmToPx(mm) { return mm * (96 / 25.4); }
-    function ajustarEscala() {
-        var container = document.querySelector('.container');
-        if (!container) return;
-        try {
-            var alturaPaginaPx = mmToPx(297) - mmToPx(10 * 2); // A4 altura menos margens @page
-            var estilosBody = getComputedStyle(document.body);
-            var padTop = parseFloat(estilosBody.paddingTop) || 0;
-            var padBottom = parseFloat(estilosBody.paddingBottom) || 0;
-            var alturaDisponivel = alturaPaginaPx - padTop - padBottom;
-            // Medir altura do conteúdo
-            var alturaConteudo = container.getBoundingClientRect().height;
-            var escala = Math.min(1, alturaDisponivel / alturaConteudo);
-            if (escala < 1) {
-                // Preferir zoom quando disponível; fallback para transform
-                container.style.zoom = escala;
-                container.style.transformOrigin = 'top left';
-                container.style.transform = 'scale(' + escala + ')';
-            }
-            document.body.setAttribute('data-fit-scale', escala.toFixed(3));
-        } catch (e) {
-            console.warn('Falha no ajuste de escala de impressão:', e);
-        }
-    }
-    window.addEventListener('load', function() {
-        // Pequeno atraso para garantir imagens/logo carregados
-        setTimeout(ajustarEscala, 100);
-    });
-})();
-</script>
-</html>
+        </section>
+
+        <div class="sisweb-print-signature">Assinatura do Cliente</div>
     `;
+
+    if (typeof helper.buildPrintDocument === 'function') {
+        const printOptions = {
+            title: `Pedido de Venda Nº ${pedido.numero || '-'}`,
+            company: dadosEmpresa,
+            badgeText: 'Vendas',
+            subtitle: `Emitido em ${new Date().toLocaleDateString('pt-BR')} as ${new Date().toLocaleTimeString('pt-BR')}`,
+            documentNumber: pedido.numero || '',
+            bodyHtml,
+            compact: contentScore > 20
+        };
+        const preparedOptions = typeof helper.preparePrintOptions === 'function'
+            ? await helper.preparePrintOptions(printOptions)
+            : printOptions;
+        return helper.buildPrintDocument(preparedOptions);
+    }
+
+    return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Pedido ${htmlEscape(pedido.numero || '')}</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111827}table{width:100%;border-collapse:collapse}th,td{border:1px solid #d6dde8;padding:8px}th{background:#2c3e50;color:#fff}.text-right{text-align:right}.text-center{text-align:center}</style></head><body>${bodyHtml}</body></html>`;
 }
 
 /**
@@ -5987,10 +6598,12 @@ const ToastManager = {
             console.warn('Toast container não encontrado');
             return;
         }
+
+        const safeType = ['success', 'error', 'warning', 'info'].includes(type) ? type : 'info';
         
         // Criar elemento do toast
         const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
+        toast.className = `toast ${safeType}`;
         
         // Definir ícone baseado no tipo
         const icons = {
@@ -6008,22 +6621,38 @@ const ToastManager = {
                 warning: 'Atenção',
                 info: 'Informação'
             };
-            title = titles[type] || 'Notificação';
+            title = titles[safeType] || 'Notificação';
         }
         
-        // Montar HTML
-        toast.innerHTML = `
-            <div class="toast-icon">
-                <i class="fas ${icons[type] || icons.info}"></i>
-            </div>
-            <div class="toast-content">
-                <div class="toast-title">${title}</div>
-                <div class="toast-message">${message}</div>
-            </div>
-            <button class="toast-close" onclick="ToastManager.close(this.parentElement)">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
+        const iconWrapper = document.createElement('div');
+        iconWrapper.className = 'toast-icon';
+        const icon = document.createElement('i');
+        icon.className = `fas ${icons[safeType] || icons.info}`;
+        iconWrapper.appendChild(icon);
+
+        const content = document.createElement('div');
+        content.className = 'toast-content';
+        const titleEl = document.createElement('div');
+        titleEl.className = 'toast-title';
+        titleEl.textContent = title;
+        const messageEl = document.createElement('div');
+        messageEl.className = 'toast-message';
+        messageEl.textContent = String(message == null ? '' : message);
+        content.appendChild(titleEl);
+        content.appendChild(messageEl);
+
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'toast-close';
+        closeButton.setAttribute('aria-label', 'Fechar notificação');
+        const closeIcon = document.createElement('i');
+        closeIcon.className = 'fas fa-times';
+        closeButton.appendChild(closeIcon);
+        closeButton.onclick = () => ToastManager.close(toast);
+
+        toast.appendChild(iconWrapper);
+        toast.appendChild(content);
+        toast.appendChild(closeButton);
         
         // Adicionar ao container
         container.appendChild(toast);
@@ -6176,7 +6805,8 @@ function getCarregoLatestStatusMap() {
     const list = getCarregoPayments();
     const map = new Map();
     list.forEach(rec => {
-        const id = String(rec.pedidoId);
+        const id = String(rec && rec.pedidoId || '');
+        if (!id) return;
         const cur = map.get(id);
         if (!cur || new Date(rec.timestamp).getTime() >= new Date(cur.timestamp).getTime()) {
             map.set(id, rec);
@@ -6232,7 +6862,7 @@ function toggleFiltroCarregoDisponivel(checked) {
             if (id) ids.push(String(id));
         });
         ids.forEach(id => {
-            const p = (window._relPedidosPeriodo || []).find(pp => String(pp.id) === String(id)) || (window.pedidos || []).find(pp => String(pp.id) === String(id));
+            const p = (window._relPedidosPeriodo || []).find(pp => getPedidoVendaId(pp) === String(id)) || (window.pedidos || []).find(pp => getPedidoVendaId(pp) === String(id));
             valorTotalCarrego += calcularValorCarregoPedido(p);
         });
         const ticketMedio = totalPedidos > 0 ? (valorTotal / totalPedidos) : 0;
@@ -6285,7 +6915,7 @@ async function pagarCarregoSelecionados() {
         const now = new Date().toISOString();
         const novos = [];
         ids.forEach(id => {
-            const pedido = (window._relPedidosPeriodo || []).find(p => String(p.id) === String(id));
+            const pedido = (window._relPedidosPeriodo || []).find(p => getPedidoVendaId(p) === String(id));
             if (!pedido) return;
             if (pedido.carregoPago === true) return; // já pago, ignorar
             const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
@@ -6297,12 +6927,12 @@ async function pagarCarregoSelecionados() {
                 volume = parseNumberFlexible(raw) || 0;
             }
             if (!carregoItem || volume <= 0) return; // sem carrego, ignorar
-            const rec = { pedidoId: String(pedido.id), numero: String(pedido.numero), volume, timestamp: now, status: 'pago' };
+            const rec = { pedidoId: getPedidoVendaId(pedido), numero: String(pedido.numero), volume, timestamp: now, status: 'pago' };
             novos.push(rec);
         });
         // Atualizar estado local do pedido (garantir estorno posterior e UI consistente)
         novos.forEach(rec => {
-            const pedido = (window._relPedidosPeriodo || []).find(p => String(p.id) === String(rec.pedidoId)) || (window.pedidos || []).find(p => String(p.id) === String(rec.pedidoId));
+            const pedido = (window._relPedidosPeriodo || []).find(p => getPedidoVendaId(p) === String(rec.pedidoId)) || (window.pedidos || []).find(p => getPedidoVendaId(p) === String(rec.pedidoId));
             if (pedido) {
                 pedido.carregoPago = true;
                 pedido.carregoPagoAt = now;
@@ -6349,14 +6979,17 @@ async function estornarCarregoSelecionados() {
     try {
         LoadingManager.show('Estornando pagamento de carrego...');
         const now = new Date().toISOString();
-        const novos = ids.map(id => ({ pedidoId: String(id), numero: String((window._relPedidosPeriodo||[]).find(p=>String(p.id)===String(id))?.numero || ''), volume: 0, timestamp: now, status: 'estornado' }))
+        const novos = ids.map(id => {
+            const pedido = (window._relPedidosPeriodo || []).find(p => getPedidoVendaId(p) === String(id));
+            return { pedidoId: String(id), numero: String(pedido?.numero || ''), volume: 0, timestamp: now, status: 'estornado' };
+        })
             .filter(rec => {
-                const pedido = (window._relPedidosPeriodo || []).find(p => String(p.id) === String(rec.pedidoId));
+                const pedido = (window._relPedidosPeriodo || []).find(p => getPedidoVendaId(p) === String(rec.pedidoId));
                 return !!(pedido && pedido.carregoPago === true);
             });
         // Atualizar estado local para refletir estorno imediatamente
         novos.forEach(rec => {
-            const pedido = (window._relPedidosPeriodo || []).find(p => String(p.id) === String(rec.pedidoId)) || (window.pedidos || []).find(p => String(p.id) === String(rec.pedidoId));
+            const pedido = (window._relPedidosPeriodo || []).find(p => getPedidoVendaId(p) === String(rec.pedidoId)) || (window.pedidos || []).find(p => getPedidoVendaId(p) === String(rec.pedidoId));
             if (pedido) {
                 pedido.carregoPago = false;
                 pedido.carregoPagoAt = now;
@@ -6405,7 +7038,7 @@ async function excluirCarregoSelecionados() {
         const now = new Date().toISOString();
         const atualizados = [];
         ids.forEach(id => {
-            const pedido = (window._relPedidosPeriodo || []).find(p => String(p.id) === String(id)) || (window.pedidos || []).find(p => String(p.id) === String(id));
+            const pedido = (window._relPedidosPeriodo || []).find(p => getPedidoVendaId(p) === String(id)) || (window.pedidos || []).find(p => getPedidoVendaId(p) === String(id));
             if (!pedido) return;
             const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
             const nameOf = it => normalizeStr(String(it.produtoNome || it.nome || it.produto || ''));
@@ -6425,12 +7058,17 @@ async function excluirCarregoSelecionados() {
         try {
             if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
                 const updates = {};
-                atualizados.forEach(p => { updates[`vendas/pedidos/${p.id}`] = p; updates[`vendas/pagamentos_carrego/${p.id}`] = null; });
+                atualizados.forEach(p => {
+                    const pid = getPedidoVendaId(p);
+                    updates[`vendas/pedidos/${pid}`] = p;
+                    updates[`vendas/pagamentos_carrego/${pid}`] = null;
+                });
                 await window.firebaseService.updatePaths(updates);
             } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
                 for (const p of atualizados) {
-                    await window.firebaseService.saveToFirebase('vendas/pedidos', String(p.id), p);
-                    await window.firebaseService.saveToFirebase('vendas/pagamentos_carrego', String(p.id), null);
+                    const pid = getPedidoVendaId(p);
+                    await window.firebaseService.saveToFirebase('vendas/pedidos', String(pid), p);
+                    await window.firebaseService.saveToFirebase('vendas/pagamentos_carrego', String(pid), null);
                 }
             } else {
                 await saveData('vendas/pedidos', window.pedidos || []);
@@ -6454,7 +7092,7 @@ async function excluirCarrego(pedidoId) {
     try {
         LoadingManager.show('Excluindo carrego...');
         const now = new Date().toISOString();
-        const pedido = (window._relPedidosPeriodo || []).find(p => String(p.id) === String(pedidoId)) || (window.pedidos || []).find(p => String(p.id) === String(pedidoId));
+        const pedido = (window._relPedidosPeriodo || []).find(p => getPedidoVendaId(p) === String(pedidoId)) || (window.pedidos || []).find(p => getPedidoVendaId(p) === String(pedidoId));
         if (!pedido) { ToastManager.warning('Pedido não encontrado', 'Atenção'); return; }
         const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
         const nameOf = it => normalizeStr(String(it.produtoNome || it.nome || it.produto || ''));
@@ -6464,10 +7102,12 @@ async function excluirCarrego(pedidoId) {
         pedido.carregoPago = false; pedido.carregoPagoAt = null; pedido.updated = now;
         try {
             if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
-                const updates = {}; updates[`vendas/pedidos/${pedido.id}`] = pedido; updates[`vendas/pagamentos_carrego/${pedido.id}`] = null; await window.firebaseService.updatePaths(updates);
+                const pid = getPedidoVendaId(pedido);
+                const updates = {}; updates[`vendas/pedidos/${pid}`] = pedido; updates[`vendas/pagamentos_carrego/${pid}`] = null; await window.firebaseService.updatePaths(updates);
             } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-                await window.firebaseService.saveToFirebase('vendas/pedidos', String(pedido.id), pedido);
-                await window.firebaseService.saveToFirebase('vendas/pagamentos_carrego', String(pedido.id), null);
+                const pid = getPedidoVendaId(pedido);
+                await window.firebaseService.saveToFirebase('vendas/pedidos', String(pid), pedido);
+                await window.firebaseService.saveToFirebase('vendas/pagamentos_carrego', String(pid), null);
             } else {
                 await saveData('vendas/pedidos', window.pedidos || []);
             }

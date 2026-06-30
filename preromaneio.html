@@ -5,13 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Pré-Romaneio - Sistema</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2c3e50">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css?v=3">
-    <link rel="stylesheet" href="romaneio-comum.css">
+    <link rel="stylesheet" href="romaneio-comum.css?v=20260607pwaqa">
+    <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <link rel="stylesheet" href="print-styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="menu-component.js?v=20260505_2"></script>
+    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
     
     <style>
         /* ==========================================================================
@@ -125,10 +128,39 @@
             font-size: 14px;
         }
 
+        input[type="date"] {
+            box-sizing: border-box;
+            padding-right: 34px;
+            position: relative;
+            text-align: left;
+            width: 100%;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            height: 18px;
+            padding: 2px;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+        }
+
+        input[type="date"]::-webkit-date-and-time-value {
+            text-align: left;
+        }
+
         input:focus, select:focus {
             border-color: #3498db;
             outline: none;
             box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+
+        input[readonly] {
+            background-color: #f8fafc;
+            color: #34495e;
+            font-weight: 600;
         }
 
         .campos-grid {
@@ -212,8 +244,12 @@
         }
         
         /* Apenas a tabela principal de itens precisa de min-width para não quebrar layout complexo */
-        #tabela-serrados, #tabela-toras {
+        #tabela-serrados {
             min-width: 900px;
+        }
+
+        #tabela-toras {
+            min-width: 1400px;
         }
 
         th, td {
@@ -891,15 +927,18 @@
 
         #speciesListModal thead th:nth-child(2),
         #speciesListModal td:nth-child(2) {
-            width: 60%;
+            width: calc(70% - 92px);
         }
 
         #speciesListModal thead th:last-child,
         #speciesListModal td:last-child {
-            width: 40px;
+            width: 92px;
+            min-width: 92px;
+            max-width: 92px;
             text-align: center;
-            padding-left: 4px;
-            padding-right: 4px;
+            padding-left: 6px;
+            padding-right: 6px;
+            white-space: nowrap;
         }
 
         #speciesListModal td:nth-child(2) {
@@ -1023,12 +1062,6 @@
                 border-bottom: none;
             }
             
-            #install-pwa-btn {
-                position: static !important;
-                margin-top: 10px;
-                width: 100%;
-                justify-content: center;
-            }
             .header-title-container {
                 flex-direction: column;
                 text-align: center;
@@ -1041,9 +1074,6 @@
         <main-menu></main-menu>
         <div class="header-title-container" style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; position: relative;">
             <h1 style="margin-bottom: 0;">Pré-Romaneio</h1>
-            <button id="install-pwa-btn" style="display: none; position: absolute; right: 0; background-color: #3498db; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; gap: 6px; align-items: center;">
-                <i class="fas fa-download"></i> Instalar
-            </button>
         </div>
         
         <!-- Navegação de Abas -->
@@ -1080,7 +1110,7 @@
                 <div class="form-group grid-col-2">
                     <label for="especieInput">Espécie:</label>
                     <div class="autocomplete-container">
-                        <input type="text" id="especieInput" class="input-with-icon" placeholder="Selecione a espécie..." oninput="showSpeciesSuggestions(this)">
+                        <input type="text" id="especieInput" class="input-with-icon" placeholder="Selecione a espécie..." autocomplete="off" data-species-list-on-type="true" data-species-list-min-chars="3" oninput="showSpeciesSuggestions(this)">
                         <div class="autocomplete-icons-container">
                             <span class="autocomplete-icon" onclick="openSpeciesListModal()"><i class="fas fa-list"></i></span>
                             <span class="autocomplete-icon" onclick="openNewSpeciesModal()"><i class="fas fa-plus"></i></span>
@@ -1168,7 +1198,7 @@
                 <div class="form-group grid-col-2">
                     <label for="especieToraInput">Espécie:</label>
                     <div class="autocomplete-container">
-                        <input type="text" id="especieToraInput" class="input-with-icon" placeholder="Espécie da tora" oninput="showSpeciesSuggestions(this)">
+                        <input type="text" id="especieToraInput" class="input-with-icon" placeholder="Espécie da tora" autocomplete="off" data-species-list-on-type="true" data-species-list-min-chars="3" oninput="showSpeciesSuggestions(this)">
                         <div class="autocomplete-icons-container">
                             <span class="autocomplete-icon" onclick="openSpeciesListModal()"><i class="fas fa-list"></i></span>
                             <span class="autocomplete-icon" onclick="openNewSpeciesModal()"><i class="fas fa-plus"></i></span>
@@ -1178,6 +1208,10 @@
                 <div class="form-group">
                     <label for="placaTora">Plaqueta:</label>
                     <input type="text" id="placaTora">
+                </div>
+                <div class="form-group">
+                    <label for="custodiaTora">Custódia:</label>
+                    <input type="text" id="custodiaTora" placeholder="Custódia">
                 </div>
             </div>
 
@@ -1208,6 +1242,33 @@
                 </div>
             </div>
 
+            <div class="campos-grid">
+                <div class="form-group">
+                    <label for="compGeoTora">Comp. Geo. (cm):</label>
+                    <input type="number" id="compGeoTora" step="0.1" min="0" placeholder="Comp. geométrico">
+                </div>
+                <div class="form-group">
+                    <label for="x1Tora">X1 (cm):</label>
+                    <input type="number" id="x1Tora" step="0.1" min="0" placeholder="X1">
+                </div>
+                <div class="form-group">
+                    <label for="x2Tora">X2 (cm):</label>
+                    <input type="number" id="x2Tora" step="0.1" min="0" placeholder="X2">
+                </div>
+                <div class="form-group">
+                    <label for="x3Tora">X3 (cm):</label>
+                    <input type="number" id="x3Tora" step="0.1" min="0" placeholder="X3">
+                </div>
+                <div class="form-group">
+                    <label for="x4Tora">X4 (cm):</label>
+                    <input type="number" id="x4Tora" step="0.1" min="0" placeholder="X4">
+                </div>
+                <div class="form-group">
+                    <label for="volumeGeoTora">V. Geo. (m³):</label>
+                    <input type="number" id="volumeGeoTora" step="0.001" value="0.000" readonly>
+                </div>
+            </div>
+
             <div class="buttons-container">
                 <button type="button" class="btn-adicionar" onclick="adicionarItemTora()"><i class="fas fa-plus"></i> Adicionar Tora</button>
                 <button type="button" class="btn-limpar" onclick="limparFormularioTora()"><i class="fas fa-eraser"></i> Limpar</button>
@@ -1218,12 +1279,19 @@
                     <thead>
                         <tr>
                             <th>Plaqueta</th>
+                            <th>Custódia</th>
                             <th>Espécie</th>
                             <th class="text-center">Rodo</th>
                             <th class="text-center">Comp.</th>
                             <th class="text-center">Ocos</th>
                             <th class="text-center">Desc. (m³)</th>
                             <th class="text-right">Vol. Líq (m³)</th>
+                            <th class="text-center">Comp. Geo.</th>
+                            <th class="text-center">X1</th>
+                            <th class="text-center">X2</th>
+                            <th class="text-center">X3</th>
+                            <th class="text-center">X4</th>
+                            <th class="text-right">V. Geo.</th>
                             <th class="text-right">Preço</th>
                             <th class="text-right">Total</th>
                             <th class="text-center">Ações</th>
@@ -1279,6 +1347,9 @@
     <script src="firebaseService.unified.js"></script>
     <script src="auth.js"></script>
     <script src="client-service.js"></script> <!-- Para autocompletes -->
+    <script src="species-utils.js"></script>
+    <script src="species-store.js"></script>
+    <script src="species-modal-standard.js"></script>
     
     <!-- Modais (Lista de Clientes, Novo Cliente, Espécies, Meus Romaneios) -->
     
@@ -1335,14 +1406,63 @@
                             <input type="text" id="clientCnpj" placeholder="000.000.000-00">
                         </div>
                         <div class="form-group">
+                            <label for="clientPersonType">Tipo de pessoa</label>
+                            <select id="clientPersonType">
+                                <option value="">Não informado</option>
+                                <option value="juridica">Pessoa jurídica</option>
+                                <option value="fisica">Pessoa física</option>
+                                <option value="estrangeiro">Estrangeiro</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="clientIndIEDest">Indicador IE</label>
+                            <select id="clientIndIEDest">
+                                <option value="">Não informado</option>
+                                <option value="1">Contribuinte ICMS</option>
+                                <option value="2">Contribuinte isento</option>
+                                <option value="9">Não contribuinte</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="clientStateRegistration">Inscrição Estadual</label>
+                            <input type="text" id="clientStateRegistration" placeholder="IE / ISENTO">
+                        </div>
+                    </div>
+
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="clientMunicipalRegistration">Inscrição Municipal</label>
+                            <input type="text" id="clientMunicipalRegistration" placeholder="Opcional">
+                        </div>
+                        <div class="form-group">
+                            <label for="clientSuframa">SUFRAMA</label>
+                            <input type="text" id="clientSuframa" placeholder="Opcional">
+                        </div>
+                    </div>
+
+                    <div class="campos-grid">
+                        <div class="form-group">
                             <label for="clientPhone">Telefone</label>
                             <input type="text" id="clientPhone" oninput="formatarTelefone(this)" placeholder="(00) 00000-0000">
                         </div>
+                        <div class="form-group">
+                            <label for="clientEmail">Email</label>
+                            <input type="email" id="clientEmail" placeholder="email@exemplo.com">
+                        </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="clientAddress">Endereço</label>
-                        <input type="text" id="clientAddress" placeholder="Rua, Avenida, etc">
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="clientCep">CEP</label>
+                            <input type="text" id="clientCep" placeholder="00000-000">
+                        </div>
+                        <div class="form-group">
+                            <label for="clientAddress">Endereço</label>
+                            <input type="text" id="clientAddress" placeholder="Rua, Avenida, etc">
+                        </div>
                     </div>
 
                     <div class="campos-grid">
@@ -1354,12 +1474,16 @@
                             <label for="clientNeighborhood">Bairro</label>
                             <input type="text" id="clientNeighborhood" placeholder="Bairro">
                         </div>
+                        <div class="form-group">
+                            <label for="clientComplement">Complemento</label>
+                            <input type="text" id="clientComplement" placeholder="Sala, lote, referência">
+                        </div>
                     </div>
 
                     <div class="campos-grid">
                         <div class="form-group">
-                            <label for="clientState">Estado *</label>
-                            <select id="clientState" required>
+                            <label for="clientState">Estado</label>
+                            <select id="clientState">
                                 <option value="">Selecione...</option>
                                 <option value="AC">Acre</option>
                                 <option value="AL">Alagoas</option>
@@ -1391,10 +1515,25 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="clientCity">Cidade *</label>
-                            <select id="clientCity" required>
+                            <label for="clientCity">Cidade</label>
+                            <select id="clientCity">
                                 <option value="">Selecione primeiro o estado</option>
                             </select>
+                        </div>
+                    </div>
+
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="clientMunicipalityCode">Código IBGE do município</label>
+                            <input type="text" id="clientMunicipalityCode" placeholder="Ex: 1501402">
+                        </div>
+                        <div class="form-group">
+                            <label for="clientCountryCode">Código do país</label>
+                            <input type="text" id="clientCountryCode" value="1058" placeholder="1058">
+                        </div>
+                        <div class="form-group">
+                            <label for="clientCountryName">País</label>
+                            <input type="text" id="clientCountryName" value="Brasil" placeholder="Brasil">
                         </div>
                     </div>
 
@@ -1469,6 +1608,27 @@
                             <input type="text" id="fornecedorCnpj" placeholder="000.000.000-00">
                         </div>
                         <div class="form-group">
+                            <label for="fornecedorPersonType">Tipo de pessoa</label>
+                            <select id="fornecedorPersonType">
+                                <option value="">Não informado</option>
+                                <option value="juridica">Pessoa jurídica</option>
+                                <option value="fisica">Pessoa física</option>
+                                <option value="estrangeiro">Estrangeiro</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="fornecedorIndIEDest">Indicador IE</label>
+                            <select id="fornecedorIndIEDest">
+                                <option value="">Não informado</option>
+                                <option value="1">Contribuinte ICMS</option>
+                                <option value="2">Contribuinte isento</option>
+                                <option value="9">Não contribuinte</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label for="fornecedorStateRegistration">Inscrição Estadual</label>
                             <input type="text" id="fornecedorStateRegistration" placeholder="Isento ou número">
                         </div>
@@ -1476,8 +1636,19 @@
 
                     <div class="campos-grid">
                         <div class="form-group">
-                            <label for="fornecedorState">Estado *</label>
-                            <select id="fornecedorState" required onchange="updateCities()">
+                            <label for="fornecedorMunicipalRegistration">Inscrição Municipal</label>
+                            <input type="text" id="fornecedorMunicipalRegistration" placeholder="Opcional">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornecedorSuframa">SUFRAMA</label>
+                            <input type="text" id="fornecedorSuframa" placeholder="Opcional">
+                        </div>
+                    </div>
+
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="fornecedorState">Estado</label>
+                            <select id="fornecedorState" onchange="updateCities()">
                                 <option value="">Selecione...</option>
                                 <option value="AC">Acre</option>
                                 <option value="AL">Alagoas</option>
@@ -1509,8 +1680,8 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="fornecedorCity">Cidade *</label>
-                            <select id="fornecedorCity" required>
+                            <label for="fornecedorCity">Cidade</label>
+                            <select id="fornecedorCity">
                                 <option value="">Selecione o estado primeiro</option>
                             </select>
                         </div>
@@ -1527,9 +1698,15 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="fornecedorAddress">Endereço</label>
-                        <input type="text" id="fornecedorAddress" placeholder="Rua, Avenida, etc">
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="fornecedorCep">CEP</label>
+                            <input type="text" id="fornecedorCep" placeholder="00000-000">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornecedorAddress">Endereço</label>
+                            <input type="text" id="fornecedorAddress" placeholder="Rua, Avenida, etc">
+                        </div>
                     </div>
 
                     <div class="campos-grid">
@@ -1540,6 +1717,25 @@
                         <div class="form-group">
                             <label for="fornecedorNeighborhood">Bairro</label>
                             <input type="text" id="fornecedorNeighborhood" placeholder="Bairro">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornecedorComplement">Complemento</label>
+                            <input type="text" id="fornecedorComplement" placeholder="Sala, lote, referência">
+                        </div>
+                    </div>
+
+                    <div class="campos-grid">
+                        <div class="form-group">
+                            <label for="fornecedorMunicipalityCode">Código IBGE do município</label>
+                            <input type="text" id="fornecedorMunicipalityCode" placeholder="Ex: 1501402">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornecedorCountryCode">Código do país</label>
+                            <input type="text" id="fornecedorCountryCode" value="1058" placeholder="1058">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornecedorCountryName">País</label>
+                            <input type="text" id="fornecedorCountryName" value="Brasil" placeholder="Brasil">
                         </div>
                     </div>
 
@@ -1560,20 +1756,20 @@
     <div id="speciesListModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Selecionar Espécie</h2>
+                <h3 class="modal-title">🌳 Lista de Espécies</h3>
                 <span class="close-modal" onclick="closeSpeciesListModal()">&times;</span>
             </div>
             <div class="modal-body">
-                <div class="search-box">
-                    <input type="text" id="speciesListFilter" placeholder="Filtrar espécies..." oninput="filterSpeciesList()">
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="speciesListFilter" placeholder="🔍 Filtrar por espécie ou nome científico..." oninput="filterSpeciesList()">
                 </div>
-                <div class="table-responsive modal-table-scroll">
+                <div class="table-container modal-table-scroll">
                     <table class="table">
                         <thead>
                             <tr>
                                 <th>Nome</th>
-                                <th>Descrição</th>
-                                <th>Ação</th>
+                                <th>Nome Científico</th>
+                                <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody id="speciesListTable"></tbody>
@@ -1592,27 +1788,25 @@
 
     <!-- Modal Nova Espécie -->
     <div id="speciesModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Nova Espécie</h2>
+        <div class="modal-content species-standard-modal-content">
+            <div class="modal-header species-standard-header">
+                <h2 id="speciesModalTitle">Nova Espécie</h2>
                 <span class="close-modal" onclick="closeNewSpeciesModal()">&times;</span>
             </div>
-            <form id="speciesForm">
+            <form id="speciesForm" class="species-standard-form">
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label for="speciesName">Nome *</label>
-                        <input type="text" id="speciesName" required placeholder="Ex: Eucalipto">
+                    <div class="form-group species-standard-field">
+                        <label for="speciesName" class="species-standard-label">Nome da Espécie *</label>
+                        <input type="text" id="speciesName" class="species-standard-input" required placeholder="Ex: Eucalipto">
+                        <div id="speciesNameSuggestionsReserve" class="species-name-suggestions-reserve" aria-hidden="true"></div>
+                        <div id="speciesNameDuplicateHint" class="species-duplicate-hint" aria-live="polite"></div>
                     </div>
-                    <div class="form-group">
-                        <label for="speciesDesc">Descrição / Nome Científico</label>
-                        <input type="text" id="speciesDesc" placeholder="Ex: Eucalyptus grandis">
-                    </div>
-                    <div class="form-group">
-                        <label for="speciesPrice">Preço Padrão (R$)</label>
-                        <input type="text" id="speciesPrice" oninput="formatarMoeda(this)" placeholder="R$ 0,00">
+                    <div class="form-group species-standard-field">
+                        <label for="speciesDesc" class="species-standard-label">Nome Científico</label>
+                        <textarea id="speciesDesc" class="species-standard-textarea" rows="3" placeholder="Ex: Eucalyptus grandis"></textarea>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer species-standard-actions">
                     <button type="button" class="btn-limpar" onclick="closeNewSpeciesModal()">Cancelar</button>
                     <button type="submit" class="btn-salvar"><i class="fas fa-save"></i> Salvar</button>
                 </div>
@@ -1654,42 +1848,9 @@
     <!-- Scripts de Modais e Lógica -->
     <script src="fornecedor-modals.js"></script>
     <script src="preromaneio-modals.js"></script>
+    <script src="tora-geometry-utils.js?v=20260528a"></script>
+    <script src="romaneio-table-enhancements.js?v=20260601a"></script>
     <script src="preromaneio.js"></script>
 
-    <!-- PWA Install & Service Worker -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(reg => {
-                    console.log('ServiceWorker registrado:', reg);
-                }).catch(err => {
-                    console.log('Falha no ServiceWorker:', err);
-                });
-            });
-        }
-
-        let deferredPrompt;
-        const installBtn = document.getElementById('install-pwa-btn');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            if(installBtn) {
-                installBtn.style.display = 'flex';
-            }
-        });
-
-        if(installBtn) {
-            installBtn.addEventListener('click', async () => {
-                installBtn.style.display = 'none';
-                if(deferredPrompt) {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    console.log('Instalação ' + outcome);
-                    deferredPrompt = null;
-                }
-            });
-        }
-    </script>
 </body>
 </html>

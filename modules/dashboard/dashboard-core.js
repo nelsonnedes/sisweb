@@ -40,7 +40,7 @@ window.DashboardCore = (function() {
                     return [...new Set(keys)];
                 }
             } else {
-                const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug || window.companyInfo.nome || window.companyInfo.name));
+                const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
                 const tenant = rawTenant ? String(rawTenant) : null;
                 if (tenant && !/^companies\//.test(base) && !/^users\//.test(base)) {
                     keys.push(`companies/${tenant}/${base}`);
@@ -59,6 +59,96 @@ window.DashboardCore = (function() {
         return null;
     }
 
+    function parseLocalStorageValue(key) {
+        try {
+            const raw = readLocalStorage(key);
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function firstLocalNonEmpty(keys) {
+        for (const key of keys) {
+            const value = parseLocalStorageValue(key);
+            if (isNonEmptyData(value)) return value;
+        }
+        return null;
+    }
+
+    function readLocalList(keys) {
+        return normalizeList(firstLocalNonEmpty(keys));
+    }
+
+    function readLocalContas(keys) {
+        return dedupeById(normalizeContasPayload(firstLocalNonEmpty(keys)));
+    }
+
+    function buildCachedDashboardData() {
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const financeMonths = buildMonthRange(currentMonth, 6, 1);
+        const readFinanceByMonth = (aliases) => dedupeById(financeMonths.flatMap((month) => {
+            const found = firstLocalNonEmpty(aliases.map((alias) => `${alias}/${month}`));
+            return normalizeContasPayload(found);
+        }));
+
+        const pagarAliases = ['financas/pagar'];
+        const receberAliases = ['financas/receber'];
+        const contasPagar = readLocalContas(pagarAliases);
+        const contasReceber = readLocalContas(receberAliases);
+
+        return {
+            romaneios: {
+                tl: readLocalList(['romaneios/tl']),
+                pct: readLocalList(['romaneios/pct']),
+                pes: readLocalList(['romaneios/pes'])
+            },
+            clients: readLocalList(['clients']),
+            species: readLocalList(['especies']),
+            preromaneios: readLocalList(['preromaneios']),
+            folha: {
+                funcionarios: readLocalList(['funcionarios']),
+                lancamentos: readLocalList(['folhas'])
+            },
+            contasPagar: contasPagar.length ? contasPagar : readFinanceByMonth(pagarAliases),
+            contasReceber: contasReceber.length ? contasReceber : readFinanceByMonth(receberAliases),
+            financeSnapshot: parseLocalStorageValue(`finance_snapshots/${currentMonth}`) || null,
+            dollarRate: getCachedData('dollarRate')?.data || null
+        };
+    }
+
+    function hasDashboardPayload(data) {
+        if (!data) return false;
+        return Boolean(
+            data.romaneios?.tl?.length
+            || data.romaneios?.pct?.length
+            || data.romaneios?.pes?.length
+            || data.clients?.length
+            || data.preromaneios?.length
+            || data.folha?.funcionarios?.length
+            || data.folha?.lancamentos?.length
+            || data.contasPagar?.length
+            || data.contasReceber?.length
+            || data.financeSnapshot
+            || data.dollarRate
+        );
+    }
+
+    function publishCachedDashboardData() {
+        const cachedData = buildCachedDashboardData();
+        if (!hasDashboardPayload(cachedData)) return false;
+
+        state.data = {
+            ...state.data,
+            ...cachedData,
+            romaneios: cachedData.romaneios || state.data.romaneios,
+            folha: cachedData.folha || state.data.folha
+        };
+        notifyWidgets('dataLoaded', state.data);
+        return true;
+    }
+
     // ✅ ESTADO DO DASHBOARD
     let state = {
         isLoading: false,
@@ -71,10 +161,16 @@ window.DashboardCore = (function() {
             species: [],
             preromaneios: [], // Renomeado de orcamentos
             folha: { funcionarios: [], lancamentos: [] },
+            contasPagar: [],
+            contasReceber: [],
+            financeSnapshot: null,
             dollarRate: null
         },
         cache: new Map(),
-        refreshTimer: null
+        refreshTimer: null,
+        listenersConfigured: false,
+        folhaListenerConfigured: false,
+        financeRefreshTimer: null
     };
 
     function isNonEmptyData(data) {
@@ -87,7 +183,12 @@ window.DashboardCore = (function() {
     function normalizeList(data) {
         if (!data) return [];
         if (Array.isArray(data)) return data;
-        if (typeof data === 'object') return Object.values(data);
+        if (typeof data === 'object') {
+            return Object.entries(data)
+                .filter(([key]) => !String(key).startsWith('_'))
+                .map(([, value]) => value)
+                .filter(Boolean);
+        }
         return [];
     }
 
@@ -195,6 +296,9 @@ window.DashboardCore = (function() {
 
             // Configurar listeners
             setupEventListeners();
+
+            // Renderizar rapidamente com cache local tenant-scoped, quando existir.
+            publishCachedDashboardData();
             
             // ✅ AGUARDAR SISTEMA DE FOLHA CARREGAR PRIMEIRO
             await waitForFolhaSystem();
@@ -301,6 +405,8 @@ window.DashboardCore = (function() {
             } else {
                 // Fallback para método antigo
                 const dollarPromise = loadDollarRate();
+                const currentMonth = new Date().toISOString().slice(0, 7);
+                const initialFinanceMonths = buildMonthRange(currentMonth, 6, 1);
                 const [romaneiosData, clientsData] = await Promise.all([
                     loadRomaneiosData(),
                     loadClientsData()
@@ -309,9 +415,9 @@ window.DashboardCore = (function() {
                 const [preromaneiosData, folhaData, contasData] = await Promise.all([
                     loadPreRomaneiosData(),
                     loadFolhaData(),
-                    loadContasFinanceirasHybrid({ mode: 'full', source: 'firebase' })
+                    loadContasFinanceirasHybrid({ mode: 'fast', monthKeys: initialFinanceMonths, source: 'firebase' })
                 ]);
-                const financeSnapshot = await loadFinanceSnapshot(new Date().toISOString().slice(0,7));
+                const financeSnapshot = await loadFinanceSnapshot(currentMonth);
                 
                 state.data.romaneios = romaneiosData;
                 state.data.clients = clientsData;
@@ -321,6 +427,7 @@ window.DashboardCore = (function() {
                 state.data.contasReceber = contasData.receber;
                 state.data.financeSnapshot = financeSnapshot || null;
                 await dollarPromise;
+                queueFullFinanceRefresh();
             }
 
             state.lastUpdate = new Date();
@@ -347,10 +454,9 @@ window.DashboardCore = (function() {
         const data = { tl: [], pct: [], pes: [] };
         
         try {
-            // Carregar usando múltiplas chaves conhecidas
-    const tlKeys = ['romaneios_tl', 'romaneiosTL', 'romaneios/tl', 'romaneio_tl', 'romaneioTL'];
-    const pctKeys = ['romaneios_pct', 'romaneios/pct', 'romaneiosPct', 'romaneio_pct', 'romaneioPct'];
-            const pesKeys = ['romaneio_pes', 'romaneiopes', 'romaneioPes'];
+            const tlKeys = ['romaneios/tl'];
+            const pctKeys = ['romaneios/pct'];
+            const pesKeys = ['romaneios/pes'];
 
             const firstNonEmpty = async (keys) => {
                 for (const k of keys) {
@@ -435,7 +541,7 @@ window.DashboardCore = (function() {
      */
     async function loadSpeciesData() {
         try {
-            let species = await loadFromFirebase('species');
+            let species = await loadFromFirebase('especies');
             
             // Processar dados - converter objeto Firebase para array se necessário
             if (species && typeof species === 'object' && !Array.isArray(species)) {
@@ -458,25 +564,8 @@ window.DashboardCore = (function() {
      */
     async function loadPreRomaneiosData() {
         try {
-            // Carregar tanto da nova coleção 'preromaneios' quanto da antiga 'orcamentos'
-            const [preromaneios, orcamentos] = await Promise.all([
-                loadFromFirebase('preromaneios'),
-                loadFromFirebase('orcamentos')
-            ]);
-            
-            const allData = [];
-            
-            // Helper to normalize
-            const normalize = (data) => {
-                if (!data) return [];
-                return Array.isArray(data) ? data : Object.values(data);
-            };
-            
-            allData.push(...normalize(preromaneios));
-            allData.push(...normalize(orcamentos));
-            
-            // Remove duplicates by ID if any
-            const unique = Array.from(new Map(allData.map(item => [item.id, item])).values());
+            const preromaneios = await loadFromFirebase('preromaneios');
+            const unique = normalizeList(preromaneios);
             
             if (CONFIG.debugMode) console.log('💰 Pré-Romaneios carregados:', unique.length);
             return unique;
@@ -663,36 +752,41 @@ window.DashboardCore = (function() {
     /**
      * ✅ CARREGAR DO FIREBASE COM TRATAMENTO DE ERRO (FALLBACK)
      */
+    async function readCanonicalDashboardPath(service, path) {
+        if (!service) return null;
+        const options = { canonicalOnly: true };
+        if (typeof service.loadFromFirebase === 'function') {
+            return await service.loadFromFirebase(path, options);
+        }
+        if (typeof service.loadData === 'function') {
+            return await service.loadData(path, options);
+        }
+        if (typeof service.getData === 'function') {
+            return await service.getData(path);
+        }
+        return null;
+    }
+
+    function unwrapFirebaseResult(result) {
+        if (result && typeof result === 'object' && 'success' in result && 'data' in result) {
+            return result.data;
+        }
+        return result;
+    }
+
     async function loadFromFirebase(path) {
         try {
             // Usar o serviço Firebase global do sistema
-            if (window.firebaseServiceTL && window.firebaseServiceTL.getData) {
-                let result = await window.firebaseServiceTL.getData(path);
-                // Desembrulhar caso venha no formato { success, data }
-                if (result && typeof result === 'object' && 'success' in result && 'data' in result) {
-                    result = result.data;
-                }
+            if (window.firebaseServiceTL) {
+                let result = unwrapFirebaseResult(await readCanonicalDashboardPath(window.firebaseServiceTL, path));
                 if (CONFIG.debugMode) console.log(`🔍 Dados Firebase ${path}:`, result);
                 return result;
-            } else if (window.FirebaseService && window.FirebaseService.loadFromFirebase) {
-                let result = await window.FirebaseService.loadFromFirebase(path);
-                if (result && typeof result === 'object' && 'success' in result && 'data' in result) {
-                    result = result.data;
-                }
+            } else if (window.FirebaseService) {
+                let result = unwrapFirebaseResult(await readCanonicalDashboardPath(window.FirebaseService, path));
                 if (CONFIG.debugMode) console.log(`🔍 Dados Firebase ${path}:`, result);
                 return result;
-            } else if (window.firebaseService && window.firebaseService.loadFromFirebase) {
-                let result = await window.firebaseService.loadFromFirebase(path);
-                if (result && typeof result === 'object' && 'success' in result && 'data' in result) {
-                    result = result.data;
-                }
-                if (CONFIG.debugMode) console.log(`🔍 Dados Firebase ${path}:`, result);
-                return result;
-            } else if (window.firebaseService && window.firebaseService.loadData) {
-                let result = await window.firebaseService.loadData(path);
-                if (result && typeof result === 'object' && 'success' in result && 'data' in result) {
-                    result = result.data;
-                }
+            } else if (window.firebaseService) {
+                let result = unwrapFirebaseResult(await readCanonicalDashboardPath(window.firebaseService, path));
                 if (CONFIG.debugMode) console.log(`🔍 Dados Firebase ${path}:`, result);
                 return result;
             } else {
@@ -707,32 +801,16 @@ window.DashboardCore = (function() {
 
     async function loadFromFirebaseStrict(path) {
         try {
-            if (window.firebaseServiceTL && window.firebaseServiceTL.getData) {
-                let result = await window.firebaseServiceTL.getData(path);
-                if (result && typeof result === 'object' && 'success' in result && 'data' in result) {
-                    result = result.data;
-                }
+            if (window.firebaseServiceTL) {
+                let result = unwrapFirebaseResult(await readCanonicalDashboardPath(window.firebaseServiceTL, path));
                 return result || [];
             }
-            if (window.FirebaseService && window.FirebaseService.loadFromFirebase) {
-                let result = await window.FirebaseService.loadFromFirebase(path);
-                if (result && typeof result === 'object' && 'success' in result && 'data' in result) {
-                    result = result.data;
-                }
+            if (window.FirebaseService) {
+                let result = unwrapFirebaseResult(await readCanonicalDashboardPath(window.FirebaseService, path));
                 return result || [];
             }
-            if (window.firebaseService && window.firebaseService.loadFromFirebase) {
-                let result = await window.firebaseService.loadFromFirebase(path);
-                if (result && typeof result === 'object' && 'success' in result && 'data' in result) {
-                    result = result.data;
-                }
-                return result || [];
-            }
-            if (window.firebaseService && window.firebaseService.loadData) {
-                let result = await window.firebaseService.loadData(path);
-                if (result && typeof result === 'object' && 'success' in result && 'data' in result) {
-                    result = result.data;
-                }
+            if (window.firebaseService) {
+                let result = unwrapFirebaseResult(await readCanonicalDashboardPath(window.firebaseService, path));
                 return result || [];
             }
         } catch (_) {}
@@ -761,6 +839,9 @@ window.DashboardCore = (function() {
      * ✅ CONFIGURAR LISTENERS
      */
     function setupEventListeners() {
+        if (state.listenersConfigured) return;
+        state.listenersConfigured = true;
+
         // Listener para conexão online/offline
         window.addEventListener('online', handleConnectionChange);
         window.addEventListener('offline', handleConnectionChange);
@@ -840,9 +921,15 @@ window.DashboardCore = (function() {
      * ✅ ATUALIZAR ESTADO DE LOADING
      */
     function updateLoadingState() {
+        const root = document.getElementById('dashboardRoot');
+        if (root) {
+            root.classList.toggle('is-loading', state.isLoading);
+            root.setAttribute('aria-busy', state.isLoading ? 'true' : 'false');
+        }
+
         const indicator = document.querySelector('.dashboard-loading');
         if (indicator) {
-            indicator.style.display = state.isLoading ? 'block' : 'none';
+            indicator.style.display = state.isLoading ? 'flex' : 'none';
         }
     }
 
@@ -906,9 +993,9 @@ window.DashboardCore = (function() {
         const data = { tl: [], pct: [], pes: [] };
 
         try {
-    const tlKeys = ['romaneios_tl', 'romaneiosTL', 'romaneios/tl', 'romaneio_tl', 'romaneioTL'];
-    const pctKeys = ['romaneios_pct', 'romaneios/pct', 'romaneiosPct', 'romaneio_pct', 'romaneioPct'];
-            const pesKeys = ['romaneio_pes', 'romaneios_pes', 'romaneiopes', 'romaneioPes'];
+            const tlKeys = ['romaneios/tl'];
+            const pctKeys = ['romaneios/pct'];
+            const pesKeys = ['romaneios/pes'];
 
             const firstNonEmpty = async (keys) => {
                 for (const k of keys) {
@@ -950,7 +1037,7 @@ window.DashboardCore = (function() {
 
     async function loadSpeciesDataHybrid() {
         try {
-            let species = await loadFromHybrid('species');
+            let species = await loadFromHybrid('especies');
             if (species && typeof species === 'object' && !Array.isArray(species)) {
                 species = Object.values(species);
             }
@@ -963,26 +1050,8 @@ window.DashboardCore = (function() {
 
     async function loadPreRomaneiosDataHybrid() {
         try {
-            const [preromaneios, orcamentos] = await Promise.all([
-                loadFromHybrid('preromaneios'),
-                loadFromHybrid('orcamentos')
-            ]);
-            
-            const allData = [];
-            
-            const normalize = (data) => {
-                if (!data) return [];
-                // Unwrapped by loadFromHybrid if {success, data}
-                return Array.isArray(data) ? data : Object.values(data);
-            };
-            
-            allData.push(...normalize(preromaneios));
-            allData.push(...normalize(orcamentos));
-            
-            // Remove duplicates
-            const unique = Array.from(new Map(allData.map(item => [item.id, item])).values());
-            
-            return unique;
+            const preromaneios = await loadFromHybrid('preromaneios');
+            return normalizeList(preromaneios);
         } catch (error) {
             console.error('❌ Erro ao carregar pré-romaneios híbrido:', error);
             return [];
@@ -1040,8 +1109,8 @@ window.DashboardCore = (function() {
             const mode = options.mode || 'full';
             const monthKeys = Array.isArray(options.monthKeys) ? options.monthKeys : [];
             const loadFn = options.source === 'firebase' ? loadFromFirebaseStrict : loadFromHybrid;
-            const pagarAliases = ['contasPagar', 'contaspagar', 'contas_pagar', 'financas/pagar', 'financasPagar', 'financas_pagar'];
-            const receberAliases = ['contasReceber', 'contasreceber', 'contas_receber', 'financas/receber', 'financasReceber', 'financas_receber'];
+            const pagarAliases = ['financas/pagar'];
+            const receberAliases = ['financas/receber'];
             const firstAliasNonEmpty = async (paths) => {
                 for (const p of paths) {
                     const r = await loadFn(p);
@@ -1090,15 +1159,59 @@ window.DashboardCore = (function() {
         return data;
     }
 
+    function queueFullFinanceRefresh() {
+        if (state.financeRefreshTimer) {
+            clearTimeout(state.financeRefreshTimer);
+        }
+
+        state.financeRefreshTimer = setTimeout(async () => {
+            state.financeRefreshTimer = null;
+            if (!state.currentTenant || state.isLoading) return;
+
+            try {
+                const fullData = await loadContasFinanceirasHybrid({ mode: 'full', source: 'firebase' });
+                const hasFinanceData = (fullData.pagar && fullData.pagar.length) || (fullData.receber && fullData.receber.length);
+                if (!hasFinanceData) return;
+
+                const currentSignature = buildFinanceSignature(state.data.contasPagar, state.data.contasReceber);
+                const nextSignature = buildFinanceSignature(fullData.pagar, fullData.receber);
+                if (currentSignature === nextSignature) return;
+
+                state.data.contasPagar = fullData.pagar;
+                state.data.contasReceber = fullData.receber;
+                state.lastUpdate = new Date();
+                notifyWidgets('dataLoaded', state.data);
+            } catch (error) {
+                console.warn('⚠️ Falha ao atualizar financeiro completo em background:', error);
+            }
+        }, 1200);
+    }
+
+    function buildFinanceSignature(pagar, receber) {
+        const compact = (list) => (Array.isArray(list) ? list : [])
+            .map((item) => {
+                const id = item && (item.id || item.key || item._id || item.descricao || item.titulo || '');
+                const valor = item && (item.valorRestante ?? item.valorOriginal ?? item.valor ?? '');
+                const vencimento = item && (item.dataVencimento || item.vencimento || item.dueDate || '');
+                const status = item && (item.status || '');
+                return `${id}|${valor}|${vencimento}|${status}`;
+            })
+            .sort()
+            .join('~');
+
+        return `${compact(pagar)}::${compact(receber)}`;
+    }
+
     /**
      * ⏳ AGUARDAR SISTEMA DE FOLHA CARREGAR
      */
     async function waitForFolhaSystem() {
         if (CONFIG.useHybridSync && window.hybridSync) return;
+        if (!window.folhaSystem && !window.folhaLancamentos) return;
         console.log('⏳ Aguardando sistema de folha carregar...');
         
         let attempts = 0;
-        const maxAttempts = 20;
+        const maxAttempts = 3;
         
         while (attempts < maxAttempts) {
             // Verificar se o sistema de folha está carregado e tem dados
@@ -1126,6 +1239,8 @@ window.DashboardCore = (function() {
      * 📊 CONFIGURAR LISTENER PARA ATUALIZAÇÕES DA FOLHA DE PAGAMENTO
      */
     function setupFolhaDataListener() {
+        if (state.folhaListenerConfigured) return;
+        state.folhaListenerConfigured = true;
         console.log('📊 Configurando listener para atualizações da folha de pagamento...');
         
         window.addEventListener('folhaDataChanged', async (event) => {
@@ -1142,7 +1257,7 @@ window.DashboardCore = (function() {
                     console.log(`📊 Dados da folha atualizados: ${state.data.folha.lancamentos.length} lançamentos`);
                     
                     // Atualizar UI do dashboard
-                    updateUI();
+                    notifyWidgets('dataLoaded', state.data);
                     
                     console.log('✅ Dashboard atualizado com novos dados da folha');
                 } else {
@@ -1493,7 +1608,7 @@ window.DashboardCore = (function() {
         console.log('🔄 Refresh manual do dashboard solicitado...');
         try {
             await loadAllData();
-            updateUI();
+            notifyWidgets('dataLoaded', state.data);
             console.log('✅ Dashboard atualizado manualmente');
         } catch (error) {
             console.error('❌ Erro no refresh manual:', error);

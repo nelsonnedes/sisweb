@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseio.com https://*.firebasedatabase.app https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://apis.google.com https://www.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com; script-src-elem 'self' 'unsafe-inline' https://*.firebaseio.com https://*.firebasedatabase.app https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://apis.google.com https://www.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebaseio.com wss://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://cdn.jsdelivr.net https://www.googleapis.com https://firebasestorage.googleapis.com https://www.google-analytics.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseio.com https://*.firebasedatabase.app https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://apis.google.com https://www.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com; script-src-elem 'self' 'unsafe-inline' https://*.firebaseio.com https://*.firebasedatabase.app https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://apis.google.com https://www.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebaseio.com wss://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://cdn.jsdelivr.net https://www.googleapis.com https://firebasestorage.googleapis.com https://www.google-analytics.com https://us-central1-sisweb-7ce82.cloudfunctions.net;">
     <title>Dashboard - Sistema Sisweb</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="modules/dashboard/dashboard-styles.css">
@@ -43,26 +47,16 @@
         })();
     </script>
     
-    <script src="menu-component.js?v=20260326"></script>
+    <script defer src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-performance-compat.js"></script>
-    
-    <!-- Image Compression SDK (Otimização Storage Blaze) -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.1/dist/browser-image-compression.js"></script>
-    
-    <!-- Chart.js para gráficos -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     
     <!-- Módulos do Dashboard -->
-    <script src="modules/core/firebase-service.js"></script>
-    <script src="modules/core/hybrid-sync-service.js"></script>
-    <script src="modules/core/responsive-manager.js"></script>
-    <script src="modules/dashboard/dashboard-core.js"></script>
-    <script src="modules/dashboard/dashboard-widgets.js"></script>
-    <script src="modules/dashboard/performance-tester.js"></script>
-    <script src="modules/dashboard/sample-data-generator.js"></script>
+    <script defer src="modules/core/firebase-service.js"></script>
+    <script defer src="modules/core/responsive-manager.js"></script>
+    <script defer src="modules/dashboard/dashboard-core.js"></script>
+    <script defer src="modules/dashboard/dashboard-widgets.js"></script>
     <!-- Adicionar fontes do Google para melhorar a tipografia -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -855,37 +849,53 @@
 <body>
     <div class="container">
         <main-menu></main-menu>
-        
-        <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-            <div class="header-info">
-                <h1 style="margin-bottom: 5px; font-size: 24px; color: #2c3e50;"><i class="fas fa-tachometer-alt"></i> Dashboard Sistema</h1>
-                <div class="last-update" style="color: #7f8c8d; font-size: 14px;">
-                    Última atualização: <span id="lastUpdate">Aguardando dados...</span>
-                    <span id="sampleDataBadge" class="sample-badge" style="display:none; background:#ffc107; color:#000; padding:2px 8px; border-radius:10px; font-size:12px; margin-left:10px; font-weight:bold;">Amostras desativadas</span>
+
+        <section id="dashboardRoot" class="dashboard-shell is-loading" aria-busy="true">
+            <div class="dashboard-loading" aria-live="polite">
+                <div class="loading-spinner">
+                    <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+                    <span>Preparando painel...</span>
                 </div>
             </div>
-            
-            <div class="header-actions">
-                <button class="export-button" onclick="if(typeof forceDashboardRefresh === 'function') forceDashboardRefresh(); else location.reload();" id="btnRefreshDashboard" title="Atualizar dados do dashboard" style="margin-bottom: 0;">
-                    <i class="fas fa-sync-alt"></i> Atualizar
-                </button>
+
+            <div class="dashboard-header">
+                <div class="header-info">
+                    <h1><i class="fas fa-tachometer-alt"></i> Dashboard Sistema</h1>
+                    <p class="last-update">Última atualização: <span id="lastUpdateTime">Usando dados locais...</span></p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-refresh" onclick="refreshDashboard()" title="Atualizar dados do dashboard">
+                        <i class="fas fa-sync-alt"></i> Atualizar
+                    </button>
+                </div>
             </div>
-        </div>
 
-        <!-- Dashboard será inserido aqui pelos módulos -->
-        
-        <!-- O conteúdo do dashboard será inserido aqui pelos módulos -->
+            <div class="kpi-grid" id="kpiGrid" aria-live="polite">
+                <div class="kpi-card dashboard-skeleton-card"></div>
+                <div class="kpi-card dashboard-skeleton-card"></div>
+                <div class="kpi-card dashboard-skeleton-card"></div>
+                <div class="kpi-card dashboard-skeleton-card"></div>
+            </div>
 
-        <!-- ========================================= -->
-        <!-- 🌿 SISTEMA UNIFICADO DE ESPÉCIES (PRIORIDADE 1) -->
-        <!-- ========================================= -->
-        <script src="species-manager.js"></script>
-        
+            <div class="dollar-widget" id="dollarWidget">
+                <div class="dashboard-placeholder">Cotação será carregada junto com o painel.</div>
+            </div>
+
+            <div class="data-tables">
+                <div class="table-container">
+                    <h3><i class="fas fa-arrow-down text-danger"></i> A Receber Vencidas</h3>
+                    <div id="contasReceberVencidasTable"><div class="dashboard-placeholder">Aguardando dados financeiros...</div></div>
+                </div>
+                <div class="table-container">
+                    <h3><i class="fas fa-arrow-up text-warning"></i> A Pagar Vencidas</h3>
+                    <div id="contasPagarVencidasTable"><div class="dashboard-placeholder">Aguardando dados financeiros...</div></div>
+                </div>
+            </div>
+        </section>
+
         <!-- ========================================= -->
         <!-- 📋 SCRIPTS PRINCIPAIS -->
         <!-- ========================================= -->
-    <script src="js/deep-clean.js"></script>
-    <script src="correcao-funcoes-ausentes.js"></script>
         <!-- <script src="firebase-config.js"></script> - ARQUIVO NÃO EXISTE -->
         <!-- <script src="sistema-romaneios.js"></script> - ARQUIVO NÃO EXISTE -->
         <!-- <script src="romaneio-backup.js"></script> - ARQUIVO NÃO EXISTE -->
@@ -895,30 +905,75 @@
             // Aguardar carregamento completo da página
             document.addEventListener('DOMContentLoaded', async function() {
                 console.log('📊 Inicializando Dashboard Sistema...');
+                function getDashboardFirebaseService() {
+                    return window.firebaseServiceTL || window.firebaseService || window.FirebaseService || null;
+                }
+
+                function isOfflineDashboardFallbackAllowed() {
+                    try {
+                        if (window._FIREBASE_CONNECTED === false) return true;
+                    } catch (_) {}
+                    try {
+                        const svc = getDashboardFirebaseService();
+                        if (svc && typeof svc.isFirebaseAvailable === 'boolean') {
+                            return svc.isFirebaseAvailable === false;
+                        }
+                    } catch (_) {}
+                    return false;
+                }
+
+                function getCachedDashboardTenant() {
+                    try {
+                        if (window.appTenantId) return String(window.appTenantId);
+                        const raw = localStorage.getItem('company_info');
+                        if (!raw) return null;
+                        const info = JSON.parse(raw);
+                        const id = info && (info.companyId || info.companyID || info.tenantId || info.id);
+                        return id ? String(id) : null;
+                    } catch (_) {
+                        return null;
+                    }
+                }
+
+                function clearDashboardTenantContext() {
+                    try {
+                        const svc = getDashboardFirebaseService();
+                        if (svc && typeof svc.setTenantId === 'function') svc.setTenantId(null);
+                    } catch (_) {}
+                    try { window.appTenantId = null; } catch (_) {}
+                    try { window.companyInfo = null; } catch (_) {}
+                    try { localStorage.removeItem('company_info'); } catch (_) {}
+                    try { window.dispatchEvent(new CustomEvent('tenantContextReady', { detail: { tenantId: null } })); } catch (_) {}
+                }
+
+                function redirectDashboardToLogin(reason = 'tenant_required') {
+                    try {
+                        if (/(^|\/)login\.html$/i.test(window.location.pathname || '')) return;
+                        const target = encodeURIComponent('index.html');
+                        window.location.replace(`login.html?reason=${encodeURIComponent(reason)}&redirect=${target}`);
+                    } catch (_) {}
+                }
+
                 async function enforceTenantContext() {
                     try {
-                        const svc = window.firebaseServiceTL || window.firebaseService || window.FirebaseService;
+                        const svc = getDashboardFirebaseService();
+                        if (svc && typeof svc.waitForAuthReady === 'function') {
+                            try { await svc.waitForAuthReady(2500); } catch (_) {}
+                        }
                         const auth = (window.firebase && typeof window.firebase.auth === 'function') ? window.firebase.auth() : null;
                         const user = auth && auth.currentUser ? auth.currentUser : null;
                         if (!user) {
-                            let fallbackTenant = null;
-                            try {
-                                if (window.appTenantId) fallbackTenant = String(window.appTenantId);
-                                if (!fallbackTenant) {
-                                    const raw = localStorage.getItem('company_info');
-                                    if (raw) {
-                                        const info = JSON.parse(raw);
-                                        const id = info && (info.companyId || info.id);
-                                        if (id) fallbackTenant = String(id);
-                                    }
-                                }
-                            } catch (_) {}
-                            if (fallbackTenant) {
+                            const allowOfflineFallback = isOfflineDashboardFallbackAllowed();
+                            const fallbackTenant = allowOfflineFallback ? getCachedDashboardTenant() : null;
+                            if (allowOfflineFallback && fallbackTenant) {
                                 if (svc && typeof svc.setTenantId === 'function') svc.setTenantId(fallbackTenant);
                                 window.appTenantId = fallbackTenant;
                                 try { window.dispatchEvent(new CustomEvent('tenantContextReady', { detail: { tenantId: fallbackTenant } })); } catch (_) {}
+                                return { success: true, authenticated: false, offline: true, companyId: fallbackTenant };
                             }
-                            return;
+                            clearDashboardTenantContext();
+                            redirectDashboardToLogin('tenant_required');
+                            return { success: false, redirected: true, code: 'tenant_required' };
                         }
                         let companyId = null;
                         if (svc && typeof svc.loadData === 'function') {
@@ -947,117 +1002,138 @@
                                 window.companyInfo = next;
                             } catch (_) {}
                             try { window.dispatchEvent(new CustomEvent('tenantContextReady', { detail: { tenantId: String(companyId) } })); } catch (_) {}
+                            return { success: true, authenticated: true, companyId: String(companyId) };
                         } else {
-                            if (svc && typeof svc.setTenantId === 'function') svc.setTenantId(null);
-                            window.appTenantId = null;
-                            try {
-                                localStorage.removeItem('company_info');
-                                window.companyInfo = null;
-                            } catch (_) {}
-                            try { window.dispatchEvent(new CustomEvent('tenantContextReady', { detail: { tenantId: null } })); } catch (_) {}
+                            clearDashboardTenantContext();
+                            return { success: false, authenticated: true, companyId: null, code: 'missing-companyId' };
                         }
-                    } catch (_) {}
+                    } catch (_) {
+                        return { success: false, code: 'tenant-guard-error' };
+                    }
                 }
-                await enforceTenantContext();
+                const tenantContext = await enforceTenantContext();
+                if (tenantContext && tenantContext.redirected) return;
                 
-                // ⚡ INICIALIZAÇÃO ULTRA RÁPIDA COM HYBRID SYNC
-                setTimeout(async () => {
-                    try {
-                        // Verificar se o Hybrid Sync está disponível
-                        if (window.hybridSync) {
-                            console.log('⚡ Hybrid Sync detectado - carregamento instantâneo ativado!');
-                        }
-                        
-                        // Verificar se os módulos estão disponíveis
-                        if (!window.DashboardCore || !window.DashboardWidgets) {
-                            console.warn('⚠️ Módulos modulares não carregados, usando fallback');
-                            showFallbackDashboard();
-                            return;
-                        }
-                        
-                        console.log('✅ Módulos detectados, inicializando...');
-                        
-                        // ⚡ INICIALIZAÇÃO PARALELA PARA MÁXIMA VELOCIDADE
-                        const [coreInitialized, widgetsInitialized] = await Promise.all([
-                            window.DashboardCore.init(),
-                            Promise.resolve(window.DashboardWidgets.init())
-                        ]);
-                        
-                        if (coreInitialized && widgetsInitialized) {
-                            console.log('✅ Dashboard Sistema inicializado com sucesso!');
-                            
-                            // ⚡ ANIMAÇÃO INSTANTÂNEA
-                            const kpiCards = document.querySelectorAll('.kpi-card');
-                            kpiCards.forEach((card, index) => {
-                                setTimeout(() => {
-                                    card.classList.add('fade-in');
-                                }, index * 50); // 50ms entre animações (mais rápido)
-                            });
-                            
-                            // 👥 GERAR DADOS DE EXEMPLO SE NÃO EXISTIREM
-                            setTimeout(async () => {
-                                // Amostras desativadas - manter somente dados reais
-                                // Ferramentas de limpeza acionáveis via parâmetros de URL
-                                setTimeout(async () => {
-                                    try {
-                                        const params = new URLSearchParams(window.location.search || '');
-                                        if (window.sampleDataGenerator) {
-                                            if (params.get('purgeFinance') === 'true') {
-                                                console.log('🧹 Purge Finance Samples acionado via URL');
-                                                await window.sampleDataGenerator.purgeFinanceSamples();
-                                            }
-                                            if (params.get('purgeFolhas') === 'true') {
-                                                console.log('🧹 Purge Folhas de amostra acionado via URL');
-                                                await window.sampleDataGenerator.purgeSampleFolhas();
-                                            }
-                                            if (params.get('previewEmployees') === 'true') {
-                                                console.log('🔎 Preview de funcionários de amostra acionado via URL');
-                                                const list = await window.sampleDataGenerator.previewSampleEmployees();
-                                                try { console.table(list.map(e => ({ id: e.id, nome: e.nome }))); } catch(_) { console.log('Funcionários previstos:', list); }
-                                            }
-                                            const purgeEmp = params.get('purgeEmployees');
-                                            if (purgeEmp) {
-                                                const ids = purgeEmp.split(',').map(s => s.trim()).filter(Boolean);
-                                                if (ids.length > 0) {
-                                                    console.log('🧹 Removendo funcionários de amostra (via URL):', ids);
-                                                    await window.sampleDataGenerator.purgeSampleEmployeesConfirmed(ids);
-                                                }
-                                            }
-                                        }
-                                    } catch (e) { console.warn('⚠️ Falha ao processar parâmetros de purge:', e); }
-                                }, 1000);
-                            }, 1000);
-                            
-                            // Mostrar métricas de performance se disponíveis
-                            if (window.hybridSync && window.DashboardCore.getHybridMetrics) {
-                                setTimeout(() => {
-                                    const metrics = window.DashboardCore.getHybridMetrics();
-                                    if (metrics) {
-                                        console.log('📊 Métricas de Performance:', {
-                                            'Tempo Médio de Carregamento': metrics.avgLoadTime + 'ms',
-                                            'Taxa de Cache Hit': metrics.cacheHitRate + '%',
-                                            'Itens em Cache': metrics.memoryCache,
-                                            'Fila de Sync': metrics.queueSize
-                                        });
-                                    }
-                                }, 3000);
-                            }
-                        } else {
-                            console.error('❌ Falha ao inicializar dashboard');
-                            showFallbackDashboard();
-                        }
-                    
-                    } catch (error) {
-                        console.error('❌ Erro crítico ao inicializar dashboard:', error);
+                try {
+                    if (window.hybridSync) {
+                        console.log('⚡ Hybrid Sync detectado - carregamento instantâneo ativado!');
+                    }
+
+                    if (!window.DashboardCore || !window.DashboardWidgets) {
+                        console.warn('⚠️ Módulos modulares não carregados, usando fallback');
+                        showFallbackDashboard();
+                        return;
+                    }
+
+                    console.log('✅ Módulos detectados, inicializando...');
+
+                    const widgetsInitialized = window.DashboardWidgets.init();
+                    const coreInitialized = await window.DashboardCore.init();
+
+                    if (coreInitialized && widgetsInitialized) {
+                        console.log('✅ Dashboard Sistema inicializado com sucesso!');
+                        processDashboardMaintenanceParams();
+                        scheduleDashboardMetricsLog();
+                    } else {
+                        console.error('❌ Falha ao inicializar dashboard');
                         showFallbackDashboard();
                     }
-                    
-                    // Configurar PWA e outros recursos avançados
-                    if ('serviceWorker' in navigator) {
-                        console.log('🔧 Service Worker disponível para PWA futuro');
-                    }
-                }, 300); // Reduzido para 300ms - mais rápido
+                } catch (error) {
+                    console.error('❌ Erro crítico ao inicializar dashboard:', error);
+                    showFallbackDashboard();
+                }
             });
+
+            const dashboardLazyScripts = new Map();
+
+            function loadDashboardScriptOnce(src) {
+                if (dashboardLazyScripts.has(src)) return dashboardLazyScripts.get(src);
+                const promise = new Promise((resolve, reject) => {
+                    const existing = document.querySelector(`script[src="${src}"]`);
+                    if (existing) {
+                        existing.addEventListener('load', resolve, { once: true });
+                        existing.addEventListener('error', reject, { once: true });
+                        if (existing.dataset.loaded === 'true') resolve();
+                        return;
+                    }
+
+                    const script = document.createElement('script');
+                    script.src = src;
+                    script.defer = true;
+                    script.onload = () => {
+                        script.dataset.loaded = 'true';
+                        resolve();
+                    };
+                    script.onerror = () => reject(new Error(`Falha ao carregar ${src}`));
+                    document.head.appendChild(script);
+                });
+                dashboardLazyScripts.set(src, promise);
+                return promise;
+            }
+
+            function hasMaintenanceParams(params) {
+                return params.get('purgeFinance') === 'true'
+                    || params.get('purgeFolhas') === 'true'
+                    || params.get('previewEmployees') === 'true'
+                    || Boolean(params.get('purgeEmployees'));
+            }
+
+            function processDashboardMaintenanceParams() {
+                window.setTimeout(async () => {
+                    try {
+                        const params = new URLSearchParams(window.location.search || '');
+                        if (params.get('debugPerformance') === 'true' || params.get('performanceTest') === 'true') {
+                            await loadDashboardScriptOnce('modules/dashboard/performance-tester.js');
+                            if (params.get('performanceTest') === 'true' && window.performanceTester && typeof window.performanceTester.quickPerformanceTest === 'function') {
+                                await window.performanceTester.quickPerformanceTest();
+                            }
+                        }
+
+                        if (!hasMaintenanceParams(params)) return;
+                        await loadDashboardScriptOnce('modules/dashboard/sample-data-generator.js');
+                        if (!window.sampleDataGenerator) return;
+
+                        if (params.get('purgeFinance') === 'true') {
+                            console.log('🧹 Purge Finance Samples acionado via URL');
+                            await window.sampleDataGenerator.purgeFinanceSamples();
+                        }
+                        if (params.get('purgeFolhas') === 'true') {
+                            console.log('🧹 Purge Folhas de amostra acionado via URL');
+                            await window.sampleDataGenerator.purgeSampleFolhas();
+                        }
+                        if (params.get('previewEmployees') === 'true') {
+                            console.log('🔎 Preview de funcionários de amostra acionado via URL');
+                            const list = await window.sampleDataGenerator.previewSampleEmployees();
+                            try { console.table(list.map(e => ({ id: e.id, nome: e.nome }))); } catch(_) { console.log('Funcionários previstos:', list); }
+                        }
+                        const purgeEmp = params.get('purgeEmployees');
+                        if (purgeEmp) {
+                            const ids = purgeEmp.split(',').map(s => s.trim()).filter(Boolean);
+                            if (ids.length > 0) {
+                                console.log('🧹 Removendo funcionários de amostra (via URL):', ids);
+                                await window.sampleDataGenerator.purgeSampleEmployeesConfirmed(ids);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Falha ao processar parâmetros de purge:', e);
+                    }
+                }, 800);
+            }
+
+            function scheduleDashboardMetricsLog() {
+                if (!window.hybridSync || !window.DashboardCore.getHybridMetrics) return;
+                window.setTimeout(() => {
+                    const metrics = window.DashboardCore.getHybridMetrics();
+                    if (metrics) {
+                        console.log('📊 Métricas de Performance:', {
+                            'Tempo Médio de Carregamento': metrics.avgLoadTime + 'ms',
+                            'Taxa de Cache Hit': metrics.cacheHitRate + '%',
+                            'Itens em Cache': metrics.memoryCache,
+                            'Fila de Sync': metrics.queueSize
+                        });
+                    }
+                }, 3000);
+            }
             
             // Função de fallback caso o dashboard modular falhe
             function showFallbackDashboard() {
@@ -1124,13 +1200,13 @@
                     if (window.appTenantId) return String(window.appTenantId);
                     if (window.companyInfo) {
                         const raw = window.companyInfo;
-                        const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                        const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                         if (id) return String(id);
                     }
                     const stored = localStorage.getItem('company_info');
                     if (stored) {
                         const obj = JSON.parse(stored);
-                        const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                        const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                         if (id) return String(id);
                     }
                 } catch (_) {}
@@ -1171,24 +1247,32 @@
             // Carregar dados básicos para fallback
             function loadFallbackData() {
                 try {
+                    const countLocalList = (value) => {
+                        if (Array.isArray(value)) return value.length;
+                        if (value && typeof value === 'object') {
+                            return Object.keys(value).filter((key) => !String(key).startsWith('_')).length;
+                        }
+                        return 0;
+                    };
+
                     // Carregar dados básicos do localStorage
-                    const romaneiosTL = JSON.parse(readLocalStorageValue('romaneiosTL') || '[]');
-                    const romaneiosPCT = JSON.parse(readLocalStorageValue('romaneiosPct') || '[]'); 
-                    const romaneiosTora = JSON.parse(readLocalStorageValue('romaneiosTora') || '[]');
+                    const romaneiosTL = JSON.parse(readLocalStorageValue('romaneios/tl') || '[]');
+                    const romaneiosPCT = JSON.parse(readLocalStorageValue('romaneios/pct') || '[]');
+                    const romaneiosPES = JSON.parse(readLocalStorageValue('romaneios/pes') || '[]');
                     const clients = JSON.parse(readLocalStorageValue('clients') || '[]');
-                    const species = JSON.parse(readLocalStorageValue('species') || '[]');
+                    const species = JSON.parse(readLocalStorageValue('especies') || '[]');
                     
-                    const totalRomaneios = romaneiosTL.length + romaneiosPCT.length + romaneiosTora.length;
+                    const totalRomaneios = countLocalList(romaneiosTL) + countLocalList(romaneiosPCT) + countLocalList(romaneiosPES);
                     
                     // Atualizar interface fallback
                     document.getElementById('fallback-romaneios').textContent = totalRomaneios;
-                    document.getElementById('fallback-clients').textContent = clients.length;
-                    document.getElementById('fallback-species').textContent = species.length;
+                    document.getElementById('fallback-clients').textContent = countLocalList(clients);
+                    document.getElementById('fallback-species').textContent = countLocalList(species);
                     
                     console.log('✅ Dados fallback carregados:', {
                         romaneios: totalRomaneios,
-                        clientes: clients.length,
-                        especies: species.length
+                        clientes: countLocalList(clients),
+                        especies: countLocalList(species)
                     });
                     
                 } catch (error) {
@@ -1256,20 +1340,33 @@
                         const localCompany = localStorage.getItem('company_info');
                         if (!localCompany) {
                             console.warn('⚠️ Nenhuma empresa detectada no cache local. Verificando Firebase...');
-                            
-                            // Se não tiver no local, tentar serviço
-                            if (window.firebaseService && typeof window.firebaseService.getAll === 'function') {
+
+                            let restoredCompany = null;
+                            if (window.firebaseService && typeof window.firebaseService.getCompanyProfileForReport === 'function') {
+                                try {
+                                    const result = await window.firebaseService.getCompanyProfileForReport();
+                                    restoredCompany = result && result.success !== false ? (result.data || result) : null;
+                                    if (restoredCompany && restoredCompany.companyId) {
+                                        localStorage.setItem('company_info', JSON.stringify(restoredCompany));
+                                        window.companyInfo = restoredCompany;
+                                        window.appTenantId = restoredCompany.companyId;
+                                    }
+                                } catch (companyErr) {
+                                    console.warn('⚠️ Falha ao restaurar empresa do usuário logado:', companyErr.message);
+                                }
+                            }
+
+                            if (!restoredCompany && window.isSuperAdminSession && await window.isSuperAdminSession() && window.firebaseService && typeof window.firebaseService.getAll === 'function') {
                                 try {
                                     const companies = await window.firebaseService.getAll('companies');
                                     if (!companies || companies.length === 0) {
                                         console.warn('⚠️ Nenhuma empresa cadastrada no sistema. Redirecionando para cadastro...');
-                                        // Adicionar flag para evitar loop se o usuário estiver intencionalmente saindo
                                         if (!sessionStorage.getItem('ignore_company_redirect')) {
                                             window.location.href = 'company.html?reason=setup_required';
                                         }
                                     }
                                 } catch (compErr) {
-                                    console.warn('⚠️ Falha ao verificar companies na raiz (permissão negada esperado para usuários normais):', compErr.message);
+                                    console.warn('⚠️ Falha ao verificar companies na raiz:', compErr.message);
                                 }
                             }
                         }
@@ -1277,7 +1374,7 @@
                         console.error('Erro na verificação de empresa:', e);
                     }
                 }
-            }, 2000); // Aguardar 2 segundos para garantir carregamento dos serviços
+            }, 350); // Evitar redirecionamento tardio que causa piscada visível no dashboard
         });
     </script>
     </div>

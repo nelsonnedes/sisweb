@@ -1,0 +1,319 @@
+#speciesModal .species-standard-modal-content {
+    background: #fff;
+    border-radius: 8px;
+    max-width: 540px;
+    width: min(92vw, 540px);
+    padding: 0;
+    overflow: visible;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.24);
+}
+
+#speciesModal.species-standard-modal.is-open {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+#speciesModal.species-standard-modal.is-open .species-standard-modal-content {
+    margin: 0;
+}
+
+#speciesModal .species-standard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    margin: 0;
+    background: #fff;
+    color: #1f2937;
+}
+
+#speciesModal .species-standard-header h2,
+#speciesModal .species-standard-header h3,
+#speciesModal .species-standard-title {
+    margin: 0;
+    color: #1f2937;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+#speciesModal .species-standard-close,
+#speciesModal .species-standard-header .close,
+#speciesModal .species-standard-header .close-modal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #4b5563;
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+}
+
+#speciesModal .species-standard-close:hover,
+#speciesModal .species-standard-header .close:hover,
+#speciesModal .species-standard-header .close-modal:hover {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+#speciesModal .species-standard-form {
+    display: grid;
+    gap: 14px;
+    padding: 18px 20px 20px;
+}
+
+#speciesModal .species-standard-field {
+    margin-bottom: 0;
+}
+
+#speciesModal .species-standard-label {
+    display: block;
+    margin-bottom: 6px;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+#speciesModal .species-standard-input,
+#speciesModal .species-standard-textarea {
+    width: 100%;
+    min-height: 38px;
+    padding: 9px 11px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    color: #111827;
+    font-size: 14px;
+    line-height: 1.35;
+    box-sizing: border-box;
+    outline: none;
+    margin-bottom: 0;
+}
+
+#speciesModal .species-standard-input:focus,
+#speciesModal .species-standard-textarea:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+#speciesModal .species-standard-textarea {
+    min-height: 76px;
+    resize: vertical;
+}
+
+#speciesModal .species-standard-actions,
+#speciesModal .species-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+#speciesModal .species-standard-actions button,
+#speciesModal .species-modal-actions button {
+    min-height: 36px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    cursor: pointer;
+}
+
+#speciesModal .species-standard-actions .btn-primary,
+#speciesModal .species-standard-actions .btn-save,
+#speciesModal .species-standard-actions .btn-salvar,
+#speciesModal .species-standard-actions button[type="submit"],
+#speciesModal .species-modal-actions .btn-primary {
+    border-color: #2563eb;
+    background: #2563eb;
+    color: #fff;
+}
+
+#speciesModal .species-standard-actions .btn-secondary,
+#speciesModal .species-standard-actions .back-button,
+#speciesModal .species-standard-actions .btn-limpar,
+#speciesModal .species-modal-actions .btn-secondary {
+    background: #f9fafb;
+    color: #374151;
+}
+
+#speciesModal .species-name-suggestions-reserve {
+    display: none;
+    width: 100%;
+    margin-top: 6px;
+}
+
+#speciesModal .species-name-suggestions-reserve.is-open {
+    display: block;
+}
+
+#speciesModal .species-modal-suggestions {
+    width: 100%;
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+}
+
+#speciesModal .species-modal-suggestion {
+    padding: 9px 11px;
+    cursor: pointer;
+    border-bottom: 1px solid #eef2f7;
+}
+
+#speciesModal .species-modal-suggestion:hover,
+#speciesModal .species-modal-suggestion.is-active {
+    background: #f8fafc;
+}
+
+#speciesModal .species-modal-suggestion:last-child {
+    border-bottom: 0;
+}
+
+#speciesModal .species-suggestion-name {
+    color: #111827;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+#speciesModal .species-suggestion-scientific {
+    margin-top: 2px;
+    color: #6b7280;
+    font-size: 12px;
+    line-height: 1.25;
+}
+
+#speciesModal .species-duplicate-hint {
+    display: none;
+    margin-top: 6px;
+    padding: 8px 10px;
+    border: 1px solid #f59e0b;
+    border-radius: 6px;
+    background: #fffbeb;
+    color: #92400e;
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+#speciesModal .species-duplicate-hint.is-visible {
+    display: block;
+}
+
+#speciesListModal .table-container,
+#speciesListModal .modal-table-scroll,
+#speciesListModal .species-list-table-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+#speciesListModal #speciesListFilter {
+    width: 100% !important;
+    min-height: 38px !important;
+    padding: 9px 11px !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px !important;
+    background: #fff !important;
+    color: #111827 !important;
+    font-size: 14px !important;
+    line-height: 1.35 !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+}
+
+#speciesListModal #speciesListFilter:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14) !important;
+}
+
+#speciesListModal .table {
+    width: 100% !important;
+    margin: 0 !important;
+    border-collapse: collapse !important;
+    table-layout: fixed !important;
+}
+
+#speciesListModal .table th,
+#speciesListModal .table td {
+    vertical-align: middle !important;
+}
+
+#speciesListModal .table th:nth-child(1),
+#speciesListModal .table td:nth-child(1) {
+    width: 30% !important;
+}
+
+#speciesListModal .table th:nth-child(2),
+#speciesListModal .table td:nth-child(2) {
+    width: calc(70% - 92px) !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+}
+
+#speciesListModal .table th:last-child,
+#speciesListModal .table td:last-child {
+    width: 92px !important;
+    min-width: 92px !important;
+    max-width: 92px !important;
+    text-align: center !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    white-space: nowrap !important;
+}
+
+#speciesListModal .btn-group,
+#speciesListModal .actions-container,
+#speciesListModal .action-buttons-container {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    width: auto !important;
+    min-width: 66px !important;
+    margin: 0 auto !important;
+}
+
+#speciesListModal .action-button,
+#speciesListModal .client-action-button,
+#speciesListModal .btn-selecionar,
+#speciesListModal .species-action-btn {
+    width: 30px !important;
+    min-width: 30px !important;
+    height: 30px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+@media (max-width: 768px) {
+    #speciesModal .species-standard-modal-content {
+        width: calc(100vw - 24px);
+    }
+
+    #speciesModal .species-standard-form {
+        padding: 16px;
+    }
+
+    #speciesModal .species-standard-actions,
+    #speciesModal .species-modal-actions {
+        flex-wrap: wrap;
+    }
+
+    #speciesModal .species-standard-actions button,
+    #speciesModal .species-modal-actions button {
+        flex: 1 1 130px;
+    }
+}

@@ -16,7 +16,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="layout-comum.css">
-    <link rel="stylesheet" href="romaneio-comum.css?v=20260324_2">
+    <link rel="stylesheet" href="romaneio-comum.css?v=20260607pwaqa">
+    <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <link rel="stylesheet" href="print-styles.css">
     <link rel="stylesheet" href="ui-components.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -86,6 +87,29 @@
             margin-bottom: 10px;
         }
 
+        input[type="date"] {
+            box-sizing: border-box;
+            padding-right: 34px;
+            position: relative;
+            text-align: left;
+            width: 100%;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            height: 18px;
+            padding: 2px;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+        }
+
+        input[type="date"]::-webkit-date-and-time-value {
+            text-align: left;
+        }
+
         .dimensoes-container {
             display: flex;
             gap: 10px;
@@ -115,6 +139,20 @@
         .form-row .form-group {
             flex: 1;
             min-width: 200px;
+        }
+
+        .form-row.geo-fields .form-group {
+            min-width: 110px;
+        }
+
+        .form-row.geo-fields .form-group.geo-result {
+            min-width: 130px;
+        }
+
+        .form-row.geo-fields input[readonly] {
+            background-color: #f8fafc;
+            color: #34495e;
+            font-weight: 600;
         }
         
         .form-buttons {
@@ -339,7 +377,7 @@
 
         #romaneioTable {
             width: 100%;
-            min-width: 800px; /* Garante que não esprema muito as colunas */
+            min-width: 1350px; /* Mantém leitura confortável com as colunas geométricas */
             table-layout: auto;
             border-collapse: collapse;
         }
@@ -350,75 +388,89 @@
         }
         #romaneioTable th:nth-child(1),  /* Plaqueta */
         #romaneioTable td:nth-child(1) {
-            width: 8%;
-            min-width: 60px;
+            min-width: 70px;
         }
 
-        #romaneioTable th:nth-child(2),  /* Espécie */
+        #romaneioTable th:nth-child(2),  /* Custódia */
         #romaneioTable td:nth-child(2) {
-            width: 12%;
             min-width: 80px;
         }
 
-        #romaneioTable th:nth-child(3),  /* Rodo */
+        #romaneioTable th:nth-child(3),  /* Espécie */
         #romaneioTable td:nth-child(3) {
-            width: 7%;
-            min-width: 50px;
-            text-align: center;
+            min-width: 130px;
         }
 
-        #romaneioTable th:nth-child(4),  /* Comprimento */
+        #romaneioTable th:nth-child(4),  /* Rodo */
         #romaneioTable td:nth-child(4) {
-            width: 9%;
-            min-width: 70px;
+            min-width: 60px;
             text-align: center;
         }
 
-        #romaneioTable th:nth-child(5),  /* Oco 1 */
+        #romaneioTable th:nth-child(5),  /* Comprimento */
         #romaneioTable td:nth-child(5) {
-            width: 6%;
-            min-width: 45px;
+            min-width: 80px;
             text-align: center;
         }
 
-        #romaneioTable th:nth-child(6),  /* Oco 2 */
+        #romaneioTable th:nth-child(6),  /* Oco 1 */
         #romaneioTable td:nth-child(6) {
-            width: 6%;
-            min-width: 45px;
-            text-align: center;
-        }
-
-        #romaneioTable th:nth-child(7),  /* Desconto */
-        #romaneioTable td:nth-child(7) {
-            width: 8%;
             min-width: 55px;
             text-align: center;
         }
 
-        #romaneioTable th:nth-child(8),  /* M³ Líquido */
-        #romaneioTable td:nth-child(8) {
-            width: 8%;
-            min-width: 60px;
+        #romaneioTable th:nth-child(7),  /* Oco 2 */
+        #romaneioTable td:nth-child(7) {
+            min-width: 55px;
             text-align: center;
         }
 
-        #romaneioTable th:nth-child(9), /* Preço */
+        #romaneioTable th:nth-child(8),  /* Desconto */
+        #romaneioTable td:nth-child(8) {
+            min-width: 75px;
+            text-align: center;
+        }
+
+        #romaneioTable th:nth-child(9),  /* M³ Líquido */
         #romaneioTable td:nth-child(9) {
-            width: 10%;
-            min-width: 70px;
-            text-align: right;
+            min-width: 80px;
+            text-align: center;
         }
 
-        #romaneioTable th:nth-child(10), /* Valor */
+        #romaneioTable th:nth-child(10), /* Comp. Geo. */
         #romaneioTable td:nth-child(10) {
-            width: 10%;
-            min-width: 70px;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        #romaneioTable th:nth-child(11),
+        #romaneioTable td:nth-child(11),
+        #romaneioTable th:nth-child(12),
+        #romaneioTable td:nth-child(12),
+        #romaneioTable th:nth-child(13),
+        #romaneioTable td:nth-child(13),
+        #romaneioTable th:nth-child(14),
+        #romaneioTable td:nth-child(14) {
+            min-width: 52px;
+            text-align: center;
+        }
+
+        #romaneioTable th:nth-child(15), /* V. Geo. */
+        #romaneioTable td:nth-child(15) {
+            min-width: 75px;
+            text-align: center;
+        }
+
+        #romaneioTable th:nth-child(16), /* Preço */
+        #romaneioTable td:nth-child(16),
+        #romaneioTable th:nth-child(17), /* Valor */
+        #romaneioTable td:nth-child(17) {
+            min-width: 85px;
             text-align: right;
         }
 
-        #romaneioTable th:nth-child(11), /* Ações */
-        #romaneioTable td:nth-child(11) {
-            width: 10%;
+        #romaneioTable th:nth-child(18), /* Ações */
+        #romaneioTable td:nth-child(18) {
             min-width: 110px;
             text-align: center;
         }
@@ -446,15 +498,30 @@
         /* ✅ AJUSTES PARA TELAS MUITO PEQUENAS */
         @media (max-width: 900px) {
             #romaneioTable th:nth-child(1),
-            #romaneioTable td:nth-child(1) {
-                display: none; /* Ocultar Plaqueta em telas pequenas */
+            #romaneioTable td:nth-child(1),
+            #romaneioTable th:nth-child(2),
+            #romaneioTable td:nth-child(2) {
+                display: none; /* Ocultar identificadores auxiliares em telas pequenas */
             }
             
-            #romaneioTable th:nth-child(5),
-            #romaneioTable td:nth-child(5),
             #romaneioTable th:nth-child(6),
             #romaneioTable td:nth-child(6) {
-                display: none; /* Ocultar Oco 1 e Oco 2 em telas pequenas */
+                display: none; /* Ocultar Oco 1 em telas pequenas */
+            }
+
+            #romaneioTable th:nth-child(7),
+            #romaneioTable td:nth-child(7),
+            #romaneioTable th:nth-child(10),
+            #romaneioTable td:nth-child(10),
+            #romaneioTable th:nth-child(11),
+            #romaneioTable td:nth-child(11),
+            #romaneioTable th:nth-child(12),
+            #romaneioTable td:nth-child(12),
+            #romaneioTable th:nth-child(13),
+            #romaneioTable td:nth-child(13),
+            #romaneioTable th:nth-child(14),
+            #romaneioTable td:nth-child(14) {
+                display: none; /* Mantém o essencial visível no celular */
             }
         }
 
@@ -801,6 +868,11 @@
         .print-menu.show {
             display: block;
         }
+
+        .external-print-menu {
+            position: fixed !important;
+            z-index: 10000050 !important;
+        }
         
         /* Overlay para dispositivos móveis */
         .print-dropdown.overlay::before {
@@ -1073,9 +1145,9 @@
         #speciesListModal .table th:nth-child(1),
         #speciesListModal .table td:nth-child(1) { width: 30% !important; }
         #speciesListModal .table th:nth-child(2),
-        #speciesListModal .table td:nth-child(2) { width: calc(70% - 40px) !important; }
+        #speciesListModal .table td:nth-child(2) { width: calc(70% - 92px) !important; }
         #speciesListModal .table th:last-child,
-        #speciesListModal .table td:last-child { width: 40px !important; min-width: 40px !important; max-width: 40px !important; }
+        #speciesListModal .table td:last-child { width: 92px !important; min-width: 92px !important; max-width: 92px !important; }
     </style>
 </head>
 <body>
@@ -1111,7 +1183,7 @@
             <div class="form-group" style="flex: 0.4;">
                 <label for="especieInput">Espécie:</label>
                 <div class="autocomplete-container">
-                    <input type="text" id="especieInput" class="autocomplete-input" placeholder="Selecionar espécie" oninput="showSpeciesSuggestions(this)">
+                    <input type="text" id="especieInput" class="autocomplete-input" placeholder="Selecionar espécie" autocomplete="off" data-species-list-on-type="true" data-species-list-min-chars="3" oninput="showSpeciesSuggestions(this)">
                     <div class="autocomplete-icons-container">
                         <span class="autocomplete-icon" title="Listar Espécies" onclick="openSpeciesListModal()">
                             <i class="fas fa-list"></i>
@@ -1125,17 +1197,22 @@
         </div>
         
         <div class="form-row">    
-            <div class="form-group" style="flex: 0.33;">
+            <div class="form-group" style="flex: 0.25;">
                 <label for="preco">Preço (R$/m³):</label>
                 <input type="text" id="preco" min="0" step="0.01" placeholder="Preço por m³" onInput="formatCurrencyInput(this)">
             </div>
             
-            <div class="form-group" style="flex: 0.33;">
+            <div class="form-group" style="flex: 0.25;">
                 <label for="plaqueta">Plaqueta:</label>
                 <input type="text" id="plaqueta" placeholder="Número da plaqueta">
             </div>
+
+            <div class="form-group" style="flex: 0.25;">
+                <label for="custodia">Custódia:</label>
+                <input type="text" id="custodia" placeholder="Custódia">
+            </div>
             
-            <div class="form-group" style="flex: 0.33;">
+            <div class="form-group" style="flex: 0.25;">
                 <label for="rodo">Rodo (cm):</label>
                 <input type="number" id="rodo" min="1" step="0.1" placeholder="Diâmetro em cm">
             </div>
@@ -1155,6 +1232,38 @@
             <div class="form-group" style="flex: 0.33;">
                 <label for="oco2">Oco 2 (cm):</label>
                 <input type="number" id="oco2" min="0" step="0.1" placeholder="Oco 2 em cm">
+            </div>
+        </div>
+
+        <div class="form-row geo-fields">
+            <div class="form-group">
+                <label for="compGeo">Comp. Geo. (cm):</label>
+                <input type="number" id="compGeo" min="0" step="0.1" placeholder="Comp. geométrico">
+            </div>
+
+            <div class="form-group">
+                <label for="x1">X1 (cm):</label>
+                <input type="number" id="x1" min="0" step="0.1" placeholder="X1">
+            </div>
+
+            <div class="form-group">
+                <label for="x2">X2 (cm):</label>
+                <input type="number" id="x2" min="0" step="0.1" placeholder="X2">
+            </div>
+
+            <div class="form-group">
+                <label for="x3">X3 (cm):</label>
+                <input type="number" id="x3" min="0" step="0.1" placeholder="X3">
+            </div>
+
+            <div class="form-group">
+                <label for="x4">X4 (cm):</label>
+                <input type="number" id="x4" min="0" step="0.1" placeholder="X4">
+            </div>
+
+            <div class="form-group geo-result">
+                <label for="volumeGeo">V. Geo. (m³):</label>
+                <input type="number" id="volumeGeo" step="0.001" value="0.000" readonly>
             </div>
         </div>
         
@@ -1183,7 +1292,7 @@
                     <i class="fas fa-download"></i> Carregar Itens
                 </button>
                 <button type="button" id="btnLimparPreRomaneio" class="btn btn-secondary btn-carregar btn-limpar-pre">
-                    <i class="fas fa-eraser"></i> Limpar Pré-Romaneio
+                    <i class="fas fa-eraser"></i> Limpar
                 </button>
             </div>
         </div>
@@ -1195,6 +1304,7 @@
                 <thead>
                     <tr>
                         <th>Plaqueta</th>
+                        <th>Custódia</th>
                         <th>Espécie</th>
                         <th>Rodo</th>
                         <th>Comprimento</th>
@@ -1203,6 +1313,12 @@
                         <th>Oco 2</th>
                         <th>Desconto</th>
                         <th>M³ Liquido</th>
+                        <th>Comp. Geo.</th>
+                        <th>X1</th>
+                        <th>X2</th>
+                        <th>X3</th>
+                        <th>X4</th>
+                        <th>V. Geo.</th>
                         <th>Preço</th>
                         <th>Valor</th>
                         <th class="actions-col no-print">Ações</th>
@@ -1291,28 +1407,44 @@
     <!-- Modal para listagem de romaneios (Gerado dinamicamente pelo romaneio-manager.js) -->
 
     <!-- Modal de Nova Espécie -->
-    <div id="speciesModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="speciesModalTitle">Nova Espécie</h3>
-                <span class="close-modal">&times;</span>
+    <div id="speciesModal" class="modal species-standard-modal" aria-hidden="true">
+        <div class="modal-content species-standard-modal-content">
+            <div class="modal-header species-standard-header">
+                <h3 class="modal-title species-standard-title" id="speciesModalTitle">Nova Espécie</h3>
+                <button type="button" class="close-modal species-standard-close" aria-label="Fechar modal">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="speciesForm" onsubmit="saveSpecies(event); return false;">
+                <form id="speciesForm" class="species-standard-form" onsubmit="saveSpecies(event); return false;">
                     <input type="hidden" id="speciesId">
-                    <div class="form-group">
-                        <label for="speciesName">Nome:</label>
-                        <input type="text" id="speciesName" required>
+                    <div class="form-group species-standard-field">
+                        <label for="speciesName" class="species-standard-label">Nome da Espécie:</label>
+                        <input type="text"
+                               id="speciesName"
+                               class="species-standard-input autocomplete-input"
+                               data-species-autocomplete="true"
+                               data-species-layout="reserved"
+                               data-species-reserve="speciesNameSuggestionsReserve"
+                               autocomplete="off"
+                               aria-autocomplete="list"
+                               aria-expanded="false"
+                               aria-controls="especieSuggestions"
+                               role="combobox"
+                               required>
+                        <div id="speciesNameSuggestionsReserve" class="species-suggestions-reserve species-name-suggestions-reserve" aria-hidden="true"></div>
+                        <div id="speciesNameDuplicateHint" class="species-duplicate-hint" aria-live="polite"></div>
                     </div>
-                    <div class="form-group">
-                        <label for="speciesDescription">Descrição:</label>
-                        <input type="text" id="speciesDescription">
+                    <div class="form-group species-standard-field">
+                        <label for="speciesDescription" class="species-standard-label">Nome Científico:</label>
+                        <textarea id="speciesDescription"
+                                  class="species-standard-textarea"
+                                  rows="3"
+                                  placeholder="Ex.: Handroanthus albus"></textarea>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer species-standard-actions species-modal-actions">
                 <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('speciesModal').style.display='none';">Cancelar</button>
-                <button type="button" class="btn-save" id="saveSpeciesBtn" onclick="saveSpecies()">Salvar</button>
+                <button type="button" class="btn-save" id="saveSpeciesBtn" onclick="saveSpecies()">Salvar Espécie</button>
             </div>
         </div>
     </div>
@@ -1445,7 +1577,7 @@
             </div>
             <div class="modal-body">
                 <div style="margin-bottom: 15px;">
-                    <input type="text" id="speciesListFilter" placeholder="🔍 Filtrar por nome ou descrição..." 
+                    <input type="text" id="speciesListFilter" placeholder="🔍 Filtrar por espécie ou nome científico..."
                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
                 </div>
                 <div class="table-container">
@@ -1453,8 +1585,8 @@
                         <thead>
                             <tr>
                                 <th>Nome</th>
-                                <th>Descrição</th>
-                                <th style="width: 120px; text-align: center;">Ações</th>
+                                <th>Nome Científico</th>
+                                <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody id="speciesListTable">
@@ -1582,8 +1714,38 @@
                         <input type="text" id="fornecedorCnpj" placeholder="00.000.000/0000-00">
                     </div>
                     <div class="form-group">
+                        <label for="fornecedorPersonType">Tipo de pessoa:</label>
+                        <select id="fornecedorPersonType">
+                            <option value="">Não informado</option>
+                            <option value="juridica">Pessoa jurídica</option>
+                            <option value="fisica">Pessoa física</option>
+                            <option value="estrangeiro">Estrangeiro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fornecedorIndIEDest">Indicador IE:</label>
+                        <select id="fornecedorIndIEDest">
+                            <option value="">Não informado</option>
+                            <option value="1">Contribuinte ICMS</option>
+                            <option value="2">Contribuinte isento</option>
+                            <option value="9">Não contribuinte</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="fornecedorStateRegistration">Inscrição Estadual:</label>
                         <input type="text" id="fornecedorStateRegistration" placeholder="000.000.000.000">
+                    </div>
+                    <div class="form-group">
+                        <label for="fornecedorMunicipalRegistration">Inscrição Municipal:</label>
+                        <input type="text" id="fornecedorMunicipalRegistration" placeholder="Opcional">
+                    </div>
+                    <div class="form-group">
+                        <label for="fornecedorSuframa">SUFRAMA:</label>
+                        <input type="text" id="fornecedorSuframa" placeholder="Opcional">
+                    </div>
+                    <div class="form-group">
+                        <label for="fornecedorCep">CEP:</label>
+                        <input type="text" id="fornecedorCep" placeholder="00000-000">
                     </div>
                     <div class="form-group">
                         <label for="fornecedorAddress">Endereço:</label>
@@ -1598,8 +1760,12 @@
                         <input type="text" id="fornecedorNeighborhood" placeholder="Nome do bairro">
                     </div>
                     <div class="form-group">
+                        <label for="fornecedorComplement">Complemento:</label>
+                        <input type="text" id="fornecedorComplement" placeholder="Sala, lote, referência">
+                    </div>
+                    <div class="form-group">
                         <label for="fornecedorState">Estado:</label>
-                        <select id="fornecedorState" required onchange="carregarCidadesPorEstado(this.value)">
+                        <select id="fornecedorState" onchange="carregarCidadesPorEstado(this.value)">
                             <option value="">Selecione o estado</option>
                             <option value="AC">Acre</option>
                             <option value="AL">Alagoas</option>
@@ -1632,9 +1798,21 @@
                     </div>
                     <div class="form-group">
                         <label for="fornecedorCity">Cidade:</label>
-                        <select id="fornecedorCity" required>
+                        <select id="fornecedorCity">
                             <option value="">Selecione primeiro o estado</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fornecedorMunicipalityCode">Código IBGE do município:</label>
+                        <input type="text" id="fornecedorMunicipalityCode" placeholder="Ex: 1501402">
+                    </div>
+                    <div class="form-group">
+                        <label for="fornecedorCountryCode">Código do país:</label>
+                        <input type="text" id="fornecedorCountryCode" value="1058" placeholder="1058">
+                    </div>
+                    <div class="form-group">
+                        <label for="fornecedorCountryName">País:</label>
+                        <input type="text" id="fornecedorCountryName" value="Brasil" placeholder="Brasil">
                     </div>
                     <div class="form-group">
                         <label for="fornecedorPhone">Telefone:</label>
@@ -1732,13 +1910,16 @@
     
     <script src="estados-cidades.js"></script>
     <!-- removido: handler de modais de clientes (não utilizado em fornecedores) -->
-    <script src="menu-component.js?v=20260326"></script>
+    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
     
     <!-- Scripts de Correção - ORDEM REORGANIZADA -->
     <script src="correcao-interface-database.js"></script>
     
     <!-- Script de gerenciamento unificado de espécies - PRIORIDADE MÁXIMA -->
-    <script src="species-manager.js"></script>
+    <script src="species-utils.js"></script>
+    <script src="species-store.js"></script>
+    <script src="species-modal-standard.js"></script>
+    <script src="species-manager.js?v=20260520a"></script>
     
     <!-- Script de fornecedor modals -->
     <script src="fornecedor-modals.js"></script>
@@ -1771,6 +1952,9 @@
     
     <!-- Scripts principais -->
     <script src="romaneio-utils.js"></script>
+    <script src="tora-geometry-utils.js?v=20260528a"></script>
+    <script src="romaneio-table-enhancements.js?v=20260601a"></script>
+    <script src="romaneio-print-config.js?v=20260603a"></script>
     <script src="pre-romaneio-selector.js"></script>
     <script src="coordenador-inicializacao.js"></script>
     <script src="romaneiotora.js"></script>
@@ -1986,10 +2170,16 @@
             const camposSequencia = [
                 'preco',        // Preço (R$/m³)
                 'plaqueta',     // Plaqueta
+                'custodia',     // Custódia
                 'rodo',         // Rodo (cm)
                 'comprimento',  // Comprimento (cm)
                 'oco1',         // Oco 1 (cm)
-                'oco2'          // Oco 2 (cm) - último campo que adiciona item
+                'oco2',         // Oco 2 (cm)
+                'compGeo',      // Comprimento geométrico
+                'x1',
+                'x2',
+                'x3',
+                'x4'            // Último campo que adiciona item
             ];
             
             // ✅ CONFIGURAR EVENT LISTENERS PARA CADA CAMPO
@@ -2021,8 +2211,8 @@
                 
                 console.log(`🎯 Enter pressionado no campo: ${campoAtual}`);
                 
-                // ✅ VERIFICAR SE É O ÚLTIMO CAMPO (oco2)
-                if (campoAtual === 'oco2') {
+                // ✅ VERIFICAR SE É O ÚLTIMO CAMPO (x4)
+                if (campoAtual === 'x4') {
                     console.log("🚀 Último campo alcançado - adicionando item...");
                     
                     // Tentar adicionar o item
@@ -2381,13 +2571,13 @@
                     let romaneios = [];
                     try {
                         if (window.FirebaseService && typeof window.FirebaseService.loadData === 'function') {
-                            const r = await window.FirebaseService.loadData('romaneiosTora');
+                            const r = await window.FirebaseService.loadData('romaneios/tora');
                             const data = r && r.data ? r.data : r;
                             if (Array.isArray(data)) romaneios = data;
                             else if (data && typeof data === 'object') romaneios = Object.values(data);
                         }
                         if (!romaneios.length && window.databaseAdapter && typeof window.databaseAdapter.load === 'function') {
-                            const r2 = await window.databaseAdapter.load('romaneiosTora');
+                            const r2 = await window.databaseAdapter.load('romaneios/tora');
                             const d2 = r2 && r2.data ? r2.data : r2;
                             if (Array.isArray(d2)) romaneios = d2;
                             else if (d2 && typeof d2 === 'object') romaneios = Object.values(d2);
@@ -2401,7 +2591,7 @@
                     let id = alvo && (alvo.id || alvo.romaneioId || alvo.key || alvo.uid);
                     if (!id) {
                         try {
-                            const r = await window.FirebaseService.loadData('romaneiosTora');
+                            const r = await window.FirebaseService.loadData('romaneios/tora');
                             const data = r && r.data ? r.data : r;
                             const keys = data && typeof data === 'object' ? Object.keys(data) : [];
                             if (keys.length) {
@@ -2473,7 +2663,7 @@
 
                     // ✅ Validar no Firebase
                     try {
-                        const r3 = await window.FirebaseService.loadData('romaneiosTora');
+                        const r3 = await window.FirebaseService.loadData('romaneios/tora');
                         const d3 = r3 && r3.data ? r3.data : r3;
                         let atual = null;
                         if (Array.isArray(d3)) {
@@ -2504,6 +2694,9 @@
             loadOnChange: false,
             onLoadItems: function(itens, pr) {
                 const normalized = (itens || []).map((it, idx) => {
+                    const geo = window.ToraGeometry && typeof window.ToraGeometry.normalizarCamposGeoItem === 'function'
+                        ? window.ToraGeometry.normalizarCamposGeoItem(it)
+                        : {};
                     const plaqueta = it.plaqueta || it.placa || it.placaIdentificacao || '';
                     const rodo = parseFloat(it.rodo) || 0;
                     const comprimento = parseFloat(it.comprimento) || 0;
@@ -2513,7 +2706,26 @@
                     const volume = parseFloat(it.volume) || parseFloat(it.volumeLiquido) || 0;
                     const preco = parseFloat(it.preco) || 0;
                     const total = parseFloat(it.total) || (volume * preco);
-                    return { ...it, id: it.id || Date.now() + idx, plaqueta, rodo, comprimento, oco1, oco2, desconto, volume, preco, total };
+                    return {
+                        ...it,
+                        ...geo,
+                        id: it.id || Date.now() + idx,
+                        plaqueta,
+                        rodo,
+                        diametro: parseFloat(it.diametro) || rodo,
+                        comprimento,
+                        oco1,
+                        oco2,
+                        desconto,
+                        volume,
+                        volumeSerraria: parseFloat(it.volumeSerraria) || parseFloat(it.volumeLiquido) || volume,
+                        volumeLiquido: parseFloat(it.volumeLiquido) || parseFloat(it.volumeSerraria) || volume,
+                        preco,
+                        precoUnitario: parseFloat(it.precoUnitario) || preco,
+                        total,
+                        valor: parseFloat(it.valor) || parseFloat(it.valorTotal) || total,
+                        valorTotal: parseFloat(it.valorTotal) || parseFloat(it.valor) || total
+                    };
                 }).filter(item => item.rodo > 0 && item.comprimento > 0);
                 window.romaneioItems = normalized;
                 if (typeof window.updateTableBody === 'function') {
@@ -2530,6 +2742,7 @@
                 if (fornecedorNome) {
                     window.selectedFornecedor = { nome: fornecedorNome, name: fornecedorNome };
                     window.selectedClient = window.selectedFornecedor;
+                    window.clienteSelecionado = window.selectedFornecedor;
                 }
                 const dataInput = document.getElementById('dataRomaneio');
                 if (dataInput && pr.data) dataInput.value = pr.data;
@@ -2542,6 +2755,13 @@
                 const select = document.getElementById('preRomaneioSelect');
                 if (select) select.value = '';
                 window.romaneioItems = [];
+                window.currentPage = 1;
+                window.romaneioEditandoId = null;
+                window.romaneioEmEdicao = null;
+                window.romaneioOriginalDataHora = null;
+                window.romaneioOriginalDataFormatada = null;
+                window.romaneioOriginalHoraFormatada = null;
+                window.romaneioOriginalCriadoEm = null;
                 if (typeof window.updateTableBody === 'function') {
                     window.updateTableBody();
                 } else if (typeof window.reconstruirTabela === 'function') {
@@ -2557,6 +2777,8 @@
                 if (fornecedorInput) fornecedorInput.value = '';
                 window.selectedFornecedor = null;
                 window.selectedClient = null;
+                window.clienteSelecionado = null;
+                window.selectedSpecies = null;
             };
         }
     });

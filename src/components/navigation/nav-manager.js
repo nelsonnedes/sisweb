@@ -689,7 +689,7 @@ class NavigationManager {
         container.innerHTML = especies.map(especie => `
             <div class="data-card" onclick="this.editEspecie('${especie.id}')">
                 <div class="card-header">
-                    <h4>${especie.nome}</h4>
+                    <h4>${especie.especie || especie.nome}</h4>
                     <div class="card-actions">
                         <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); this.editEspecie('${especie.id}')">
                             ✏️
@@ -1306,4 +1306,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 export default NavigationManager;
-export { initializeNavigationManager, getNavigationManager }; 
+export { initializeNavigationManager, getNavigationManager };

@@ -125,21 +125,55 @@ function toNumberBR(value) {
     }
 }
 
+function normalizarCamposGeoItemTabela(item = {}) {
+    if (window.ToraGeometry && typeof window.ToraGeometry.normalizarCamposGeoItem === 'function') {
+        return window.ToraGeometry.normalizarCamposGeoItem(item);
+    }
+    return {
+        custodia: item.custodia || '',
+        compGeo: toNumberBR(item.compGeo),
+        x1: toNumberBR(item.x1),
+        x2: toNumberBR(item.x2),
+        x3: toNumberBR(item.x3),
+        x4: toNumberBR(item.x4),
+        volumeGeo: toNumberBR(item.volumeGeo)
+    };
+}
+
+function lerCamposGeoFormularioTabela() {
+    return normalizarCamposGeoItemTabela({
+        custodia: document.getElementById('custodia')?.value || '',
+        compGeo: document.getElementById('compGeo')?.value || 0,
+        x1: document.getElementById('x1')?.value || 0,
+        x2: document.getElementById('x2')?.value || 0,
+        x3: document.getElementById('x3')?.value || 0,
+        x4: document.getElementById('x4')?.value || 0,
+        volumeGeo: document.getElementById('volumeGeo')?.value || 0
+    });
+}
+
 // Função para limpar os campos do item
 function limparCamposItem() {
     try {
         // Limpar campos específicos da tora
         const camposParaLimpar = [
             'plaqueta',
+            'custodia',
             'comprimento',
             'oco1',
-            'oco2'
+            'oco2',
+            'compGeo',
+            'x1',
+            'x2',
+            'x3',
+            'x4',
+            'volumeGeo'
         ];
 
         camposParaLimpar.forEach(id => {
             const campo = document.getElementById(id);
             if (campo) {
-                campo.value = '';
+                campo.value = id === 'volumeGeo' ? '0.000' : '';
             }
         });
 
@@ -219,7 +253,7 @@ function reconstruirTabela() {
             // Verificar se o array está vazio e limpar totais
             if (!window.romaneioItems || window.romaneioItems.length === 0) {
                 // Mostrar mensagem de "nenhuma tora adicionada"
-                tbody.innerHTML = '<tr><td colspan="11" style="text-align: center;">Nenhuma tora adicionada</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="18" style="text-align: center;">Nenhuma tora adicionada</td></tr>';
                 
                 // Limpar os totais explicitamente
                 const totalVolumeBruto = document.getElementById('totalVolumeBruto');
@@ -242,7 +276,7 @@ function reconstruirTabela() {
                 
                 // Mostrar mensagem de erro se não houver itens
                 if (!window.romaneioItems || window.romaneioItems.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="11" style="text-align: center;">Nenhuma tora adicionada</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="18" style="text-align: center;">Nenhuma tora adicionada</td></tr>';
                 }
             }
             
@@ -533,6 +567,7 @@ function adicionarItem() {
         // Obter valores dos campos
         const especie = especieInput.value;
         const plaqueta = document.getElementById('plaqueta') ? document.getElementById('plaqueta').value : '';
+        const geo = lerCamposGeoFormularioTabela();
 
         // Garantir que os campos existem antes de acessar .value
         const rodoEl = document.getElementById('rodo');
@@ -601,6 +636,7 @@ function adicionarItem() {
         const novoItem = {
             especie: especie,
             plaqueta: plaqueta,
+            ...geo,
             rodo: rodo,
             comprimento: comprimento,
             oco1: oco1,
@@ -655,10 +691,18 @@ function adicionarItem() {
         
         // Limpar campos para adicionar próximo item
         document.getElementById('plaqueta').value = '';
+        const custodiaEl = document.getElementById('custodia');
+        if (custodiaEl) custodiaEl.value = '';
         document.getElementById('rodo').value = '';
         document.getElementById('comprimento').value = '';
         document.getElementById('oco1').value = '';
         document.getElementById('oco2').value = '';
+        ['compGeo', 'x1', 'x2', 'x3', 'x4'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        const volumeGeoEl = document.getElementById('volumeGeo');
+        if (volumeGeoEl) volumeGeoEl.value = '0.000';
         document.getElementById('plaqueta').focus();
         
         // Resetar o botão se estava em modo de edição
@@ -747,9 +791,11 @@ async function salvarRomaneio() {
         } else {
             // Fallback para cálculo simples
             const volumeSerraria = window.romaneioItems.reduce((sum, item) => sum + (parseFloat(item.volumeSerraria) || 0), 0);
+            const volumeGeo = window.romaneioItems.reduce((sum, item) => sum + (normalizarCamposGeoItemTabela(item).volumeGeo || 0), 0);
             const valorTotal = window.romaneioItems.reduce((sum, item) => sum + (parseFloat(item.valorTotal) || 0), 0);
             totaisRomaneio = {
                 volumeSerraria: volumeSerraria,
+                volumeGeo: volumeGeo,
                 valorTotal: valorTotal
             };
         }
@@ -795,6 +841,7 @@ async function salvarRomaneio() {
                 
                 return true;
             }).map(item => ({
+                ...normalizarCamposGeoItemTabela(item),
                 id: item.id || timestamp + Math.random(),
                 especie: item.especie || 'Desconhecida', // Garantir string
                 plaqueta: item.plaqueta || '',
@@ -804,19 +851,20 @@ async function salvarRomaneio() {
                 oco1: parseFloat(item.oco1) || 0,
                 oco2: parseFloat(item.oco2) || 0,
                 volumeBruto: parseFloat(item.volumeBruto) || parseFloat(item.volumeEstimado) || 0,
-                volumeSerraria: parseFloat(item.volumeSerraria) || parseFloat(item.volumeLiquido) || 0,
-                volumeLiquido: parseFloat(item.volumeLiquido) || parseFloat(item.volumeSerraria) || 0,
+                volumeSerraria: parseFloat(item.volumeSerraria) || parseFloat(item.volumeLiquido) || parseFloat(item.volume) || 0,
+                volumeLiquido: parseFloat(item.volumeLiquido) || parseFloat(item.volumeSerraria) || parseFloat(item.volume) || 0,
                 volumeEstimado: parseFloat(item.volumeEstimado) || parseFloat(item.volumeBruto) || 0,
                 preco: parseFloat(item.preco) || parseFloat(item.precoUnitario) || 0,
                 precoUnitario: parseFloat(item.precoUnitario) || parseFloat(item.preco) || 0,
-                valorTotal: parseFloat(item.valorTotal) || parseFloat(item.valor) || 0,
-                valor: parseFloat(item.valor) || parseFloat(item.valorTotal) || 0,
+                valorTotal: parseFloat(item.valorTotal) || parseFloat(item.valor) || parseFloat(item.total) || 0,
+                valor: parseFloat(item.valor) || parseFloat(item.valorTotal) || parseFloat(item.total) || 0,
                 observacoes: item.observacoes || ''
             })),
             totais: {
                 quantidadeItens: romaneioItems.length,
                 volumeEstimado: totaisRomaneio.volumeEstimado || 0,
                 volumeSerraria: totaisRomaneio.volumeSerraria || 0,
+                volumeGeo: totaisRomaneio.volumeGeo || 0,
                 valorTotal: totaisRomaneio.valorTotal || 0
             },
             observacoes: document.getElementById('romaneioObservacoes')?.value || '',
@@ -1296,6 +1344,7 @@ function calcularTotais() {
     try {
         let volumeEstimado = 0;
         let volumeSerraria = 0;
+        let volumeGeo = 0;
         let valorTotal = 0;
         
         // Verificar se há itens no romaneio
@@ -1307,6 +1356,7 @@ function calcularTotais() {
                 const oco1 = toNumberBR(item.oco1);
                 const oco2 = toNumberBR(item.oco2);
                 const preco = toNumberBR(item.preco ?? item.precoUnitario);
+                const geo = normalizarCamposGeoItemTabela(item);
                 
                 // Caso especial para a calibração
                 let volumeBruto, desconto, volumeLiquido;
@@ -1339,6 +1389,7 @@ function calcularTotais() {
                 // Acumular totais
                 volumeEstimado += volumeBruto;
                 volumeSerraria += volumeLiquido;
+                volumeGeo += geo.volumeGeo || 0;
                 valorTotal += valor;
                 
                 console.log(`📊 Item calculado: Bruto=${volumeBruto.toFixed(3)}, Líquido=${volumeLiquido.toFixed(3)}, Valor=${valor.toFixed(2)}`);
@@ -1348,6 +1399,7 @@ function calcularTotais() {
         const resultadoTotais = {
             volumeEstimado: parseFloat(volumeEstimado.toFixed(3)),
             volumeSerraria: parseFloat(volumeSerraria.toFixed(3)),
+            volumeGeo: parseFloat(volumeGeo.toFixed(3)),
             valorTotal: parseFloat(valorTotal.toFixed(2))
         };
         

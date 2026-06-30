@@ -56,10 +56,18 @@ function cleanOldData() {
 }
 
 // Função para obter dados do localStorage
+function canonicalizeDataKey(key) {
+    return String(key || '')
+        .replace(/^data\/species(\/|$)/, 'especies$1')
+        .replace(/^species(\/|$)/, 'especies$1')
+        .replace(/^especiesPct(\/|$)/, 'especies$1');
+}
+
 function getData(key) {
     try {
-        console.log("Obtendo dados para chave:", key);
-        const data = localStorage.getItem(key);
+        const canonicalKey = canonicalizeDataKey(key);
+        console.log("Obtendo dados para chave:", canonicalKey);
+        const data = localStorage.getItem(canonicalKey);
         return data ? JSON.parse(data) : [];
     } catch (error) {
         console.error("Erro ao obter dados para chave " + key + ":", error);
@@ -79,8 +87,9 @@ function saveData(key, data, checkSpace = true) {
             }
         }
         
-        console.log("Salvando dados para chave:", key);
-        localStorage.setItem(key, JSON.stringify(data));
+        const canonicalKey = canonicalizeDataKey(key);
+        console.log("Salvando dados para chave:", canonicalKey);
+        localStorage.setItem(canonicalKey, JSON.stringify(data));
         return true;
     } catch (error) {
         console.error("Erro ao salvar dados para chave " + key + ":", error);
@@ -94,7 +103,7 @@ function saveData(key, data, checkSpace = true) {
             
             // Tentar salvar novamente
             try {
-                localStorage.setItem(key, JSON.stringify(data));
+                localStorage.setItem(canonicalizeDataKey(key), JSON.stringify(data));
                 return true;
             } catch (retryError) {
                 alert('Não foi possível salvar os dados. Recomendamos exportar seus dados importantes.');
@@ -110,4 +119,4 @@ function saveData(key, data, checkSpace = true) {
 window.getData = getData;
 window.saveData = saveData;
 window.checkLocalStorageSpace = checkLocalStorageSpace;
-window.cleanOldData = cleanOldData; 
+window.cleanOldData = cleanOldData;

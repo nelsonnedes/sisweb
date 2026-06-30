@@ -687,41 +687,55 @@ textarea:focus {
     white-space: nowrap;
 }
 
-/* Colunas: Nome (40%), Descrição (restante), Ações (fixa) */
+/* Colunas da Lista de Especies: mesmo padrao visual do Romaneio PES */
 #speciesListModal .table thead th:nth-child(1),
 #speciesListModal .table tbody td:nth-child(1) {
-    width: 40% !important; /* Nome */
+    width: 30% !important;
 }
 
 #speciesListModal .table thead th:nth-child(2),
 #speciesListModal .table tbody td:nth-child(2) {
-    width: calc(60% - 120px) !important; /* Descrição, reservando espaço para Ações */
+    width: calc(70% - 92px) !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    text-overflow: clip !important;
 }
 
 #speciesListModal .table thead th:last-child,
 #speciesListModal .table tbody td:last-child {
-    width: 120px !important;
-    min-width: 120px !important;
-    max-width: 120px !important;
+    width: 92px !important;
+    min-width: 92px !important;
+    max-width: 92px !important;
     text-align: center !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
     white-space: nowrap !important;
 }
 
 /* Ícones de ação: área clicável e alinhamento */
+#speciesListModal .btn-group,
+#speciesListModal .actions-container,
 #speciesListModal .action-buttons-container {
-    display: flex !important;
+    display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+    flex-wrap: nowrap !important;
     gap: 6px !important;
-    min-width: 100% !important;
+    width: auto !important;
+    min-width: 66px !important;
+    margin: 0 auto !important;
 }
 
+#speciesListModal .action-button,
+#speciesListModal .client-action-button,
+#speciesListModal .btn-selecionar,
 #speciesListModal .species-action-btn {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    width: 28px !important;
-    height: 28px !important;
+    width: 30px !important;
+    min-width: 30px !important;
+    height: 30px !important;
     border-radius: 4px !important;
     padding: 0 !important;
 }
@@ -786,59 +800,45 @@ textarea:focus {
 @media (max-width: 992px) {
     #speciesListModal .table thead th:nth-child(1),
     #speciesListModal .table tbody td:nth-child(1) {
-        width: 45% !important;
+        width: 30% !important;
     }
 
     #speciesListModal .table thead th:nth-child(2),
     #speciesListModal .table tbody td:nth-child(2) {
-        width: calc(55% - 100px) !important;
+        width: calc(70% - 92px) !important;
     }
 
     #speciesListModal .table thead th:last-child,
     #speciesListModal .table tbody td:last-child {
-        width: 100px !important;
-        min-width: 100px !important;
-        max-width: 100px !important;
-    }
-
-    #speciesListModal .species-action-btn {
-        width: 26px !important;
-        height: 26px !important;
+        width: 92px !important;
+        min-width: 92px !important;
+        max-width: 92px !important;
     }
 }
 
 @media (max-width: 768px) {
     #speciesListModal .table thead th:nth-child(1),
     #speciesListModal .table tbody td:nth-child(1) {
-        width: 50% !important;
+        width: 30% !important;
     }
 
     #speciesListModal .table thead th:nth-child(2),
     #speciesListModal .table tbody td:nth-child(2) {
-        width: calc(50% - 90px) !important;
+        width: calc(70% - 92px) !important;
     }
 
     #speciesListModal .table thead th:last-child,
     #speciesListModal .table tbody td:last-child {
-        width: 90px !important;
-        min-width: 90px !important;
-        max-width: 90px !important;
+        width: 92px !important;
+        min-width: 92px !important;
+        max-width: 92px !important;
     }
 
-    #speciesListModal .species-action-btn {
-        width: 24px !important;
-        height: 24px !important;
-    }
-    /* Quebra de linha apenas na coluna Descrição (corpo) em mobile */
     #speciesListModal .table tbody td:nth-child(2) {
         white-space: normal !important;
         overflow-wrap: anywhere;
         word-break: break-word;
         text-overflow: clip !important;
-    }
-    /* Mantém o cabeçalho da coluna Descrição em uma linha */
-    #speciesListModal .table thead th:nth-child(2) {
-        white-space: nowrap !important;
     }
 }
 
@@ -1683,10 +1683,17 @@ textarea:focus {
     min-height: 30px !important;
 }
 
-#clientListModal .table th:last-child,
-#clientListModal .table td:last-child,
 #speciesListModal .table th:last-child,
 #speciesListModal .table td:last-child {
+    width: 92px !important;
+    min-width: 92px !important;
+    max-width: 92px !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+}
+
+#clientListModal .table th:last-child,
+#clientListModal .table td:last-child {
     width: 40px !important;
     min-width: 40px !important;
     max-width: 40px !important;
@@ -1779,6 +1786,64 @@ textarea:focus {
         min-height: 34px !important;
         font-size: 12px !important;
         padding: 8px 10px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-buttons,
+    .buttons-container {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        align-items: stretch !important;
+        white-space: normal !important;
+        overflow: visible !important;
+    }
+
+    .form-buttons > button,
+    .form-buttons > .btn,
+    .buttons-container > button,
+    .buttons-container > .btn {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        justify-content: center !important;
+        white-space: normal !important;
+        line-height: 1.2 !important;
+    }
+
+    .pre-romaneio-group,
+    .pre-romaneio-left {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        margin-left: 0 !important;
+        white-space: normal !important;
+        align-items: stretch !important;
+    }
+
+    .pre-romaneio-group select,
+    .pre-romaneio-left select,
+    #preRomaneioSelect {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .pre-romaneio-group .btn-carregar,
+    .btn-carregar,
+    .btn-limpar-pre {
+        width: 100% !important;
+        min-width: 0 !important;
+        margin-left: 0 !important;
     }
 }
 

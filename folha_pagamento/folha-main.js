@@ -106,6 +106,19 @@ class FolhaPagamentoSystem {
             });
         });
     }
+
+    mostrarSecoesPrincipaisFolha() {
+        try {
+            if (window.FolhaUtils && typeof window.FolhaUtils.ensureFolhaMainSectionsVisible === 'function') {
+                window.FolhaUtils.ensureFolhaMainSectionsVisible();
+                return;
+            }
+            const tabela = document.getElementById('tabela-folhas-section');
+            const totais = document.getElementById('totais-section');
+            if (tabela) tabela.style.display = 'block';
+            if (totais) totais.style.display = 'block';
+        } catch (e) {}
+    }
     
     /**
      * ⏳ Aguardar carregamento das dependências
@@ -546,17 +559,17 @@ class FolhaPagamentoSystem {
                             }
                             const base = String(p || '');
                             if (!base) return base;
-                            if (/^companies\//.test(base) || /^users\//.test(base)) return base;
+                            if (/^companies(\/|$)/.test(base) || /^users(\/|$)/.test(base)) return base;
                             const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
                             if (svc && typeof svc.getNamespacedPath === 'function') {
                                 return svc.getNamespacedPath(base);
                             }
-                            const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.id || window.companyInfo.companyId || window.companyInfo.slug || window.companyInfo.nome || window.companyInfo.name));
+                            const rawTenant = window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
                             if (rawTenant) return `companies/${String(rawTenant)}/${base}`;
                             const stored = localStorage.getItem('company_info');
                             if (stored) {
                                 const obj = JSON.parse(stored);
-                                const t = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                                const t = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                                 if (t) return `companies/${String(t)}/${base}`;
                             }
                         } catch {}
@@ -650,19 +663,13 @@ class FolhaPagamentoSystem {
         // Incluir 'mes_fechado' por padrão (quando Tipo = "Todos")
         const finalLancamentos = folhasFiltradas;
         
-        // Fallback: se filtro de mês gerar 0 e existir dados gerais, remover filtro de mês
+        // Manter o Mês/Ano escolhido pelo usuário mesmo quando ainda não há dados para ele.
+        // A seleção fica persistida até o usuário decidir alterar.
         if (filtrosParaAplicar.mesAno && finalLancamentos.length === 0 && this.folhas.length > 0) {
             const alvo = normalizeMes(filtrosParaAplicar.mesAno);
             const existe = this.folhas.some(f => normalizeMes(f.mesAno) === alvo);
             if (!existe) {
-                if (window.__folhaDebug) console.log('ℹ️ Filtro de mês não existe nos dados. Removendo filtro para evitar tabela vazia.');
-                if (window.folhaFiltros) {
-                    delete window.folhaFiltros.filtrosAtivos.mesAno;
-                    try { persistLocalValue('folha_filtros_ativos', window.folhaFiltros.filtrosAtivos); } catch(e) {}
-                    const mesInput = document.getElementById('mesAno');
-                    if (mesInput) mesInput.value = '';
-                }
-                folhasFiltradas = [...this.folhas];
+                if (window.__folhaDebug) console.log('ℹ️ Filtro de mês sem dados. Mantendo seleção persistida:', filtrosParaAplicar.mesAno);
             } else {
                 if (window.__folhaDebug) console.log('ℹ️ Filtro de mês existe, mantendo seleção do usuário');
             }
@@ -807,8 +814,12 @@ class FolhaPagamentoSystem {
             return;
         }
         
+        const folhasOrdenadas = (window.FolhaUtils && typeof window.FolhaUtils.aplicarOrdenacaoTabelaFolhas === 'function')
+            ? window.FolhaUtils.aplicarOrdenacaoTabelaFolhas(folhasFiltradas)
+            : folhasFiltradas.slice();
+
         // Gerar HTML da tabela
-        const htmlContent = folhasFiltradas.map(folha => {
+        const htmlContent = folhasOrdenadas.map(folha => {
             const id = folha.id || folha.key || folha.recordId || '';
             const tipoPagamento = (window.FolhaUtils && typeof window.FolhaUtils.resolveTipoPagamento === 'function')
                 ? window.FolhaUtils.resolveTipoPagamento(folha)
@@ -828,33 +839,23 @@ class FolhaPagamentoSystem {
             const acres = (window.FolhaUtils && window.FolhaUtils.calcularAcrescimosDisplay) ? window.FolhaUtils.calcularAcrescimosDisplay(folha) : 0;
             const desc = (window.FolhaUtils && window.FolhaUtils.calcularDescontosDisplay) ? window.FolhaUtils.calcularDescontosDisplay(folha) : 0;
             const liq = (window.FolhaUtils && window.FolhaUtils.calcularSalarioLiquidoDisplay) ? window.FolhaUtils.calcularSalarioLiquidoDisplay(folha) : (isQuinzena ? (Number(base||0) + Number(acres||0) - Number(desc||0) - Number(qz||0)) : (Number(base||0) + Number(acres||0) - Number(desc||0)));
+            const saldoLiq = (window.FolhaUtils && typeof window.FolhaUtils.calcularSaldoLiquidoEmAberto === 'function') ? window.FolhaUtils.calcularSaldoLiquidoEmAberto(folha) : (statusNorm === 'mes_fechado' ? 0 : liq);
+            const valorPago = (window.FolhaUtils && typeof window.FolhaUtils.calcularValorPagoLancamento === 'function') ? window.FolhaUtils.calcularValorPagoLancamento(folha) : (statusNorm === 'mes_fechado' ? liq : 0);
+            const valorPix = (window.FolhaUtils && typeof window.FolhaUtils.calcularValorPixLancamento === 'function') ? window.FolhaUtils.calcularValorPixLancamento(folha) : saldoLiq;
+            const pixQuitado = (window.FolhaUtils && typeof window.FolhaUtils.isPixLancamentoQuitado === 'function') ? window.FolhaUtils.isPixLancamentoQuitado(folha) : (valorPago > 0 && Math.abs(saldoLiq) < 0.005);
+            const liquidoTabelaHtml = (window.FolhaUtils && typeof window.FolhaUtils.formatarLiquidoLancamentoTabela === 'function')
+                ? window.FolhaUtils.formatarLiquidoLancamentoTabela(folha, { valorHistorico: liq, saldoAberto: saldoLiq, valorPago })
+                : fmt(saldoLiq);
+            const totalVales = (window.FolhaUtils && typeof window.FolhaUtils.calcularTotalVales === 'function') ? window.FolhaUtils.calcularTotalVales(folha) : (folha.vales || 0);
             const funcionarioLanc = (folha && folha.funcionario) || {};
             const funcionarioCadastro = (this.funcionarios || []).find(f => String((f && f.id) || '') === String((funcionarioLanc && funcionarioLanc.id) || folha.funcionarioId || folha.idFuncionario || folha.func_id || '')) || {};
             const funcionarioDetalhado = { ...funcionarioCadastro, ...funcionarioLanc };
-            
-            return `
-            <tr data-id="${id}">
-                <td>
-                    <strong>${(folha && folha.funcionario && folha.funcionario.nome) || 'N/A'}</strong>
-                    <div style="font-size: 11px; color: #666;">${(folha && folha.funcionario && folha.funcionario.cargo) || ''}</div>
-                </td>
-                <td style="font-size: 12px;">${(window.FolhaUtils && typeof window.FolhaUtils.formatarFormaPagamentoDetalhada === 'function')
-                    ? window.FolhaUtils.formatarFormaPagamentoDetalhada(funcionarioDetalhado)
-                    : ((folha && folha.funcionario && folha.funcionario.formaPagamento) || '-')}</td>
-                <td>${folha.mesAno || 'N/A'}</td>
-                <td>
-                    <span class="badge-status" style="background-color: ${isQuinzena ? '#17a2b8' : '#28a745'}">
-                        ${tipoLabel}
-                    </span>
-                </td>
-                <td>${isQuinzena ? (Number(folha.percentualQuinzena || folha.quinzenaPercentual || 50)) + '%' : '100%'}</td>
-                <td>${fmt(base)}</td>
-                <td>${fmt(qz)}</td>
-                <td>${fmt(acres)}</td>
-                <td>${fmt(desc)}</td>
-                <td>${fmt(folha.vales || 0)}</td>
-                <td class="valor-destaque">${fmt(liq)}</td>
-                <td class="actions-cell">
+            const isMesFechadoPago = (window.FolhaUtils && typeof window.FolhaUtils.isLancamentoMesFechadoPago === 'function')
+                ? window.FolhaUtils.isLancamentoMesFechadoPago(folha, tipoPagamento, statusNorm)
+                : (!isQuinzena && statusNorm === 'mes_fechado');
+            const acoesLancamentoHtml = (window.FolhaUtils && typeof window.FolhaUtils.renderizarAcoesLancamento === 'function')
+                ? window.FolhaUtils.renderizarAcoesLancamento(folha, '', { tipoPagamento, statusNorm })
+                : `
                     <button class="action-button edit-button" title="Editar" data-id="${id}" onclick="__onEditFolhaButtonClick('${id}')">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -864,6 +865,40 @@ class FolhaPagamentoSystem {
                     <button class="action-button delete-button" title="Excluir" data-id="${id}" onclick="deleteFolha('${id}')">
                         <i class="fas fa-trash"></i>
                     </button>
+                `;
+            
+            return `
+            <tr data-id="${id}">
+                <td data-label="Funcionário">
+                    <strong>${(folha && folha.funcionario && folha.funcionario.nome) || 'N/A'}</strong>
+                    <div style="font-size: 11px; color: #666;">${(folha && folha.funcionario && folha.funcionario.cargo) || ''}</div>
+                </td>
+                <td data-label="Forma Pgto." style="font-size: 12px;">${(window.FolhaUtils && typeof window.FolhaUtils.formatarFormaPagamentoLancamento === 'function')
+                    ? window.FolhaUtils.formatarFormaPagamentoLancamento(funcionarioDetalhado, {
+                        id,
+                        nomeFuncionario: (folha && folha.funcionario && folha.funcionario.nome) || '',
+                        liquido: valorPix,
+                        liquidoFormatado: fmt(valorPix),
+                        valorPago,
+                        valorPagoFormatado: fmt(valorPago),
+                        pagamentoQuitado: pixQuitado
+                    })
+                    : ((folha && folha.funcionario && folha.funcionario.formaPagamento) || '-')}</td>
+                <td data-label="Mês/Ano">${folha.mesAno || 'N/A'}</td>
+                <td data-label="Tipo">
+                    <span class="badge-status" style="background-color: ${isQuinzena ? '#17a2b8' : '#28a745'}">
+                        ${tipoLabel}
+                    </span>
+                </td>
+                <td data-label="%">${isQuinzena ? (Number(folha.percentualQuinzena || folha.quinzenaPercentual || 50)) + '%' : '100%'}</td>
+                <td data-label="Salário Base">${fmt(base)}</td>
+                <td data-label="1ª Quinzena">${fmt(qz)}</td>
+                <td data-label="Acréscimos">${fmt(acres)}</td>
+                <td data-label="Descontos">${fmt(desc)}</td>
+                <td data-label="Total Vales">${fmt(totalVales)}</td>
+                <td data-label="Líquido" class="valor-destaque liquido-cell">${liquidoTabelaHtml}</td>
+                <td data-label="Ações" class="actions-cell${isMesFechadoPago ? ' paid-actions-cell' : ''}">
+                    ${acoesLancamentoHtml}
                 </td>
             </tr>
             `;
@@ -872,14 +907,14 @@ class FolhaPagamentoSystem {
         try {
             tbody.innerHTML = htmlContent;
             try { window.FolhaUtils && window.FolhaUtils.applyFolhasColumnsConfig && window.FolhaUtils.applyFolhasColumnsConfig(); } catch(e) {}
-            console.log(`✅ Tabela atualizada com ${folhasFiltradas.length} linhas (fallback)`);
+            console.log(`✅ Tabela atualizada com ${folhasOrdenadas.length} linhas (fallback)`);
             try { this.setupActionDelegates(); } catch(e) { console.warn('⚠️ Falha ao configurar delegação após fallback:', e); }
             try { this.fixMissingRowIds(); } catch(e) {}
             
             // ✅ CORREÇÃO: Só atualizar totais se não há sistema de filtros ativo
             if (!this.hasFiltrosAtivos()) {
                 console.log('📊 Atualizando totais (fallback) - sem filtros ativos');
-                this.atualizarTotais(folhasFiltradas);
+                this.atualizarTotais(folhasOrdenadas);
             } else {
                 console.log('📊 Filtros ativos - deixando sistema de filtros gerenciar totais (fallback)');
             }
@@ -1036,6 +1071,7 @@ class FolhaPagamentoSystem {
                         ? window.FolhaUtils.shouldLogDataChange('folhaMain.tabelaRender', `${src || ''}|${rows || 0}`)
                         : !!window.__folhaDebug;
                     if (logTabela) console.log('🧩 Evento tabelaFolhasRenderizada', { source: src, rows });
+                    this.mostrarSecoesPrincipaisFolha();
                     this.setupActionDelegates();
                     this.fixMissingRowIds();
                 } catch(err) { console.warn('⚠️ Falha ao tratar tabelaFolhasRenderizada:', err); }
@@ -1147,13 +1183,6 @@ class FolhaPagamentoSystem {
             }
             return true;
         });
-        const folhasBaixadas = folhasDedupe.filter((folha) => {
-            if (window.FolhaUtils && typeof window.FolhaUtils.lancamentoContaNoResumo === 'function') {
-                return !window.FolhaUtils.lancamentoContaNoResumo(folha);
-            }
-            return false;
-        });
-        
         if (logTotais) console.log('📊 Calculando totais para', folhasParaResumo.length, 'folhas não baixadas (deduplicadas)');
         
         // ✅ CORREÇÃO CRÍTICA: Calcular totais EXATAMENTE como no relatório
@@ -1173,8 +1202,9 @@ class FolhaPagamentoSystem {
             const descontos = window.FolhaUtils.calcularDescontosDisplay ? 
                 window.FolhaUtils.calcularDescontosDisplay(folha) : 0;
                 
-            const liquido = window.FolhaUtils.calcularSalarioLiquidoDisplay ? 
-                window.FolhaUtils.calcularSalarioLiquidoDisplay(folha) : 0;
+            const liquido = window.FolhaUtils.calcularSaldoLiquidoEmAberto ?
+                window.FolhaUtils.calcularSaldoLiquidoEmAberto(folha) :
+                (window.FolhaUtils.calcularSalarioLiquidoDisplay ? window.FolhaUtils.calcularSalarioLiquidoDisplay(folha) : 0);
             
             // Logs detalhados para cada funcionário (igual ao relatório)
             if (logTotais) {
@@ -1193,9 +1223,10 @@ class FolhaPagamentoSystem {
                 liquido: acc.liquido + Number(liquido || 0)
             };
         }, { bruto: 0, quinzena: 0, acrescimos: 0, descontos: 0, liquido: 0 });
-        const totalPagos = folhasBaixadas.reduce((acc, folha) => {
-            const liquido = window.FolhaUtils.calcularSalarioLiquidoDisplay ? 
-                window.FolhaUtils.calcularSalarioLiquidoDisplay(folha) : 0;
+        const totalPagos = folhasDedupe.reduce((acc, folha) => {
+            const liquido = window.FolhaUtils.calcularValorPagoLancamento ?
+                window.FolhaUtils.calcularValorPagoLancamento(folha) :
+                (window.FolhaUtils.calcularSalarioLiquidoDisplay ? window.FolhaUtils.calcularSalarioLiquidoDisplay(folha) : 0);
             return acc + Number(liquido || 0);
         }, 0);
         totais.pagos = totalPagos;
@@ -1258,7 +1289,7 @@ class FolhaPagamentoSystem {
         }
         
         if (elementos.totalRestantes) {
-            elementos.totalRestantes.textContent = window.FolhaUtils.formatarMoeda(totais.restantes || totais.liquido || 0);
+            elementos.totalRestantes.textContent = window.FolhaUtils.formatarMoeda(totais.restantes ?? totais.liquido ?? 0);
         }
         
         const sig = `${Number(totais.bruto || 0)}|${Number(totais.quinzena || 0)}|${Number(totais.acrescimos || 0)}|${Number(totais.descontos || 0)}|${Number(totais.liquido || 0)}|${Number(totais.pagos || 0)}|${Number(totais.restantes || 0)}`;
@@ -1335,6 +1366,11 @@ class FolhaPagamentoSystem {
             ? window.FolhaUtils.getDebugMode() === 'all'
             : false;
         if (debugAll) console.log('🔘 Configurando botões de ação...');
+        try {
+            if (window.FolhaUtils && typeof window.FolhaUtils.setupAcoesPrincipaisToggle === 'function') {
+                window.FolhaUtils.setupAcoesPrincipaisToggle();
+            }
+        } catch (_) {}
         if (debugAll) console.log('✅ Botões de ação configurados');
     }
     
@@ -1364,7 +1400,15 @@ class FolhaPagamentoSystem {
         const mesAnoFilter = document.getElementById('mesAno');
         if (mesAnoFilter && !mesAnoFilter.value) {
             // Definir mês atual SOMENTE se há dados para o mês ou há filtro persistido
-            const filtrosPersistidos = (() => { try { return JSON.parse(localStorage.getItem('folha_filtros_ativos')||'{}'); } catch(e){ return {}; } })();
+            const filtrosPersistidos = (() => {
+                try {
+                    if (window.SiswebStorage && typeof window.SiswebStorage.read === 'function') {
+                        const raw = window.SiswebStorage.read('folha_filtros_ativos');
+                        return typeof raw === 'string' ? JSON.parse(raw || '{}') : (raw || {});
+                    }
+                    return JSON.parse(localStorage.getItem('folha_filtros_ativos')||'{}');
+                } catch(e){ return {}; }
+            })();
             if (filtrosPersistidos && filtrosPersistidos.mesAno) {
                 mesAnoFilter.value = filtrosPersistidos.mesAno;
                 if (debugAll) console.log('📅 Mês padrão restaurado do storage:', filtrosPersistidos.mesAno);
@@ -1946,15 +1990,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (overlay) overlay.classList.remove('active');
         
         // Mostrar seções principais que estavam ocultas
-        const t = document.getElementById('tabela-folhas-section');
-        const tot = document.getElementById('totais-section');
-        if (t) t.style.display = 'block';
-        if (tot) tot.style.display = 'block';
+        folhaSystem.mostrarSecoesPrincipaisFolha();
 
     } catch (error) {
         console.error('❌ Erro ao criar sistema de Folha de Pagamento:', error);
         const overlay = document.getElementById('loadingOverlay');
         if (overlay) overlay.classList.remove('active');
+        if (folhaSystem && typeof folhaSystem.mostrarSecoesPrincipaisFolha === 'function') {
+            folhaSystem.mostrarSecoesPrincipaisFolha();
+        } else if (window.FolhaUtils && typeof window.FolhaUtils.ensureFolhaMainSectionsVisible === 'function') {
+            window.FolhaUtils.ensureFolhaMainSectionsVisible();
+        } else {
+            const t = document.getElementById('tabela-folhas-section');
+            const tot = document.getElementById('totais-section');
+            if (t) t.style.display = 'block';
+            if (tot) tot.style.display = 'block';
+        }
     }
 });
 

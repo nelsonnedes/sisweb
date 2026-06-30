@@ -36,7 +36,7 @@ const MIGRATION_CONFIG = {
     // Chaves prioritárias para migração
     priorityKeys: [
         'clients',
-        'species',
+        'especies',
         'romaneiosTora',
         'romaneiosPct',
         'romaneiosTL'
@@ -524,7 +524,7 @@ class SisWebMigration {
      */
     categorizeKey(key) {
         if (key.includes('client') || key.includes('fornecedor')) return 'clients';
-        if (key.includes('species') || key.includes('especie')) return 'species';
+        if (key.includes('species') || key.includes('especie')) return 'especies';
         if (key.includes('romaneio')) return 'romaneios';
         if (key.includes('orcamento')) return 'orcamentos';
         if (key.includes('preference') || key.includes('config')) return 'settings';
@@ -545,7 +545,7 @@ class SisWebMigration {
         }
         
         if (key.includes('species') || key.includes('especie')) {
-            return Array.isArray(data) && data.every(item => item && item.nome);
+            return Array.isArray(data) && data.every(item => item && (item.especie || item.nome || item.name));
         }
         
         if (key.includes('romaneio')) {

@@ -1,0 +1,3356 @@
+[
+  {
+    "id": "ajuda-overview",
+    "path": "ajuda.html",
+    "title": "Manual e Ajuda | Sisweb",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "ajuda.html"
+      },
+      {
+        "type": "training",
+        "name": "ajuda"
+      }
+    ]
+  },
+  {
+    "id": "ajudabitolas-overview",
+    "path": "ajudabitolas.html",
+    "title": "Classificação CONAMA - Sistema",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "ajudabitolas.html"
+      },
+      {
+        "type": "training",
+        "name": "ajuda-bitolas"
+      }
+    ]
+  },
+  {
+    "id": "client-overview",
+    "path": "client.html",
+    "title": "Gerenciar Clientes - Sistema Sisweb",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "client.html"
+      },
+      {
+        "type": "training",
+        "name": "cadastros"
+      }
+    ]
+  },
+  {
+    "id": "client-modal-modalform",
+    "path": "client.html",
+    "title": "Gerenciar Clientes - Sistema Sisweb - Novo Cliente",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "client.html"
+      },
+      {
+        "type": "training",
+        "name": "cadastros"
+      },
+      {
+        "type": "trainingModal",
+        "id": "modalForm",
+        "title": "Novo Cliente"
+      }
+    ]
+  },
+  {
+    "id": "company-overview",
+    "path": "company.html",
+    "title": "Cadastro de Empresa",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "company.html"
+      },
+      {
+        "type": "training",
+        "name": "empresa"
+      }
+    ]
+  },
+  {
+    "id": "company-modal-companymodal",
+    "path": "company.html",
+    "title": "Cadastro de Empresa - Lista de Empresas",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "company.html"
+      },
+      {
+        "type": "training",
+        "name": "empresa"
+      },
+      {
+        "type": "trainingModal",
+        "id": "companyModal",
+        "title": "Lista de Empresas"
+      }
+    ]
+  },
+  {
+    "id": "company-modal-aboutmodal",
+    "path": "company.html",
+    "title": "Cadastro de Empresa - Sobre o Desenvolvedor",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "company.html"
+      },
+      {
+        "type": "training",
+        "name": "empresa"
+      },
+      {
+        "type": "trainingModal",
+        "id": "aboutModal",
+        "title": "Sobre o Desenvolvedor"
+      }
+    ]
+  },
+  {
+    "id": "company-modal-helpmodal",
+    "path": "company.html",
+    "title": "Cadastro de Empresa - Ajuda do Sistema",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "company.html"
+      },
+      {
+        "type": "training",
+        "name": "empresa"
+      },
+      {
+        "type": "trainingModal",
+        "id": "helpModal",
+        "title": "Ajuda do Sistema"
+      }
+    ]
+  },
+  {
+    "id": "company-acao-listar-empresas",
+    "path": "company.html",
+    "title": "Cadastro de Empresa - Listar Empresas",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "company.html"
+      },
+      {
+        "type": "training",
+        "name": "empresa"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Listar Empresas",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "compras-overview",
+    "path": "compras.html",
+    "title": "Sistema de Compras",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      }
+    ]
+  },
+  {
+    "id": "compras-tab-pedidos-de-compras",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Pedidos de Compras",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Pedidos de Compras",
+        "label": "Pedidos de Compras"
+      }
+    ]
+  },
+  {
+    "id": "compras-tab-fornecedores",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Fornecedores",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Fornecedores",
+        "label": "Fornecedores"
+      }
+    ]
+  },
+  {
+    "id": "compras-tab-produtos",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Produtos",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Produtos",
+        "label": "Produtos"
+      }
+    ]
+  },
+  {
+    "id": "compras-tab-relatorios",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Relatórios",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Relatórios",
+        "label": "Relatórios"
+      }
+    ]
+  },
+  {
+    "id": "compras-tab-pedidos",
+    "path": "compras.html",
+    "title": "Sistema de Compras - pedidos",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingTab",
+        "id": "pedidos",
+        "label": "pedidos"
+      }
+    ]
+  },
+  {
+    "id": "compras-tab-clientes",
+    "path": "compras.html",
+    "title": "Sistema de Compras - clientes",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingTab",
+        "id": "clientes",
+        "label": "clientes"
+      }
+    ]
+  },
+  {
+    "id": "compras-modal-customizarcolunascomprasmodal",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Configurar colunas",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingModal",
+        "id": "customizarColunasComprasModal",
+        "title": "Configurar colunas"
+      }
+    ]
+  },
+  {
+    "id": "compras-modal-listapedidosmodal",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Lista de Pedidos",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingModal",
+        "id": "listaPedidosModal",
+        "title": "Lista de Pedidos"
+      }
+    ]
+  },
+  {
+    "id": "compras-modal-produtomodal",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Novo Produto",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingModal",
+        "id": "produtoModal",
+        "title": "Novo Produto"
+      }
+    ]
+  },
+  {
+    "id": "compras-modal-visualizarpedidomodal",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Detalhes do Pedido",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingModal",
+        "id": "visualizarPedidoModal",
+        "title": "Detalhes do Pedido"
+      }
+    ]
+  },
+  {
+    "id": "compras-modal-modalfornecedor",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Novo Fornecedor",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingModal",
+        "id": "modalFornecedor",
+        "title": "Novo Fornecedor"
+      }
+    ]
+  },
+  {
+    "id": "compras-modal-clientmodal",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Novo Fornecedor",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingModal",
+        "id": "clientModal",
+        "title": "Novo Fornecedor"
+      }
+    ]
+  },
+  {
+    "id": "compras-acao-relatorios",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Relatórios",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Relatórios",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "compras-acao-listar-pedidos",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Listar Pedidos",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Listar Pedidos",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "compras-acao-listar-produtos",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Listar Produtos",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Listar Produtos",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "compras-acao-gerar-relatorio-de-compras",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Gerar Relatório de Compras",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Gerar Relatório de Compras",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "compras-acao-exportar-csv",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Exportar CSV",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Exportar CSV",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "compras-acao-exportar-pdf",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Exportar PDF",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Exportar PDF",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "compras-acao-imprimir-0",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Imprimir (0)",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Imprimir (0)",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "compras-acao-imprimir",
+    "path": "compras.html",
+    "title": "Sistema de Compras - Imprimir",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Imprimir",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "estoque-overview",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      }
+    ]
+  },
+  {
+    "id": "estoque-tab-entrada-toras",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Entrada Toras",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Entrada Toras",
+        "label": "Entrada Toras"
+      }
+    ]
+  },
+  {
+    "id": "estoque-tab-saida-toras",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Saída Toras",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Saída Toras",
+        "label": "Saída Toras"
+      }
+    ]
+  },
+  {
+    "id": "estoque-tab-consultar-toras",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Consultar Toras",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Consultar Toras",
+        "label": "Consultar Toras"
+      }
+    ]
+  },
+  {
+    "id": "estoque-tab-entrada-almoxarifado",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Entrada Almoxarifado",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Entrada Almoxarifado",
+        "label": "Entrada Almoxarifado"
+      }
+    ]
+  },
+  {
+    "id": "estoque-tab-almoxarifado",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Almoxarifado",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Almoxarifado",
+        "label": "Almoxarifado"
+      }
+    ]
+  },
+  {
+    "id": "estoque-tab-movimentacoes",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Movimentações",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Movimentações",
+        "label": "Movimentações"
+      }
+    ]
+  },
+  {
+    "id": "estoque-tab-relatorios",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Relatórios",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Relatórios",
+        "label": "Relatórios"
+      }
+    ]
+  },
+  {
+    "id": "estoque-tab-produtos",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - produtos",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingTab",
+        "id": "produtos",
+        "label": "produtos"
+      }
+    ]
+  },
+  {
+    "id": "estoque-tab-entrada",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - entrada",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingTab",
+        "id": "entrada",
+        "label": "entrada"
+      }
+    ]
+  },
+  {
+    "id": "estoque-tab-saida",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - saida",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingTab",
+        "id": "saida",
+        "label": "saida"
+      }
+    ]
+  },
+  {
+    "id": "estoque-tab-consulta",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - consulta",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingTab",
+        "id": "consulta",
+        "label": "consulta"
+      }
+    ]
+  },
+  {
+    "id": "estoque-tab-movimentacao",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - movimentacao",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingTab",
+        "id": "movimentacao",
+        "label": "movimentacao"
+      }
+    ]
+  },
+  {
+    "id": "estoque-tab-entradaalmoxarifado",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - entradaAlmoxarifado",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingTab",
+        "id": "entradaAlmoxarifado",
+        "label": "entradaAlmoxarifado"
+      }
+    ]
+  },
+  {
+    "id": "estoque-modal-selecaotorasmodal",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Selecionar Toras para Baixa",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingModal",
+        "id": "selecaoTorasModal",
+        "title": "Selecionar Toras para Baixa"
+      }
+    ]
+  },
+  {
+    "id": "estoque-modal-modalbaixaproduto",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Baixa de Produto / Consumo",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingModal",
+        "id": "modalBaixaProduto",
+        "title": "Baixa de Produto / Consumo"
+      }
+    ]
+  },
+  {
+    "id": "estoque-modal-rastreabilidademodal",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Rastreabilidade de Toras",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingModal",
+        "id": "rastreabilidadeModal",
+        "title": "Rastreabilidade de Toras"
+      }
+    ]
+  },
+  {
+    "id": "estoque-modal-relatoriopreviewmodal",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Pré-visualização de Relatório",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingModal",
+        "id": "relatorioPreviewModal",
+        "title": "Pré-visualização de Relatório"
+      }
+    ]
+  },
+  {
+    "id": "estoque-modal-loadingmodal",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Processando...",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingModal",
+        "id": "loadingModal",
+        "title": "Processando..."
+      }
+    ]
+  },
+  {
+    "id": "estoque-acao-relatorios",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Relatórios",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Relatórios",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "estoque-acao-imprimir",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Imprimir",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Imprimir",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "estoque-acao-configurar-colunas",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Configurar Colunas",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Configurar Colunas",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "estoque-acao-gerar-relatorio",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Gerar Relatório",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Gerar Relatório",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "estoque-acao-colunas",
+    "path": "estoque.html",
+    "title": "Controle de Estoque - Sistema - Colunas",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Colunas",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "financas-overview",
+    "path": "financas.html",
+    "title": "Finanças - Sistema de Gestão",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      }
+    ]
+  },
+  {
+    "id": "financas-tab-dashboard",
+    "path": "financas.html",
+    "title": "Finanças - Sistema de Gestão - Dashboard",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Dashboard",
+        "label": "Dashboard"
+      }
+    ]
+  },
+  {
+    "id": "financas-tab-contas-a-receber",
+    "path": "financas.html",
+    "title": "Finanças - Sistema de Gestão - Contas a Receber",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Contas a Receber",
+        "label": "Contas a Receber"
+      }
+    ]
+  },
+  {
+    "id": "financas-tab-contas-a-pagar",
+    "path": "financas.html",
+    "title": "Finanças - Sistema de Gestão - Contas a Pagar",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Contas a Pagar",
+        "label": "Contas a Pagar"
+      }
+    ]
+  },
+  {
+    "id": "financas-tab-fluxo-de-caixa",
+    "path": "financas.html",
+    "title": "Finanças - Sistema de Gestão - Fluxo de Caixa",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Fluxo de Caixa",
+        "label": "Fluxo de Caixa"
+      }
+    ]
+  },
+  {
+    "id": "financas-tab-relatorios",
+    "path": "financas.html",
+    "title": "Finanças - Sistema de Gestão - Relatórios",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Relatórios",
+        "label": "Relatórios"
+      }
+    ]
+  },
+  {
+    "id": "financas-tab-receber",
+    "path": "financas.html",
+    "title": "Finanças - Sistema de Gestão - receber",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      },
+      {
+        "type": "trainingTab",
+        "id": "receber",
+        "label": "receber"
+      }
+    ]
+  },
+  {
+    "id": "financas-tab-pagar",
+    "path": "financas.html",
+    "title": "Finanças - Sistema de Gestão - pagar",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      },
+      {
+        "type": "trainingTab",
+        "id": "pagar",
+        "label": "pagar"
+      }
+    ]
+  },
+  {
+    "id": "financas-tab-fluxo",
+    "path": "financas.html",
+    "title": "Finanças - Sistema de Gestão - fluxo",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      },
+      {
+        "type": "trainingTab",
+        "id": "fluxo",
+        "label": "fluxo"
+      }
+    ]
+  },
+  {
+    "id": "financas-modal-pagamentomodal",
+    "path": "financas.html",
+    "title": "Finanças - Sistema de Gestão - Registrar Pagamento",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      },
+      {
+        "type": "trainingModal",
+        "id": "pagamentoModal",
+        "title": "Registrar Pagamento"
+      }
+    ]
+  },
+  {
+    "id": "financas-modal-anexosmodal",
+    "path": "financas.html",
+    "title": "Finanças - Sistema de Gestão - Anexos",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      },
+      {
+        "type": "trainingModal",
+        "id": "anexosModal",
+        "title": "Anexos"
+      }
+    ]
+  },
+  {
+    "id": "financas-modal-printcolumnsmodal",
+    "path": "financas.html",
+    "title": "Finanças - Sistema de Gestão - Configurar colunas",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      },
+      {
+        "type": "trainingModal",
+        "id": "printColumnsModal",
+        "title": "Configurar colunas"
+      }
+    ]
+  },
+  {
+    "id": "financas-acao-relatorios",
+    "path": "financas.html",
+    "title": "Finanças - Sistema de Gestão - Relatórios",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Relatórios",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "financas-acao-gerar-relatorio",
+    "path": "financas.html",
+    "title": "Finanças - Sistema de Gestão - Gerar Relatório",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Gerar Relatório",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "financas-acao-pdf",
+    "path": "financas.html",
+    "title": "Finanças - Sistema de Gestão - PDF",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      },
+      {
+        "type": "trainingAction",
+        "label": "PDF",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "folha-folha-overview",
+    "path": "folha_pagamento/folha.html",
+    "title": "Folha de Pagamento - Sistema SisWeb",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "folha_pagamento/folha.html"
+      },
+      {
+        "type": "training",
+        "name": "folha"
+      }
+    ]
+  },
+  {
+    "id": "folha-folha-modal-funcionariomodal",
+    "path": "folha_pagamento/folha.html",
+    "title": "Folha de Pagamento - Sistema SisWeb - Novo Funcionário",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "folha_pagamento/folha.html"
+      },
+      {
+        "type": "training",
+        "name": "folha"
+      },
+      {
+        "type": "trainingModal",
+        "id": "funcionarioModal",
+        "title": "Novo Funcionário"
+      }
+    ]
+  },
+  {
+    "id": "folha-folha-modal-pixqrcodemodal",
+    "path": "folha_pagamento/folha.html",
+    "title": "Folha de Pagamento - Sistema SisWeb - QR Code PIX",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "folha_pagamento/folha.html"
+      },
+      {
+        "type": "training",
+        "name": "folha"
+      },
+      {
+        "type": "trainingModal",
+        "id": "pixQrCodeModal",
+        "title": "QR Code PIX"
+      }
+    ]
+  },
+  {
+    "id": "folha-folha-modal-cargomodal",
+    "path": "folha_pagamento/folha.html",
+    "title": "Folha de Pagamento - Sistema SisWeb - Novo Cargo",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "folha_pagamento/folha.html"
+      },
+      {
+        "type": "training",
+        "name": "folha"
+      },
+      {
+        "type": "trainingModal",
+        "id": "cargoModal",
+        "title": "Novo Cargo"
+      }
+    ]
+  },
+  {
+    "id": "folha-folha-modal-folhamodal",
+    "path": "folha_pagamento/folha.html",
+    "title": "Folha de Pagamento - Sistema SisWeb - Nova Folha de Pagamento",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "folha_pagamento/folha.html"
+      },
+      {
+        "type": "training",
+        "name": "folha"
+      },
+      {
+        "type": "trainingModal",
+        "id": "folhaModal",
+        "title": "Nova Folha de Pagamento"
+      }
+    ]
+  },
+  {
+    "id": "folha-folha-modal-cargoslistmodal",
+    "path": "folha_pagamento/folha.html",
+    "title": "Folha de Pagamento - Sistema SisWeb - 📋 Lista de Cargos",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "folha_pagamento/folha.html"
+      },
+      {
+        "type": "training",
+        "name": "folha"
+      },
+      {
+        "type": "trainingModal",
+        "id": "cargosListModal",
+        "title": "📋 Lista de Cargos"
+      }
+    ]
+  },
+  {
+    "id": "folha-folha-modal-folhasfechadasmodal",
+    "path": "folha_pagamento/folha.html",
+    "title": "Folha de Pagamento - Sistema SisWeb - 📁 Folhas Fechadas",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "folha_pagamento/folha.html"
+      },
+      {
+        "type": "training",
+        "name": "folha"
+      },
+      {
+        "type": "trainingModal",
+        "id": "folhasFechadasModal",
+        "title": "📁 Folhas Fechadas"
+      }
+    ]
+  },
+  {
+    "id": "folha-folha-acao-relatorios",
+    "path": "folha_pagamento/folha.html",
+    "title": "Folha de Pagamento - Sistema SisWeb - Relatórios",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "folha_pagamento/folha.html"
+      },
+      {
+        "type": "training",
+        "name": "folha"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Relatórios",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "folha-folha-acao-folhas-fechadas",
+    "path": "folha_pagamento/folha.html",
+    "title": "Folha de Pagamento - Sistema SisWeb - Folhas Fechadas",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "folha_pagamento/folha.html"
+      },
+      {
+        "type": "training",
+        "name": "folha"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Folhas Fechadas",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "folha-folha-acao-resumo-da-folha",
+    "path": "folha_pagamento/folha.html",
+    "title": "Folha de Pagamento - Sistema SisWeb - Resumo da Folha",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "folha_pagamento/folha.html"
+      },
+      {
+        "type": "training",
+        "name": "folha"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Resumo da Folha",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "fornecedor-overview",
+    "path": "fornecedor.html",
+    "title": "Gerenciar Fornecedores - Sistema",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "fornecedor.html"
+      },
+      {
+        "type": "training",
+        "name": "cadastros-fornecedor"
+      }
+    ]
+  },
+  {
+    "id": "fornecedor-modal-modalform",
+    "path": "fornecedor.html",
+    "title": "Gerenciar Fornecedores - Sistema - Novo Fornecedor",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "fornecedor.html"
+      },
+      {
+        "type": "training",
+        "name": "cadastros-fornecedor"
+      },
+      {
+        "type": "trainingModal",
+        "id": "modalForm",
+        "title": "Novo Fornecedor"
+      }
+    ]
+  },
+  {
+    "id": "importar-especies-overview",
+    "path": "importar_especies.html",
+    "title": "Importação de Espécies - Sistema",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "importar_especies.html"
+      },
+      {
+        "type": "training",
+        "name": "cadastros-importar-especies"
+      }
+    ]
+  },
+  {
+    "id": "index-overview",
+    "path": "index.html",
+    "title": "Dashboard - Sistema Sisweb",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "index.html"
+      },
+      {
+        "type": "training",
+        "name": "inicio"
+      }
+    ]
+  },
+  {
+    "id": "login-overview",
+    "path": "login.html",
+    "title": "Portal de Acesso - SisWeb",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "login.html"
+      },
+      {
+        "type": "training",
+        "name": "login"
+      }
+    ]
+  },
+  {
+    "id": "login-modal-registermodal",
+    "path": "login.html",
+    "title": "Portal de Acesso - SisWeb - Criar Conta",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "login.html"
+      },
+      {
+        "type": "training",
+        "name": "login"
+      },
+      {
+        "type": "trainingModal",
+        "id": "registerModal",
+        "title": "Criar Conta"
+      }
+    ]
+  },
+  {
+    "id": "login-modal-forgotpasswordmodal",
+    "path": "login.html",
+    "title": "Portal de Acesso - SisWeb - Recuperar Senha",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "login.html"
+      },
+      {
+        "type": "training",
+        "name": "login"
+      },
+      {
+        "type": "trainingModal",
+        "id": "forgotPasswordModal",
+        "title": "Recuperar Senha"
+      }
+    ]
+  },
+  {
+    "id": "mdf-e-overview",
+    "path": "mdf-e.html",
+    "title": "MDF-e - Manifesto de Documentos Fiscais",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "mdf-e.html"
+      },
+      {
+        "type": "training",
+        "name": "mdfe"
+      }
+    ]
+  },
+  {
+    "id": "mdf-e-tab-emissao",
+    "path": "mdf-e.html",
+    "title": "MDF-e - Manifesto de Documentos Fiscais - Emissão",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "mdf-e.html"
+      },
+      {
+        "type": "training",
+        "name": "mdfe"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Emissão",
+        "label": "Emissão"
+      }
+    ]
+  },
+  {
+    "id": "mdf-e-tab-consulta",
+    "path": "mdf-e.html",
+    "title": "MDF-e - Manifesto de Documentos Fiscais - Consulta",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "mdf-e.html"
+      },
+      {
+        "type": "training",
+        "name": "mdfe"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Consulta",
+        "label": "Consulta"
+      }
+    ]
+  },
+  {
+    "id": "mdf-e-tab-encerramento",
+    "path": "mdf-e.html",
+    "title": "MDF-e - Manifesto de Documentos Fiscais - Encerramento",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "mdf-e.html"
+      },
+      {
+        "type": "training",
+        "name": "mdfe"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Encerramento",
+        "label": "Encerramento"
+      }
+    ]
+  },
+  {
+    "id": "mdf-e-tab-dashboard",
+    "path": "mdf-e.html",
+    "title": "MDF-e - Manifesto de Documentos Fiscais - Dashboard",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "mdf-e.html"
+      },
+      {
+        "type": "training",
+        "name": "mdfe"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Dashboard",
+        "label": "Dashboard"
+      }
+    ]
+  },
+  {
+    "id": "mdf-e-acao-emitir-mdf-e",
+    "path": "mdf-e.html",
+    "title": "MDF-e - Manifesto de Documentos Fiscais - Emitir MDF-e",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "mdf-e.html"
+      },
+      {
+        "type": "training",
+        "name": "mdfe"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Emitir MDF-e",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "mdf-e-acao-encerrar-mdf-e",
+    "path": "mdf-e.html",
+    "title": "MDF-e - Manifesto de Documentos Fiscais - Encerrar MDF-e",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "mdf-e.html"
+      },
+      {
+        "type": "training",
+        "name": "mdfe"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Encerrar MDF-e",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "mdf-e-acao-gerar-relatorio",
+    "path": "mdf-e.html",
+    "title": "MDF-e - Manifesto de Documentos Fiscais - Gerar Relatório",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "mdf-e.html"
+      },
+      {
+        "type": "training",
+        "name": "mdfe"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Gerar Relatório",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "notas-fiscais-overview",
+    "path": "notas-fiscais.html",
+    "title": "Notas Fiscais - Sistema de Gestão",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "notas-fiscais.html"
+      },
+      {
+        "type": "training",
+        "name": "fiscal"
+      }
+    ]
+  },
+  {
+    "id": "notas-fiscais-tab-emissao",
+    "path": "notas-fiscais.html",
+    "title": "Notas Fiscais - Sistema de Gestão - Emissão",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "notas-fiscais.html"
+      },
+      {
+        "type": "training",
+        "name": "fiscal"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Emissão",
+        "label": "Emissão"
+      }
+    ]
+  },
+  {
+    "id": "notas-fiscais-tab-consulta",
+    "path": "notas-fiscais.html",
+    "title": "Notas Fiscais - Sistema de Gestão - Consulta",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "notas-fiscais.html"
+      },
+      {
+        "type": "training",
+        "name": "fiscal"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Consulta",
+        "label": "Consulta"
+      }
+    ]
+  },
+  {
+    "id": "notas-fiscais-tab-dashboard",
+    "path": "notas-fiscais.html",
+    "title": "Notas Fiscais - Sistema de Gestão - Dashboard",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "notas-fiscais.html"
+      },
+      {
+        "type": "training",
+        "name": "fiscal"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Dashboard",
+        "label": "Dashboard"
+      }
+    ]
+  },
+  {
+    "id": "notas-fiscais-tab-configuracao",
+    "path": "notas-fiscais.html",
+    "title": "Notas Fiscais - Sistema de Gestão - Configuração",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "notas-fiscais.html"
+      },
+      {
+        "type": "training",
+        "name": "fiscal"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Configuração",
+        "label": "Configuração"
+      }
+    ]
+  },
+  {
+    "id": "notas-fiscais-acao-gerar-relatorio",
+    "path": "notas-fiscais.html",
+    "title": "Notas Fiscais - Sistema de Gestão - Gerar Relatório",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "notas-fiscais.html"
+      },
+      {
+        "type": "training",
+        "name": "fiscal"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Gerar Relatório",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "preromaneio-overview",
+    "path": "preromaneio.html",
+    "title": "Pré-Romaneio - Sistema",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "preromaneio.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneios"
+      }
+    ]
+  },
+  {
+    "id": "preromaneio-tab-pacote",
+    "path": "preromaneio.html",
+    "title": "Pré-Romaneio - Sistema - Pacote",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "preromaneio.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneios"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Pacote",
+        "label": "Pacote"
+      }
+    ]
+  },
+  {
+    "id": "preromaneio-tab-toda-largura",
+    "path": "preromaneio.html",
+    "title": "Pré-Romaneio - Sistema - Toda Largura",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "preromaneio.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneios"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Toda Largura",
+        "label": "Toda Largura"
+      }
+    ]
+  },
+  {
+    "id": "preromaneio-tab-pes",
+    "path": "preromaneio.html",
+    "title": "Pré-Romaneio - Sistema - Pés",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "preromaneio.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneios"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Pés",
+        "label": "Pés"
+      }
+    ]
+  },
+  {
+    "id": "preromaneio-tab-toras",
+    "path": "preromaneio.html",
+    "title": "Pré-Romaneio - Sistema - Toras",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "preromaneio.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneios"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Toras",
+        "label": "Toras"
+      }
+    ]
+  },
+  {
+    "id": "preromaneio-tab-content-serrados",
+    "path": "preromaneio.html",
+    "title": "Pré-Romaneio - Sistema - content-serrados",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "preromaneio.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneios"
+      },
+      {
+        "type": "trainingTab",
+        "id": "content-serrados",
+        "label": "content-serrados"
+      }
+    ]
+  },
+  {
+    "id": "preromaneio-tab-content-toras",
+    "path": "preromaneio.html",
+    "title": "Pré-Romaneio - Sistema - content-toras",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "preromaneio.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneios"
+      },
+      {
+        "type": "trainingTab",
+        "id": "content-toras",
+        "label": "content-toras"
+      }
+    ]
+  },
+  {
+    "id": "preromaneio-modal-clientlistmodal",
+    "path": "preromaneio.html",
+    "title": "Pré-Romaneio - Sistema - Selecionar Cliente",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "preromaneio.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneios"
+      },
+      {
+        "type": "trainingModal",
+        "id": "clientListModal",
+        "title": "Selecionar Cliente"
+      }
+    ]
+  },
+  {
+    "id": "preromaneio-modal-clientmodal",
+    "path": "preromaneio.html",
+    "title": "Pré-Romaneio - Sistema - Novo Cliente",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "preromaneio.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneios"
+      },
+      {
+        "type": "trainingModal",
+        "id": "clientModal",
+        "title": "Novo Cliente"
+      }
+    ]
+  },
+  {
+    "id": "preromaneio-modal-fornecedorlistmodal",
+    "path": "preromaneio.html",
+    "title": "Pré-Romaneio - Sistema - Selecionar Fornecedor",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "preromaneio.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneios"
+      },
+      {
+        "type": "trainingModal",
+        "id": "fornecedorListModal",
+        "title": "Selecionar Fornecedor"
+      }
+    ]
+  },
+  {
+    "id": "preromaneio-modal-fornecedormodal",
+    "path": "preromaneio.html",
+    "title": "Pré-Romaneio - Sistema - Novo Fornecedor",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "preromaneio.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneios"
+      },
+      {
+        "type": "trainingModal",
+        "id": "fornecedorModal",
+        "title": "Novo Fornecedor"
+      }
+    ]
+  },
+  {
+    "id": "preromaneio-modal-specieslistmodal",
+    "path": "preromaneio.html",
+    "title": "Pré-Romaneio - Sistema - 🌳 Lista de Espécies",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "preromaneio.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneios"
+      },
+      {
+        "type": "trainingModal",
+        "id": "speciesListModal",
+        "title": "🌳 Lista de Espécies"
+      }
+    ]
+  },
+  {
+    "id": "preromaneio-modal-speciesmodal",
+    "path": "preromaneio.html",
+    "title": "Pré-Romaneio - Sistema - Nova Espécie",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "preromaneio.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneios"
+      },
+      {
+        "type": "trainingModal",
+        "id": "speciesModal",
+        "title": "Nova Espécie"
+      }
+    ]
+  },
+  {
+    "id": "preromaneio-modal-listamodal",
+    "path": "preromaneio.html",
+    "title": "Pré-Romaneio - Sistema - Meus Pré-Romaneios",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "preromaneio.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneios"
+      },
+      {
+        "type": "trainingModal",
+        "id": "listaModal",
+        "title": "Meus Pré-Romaneios"
+      }
+    ]
+  },
+  {
+    "id": "romaneiopct-overview",
+    "path": "romaneiopct.html",
+    "title": "Romaneio PCT - Sistema Sisweb",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopct.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pct"
+      }
+    ]
+  },
+  {
+    "id": "romaneiopct-modal-aboutmodal",
+    "path": "romaneiopct.html",
+    "title": "Romaneio PCT - Sistema Sisweb - Sobre o Desenvolvedor",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopct.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pct"
+      },
+      {
+        "type": "trainingModal",
+        "id": "aboutModal",
+        "title": "Sobre o Desenvolvedor"
+      }
+    ]
+  },
+  {
+    "id": "romaneiopct-modal-helpmodal",
+    "path": "romaneiopct.html",
+    "title": "Romaneio PCT - Sistema Sisweb - Ajuda do Sistema",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopct.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pct"
+      },
+      {
+        "type": "trainingModal",
+        "id": "helpModal",
+        "title": "Ajuda do Sistema"
+      }
+    ]
+  },
+  {
+    "id": "romaneiopct-modal-listamodal",
+    "path": "romaneiopct.html",
+    "title": "Romaneio PCT - Sistema Sisweb - 📋 Lista de Romaneios",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopct.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pct"
+      },
+      {
+        "type": "trainingModal",
+        "id": "listaModal",
+        "title": "📋 Lista de Romaneios"
+      }
+    ]
+  },
+  {
+    "id": "romaneiopct-modal-clientlistmodal",
+    "path": "romaneiopct.html",
+    "title": "Romaneio PCT - Sistema Sisweb - 📋 Lista de Clientes",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopct.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pct"
+      },
+      {
+        "type": "trainingModal",
+        "id": "clientListModal",
+        "title": "📋 Lista de Clientes"
+      }
+    ]
+  },
+  {
+    "id": "romaneiopct-modal-clientmodal",
+    "path": "romaneiopct.html",
+    "title": "Romaneio PCT - Sistema Sisweb - Novo Cliente",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopct.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pct"
+      },
+      {
+        "type": "trainingModal",
+        "id": "clientModal",
+        "title": "Novo Cliente"
+      }
+    ]
+  },
+  {
+    "id": "romaneiopct-modal-specieslistmodal",
+    "path": "romaneiopct.html",
+    "title": "Romaneio PCT - Sistema Sisweb - 🌳 Lista de Espécies",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopct.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pct"
+      },
+      {
+        "type": "trainingModal",
+        "id": "speciesListModal",
+        "title": "🌳 Lista de Espécies"
+      }
+    ]
+  },
+  {
+    "id": "romaneiopct-modal-speciesmodal",
+    "path": "romaneiopct.html",
+    "title": "Romaneio PCT - Sistema Sisweb - Nova Espécie",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopct.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pct"
+      },
+      {
+        "type": "trainingModal",
+        "id": "speciesModal",
+        "title": "Nova Espécie"
+      }
+    ]
+  },
+  {
+    "id": "romaneiopct-acao-listar",
+    "path": "romaneiopct.html",
+    "title": "Romaneio PCT - Sistema Sisweb - Listar",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopct.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pct"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Listar",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "romaneiopes-overview",
+    "path": "romaneiopes.html",
+    "title": "Romaneio PES - Sistema Sisweb",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopes.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pes"
+      }
+    ]
+  },
+  {
+    "id": "romaneiopes-modal-helpmodal",
+    "path": "romaneiopes.html",
+    "title": "Romaneio PES - Sistema Sisweb - Ajuda do Sistema",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopes.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pes"
+      },
+      {
+        "type": "trainingModal",
+        "id": "helpModal",
+        "title": "Ajuda do Sistema"
+      }
+    ]
+  },
+  {
+    "id": "romaneiopes-modal-clientmodal",
+    "path": "romaneiopes.html",
+    "title": "Romaneio PES - Sistema Sisweb - Novo Cliente",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopes.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pes"
+      },
+      {
+        "type": "trainingModal",
+        "id": "clientModal",
+        "title": "Novo Cliente"
+      }
+    ]
+  },
+  {
+    "id": "romaneiopes-modal-speciesmodal",
+    "path": "romaneiopes.html",
+    "title": "Romaneio PES - Sistema Sisweb - Nova Espécie",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopes.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pes"
+      },
+      {
+        "type": "trainingModal",
+        "id": "speciesModal",
+        "title": "Nova Espécie"
+      }
+    ]
+  },
+  {
+    "id": "romaneiopes-acao-listar",
+    "path": "romaneiopes.html",
+    "title": "Romaneio PES - Sistema Sisweb - Listar",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopes.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pes"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Listar",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "romaneiopes-acao-imprimir",
+    "path": "romaneiopes.html",
+    "title": "Romaneio PES - Sistema Sisweb - Imprimir",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopes.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pes"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Imprimir",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "romaneiotl-overview",
+    "path": "romaneiotl.html",
+    "title": "Romaneio TL - Sistema Sisweb",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiotl.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-tl"
+      }
+    ]
+  },
+  {
+    "id": "romaneiotl-modal-clientlistmodal",
+    "path": "romaneiotl.html",
+    "title": "Romaneio TL - Sistema Sisweb - 📋 Lista de Clientes",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiotl.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-tl"
+      },
+      {
+        "type": "trainingModal",
+        "id": "clientListModal",
+        "title": "📋 Lista de Clientes"
+      }
+    ]
+  },
+  {
+    "id": "romaneiotl-modal-specieslistmodal",
+    "path": "romaneiotl.html",
+    "title": "Romaneio TL - Sistema Sisweb - 🌳 Lista de Espécies",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiotl.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-tl"
+      },
+      {
+        "type": "trainingModal",
+        "id": "speciesListModal",
+        "title": "🌳 Lista de Espécies"
+      }
+    ]
+  },
+  {
+    "id": "romaneiotl-modal-listamodal",
+    "path": "romaneiotl.html",
+    "title": "Romaneio TL - Sistema Sisweb - 📋 Lista de Romaneios",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiotl.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-tl"
+      },
+      {
+        "type": "trainingModal",
+        "id": "listaModal",
+        "title": "📋 Lista de Romaneios"
+      }
+    ]
+  },
+  {
+    "id": "romaneiotl-acao-listar",
+    "path": "romaneiotl.html",
+    "title": "Romaneio TL - Sistema Sisweb - Listar",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiotl.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-tl"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Listar",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "romaneiotora-overview",
+    "path": "romaneiotora.html",
+    "title": "Romaneio de Toras",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiotora.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-tora"
+      }
+    ]
+  },
+  {
+    "id": "romaneiotora-modal-aboutmodal",
+    "path": "romaneiotora.html",
+    "title": "Romaneio de Toras - Sobre o Desenvolvedor",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiotora.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-tora"
+      },
+      {
+        "type": "trainingModal",
+        "id": "aboutModal",
+        "title": "Sobre o Desenvolvedor"
+      }
+    ]
+  },
+  {
+    "id": "romaneiotora-modal-helpmodal",
+    "path": "romaneiotora.html",
+    "title": "Romaneio de Toras - Ajuda do Sistema",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiotora.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-tora"
+      },
+      {
+        "type": "trainingModal",
+        "id": "helpModal",
+        "title": "Ajuda do Sistema"
+      }
+    ]
+  },
+  {
+    "id": "romaneiotora-modal-speciesmodal",
+    "path": "romaneiotora.html",
+    "title": "Romaneio de Toras - Nova Espécie",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiotora.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-tora"
+      },
+      {
+        "type": "trainingModal",
+        "id": "speciesModal",
+        "title": "Nova Espécie"
+      }
+    ]
+  },
+  {
+    "id": "romaneiotora-modal-fornecedorlistmodal",
+    "path": "romaneiotora.html",
+    "title": "Romaneio de Toras - Lista de Fornecedores",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiotora.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-tora"
+      },
+      {
+        "type": "trainingModal",
+        "id": "fornecedorListModal",
+        "title": "Lista de Fornecedores"
+      }
+    ]
+  },
+  {
+    "id": "romaneiotora-modal-specieslistmodal",
+    "path": "romaneiotora.html",
+    "title": "Romaneio de Toras - 🌳 Lista de Espécies",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiotora.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-tora"
+      },
+      {
+        "type": "trainingModal",
+        "id": "speciesListModal",
+        "title": "🌳 Lista de Espécies"
+      }
+    ]
+  },
+  {
+    "id": "romaneiotora-modal-fornecedormodal",
+    "path": "romaneiotora.html",
+    "title": "Romaneio de Toras - Novo Fornecedor",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiotora.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-tora"
+      },
+      {
+        "type": "trainingModal",
+        "id": "fornecedorModal",
+        "title": "Novo Fornecedor"
+      }
+    ]
+  },
+  {
+    "id": "romaneiotora-acao-listar",
+    "path": "romaneiotora.html",
+    "title": "Romaneio de Toras - Listar",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiotora.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-tora"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Listar",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "species-overview",
+    "path": "species.html",
+    "title": "Gerenciar Espécies - Sistema",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "species.html"
+      },
+      {
+        "type": "training",
+        "name": "cadastros-especies"
+      }
+    ]
+  },
+  {
+    "id": "species-modal-speciesmodal",
+    "path": "species.html",
+    "title": "Gerenciar Espécies - Sistema - Nova Espécie",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "species.html"
+      },
+      {
+        "type": "training",
+        "name": "cadastros-especies"
+      },
+      {
+        "type": "trainingModal",
+        "id": "speciesModal",
+        "title": "Nova Espécie"
+      }
+    ]
+  },
+  {
+    "id": "subscription-status-overview",
+    "path": "subscription-status.html",
+    "title": "Status da Assinatura - Sistema",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "subscription-status.html"
+      },
+      {
+        "type": "training",
+        "name": "assinatura"
+      }
+    ]
+  },
+  {
+    "id": "subscription-status-modal-aboutmodal",
+    "path": "subscription-status.html",
+    "title": "Status da Assinatura - Sistema - Sobre o Desenvolvedor",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "subscription-status.html"
+      },
+      {
+        "type": "training",
+        "name": "assinatura"
+      },
+      {
+        "type": "trainingModal",
+        "id": "aboutModal",
+        "title": "Sobre o Desenvolvedor"
+      }
+    ]
+  },
+  {
+    "id": "subscription-status-modal-helpmodal",
+    "path": "subscription-status.html",
+    "title": "Status da Assinatura - Sistema - Ajuda do Sistema",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "subscription-status.html"
+      },
+      {
+        "type": "training",
+        "name": "assinatura"
+      },
+      {
+        "type": "trainingModal",
+        "id": "helpModal",
+        "title": "Ajuda do Sistema"
+      }
+    ]
+  },
+  {
+    "id": "subscription-overview",
+    "path": "subscription.html",
+    "title": "Assinatura - Sistema",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "subscription.html"
+      },
+      {
+        "type": "training",
+        "name": "assinatura-pagamento"
+      }
+    ]
+  },
+  {
+    "id": "subscription-modal-paymentmodal",
+    "path": "subscription.html",
+    "title": "Assinatura - Sistema - Pagamento da Assinatura",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "subscription.html"
+      },
+      {
+        "type": "training",
+        "name": "assinatura-pagamento"
+      },
+      {
+        "type": "trainingModal",
+        "id": "paymentModal",
+        "title": "Pagamento da Assinatura"
+      }
+    ]
+  },
+  {
+    "id": "user-profile-overview",
+    "path": "user-profile.html",
+    "title": "Meu Perfil - Sistema",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "user-profile.html"
+      },
+      {
+        "type": "training",
+        "name": "perfil"
+      }
+    ]
+  },
+  {
+    "id": "user-profile-modal-editpersonalmodal",
+    "path": "user-profile.html",
+    "title": "Meu Perfil - Sistema - Editar Informações Pessoais",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "user-profile.html"
+      },
+      {
+        "type": "training",
+        "name": "perfil"
+      },
+      {
+        "type": "trainingModal",
+        "id": "editPersonalModal",
+        "title": "Editar Informações Pessoais"
+      }
+    ]
+  },
+  {
+    "id": "vendas-overview",
+    "path": "vendas.html",
+    "title": "Sistema de Vendas",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      }
+    ]
+  },
+  {
+    "id": "vendas-tab-pedidos-de-venda",
+    "path": "vendas.html",
+    "title": "Sistema de Vendas - Pedidos de Venda",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Pedidos de Venda",
+        "label": "Pedidos de Venda"
+      }
+    ]
+  },
+  {
+    "id": "vendas-tab-clientes",
+    "path": "vendas.html",
+    "title": "Sistema de Vendas - Clientes",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Clientes",
+        "label": "Clientes"
+      }
+    ]
+  },
+  {
+    "id": "vendas-tab-produtos",
+    "path": "vendas.html",
+    "title": "Sistema de Vendas - Produtos",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Produtos",
+        "label": "Produtos"
+      }
+    ]
+  },
+  {
+    "id": "vendas-tab-relatorios",
+    "path": "vendas.html",
+    "title": "Sistema de Vendas - Relatórios",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      },
+      {
+        "type": "trainingTab",
+        "id": "Relatórios",
+        "label": "Relatórios"
+      }
+    ]
+  },
+  {
+    "id": "vendas-tab-pedidos",
+    "path": "vendas.html",
+    "title": "Sistema de Vendas - pedidos",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      },
+      {
+        "type": "trainingTab",
+        "id": "pedidos",
+        "label": "pedidos"
+      }
+    ]
+  },
+  {
+    "id": "vendas-modal-listapedidosmodal",
+    "path": "vendas.html",
+    "title": "Sistema de Vendas - Lista de Pedidos",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      },
+      {
+        "type": "trainingModal",
+        "id": "listaPedidosModal",
+        "title": "Lista de Pedidos"
+      }
+    ]
+  },
+  {
+    "id": "vendas-modal-produtomodal",
+    "path": "vendas.html",
+    "title": "Sistema de Vendas - Novo Produto",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      },
+      {
+        "type": "trainingModal",
+        "id": "produtoModal",
+        "title": "Novo Produto"
+      }
+    ]
+  },
+  {
+    "id": "vendas-modal-customizarcolunasmodal",
+    "path": "vendas.html",
+    "title": "Sistema de Vendas - Configurar colunas",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      },
+      {
+        "type": "trainingModal",
+        "id": "customizarColunasModal",
+        "title": "Configurar colunas"
+      }
+    ]
+  },
+  {
+    "id": "vendas-modal-visualizarpedidomodal",
+    "path": "vendas.html",
+    "title": "Sistema de Vendas - Detalhes do Pedido",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      },
+      {
+        "type": "trainingModal",
+        "id": "visualizarPedidoModal",
+        "title": "Detalhes do Pedido"
+      }
+    ]
+  },
+  {
+    "id": "vendas-acao-relatorios",
+    "path": "vendas.html",
+    "title": "Sistema de Vendas - Relatórios",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Relatórios",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "vendas-acao-listar-pedidos",
+    "path": "vendas.html",
+    "title": "Sistema de Vendas - Listar Pedidos",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Listar Pedidos",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "vendas-acao-listar-produtos",
+    "path": "vendas.html",
+    "title": "Sistema de Vendas - Listar Produtos",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Listar Produtos",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "vendas-acao-imprimir",
+    "path": "vendas.html",
+    "title": "Sistema de Vendas - Imprimir",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Imprimir",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "vendas-acao-imprimir-0",
+    "path": "vendas.html",
+    "title": "Sistema de Vendas - Imprimir (0)",
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      },
+      {
+        "type": "trainingAction",
+        "label": "Imprimir (0)",
+        "onclick": ""
+      }
+    ]
+  },
+  {
+    "id": "index-mobile",
+    "path": "index.html",
+    "title": "index.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "index.html"
+      },
+      {
+        "type": "training",
+        "name": "inicio"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "vendas-mobile",
+    "path": "vendas.html",
+    "title": "vendas.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "vendas.html"
+      },
+      {
+        "type": "training",
+        "name": "vendas"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "compras-mobile",
+    "path": "compras.html",
+    "title": "compras.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "compras.html"
+      },
+      {
+        "type": "training",
+        "name": "compras"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "estoque-mobile",
+    "path": "estoque.html",
+    "title": "estoque.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "estoque.html"
+      },
+      {
+        "type": "training",
+        "name": "estoque"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "financas-mobile",
+    "path": "financas.html",
+    "title": "financas.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "financas.html"
+      },
+      {
+        "type": "training",
+        "name": "financas"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "folha-folha-mobile",
+    "path": "folha_pagamento/folha.html",
+    "title": "folha_pagamento/folha.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "folha_pagamento/folha.html"
+      },
+      {
+        "type": "training",
+        "name": "folha"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "ajuda-mobile",
+    "path": "ajuda.html",
+    "title": "ajuda.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "ajuda.html"
+      },
+      {
+        "type": "training",
+        "name": "ajuda"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  }
+]

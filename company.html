@@ -594,6 +594,40 @@
                 </div>
             </div>
 
+            <!-- Seção Dados Bancários / PIX para Cobrança -->
+            <div style="margin-top: 25px; margin-bottom: 15px; padding: 18px; border: 1px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;">
+                <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-university" style="color: #2563eb;"></i> Dados Bancários / PIX para Cobrança
+                </h3>
+                <div class="grid" style="margin-bottom: 15px;">
+                    <div class="form-group">
+                        <label for="pixTipoChaveCobranca">Tipo de Chave PIX:</label>
+                        <select id="pixTipoChaveCobranca">
+                            <option value="">Selecione o tipo de chave</option>
+                            <option value="cnpj">CNPJ</option>
+                            <option value="cpf">CPF</option>
+                            <option value="email">E-mail</option>
+                            <option value="telefone">Celular/Telefone</option>
+                            <option value="aleatoria">Chave Aleatória</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pixChaveCobranca">Chave PIX:</label>
+                        <input type="text" id="pixChaveCobranca" placeholder="Chave do PIX">
+                    </div>
+                </div>
+                <div class="grid">
+                    <div class="form-group">
+                        <label for="pixFavorecidoCobranca">Nome do Favorecido:</label>
+                        <input type="text" id="pixFavorecidoCobranca" placeholder="Nome como no banco" maxlength="25">
+                    </div>
+                    <div class="form-group">
+                        <label for="pixBancoCobranca">Nome do Banco:</label>
+                        <input type="text" id="pixBancoCobranca" placeholder="Ex: Nubank, Itaú, Banco do Brasil">
+                    </div>
+                </div>
+            </div>
+
             <div class="button-container">
                 <button type="submit" id="saveBtn"><i class="fas fa-save"></i> Salvar Empresa</button>
                 <button type="button" id="btnListCompanies" onclick="showCompanyList()" style="display:none;"><i class="fas fa-list"></i> Listar Empresas</button>
@@ -768,7 +802,7 @@
                 try {
                     const raw = localStorage.getItem('company_info');
                     const info = raw ? JSON.parse(raw) : null;
-                    currentCompanyId = String((info && (info.id || info.companyId || info.companyID || info.tenantId || info.slug)) || '').trim();
+                    currentCompanyId = String((info && (info.companyId || info.companyID || info.tenantId || info.id)) || '').trim();
                 } catch (_) {}
             }
             if (currentCompanyId && typeof svc.loadFromFirebase === 'function') {
@@ -832,6 +866,14 @@
             window.getAll = getAllImpl;
         }
         
+        let companyLogoPreviewObjectUrl = '';
+        function revokeCompanyLogoPreviewObjectUrl() {
+            if (companyLogoPreviewObjectUrl && window.URL && typeof window.URL.revokeObjectURL === 'function') {
+                try { window.URL.revokeObjectURL(companyLogoPreviewObjectUrl); } catch (_) {}
+            }
+            companyLogoPreviewObjectUrl = '';
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             window.previewLogo = function() {
                 const input = document.getElementById('logo');
@@ -848,35 +890,37 @@
                             if (typeof window.__toast === 'function') window.__toast(msg, 'warning');
                             else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
                         } catch (_) {}
+                        revokeCompanyLogoPreviewObjectUrl();
                         preview.style.display = 'none';
                         fileNameDisplay.textContent = 'Arquivo inválido';
                         input.value = '';
                         return;
                     }
 
-                    // Verificar tamanho (5MB máximo)
-                    const maxSize = 5 * 1024 * 1024;
+                    // Verificar tamanho alinhado com storage.rules (2MB máximo)
+                    const maxSize = 2 * 1024 * 1024;
                     if (file.size > maxSize) {
                         try {
-                            const msg = 'A imagem deve ter no máximo 5MB.';
+                            const msg = 'A imagem deve ter no máximo 2MB para envio seguro ao Firebase Storage.';
                             if (typeof window.__toast === 'function') window.__toast(msg, 'warning');
                             else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
                         } catch (_) {}
+                        revokeCompanyLogoPreviewObjectUrl();
                         preview.style.display = 'none';
                         fileNameDisplay.textContent = 'Arquivo muito grande';
                         input.value = '';
                         return;
                     }
 
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        preview.src = e.target.result;
-                        preview.style.display = 'block';
-                        fileNameDisplay.textContent = file.name;
-                    };
-                    
-                    reader.readAsDataURL(file);
+                    revokeCompanyLogoPreviewObjectUrl();
+                    if (window.URL && typeof window.URL.createObjectURL === 'function') {
+                        companyLogoPreviewObjectUrl = window.URL.createObjectURL(file);
+                        preview.src = companyLogoPreviewObjectUrl;
+                    }
+                    preview.style.display = companyLogoPreviewObjectUrl ? 'block' : 'none';
+                    fileNameDisplay.textContent = file.name;
                 } else {
+                    revokeCompanyLogoPreviewObjectUrl();
                     preview.style.display = 'none';
                     fileNameDisplay.textContent = 'Nenhuma imagem selecionada';
                 }
@@ -931,9 +975,10 @@
                             
                             // Processar logo da empresa
                             let logoHtml = '';
-                            if (company.logo) {
+                            const logoRef = company.logoUrl || company.logoURL || company.logo || company.logoStoragePath || company.logoPath;
+                            if (logoRef) {
                                 try {
-                                    const logoUrl = await loadCompanyLogo(company.logo);
+                                    const logoUrl = await loadCompanyLogo(logoRef);
                                     if (logoUrl) {
                                         logoHtml = `<img src="${logoUrl}" alt="Logo" style="width: 40px; height: 40px; object-fit: contain; border-radius: 4px;">`;
                                     } else {
@@ -1074,7 +1119,13 @@
                     state: String(pick('state', 'estado', 'uf')).trim(),
                     city: String(pick('city', 'cidade', 'municipio')).trim(),
                     phone: String(pick('phone', 'telefone', 'celular')).trim(),
-                    logo: String(pick('logo', 'logoUrl', 'image', 'imagem', 'logoBase64')).trim()
+                    logo: String(pick('logoUrl', 'logoURL', 'logo', 'logoStoragePath', 'logoPath', 'image', 'imagem', 'logoBase64')).trim(),
+                    logoUrl: String(pick('logoUrl', 'logoURL')).trim(),
+                    logoStoragePath: String(pick('logoStoragePath', 'logoPath', 'storagePath')).trim(),
+                    logoFileName: String(pick('logoFileName', 'logoName')).trim(),
+                    logoContentType: String(pick('logoContentType', 'logoMimeType')).trim(),
+                    logoSize: pick('logoSize') || '',
+                    logoUpdatedAt: String(pick('logoUpdatedAt')).trim()
                 };
             };
 
@@ -1090,6 +1141,13 @@
                 }
                 document.getElementById('city').value = normalized.city;
                 document.getElementById('phone').value = normalized.phone;
+                
+                // Preencher campos PIX/Bancários
+                document.getElementById('pixTipoChaveCobranca').value = company.pixTipoChaveCobranca || '';
+                document.getElementById('pixChaveCobranca').value = company.pixChaveCobranca || '';
+                document.getElementById('pixFavorecidoCobranca').value = company.pixFavorecidoCobranca || '';
+                document.getElementById('pixBancoCobranca').value = company.pixBancoCobranca || '';
+
                 if (normalized.logo) {
                     try {
                         const logoUrl = await loadCompanyLogo(normalized.logo);
@@ -1160,16 +1218,58 @@
         // FUNÇÕES DE DADOS INTEGRADAS COM FIREBASE
         // ========================================
 
+        function isDataLogo(value) {
+            return String(value || '').trim().startsWith('data:');
+        }
+
+        function normalizeLogoPayloadFromUpload(uploadData) {
+            const data = uploadData && uploadData.data ? uploadData.data : (uploadData || {});
+            const path = String(data.path || data.storagePath || data.logoStoragePath || '').trim();
+            const url = String(data.downloadURL || data.url || data.logoUrl || '').trim();
+            return {
+                logo: url || path,
+                logoUrl: url,
+                logoStoragePath: path,
+                logoPath: path,
+                logoFileName: data.name || data.fileName || '',
+                logoContentType: data.contentType || data.mimeType || '',
+                logoSize: Number(data.size || 0) || '',
+                logoUpdatedAt: data.updatedAt || new Date().toISOString()
+            };
+        }
+
+        function normalizeLogoPayloadFromCompany(company) {
+            const source = company && typeof company === 'object' ? company : {};
+            const logo = source.logoUrl || source.logoURL || source.logo || source.logoStoragePath || source.logoPath || '';
+            return {
+                logo: isDataLogo(logo) ? '' : String(logo || '').trim(),
+                logoUrl: isDataLogo(source.logoUrl || source.logoURL || source.logo) ? '' : String(source.logoUrl || source.logoURL || (/^https?:\/\//i.test(String(source.logo || '')) ? source.logo : '') || '').trim(),
+                logoStoragePath: String(source.logoStoragePath || source.logoPath || source.storagePath || '').trim(),
+                logoPath: String(source.logoStoragePath || source.logoPath || source.storagePath || '').trim(),
+                logoFileName: source.logoFileName || source.logoName || '',
+                logoContentType: source.logoContentType || source.logoMimeType || '',
+                logoSize: source.logoSize || '',
+                logoUpdatedAt: source.logoUpdatedAt || ''
+            };
+        }
+
+        function applyLogoPayload(target, logoPayload) {
+            const payload = logoPayload && typeof logoPayload === 'object' ? logoPayload : {};
+            Object.entries(payload).forEach(([key, value]) => {
+                if (value === undefined || value === null || value === '') return;
+                target[key] = value;
+            });
+            return target;
+        }
+
         // ✅ FUNÇÃO PARA UPLOAD DA LOGO NO FIREBASE STORAGE
         async function uploadLogoToFirebase(file, companyId) {
             console.log('📤 Iniciando upload da logo para Firebase Storage...');
             
             try {
-                if (!window.firebaseService || typeof window.firebaseService.uploadFile !== 'function') {
-                    console.warn('⚠️ Firebase Storage não disponível, salvando logo como base64 local');
-                    return await readFileAsDataURL(file);
+                if (!window.firebaseService || (typeof window.firebaseService.uploadCompanyLogo !== 'function' && typeof window.firebaseService.uploadFile !== 'function')) {
+                    throw new Error('Firebase Storage indisponível para upload da logo');
                 }
-                
 
                 try {
                     if (window.firebaseService && typeof window.firebaseService.setTenantId === 'function') {
@@ -1193,31 +1293,37 @@
                 const safeFileName = String(file && file.name ? file.name : 'logo.png').replace(/[^\w.\-]+/g, '_');
                 const fileName = `companies/${companyId}/profile/logo/${timestamp}_${safeFileName}`;
                 
-                
-                console.log(`📤 Fazendo upload do arquivo: ${fileName}`);
-                
-                const uploadResult = await window.firebaseService.uploadFile(fileName, file);
-                
-                if (uploadResult && uploadResult.success && uploadResult.downloadURL) {
-                    console.log('✅ Logo enviada com sucesso para Firebase Storage');
-                    console.log('🔗 URL da logo:', uploadResult.downloadURL);
-                    return uploadResult.downloadURL;
+                let uploadResult = null;
+                if (typeof window.firebaseService.uploadCompanyLogo === 'function') {
+                    uploadResult = await window.firebaseService.uploadCompanyLogo(file, companyId);
                 } else {
-                    throw new Error('Falha no upload para Firebase Storage');
+                    console.log(`📤 Fazendo upload do arquivo: ${fileName}`);
+                    uploadResult = await window.firebaseService.uploadFile(fileName, file);
+                }
+                
+                const data = uploadResult && uploadResult.data ? uploadResult.data : uploadResult;
+                const url = data && (data.downloadURL || data.url);
+                const storagePath = data && (data.path || data.storagePath || fileName);
+                if (uploadResult && uploadResult.success !== false && (url || storagePath)) {
+                    console.log('✅ Logo enviada com sucesso para Firebase Storage');
+                    console.log('🔗 URL da logo:', url || storagePath);
+                    return normalizeLogoPayloadFromUpload({
+                        ...data,
+                        path: storagePath,
+                        storagePath,
+                        downloadURL: url,
+                        url,
+                        name: data && data.name ? data.name : safeFileName,
+                        contentType: file.type || '',
+                        size: file.size || 0
+                    });
+                } else {
+                    throw new Error((uploadResult && uploadResult.error) || 'Falha no upload para Firebase Storage');
                 }
                 
             } catch (error) {
                 console.error('❌ Erro no upload para Firebase Storage:', error);
-                
-                // Notificar usuário sobre o erro de upload
-                try {
-                    const msg = 'Erro no upload da logo: ' + (error.message || 'Erro desconhecido') + '. Usando armazenamento local.';
-                    if (typeof window.__toast === 'function') window.__toast(msg, 'warning', { duration: 7000 });
-                    else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
-                } catch (_) {}
-
-                console.log('💾 Fallback: Salvando logo como base64 local');
-                return await readFileAsDataURL(file);
+                throw error;
             }
         }
 
@@ -1225,7 +1331,7 @@
         async function loadCompanyLogo(logoPath) {
             if (!logoPath) return '';
             
-            // Se já é uma URL do Firebase ou base64, retornar diretamente
+            // Se já é uma URL do Firebase ou base64 legado, retornar diretamente
             if (logoPath.startsWith('https://') || logoPath.startsWith('data:')) {
                 return logoPath;
             }
@@ -1340,51 +1446,6 @@
             e.target.value = formatPhone(e.target.value);
         });
 
-        // Função para ler arquivo como Data URL
-        function readFileAsDataURL(file) {
-            return new Promise((resolve, reject) => {
-                if (!file) {
-                    reject(new Error('Nenhum arquivo fornecido'));
-                    return;
-                }
-
-                if (!file.type.startsWith('image/')) {
-                    reject(new Error('O arquivo selecionado não é uma imagem válida'));
-                    return;
-                }
-
-                const maxSize = 5 * 1024 * 1024; // 5MB
-                if (file.size > maxSize) {
-                    reject(new Error('A imagem deve ter no máximo 5MB'));
-                    return;
-                }
-
-                const reader = new FileReader();
-                
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = () => reject(new Error('Erro ao ler o arquivo'));
-                
-                reader.readAsDataURL(file);
-            });
-        }
-
-        async function urlToDataURL(url) {
-            try {
-                const res = await fetch(url, { mode: 'cors' });
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const blob = await res.blob();
-                return await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.onerror = () => reject(new Error('Erro ao converter blob'));
-                    reader.readAsDataURL(blob);
-                });
-            } catch (e) {
-                console.warn('⚠️ Falha ao converter URL para DataURI:', e);
-                return '';
-            }
-        }
-
         // ✅ FUNÇÃO DE SALVAR EMPRESA CORRIGIDA COM FIREBASE
         async function saveCompany() {
             console.log("💾 === SALVANDO EMPRESA (VERSÃO CORRIGIDA COM FIREBASE) ===");
@@ -1410,11 +1471,18 @@
             
             const logoInput = document.getElementById('logo');
             const logoFile = logoInput.files[0];
-            let logoData = '';
+            const draftCompanyId = String(editingId || Date.now());
+            let logoPayload = {};
             
             const sanitizeCompanyForRemoteProfile = (obj) => {
                 const out = { ...(obj || {}) };
                 try { delete out.logoBase64; } catch (_) {}
+                try { delete out.logoData; } catch (_) {}
+                try {
+                    if (isDataLogo(out.logo)) out.logo = '';
+                    if (isDataLogo(out.logoUrl)) out.logoUrl = '';
+                    if (isDataLogo(out.logoURL)) delete out.logoURL;
+                } catch (_) {}
                 return out;
             };
 
@@ -1430,15 +1498,13 @@
             };
 
             // Obter dados atuais da empresa se estiver editando
-            let existingLogo = '';
+            let existingLogoPayload = {};
             let existingCnpj = '';
             if (editingId) {
                 const companies = await getCompaniesList();
                 const existingCompany = companies.find(c => String(c.id) === String(editingId));
-                if (existingCompany && existingCompany.logo) {
-                    existingLogo = existingCompany.logo;
-                }
                 if (existingCompany) {
+                    existingLogoPayload = normalizeLogoPayloadFromCompany(existingCompany);
                     const normalizedExisting = window.__companyNormalizeForForm(existingCompany, editingId);
                     existingCnpj = normalizedExisting.cnpj || '';
                 }
@@ -1448,9 +1514,8 @@
             if (logoFile) {
                 try {
                     console.log('📤 Fazendo upload da nova logo...');
-                    const companyId = editingId || Date.now();
-                    logoData = await uploadLogoToFirebase(logoFile, companyId);
-                    console.log('✅ Logo processada com sucesso:', logoData.substring(0, 50) + '...');
+                    logoPayload = await uploadLogoToFirebase(logoFile, draftCompanyId);
+                    console.log('✅ Logo processada com sucesso:', String(logoPayload.logo || logoPayload.logoStoragePath || '').substring(0, 80) + '...');
                 } catch (error) {
                     console.error('❌ Erro ao processar logo:', error);
                     try {
@@ -1465,11 +1530,11 @@
                 }
             } else {
                 // Manter logo existente se não há nova logo
-                logoData = existingLogo;
+                logoPayload = existingLogoPayload;
             }
 
-            const company = {
-                id: editingId || Date.now(),
+            const company = applyLogoPayload({
+                id: draftCompanyId,
                 name: document.getElementById('name').value,
                 cnpj: document.getElementById('cnpj').value,
                 stateRegistration: document.getElementById('stateRegistration').value,
@@ -1477,9 +1542,15 @@
                 city: document.getElementById('city').value,
                 state: document.getElementById('state').value,
                 phone: document.getElementById('phone').value,
-                logo: logoData,
+                
+                // Campos PIX/Bancários
+                pixTipoChaveCobranca: document.getElementById('pixTipoChaveCobranca').value,
+                pixChaveCobranca: document.getElementById('pixChaveCobranca').value,
+                pixFavorecidoCobranca: document.getElementById('pixFavorecidoCobranca').value,
+                pixBancoCobranca: document.getElementById('pixBancoCobranca').value,
+
                 timestamp: new Date().toISOString()
-            };
+            }, logoPayload);
             if (editingId && existingCnpj) {
                 company.cnpj = existingCnpj;
                 const cnpjInput = document.getElementById('cnpj');
@@ -1603,7 +1674,7 @@
                             }
                         }
                         window.companyInfo = persisted;
-                        const resolvedTenant = String(effectiveCompany.id || effectiveCompany.companyId || '').trim();
+                        const resolvedTenant = String(effectiveCompany.companyId || effectiveCompany.companyID || effectiveCompany.tenantId || effectiveCompany.id || '').trim();
                         window.appTenantId = resolvedTenant || null;
                         if (window.firebaseService && typeof window.firebaseService.setTenantId === 'function') {
                             window.firebaseService.setTenantId(window.appTenantId);
@@ -1724,7 +1795,7 @@
                     try {
                         const raw = localStorage.getItem('company_info');
                         const info = raw ? JSON.parse(raw) : null;
-                        currentCompanyId = (info && (info.companyId || info.id)) || '';
+                        currentCompanyId = (info && (info.companyId || info.companyID || info.tenantId || info.id)) || '';
                     } catch (_) {}
                 }
                 
@@ -1772,9 +1843,10 @@
                     for (const company of list) {
                         // Processar logo da empresa
                         let logoHtml = '';
-                        if (company.logo) {
+                        const logoRef = company.logoUrl || company.logoURL || company.logo || company.logoStoragePath || company.logoPath;
+                        if (logoRef) {
                             try {
-                                const logoUrl = await loadCompanyLogo(company.logo);
+                                const logoUrl = await loadCompanyLogo(logoRef);
                                 if (logoUrl) {
                                     logoHtml = `<img src="${logoUrl}" alt="Logo ${company.name}" style="width: 60px; height: 60px; object-fit: contain; border-radius: 8px; border: 2px solid #e9ecef;">`;
                                 } else {
@@ -1870,7 +1942,7 @@
                     localStorage.setItem('company_info', JSON.stringify(selected));
                     window.companyInfo = selected;
                 } catch (_) {}
-                const tenant = String(selected.id || selected.companyId || selected.slug || selected.nome || selected.name || '');
+                const tenant = String(selected.companyId || selected.companyID || selected.tenantId || selected.id || '');
                 if (tenant) {
                     window.appTenantId = tenant;
                     if (window.firebaseService && typeof window.firebaseService.setTenantId === 'function') {
@@ -2004,8 +2076,15 @@
 
         function clearForm() {
             document.getElementById('companyForm').reset();
+            revokeCompanyLogoPreviewObjectUrl();
             document.getElementById('logoPreview').style.display = 'none';
             document.getElementById('selectedFileName').textContent = 'Nenhuma imagem selecionada';
+            
+            // Limpar campos PIX/Bancários
+            document.getElementById('pixTipoChaveCobranca').value = '';
+            document.getElementById('pixChaveCobranca').value = '';
+            document.getElementById('pixFavorecidoCobranca').value = '';
+            document.getElementById('pixBancoCobranca').value = '';
             
             const cnpjInput = document.getElementById('cnpj');
             if (cnpjInput) {
@@ -2094,7 +2173,7 @@
             if (!companyId) {
                 try {
                     const raw = JSON.parse(localStorage.getItem('company_info') || 'null');
-                    companyId = String((raw && (raw.id || raw.companyId || raw.companyID || raw.tenantId || raw.slug || raw.nome || raw.name)) || '').trim();
+                    companyId = String((raw && (raw.companyId || raw.companyID || raw.tenantId || raw.id)) || '').trim();
                 } catch (_) {}
             }
             if (companyId) return { allow: true, mode: 'has_company' };

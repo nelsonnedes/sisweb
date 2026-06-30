@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="layout-comum.css">
+    <link rel="stylesheet" href="commerce-responsive.css?v=2026-06-07-print-context-v13">
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -16,8 +17,18 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
     <!-- Menu Component -->
-    <script src="menu-component.js?v=20260326"></script>
+    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
     <script src="schema-migration-contatos.js"></script>
+    <script>
+        (function () {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                if (params.get('embedded') === 'true' || params.get('embedded') === '1') {
+                    document.documentElement.classList.add('sisweb-embedded');
+                }
+            } catch (_) {}
+        })();
+    </script>
     
     <style>
         * {
@@ -272,6 +283,50 @@
             padding: 0 4px;
             color: #6c757d;
         }
+
+        @media (max-width: 768px) {
+            .page-header {
+                align-items: flex-start;
+            }
+
+            .page-title {
+                font-size: 20px;
+                line-height: 1.2;
+            }
+
+            .actions-bar,
+            .form-row {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .search-box {
+                min-width: 0;
+                width: 100%;
+            }
+
+            .actions-bar .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .modal-content {
+                width: 100%;
+                max-width: none;
+                min-height: 100dvh;
+                margin: 0;
+                border-radius: 0;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .modal-footer {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -293,7 +348,7 @@
             </button>
         </div>
 
-        <div class="table-responsive">
+        <div class="table-responsive mobile-cards">
             <table>
                 <thead>
                     <tr>
@@ -351,16 +406,93 @@
                     <input type="email" id="email" placeholder="contato@empresa.com">
                 </div>
 
-                <div class="form-group">
-                    <label for="address">Endereço</label>
-                    <input type="text" id="address" placeholder="Rua, Número, Bairro">
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="personType">Tipo de pessoa</label>
+                            <select id="personType">
+                                <option value="">Não informado</option>
+                                <option value="juridica">Pessoa jurídica</option>
+                                <option value="fisica">Pessoa física</option>
+                                <option value="estrangeiro">Estrangeiro</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="ieIndicator">Indicador IE</label>
+                            <select id="ieIndicator">
+                                <option value="">Não informado</option>
+                                <option value="1">Contribuinte ICMS</option>
+                                <option value="2">Contribuinte isento</option>
+                                <option value="9">Não contribuinte</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="stateRegistration">Inscrição Estadual</label>
+                            <input type="text" id="stateRegistration" placeholder="IE / ISENTO">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="municipalRegistration">Inscrição Municipal</label>
+                            <input type="text" id="municipalRegistration" placeholder="Opcional">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="suframa">SUFRAMA</label>
+                            <input type="text" id="suframa" placeholder="Opcional">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="postalCode">CEP</label>
+                            <input type="text" id="postalCode" placeholder="00000-000">
+                        </div>
+                    </div>
+                    <div class="form-col" style="flex: 2;">
+                        <div class="form-group">
+                            <label for="address">Endereço</label>
+                            <input type="text" id="address" placeholder="Rua, Avenida">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="number">Número</label>
+                            <input type="text" id="number" placeholder="Nº">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="neighborhood">Bairro</label>
+                            <input type="text" id="neighborhood" placeholder="Bairro">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="complement">Complemento</label>
+                            <input type="text" id="complement" placeholder="Sala, lote, referência">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-col">
                         <div class="form-group">
                             <label for="state">Estado</label>
-                            <select id="state" required>
+                            <select id="state">
                                 <option value="">Selecione</option>
                                 <option value="AC">Acre</option>
                                 <option value="AL">Alagoas</option>
@@ -395,11 +527,37 @@
                     <div class="form-col">
                         <div class="form-group">
                             <label for="city">Cidade</label>
-                            <select id="city" required>
+                            <select id="city">
                                 <option value="">Selecione primeiro o estado</option>
                             </select>
                         </div>
                     </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="municipalityCode">Código IBGE do município</label>
+                            <input type="text" id="municipalityCode" placeholder="Ex: 1501402">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="countryCode">Código do país</label>
+                            <input type="text" id="countryCode" value="1058" placeholder="1058">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="countryName">País</label>
+                            <input type="text" id="countryName" value="Brasil" placeholder="Brasil">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="obs">Observações</label>
+                    <textarea id="obs" rows="2" placeholder="Informações adicionais..."></textarea>
                 </div>
 
                 <div class="modal-footer" style="text-align: right; margin-top: 20px;">
@@ -423,7 +581,8 @@
         import * as svc from './modules/core/firebase-service.js';
         if (!window.firebaseService) window.firebaseService = svc;
     </script>
-    <script type="module" src="js/fornecedor.js"></script>
+    <script type="module" src="js/fornecedor.js?v=2026-06-23-cadastro-fiscal-nfe-v1"></script>
+    <script src="commerce-responsive.js?v=2026-06-07-print-context-v13"></script>
 
 </body>
 </html>

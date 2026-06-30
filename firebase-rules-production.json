@@ -21,11 +21,9 @@
         "produtos": {
           ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')"
         },
-        "species": {
-          ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')"
-        },
         "especies": {
-          ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')"
+          ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')",
+          ".indexOn": ["especie", "nomeCientifico", "ativo"]
         },
         "romaneios": {
           "tora": {
@@ -91,6 +89,10 @@
         "movimentacoesToras": {
           ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')",
           ".indexOn": ["tipo", "data", "fornecedorId"]
+        },
+        "rastreabilidade": {
+          ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')",
+          ".indexOn": ["data", "remessaId", "movimentacaoId", "toraId", "plaqueta", "romaneioId", "numeroRomaneio", "status"]
         },
         "funcionarios": {
           ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')",

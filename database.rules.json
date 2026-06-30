@@ -6,8 +6,8 @@
     "companies": {
       ".read": "auth != null && auth.token.superadmin == true",
       "$companyId": {
-        ".read": "auth != null && (auth.token.companyId == $companyId || auth.token.superadmin == true)",
-        ".write": "auth != null && (auth.token.superadmin == true || (((auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())) && ((auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active' || auth.token.subscriptionStatus == 'premium' || auth.token.subscriptionStatus == 'premium_active' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'active' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'trial_active' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'premium' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'premium_active' || root.child('users/' + auth.uid + '/status').val() == 'active' || root.child('users/' + auth.uid + '/status').val() == 'trial_active' || root.child('users/' + auth.uid + '/status').val() == 'premium' || root.child('users/' + auth.uid + '/status').val() == 'premium_active'))))",
+        ".read": "auth != null && (auth.token.superadmin == true || auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())",
+        ".write": false,
 
         "profile": {
           ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')"
@@ -58,13 +58,9 @@
           ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')",
           ".indexOn": ["data", "timestamp", "status", "nome"]
         },
-        "species": {
-          ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')",
-          ".indexOn": ["data", "timestamp", "status"]
-        },
         "especies": {
           ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')",
-          ".indexOn": ["data", "timestamp", "status"]
+          ".indexOn": ["data", "timestamp", "status", "especie", "nomeCientifico"]
         },
         "romaneios": {
           "tora": {
@@ -101,6 +97,19 @@
             ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')",
             ".indexOn": ["status", "vencimento", "fornecedorId", "dataEmissao"]
           }
+        },
+        "printPreferences": {
+          ".read": "auth != null && (auth.token.superadmin == true || auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())",
+          ".write": "auth != null && (auth.token.superadmin == true || auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())"
+        },
+        "finance_snapshots": {
+          ".read": "auth != null && (auth.token.superadmin == true || auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())",
+          ".write": "auth != null && (auth.token.superadmin == true || (((auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())) && ((auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active' || auth.token.subscriptionStatus == 'premium' || auth.token.subscriptionStatus == 'premium_active' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'active' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'trial_active' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'premium' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'premium_active' || root.child('users/' + auth.uid + '/status').val() == 'active' || root.child('users/' + auth.uid + '/status').val() == 'trial_active' || root.child('users/' + auth.uid + '/status').val() == 'premium' || root.child('users/' + auth.uid + '/status').val() == 'premium_active'))))",
+          ".indexOn": ["month", "updatedAt"]
+        },
+        "sequences": {
+          ".read": "auth != null && (auth.token.superadmin == true || auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())",
+          ".write": "auth != null && (auth.token.superadmin == true || (((auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())) && ((auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active' || auth.token.subscriptionStatus == 'premium' || auth.token.subscriptionStatus == 'premium_active' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'active' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'trial_active' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'premium' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'premium_active' || root.child('users/' + auth.uid + '/status').val() == 'active' || root.child('users/' + auth.uid + '/status').val() == 'trial_active' || root.child('users/' + auth.uid + '/status').val() == 'premium' || root.child('users/' + auth.uid + '/status').val() == 'premium_active'))))"
         },
         "auditoriaTransacoes": {
           ".write": "auth != null && (auth.token.superadmin == true || (((auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())) && ((auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active' || auth.token.subscriptionStatus == 'premium' || auth.token.subscriptionStatus == 'premium_active' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'active' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'trial_active' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'premium' || root.child('users/' + auth.uid + '/subscriptionStatus').val() == 'premium_active' || root.child('users/' + auth.uid + '/status').val() == 'active' || root.child('users/' + auth.uid + '/status').val() == 'trial_active' || root.child('users/' + auth.uid + '/status').val() == 'premium' || root.child('users/' + auth.uid + '/status').val() == 'premium_active'))))"
@@ -145,6 +154,10 @@
           ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')",
           ".indexOn": ["tipo", "data", "fornecedorId"]
         },
+        "rastreabilidade": {
+          ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')",
+          ".indexOn": ["data", "remessaId", "movimentacaoId", "toraId", "plaqueta", "romaneioId", "numeroRomaneio", "status"]
+        },
         "funcionarios": {
           ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')",
           ".indexOn": ["status", "cargoId"]
@@ -178,7 +191,10 @@
       ".read": "auth != null && auth.token.superadmin == true",
       "$uid": {
         ".read": "auth != null && (auth.uid == $uid || auth.token.superadmin == true)",
-        ".write": "auth != null && (auth.token.superadmin == true || (auth.uid == $uid && (!newData.hasChild('companyId') || newData.child('companyId').val() == data.child('companyId').val()) && (!newData.hasChild('superadmin') || newData.child('superadmin').val() == data.child('superadmin').val()) && (!newData.hasChild('subscriptionStatus') || newData.child('subscriptionStatus').val() == data.child('subscriptionStatus').val()) && (!newData.hasChild('accountStatus') || newData.child('accountStatus').val() == data.child('accountStatus').val()) && (!newData.hasChild('statusReason') || newData.child('statusReason').val() == data.child('statusReason').val()) && (!newData.hasChild('trialStart') || newData.child('trialStart').val() == data.child('trialStart').val()) && (!newData.hasChild('subscription') || newData.child('subscription').val() == data.child('subscription').val()) && (!newData.hasChild('pendingPayment') || newData.child('pendingPayment').val() == data.child('pendingPayment').val()) && (!newData.hasChild('payments') || newData.child('payments').val() == data.child('payments').val()) && (!newData.hasChild('readOnlyUntil') || newData.child('readOnlyUntil').val() == data.child('readOnlyUntil').val()) && (!newData.hasChild('readOnlyGrantedAt') || newData.child('readOnlyGrantedAt').val() == data.child('readOnlyGrantedAt').val()) && (!newData.hasChild('readOnlyGrantedBy') || newData.child('readOnlyGrantedBy').val() == data.child('readOnlyGrantedBy').val()) && (!newData.hasChild('readOnlyReason') || newData.child('readOnlyReason').val() == data.child('readOnlyReason').val()) && (!newData.hasChild('readOnlyGraceConsumed') || newData.child('readOnlyGraceConsumed').val() == data.child('readOnlyGraceConsumed').val()) && (!newData.hasChild('role') || newData.child('role').val() == data.child('role').val()) && (!newData.hasChild('adminPermissions') || newData.child('adminPermissions').val() == data.child('adminPermissions').val()) && (!newData.hasChild('adminActive') || newData.child('adminActive').val() == data.child('adminActive').val())))"
+        ".write": "auth != null && (auth.token.superadmin == true || (auth.uid == $uid && (!newData.hasChild('companyId') || newData.child('companyId').val() == data.child('companyId').val()) && (!newData.hasChild('superadmin') || newData.child('superadmin').val() == data.child('superadmin').val()) && (!newData.hasChild('subscriptionStatus') || newData.child('subscriptionStatus').val() == data.child('subscriptionStatus').val()) && (!newData.hasChild('accountStatus') || newData.child('accountStatus').val() == data.child('accountStatus').val()) && (!newData.hasChild('statusReason') || newData.child('statusReason').val() == data.child('statusReason').val()) && (!newData.hasChild('trialStart') || newData.child('trialStart').val() == data.child('trialStart').val()) && (!newData.hasChild('subscription') || newData.child('subscription').val() == data.child('subscription').val()) && (!newData.hasChild('pendingPayment') || newData.child('pendingPayment').val() == data.child('pendingPayment').val()) && (!newData.hasChild('payments') || newData.child('payments').val() == data.child('payments').val()) && (!newData.hasChild('readOnlyUntil') || newData.child('readOnlyUntil').val() == data.child('readOnlyUntil').val()) && (!newData.hasChild('readOnlyGrantedAt') || newData.child('readOnlyGrantedAt').val() == data.child('readOnlyGrantedAt').val()) && (!newData.hasChild('readOnlyGrantedBy') || newData.child('readOnlyGrantedBy').val() == data.child('readOnlyGrantedBy').val()) && (!newData.hasChild('readOnlyReason') || newData.child('readOnlyReason').val() == data.child('readOnlyReason').val()) && (!newData.hasChild('readOnlyGraceConsumed') || newData.child('readOnlyGraceConsumed').val() == data.child('readOnlyGraceConsumed').val()) && (!newData.hasChild('role') || newData.child('role').val() == data.child('role').val()) && (!newData.hasChild('adminPermissions') || newData.child('adminPermissions').val() == data.child('adminPermissions').val()) && (!newData.hasChild('adminActive') || newData.child('adminActive').val() == data.child('adminActive').val())))",
+        "preferences": {
+          ".write": "auth != null && auth.uid == $uid"
+        }
       }
     },
 
@@ -194,12 +210,12 @@
       ".read": "auth != null && auth.token.superadmin == true",
       "$uid": {
         ".read": "auth != null && (auth.uid == $uid || auth.token.superadmin == true)",
-        ".write": "auth != null && auth.uid == $uid"
+        ".write": false
       }
     },
 
     "subscriptionPayments": {
-      ".read": "auth != null",
+      ".read": "auth != null && auth.token.superadmin == true",
       ".write": "auth != null && auth.token.superadmin == true",
       "$paymentId": {
         ".read": "auth != null && (auth.token.superadmin == true || data.child('uid').val() == auth.uid || data.child('companyId').val() == auth.token.companyId || data.child('companyId').val() == auth.token.companyID || data.child('companyId').val() == auth.token.tenantId || data.child('companyId').val() == root.child('users/' + auth.uid + '/companyId').val() || data.child('companyId').val() == root.child('users/' + auth.uid + '/companyID').val() || data.child('companyId').val() == root.child('users/' + auth.uid + '/tenantId').val())"
@@ -222,9 +238,62 @@
       ".write": "auth != null && auth.token.superadmin == true"
     },
 
+    "supportTickets": {
+      ".read": "auth != null && auth.token.superadmin == true",
+      ".write": false,
+      ".indexOn": ["status", "priority", "companyId", "module", "updatedAt", "createdAt"]
+    },
+
+    "supportTicketsByCompany": {
+      ".read": "auth != null && auth.token.superadmin == true",
+      ".write": false,
+      "$companyId": {
+        ".indexOn": ["status", "priority", "createdByUid", "updatedAt", "createdAt"]
+      }
+    },
+
+    "supportTicketMessagesByCompany": {
+      ".read": "auth != null && auth.token.superadmin == true",
+      ".write": false,
+      "$companyId": {
+        "$ticketId": {
+          ".indexOn": ["createdAt"]
+        }
+      }
+    },
+
+    "supportTicketsByUser": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || auth.token.superadmin == true)",
+        ".write": false,
+        ".indexOn": ["status", "priority", "companyId", "updatedAt", "createdAt"]
+      }
+    },
+
+    "supportTicketAudit": {
+      ".read": "auth != null && auth.token.superadmin == true",
+      ".write": false,
+      "$ticketId": {
+        ".indexOn": ["createdAt", "event", "companyId"]
+      }
+    },
+
+    "supportTicketNotifications": {
+      ".read": "auth != null && auth.token.superadmin == true",
+      ".write": false,
+      "$ticketId": {
+        ".indexOn": ["createdAt", "status", "event", "companyId"]
+      }
+    },
+
+    "supportTicketRateLimits": {
+      ".read": false,
+      ".write": false
+    },
+
     "system": {
-      ".read": "auth != null",
-      ".write": "auth != null && auth.token.superadmin == true"
+      ".read": "auth != null && auth.token.superadmin == true",
+      ".write": false
     }
   }
 }

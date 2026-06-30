@@ -18,6 +18,49 @@ let currentPageSupplier = 1;
 let currentPageSpecies = 1;
 let currentPageRomaneios = 1;
 
+function parseRomaneioDateCandidate(value) {
+    if (!value) return 0;
+    if (typeof value === 'number' && isFinite(value)) return value;
+    if (value instanceof Date) {
+        const t = value.getTime();
+        return isNaN(t) ? 0 : t;
+    }
+    const t = Date.parse(value);
+    return isNaN(t) ? 0 : t;
+}
+
+function getRomaneioRecencyTimestamp(item) {
+    if (!item || typeof item !== 'object') return 0;
+    const candidates = [
+        item?._metadata?.lastUpdated,
+        item.updatedAt,
+        item.atualizadoEm,
+        item.updated,
+        item.lastModified,
+        item.modifiedAt,
+        item.createdAt,
+        item.criadoEm,
+        item.created,
+        item.dataEmissao,
+        item.data,
+        item.date,
+        item.dataHora,
+        item.dataCriacao,
+        item.timestamp
+    ];
+    for (const candidate of candidates) {
+        const ts = parseRomaneioDateCandidate(candidate);
+        if (ts) return ts;
+    }
+    const id = String(item.id || item.key || item.firebaseKey || item.numero || '');
+    const match = id.match(/(\d{10,})/);
+    return match ? Number(match[1]) || 0 : 0;
+}
+
+function getRomaneioDisplayDate(item) {
+    return item?.dataEmissao || item?.data || item?.date || item?.dataHora || item?.createdAt || item?.criadoEm || item?.created || item?.timestamp || '';
+}
+
 // Helper: Render Pagination Controls
 function renderPagination(totalItems, currentPage, containerId, onPageChange) {
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
@@ -367,21 +410,23 @@ async function openSpeciesListModal() {
     tbody.innerHTML = '<tr><td colspan="3" class="text-center">Carregando...</td></tr>';
 
     try {
-        let speciesData = await window.firebaseService.loadFromFirebase('species');
-        if (!speciesData || (speciesData.data && Object.keys(speciesData.data).length === 0) || (Array.isArray(speciesData.data) && speciesData.data.length === 0)) {
-            speciesData = await window.firebaseService.loadFromFirebase('especies');
-        }
-
-        if (speciesData && speciesData.data) speciesData = speciesData.data;
-
         let speciesList = [];
-        if (speciesData && typeof speciesData === 'object' && !Array.isArray(speciesData)) {
-            speciesList = Object.keys(speciesData).map(key => ({
-                id: key,
-                ...speciesData[key]
-            }));
-        } else if (Array.isArray(speciesData)) {
-            speciesList = speciesData;
+        if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.getAll === 'function') {
+            speciesList = await window.SiswebSpeciesStore.getAll({ waitRemote: true, timeoutMs: 5000 });
+        } else if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+            let speciesData = await window.firebaseService.loadFromFirebase('especies');
+            if (speciesData && speciesData.data) speciesData = speciesData.data;
+            if (speciesData && typeof speciesData === 'object' && !Array.isArray(speciesData)) {
+                speciesList = Object.keys(speciesData).map(key => ({
+                    id: key,
+                    key,
+                    firebaseKey: key,
+                    originalId: speciesData[key] && (speciesData[key].id || speciesData[key].key || key),
+                    ...speciesData[key]
+                }));
+            } else if (Array.isArray(speciesData)) {
+                speciesList = speciesData;
+            }
         }
 
         cachedSpecies = speciesList;
@@ -416,9 +461,8 @@ function renderSpeciesList(list = null) {
     const paginatedItems = dataToRender.slice(start, end);
 
     paginatedItems.forEach(item => {
-        // Fallback robusto para nome e descrição
-        const displayName = item.nome || item.name || item.especie || 'Sem Nome';
-        const displayDesc = item.descricao || item.description || item.scientificName || '-';
+        const displayName = item.especie || item.nome || item.name || 'Sem Nome';
+        const displayDesc = item.nomeCientifico || item.scientificName || item.descricao || item.description || '-';
         // Preço ainda é necessário para a seleção, mas não exibido na coluna
         const price = item.price || item.preco || '0,00';
         
@@ -446,7 +490,8 @@ function renderSpeciesList(list = null) {
 function filterSpeciesList() {
     const term = document.getElementById('speciesListFilter').value.toLowerCase();
     const filtered = cachedSpecies.filter(s => 
-        (s.name && s.name.toLowerCase().includes(term))
+        ((s.especie || s.nome || s.name || '').toLowerCase().includes(term)) ||
+        ((s.nomeCientifico || s.scientificName || s.descricao || s.description || '').toLowerCase().includes(term))
     );
     currentPageSpecies = 1;
     renderSpeciesList(filtered);
@@ -476,7 +521,12 @@ function selectSpecies(name, price) {
 
 function openNewSpeciesModal() {
     const modal = document.getElementById('speciesModal');
-    if (modal) modal.style.display = 'block';
+    if (modal) {
+        if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.enhance === 'function') {
+            window.SiswebSpeciesModal.enhance({ modal });
+        }
+        modal.style.display = 'block';
+    }
 }
 
 function closeNewSpeciesModal() {
@@ -492,21 +542,28 @@ if (speciesForm) {
         e.preventDefault();
         
         const name = document.getElementById('speciesName').value;
-        const desc = document.getElementById('speciesDesc').value;
-        const price = document.getElementById('speciesPrice').value;
+        const scientificInput = document.getElementById('speciesDescription') || document.getElementById('speciesDesc');
+        const nomeCientifico = scientificInput ? scientificInput.value : '';
 
-        const newSpecies = {
-            name,
-            descricao: desc,
-            scientificName: desc, // Compatibilidade
-            price,
-            createdAt: new Date().toISOString()
-        };
+        if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
+            const duplicate = window.SiswebSpeciesModal.getExactDuplicate(name);
+            if (duplicate) {
+                alert(`Espécie já cadastrada: ${window.SiswebSpeciesModal.getDisplayName(duplicate)}. Use o cadastro existente para evitar duplicidade.`);
+                document.getElementById('speciesName').focus();
+                return;
+            }
+        }
+
+        const now = new Date().toISOString();
+        const speciesId = `ESP_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        const newSpecies = window.SiswebSpecies && typeof window.SiswebSpecies.toCanonicalRecord === 'function'
+            ? window.SiswebSpecies.toCanonicalRecord({ id: speciesId, especie: name, nomeCientifico, createdAt: now }, 0, { id: speciesId, updatedAt: now })
+            : { id: speciesId, especie: name, nomeCientifico, createdAt: now, updatedAt: now };
 
         try {
-            const result = await window.firebaseService.saveData('species', newSpecies);
+            const result = await window.firebaseService.saveData(`especies/${speciesId}`, newSpecies);
             if (result && result.success) {
-                selectSpecies(name, price);
+                selectSpecies(name, '');
                 closeNewSpeciesModal();
                 // Refresh list if open
                 const listModal = document.getElementById('speciesListModal');
@@ -565,33 +622,94 @@ async function abrirLista() {
         // Garantir que estamos pegando os dados corretos, evitando metadados como 'isMock' ou 'success'
         const data = (result && typeof result === 'object' && 'data' in result) ? result.data : result;
 
-        const normalizeItem = (id, item) => {
+        const normalizeTipoPreRomaneio = (value) => {
+            const raw = value == null ? '' : String(value).trim().toUpperCase();
+            if (!raw) return '';
+            if (raw === 'TORA' || raw === 'TORAS') return 'TORA';
+            if (raw === 'TL' || raw === 'TODA LARGURA' || raw === 'TODA_LARGURA') return 'TL';
+            if (raw === 'PCT' || raw === 'PACOTE' || raw === 'PACOTES') return 'PCT';
+            if (raw === 'PES' || raw === 'PÉS' || raw === 'PE') return 'PES';
+            return raw;
+        };
+        const nonRecordKeys = new Set(['cliente', 'fornecedor', 'empresa', 'itens', 'items', 'romaneioitens', 'romaneioitems', 'toraitens', 'toraitems', 'totais', 'total', 'metadata', '_metadata']);
+        const isTechnicalKey = (key) => String(key || '').trim().startsWith('_');
+        const isRecordKey = (key) => {
+            const k = String(key || '').trim();
+            return !!k && !isTechnicalKey(k) && !nonRecordKeys.has(k.toLowerCase()) && (/^\d{8,}$/.test(k) || /^pre[-_]?romaneio/i.test(k) || /^pr[-_]/i.test(k));
+        };
+        const extractItens = (item) => {
+            if (!item || typeof item !== 'object') return [];
+            const raw = item.itens ?? item.items ?? item.romaneioItens ?? item.romaneioItems ?? item.toraItens ?? item.toraItems;
+            if (Array.isArray(raw)) return raw;
+            if (raw && typeof raw === 'object') return Object.values(raw);
+            return [];
+        };
+        const normalizeItem = (id, item, tipoFallback = '') => {
             if (!item || typeof item !== 'object') return null;
-            const rawId = item.id || item.numero || id;
+            if (isTechnicalKey(id) || nonRecordKeys.has(String(id || '').trim().toLowerCase())) return null;
+            const rawId = item.id || item.key || item.firebaseKey || item.numero || (isRecordKey(id) ? id : '');
             if (!rawId) return null;
-            const hasAnyKey = !!(item.data || item.date || item.tipo || item.itens || item.cliente || item.clienteNome || item.fornecedorNome);
+            const tipo = normalizeTipoPreRomaneio(item.tipo || item.tipoRomaneio || item.romaneioTipo || item.categoria || item.modulo || tipoFallback);
+            const hasItems = extractItens(item).length > 0 || !!(item.itens || item.items || item.romaneioItens || item.romaneioItems || item.toraItens || item.toraItems);
+            const hasDate = !!(item.data || item.dataEmissao || item.date || item.dataHora || item.dataCriacao || item.criadoEm || item.createdAt || item.updatedAt || item.atualizadoEm);
+            const hasParty = !!(item.cliente || item.clienteNome || item.fornecedor || item.fornecedorNome || item.nomeCliente);
+            const hasTotals = !!(item.totais || item.totalVolume || item.volumeTotal || item.volume || item.totalValor || item.valorTotal || item.valor);
+            const hasAnyKey = hasItems || tipo || (hasDate && (hasParty || hasTotals || rawId)) || (isRecordKey(id) && (hasParty || hasTotals));
             if (!hasAnyKey) return null;
-            return { id: String(rawId), ...item };
+            return { ...item, id: String(rawId), numero: item.numero || String(rawId), tipo: item.tipo || tipo || undefined };
+        };
+        const normalizeCollection = (raw) => {
+            const records = [];
+            const push = (id, item, tipoFallback = '') => {
+                const normalized = normalizeItem(id, item, tipoFallback);
+                if (normalized) records.push(normalized);
+            };
+            if (Array.isArray(raw)) {
+                raw.forEach((item, idx) => push(item?.id || idx, item));
+            } else if (raw && typeof raw === 'object') {
+                push(raw.id || raw.numero || '', raw);
+                Object.entries(raw).forEach(([id, item]) => {
+                    if (!item || typeof item !== 'object' || isTechnicalKey(id) || nonRecordKeys.has(String(id).toLowerCase())) return;
+                    const bucketTipo = normalizeTipoPreRomaneio(id);
+                    const normalized = normalizeItem(id, item, bucketTipo);
+                    if (normalized) {
+                        records.push(normalized);
+                    } else if (bucketTipo || Object.values(item).some(v => v && typeof v === 'object')) {
+                        Object.entries(item).forEach(([childId, childItem]) => push(childId, childItem, bucketTipo));
+                    }
+                });
+            }
+            const byId = new Map();
+            records.forEach((record) => {
+                const id = String(record.id || record.numero || '').trim();
+                if (!id || isTechnicalKey(id)) return;
+                const existing = byId.get(id);
+                if (!existing) {
+                    byId.set(id, record);
+                    return;
+                }
+                const existingTs = getRomaneioRecencyTimestamp(existing);
+                const recordTs = getRomaneioRecencyTimestamp(record);
+                const preferRecord = recordTs > existingTs || (
+                    recordTs === existingTs &&
+                    Object.keys(record).length + extractItens(record).length >= Object.keys(existing).length + extractItens(existing).length
+                );
+                const merged = preferRecord ? { ...existing, ...record, id } : { ...record, ...existing, id };
+                merged.companyId = merged.companyId || existing.companyId || record.companyId;
+                merged.companyID = merged.companyID || existing.companyID || record.companyID;
+                merged.tenantId = merged.tenantId || existing.tenantId || record.tenantId;
+                byId.set(id, merged);
+            });
+            return Array.from(byId.values());
         };
 
-        if (Array.isArray(data)) {
-            cachedRomaneios = data.map((item, idx) => normalizeItem(item?.id || idx, item)).filter(Boolean);
-        } else {
-            cachedRomaneios = Object.entries(data || {}).map(([id, item]) => {
-                if (id === 'isMock' || id === 'success' || id === '_metadata') return null;
-                return normalizeItem(id, item);
-            }).filter(Boolean);
-        }
+        cachedRomaneios = normalizeCollection(data);
         if ((!cachedRomaneios || cachedRomaneios.length === 0) && activeTenant) {
             try {
                 const nsKey = `companies/${String(activeTenant)}/preromaneios`;
-                const rawLocal = localStorage.getItem(nsKey) || localStorage.getItem('preromaneios');
+                const rawLocal = localStorage.getItem(nsKey);
                 const parsedLocal = rawLocal ? JSON.parse(rawLocal) : null;
-                if (Array.isArray(parsedLocal)) {
-                    cachedRomaneios = parsedLocal.map((item, idx) => normalizeItem(item?.id || idx, item)).filter(Boolean);
-                } else if (parsedLocal && typeof parsedLocal === 'object') {
-                    cachedRomaneios = Object.entries(parsedLocal).map(([id, item]) => normalizeItem(id, item)).filter(Boolean);
-                }
+                cachedRomaneios = normalizeCollection(parsedLocal);
             } catch (_) {}
         }
         if (activeTenant) {
@@ -601,8 +719,8 @@ async function abrirLista() {
             });
         }
         
-        // Sort by date desc
-        cachedRomaneios.sort((a, b) => new Date(b.data || b.date || 0) - new Date(a.data || a.date || 0));
+        // Mais recentes primeiro, aceitando datas de emissao, atualizacao e criacao.
+        cachedRomaneios.sort((a, b) => getRomaneioRecencyTimestamp(b) - getRomaneioRecencyTimestamp(a));
 
         const activeTab = (typeof window.currentTab === 'string' && window.currentTab) ? window.currentTab : null;
         if (activeTab) {
@@ -641,7 +759,9 @@ function renderRomaneiosList(list = null) {
 
     paginatedItems.forEach(item => {
         const tr = document.createElement('tr');
-        const date = item.data ? new Date(item.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-';
+        const dateValue = getRomaneioDisplayDate(item);
+        const dateObj = dateValue ? new Date(dateValue) : null;
+        const date = dateObj && !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-';
         // Ajuste para pegar nome do cliente/fornecedor
         const client = item.clienteNome || (item.cliente ? item.cliente.nome : '') || item.fornecedorNome || '-';
         const type = item.tipo || 'PCT';

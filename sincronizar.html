@@ -132,13 +132,13 @@
                 if (window.appTenantId) return String(window.appTenantId);
                 if (window.companyInfo) {
                     const raw = window.companyInfo;
-                    const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                    const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                     if (id) return String(id);
                 }
                 const stored = localStorage.getItem('company_info');
                 if (stored) {
                     const obj = JSON.parse(stored);
-                    const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                    const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                     if (id) return String(id);
                 }
             } catch (_) {}
@@ -179,17 +179,15 @@
             try {
                 const clientes = readLocalStorageValue('clientes');
                 const especies = readLocalStorageValue('especies');
-                const romaneiosPct = readLocalStorageValue('romaneiosPct');
                 
                 const clientesCount = clientes ? JSON.parse(clientes).length : 0;
                 const especiesCount = especies ? JSON.parse(especies).length : 0;
-                const romaneiosCount = romaneiosPct ? JSON.parse(romaneiosPct).length : 0;
                 
                 dadosContent.innerHTML = `
                     <strong>📊 Dados Locais:</strong><br>
                     👥 Clientes: ${clientesCount}<br>
                     🌳 Espécies: ${especiesCount}<br>
-                    📋 Romaneios PCT: ${romaneiosCount}<br><br>
+                    📋 Romaneios: somente Firebase canônico<br><br>
                     
                     <strong>🔗 Conectividade:</strong><br>
                     🌐 Online: ${navigator.onLine ? 'Sim' : 'Não'}<br>
@@ -249,7 +247,7 @@
             updateStatus('🔄 Sincronizando...', 'warning');
             
             try {
-                const keys = ['clientes', 'especies', 'romaneiosPct'];
+                const keys = ['clientes', 'especies'];
                 const results = {};
                 
                 for (const key of keys) {
@@ -301,11 +299,10 @@
                 
                 const clientes = readLocalStorageValue('clientes');
                 const especies = readLocalStorageValue('especies');
-                const romaneiosPct = readLocalStorageValue('romaneiosPct');
                 
                 log(`👥 Clientes: ${clientes ? JSON.parse(clientes).length : 0}`);
                 log(`🌳 Espécies: ${especies ? JSON.parse(especies).length : 0}`);
-                log(`📋 Romaneios: ${romaneiosPct ? JSON.parse(romaneiosPct).length : 0}`);
+                log('📋 Romaneios: use somente companies/{companyId}/romaneios/{pct,tl,pes,tora}');
                 
                 updateStatus('📊 Status verificado - veja o log', 'info');
                 updateDados();

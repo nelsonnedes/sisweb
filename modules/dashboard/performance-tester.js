@@ -19,7 +19,7 @@ class PerformanceTester {
     constructor() {
         this.config = {
             testIterations: 5,
-            testKeys: ['romaneiosTL', 'romaneiosPct', 'clients', 'species'],
+            testKeys: ['romaneiosTL', 'romaneiosPct', 'clients', 'especies'],
             performanceThresholds: {
                 excellent: 100,  // < 100ms
                 good: 300,       // < 300ms

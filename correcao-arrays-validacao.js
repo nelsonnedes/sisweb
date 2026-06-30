@@ -89,7 +89,7 @@ function patchGetData() {
             const result = originalGetData(key);
             
             // Se é uma das chaves que devem ser arrays, garantir que seja
-            const arrayKeys = ['clients', 'species', 'clientesTora', 'clientesPct', 'fornecedores', 'romaneiosTora'];
+            const arrayKeys = ['clients', 'especies', 'clientesTora', 'clientesPct', 'fornecedores', 'romaneiosTora'];
             
             if (arrayKeys.includes(key)) {
                 return garantirArray(result, `getData('${key}')`);
@@ -197,4 +197,4 @@ if (document.readyState === 'loading') {
 // ✅ EXECUTAR CORREÇÃO TAMBÉM QUANDO A APLICAÇÃO ESTIVER PRONTA
 document.addEventListener('sistemaRomaneiosPronto', executarCorrecaoArrays);
 
-console.log("✅ Correção de validação de arrays carregada"); 
+console.log("✅ Correção de validação de arrays carregada");

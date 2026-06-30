@@ -25,6 +25,38 @@ function verificarPaginaVendas() {
     return true;
 }
 
+function getRomaneioRecencyTimestampCorrecaoVendas(romaneio) {
+    if (!romaneio || typeof romaneio !== 'object') return 0;
+    const candidates = [
+        romaneio._metadata && romaneio._metadata.lastUpdated,
+        romaneio.updatedAt,
+        romaneio.updated,
+        romaneio.lastModified,
+        romaneio.dataEmissao,
+        romaneio.data,
+        romaneio.dataHora,
+        romaneio.dataCriacao,
+        romaneio.createdAt,
+        romaneio.created,
+        romaneio.timestamp
+    ];
+    for (const candidate of candidates) {
+        if (!candidate) continue;
+        const ts = typeof candidate === 'number' ? candidate : Date.parse(candidate);
+        if (!isNaN(ts)) return ts;
+    }
+    const id = String(romaneio.id || romaneio.romaneioId || romaneio.firebaseKey || romaneio.key || romaneio.numero || romaneio.numeroRomaneio || '');
+    const match = id.match(/(\d{10,})/);
+    return match ? Number(match[1]) || 0 : 0;
+}
+
+function formatRomaneioDataCorrecaoVendas(romaneio) {
+    const raw = romaneio && (romaneio.dataEmissao || romaneio.data || romaneio.dataHora || romaneio.createdAt || romaneio.created || romaneio.timestamp);
+    if (!raw) return 'S/Data';
+    const dt = new Date(raw);
+    return isNaN(dt.getTime()) ? 'S/Data' : dt.toLocaleDateString('pt-BR');
+}
+
 // Função para forçar reload dos romaneios PCT
 async function forcarReloadRomaneiosPct() {
     console.log('\n🔄 FORÇANDO RELOAD DOS ROMANEIOS PCT');
@@ -62,13 +94,14 @@ async function forcarReloadRomaneiosPct() {
             return false;
         }
         
-        // 4. Adicionar cada romaneio manualmente
-        romaneios.forEach((romaneio, index) => {
+        // 4. Adicionar cada romaneio manualmente, mais recentes primeiro
+        const romaneiosOrdenados = romaneios.slice().sort((a, b) => getRomaneioRecencyTimestampCorrecaoVendas(b) - getRomaneioRecencyTimestampCorrecaoVendas(a));
+        romaneiosOrdenados.forEach((romaneio, index) => {
             const option = document.createElement('option');
             option.value = index;
             
             // Extrair informações do romaneio
-            const data = romaneio.data ? new Date(romaneio.data).toLocaleDateString('pt-BR') : 'S/Data';
+            const data = formatRomaneioDataCorrecaoVendas(romaneio);
             
             let cliente = 'Cliente não informado';
             if (romaneio.cliente && romaneio.cliente.nome) {
@@ -148,20 +181,14 @@ function substituirFuncaoCarregamento() {
                 return;
             }
             
-            // Processar cada romaneio
-            romaneios.forEach((romaneio, index) => {
+            // Processar cada romaneio, mais recentes primeiro
+            const romaneiosOrdenados = romaneios.slice().sort((a, b) => getRomaneioRecencyTimestampCorrecaoVendas(b) - getRomaneioRecencyTimestampCorrecaoVendas(a));
+            romaneiosOrdenados.forEach((romaneio, index) => {
                 const option = document.createElement('option');
                 option.value = index;
                 
                 // Extrair dados com verificações
-                let data = 'S/Data';
-                if (romaneio.data) {
-                    try {
-                        data = new Date(romaneio.data).toLocaleDateString('pt-BR');
-                    } catch (e) {
-                        console.warn(`Erro na data do romaneio ${index}:`, e);
-                    }
-                }
+                let data = formatRomaneioDataCorrecaoVendas(romaneio);
                 
                 let cliente = 'Cliente não informado';
                 if (romaneio.cliente) {

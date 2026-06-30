@@ -33,7 +33,7 @@ function getStorageKey(key) {
         const raw = localStorage.getItem('company_info');
         if (raw) {
             const obj = JSON.parse(raw);
-            const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+            const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
             if (id) return `company_${id}__${key}`;
         }
     } catch (_) {}
@@ -82,7 +82,7 @@ function getFornecedorBasePath() {
         const raw = localStorage.getItem('company_info');
         if (raw) {
             const obj = JSON.parse(raw);
-            const t = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+            const t = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
             if (t) return `companies/${String(t)}/fornecedores`;
         }
     } catch (_) {}
@@ -660,7 +660,12 @@ async function loadClientForEdit(fornecedor) {
     const idInput = document.getElementById('fornecedorId');
     const nameInput = document.getElementById('fornecedorName');
     const cnpjInput = document.getElementById('fornecedorCnpj');
+    const tipoPessoaInput = document.getElementById('fornecedorPersonType');
     const inscricaoInput = document.getElementById('fornecedorStateRegistration');
+    const indIEDestInput = document.getElementById('fornecedorIndIEDest');
+    const municipalRegistrationInput = document.getElementById('fornecedorMunicipalRegistration');
+    const suframaInput = document.getElementById('fornecedorSuframa');
+    const cepInput = document.getElementById('fornecedorCep');
     const stateSelect = document.getElementById('fornecedorState');
     const citySelect = document.getElementById('fornecedorCity');
     const phoneInput = document.getElementById('fornecedorPhone');
@@ -668,13 +673,22 @@ async function loadClientForEdit(fornecedor) {
     const addressInput = document.getElementById('fornecedorAddress');
     const numeroInput = document.getElementById('fornecedorNumber');
     const bairroInput = document.getElementById('fornecedorNeighborhood');
+    const complementoInput = document.getElementById('fornecedorComplement');
+    const municipioCodeInput = document.getElementById('fornecedorMunicipalityCode');
+    const countryCodeInput = document.getElementById('fornecedorCountryCode');
+    const countryNameInput = document.getElementById('fornecedorCountryName');
     const obsInput = document.getElementById('fornecedorObs');
     
     console.log("🔍 Verificando campos encontrados:", {
         idInput: !!idInput,
         nameInput: !!nameInput,
         cnpjInput: !!cnpjInput,
+        tipoPessoaInput: !!tipoPessoaInput,
         inscricaoInput: !!inscricaoInput,
+        indIEDestInput: !!indIEDestInput,
+        municipalRegistrationInput: !!municipalRegistrationInput,
+        suframaInput: !!suframaInput,
+        cepInput: !!cepInput,
         stateSelect: !!stateSelect,
         citySelect: !!citySelect,
         phoneInput: !!phoneInput,
@@ -682,6 +696,10 @@ async function loadClientForEdit(fornecedor) {
         addressInput: !!addressInput,
         numeroInput: !!numeroInput,
         bairroInput: !!bairroInput,
+        complementoInput: !!complementoInput,
+        municipioCodeInput: !!municipioCodeInput,
+        countryCodeInput: !!countryCodeInput,
+        countryNameInput: !!countryNameInput,
         obsInput: !!obsInput
     });
     
@@ -697,13 +715,38 @@ async function loadClientForEdit(fornecedor) {
     }
     
     if (cnpjInput) {
-        cnpjInput.value = fornecedor.cnpj || '';
+        cnpjInput.value = fornecedor.documento || fornecedor.document || fornecedor.cnpj || fornecedor.cpf || '';
         console.log("✅ CNPJ preenchido:", cnpjInput.value);
+    }
+
+    if (tipoPessoaInput) {
+        tipoPessoaInput.value = fornecedor.tipoPessoa || fornecedor.personType || fornecedor.fiscalPersonType || '';
+        console.log("✅ Tipo de pessoa preenchido:", tipoPessoaInput.value);
     }
     
     if (inscricaoInput) {
         inscricaoInput.value = fornecedor.inscricaoEstadual || fornecedor.stateRegistration || '';
         console.log("✅ Inscrição Estadual preenchida:", inscricaoInput.value);
+    }
+
+    if (indIEDestInput) {
+        indIEDestInput.value = fornecedor.indIEDest || fornecedor.indicadorInscricaoEstadual || fornecedor.ieIndicator || '';
+        console.log("✅ Indicador IE preenchido:", indIEDestInput.value);
+    }
+
+    if (municipalRegistrationInput) {
+        municipalRegistrationInput.value = fornecedor.inscricaoMunicipal || fornecedor.municipalRegistration || '';
+        console.log("✅ Inscrição Municipal preenchida:", municipalRegistrationInput.value);
+    }
+
+    if (suframaInput) {
+        suframaInput.value = fornecedor.suframa || '';
+        console.log("✅ SUFRAMA preenchido:", suframaInput.value);
+    }
+
+    if (cepInput) {
+        cepInput.value = fornecedor.cep || fornecedor.postalCode || '';
+        console.log("✅ CEP preenchido:", cepInput.value);
     }
     
     if (phoneInput) {
@@ -729,6 +772,26 @@ async function loadClientForEdit(fornecedor) {
     if (bairroInput) {
         bairroInput.value = fornecedor.bairro || fornecedor.neighborhood || '';
         console.log("✅ Bairro preenchido:", bairroInput.value);
+    }
+
+    if (complementoInput) {
+        complementoInput.value = fornecedor.complemento || fornecedor.complement || '';
+        console.log("✅ Complemento preenchido:", complementoInput.value);
+    }
+
+    if (municipioCodeInput) {
+        municipioCodeInput.value = fornecedor.codigoMunicipio || fornecedor.municipioCodigo || fornecedor.municipalityCode || fornecedor.cMun || fornecedor.ibgeCode || '';
+        console.log("✅ Código IBGE preenchido:", municipioCodeInput.value);
+    }
+
+    if (countryCodeInput) {
+        countryCodeInput.value = fornecedor.paisCodigo || fornecedor.countryCode || fornecedor.cPais || '1058';
+        console.log("✅ Código do país preenchido:", countryCodeInput.value);
+    }
+
+    if (countryNameInput) {
+        countryNameInput.value = fornecedor.pais || fornecedor.country || fornecedor.countryName || fornecedor.xPais || 'Brasil';
+        console.log("✅ País preenchido:", countryNameInput.value);
     }
     
     if (obsInput) {
@@ -822,7 +885,7 @@ async function saveClient(event) {
     // Aceitar chamada sem evento (botão), prosseguir normalmente
     
     // Verificar se todos os inputs necessários existem
-    const requiredInputs = ['fornecedorName', 'fornecedorState', 'fornecedorCity'];
+    const requiredInputs = ['fornecedorName'];
     for (const inputId of requiredInputs) {
         const input = document.getElementById(inputId);
         if (!input) {
@@ -837,7 +900,12 @@ async function saveClient(event) {
         const id = document.getElementById('fornecedorId')?.value || '';
         const nome = document.getElementById('fornecedorName')?.value || '';
         const cnpj = document.getElementById('fornecedorCnpj')?.value || '';
+        const tipoPessoa = document.getElementById('fornecedorPersonType')?.value || '';
         const inscricaoEstadual = document.getElementById('fornecedorStateRegistration')?.value || '';
+        const indIEDest = document.getElementById('fornecedorIndIEDest')?.value || '';
+        const inscricaoMunicipal = document.getElementById('fornecedorMunicipalRegistration')?.value || '';
+        const suframa = document.getElementById('fornecedorSuframa')?.value || '';
+        const cep = document.getElementById('fornecedorCep')?.value || '';
         const estado = document.getElementById('fornecedorState')?.value || '';
         const cidade = document.getElementById('fornecedorCity')?.value || '';
         const telefone = document.getElementById('fornecedorPhone')?.value || '';
@@ -845,6 +913,10 @@ async function saveClient(event) {
         const endereco = document.getElementById('fornecedorAddress')?.value || '';
         const numero = document.getElementById('fornecedorNumber')?.value || '';
         const bairro = document.getElementById('fornecedorNeighborhood')?.value || '';
+        const complemento = document.getElementById('fornecedorComplement')?.value || '';
+        const codigoMunicipio = document.getElementById('fornecedorMunicipalityCode')?.value || '';
+        const paisCodigo = document.getElementById('fornecedorCountryCode')?.value || '1058';
+        const pais = document.getElementById('fornecedorCountryName')?.value || 'Brasil';
         const observacoes = document.getElementById('fornecedorObs')?.value || '';
         
         // ✅ VALIDAÇÕES RIGOROSAS DE DADOS
@@ -862,20 +934,6 @@ async function saveClient(event) {
             return false;
         }
         
-        if (!estado || estado.trim() === '') {
-            console.error("❌ Estado é obrigatório");
-            window.__toast('O estado é obrigatório.', 'warning');
-            document.getElementById('fornecedorState').focus();
-            return false;
-        }
-        
-        if (!cidade || cidade.trim() === '') {
-            console.error("❌ Cidade é obrigatória");
-            window.__toast('A cidade é obrigatória.', 'warning');
-            document.getElementById('fornecedorCity').focus();
-            return false;
-        }
-        
         // ✅ VALIDAÇÃO DE EMAIL SE FORNECIDO
         if (email && email.trim() !== '') {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -890,9 +948,9 @@ async function saveClient(event) {
         // ✅ VALIDAÇÃO DE CNPJ SE FORNECIDO
         if (cnpj && cnpj.trim() !== '') {
             const cnpjLimpo = cnpj.replace(/\D/g, '');
-            if (cnpjLimpo.length !== 14) {
-                console.error("❌ CNPJ deve ter 14 dígitos");
-                window.__toast('CNPJ deve ter 14 dígitos.', 'warning');
+            if (![11, 14].includes(cnpjLimpo.length)) {
+                console.error("❌ Documento deve ter 11 ou 14 dígitos");
+                window.__toast('CPF/CNPJ deve ter 11 ou 14 dígitos.', 'warning');
                 document.getElementById('fornecedorCnpj').focus();
                 return false;
             }
@@ -904,8 +962,22 @@ async function saveClient(event) {
             nome: nome,
             name: nome, // Para compatibilidade
             cnpj: cnpj || '',
+            documento: cnpj || '',
+            document: cnpj || '',
+            tipoPessoa: tipoPessoa || '',
+            personType: tipoPessoa || '',
+            fiscalPersonType: tipoPessoa || '',
             inscricaoEstadual: inscricaoEstadual || '',
             stateRegistration: inscricaoEstadual || '', // Para compatibilidade
+            ie: inscricaoEstadual || '',
+            indIEDest: indIEDest || '',
+            indicadorInscricaoEstadual: indIEDest || '',
+            ieIndicator: indIEDest || '',
+            inscricaoMunicipal: inscricaoMunicipal || '',
+            municipalRegistration: inscricaoMunicipal || '',
+            suframa: suframa || '',
+            cep: cep || '',
+            postalCode: cep || '',
             estado: estado,
             state: estado, // Para compatibilidade
             cidade: cidade,
@@ -919,6 +991,20 @@ async function saveClient(event) {
             number: numero || '', // Para compatibilidade
             bairro: bairro || '',
             neighborhood: bairro || '', // Para compatibilidade
+            complemento: complemento || '',
+            complement: complemento || '',
+            codigoMunicipio: codigoMunicipio || '',
+            municipioCodigo: codigoMunicipio || '',
+            municipalityCode: codigoMunicipio || '',
+            cMun: codigoMunicipio || '',
+            ibgeCode: codigoMunicipio || '',
+            paisCodigo: paisCodigo || '1058',
+            countryCode: paisCodigo || '1058',
+            cPais: paisCodigo || '1058',
+            pais: pais || 'Brasil',
+            country: pais || 'Brasil',
+            countryName: pais || 'Brasil',
+            xPais: pais || 'Brasil',
             observacoes: observacoes || '',
             obs: observacoes || '', // Para compatibilidade
             updated: new Date().toISOString()

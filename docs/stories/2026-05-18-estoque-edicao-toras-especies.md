@@ -1,0 +1,312 @@
+# Story: Edicao segura de toras e especies no estoque
+
+## Status
+Ready for Review
+
+## Contexto
+A aba Consulta de toras permite acionar edicao e carrega os dados no formulario da aba Entrada de Toras. O Sisweb esta em producao, entao o fluxo precisa evitar duplicar toras e especies por diferencas de escrita, mantendo dados reais e historico existente preservados.
+
+## Problema
+Ao editar uma tora da consulta, o formulario continua com o botao "Adicionar Item" e aviso de criacao de nova entrada, o que induz a duplicar a tora. O formulario tambem nao restaura fornecedor/romaneio associados quando existem e permite digitar especie fora do cadastro ou com variacao de maiusculas/minusculas.
+
+## Objetivo
+Transformar o formulario de Entrada em modo edicao quando a origem for a Consulta, atualizar a tora existente sem criar nova entrada, restaurar fornecedor/romaneio quando possivel e padronizar a especie pelo cadastro unificado.
+
+## Acceptance Criteria
+- [x] Ao clicar em editar na Consulta, o botao de item muda de "Adicionar Item" para "Atualizar Item".
+- [x] O aviso de modo edicao explica que a tora existente sera atualizada, sem registrar nova entrada.
+- [x] Editar uma tora atualiza o registro existente em `estoqueTorasAtual` e nao adiciona item temporario para nova entrada.
+- [x] Fornecedor e romaneio sao preenchidos quando existirem no registro da tora ou puderem ser inferidos do romaneio.
+- [x] Campo Especie usa a lista do cadastro unificado e normaliza escrita equivalente para o nome cadastrado.
+- [x] Se houver especies cadastradas, salvar/adicionar tora com especie fora do cadastro e bloqueado para evitar duplicidades.
+- [x] Campos de especie da Entrada, Saida manual, filtro da Consulta e filtro do modal de baixa usam o mesmo autocomplete customizado, sem `datalist` nativo.
+- [x] Filtros que tambem aceitam busca livre continuam sem bloqueio de cadastro e preservam busca por texto/plaqueta.
+- [x] O modal "Nova Especie" no estoque usa autocomplete em "Nome da Especie" para reduzir duplicidades antes de salvar.
+- [x] O antigo campo visual "Descricao" do cadastro/lista de especies foi tratado como "Nome Cientifico" no fluxo do estoque, lendo aliases legados sem gravar novos campos `descricao`/`description`/`decription`.
+- [x] Validacoes possiveis foram executadas e registradas.
+
+## File List
+- `docs/stories/2026-05-18-estoque-edicao-toras-especies.md`
+- `auto_sync_firebase.html`
+- `correcao-arrays-validacao.js`
+- `extrator_dados_dashboard.html`
+- `estoque.html`
+- `estoque.js`
+- `species-manager.js`
+- `species-utils.js`
+- `species-store.js`
+- `species-modal-standard.css`
+- `species-modal-standard.js`
+- `species.html`
+- `js/species.js`
+- `romaneiopct.html`
+- `romaneiotora.html`
+- `modules/modals/modal-especies.js`
+- `modules/romaneiopct/modal-especies-pct.js`
+- `modules/crud/gerenciar-especies.js`
+- `firebaseService.js`
+- `firebaseService.unified.js`
+- `modules/core/firebase-service.js`
+- `database-adapter.js`
+- `database-utils.js`
+- `data-functions.js`
+- `utils.js`
+- `src/services/databaseAdapter.js`
+- `src/services/firebaseService.unified.js`
+- `importar_especies.html`
+- `importar_especies_direto.js`
+- `limpar_especies.html`
+- `limpar_especies_direto.js`
+- `limpar_storage.js`
+- `database.rules.json`
+- `firebase-rules.json`
+- `firebase-rules-valid.json`
+- `firebase-rules-production.json`
+- `firebase-rules-update.html`
+- `preromaneio.html`
+- `preromaneio.js`
+- `preromaneio-modals.js`
+- `romaneiotl.html`
+- `romaneiopes.html`
+- `romaneio-comum.css`
+- `romaneiopct_funcoes.js`
+- `romaneiotora.js`
+- `romaneiotora_modais.js`
+- `compras.js`
+- `vendas.js`
+- `src/services/stateManager.js`
+- `src/components/forms/especie-form.js`
+- `src/components/navigation/nav-manager.js`
+- `src/scripts/migrationScript.js`
+- `global-functions-fix.js`
+- `index.html`
+- `romaneio-firebase-service.js`
+- `migrate-to-firebase.html`
+- `migrateToFirebase.js`
+- `migration-tool.html`
+- `modules/dashboard/dashboard-core.js`
+- `modules/dashboard/performance-tester.js`
+- `romaneiotora_otimizado.html`
+- `romaneiotora_versao_dev.html`
+- `config.example.js`
+- `configurar-firebase-real.js`
+- `correcao-dados-firebase.js`
+- `correcao-carregamento-listas.js`
+- `index_bak.html`
+
+## Implementacao
+- Adicionado estado visual de edicao na Entrada de Toras: titulo, aviso, icone e botao passam para "Atualizar Item".
+- O clique em "Atualizar Item" salva a tora existente em `estoqueTorasAtual` pelo mesmo `id`, sem inserir item temporario em `itensEntrada`.
+- A edicao restaura fornecedor e romaneio por `id`, `firebaseKey`, `key`, numero do romaneio, fornecedor, cliente ou nome quando possivel.
+- Ao editar, se o romaneio for limpo no select, o vinculo de romaneio e o documento voltam para entrada manual em vez de reaproveitar o romaneio antigo silenciosamente.
+- A movimentacao de entrada correspondente e atualizada quando existe, mantendo relatorios/historico coerentes com a correcao da tora.
+- O cadastro de especies passou a normalizar nomes por chave sem acento, caixa ou espacamento, usando o nome canonico cadastrado.
+- Entradas manuais, entradas vindas de romaneio e edicoes bloqueiam especies fora do cadastro carregado.
+- O cadastro de especies bloqueia duplicidade por diferencas de maiusculas/minusculas, acentos e espacamentos.
+- Edicao e salvamento final de entrada bloqueiam plaquetas duplicadas para evitar conflito no estoque.
+- Corrigido o erro de navegacao apos atualizar item: `showTab()` nao depende mais do `event` global e valida a aba de destino antes de ativar.
+- O campo Especie agora aciona o autocomplete/lista do gerenciador unificado ao focar/digitar e ganhou botao de lista para abrir o modal de especies cadastradas.
+- A edicao tenta recarregar o cadastro de especies antes de preencher o campo quando o cache local ainda nao estiver pronto.
+- Removido o autocomplete nativo por `datalist` do navegador no campo Especie, mantendo apenas o autocomplete customizado branco do `species-manager.js`.
+- O autocomplete customizado agora fecha por perda de foco, clique fora, `Escape`, `Tab`, mudanca de janela e apos selecionar uma especie; tambem ignora timers pendentes quando o campo ja perdeu foco.
+- O mesmo padrao foi aplicado em `#manualEspecieSaida`, `#filtroEspecie` e `#filtroTorasEspecieModal`, usando wrapper responsivo, botoes de lista/cadastro onde cabe e um unico container de sugestoes movido para o campo ativo.
+- A selecao pelo modal de especies memoriza o campo que abriu a lista para evitar preencher `#especieEntrada` quando a origem for outro campo.
+- A saida manual agora valida e canoniza a especie antes de adicionar a tora fora do estoque.
+- O filtro da Consulta passou de `select` para input com autocomplete e filtro parcial por especie; o filtro do modal de baixa manteve busca livre por especie ou plaqueta.
+- O autocomplete de especies agora e renderizado como camada fixa no `body`, com z-index alto e reposicionamento por scroll/resize, evitando ficar por baixo ou recortado por tabelas, botoes, campos e containers com `overflow`.
+- No modal "Selecionar Toras para Baixa", o autocomplete usa modo reservado expansivel (`data-species-layout="reserved"`), abrindo em um espaco proprio abaixo dos filtros e recolhendo ao perder foco para evitar barras de rolagem inesperadas no container horizontal.
+- A baixa individual ganhou painel/tabela expansivel para "Buscar por Plaqueta", com resultados abaixo dos campos, acao de adicionar por linha e recolhimento ao tirar foco da busca/lista.
+- Mapeado no estoque que "Nova Especie" aparece nos fluxos de Entrada de Toras e Saida manual; filtros de Consulta e modal de baixa abrem apenas a lista completa de especies.
+- O modal "Nova Especie" passou a usar `#speciesName` com o mesmo autocomplete customizado/reservado dos campos de especie, exibindo sugestoes cadastradas ao focar/digitar e aviso de duplicidade normalizado por acento, caixa e espacos.
+- O campo `#speciesDescription` foi mantido como id tecnico para compatibilidade, mas sua label e exibicao passaram para "Nome Cientifico"; novas escritas gravam `especie` e `nomeCientifico`, com `descricao`, `description`, `decription`, `scientific` e `scientificName` apenas como aliases de leitura/transicao.
+- A lista/modal de especies passou a exibir a coluna "Nome Cientifico" e filtrar por nome comum ou nome cientifico, sem depender de `descricao` como texto visual.
+- O cache auxiliar de especies passou a ser salvo com chave tenant-scoped (`company_<id>__species_cache`) quando houver tenant resolvido, alinhado ao padrao multi-tenant do Sisweb.
+- Adicionado `species-utils.js` como utilitario compartilhado: `descricao`, `description` e o typo legado `decription` passam a ser aliases somente de leitura para o valor semantico `nomeCientifico`.
+- Validado o export real `sisweb-7ce82-default-rtdb-especies-export.json`: os registros gravados em `descricao`/`description` representam nome cientifico; a normalizacao limpa grava `especie` e `nomeCientifico`.
+- Caminho canonico de especies definido como `especies`; chamadas antigas para `species`, `especiesPct` e `data/species` sao redirecionadas internamente para `especies`, sem varrer nem recriar caminhos legados.
+- `firebaseService.js`, `firebaseService.unified.js`, `modules/core/firebase-service.js`, `database-adapter.js`, `database-utils.js`, `data-functions.js`, `utils.js` e servicos `src/services/*` receberam aliases para reduzir novos caminhos paralelos de especies.
+- Fluxos principais de cadastro/lista em `species.html`, `romaneiopct.html`, `romaneiotora.html`, `modules/modals/modal-especies.js`, `modules/romaneiopct/modal-especies-pct.js` e `modules/crud/gerenciar-especies.js` passaram a exibir/gravar "Nome Cientifico" sem criar novos aliases `descricao`/`description`.
+- `importar_especies.html` foi refatorado para importar linhas no formato `Nome Cientifico - Especie`, detectar duplicidades por especie normalizada e gravar registros limpos em `especies/{id}`.
+- Regras do Realtime Database passaram a indexar `especies` por `especie` e `nomeCientifico`.
+- `species.html` trocou o id tecnico do campo visual de nome cientifico para `#scientificName`, removendo o antigo `#description` da tela de gerenciamento principal de especies.
+- Regras auxiliares antigas (`firebase-rules*.json` e `firebase-rules-update.html`) foram alinhadas para `especies`/`especie`/`nomeCientifico`, mantendo a regra principal `database.rules.json` como fonte de producao.
+- Criado o padrao compartilhado `species-modal-standard.css`/`species-modal-standard.js` para modais "Nova Especie" fora do Estoque: layout responsivo, campo de nome com autocomplete reservado, aviso de duplicidade e leitura do cadastro canonico.
+- Padronizados os modais "Nova Especie" em `species.html`, `romaneiotl.html`, `romaneiopct.html`, `romaneiotora.html`, `romaneiopes.html`, `preromaneio.html` e variantes de toras, usando "Nome da Especie" e "Nome Cientifico" sem rótulos antigos de descricao.
+- As funcoes de salvamento em `js/species.js`, `modules/crud/gerenciar-especies.js`, `romaneiopct.html`, `romaneiopes.html`, `preromaneio-modals.js` e `romaneiotora_modais.js` passaram a consultar duplicidade normalizada antes de criar nova especie.
+- O helper `species-modal-standard.js` passou a oferecer `data-species-list-on-type`, `bindSpeciesField()` e `openSpeciesListModalFromField()` para abrir a lista completa de especies ao digitar no campo focado, com minimo de 3 caracteres e sem abrir por preenchimentos automaticos internos.
+- Os campos `Espécie`/`Espécie Padrão` de `romaneiotl.html`, `romaneiopct.html`, `romaneiopes.html`, `romaneiotora.html` e das duas abas de `preromaneio.html` foram marcados com o mesmo padrao de abertura da lista de especies ao digitar.
+- O autocomplete inline de `romaneiopes.html` passou a ceder prioridade ao modal/lista padronizado quando a busca atinge o minimo, evitando dois menus concorrentes no mesmo campo.
+- O modal "Nova Especie" do Romaneio TL foi alinhado ao PCT, mantendo apenas "Nome da Especie" e "Nome Cientifico" no formulario visual e removendo categoria/preco do novo payload canonico de especies.
+- O modal "Nova Especie" de `species.html` foi alinhado ao mesmo layout dos romaneios: `#speciesName`, reserve `#speciesNameSuggestionsReserve`, aviso de duplicidade, textarea para "Nome Cientifico", botoes "Salvar/Atualizar Especie" e abertura centralizada/responsiva.
+- Os modais "Editar Especie" em PCT, TL, PES e Tora passaram a usar o mesmo layout `species-standard-*`, com titulo/botao alternando para "Editar Especie"/"Atualizar Especie", campo `Nome Cientifico` em textarea e sem campos auxiliares de categoria/preco.
+- O salvamento de edicao de especies foi corrigido para persistir o registro individual em `especies/{id}` via `saveToFirebase('especies', id, payload)` ou `saveData('especies/{id}', payload)`, evitando gravar listas inteiras ou caminhos legados.
+- O `species-manager.js` deixou de usar as classes legadas `species-edit-*` no modal de edicao e removeu o CSS duplicado correspondente, ficando alinhado ao par `species-modal-standard.css`/`species-modal-standard.js`.
+- O fluxo legado `romaneiotora_modais.js` passou a preencher `#speciesId` ao editar e a gerar `id` antes de salvar nova especie, evitando transformar edicao em novo cadastro.
+- As variantes `romaneiotora_otimizado.html` e `romaneiotora_versao_dev.html` receberam o mesmo markup base do modal padronizado para evitar divergencia quando usadas em manutencao/teste.
+- Corrigida a causa da duplicacao ao atualizar especie: listas vindas do Firebase agora preservam a chave do no como `id` canonico e guardam o `id` antigo do payload apenas em `originalId`, evitando salvar a edicao em um novo caminho.
+- Os fluxos de edicao/lista em `species-manager.js`, `js/species.js`, `modules/crud/gerenciar-especies.js`, `modules/romaneiopct/modal-especies-pct.js`, `romaneiopct.html`, `romaneiopes.html` e `romaneiotora_modais.js` passaram a comparar IDs normalizados por `id`, `key`, `firebaseKey` e `originalId`.
+- Logs reais de edicao em `romaneiotl.html` e `species.html` mostraram o no `especies` ainda em formato de array legado: a edicao de `1750256375525` salvava em `especies/1750256375525`, criando uma chave extra ao lado das posicoes `0..112`.
+- Leituras de arrays legados de especies agora anotam a posicao real como `firebaseKey`/`key` e movem o `id` antigo para `originalId`, permitindo atualizar a posicao existente em vez de criar outro registro.
+- Listas de especies passam a deduplicar por nome normalizado, mantendo o registro mais recente quando houver mistura de array legado com chave nova criada por edicoes anteriores.
+- `importar_especies.html` ficou alinhado ao fluxo de especies: le somente `especies`, normaliza array/object, deduplica por especie normalizada e grava sempre em `especies/{id}`.
+- Apos limpeza manual do no antigo no banco, telas, importadores, sincronizadores, dashboards e fallbacks locais foram alinhados para consultar apenas `especies`; chaves antigas no codigo ficam restritas a redirecionamento defensivo ou limpeza de cache legado.
+- `firebaseService.js`, `modules/core/firebase-service.js`, `species-utils.js`, `database-utils.js`, `data-functions.js` e `utils.js` passaram a transformar entrada legada em candidato unico `especies`, sem montar listas de candidatos com `species`/`especiesPct`/`data/species`.
+- Auditoria posterior de CRUD/listas/modais/importacao confirmou ausencia de chamadas ativas para caminhos legados e removeu novas divergencias encontradas: catalogo de produtos de `compras.js` voltou a usar `produtos`, sincronizacao diagnostica de PCT grava especies individualmente em `especies/{id}` e o modal de `preromaneio.html` deixou de gravar preco dentro do cadastro de especies.
+- `preromaneio-modals.js` passou a salvar nova especie em `especies/{id}` via `saveData(\`especies/${id}\`, payload)`, evitando substituir o no inteiro `especies` por um unico registro.
+- `global-functions-fix.js` deixou de sobrescrever funcoes reais de modais de especies; agora expoe apenas fallbacks ausentes, prevenindo recursao/conflito com implementacoes dos modulos.
+- `correcao-dados-firebase.js` passou a atualizar/remover registros usando `firebaseService` quando disponivel ou caminho tenant-scoped (`companies/{tenant}/...`) como fallback, evitando operacoes diretas na raiz do banco em ambiente multi-tenant.
+- `species-modal-standard.js` passou a resolver o tenant efetivo antes de consultar caches locais de especies; quando houver `companyId`/`tenantId`, le somente `companies/<tenant>/especies`, `companies/<tenant>/especies_cache`, `company_<tenant>__especies` e `company_<tenant>__especies_cache`, ignorando chaves raiz e caches de outras empresas.
+- `species-manager.js` deixou de cair em `localStorage.getItem('especies')` quando existe cache tenant-scoped e passou a tentar tambem o formato local `companies/<tenant>/especies`, mantendo fallback raiz apenas para contexto sem tenant.
+- O fallback final por `window.species` em `species-manager.js` agora filtra por `companyId`/`companyID`/`tenantId` quando houver tenant resolvido, evitando reaproveitar uma lista em memoria de outra empresa.
+- Em `romaneiopes.html`, o foco inicial em `Espessura` passou a ser aplicado somente se o usuario ainda nao tiver focado outro campo durante o carregamento assincrono; isso evita o salto de foco observado ao digitar em `Especie Padrao`.
+- O campo `Especie Padrao` de `romaneiopes.html` agora deixa o helper padronizado ser a unica fonte de abertura da lista ao digitar; o autocomplete inline antigo fica apenas como fallback caso `species-modal-standard.js` nao esteja disponivel.
+- Os icones de `Listar Especies` e `Nova Especie` em `romaneiopes.html` ganharam `role="button"`, `tabindex`, foco visivel e handlers de `pointerdown`/teclado para impedir perda de foco e cliques inconsistentes.
+- As tabelas dos modais "Lista de Especies" foram padronizadas pelo mesmo desenho usado no PES: colunas `Nome`, `Nome Cientifico` e `Acoes`, primeira coluna com 30%, segunda com `calc(70% - 40px)`, coluna de acoes compacta de 40px, texto cientifico quebrando linha e botoes de acao centralizados.
+- O padrao compartilhado foi aplicado em `romaneio-comum.css`, `species-modal-standard.css` e tambem no CSS injetado por `species-manager.js`, cobrindo modais estaticos dos romaneios/pre-romaneio e o modal dinamico usado pelo Estoque.
+- `preromaneio.html`, `romaneiopct.html`, `romaneiotora.html`, `romaneiotora_versao_dev.html`, `romaneiotora_modais.js` e o fallback de `global-functions-fix.js` receberam os mesmos cabecalhos/filtro/estrutura de tabela da lista de especies do PES.
+- As versoes de cache dos estilos `romaneio-comum.css` e `species-modal-standard.css` foram atualizadas nos modulos que os consomem para evitar que o navegador mantenha o layout antigo em producao.
+- A coluna `Acoes` dos modais "Lista de Especies" passou de 40px para 92px, com `flex-wrap: nowrap`, preservando os icones de selecionar/editar lado a lado e evitando truncar o cabecalho.
+- As referencias de `romaneio-comum.css`, `species-modal-standard.css` e `species-manager.js` receberam versao `v=20260520a` nos modulos afetados para derrubar cache do layout antigo.
+- Em `romaneiopes.html`, a inicializacao dos autocompletes/formularios de cliente e especie passou a ocorrer antes dos `await` de carga inicial, eliminando a janela em que o icone "Listar Especies" podia apenas focar o campo no primeiro carregamento.
+- O carregamento de especies do PES ficou idempotente e tenant-aware: aguarda `firebaseService` + `companyId` quando necessario, consulta somente `especies`, reaproveita uma carga em andamento e recarrega ao abrir o modal se a lista estiver vazia ou se o tenant mudou.
+- O modal "Lista de Especies" do PES passou a ter estado de carregamento e estado vazio explicito, evitando tabela branca/silenciosa enquanto o Firebase ou o contexto da empresa ainda estao prontos.
+- Criado `species-store.js` como camada compartilhada tenant-aware para listas de especies: resolve o tenant efetivo, consulta somente `especies`, usa promise unica de carregamento, cache local namespaced e assinatura realtime centralizada.
+- Os modais "Lista de Especies" de PES, TL, PCT, Pre-romaneio e Tora passaram a consultar `SiswebSpeciesStore` antes de qualquer fallback legado, removendo a duplicacao de autoridade entre modulos e reduzindo recargas concorrentes.
+- `romaneiopct-main.js`, `preromaneio.js`, `preromaneio-modals.js`, `romaneiotora.js` e `romaneiotora_modais.js` foram alinhados para carregar especies pelo store compartilhado antes dos caminhos defensivos antigos.
+- `romaneiotora_otimizado.html` e `romaneiotora_versao_dev.html` receberam a mesma base de `species-utils.js`/`species-store.js` e um fallback de abertura da lista para nao dependerem de modulo legado ausente.
+- O render do modal de especies do PES passou a montar linhas por DOM/textContent, evitando injetar IDs/nomes em HTML inline e mantendo botoes de selecionar/editar por closures.
+- Os filtros dos modais TL/PCT passaram a remover listeners antigos antes de adicionar novos e o evento `species:updated` so recarrega quando o modal esta visivel, evitando acumulo de handlers e recargas fora de hora.
+- Removidos logs placeholders repetitivos de `romaneiotora_modais.js` e debug de geometria no fluxo de especies do PCT; logs restantes ficam fora do fluxo principal de especies ou em fallbacks defensivos.
+- `importar_especies_direto.js` e `limpar_especies_direto.js` deixaram de ler/gravar `localStorage.especies` global; agora exigem tenant resolvido e usam `companies/<tenant>/especies`/caches namespaced, bloqueando operacao sem empresa identificada.
+
+## Padrao reutilizavel de campo
+- Usar `input type="text"` com `autocomplete="off"`, `role="combobox"`, `aria-autocomplete="list"`, `aria-expanded` e `aria-controls`.
+- Nao usar `datalist` nativo quando houver autocomplete customizado, para evitar dois menus concorrentes.
+- Manter um botao de lista ao lado do campo para abrir o modal completo do cadastro.
+- Ao reutilizar o modal de lista em varios campos, passar o `id` do campo para registrar o campo ativo antes de abrir o modal.
+- Abrir sugestoes apenas quando o campo estiver focado; fechar ao clicar fora, ao mudar foco, ao pressionar `Escape` ou `Tab`, ao perder a janela e apos selecao.
+- Selecionar opcoes por `pointerdown` para gravar antes do `blur`, com pequena supressao para impedir reabertura pelo evento `input`.
+- Validar o valor final contra o cadastro canonico antes de salvar, normalizando acentos, caixa e espacos.
+- Em filtros de consulta/busca, usar autocomplete sem `data-species-validate`, para permitir texto parcial e buscas mistas como especie ou plaqueta.
+- Para campos em tabelas, drawers, modais ou containers com `overflow`, renderizar sugestoes em camada fixa/portal no `body`; somente aumentar `z-index` dentro do wrapper nao resolve recorte por overflow.
+- Em modais densos com tabela logo abaixo, preferir `data-species-layout="reserved"` com um reserve fora de containers `overflow-x:auto`, para expandir/recolher a lista sem sobrepor a tabela nem criar rolagem horizontal/vertical inesperada.
+- Para buscas operacionais por codigo/plaqueta, preferir painel expansivel em formato de tabela abaixo do campo, com colunas essenciais, acao por linha e recolhimento por perda de foco. Esse padrao evita modais desnecessarios e padroniza com telas densas do Sisweb.
+- Para cadastros auxiliares que possam duplicar registros, aplicar autocomplete tambem no campo de nome do modal de cadastro, com normalizacao sem acento/caixa/espacamento e aviso preventivo antes de salvar.
+- Em qualquer modal "Nova Especie" novo ou legado, aplicar o par `species-modal-standard.css`/`species-modal-standard.js` quando o modulo nao usa `species-manager.js`; quando usa `species-manager.js`, manter o mesmo markup reservado (`speciesNameSuggestionsReserve` e `speciesNameDuplicateHint`) para o comportamento ficar equivalente.
+- Para campos de especie que devem abrir a lista completa ao digitar, usar `data-species-list-on-type="true"` e `data-species-list-min-chars="3"`; o helper so abre enquanto o campo esta focado, evitando que eventos `input` disparados por scripts abram modais indevidamente.
+- Quando esse helper estiver ativo, nao chamar `openSpeciesListModalFromField()` novamente em handlers locais de `input`; handlers antigos devem apenas esconder sugestoes inline ou servir como fallback se o helper nao existir.
+- Em telas com carregamento assincrono inicial, foco automatico so deve ocorrer se `document.activeElement` ainda for `body`/`documentElement`; nunca roubar foco de um campo em que o usuario ja clicou ou esta digitando.
+- Botoes/ icones dentro de campos de autocomplete devem ser acionaveis por mouse e teclado, usando `pointerdown` para preservar o foco do input quando a lista depende do campo ativo.
+- Para qualquer modal "Lista de Especies", manter a tabela no padrao PES: usar `.table` dentro de `.table-container`, cabecalhos `Nome`, `Nome Cientifico`, `Acoes`, filtro `#speciesListFilter` com busca por especie ou nome cientifico e deixar as larguras sob controle de `species-modal-standard.css`/`species-manager.js`.
+- Em telas com dados iniciais assincronos, conectar eventos de campos/icones antes de aguardar Firebase/listas; o evento deve abrir o modal em modo carregando e aguardar a mesma promise de carga para evitar cliques perdidos no primeiro carregamento.
+- Quando um campo legado tiver sido usado com nome conceitual errado, manter o id/alias tecnico se ele ja integra outros modulos, mas corrigir a label, a coluna visivel e o campo canonico novo. No caso de especies: `descricao`/`description`/`decription` ficam como aliases apenas de leitura, e novas escritas usam `nomeCientifico`.
+- Quando o campo tecnico for local a uma tela e nao quebrar integracoes externas, preferir renomear tambem o id/variavel para `scientificName`/`nomeCientifico`, deixando `description` apenas como alias de leitura em normalizadores.
+- Caminho canonico para especies: sempre ler/gravar em `especies`; se algum modulo legado pedir `species`, `especiesPct` ou `data/species`, redirecionar para `especies` antes de acessar armazenamento ou Firebase.
+- Ao converter objetos Firebase para arrays, usar `...item` antes de definir `id: key`, `key`, `firebaseKey` e `originalId`; a chave do no precisa vencer qualquer `id` legado dentro do payload para edicoes nao criarem novos registros.
+- Quando o Firebase retornar `especies` como array, mapear cada item com `id/key/firebaseKey = String(index)` e `originalId = item.id || item.key || index`; isso preserva a posicao de armazenamento ate a importacao/migracao recriar o no no formato canonico.
+- Importadores devem consultar somente `especies` para reconhecimento de registros existentes; novas escritas, atualizacoes e exclusoes continuam usando o caminho canonico `especies`.
+
+## Memoria Sisweb
+- O Sisweb e multi-tenant: novas leituras/escritas devem respeitar `companyId`/`companyID`/`tenantId` vindo do `firebaseService`, `window.appTenantId`, usuario autenticado ou `company_info`.
+- Dados globais de apoio, como especies, devem preferir colecoes/nos tenant-scoped e cache local namespaced (`company_<id>__...`) para nao misturar empresas.
+- Quando houver tenant resolvido, nao usar cache raiz (`especies`, `especies_cache`) nem cache de outro tenant como fallback visual; cache raiz so e aceitavel em contexto sem tenant para diagnostico/local, nunca como substituto de dados de empresa.
+- Cabecalhos, relatorios e impressoes devem resolver dados da empresa pelo mesmo tenant efetivo antes de cair em defaults ou cache local.
+- Alteracoes visuais devem preservar impressao/relatorio e nao executar migracoes ou escritas massivas em dados reais sem acao explicita do usuario.
+- Ao padronizar campos de especies em outros modulos, replicar o autocomplete customizado, o bloqueio/aviso de duplicidade e a nomenclatura "Nome Cientifico" sem misturar especies entre tenants/empresas.
+- Em especies, `descricao`, `description`, `decription`, `scientificName` e `scientific` devem ser tratados como aliases legados de nome cientifico, nao como campos de gravacao. O registro canonico novo grava `especie` e `nomeCientifico`.
+
+## Validacao
+- `node --check estoque.js`
+- `node --check species-manager.js`
+- `git diff --check -- estoque.html estoque.js species-manager.js docs/stories/2026-05-18-estoque-edicao-toras-especies.md`
+- `npm run lint`
+- `npm run typecheck`
+- `npm test`
+- `node --check` nos JS alterados de especies/importacao/servicos; corrigida duplicidade antiga de `parseCurrencyValue` em `romaneiotora.js` que impedia esse check.
+- Smoke local no Browser em `http://127.0.0.1:5501/estoque.html?noRedirect=true`: abas principais navegam, formulario inicial permanece com "Adicionar Item", aviso de edicao oculto e sem erros de console.
+- Smoke local apos analise do `logs.md`: clique entre abas nao gera erro de console; campo Especie mantem botao de lista e autocomplete customizado. O ambiente local nao leu especies reais por permissao/contexto, mas os logs de producao indicaram `species` carregado com 104 registros.
+- Smoke local apos remocao do `datalist`: o input `#especieEntrada` nao possui mais atributo `list`, nao existe mais `#listaEspecies` no DOM e o botao de lista permanece disponivel.
+- Validado por leitura de DOM/codigo que o campo usa somente o autocomplete customizado e possui fechamento por contexto (`pointerdown`, `focusin`, `keydown`, `blur` de janela e `blur` do campo).
+- Smoke local do campo Especie: apos focar, pressionar `Escape` e mover foco para Plaqueta, `aria-expanded` voltou para `false`, sem `datalist` no DOM e sem erros de console.
+- Smoke local da migracao: `#especieEntrada`, `#manualEspecieSaida`, `#filtroEspecie` e `#filtroTorasEspecieModal` existem como `input` com `data-species-autocomplete="true"`, `autocomplete="off"`, ARIA de combobox, sem atributo `list` e com wrapper `.species-combobox-inline`.
+- Smoke local de foco: ao digitar em Entrada, Saida manual, Consulta e modal de baixa, o unico `#especieSuggestions` se move para o campo ativo; ao sair do campo, `display` volta para `none` e `aria-expanded` para `false`.
+- Smoke local do botao de lista no modal de baixa: o modal unificado de especies abriu sem erros de console. O ambiente local continuou sem especies reais por falta de tenant/contexto, sem gravacao em producao.
+- Validacao de multi-tenant: `species-manager.js` usa `getCurrentTenantId`/`getTenantId`, `window.appTenantId` e `company_info` com `companyId`/`companyID`/`tenantId`/`id`; `estoque.html` aplica tenant por auth/profile/token; `estoque.js` resolve tenant para dados, relatorios e storage local antes de fallbacks.
+- Ajuste posterior do modal de baixa: `#filtroTorasEspecieModal` recebeu reserve dedicado fora do scroll horizontal para o autocomplete expandir/recolher sem gerar barra de rolagem no bloco de filtros.
+- Ajuste posterior da baixa individual: `#saidaPlaquetaBusca` passou a controlar `#saidaPlaquetaResultadosPanel`, uma tabela responsiva de toras disponiveis que expande ao focar/digitar e recolhe ao sair do campo/lista.
+- Smoke local do modal "Nova Especie": `#speciesName` existe como combobox com `data-species-autocomplete="true"`, `data-species-layout="reserved"` e reserve proprio; ao digitar, `#especieSuggestions` abre dentro de `#speciesNameSuggestionsReserve` e recolhe ao focar `#speciesDescription`.
+- Smoke local do modal "Nova Especie": label de `#speciesDescription` aparece como "Nome Cientifico:" e nao como "Descricao:".
+- Smoke local da "Lista de Especies": modal abre com titulo "Lista de Especies", filtro "Filtrar por nome ou nome cientifico..." e cabecalhos "Nome", "Nome Cientifico" e "Acoes", sem erros de console.
+- Validacao do export real de especies: `species-utils.js` normalizou 110 especies unicas a partir das 113 linhas do arquivo exportado e preencheu `nomeCientifico` a partir de `descricao`/`description`; os 5 registros sem nome cientifico no export permaneceram vazios por falta de valor de origem.
+- Validacao de caminhos: `SiswebSpecies.canonicalizePath('species/abc')` e `SiswebSpecies.canonicalizePath('data/species/abc')` retornam `especies/abc`, mantendo leitura legada com escrita canonica em `especies`.
+- Smoke local adicional no Browser: `estoque.html?noRedirect=true` abriu o modal "Nova Especie" com label "Nome Cientifico:" e autocomplete no nome; `species.html?noRedirect=true` exibiu busca por "nome ou nome cientifico", coluna "Nome Cientifico" e label "Nome Cientifico", sem erros de console.
+- Smoke local no Browser apos refatoracao do importador: `importar_especies.html?noRedirect=true` exibiu instrucoes/cabecalhos "Especie" e "Nome Cientifico", sem campo `description`/`descricao` no DOM e sem erros de console.
+- Smoke local no Browser apos renomear o campo em `species.html`: `#scientificName` existe, `#description` nao existe mais, a coluna "Nome Cientifico" permanece visivel e nao houve erro de console.
+- Revalidado `node --check` em utilitarios, servicos e telas alteradas de especies/importacao; `git diff --check`, `npm run lint`, `npm run typecheck` e `npm test` passaram apos os ultimos ajustes.
+- Smoke local dos modais "Nova Especie" fora do Estoque: `species.html?noRedirect=true` abriu o modal com `species-standard-modal-content`, `data-species-autocomplete="true"`, reserve de sugestoes e aviso de duplicidade; `romaneiopct.html`, `romaneiopes.html` e `preromaneio.html` exibiram estrutura padronizada e labels "Nome da Especie"/"Nome Cientifico", sem erros de console.
+- `node --check species-modal-standard.js`
+- `node --check modules/crud/gerenciar-especies.js`
+- `node --check romaneiotora.js`
+- `git diff --check -- species-modal-standard.js modules/crud/gerenciar-especies.js romaneiopct.html romaneiopes.html romaneiotl.html romaneiotora.html romaneiotora.js preromaneio.html docs/stories/2026-05-18-estoque-edicao-toras-especies.md`
+- Revalidado `npm run lint`, `npm run typecheck` e `npm test` apos o ajuste dos romaneios.
+- Revalidado `node --check species-modal-standard.js` e `node --check species-manager.js` apos reforco de cache tenant-scoped.
+- Validado script inline classico de `romaneiopes.html` com `new Function`, ignorando o bloco `type="module"` de importacao.
+- Validado por harness local em Node que `SiswebSpeciesModal.getSpeciesList()` com tenant `TENANT_A` inclui somente caches `TENANT_A` e ignora `especies` raiz e `company_TENANT_B__especies`.
+- Smoke local no Browser em `http://127.0.0.1:5501/romaneiopes.html?noRedirect=true`: ao focar `#especieInput` e digitar `Ara`, o modal `#speciesListModal` abriu, o foco permaneceu em `especieInput` e o icone `Listar Especies` abriu o mesmo modal.
+- Smoke local no Browser em `romaneiotl.html`, `romaneiopct.html`, `romaneiopes.html`, `romaneiotora.html` e `preromaneio.html`: ao preencher `Ced` nos campos de especie focados, `#speciesListModal` abriu com `display: block`; os campos ficaram com `autocomplete="off"`, `data-species-list-on-type="true"` e minimo `3`.
+- Smoke local no Browser na aba Toras de `preromaneio.html`: ao preencher `#especieToraInput`, a lista de especies abriu com `#speciesListModal` visivel.
+- Smoke local no Browser dos modais "Nova Especie" de `romaneiopct.html`, `romaneiopes.html` e `romaneiotl.html`: todos abriram com classe padronizada, labels "Nome da Especie:" e "Nome Cientifico:", botao "Salvar Especie" e sem campos categoria/preco. Os erros de console observados foram apenas permissoes/autenticacao esperadas no ambiente local sem tenant autenticado.
+- `node --check js/species.js`
+- Smoke local no Browser de `species.html?noRedirect=true`: o modal "Nova Especie" abriu centralizado com `species-standard-modal-content`, `#speciesName`, reserve padronizado, label "Nome Cientifico:", textarea e botao "Salvar Especie".
+- `node --check species-manager.js`
+- `node --check modules/crud/gerenciar-especies.js`
+- `node --check romaneiotora_modais.js`
+- Revalidado `git diff --check`, `npm run lint`, `npm run typecheck` e `npm test` apos a padronizacao dos modais de edicao.
+- Smoke local no Browser dos modais de especies em `romaneiopct.html`, `romaneiopes.html`, `romaneiotora.html`, `romaneiotl.html` e `species.html`: os modais abriram com `species-standard-modal-content`, `Nome Cientifico` em textarea e sem campos categoria/preco. O teste local nao executou salvamento e os erros vistos foram de permissao/autenticacao esperados sem tenant autenticado.
+- Validada simulacao do bug de duplicacao: registro com chave Firebase e `id` legado no payload manteve a chave Firebase como `id` canonico e comparou corretamente tambem por `originalId`.
+- `node --check species-manager.js species-utils.js species-modal-standard.js js/species.js modules/crud/gerenciar-especies.js modules/romaneiopct/modal-especies-pct.js romaneiotora_modais.js`
+- Sintaxe dos scripts inline de `romaneiopes.html`, `romaneiopct.html` e `importar_especies.html` validada com `node --check` em modo script/module conforme o atributo do script.
+- Smoke local no Browser em `species.html`, `romaneiopct.html`, `romaneiopes.html` e `romaneiotora.html`: paginas carregaram com campos/modal de especies presentes (`speciesId`, `speciesName` e campo de Nome Cientifico). Sem gravacao; erros observados foram somente permissao/autenticacao esperadas no ambiente local sem tenant.
+- Revalidado `git diff --check`, `npm run lint`, `npm run typecheck` e `npm test` apos a correcao de preservacao do ID canonico de especies.
+- Analise de `logs.md`: `romaneiotl.html` carregou `especies` como `Array(113)` e, ao atualizar `1750256375525`, criou o filho `especies/1750256375525`, resultando em objeto misto com 114 chaves (`0..112` + `1750256375525`).
+- Auditoria com agentes especialistas: PES/TL/PCT identificaram dupla autoridade de carregamento, acumulacao de listeners e risco de cache raiz; Pre-romaneio/Tora identificaram cargas diretas duplicadas e variantes sem opener completo da lista.
+- `node --check species-store.js species-modal-standard.js modules/modals/modal-especies.js modules/romaneiopct/modal-especies-pct.js preromaneio.js preromaneio-modals.js romaneiotora.js romaneiotora_modais.js romaneiopct-main.js importar_especies_direto.js limpar_especies_direto.js`
+- Validado script inline classico de `romaneiopes.html`, `romaneiotl.html`, `romaneiopct.html`, `preromaneio.html`, `romaneiotora.html`, `romaneiotora_otimizado.html`, `romaneiotora_versao_dev.html`, `importar_especies.html` e `species.html`.
+- `git diff --check -- species-store.js species-modal-standard.js modules/modals/modal-especies.js modules/romaneiopct/modal-especies-pct.js romaneiopes.html romaneiopct-main.js romaneiopct.html preromaneio.js preromaneio-modals.js romaneiotora.js romaneiotora_modais.js romaneiotl.html preromaneio.html romaneiotora.html romaneiotora_otimizado.html romaneiotora_versao_dev.html importar_especies_direto.js limpar_especies_direto.js`
+- Smoke local no Browser em `romaneiopes.html`, `romaneiotl.html`, `romaneiopct.html`, `preromaneio.html`, `romaneiotora.html`, `romaneiotora_otimizado.html` e `romaneiotora_versao_dev.html`: `species-store.js` presente, campo de especie visivel abriu `#speciesListModal` ao digitar 3 letras e o filtro exibiu placeholder por especie/nome cientifico.
+- Smoke local adicional em `preromaneio.html` na aba Toras: apos acionar a aba, `#especieToraInput` ficou visivel e abriu a lista de especies com o mesmo modal padronizado.
+- Revalidado `npm run lint`, `npm run typecheck` e `npm test` apos a unificacao dos modais/listas e dos scripts auxiliares tenant-aware.
+- Validado no Browser local que `#speciesListModal` abre nos modulos testados e o cabecalho da coluna `Acoes` passa a computar 92px. Sem dados autenticados, as linhas reais nao renderizaram no ambiente local, mas a regra compartilhada aplicada aos containers de botoes esta em `nowrap`.
+- `node --check species-manager.js romaneiotora_modais.js`
+- `git diff --check -- species-modal-standard.css romaneio-comum.css species-manager.js romaneiopes.html romaneiotl.html romaneiopct.html preromaneio.html romaneiotora.html romaneiotora_otimizado.html romaneiotora_versao_dev.html species.html romaneiotora_modais.js estoque.html compras.html index.html`
+- Validada simulacao local de normalizacao para array legado e objeto misto: array preserva posicao como `firebaseKey`, e objeto misto deduplica "Mista" mantendo o registro mais recente.
+- `node --check species-utils.js species-manager.js species-modal-standard.js modules/modals/modal-especies.js modules/crud/gerenciar-especies.js modules/romaneiopct/modal-especies-pct.js js/species.js romaneiotora_modais.js`
+- Sintaxe dos scripts inline de `romaneiopes.html` e `romaneiopct.html` validada com `node --check`.
+- Smoke local no Browser em `romaneiotl.html?noRedirect=true` e `species.html?noRedirect=true`: paginas carregaram sem `SyntaxError`, `ReferenceError` ou `TypeError`; sem gravacao em dados reais.
+- Revalidado `git diff --check`, `npm run lint`, `npm run typecheck` e `npm test` apos ajuste para arrays legados de especies.
+- Sintaxe do script inline de `importar_especies.html` validada com `node --check` em modo module.
+- Smoke local no Browser em `importar_especies.html?noRedirect=true`: tela abriu com textarea, botoes de analisar/importar e `species-utils.js` carregado, sem `SyntaxError`, `ReferenceError`, `TypeError` ou erro de FirebaseService indisponivel.
+- `node --check` nos JS alterados nesta rodada: `species-utils.js`, `species-manager.js`, `species-modal-standard.js`, `firebaseService.js`, `modules/core/firebase-service.js`, `modules/modals/modal-especies.js`, `estoque.js`, `preromaneio-modals.js`, `importar_especies_direto.js`, `limpar_storage.js`, `limpar_especies_direto.js`, `romaneiotora.js`, `romaneiotora_modais.js`, `romaneiopct_funcoes.js`, `data-functions.js`, `database-utils.js`, `utils.js`, `modules/dashboard/dashboard-core.js`, `modules/dashboard/performance-tester.js`, `correcao-arrays-validacao.js` e `migrateToFirebase.js`.
+- Sintaxe dos scripts inline de `importar_especies.html`, `romaneiopes.html`, `auto_sync_firebase.html`, `extrator_dados_dashboard.html`, `index.html`, `index_bak.html`, `migrate-to-firebase.html` e `migration-tool.html` validada com `node --check` em arquivos temporarios `.js`/`.mjs`.
+- `database.rules.json` e `firebase-rules-production.json` validados com `JSON.parse` apos remover a regra do caminho legado `species`.
+- Varredura `rg` confirmou ausencia de chamadas diretas ativas para `loadFromFirebase('species')`, `getData('species')`, `loadData('species')`, `saveData('species')`, `saveToFirebase('species')`, `readLocalStorageValue('species')`, `localStorage.getItem('species')` e `loadFromHybrid('species')`.
+- Validada simulacao local de `SiswebSpecies.getPathCandidates`: `species/abc`, `especiesPct/abc` e `data/species/abc` retornam somente `especies/abc`, sem candidatos para caminhos antigos.
+- Smoke local no Browser em `importar_especies.html`, `estoque.html` e `romaneiopes.html`: paginas carregaram sem `SyntaxError`, `ReferenceError` ou `TypeError`; avisos/erros de permissao vistos foram esperados no ambiente local sem autenticacao/tenant.
+- `git diff --check -- <arquivos alterados nesta rodada>` passou. O `git diff --check` global ainda acusa trailing whitespace em `logs.md`, arquivo ja sujo e fora deste ajuste.
+- Revalidado `npm run lint`, `npm run typecheck` e `npm test` apos o alinhamento para caminho unico `especies`.
+- Auditoria adicional de especies: zero ocorrencias para acesso ativo a `species`/`especiesPct`/`data/species`, zero gravação Firebase de colecao inteira em `especies`, zero mistura `produtos` -> `especies`, zero `speciesPrice` em modal de especie e zero uso direto de `firebase.database().ref(\`${colecao}/${id}\`)` na correcao de dados.
+- `node --check compras.js preromaneio-modals.js romaneiopct_funcoes.js global-functions-fix.js correcao-dados-firebase.js`.
+- Sintaxe inline revalidada em `preromaneio.html`, `compras.html`, `romaneiopct.html`, `romaneiopes.html`, `romaneiotora.html`, `romaneiotl.html`, `species.html` e `importar_especies.html`.
+- Smoke local no Browser em `preromaneio.html`, `compras.html` e `importar_especies.html`: sem `SyntaxError`, `ReferenceError` ou `TypeError`; `preromaneio.html` manteve `speciesModal`, `speciesName`, campo de nome cientifico e nao possui `speciesPrice`.
+- Sintaxe inline revalidada em `romaneiopes.html`, `romaneiopct.html`, `romaneiotl.html`, `romaneiotora.html`, `romaneiotora_versao_dev.html` e `preromaneio.html`; `node --check` revalidado em `species-manager.js`, `romaneiotora_modais.js` e `global-functions-fix.js`.
+- Smoke local no Browser com login e tenant real em `romaneiopes.html?noRedirect=true`: clique imediato no icone "Listar Especies" apos `DOMContentLoaded` abriu o modal no primeiro carregamento, aguardou a carga e exibiu 99 especies de `companies/1749492103278/especies`, sem erros de console e sem gravacao.
+- Smoke local sem tenant confirmou que o PES nao cai para caminho raiz: o modal mostra "Nenhuma especie cadastrada para esta empresa" e registra apenas aviso de `tenant/companyId` ausente.
+- Revalidado `git diff --check -- <arquivos alterados nesta rodada>`, `npm run lint`, `npm run typecheck` e `npm test` apos o ajuste de primeiro carregamento do PES.
+- Ajuste em `estoque.html`/`estoque.js`: na aba Consulta de Toras, o campo `Buscar` agora aceita Enter para filtrar, selecionar as toras resultantes (priorizando plaqueta exata), limpar a busca e devolver o foco ao campo, seguindo o comportamento do modal de baixa por lote.
+- Validado `node --check estoque.js`, sintaxe inline classica de `estoque.html`, `git diff --check -- estoque.html estoque.js`, `npm run lint`, `npm run typecheck` e `npm test`.
+
+## Notas de seguranca
+- Nenhuma migracao ou escrita massiva foi executada.
+- Nenhuma gravacao em dados reais de producao foi feita durante a validacao.
+- O fluxo de edicao preserva campos existentes da tora nao exibidos no formulario usando spread do registro original.
+- Teste local sem autenticacao exibiu avisos esperados de permissao/contexto de empresa, sem gravacao.

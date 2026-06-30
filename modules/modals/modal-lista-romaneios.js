@@ -52,7 +52,7 @@ window.ModalListaRomaneios = (function() {
     }
 
     function removeFromLocalCachesById(id) {
-        const candidates = ['romaneios_tl', 'romaneiosTl', 'romaneiosTL', 'romaneios/tl'];
+        const candidates = ['romaneios/tl'];
         const sid = String(id);
         candidates.forEach(key => {
             try {
@@ -96,16 +96,30 @@ window.ModalListaRomaneios = (function() {
     let modalOutsideClickHandler = null;
     let modalAutoCloseHandler = null;
     function parseRomaneioTime(r) {
-        const m = r && r._metadata && r._metadata.lastUpdated;
-        if (typeof m === 'number') return m;
-        if (typeof m === 'string') { const t = Date.parse(m); if (!isNaN(t)) return t; }
-        if (r && r.updatedAt) { const t = Date.parse(r.updatedAt); if (!isNaN(t)) return t; }
-        if (r && r.dataCriacao) { const t = Date.parse(r.dataCriacao); if (!isNaN(t)) return t; }
-        if (r && r.created) { const t = Date.parse(r.created); if (!isNaN(t)) return t; }
-        if (r && r.timestamp) { return r.timestamp; }
-        if (r && r.data) { const t = Date.parse(r.data); if (!isNaN(t)) return t; }
-        const idn = parseFloat(r && r.id); if (!isNaN(idn)) return idn;
-        return 0;
+        if (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.parseRomaneioTimestamp === 'function') {
+            return window.RomaneioDataUtils.parseRomaneioTimestamp(r);
+        }
+        const candidates = [
+            r && r._metadata && r._metadata.lastUpdated,
+            r && r.updatedAt,
+            r && r.updated,
+            r && r.lastModified,
+            r && r.dataEmissao,
+            r && r.data,
+            r && r.dataHora,
+            r && r.dataCriacao,
+            r && r.createdAt,
+            r && r.created,
+            r && r.timestamp
+        ];
+        for (const candidate of candidates) {
+            if (!candidate) continue;
+            const t = typeof candidate === 'number' ? candidate : Date.parse(candidate);
+            if (!isNaN(t)) return t;
+        }
+        const id = String(r && (r.id || r.romaneioId || r.firebaseKey || r.key || r.numero || r.numeroRomaneio) || '');
+        const match = id.match(/(\d{10,})/);
+        return match ? Number(match[1]) || 0 : 0;
     }
     function resolveCompanyId() {
         try {
@@ -123,13 +137,13 @@ window.ModalListaRomaneios = (function() {
             if (window.appTenantId) return String(window.appTenantId);
             if (window.companyInfo) {
                 const raw = window.companyInfo;
-                const id = raw.id || raw.companyId || raw.slug || raw.nome || raw.name;
+                const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
                 if (id) return String(id);
             }
             const stored = localStorage.getItem('company_info');
             if (stored) {
                 const obj = JSON.parse(stored);
-                const id = obj && (obj.id || obj.companyId || obj.slug || obj.nome || obj.name);
+                const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
                 if (id) return String(id);
             }
         } catch (_) {}
@@ -148,25 +162,17 @@ window.ModalListaRomaneios = (function() {
         if (companyId && !/^companies\//.test(base) && !/^users\//.test(base)) {
             return `companies/${companyId}/${base}`;
         }
-        return base;
+        if (/^companies\//.test(base)) return base;
+        return null;
     }
 
     function readLocalObject(base) {
         const nsKey = resolveStorageKey(base);
+        if (!nsKey || !/^companies\//.test(String(nsKey))) return {};
         try {
             const rawNs = localStorage.getItem(nsKey);
             if (rawNs) {
                 const parsed = JSON.parse(rawNs);
-                if (parsed && typeof parsed === 'object') return parsed;
-            }
-        } catch (_) {}
-        if (nsKey && nsKey !== base) {
-            return {};
-        }
-        try {
-            const raw = localStorage.getItem(base);
-            if (raw) {
-                const parsed = JSON.parse(raw);
                 if (parsed && typeof parsed === 'object') return parsed;
             }
         } catch (_) {}
@@ -175,6 +181,7 @@ window.ModalListaRomaneios = (function() {
 
     function writeLocalObject(base, obj) {
         const nsKey = resolveStorageKey(base);
+        if (!nsKey || !/^companies\//.test(String(nsKey))) return;
         try {
             if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {
                 window.SiswebStorage.write(nsKey, obj);
@@ -214,6 +221,48 @@ window.ModalListaRomaneios = (function() {
         if (!normalized) return '';
         if (normalized.length <= max) return normalized;
         return `${normalized.slice(0, max - 1)}…`;
+    }
+
+    function normalizeDateInputValue(value) {
+        if (typeof value === 'number' && isFinite(value)) {
+            const parsed = new Date(value);
+            if (!isNaN(parsed.getTime())) {
+                const y = parsed.getFullYear();
+                const m = String(parsed.getMonth() + 1).padStart(2, '0');
+                const d = String(parsed.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+        }
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+        const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+        const parsed = new Date(raw);
+        if (!isNaN(parsed.getTime())) {
+            const y = parsed.getFullYear();
+            const m = String(parsed.getMonth() + 1).padStart(2, '0');
+            const d = String(parsed.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        return '';
+    }
+
+    function formatDateLabel(value) {
+        const normalized = normalizeDateInputValue(value);
+        if (!normalized) return value ? String(value) : 'N/A';
+        const parts = normalized.split('-');
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    function toLocalDateObject(value) {
+        const normalized = normalizeDateInputValue(value);
+        if (normalized) {
+            const parts = normalized.split('-').map(Number);
+            return new Date(parts[0], parts[1] - 1, parts[2]);
+        }
+        return new Date();
     }
 
     // ✅ FUNÇÃO AUXILIAR PARA FORMATAÇÃO DE MOEDA - USANDO UTILITÁRIO EXISTENTE
@@ -279,19 +328,17 @@ window.ModalListaRomaneios = (function() {
             let romaneios = [];
 
             if (io && typeof io.load === 'function') {
-                const candidates = ['romaneios/tl', 'romaneiosTl', 'romaneiosTL', 'romaneios_tl'];
                 let data = null;
-                for (const path of candidates) {
-                    try {
-                        const res = await io.load(path);
-                        if (res && res.success && res.data && typeof res.data === 'object' && Object.keys(res.data).length > 0) {
-                            data = res.data;
-                            break;
-                        }
-                    } catch (_) {}
-                }
+                try {
+                    const res = await io.load('romaneios/tl');
+                    if (res && res.success && res.data && typeof res.data === 'object' && Object.keys(res.data).length > 0) {
+                        data = res.data;
+                    }
+                } catch (_) {}
 
-                if (data && typeof data === 'object' && !Array.isArray(data)) {
+                if (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function') {
+                    romaneios = window.RomaneioDataUtils.normalizeRomaneioCollection(data, { type: 'TL' });
+                } else if (data && typeof data === 'object' && !Array.isArray(data)) {
                     romaneios = Object.keys(data).map(key => ({
                         id: key,
                         firebaseKey: key,
@@ -299,17 +346,6 @@ window.ModalListaRomaneios = (function() {
                     })).filter(item => item && (item.cliente || item.numero || item.timestamp || item.data));
                 } else if (Array.isArray(data)) {
                     romaneios = data.filter(item => item && (item.cliente || item.numero || item.timestamp || item.data));
-                }
-            }
-
-            if (!Array.isArray(romaneios) || romaneios.length === 0) {
-                const localRomaneios = readLocalObject('romaneios_tl');
-                if (Array.isArray(localRomaneios)) {
-                    romaneios = localRomaneios;
-                } else if (localRomaneios && typeof localRomaneios === 'object') {
-                    romaneios = Object.keys(localRomaneios).map(key => ({ id: key, firebaseKey: key, ...localRomaneios[key] }));
-                } else {
-                    romaneios = [];
                 }
             }
 
@@ -368,7 +404,7 @@ window.ModalListaRomaneios = (function() {
         }
 
         tbody.innerHTML = romaneiosToShow.map(romaneio => {
-            const data = romaneio.timestamp ? new Date(romaneio.timestamp).toLocaleDateString('pt-BR') : 'N/A';
+            const data = formatDateLabel(romaneio.dataEmissao || romaneio.data || romaneio.timestamp);
             const clienteCompleto = obterNomeClienteRomaneio(romaneio) || 'N/A';
             const cliente = truncateText(clienteCompleto, 64);
             
@@ -407,13 +443,13 @@ window.ModalListaRomaneios = (function() {
                                     <i class="fas fa-print"></i>
                                 </button>
                                 <div class="dropdown-content">
-                                    <a href="#" onclick="window.ModalListaRomaneios.printRomaneio('${romaneio.id}', 'completo')">
+                                    <a href="#" data-print-romaneio-id="${romaneio.id}" data-print-mode="completo" onclick="window.ModalListaRomaneios.printRomaneio('${romaneio.id}', 'completo'); return false;">
                                         <i class="fas fa-file-alt"></i> Completo
                                     </a>
-                                    <a href="#" onclick="window.ModalListaRomaneios.printRomaneio('${romaneio.id}', 'sem_preco_unitario')">
+                                    <a href="#" data-print-romaneio-id="${romaneio.id}" data-print-mode="sem_preco_unitario" onclick="window.ModalListaRomaneios.printRomaneio('${romaneio.id}', 'sem_preco_unitario'); return false;">
                                         <i class="fas fa-file-minus"></i> Sem Preço Unitário
                                     </a>
-                                    <a href="#" onclick="window.ModalListaRomaneios.printRomaneio('${romaneio.id}', 'sem_preco')">
+                                    <a href="#" data-print-romaneio-id="${romaneio.id}" data-print-mode="sem_preco" onclick="window.ModalListaRomaneios.printRomaneio('${romaneio.id}', 'sem_preco'); return false;">
                                         <i class="fas fa-file-times"></i> Sem Preços
                                     </a>
                                 </div>
@@ -515,7 +551,7 @@ window.ModalListaRomaneios = (function() {
                 const cliente = obterNomeClienteRomaneio(romaneio).toLowerCase();
                 
                 const especies = romaneio.items ? romaneio.items.map(item => item.especie || '').join(' ').toLowerCase() : '';
-                const data = romaneio.timestamp ? new Date(romaneio.timestamp).toLocaleDateString('pt-BR').toLowerCase() : '';
+                const data = `${romaneio.dataEmissao || romaneio.data || ''} ${formatDateLabel(romaneio.dataEmissao || romaneio.data || romaneio.timestamp)}`.toLowerCase();
                 
                 return cliente.includes(filterText) || 
                        especies.includes(filterText) || 
@@ -562,17 +598,29 @@ window.ModalListaRomaneios = (function() {
     /**
      * ✅ IMPRIMIR ROMANEIO
      */
+    function normalizePrintTypeTL(tipo) {
+        if (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizePrintMode === 'function') {
+            return window.RomaneioDataUtils.normalizePrintMode(tipo);
+        }
+        return String(tipo || 'completo').replace(/-/g, '_').toLowerCase();
+    }
+
     function printRomaneio(romaneioId, tipo) {
-        dbg(`🖨️ Imprimindo romaneio: ${romaneioId}, tipo: ${tipo}`);
+        const printType = normalizePrintTypeTL(tipo);
+        dbg(`🖨️ Imprimindo romaneio: ${romaneioId}, tipo: ${printType}`);
         // ✅ Sempre fechar dropdowns antes de imprimir
         closeAllPrintDropdownsTL();
         
         if (window.ImprimirRomaneio && window.ImprimirRomaneio.imprimirRomaneio) {
-            window.ImprimirRomaneio.imprimirRomaneio(romaneioId, tipo);
+            Promise.resolve(window.ImprimirRomaneio.imprimirRomaneio(romaneioId, printType)).catch((error) => {
+                console.error('❌ Erro ao imprimir romaneio TL:', error);
+                showError(MSG_ERROR_PRINT_UNAVAILABLE);
+            });
         } else {
             console.error('❌ Módulo de impressão não disponível');
             showError(MSG_ERROR_PRINT_UNAVAILABLE);
         }
+        return false;
     }
 
     /**
@@ -588,7 +636,7 @@ window.ModalListaRomaneios = (function() {
 
             const io = getIoService();
             if (io && typeof io.save === 'function') {
-                await io.save('romaneiosTl', key, null);
+                await io.save('romaneios/tl', key, null);
             } else {
                 console.warn('⚠️ Serviço Firebase indisponível para exclusão.');
             }
@@ -632,85 +680,134 @@ window.ModalListaRomaneios = (function() {
             console.error('❌ Dropdown não encontrado');
             return;
         }
-        
-        // Fechar outros dropdowns
-        document.querySelectorAll('.dropdown-content').forEach(d => {
-            if (d !== dropdown) {
-                d.classList.remove('show');
-                d.style.display = 'none';
+
+        if (!button.dataset.tlPrintDropdownSource) {
+            button.dataset.tlPrintDropdownSource = `tl-print-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        }
+
+        const currentMenu = document.querySelector(`.external-print-menu[data-source="${button.dataset.tlPrintDropdownSource}"]`);
+        if (currentMenu) {
+            closeAllPrintDropdownsTL();
+            dbg('✅ Dropdown fechado');
+            return;
+        }
+
+        closeAllPrintDropdownsTL();
+
+        const printOptions = [
+            { mode: 'completo', icon: 'fas fa-file-alt', label: 'Completo' },
+            { mode: 'sem_preco_unitario', icon: 'fas fa-file-minus', label: 'Sem Preço Unitário' },
+            { mode: 'sem_preco', icon: 'fas fa-file-times', label: 'Sem Preços' }
+        ];
+        const romaneioId = button.dataset.romaneioId || button.closest('tr')?.dataset?.romaneioId || dropdown.querySelector('[data-print-romaneio-id]')?.dataset?.printRomaneioId || '';
+        const floatingMenu = document.createElement('div');
+        floatingMenu.className = 'dropdown-content show external-print-menu tl-print-dropdown-menu';
+        floatingMenu.dataset.source = button.dataset.tlPrintDropdownSource;
+        floatingMenu.innerHTML = printOptions.map(option => `
+            <button type="button" class="tl-print-option" data-print-romaneio-id="${romaneioId}" data-print-mode="${option.mode}">
+                <i class="${option.icon}"></i> ${option.label}
+            </button>
+        `).join('');
+        document.body.appendChild(floatingMenu);
+
+        function findMenuOptionFromEvent(event) {
+            const direct = event.target.closest && event.target.closest('[data-print-mode]');
+            if (direct) return direct;
+            const x = event.clientX;
+            const y = event.clientY;
+            if (typeof x !== 'number' || typeof y !== 'number') return null;
+            return Array.from(floatingMenu.querySelectorAll('[data-print-mode]')).find(option => {
+                const rect = option.getBoundingClientRect();
+                return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+            }) || null;
+        }
+
+        floatingMenu.addEventListener('mousedown', function(event) {
+            if (findMenuOptionFromEvent(event)) {
+                event.preventDefault();
+                event.stopPropagation();
             }
-        });
-        
-        // Toggle do dropdown atual
-        const isVisible = dropdown.classList.contains('show');
-        
-        if (!isVisible) {
-            dropdown.classList.add('show');
-            dropdown.style.display = 'block';
-            
-            // ✅ POSICIONAMENTO ALINHADO À ESQUERDA
+        }, true);
+
+        floatingMenu.addEventListener('click', function(event) {
+            const option = findMenuOptionFromEvent(event);
+            if (!option) return;
+            event.preventDefault();
+            event.stopPropagation();
+            printRomaneio(option.dataset.printRomaneioId, option.dataset.printMode);
+        }, true);
+
+        try {
+            const modal = document.getElementById(CONFIG.modalId);
+            if (modal) modal.classList.add('has-active-print-dropdown');
+
             const rect = button.getBoundingClientRect();
-            dropdown.style.position = 'fixed';
-            dropdown.style.top = `${rect.bottom + 4}px`;
-            dropdown.style.left = `${rect.left}px`; // ✅ CORREÇÃO: Alinhado à esquerda do botão
-            dropdown.style.zIndex = '1500';
-            dropdown.style.right = 'auto';
-            dropdown.style.marginTop = '0';
-            dropdown.style.maxHeight = '280px';
-            dropdown.style.overflowY = 'auto';
+            floatingMenu.style.position = 'fixed';
+            floatingMenu.style.top = `${rect.bottom + 4}px`;
+            floatingMenu.style.left = `${rect.left}px`;
+            floatingMenu.style.zIndex = '10000080';
+            floatingMenu.style.right = 'auto';
+            floatingMenu.style.marginTop = '0';
+            floatingMenu.style.maxHeight = '280px';
+            floatingMenu.style.overflowY = 'auto';
+            floatingMenu.style.display = 'block';
+            floatingMenu.style.minWidth = '220px';
+            floatingMenu.style.background = '#fff';
+            floatingMenu.style.border = '1px solid #d6e1ec';
+            floatingMenu.style.borderRadius = '6px';
+            floatingMenu.style.boxShadow = '0 14px 34px rgba(13, 35, 57, 0.32)';
+            floatingMenu.style.pointerEvents = 'auto';
+
             const viewportPadding = 8;
-            const menuRect = dropdown.getBoundingClientRect();
+            const menuRect = floatingMenu.getBoundingClientRect();
             if (menuRect.right > (window.innerWidth - viewportPadding)) {
                 const clampedLeft = Math.max(viewportPadding, window.innerWidth - menuRect.width - viewportPadding);
-                dropdown.style.left = `${clampedLeft}px`;
+                floatingMenu.style.left = `${clampedLeft}px`;
             }
             if (menuRect.bottom > (window.innerHeight - viewportPadding)) {
                 const clampedTop = Math.max(viewportPadding, rect.top - menuRect.height - 4);
-                dropdown.style.top = `${clampedTop}px`;
+                floatingMenu.style.top = `${clampedTop}px`;
             }
-            
-            dbg('✅ Dropdown mostrado com posicionamento fixed');
-            
-            // Fechar dropdown ao clicar fora
-            setTimeout(() => {
-                // Remover listeners antigos para evitar acúmulo
-                if (window.currentDropdownCloseHandler) {
-                    document.removeEventListener('mousedown', window.currentDropdownCloseHandler, true);
-                }
-                
-                const closeHandler = function(event) {
-                    const isInsideDropdown = dropdown.contains(event.target);
-                    const isDropdownButton = button.contains(event.target);
-                    
-                    if (!isInsideDropdown && !isDropdownButton) {
-                        dropdown.classList.remove('show');
-                        dropdown.style.display = 'none';
-                        document.removeEventListener('mousedown', closeHandler, true);
-                        window.currentDropdownCloseHandler = null;
-                        dbg('✅ Dropdown fechado por clique externo');
-                    }
-                };
-                
-                // ✅ Usar captura em mousedown para garantir fechamento robusto
-                document.addEventListener('mousedown', closeHandler, true);
-                window.currentDropdownCloseHandler = closeHandler;
-            }, 100);
+        } catch (e) {
+            console.warn('⚠️ Falha ao posicionar dropdown TL:', e);
+        }
 
-            // ✅ Fechar com tecla Escape
-            if (!window.currentDropdownEscapeHandler) {
-                const escapeHandler = function(ev) {
-                    if (ev.key === 'Escape') {
-                        closeAllPrintDropdownsTL();
-                        dbg('✅ Dropdown fechado pela tecla Escape');
-                    }
-                };
-                document.addEventListener('keydown', escapeHandler);
-                window.currentDropdownEscapeHandler = escapeHandler;
+        dbg('✅ Dropdown mostrado como menu flutuante externo');
+
+        setTimeout(() => {
+            if (window.currentDropdownCloseHandler) {
+                document.removeEventListener('mousedown', window.currentDropdownCloseHandler, true);
             }
-        } else {
-            dropdown.classList.remove('show');
-            dropdown.style.display = 'none';
-            dbg('✅ Dropdown fechado');
+
+            const closeHandler = function(event) {
+                const isInsideDropdown = floatingMenu.contains(event.target);
+                const rect = floatingMenu.getBoundingClientRect();
+                const isInsideByPoint = typeof event.clientX === 'number'
+                    && event.clientX >= rect.left
+                    && event.clientX <= rect.right
+                    && event.clientY >= rect.top
+                    && event.clientY <= rect.bottom;
+                const isDropdownButton = button.contains(event.target);
+
+                if (!isInsideDropdown && !isInsideByPoint && !isDropdownButton) {
+                    closeAllPrintDropdownsTL();
+                    dbg('✅ Dropdown fechado por clique externo');
+                }
+            };
+
+            document.addEventListener('mousedown', closeHandler, true);
+            window.currentDropdownCloseHandler = closeHandler;
+        }, 100);
+
+        if (!window.currentDropdownEscapeHandler) {
+            const escapeHandler = function(ev) {
+                if (ev.key === 'Escape') {
+                    closeAllPrintDropdownsTL();
+                    dbg('✅ Dropdown fechado pela tecla Escape');
+                }
+            };
+            document.addEventListener('keydown', escapeHandler);
+            window.currentDropdownEscapeHandler = escapeHandler;
         }
     }
 
@@ -725,6 +822,8 @@ window.ModalListaRomaneios = (function() {
             });
             // Remover possíveis menus externos flutuantes
             document.querySelectorAll('.external-print-menu').forEach(menu => menu.remove());
+            const modal = document.getElementById(CONFIG.modalId);
+            if (modal) modal.classList.remove('has-active-print-dropdown');
             // Remover handlers ativos
             if (window.currentDropdownCloseHandler) {
                 document.removeEventListener('mousedown', window.currentDropdownCloseHandler, true);
@@ -912,7 +1011,7 @@ window.ModalListaRomaneios = (function() {
             
             // Confirmar lançamento
             const especies = romaneio.items ? [...new Set(romaneio.items.map(item => item.especie))].join(', ') : 'N/A';
-            const dataRomaneio = romaneio.timestamp ? new Date(romaneio.timestamp).toLocaleDateString('pt-BR') : 'N/A';
+            const dataRomaneio = formatDateLabel(romaneio.dataEmissao || romaneio.data || romaneio.timestamp);
             const valorFormatado = formatarMoedaTL(valorTotal);
             
             // ✅ CORREÇÃO: Remover confirmação desnecessária - ação já é clara pelo botão
@@ -967,24 +1066,26 @@ window.ModalListaRomaneios = (function() {
                 state.romaneios[romaneioIndex].contasReceberLancadoEm = new Date().toISOString();
             }
             
-            // Salvar no Firebase
-            if (window.FirebaseService) {
-                // Carregar dados atuais do Firebase
-                const romaneiosFirebase = await window.FirebaseService.loadFromFirebase('romaneios/tl');
-                
-                if (romaneiosFirebase && romaneiosFirebase.data && romaneiosFirebase.data[romaneioId]) {
-                    // Atualizar o romaneio específico (sem sobrescrever coleção inteira)
+            const io = getIoService();
+            if (io) {
+                const loaded = await io.load('romaneios/tl');
+                const data = loaded && loaded.success !== false ? (loaded.data || loaded) : null;
+                const utils = window.RomaneioDataUtils;
+                const lista = utils && typeof utils.normalizeRomaneioCollection === 'function'
+                    ? utils.normalizeRomaneioCollection(data, { type: 'TL' })
+                    : Object.entries(data || {}).map(([key, value]) => ({ id: value && value.id || key, firebaseKey: key, ...(value || {}) }));
+                const atual = lista.find((r) => String(r.id) === String(romaneioId) || String(r.firebaseKey || '') === String(romaneioId));
+                if (atual) {
+                    const registroId = atual.firebaseKey || atual.key || atual.id || romaneioId;
                     const atualizado = {
-                        ...romaneiosFirebase.data[romaneioId],
+                        ...atual,
                         contasReceberLancado: true,
                         contasReceberLancadoEm: new Date().toISOString()
                     };
-                    
-                    // Salvar apenas o registro
-                    await window.FirebaseService.saveData(`romaneios_tl/${romaneioId}`, atualizado);
-                    dbg('✅ Estado do romaneio salvo no Firebase (registro individual)');
+                    await io.save('romaneios/tl', String(registroId), atualizado);
+                    dbg('✅ Estado do romaneio salvo em companies/{companyId}/romaneios/tl');
                 } else {
-                    console.warn('⚠️ Romaneio não encontrado no Firebase para atualização');
+                    console.warn('⚠️ Romaneio não encontrado no caminho canônico para atualização');
                 }
             }
             
@@ -1015,8 +1116,7 @@ window.ModalListaRomaneios = (function() {
                 throw new Error('FirebaseService não disponível');
             }
             
-            // Tentar buscar nos diferentes caminhos possíveis
-            const caminhos = ['romaneios_tl', 'romaneiosTL', 'romaneios'];
+            const caminhos = ['romaneios/tl'];
             
             for (const caminho of caminhos) {
                 try {
@@ -1152,19 +1252,8 @@ window.ModalListaRomaneios = (function() {
             const especies = romaneio.items ? [...new Set(romaneio.items.map(item => item.especie))].join(', ') : 'Romaneio sem itens';
             
             // ✅ CORREÇÃO: Calcular data de vencimento (30 dias após a data do romaneio)
-            let dataVencimento = new Date();
-            
-            // Validar e usar timestamp do romaneio se disponível
-            if (romaneio.timestamp && !isNaN(romaneio.timestamp)) {
-                try {
-                    const dataRomaneioValida = new Date(romaneio.timestamp);
-                    if (!isNaN(dataRomaneioValida.getTime())) {
-                        dataVencimento = new Date(dataRomaneioValida);
-                    }
-                } catch (error) {
-                    console.warn('⚠️ Timestamp inválido, usando data atual:', romaneio.timestamp);
-                }
-            }
+            const dataBaseRomaneio = romaneio.dataEmissao || romaneio.data || romaneio.timestamp;
+            let dataVencimento = toLocalDateObject(dataBaseRomaneio);
             
             // Adicionar 30 dias
             dataVencimento.setDate(dataVencimento.getDate() + 30);
@@ -1204,7 +1293,7 @@ window.ModalListaRomaneios = (function() {
                 categoria: 'Vendas',
                 origem: 'romaneio_tl',
                 origemId: romaneio.id,
-                romaneioData: romaneio.timestamp,
+                romaneioData: normalizeDateInputValue(dataBaseRomaneio) || normalizeDateInputValue(new Date()),
                 romaneioCliente: obterNomeClienteRomaneio(romaneio) || romaneio.cliente,
                 romaneioEspecies: especies,
                 observacoes: `Gerado automaticamente do Romaneio TL em ${new Date().toLocaleDateString('pt-BR')}`,
@@ -1450,7 +1539,7 @@ window.addEventListener('romaneiosTL:updated', async function() {
                 window.__tlEventRefreshTimer = null;
                 if (window.ModalListaRomaneios && typeof window.ModalListaRomaneios.refresh === 'function') {
                     await window.ModalListaRomaneios.refresh();
-                    dbg('📡 Lista de Romaneios TL atualizada via evento realtime');
+                    console.debug('📡 Lista de Romaneios TL atualizada via evento realtime');
                 }
             }, 300);
         }
