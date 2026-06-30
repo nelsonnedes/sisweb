@@ -64,3 +64,12 @@ Thumbs.db
 .aiox-core/local/
 .claude/settings.local.json
 .aiox/install-log.txt
+
+# Local workspace artifacts / scratch files
+/audits/
+/company.html.pix_backup
+/src.txt
+/test_output.txt
+/tmp-cart-card-v2-vendas.png
+/Ajustes nesces*
+*.pix_backup
