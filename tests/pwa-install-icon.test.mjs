@@ -62,7 +62,7 @@ test('PWA bootstrap and service worker publish the product icon assets', () => {
   assert.match(menuComponent, /link\[rel="apple-touch-icon"\]/);
   assert.match(menuComponent, /assets\/icons\/apple-touch-icon\.png/);
 
-  assert.match(sw, /const APP_VERSION = '2026-06-25-storage-replace-v1'/);
+  assert.match(sw, /const APP_VERSION = '2026-06-26-boleto-pix-lamina-v3'/);
   assert.match(sw, /'\/assets\/icons\/icon-144x144\.png'/);
   assert.match(sw, /'\/assets\/icons\/icon-192x192\.png'/);
   assert.match(sw, /'\/assets\/icons\/icon-512x512\.png'/);

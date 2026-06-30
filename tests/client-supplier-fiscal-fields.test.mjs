@@ -163,5 +163,5 @@ test('PWA e abas comerciais usam cachebuster fiscal atual', () => {
   assert.match(read('compras.html'), /compras\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
   assert.match(read('client.html'), /js\/client\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
   assert.match(read('fornecedor.html'), /js\/fornecedor\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
-  assert.match(read('sw.js'), /const APP_VERSION = '2026-06-25-storage-replace-v1'/);
+  assert.match(read('sw.js'), /const APP_VERSION = '2026-06-26-boleto-pix-lamina-v3'/);
 });

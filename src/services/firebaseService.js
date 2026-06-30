@@ -180,6 +180,27 @@ async function getDownloadURLFromStorage(pathOrUrl) {
     return await storage.ref().child(raw).getDownloadURL();
 }
 
+function extractStoragePathFromUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^gs:\/\//i.test(raw)) {
+        return raw.replace(/^gs:\/\/[^/]+\//i, '').replace(/^\/+/, '');
+    }
+    if (!/^https?:\/\//i.test(raw)) return raw.replace(/^\/+/, '');
+    try {
+        const url = new URL(raw, window.location && window.location.origin ? window.location.origin : undefined);
+        const host = String(url.hostname || '').toLowerCase();
+        const isStorageHost = host.includes('firebasestorage.googleapis.com') || host.endsWith('.firebasestorage.app');
+        if (!isStorageHost) return '';
+        const marker = '/o/';
+        const index = url.pathname.indexOf(marker);
+        if (index < 0) return '';
+        return decodeURIComponent(url.pathname.slice(index + marker.length)).replace(/^\/+/, '');
+    } catch (_) {
+        return '';
+    }
+}
+
 async function uploadCompanyLogo(file, companyId, options = {}) {
     if (!file) throw new Error('Arquivo de logo não informado');
     const tenant = sanitizeTenantId(companyId || options.companyId || getTenantId());
@@ -190,10 +211,22 @@ async function uploadCompanyLogo(file, companyId, options = {}) {
     if (Number(file.size || 0) > maxSize) throw new Error('A logo deve ter no máximo 2MB para cumprir as regras do Storage');
 
     const safeName = String(file.name || 'logo.png').replace(/[^\w.\-]+/g, '_').slice(0, 90) || 'logo.png';
-    const path = `companies/${tenant}/profile/logo/${Date.now()}_${safeName}`;
+    const path = `companies/${tenant}/profile/logo/current`;
+    const logoPrefix = `companies/${tenant}/profile/logo/`;
+    const previousPath = String(
+        options.previousStoragePath
+        || options.logoStoragePath
+        || options.logoPath
+        || options.previousPath
+        || extractStoragePathFromUrl(options.previousLogoUrl || options.logoUrl || '')
+        || ''
+    ).trim().replace(/^\/+/, '');
     const result = await uploadFile(path, file);
     if (!result || result.success === false) {
         throw new Error((result && result.error) || 'Falha no upload da logo');
+    }
+    if (previousPath && previousPath !== path && previousPath.startsWith(logoPrefix)) {
+        try { await deleteStorageFile(previousPath); } catch (_) {}
     }
     return {
         success: true,
@@ -524,6 +557,7 @@ window.firebaseService = {
     uploadFile,
     getDownloadURL: getDownloadURLFromStorage,
     getStorageDownloadURL: getDownloadURLFromStorage,
+    extractStoragePathFromUrl,
     uploadCompanyLogo,
     storage: {
         upload: async (path, file, options = {}) => {

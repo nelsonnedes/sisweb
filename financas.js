@@ -2722,7 +2722,7 @@ function computeFilteredReceber(filtro = {}) {
         contasFiltradas = contasFiltradas.filter(c => {
             const catCmp = normalizeCategoriaKey(c.categoria);
             if (tipoKeys[catKey]) {
-                const tipoCmp = normalizeTipoKey(c.tipo);
+                const tipoCmp = resolveFinanceTipoOperacional(c);
                 return catCmp === catKey || tipoCmp === catKey;
             }
             return catCmp === catKey;
@@ -2730,7 +2730,7 @@ function computeFilteredReceber(filtro = {}) {
     }
     if (filtro.tipo) {
         const tkey = normalizeTipoKey(filtro.tipo);
-        contasFiltradas = contasFiltradas.filter(c => normalizeTipoKey(c.tipo) === tkey);
+        contasFiltradas = contasFiltradas.filter(c => resolveFinanceTipoOperacional(c) === tkey);
     }
     if (filtro.pedidoNumero) {
         const needle = String(filtro.pedidoNumero).trim().toLowerCase();
@@ -2798,7 +2798,7 @@ function computeFilteredPagar(filtro = {}) {
         contasFiltradas = contasFiltradas.filter(c => {
             const catCmp = normalizeCategoriaKey(c.categoria);
             if (tipoKeys[catKey]) {
-                const tipoCmp = normalizeTipoKey(c.tipo);
+                const tipoCmp = resolveFinanceTipoOperacional(c);
                 return catCmp === catKey || tipoCmp === catKey;
             }
             return catCmp === catKey;
@@ -4141,7 +4141,7 @@ async function carregarTabelaReceber(filtro = {}) {
         contasFiltradas = contasFiltradas.filter(c => {
             const catCmp = normalizeCategoriaKey(c.categoria);
             if (tipoKeys[catKey]) {
-                const tipoCmp = normalizeTipoKey(c.tipo);
+                const tipoCmp = resolveFinanceTipoOperacional(c);
                 return catCmp === catKey || tipoCmp === catKey;
             }
             return catCmp === catKey;
@@ -4149,7 +4149,7 @@ async function carregarTabelaReceber(filtro = {}) {
     }
     if (filtro.tipo && String(filtro.tipo).toLowerCase() !== 'todos') {
         const tkey = normalizeTipoKey(filtro.tipo);
-        contasFiltradas = contasFiltradas.filter(c => normalizeTipoKey(c.tipo) === tkey);
+        contasFiltradas = contasFiltradas.filter(c => resolveFinanceTipoOperacional(c) === tkey);
     }
     
     // ✅ Comparação robusta por datas (normalizadas para timestamp)
@@ -4276,7 +4276,7 @@ async function carregarTabelaReceber(filtro = {}) {
                 case 'vencimento': rowCells.push(`<td style="text-align: center;">${formatDate(conta.dataVencimento || conta.vencimento)}</td>`); break;
                 case 'status': rowCells.push(`<td style="text-align: center;"><span class="status-indicator status-${statusNorm}">${statusExibir}</span></td>`); break;
                 case 'categoria': rowCells.push(`<td>${getCategoriaLabel(conta.categoria)}</td>`); break;
-                case 'tipo': rowCells.push(`<td>${getTipoLabel(conta.tipo)}</td>`); break;
+                case 'tipo': rowCells.push(`<td>${getTipoLabel(resolveFinanceTipoOperacional(conta))}</td>`); break;
             }
         });
 
@@ -4301,7 +4301,7 @@ async function carregarTabelaReceber(filtro = {}) {
                     ` : `
                         <div style="width: 28px; min-width: 28px; height: 28px; display: inline-block;"></div>
                     `}
-                    ${String(conta.tipo || '').toLowerCase() === 'boleto' ? `
+                    ${shouldShowBoletoLamina(conta, 'receber') ? `
                         <button onclick="abrirBoletoPixLamina('${conta.id}', 'receber')" class="btn btn-warning btn-small boleto-pix-btn" style="min-width: 28px; background-color: #f59e0b; border-color: #d97706; color: white;" title="Gerar Lâmina de Cobrança PIX">
                             <i class="fas fa-barcode"></i>
                         </button>
@@ -4426,7 +4426,7 @@ async function carregarTabelaPagar(filtro = {}) {
         contasFiltradas = contasFiltradas.filter(c => {
             const catCmp = normalizeCategoriaKey(c.categoria);
             if (tipoKeys[catKey]) {
-                const tipoCmp = normalizeTipoKey(c.tipo);
+                const tipoCmp = resolveFinanceTipoOperacional(c);
                 return catCmp === catKey || tipoCmp === catKey;
             }
             return catCmp === catKey;
@@ -4434,7 +4434,7 @@ async function carregarTabelaPagar(filtro = {}) {
     }
     if (filtro.tipo && String(filtro.tipo).toLowerCase() !== 'todos') {
         const tkey = normalizeTipoKey(filtro.tipo);
-        contasFiltradas = contasFiltradas.filter(c => normalizeTipoKey(c.tipo) === tkey);
+        contasFiltradas = contasFiltradas.filter(c => resolveFinanceTipoOperacional(c) === tkey);
     }
     
     // ✅ Comparação robusta por datas (normalizadas para timestamp)
@@ -4529,7 +4529,7 @@ async function carregarTabelaPagar(filtro = {}) {
                 case 'vencimento': rowCells.push(`<td style="text-align: center;">${formatDate(conta.dataVencimento || conta.vencimento)}</td>`); break;
                 case 'status': rowCells.push(`<td style="text-align: center;"><span class="status-indicator status-${statusNorm}">${statusExibir}</span></td>`); break;
                 case 'categoria': rowCells.push(`<td>${getCategoriaLabel(conta.categoria)}</td>`); break;
-                case 'tipo': rowCells.push(`<td>${getTipoLabel(conta.tipo)}</td>`); break;
+                case 'tipo': rowCells.push(`<td>${getTipoLabel(resolveFinanceTipoOperacional(conta))}</td>`); break;
             }
         });
     const disabledSel = '';
@@ -4553,7 +4553,7 @@ async function carregarTabelaPagar(filtro = {}) {
                     ` : `
                         <div style="width: 28px; min-width: 28px; height: 28px; display: inline-block;"></div>
                     `}
-                    ${String(conta.tipo || '').toLowerCase() === 'boleto' ? `
+                    ${shouldShowBoletoLamina(conta, 'pagar') ? `
                         <button onclick="abrirBoletoPixLamina('${conta.id}', 'pagar')" class="btn btn-warning btn-small boleto-pix-btn" style="min-width: 28px; background-color: #f59e0b; border-color: #d97706; color: white;" title="Gerar Lâmina de Cobrança PIX">
                             <i class="fas fa-barcode"></i>
                         </button>
@@ -7917,6 +7917,18 @@ function getTipoLabel(val) {
     return m[k] || (val || 'Não informado');
 }
 
+function resolveFinanceTipoOperacional(conta) {
+    const tipoPagamento = normalizeTipoKey(conta && conta.tipoPagamento);
+    const tipo = normalizeTipoKey(conta && conta.tipo);
+    if (tipoPagamento && tipoPagamento !== 'pagar' && tipoPagamento !== 'receber') return tipoPagamento;
+    if (tipo && tipo !== 'pagar' && tipo !== 'receber') return tipo;
+    return tipoPagamento || tipo || '';
+}
+
+function shouldShowBoletoLamina(conta, tipoConta) {
+    return String(tipoConta || '').toLowerCase() === 'receber' && resolveFinanceTipoOperacional(conta) === 'boleto';
+}
+
 function getCategoriaLabel(val) {
     const map = {
         'vendas': 'Vendas',
@@ -8785,8 +8797,12 @@ function renderRowsChunked(tbody, rowsHtml, chunkSize = 300) {
 
 async function abrirBoletoPixLamina(contaId, tipo) {
     try {
+        const tipoConta = String(tipo || '').toLowerCase();
+        if (tipoConta !== 'receber') {
+            throw new Error('A Lâmina de Cobrança PIX é exclusiva para contas a receber.');
+        }
         mostrarLoading(true, 'Gerando Lâmina de Cobrança PIX...');
-        const lista = tipo === 'receber' ? (typeof contasReceber !== 'undefined' ? contasReceber : (window.contasReceber || [])) : (typeof contasPagar !== 'undefined' ? contasPagar : (window.contasPagar || []));
+        const lista = typeof contasReceber !== 'undefined' ? contasReceber : (window.contasReceber || []);
         const conta = lista.find(c => String(c.id) === String(contaId));
         if (!conta) {
             throw new Error('Conta não encontrada.');
@@ -8818,9 +8834,9 @@ async function abrirBoletoPixLamina(contaId, tipo) {
 
         // Tentar obter dados do cliente/fornecedor (sacado)
         let sacado = null;
-        const sacadoId = conta.clienteId || conta.fornecedorId || conta.cliente || conta.fornecedor;
+        const sacadoId = conta.clienteId || conta.cliente;
         if (sacadoId && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-            const path = tipo === 'receber' ? `clientes/${sacadoId}` : `fornecedores/${sacadoId}`;
+            const path = `clientes/${sacadoId}`;
             try {
                 const res = await window.firebaseService.loadFromFirebase(path);
                 if (res && res.success) {
@@ -8831,7 +8847,7 @@ async function abrirBoletoPixLamina(contaId, tipo) {
 
         // Busca local fallback no array de clientes/fornecedores carregados na página
         if (!sacado) {
-            const cObj = tipo === 'receber' ? conta.cliente : conta.fornecedor;
+            const cObj = conta.cliente;
             if (cObj && typeof cObj === 'object') {
                 sacado = {
                     nome: cObj.nome || cObj.name || cObj.nomeCompleto || cObj.razaoSocial,
@@ -8841,16 +8857,14 @@ async function abrirBoletoPixLamina(contaId, tipo) {
                 };
             } else {
                 const searchName = String(cObj || sacadoId || conta.clienteNome || conta.fornecedorNome || '');
-                if (tipo === 'receber' && typeof clientes !== 'undefined' && Array.isArray(clientes)) {
+                if (typeof clientes !== 'undefined' && Array.isArray(clientes)) {
                     sacado = clientes.find(c => String(c.id) === String(sacadoId) || (c.nome || c.name || c.nomeCompleto || '').toLowerCase() === searchName.toLowerCase());
-                } else if (tipo === 'pagar' && typeof fornecedores !== 'undefined' && Array.isArray(fornecedores)) {
-                    sacado = fornecedores.find(f => String(f.id) === String(sacadoId) || (f.nome || f.name || f.nomeCompleto || '').toLowerCase() === searchName.toLowerCase());
                 }
                 
                 if (!sacado && searchName) {
                     sacado = {
                         nome: searchName,
-                        documento: conta.clienteDocumento || conta.fornecedorDocumento || conta.documento || conta.cpfCnpj || conta.cnpjCpf
+                        documento: conta.clienteDocumento || conta.documento || conta.cpfCnpj || conta.cnpjCpf
                     };
                 }
             }
@@ -8873,4 +8887,3 @@ async function abrirBoletoPixLamina(contaId, tipo) {
         mostrarLoading(false);
     }
 }
-

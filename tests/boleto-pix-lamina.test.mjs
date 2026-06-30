@@ -5,6 +5,14 @@ import vm from 'node:vm';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
+function blockBetween(source, startMarker, endMarker) {
+  const start = source.indexOf(startMarker);
+  assert.notEqual(start, -1, `bloco ${startMarker} precisa existir`);
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  assert.notEqual(end, -1, `fim ${endMarker} precisa existir`);
+  return source.slice(start, end);
+}
+
 function loadPixBrCode() {
   const code = read('js/pix-brcode.js');
   const windowMock = {};
@@ -18,6 +26,30 @@ function loadPixBrCode() {
   };
   vm.runInNewContext(code, context, { filename: 'pix-brcode.js' });
   return context.window.PixBrCode;
+}
+
+function loadFinanceBoletoHelpers() {
+    const source = read('financas.js');
+    const helpersBlock = blockBetween(
+      source,
+      'function normalizeTipoKey',
+      'function getCategoriaLabel'
+    );
+    const context = {
+      window: {},
+      console: {
+        log: () => {},
+        warn: () => {},
+        error: () => {},
+      }
+    };
+    vm.createContext(context);
+    vm.runInContext(`${helpersBlock}
+      this.helpers = {
+        resolveFinanceTipoOperacional,
+        shouldShowBoletoLamina
+      };`, context, { filename: 'financas-boleto-helpers.vm.js' });
+    return context.helpers;
 }
 
 describe('Lâmina de Cobrança PIX e Engine PIX Compartilhada', () => {
@@ -70,5 +102,14 @@ describe('Lâmina de Cobrança PIX e Engine PIX Compartilhada', () => {
         assert.ok(payload);
         assert.ok(payload.includes('br.gov.bcb.pix'));
         assert.equal(payload.slice(-4), PixBrCode.crc16CcittFalse(payload.slice(0, -4)));
+    });
+
+    it('deve manter o tipo operacional visível e bloquear boleto em contas a pagar', () => {
+        const helpers = loadFinanceBoletoHelpers();
+        assert.equal(helpers.resolveFinanceTipoOperacional({ tipo: 'pagar', tipoPagamento: 'boleto' }), 'boleto');
+        assert.equal(helpers.resolveFinanceTipoOperacional({ tipo: 'receber', tipoPagamento: 'boleto' }), 'boleto');
+        assert.equal(helpers.resolveFinanceTipoOperacional({ tipo: 'boleto' }), 'boleto');
+        assert.equal(helpers.shouldShowBoletoLamina({ tipo: 'pagar', tipoPagamento: 'boleto' }, 'pagar'), false);
+        assert.equal(helpers.shouldShowBoletoLamina({ tipo: 'boleto' }, 'receber'), true);
     });
 });
