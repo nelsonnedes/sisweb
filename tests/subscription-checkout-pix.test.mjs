@@ -40,7 +40,7 @@ test('link publico de assinatura registra antes de pagamento ou teste gratis', (
   assert.match(login, /const cleanUrl = window\.location\.pathname \+ \(urlParams\.toString\(\) \? '\?' \+ urlParams\.toString\(\) : ''\)/);
   assert.match(login, /String\(initialParams\.get\('mode'\) \|\| ''\)\.toLowerCase\(\) === 'register'/);
 
-  assert.match(company, /menu-component\.js\?v=2026-06-11-company-profile-permissions-v3/);
+  assert.match(company, /menu-component\.js\?v=2026-07-01-menu-global-dedupe-v1/);
   assert.match(company, /auth\.js\?v=2026-06-11-company-profile-permissions-v3/);
   assert.match(company, /function getCompanyOnboardingReturnTarget\(\)/);
   assert.match(company, /reason'\) \|\| ''\)\.toLowerCase\(\) === 'subscription_onboarding'/);

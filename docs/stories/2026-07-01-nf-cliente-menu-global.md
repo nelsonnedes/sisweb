@@ -12,27 +12,45 @@ Padronizar o menu superior para manter a aparência do `index.html` nas demais p
 - [x] Escopar estilos do menu principal em `main-menu .sisweb-menu-shell`.
 - [x] Atualizar cachebusters e Service Worker para publicação PWA.
 - [x] Cobrir regressão com testes automatizados.
+- [x] Remover links móveis duplicados (.mobile-menu-link, .mobile-logout-link) que já existiam no dropdown engrenagem.
+- [x] Corrigir inconsistência Font Awesome no `financas.html` (5.15.4 → 6.0.0).
+- [x] Analisar `folha-menu-original-completo.css` por conflitos — sem conflitos, apenas z-index e display.
+- [x] Verificação visual in loco via browser-use: menu consistente entre páginas, dropdowns funcionais, gear com itens corretos, sem duplicação no mobile.
 
 ## Alterações de Código Efetuadas
 - **[MODIFY] `openNewClientModal.js`**: modal de cliente agora suporta criação e edição, preserva aliases fiscais e expõe `openEditClientModal`.
 - **[MODIFY] `notas-fiscais.html`**: edição de destinatário NF-e passa a usar o modal compartilhado e recarrega o cliente selecionado após salvar.
-- **[MODIFY] `menu-component.js`**: menu superior recebeu regras escopadas para itens e dropdowns.
-- **[MODIFY] `menu.css`**: reforço CSS escopado para manter consistência visual entre páginas.
-- **[MODIFY] `sw.js` / cachebusters**: versão `2026-07-01-nf-client-menu-v1`.
+- **[MODIFY] `menu-component.js`**: menu superior recebeu regras escopadas para itens e dropdowns. Removidos `.mobile-menu-link` e `.mobile-logout-link` (já disponíveis no dropdown engrenagem).
+- **[MODIFY] `menu.css`**: reforço CSS escopado para manter consistência visual entre páginas. Removidas regras `.mobile-logout-link`.
+- **[MODIFY] `sw.js` / cachebusters**: versão `2026-07-01-menu-global-dedupe-v1`.
+- **[MODIFY] `financas.html`**: corrigido Font Awesome de v5.15.4 para v6.0.0 (consistência com demais páginas).
+- **[ANALYSIS] `folha-menu-original-completo.css`**: apenas z-index e display — sem conflitos com menu global escopado.
 
 ## Evidências
 - `node --check openNewClientModal.js`
 - `node --check menu-component.js`
 - `git diff --check`
 - `node --test tests/client-supplier-fiscal-fields.test.mjs tests/company-logo-storage-policy.test.mjs tests/pwa-mobile-menu-session.test.mjs tests/pwa-install-icon.test.mjs tests/qa-visual-pwa-routes.test.mjs tests/financas-contas-pagar-edit.test.mjs` -> 42/42
+- `node --test tests/pwa-mobile-menu-session.test.mjs tests/client-supplier-fiscal-fields.test.mjs tests/commerce-responsive-pwa.test.mjs tests/pwa-install-icon.test.mjs tests/qa-visual-pwa-routes.test.mjs tests/financas-contas-pagar-edit.test.mjs` -> 33/33
 - `npm run lint`
 - `npm run typecheck`
 - `npm run build --if-present`
 - `npm test` -> 192/192
+- Smoke HTTP pós-deploy:
+  - `menu-component.js?v=2026-07-01-menu-global-dedupe-v1` -> 200, sem `.mobile-menu-link`, com `settings-section settings-exit`
+  - `sw.js` -> 200, `APP_VERSION = 2026-07-01-menu-global-dedupe-v1`
+  - `index.html` e `financas.html` -> 200, cachebuster do menu atualizado
 - CodeRabbit: GitHub App instalado no PR; CLI local `coderabbit` não encontrado no PATH do Windows e WSL indisponível nesta máquina.
 - `firebase deploy --only hosting --project sisweb-7ce82 --non-interactive`
 - `npm run security:postdeploy` -> 37/37
 - Smoke publicado em `https://sisweb-7ce82.web.app`: cachebuster NF-e, `sw.js`, `openEditClientModal` e menu escopado confirmados.
+- **Verificação visual/DOM em Chrome autenticado (2026-07-01):**
+  - ✅ Menu principal horizontal com dropdowns funcionais (Vendas, Estoque, Financeiro, Cadastros, Romaneios)
+  - ✅ Dropdown engrenagem com itens corretos: Instalar, Meu Perfil, Assinatura, Empresa, Ajuda, Suporte, Sobre, Sair
+  - ✅ Sem links duplicados no menu mobile
+  - ✅ Menu consistente entre Home, Vendas, Finanças e Folha de Pagamento
+  - ⚠️ Folha de Pagamento redireciona para cadastro de empresa quando sem tenant configurado (comportamento esperado)
+- `firebase deploy --only hosting --project sisweb-7ce82 --non-interactive` (re-deploy pós-correção FA)
 
 ## File List
 - `openNewClientModal.js`
@@ -41,6 +59,7 @@ Padronizar o menu superior para manter a aparência do `index.html` nas demais p
 - `menu.css`
 - `vendas.html`
 - `sw.js`
+- `financas.html`
 - `tests/client-supplier-fiscal-fields.test.mjs`
 - `tests/company-logo-storage-policy.test.mjs`
 - `tests/pwa-mobile-menu-session.test.mjs`
@@ -48,3 +67,11 @@ Padronizar o menu superior para manter a aparência do `index.html` nas demais p
 - `tests/qa-visual-pwa-routes.test.mjs`
 - `tests/financas-contas-pagar-edit.test.mjs`
 - `docs/stories/2026-07-01-nf-cliente-menu-global.md`
+
+## Status Final
+**Story concluída.** Navegação visual validada. Próximo Codex que retornar saberá que:
+- Menu global padronizado e escopado
+- Itens duplicados removidos
+- Visual verificado in loco
+- `folha-menu-original-completo.css` não conflita com menu global
+- Finanças agora usa Font Awesome 6 (consistente)

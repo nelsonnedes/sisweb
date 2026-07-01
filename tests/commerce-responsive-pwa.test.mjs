@@ -423,9 +423,19 @@ test('compras possui relatórios e busca de fornecedor carregados no script ativ
 });
 
 test('paginas html nao mantem cachebuster antigo do menu PWA', () => {
+  const legacyOrNonRuntimePages = new Set([
+    'compras_legacy.html',
+    'folha_pagamento/teste-modal-integrado.html',
+    'index_bak.html',
+    'romaneiopct_back.html',
+    'romaneiotora_otimizado.html',
+    'romaneiotora_versao_dev.html',
+    'template.html',
+  ]);
   const offenders = walkHtml(root).filter((path) => {
+    if (legacyOrNonRuntimePages.has(path)) return false;
     const html = read(path);
-    return /menu-component\.js\?v=(?!2026-06-07-commerce-pwa-menu-v1|2026-06-10-promo-crud-functions-v2|2026-06-10-subscription-status-ux-v1|2026-06-10-admin-assinaturas-v1|2026-06-11-admin-trial-v1|2026-06-11-admin-trial-v2|2026-06-11-profile-admin-v1|2026-06-11-company-profile-permissions-v1|2026-06-11-company-profile-permissions-v2|2026-06-11-company-profile-permissions-v3)/.test(html);
+    return /menu-component\.js\?v=(?!2026-07-01-menu-global-dedupe-v1)/.test(html);
   });
   assert.deepEqual(offenders, []);
 });

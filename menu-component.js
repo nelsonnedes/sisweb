@@ -737,10 +737,6 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                         background: rgba(255,255,255,0.08);
                         outline: none;
                     }
-                    .mobile-menu-link,
-                    .mobile-logout-link {
-                        display: none;
-                    }
                     .alerts-panel {
                         right: 0;
                         left: auto;
@@ -1078,20 +1074,6 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             background: #2c3e50;
                             box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
                         }
-                        .mobile-menu-link,
-                        .mobile-logout-link {
-                            display: flex;
-                            align-items: center;
-                            gap: 8px;
-                            color: #fff !important;
-                        }
-                        .mobile-menu-link.mobile-support-link {
-                            background: rgba(255,255,255,0.08);
-                            border-left: 3px solid rgba(255,255,255,0.35);
-                        }
-                        .mobile-logout-link {
-                            margin-top: 10px;
-                        }
                     }
                 </style>
                 <div class="sisweb-menu-shell">
@@ -1152,10 +1134,6 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                         </div>
                     </div>
                     ` : ''}
-                    <a href="${this.resolveUrl('ajuda.html')}" class="menu-item mobile-menu-link"><i class="fas fa-book-open"></i> Ajuda</a>
-                    ${!adminContext.isSuperAdmin ? `<a href="#" class="menu-item mobile-menu-link mobile-support-link support-link"><i class="fas fa-headset"></i> Suporte</a>` : ''}
-                    ${showBusinessModules ? `<a href="${this.resolveUrl('subscription-status.html')}" class="menu-item mobile-menu-link"><i class="fas fa-star"></i> Assinatura</a>` : ''}
-                    <a href="#" class="menu-item mobile-logout-link logout-link"><i class="fas fa-sign-out-alt"></i> Sair</a>
                     </div>
                     <div class="menu-quick-actions" aria-label="Ações rápidas">
                         <div class="alerts-dropdown">

@@ -23,7 +23,10 @@ test('menu mobile usa gatilhos completos para alertas/configuracoes e exibe sair
   assert.match(menuComponent, /class="settings-section-title">Conta/);
   assert.match(menuComponent, /class="settings-section-title">Operação/);
   assert.match(menuComponent, /class="settings-section-title">Ajuda/);
-  assert.match(menuComponent, /class="menu-item mobile-logout-link logout-link"/);
+  assert.match(menuComponent, /class="settings-section settings-exit"/);
+  assert.match(menuComponent, /class="settings-action logout-link"/);
+  assert.doesNotMatch(menuComponent, /mobile-menu-link/);
+  assert.doesNotMatch(menuComponent, /mobile-logout-link/);
   assert.match(menuComponent, /\$\{!adminContext\.isSuperAdmin \? `<a href="#" class="[^"]*support-link/);
   assert.match(menuComponent, /admin\.html\?tab=support/);
   assert.match(menuComponent, /const settingsTrigger = this\.querySelector\('\.settings-dropdown \.menu-item-trigger'\)/);
@@ -34,8 +37,8 @@ test('menu mobile usa gatilhos completos para alertas/configuracoes e exibe sair
   assert.doesNotMatch(menuComponent, /settingsIcon\.addEventListener\('click'/);
   assert.doesNotMatch(menuComponent, /alertsIcon\.addEventListener\('click'/);
 
-  assert.match(menuCss, /\.mobile-logout-link \{\s*display: none;/);
-  assert.match(menuCss, /@media \(max-width: 1024px\) \{[\s\S]*\.mobile-logout-link \{[\s\S]*display: flex;/);
+  assert.doesNotMatch(menuCss, /mobile-menu-link/);
+  assert.doesNotMatch(menuCss, /mobile-logout-link/);
   assert.match(menuCss, /\.menu-quick-actions \{[\s\S]*display: flex;/);
   assert.match(menuCss, /@media \(max-width: 1024px\) \{[\s\S]*\.menu-quick-actions \{[\s\S]*margin-left: 0;/);
   assert.match(menuCss, /\.menu-quick-actions \.menu-item-trigger \{[\s\S]*width: 42px;/);
@@ -45,7 +48,7 @@ test('PWA verifica updates instalados e service worker responde versao atual', (
   const menuComponent = read('menu-component.js');
   const sw = read('sw.js');
 
-  assert.match(sw, /const APP_VERSION = '2026-07-01-nf-client-menu-v1'/);
+  assert.match(sw, /const APP_VERSION = '2026-07-01-menu-global-dedupe-v1'/);
   assert.match(menuComponent, /window\.addEventListener\('online', \(\) => checkForUpdate\(true\)\)/);
   assert.match(menuComponent, /window\.addEventListener\('pageshow', \(\) => checkForUpdate\(true\)\)/);
   assert.match(menuComponent, /window\.setTimeout\(\(\) => checkForUpdate\(true\), 1500\)/);

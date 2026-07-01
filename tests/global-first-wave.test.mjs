@@ -279,10 +279,8 @@ test('menu global expoe suporte profissional no desktop e no mobile', () => {
   const source = read('menu-component.js');
 
   assert.match(source, /class="[^"]*support-link/);
-  assert.match(source, /class="menu-item mobile-menu-link mobile-support-link support-link"/);
-  assert.match(source, /class="menu-item mobile-menu-link"><i class="fas fa-book-open"><\/i> Ajuda/);
-  assert.match(source, /subscription-status\.html'\)\}" class="menu-item mobile-menu-link"/);
-  assert.match(source, /class="menu-item mobile-logout-link logout-link"/);
+  assert.doesNotMatch(source, /mobile-menu-link/);
+  assert.doesNotMatch(source, /mobile-logout-link/);
   assert.match(source, /showSupport/);
   assert.match(source, /supportModal/);
   assert.match(source, /sendSiswebSupportWhatsApp/);
