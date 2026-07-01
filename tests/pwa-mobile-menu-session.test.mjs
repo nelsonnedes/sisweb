@@ -45,7 +45,7 @@ test('PWA verifica updates instalados e service worker responde versao atual', (
   const menuComponent = read('menu-component.js');
   const sw = read('sw.js');
 
-  assert.match(sw, /const APP_VERSION = '2026-07-01-finance-pay-edit-v1'/);
+  assert.match(sw, /const APP_VERSION = '2026-07-01-nf-client-menu-v1'/);
   assert.match(menuComponent, /window\.addEventListener\('online', \(\) => checkForUpdate\(true\)\)/);
   assert.match(menuComponent, /window\.addEventListener\('pageshow', \(\) => checkForUpdate\(true\)\)/);
   assert.match(menuComponent, /window\.setTimeout\(\(\) => checkForUpdate\(true\), 1500\)/);
@@ -59,6 +59,18 @@ test('PWA verifica updates instalados e service worker responde versao atual', (
   assert.match(sw, /cache: 'no-store'/);
   assert.match(menuComponent, /sessionStorage\.setItem\('siswebPwaUpdateReady', PWA_VERSION\)/);
   assert.doesNotMatch(menuComponent, /window\.location\.reload\(\)/);
+});
+
+test('menu principal tem escopo proprio para manter visual igual entre paginas', () => {
+  const menuComponent = read('menu-component.js');
+  const menuCss = read('menu.css');
+
+  assert.match(menuComponent, /\.sisweb-menu-shell \.menu-item \{[\s\S]*font-weight: 700;[\s\S]*border-radius: 6px;/);
+  assert.match(menuComponent, /\.sisweb-menu-shell \.dropdown-content \{[\s\S]*width: max-content;[\s\S]*z-index: 5000;/);
+  assert.match(menuComponent, /\.sisweb-menu-shell \.dropdown-content a \{[\s\S]*text-overflow: ellipsis;/);
+  assert.match(menuCss, /main-menu \.sisweb-menu-shell \.menu-item \{[\s\S]*font-weight: 700;[\s\S]*border-radius: 6px;/);
+  assert.match(menuCss, /main-menu \.sisweb-menu-shell \.dropdown-content \{[\s\S]*z-index: 5000;/);
+  assert.match(menuCss, /@media \(max-width: 1024px\) \{[\s\S]*main-menu \.sisweb-menu-shell \.menu-item \{[\s\S]*width: 100%;/);
 });
 
 test('sininho superadmin alerta bloqueio de faturamento firebase no hover desktop', () => {

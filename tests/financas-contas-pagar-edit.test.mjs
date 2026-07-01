@@ -79,5 +79,5 @@ test('salvarContaPagar usa contrato novo de tipo e cachebuster atualizado', () =
   assert.match(js, /inRangePag\.map\(c => resolveFinanceTipoOperacional\(c\)\)/);
   assert.doesNotMatch(js, /conta\.categoria = getBaseCategoriaKeys\(\)\.includes\(categoriaKey\) \? categoriaKey : 'outros';/);
   assert.match(html, /financas\.js\?v=2026-07-01-finance-pay-edit-v1/);
-  assert.match(sw, /const APP_VERSION = '2026-07-01-finance-pay-edit-v1'/);
+  assert.match(sw, /const APP_VERSION = '2026-07-01-nf-client-menu-v1'/);
 });

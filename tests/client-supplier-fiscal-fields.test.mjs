@@ -142,6 +142,10 @@ test('modais operacionais de cliente e fornecedor incluem campos fiscais opciona
     'newClientCountryName',
     'newClientObs'
   ], 'openNewClientModal.js');
+  assert.match(openNewClientModalJs, /function openClientFormModal\(options = \{\}\)/);
+  assert.match(openNewClientModalJs, /function openEditClientModal\(client, options = \{\}\)/);
+  assert.match(openNewClientModalJs, /window\.openEditClientModal = openEditClientModal/);
+  assert.match(openNewClientModalJs, /typeof window\.popularCidades === 'function'/);
   assertHasIds(comprasHtml, [
     'fornDocumento',
     'fornTipoPessoa',
@@ -206,6 +210,8 @@ test('cadastros rápidos de pedido usam caminhos canônicos de clientes e fornec
   const fornecedorLoadData = fornecedorJs.match(/async function loadData\(\) \{[\s\S]*?finally \{/)?.[0] || '';
 
   assert.match(openNewClientModalJs, /window\.clientService && typeof window\.clientService\.saveClient === 'function'/);
+  assert.match(openNewClientModalJs, /clientFormModalContext\.mode === 'edit'/);
+  assert.match(openNewClientModalJs, /clientFormModalContext\.onSaved/);
   assert.doesNotMatch(openNewClientModalJs, /saveFornecedor|saveData\(['"`]fornecedores|saveToFirebase\(['"`]fornecedores/);
   assert.match(comprasJs, /saveData\('fornecedores', ordered\)/);
   assert.match(comprasJs, /const saved = await service\.saveFornecedor\(novoFornecedor\)/);
@@ -234,9 +240,10 @@ test('normalizadores preservam aliases fiscais usados pela emissão NF-e', () =>
 
 test('PWA e abas comerciais usam cachebuster fiscal atual', () => {
   assert.match(read('vendas.html'), /vendas\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
-  assert.match(read('vendas.html'), /openNewClientModal\.js\?v=2026-06-30-pedido-contact-modals-v1/);
+  assert.match(read('vendas.html'), /openNewClientModal\.js\?v=2026-07-01-nf-client-menu-v1/);
+  assert.match(read('notas-fiscais.html'), /openNewClientModal\.js\?v=2026-07-01-nf-client-menu-v1/);
   assert.match(read('compras.html'), /compras\.js\?v=2026-06-30-pedido-contact-modals-v1/);
   assert.match(read('client.html'), /js\/client\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
   assert.match(read('fornecedor.html'), /js\/fornecedor\.js\?v=2026-06-30-pedido-contact-modals-v1/);
-  assert.match(read('sw.js'), /const APP_VERSION = '2026-07-01-finance-pay-edit-v1'/);
+  assert.match(read('sw.js'), /const APP_VERSION = '2026-07-01-nf-client-menu-v1'/);
 });

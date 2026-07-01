@@ -623,7 +623,8 @@ test('NF-e emission screen uses guided steps and fiscal review before A1 passwor
   assert.match(notasFiscais, /_revisaoFiscalStatus\.errors/);
   assert.match(notasFiscais, /box\.style\.display = 'block'/);
   assert.match(notasFiscais, /editarClienteSelecionadoNF/);
-  assert.match(notasFiscais, /nfEditClientModal/);
+  assert.match(notasFiscais, /window\.openEditClientModal\(cliente, \{/);
+  assert.doesNotMatch(notasFiscais, /nfEditClientModal/);
   assert.match(notasFiscais, /editarItemNF/);
   assert.match(notasFiscais, /nfEditItemModal/);
   assert.match(notasFiscais, /recalcularImpostosItemNF/);

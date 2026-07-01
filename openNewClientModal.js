@@ -1,6 +1,86 @@
-// Função para abrir o modal de novo cliente
-function openNewClientModal() {
-    console.log("Abrindo modal para cadastrar novo cliente");
+let clientFormModalContext = {
+    mode: 'create',
+    client: null,
+    onSaved: null,
+    selectAfterSave: true
+};
+
+function clientModalText(client, ...keys) {
+    for (const key of keys) {
+        const value = client && client[key];
+        if (value !== undefined && value !== null && String(value).trim() !== '') {
+            return String(value).trim();
+        }
+    }
+    return '';
+}
+
+function setClientModalValue(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.value = value || '';
+}
+
+async function loadClientModalCities(uf, selectedCity = '') {
+    const citySelect = document.getElementById('newClientCity');
+    if (!citySelect) return;
+    if (!uf) {
+        citySelect.innerHTML = '<option value="">Selecione primeiro o estado</option>';
+        return;
+    }
+    if (typeof window.popularCidades === 'function') {
+        await window.popularCidades(citySelect.id, uf, selectedCity);
+        return;
+    }
+    if (typeof window.populateCitySelect === 'function') {
+        await window.populateCitySelect(uf, citySelect.id);
+        if (selectedCity) citySelect.value = selectedCity;
+        return;
+    }
+    citySelect.innerHTML = '';
+    const option = document.createElement('option');
+    option.value = selectedCity || '';
+    option.textContent = selectedCity || 'Cidade não carregada';
+    citySelect.appendChild(option);
+}
+
+async function populateClientFormModal(client = null) {
+    const form = document.getElementById('newClientForm');
+    if (form) form.reset();
+
+    const isEdit = !!(clientFormModalContext.mode === 'edit' && client);
+    const title = document.getElementById('newClientModalLabel');
+    const saveButton = document.getElementById('saveNewClient');
+    if (title) title.textContent = isEdit ? 'Editar Cliente' : 'Novo Cliente';
+    if (saveButton) saveButton.textContent = isEdit ? 'Atualizar' : 'Salvar';
+
+    setClientModalValue('newClientName', clientModalText(client, 'nome', 'name', 'razao', 'razaoSocial'));
+    setClientModalValue('newClientCnpj', clientModalText(client, 'documento', 'document', 'cnpj', 'cpf', 'cpfCnpj'));
+    setClientModalValue('newClientPhone', clientModalText(client, 'telefone', 'phone', 'celular'));
+    setClientModalValue('newClientEmail', clientModalText(client, 'email'));
+    setClientModalValue('newClientTipoPessoa', clientModalText(client, 'tipoPessoa', 'personType', 'fiscalPersonType'));
+    setClientModalValue('newClientIndIEDest', clientModalText(client, 'indIEDest', 'indicadorInscricaoEstadual', 'ieIndicator'));
+    setClientModalValue('newClientInscricaoEstadual', clientModalText(client, 'inscricaoEstadual', 'stateRegistration', 'ie'));
+    setClientModalValue('newClientInscricaoMunicipal', clientModalText(client, 'inscricaoMunicipal', 'municipalRegistration', 'im'));
+    setClientModalValue('newClientSuframa', clientModalText(client, 'suframa', 'SUFRAMA'));
+    setClientModalValue('newClientCep', clientModalText(client, 'cep', 'postalCode', 'zipCode', 'zip'));
+    setClientModalValue('newClientAddress', clientModalText(client, 'endereco', 'address', 'logradouro'));
+    setClientModalValue('newClientNumber', clientModalText(client, 'numero', 'number'));
+    setClientModalValue('newClientNeighborhood', clientModalText(client, 'bairro', 'neighborhood', 'district'));
+    setClientModalValue('newClientComplement', clientModalText(client, 'complemento', 'complement'));
+    const state = clientModalText(client, 'estado', 'state', 'uf').toUpperCase();
+    const city = clientModalText(client, 'cidade', 'city', 'municipio');
+    setClientModalValue('newClientState', state);
+    await loadClientModalCities(state, city);
+    setClientModalValue('newClientMunicipalityCode', clientModalText(client, 'codigoMunicipio', 'municipioCodigo', 'municipalityCode', 'cMun', 'codigoIBGE', 'ibge', 'ibgeCode'));
+    setClientModalValue('newClientCountryCode', clientModalText(client, 'paisCodigo', 'countryCode', 'cPais') || '1058');
+    setClientModalValue('newClientCountryName', clientModalText(client, 'pais', 'country', 'countryName', 'xPais') || 'Brasil');
+    setClientModalValue('newClientObs', clientModalText(client, 'obs', 'observacoes', 'observations'));
+}
+
+// Modal canônico de cliente para fluxos operacionais.
+function openClientFormModal(options = {}) {
+    const opts = (options && typeof options === 'object') ? options : {};
+    console.log(opts.mode === 'edit' ? "Abrindo modal para editar cliente" : "Abrindo modal para cadastrar novo cliente");
     // ✅ Fechar lista de clientes/fornecedores se estiver aberta para evitar dois modais
     try {
         const listModal = document.getElementById('clientListModal');
@@ -187,13 +267,7 @@ function openNewClientModal() {
         const stateSelect = modal.querySelector('#newClientState');
         if (stateSelect) {
             stateSelect.addEventListener('change', function() {
-                const citySelect = modal.querySelector('#newClientCity');
-                if (citySelect && typeof window.populateCitySelect === 'function') {
-                    window.populateCitySelect(this.value, citySelect.id);
-                } else if (citySelect) {
-                    console.warn('Função populateCitySelect não encontrada. Verifique se cities.js está carregado.');
-                    citySelect.innerHTML = '<option value="">Erro ao carregar cidades</option>';
-                }
+                loadClientModalCities(this.value);
             });
         }
 
@@ -209,11 +283,15 @@ function openNewClientModal() {
         });
     }
     
-    // Limpar formulário
-    const form = document.getElementById('newClientForm');
-    if (form) {
-        form.reset();
-    }
+    clientFormModalContext = {
+        mode: opts.mode === 'edit' ? 'edit' : 'create',
+        client: opts.client || null,
+        onSaved: typeof opts.onSaved === 'function' ? opts.onSaved : null,
+        selectAfterSave: opts.selectAfterSave !== false
+    };
+    Promise.resolve(populateClientFormModal(clientFormModalContext.client)).catch((error) => {
+        console.warn('Falha ao preencher modal de cliente:', error);
+    });
     
     // Mostrar modal
     modal.style.display = 'block';
@@ -222,7 +300,25 @@ function openNewClientModal() {
 }
 
 // Expor a função para o escopo global
+function openNewClientModal() {
+    return openClientFormModal({ mode: 'create' });
+}
+
+function openEditClientModal(client, options = {}) {
+    if (!client) {
+        try {
+            const msg = 'Selecione um cliente para editar';
+            if (typeof window.__toast === 'function') window.__toast(msg, 'warning');
+            else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
+        } catch (_) {}
+        return;
+    }
+    return openClientFormModal({ ...options, mode: 'edit', client });
+}
+
+window.openClientFormModal = openClientFormModal;
 window.openNewClientModal = openNewClientModal;
+window.openEditClientModal = openEditClientModal;
 function saveNewClient() {
     try {
         const field = (id) => (document.getElementById(id)?.value || '').trim();
@@ -255,7 +351,12 @@ function saveNewClient() {
             return; 
         }
         const nowIso = new Date().toISOString();
+        const originalClient = clientFormModalContext.client || {};
+        const isEditMode = clientFormModalContext.mode === 'edit' && originalClient.id;
+        const documentDigits = documento.replace(/\D/g, '');
         const client = {
+            ...originalClient,
+            id: isEditMode ? String(originalClient.id) : originalClient.id,
             name,
             nome: name,
             email,
@@ -263,7 +364,8 @@ function saveNewClient() {
             telefone: phone,
             address,
             endereco: address,
-            cnpj: documento,
+            cnpj: documentDigits.length === 11 ? '' : documento,
+            cpf: documentDigits.length === 11 ? documento : '',
             documento,
             document: documento,
             tipoPessoa,
@@ -304,8 +406,8 @@ function saveNewClient() {
             obs,
             observacoes: obs,
             observations: obs,
-            status: 'ativo',
-            createdAt: nowIso,
+            status: originalClient.status || 'ativo',
+            createdAt: originalClient.createdAt || originalClient.created || nowIso,
             updatedAt: nowIso,
             updated: nowIso
         };
@@ -329,9 +431,22 @@ function saveNewClient() {
             }
             
             // ✅ Selecionar o novo cliente no dropdown passando o savedId
-            try { if (typeof atualizarSelectClientes === 'function') atualizarSelectClientes(savedId); } catch (_) {}
             try {
-                const msg = 'Cliente salvo com sucesso';
+                if (clientFormModalContext.selectAfterSave && typeof atualizarSelectClientes === 'function') {
+                    atualizarSelectClientes(savedId);
+                }
+            } catch (_) {}
+            try {
+                if (typeof clientFormModalContext.onSaved === 'function') {
+                    Promise.resolve(clientFormModalContext.onSaved(saved || client)).catch((callbackError) => {
+                        console.warn('Falha no callback pós-salvamento do cliente:', callbackError);
+                    });
+                }
+            } catch (callbackError) {
+                console.warn('Falha no callback pós-salvamento do cliente:', callbackError);
+            }
+            try {
+                const msg = isEditMode ? 'Cliente atualizado com sucesso' : 'Cliente salvo com sucesso';
                 if (typeof window.__toast === 'function') window.__toast(msg, 'success');
                 else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'success');
             } catch (_) {}
