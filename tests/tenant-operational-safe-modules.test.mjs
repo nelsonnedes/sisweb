@@ -19,7 +19,7 @@ test('estoque e financas exigem tenant autenticado online antes do carregamento 
   const financasJs = read('financas.js');
 
   assert.match(estoqueHtml, /estoque\.js\?v=2026-06-16-tenant-safe-v1/);
-  assert.match(financasHtml, /financas\.js\?v=2026-06-26-boleto-pix-lamina-v3/);
+  assert.match(financasHtml, /financas\.js\?v=2026-07-01-finance-pay-edit-v1/);
   assert.match(financasHtml, /window\.__siswebFirebaseServiceReady = \(async function/);
   assert.match(financasHtml, /resolveAuthenticatedTenant: firebaseSvc\.resolveAuthenticatedTenant \|\| existingFirebaseService\.resolveAuthenticatedTenant/);
 

@@ -3815,11 +3815,7 @@ function comprasFornecedoresNormalizarLista(lista) {
 }
 
 async function comprasFornecedoresCarregarDados() {
-    let lista = await getData('fornecedores') || [];
-    if (!Array.isArray(lista) || lista.length === 0) {
-        const clients = await getData('clients');
-        if (Array.isArray(clients) && clients.length > 0) lista = clients;
-    }
+    const lista = await getData('fornecedores') || [];
     return comprasFornecedoresNormalizarLista(lista);
 }
 
@@ -4302,61 +4298,74 @@ function configurarAbaFornecedoresCompras() {
 }
 
 // Modal Rápido de Fornecedor
-window.abrirModalFornecedor = function() {
+function abrirModalFornecedor() {
     document.getElementById('modalFornecedor').style.display = 'block';
-};
+}
 
-window.fecharModalFornecedor = function() {
+function fecharModalFornecedor() {
     document.getElementById('modalFornecedor').style.display = 'none';
-};
+}
 
-window.salvarFornecedorInline = async function(event) {
+async function salvarFornecedorInline(event) {
     event.preventDefault();
     LoadingManager.show('Salvando fornecedor...');
     try {
+        const nowIso = new Date().toISOString();
+        const obs = comprasFornecedoresCampo('fornObs');
         const novoFornecedor = {
             id: `FOR-${Date.now()}`,
-            nome: document.getElementById('fornNome').value,
-            documento: document.getElementById('fornDocumento').value,
-            document: document.getElementById('fornDocumento').value,
-            cnpj: document.getElementById('fornDocumento').value,
+            nome: comprasFornecedoresCampo('fornNome'),
+            name: comprasFornecedoresCampo('fornNome'),
+            documento: comprasFornecedoresCampo('fornDocumento'),
+            document: comprasFornecedoresCampo('fornDocumento'),
+            cnpj: comprasFornecedoresCampo('fornDocumento'),
             tipoPessoa: comprasFornecedoresCampo('fornTipoPessoa'),
             personType: comprasFornecedoresCampo('fornTipoPessoa'),
+            fiscalPersonType: comprasFornecedoresCampo('fornTipoPessoa'),
             indIEDest: comprasFornecedoresCampo('fornIndIEDest'),
             indicadorInscricaoEstadual: comprasFornecedoresCampo('fornIndIEDest'),
             ieIndicator: comprasFornecedoresCampo('fornIndIEDest'),
             inscricaoEstadual: comprasFornecedoresCampo('fornInscricaoEstadual'),
             stateRegistration: comprasFornecedoresCampo('fornInscricaoEstadual'),
+            ie: comprasFornecedoresCampo('fornInscricaoEstadual'),
             inscricaoMunicipal: comprasFornecedoresCampo('fornInscricaoMunicipal'),
             municipalRegistration: comprasFornecedoresCampo('fornInscricaoMunicipal'),
             suframa: comprasFornecedoresCampo('fornSuframa'),
             cep: comprasFornecedoresCampo('fornCep'),
             postalCode: comprasFornecedoresCampo('fornCep'),
-            telefone: document.getElementById('fornTelefone').value,
-            email: document.getElementById('fornEmail').value,
-            endereco: document.getElementById('fornEndereco').value,
-            address: document.getElementById('fornEndereco').value,
+            telefone: comprasFornecedoresCampo('fornTelefone'),
+            phone: comprasFornecedoresCampo('fornTelefone'),
+            email: comprasFornecedoresCampo('fornEmail'),
+            endereco: comprasFornecedoresCampo('fornEndereco'),
+            address: comprasFornecedoresCampo('fornEndereco'),
             numero: comprasFornecedoresCampo('fornNumero'),
             number: comprasFornecedoresCampo('fornNumero'),
             bairro: comprasFornecedoresCampo('fornBairro'),
             neighborhood: comprasFornecedoresCampo('fornBairro'),
             complemento: comprasFornecedoresCampo('fornComplemento'),
             complement: comprasFornecedoresCampo('fornComplemento'),
-            cidade: document.getElementById('fornCidade').value,
-            city: document.getElementById('fornCidade').value,
-            estado: document.getElementById('fornEstado').value,
-            state: document.getElementById('fornEstado').value,
+            cidade: comprasFornecedoresCampo('fornCidade'),
+            city: comprasFornecedoresCampo('fornCidade'),
+            estado: comprasFornecedoresCampo('fornEstado'),
+            state: comprasFornecedoresCampo('fornEstado'),
             codigoMunicipio: comprasFornecedoresCampo('fornCodigoMunicipio'),
             municipioCodigo: comprasFornecedoresCampo('fornCodigoMunicipio'),
             municipalityCode: comprasFornecedoresCampo('fornCodigoMunicipio'),
             cMun: comprasFornecedoresCampo('fornCodigoMunicipio'),
+            ibgeCode: comprasFornecedoresCampo('fornCodigoMunicipio'),
             paisCodigo: comprasFornecedoresCampo('fornPaisCodigo') || '1058',
             countryCode: comprasFornecedoresCampo('fornPaisCodigo') || '1058',
             cPais: comprasFornecedoresCampo('fornPaisCodigo') || '1058',
             pais: comprasFornecedoresCampo('fornPais') || 'Brasil',
             country: comprasFornecedoresCampo('fornPais') || 'Brasil',
             countryName: comprasFornecedoresCampo('fornPais') || 'Brasil',
-            xPais: comprasFornecedoresCampo('fornPais') || 'Brasil'
+            xPais: comprasFornecedoresCampo('fornPais') || 'Brasil',
+            obs,
+            observacoes: obs,
+            observations: obs,
+            createdAt: nowIso,
+            updatedAt: nowIso,
+            updated: nowIso
         };
 
         const service = comprasFornecedoresGetService();
@@ -4376,7 +4385,7 @@ window.salvarFornecedorInline = async function(event) {
     } finally {
         LoadingManager.hide();
     }
-};
+}
 
 // ============================================================================
 // 6. INICIALIZAÇÃO DO SISTEMA
@@ -4576,13 +4585,13 @@ window.loadCities = function(uf, targetId) {
     }
 };
 
-// Integração para o modal legado (clientModal)
+// Integração com selects de cidade usados pelos formulários de fornecedor.
 window.carregarCidadesPorEstado = function(uf) {
     // O modal legado usa 'clientCity' como ID fixo
     window.loadCities(uf, 'clientCity');
 };
 
-// Integração com sistema de modal externo (client-modal-handler)
+// Integração com atualizações externas de fornecedores.
 window.addEventListener('suppliers:updated', (e) => {
     if (e.detail) {
         carregarFornecedores().then(() => {

@@ -142,7 +142,7 @@ test('lista de pedidos usa PDF compartilhavel em PWA para vendas e compras', () 
     assert.match(html, /commerce-pdf-share\.js\?v=2026-06-23-logo-print-dataurl-v1/);
   });
   assert.match(vendasHtml, /vendas\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
-  assert.match(comprasHtml, /compras\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
+  assert.match(comprasHtml, /compras\.js\?v=2026-06-30-pedido-contact-modals-v1/);
 
   assert.match(helper, /JSPDF_LOCAL = '\/assets\/vendor\/jspdf\.umd\.min\.js'/);
   assert.match(helper, /navigator\.canShare/);
@@ -228,7 +228,7 @@ test('service worker publica nova versao PWA para invalidar cache visual', () =>
   const sw = read('sw.js');
   const menuComponent = read('menu-component.js');
 
-  assert.match(sw, /const APP_VERSION = '2026-06-26-boleto-pix-lamina-v3'/);
+  assert.match(sw, /const APP_VERSION = '2026-07-01-finance-pay-edit-v1'/);
   assert.match(menuComponent, /const PWA_VERSION = '2026-06-11-profile-admin-v1'/);
   assert.match(sw, /cache: 'no-store'/);
   assert.match(sw, /SISWEB_PWA_UPDATED/);

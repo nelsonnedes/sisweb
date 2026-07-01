@@ -387,12 +387,7 @@ async function loadData() {
         await ensureTenantContext();
         const fornecedoresResult = await window.firebaseService.loadFromFirebase('fornecedores');
         const fornecedoresList = extractListFromResult(fornecedoresResult);
-        let loadedList = fornecedoresList;
-        if (!loadedList.length) {
-            const clientsResult = await window.firebaseService.loadFromFirebase('clients');
-            loadedList = extractListFromResult(clientsResult);
-        }
-        currentList = loadedList.map(item => normalizeFornecedor(item, item.id));
+        currentList = fornecedoresList.map(item => normalizeFornecedor(item, item.id));
         currentList = currentList.filter(item => String(item.name || item.nome || '').trim());
         currentList.sort((a, b) => String(a.name || a.nome || '').localeCompare(String(b.name || b.nome || ''), 'pt-BR'));
         

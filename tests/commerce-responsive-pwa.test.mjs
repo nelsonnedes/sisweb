@@ -31,7 +31,7 @@ test('vendas e compras carregam camada responsiva compartilhada para PWA', () =>
     assert.match(html, /commerce-pdf-share\.js\?v=2026-06-23-logo-print-dataurl-v1/);
   });
   assert.match(vendasHtml, /vendas\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
-  assert.match(comprasHtml, /compras\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
+  assert.match(comprasHtml, /compras\.js\?v=2026-06-30-pedido-contact-modals-v1/);
   assert.match(vendasHtml, /firebaseService\.js\?v=2026-06-12-tenant-auth-guard-v1/);
   assert.match(comprasHtml, /firebaseService\.js\?v=2026-06-12-tenant-auth-guard-v1/);
 
@@ -65,7 +65,7 @@ test('compras aguarda tenant autenticado antes de ler dados operacionais', () =>
   assert.doesNotMatch(beforeFirebaseModule, /localStorage\.getItem\('company_info'\)/);
   assert.doesNotMatch(beforeFirebaseModule, /window\.appTenantId\s*=\s*String\(tenant\)/);
   assert.match(html, /firebaseService\.js\?v=2026-06-12-tenant-auth-guard-v1/);
-  assert.match(html, /compras\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
+  assert.match(html, /compras\.js\?v=2026-06-30-pedido-contact-modals-v1/);
 
   const initStart = js.indexOf("document.addEventListener('DOMContentLoaded', async () =>");
   const guardCall = js.indexOf('await garantirContextoEmpresaCompras();', initStart);

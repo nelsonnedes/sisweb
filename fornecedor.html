@@ -134,17 +134,22 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0,0,0,0.5);
-            overflow-y: auto;
+            overflow: hidden;
+            padding: 24px 12px;
         }
 
         .modal-content {
             background-color: white;
-            margin: 5% auto;
-            padding: 25px;
+            margin: 0 auto;
+            padding: 0;
             border-radius: 8px;
-            width: 90%;
-            max-width: 600px;
+            width: min(100%, 960px);
+            max-width: 960px;
+            max-height: calc(100dvh - 48px);
             box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
             animation: slideIn 0.3s ease;
         }
 
@@ -157,16 +162,67 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            flex: 0 0 auto;
+            margin-bottom: 0;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            border-bottom: 0;
+            border-radius: 8px 8px 0 0;
+            color: #fff;
+        }
+
+        .modal-header h2,
+        .modal-header .modal-title {
+            color: #fff;
+            font-size: 20px;
+            line-height: 1.2;
+            margin: 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.35);
+        }
+
+        #mainForm {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .modal-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 24px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .modal-footer {
+            align-items: center;
+            background: #fafafa;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            flex: 0 0 auto;
+            gap: 10px;
+            justify-content: flex-end;
+            margin: 0;
+            padding: 14px 24px;
         }
 
         .close {
+            align-items: center;
+            background: transparent;
+            border: 0;
+            color: #fff;
+            display: inline-flex;
             font-size: 28px;
+            height: 36px;
+            justify-content: center;
+            line-height: 1;
+            padding: 0;
+            width: 36px;
             cursor: pointer;
-            color: #aaa;
         }
 
-        .close:hover { color: #333; }
+        .close:hover { color: #e5e7eb; }
 
         /* Form Groups */
         .form-row {
@@ -311,14 +367,26 @@
                 justify-content: center;
             }
 
+            .modal {
+                padding: 0;
+            }
+
             .modal-content {
                 width: 100%;
                 max-width: none;
-                min-height: 100dvh;
+                height: 100dvh;
+                max-height: 100dvh;
                 margin: 0;
                 border-radius: 0;
-                display: flex;
-                flex-direction: column;
+            }
+
+            .modal-header,
+            .modal-footer {
+                border-radius: 0;
+            }
+
+            .modal-body {
+                padding: 16px;
             }
 
             .modal-footer {
@@ -377,190 +445,196 @@
     <div id="modalForm" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="modalTitle">Novo Fornecedor</h2>
-                <span class="close">&times;</span>
+                <h2 id="modalTitle" class="modal-title">Novo Fornecedor</h2>
+                <button type="button" class="close close-modal" aria-label="Fechar">&times;</button>
             </div>
             <form id="mainForm">
-                <div class="form-group">
-                    <label for="name">Nome / Razão Social *</label>
-                    <input type="text" id="name" required placeholder="Ex: Madeireira Silva Ltda">
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="cnpj">CNPJ / CPF</label>
-                            <input type="text" id="cnpj" placeholder="00.000.000/0000-00">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="name">Nome / Razão Social *</label>
+                        <input type="text" id="name" required placeholder="Ex: Madeireira Silva Ltda">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="cnpj">CNPJ / CPF</label>
+                                <input type="text" id="cnpj" placeholder="00.000.000/0000-00">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="phone">Telefone / Celular</label>
+                                <input type="text" id="phone" placeholder="(00) 00000-0000">
+                            </div>
                         </div>
                     </div>
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="phone">Telefone / Celular</label>
-                            <input type="text" id="phone" placeholder="(00) 00000-0000">
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <input type="email" id="email" placeholder="contato@empresa.com">
+                            </div>
                         </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="personType">Tipo de pessoa</label>
+                                <select id="personType">
+                                    <option value="">Não informado</option>
+                                    <option value="juridica">Pessoa jurídica</option>
+                                    <option value="fisica">Pessoa física</option>
+                                    <option value="estrangeiro">Estrangeiro</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="ieIndicator">Indicador IE</label>
+                                <select id="ieIndicator">
+                                    <option value="">Não informado</option>
+                                    <option value="1">Contribuinte ICMS</option>
+                                    <option value="2">Contribuinte isento</option>
+                                    <option value="9">Não contribuinte</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="stateRegistration">Inscrição Estadual</label>
+                                <input type="text" id="stateRegistration" placeholder="IE / ISENTO">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="municipalRegistration">Inscrição Municipal</label>
+                                <input type="text" id="municipalRegistration" placeholder="Opcional">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="suframa">SUFRAMA</label>
+                                <input type="text" id="suframa" placeholder="Opcional">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="postalCode">CEP</label>
+                                <input type="text" id="postalCode" placeholder="00000-000">
+                            </div>
+                        </div>
+                        <div class="form-col" style="flex: 2;">
+                            <div class="form-group">
+                                <label for="address">Endereço</label>
+                                <input type="text" id="address" placeholder="Rua, Avenida">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="number">Número</label>
+                                <input type="text" id="number" placeholder="Nº">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="neighborhood">Bairro</label>
+                                <input type="text" id="neighborhood" placeholder="Bairro">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="complement">Complemento</label>
+                                <input type="text" id="complement" placeholder="Sala, lote, referência">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="state">Estado</label>
+                                <select id="state">
+                                    <option value="">Selecione</option>
+                                    <option value="AC">Acre</option>
+                                    <option value="AL">Alagoas</option>
+                                    <option value="AP">Amapá</option>
+                                    <option value="AM">Amazonas</option>
+                                    <option value="BA">Bahia</option>
+                                    <option value="CE">Ceará</option>
+                                    <option value="DF">Distrito Federal</option>
+                                    <option value="ES">Espírito Santo</option>
+                                    <option value="GO">Goiás</option>
+                                    <option value="MA">Maranhão</option>
+                                    <option value="MT">Mato Grosso</option>
+                                    <option value="MS">Mato Grosso do Sul</option>
+                                    <option value="MG">Minas Gerais</option>
+                                    <option value="PA">Pará</option>
+                                    <option value="PB">Paraíba</option>
+                                    <option value="PR">Paraná</option>
+                                    <option value="PE">Pernambuco</option>
+                                    <option value="PI">Piauí</option>
+                                    <option value="RJ">Rio de Janeiro</option>
+                                    <option value="RN">Rio Grande do Norte</option>
+                                    <option value="RS">Rio Grande do Sul</option>
+                                    <option value="RO">Rondônia</option>
+                                    <option value="RR">Roraima</option>
+                                    <option value="SC">Santa Catarina</option>
+                                    <option value="SP">São Paulo</option>
+                                    <option value="SE">Sergipe</option>
+                                    <option value="TO">Tocantins</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="city">Cidade</label>
+                                <select id="city">
+                                    <option value="">Selecione primeiro o estado</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="municipalityCode">Código IBGE do município</label>
+                                <input type="text" id="municipalityCode" placeholder="Ex: 1501402">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="countryCode">Código do país</label>
+                                <input type="text" id="countryCode" value="1058" placeholder="1058">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="countryName">País</label>
+                                <input type="text" id="countryName" value="Brasil" placeholder="Brasil">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="obs">Observações</label>
+                        <textarea id="obs" rows="2" placeholder="Informações adicionais..."></textarea>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" placeholder="contato@empresa.com">
-                </div>
-
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="personType">Tipo de pessoa</label>
-                            <select id="personType">
-                                <option value="">Não informado</option>
-                                <option value="juridica">Pessoa jurídica</option>
-                                <option value="fisica">Pessoa física</option>
-                                <option value="estrangeiro">Estrangeiro</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="ieIndicator">Indicador IE</label>
-                            <select id="ieIndicator">
-                                <option value="">Não informado</option>
-                                <option value="1">Contribuinte ICMS</option>
-                                <option value="2">Contribuinte isento</option>
-                                <option value="9">Não contribuinte</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="stateRegistration">Inscrição Estadual</label>
-                            <input type="text" id="stateRegistration" placeholder="IE / ISENTO">
-                        </div>
-                    </div>
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="municipalRegistration">Inscrição Municipal</label>
-                            <input type="text" id="municipalRegistration" placeholder="Opcional">
-                        </div>
-                    </div>
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="suframa">SUFRAMA</label>
-                            <input type="text" id="suframa" placeholder="Opcional">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="postalCode">CEP</label>
-                            <input type="text" id="postalCode" placeholder="00000-000">
-                        </div>
-                    </div>
-                    <div class="form-col" style="flex: 2;">
-                        <div class="form-group">
-                            <label for="address">Endereço</label>
-                            <input type="text" id="address" placeholder="Rua, Avenida">
-                        </div>
-                    </div>
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="number">Número</label>
-                            <input type="text" id="number" placeholder="Nº">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="neighborhood">Bairro</label>
-                            <input type="text" id="neighborhood" placeholder="Bairro">
-                        </div>
-                    </div>
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="complement">Complemento</label>
-                            <input type="text" id="complement" placeholder="Sala, lote, referência">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="state">Estado</label>
-                            <select id="state">
-                                <option value="">Selecione</option>
-                                <option value="AC">Acre</option>
-                                <option value="AL">Alagoas</option>
-                                <option value="AP">Amapá</option>
-                                <option value="AM">Amazonas</option>
-                                <option value="BA">Bahia</option>
-                                <option value="CE">Ceará</option>
-                                <option value="DF">Distrito Federal</option>
-                                <option value="ES">Espírito Santo</option>
-                                <option value="GO">Goiás</option>
-                                <option value="MA">Maranhão</option>
-                                <option value="MT">Mato Grosso</option>
-                                <option value="MS">Mato Grosso do Sul</option>
-                                <option value="MG">Minas Gerais</option>
-                                <option value="PA">Pará</option>
-                                <option value="PB">Paraíba</option>
-                                <option value="PR">Paraná</option>
-                                <option value="PE">Pernambuco</option>
-                                <option value="PI">Piauí</option>
-                                <option value="RJ">Rio de Janeiro</option>
-                                <option value="RN">Rio Grande do Norte</option>
-                                <option value="RS">Rio Grande do Sul</option>
-                                <option value="RO">Rondônia</option>
-                                <option value="RR">Roraima</option>
-                                <option value="SC">Santa Catarina</option>
-                                <option value="SP">São Paulo</option>
-                                <option value="SE">Sergipe</option>
-                                <option value="TO">Tocantins</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="city">Cidade</label>
-                            <select id="city">
-                                <option value="">Selecione primeiro o estado</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="municipalityCode">Código IBGE do município</label>
-                            <input type="text" id="municipalityCode" placeholder="Ex: 1501402">
-                        </div>
-                    </div>
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="countryCode">Código do país</label>
-                            <input type="text" id="countryCode" value="1058" placeholder="1058">
-                        </div>
-                    </div>
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="countryName">País</label>
-                            <input type="text" id="countryName" value="Brasil" placeholder="Brasil">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="obs">Observações</label>
-                    <textarea id="obs" rows="2" placeholder="Informações adicionais..."></textarea>
-                </div>
-
-                <div class="modal-footer" style="text-align: right; margin-top: 20px;">
+                <div class="modal-footer">
                     <button type="button" id="cancelBtn" class="btn btn-secondary">Cancelar</button>
                     <button type="submit" id="saveBtn" class="btn btn-primary">Salvar</button>
                 </div>
@@ -581,7 +655,7 @@
         import * as svc from './modules/core/firebase-service.js';
         if (!window.firebaseService) window.firebaseService = svc;
     </script>
-    <script type="module" src="js/fornecedor.js?v=2026-06-23-cadastro-fiscal-nfe-v1"></script>
+    <script type="module" src="js/fornecedor.js?v=2026-06-30-pedido-contact-modals-v1"></script>
     <script src="commerce-responsive.js?v=2026-06-07-print-context-v13"></script>
 
 </body>

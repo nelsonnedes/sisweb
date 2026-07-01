@@ -20,6 +20,7 @@ Nas contas a pagar, o financeiro continua exibindo o tipo operacional e o víncu
 - **[MODIFY] `financas.html`**: Inclusão dos scripts criados e do gerador de QR Code como dependência.
 - **[MODIFY] `functions/index.js`**: Adicionada sanitização nas funções `upsertCompanyProfile` e `updateMyCompanyProfile` para não haver perda de dados.
 - **[MODIFY] `financas.js`**: A lâmina passou a ser exclusiva de `contas a receber`; em `contas a pagar` o tipo operacional continua visível via `tipoPagamento`, mas sem ação de boleto.
+- **[MODIFY] `financas.js`**: Edição manual de contas a pagar agora sincroniza `tipo`, `tipoPagamento` e `tipo_pagamento`, carrega o tipo operacional legado no formulário e preserva categorias normalizadas sem falso `outros`.
 - **[MODIFY] `company.html`**: Recomposta a proteção do perfil da empresa via `updateMyCompanyProfile`, georeferenciamento com QR de navegação, cachebusters atuais e cards operacionais sem ação destrutiva de tenant.
 - **[MODIFY] `src/services/firebaseService.js`**: Upload de logo da empresa usa caminho canônico `companies/{tenant}/profile/logo/current` e limpa caminho legado quando substituído.
 
@@ -32,6 +33,7 @@ Nas contas a pagar, o financeiro continua exibindo o tipo operacional e o víncu
 - Verificacao HTTP confirmou `js/commerce-boleto-pix.js` contendo `loadJsPdf`, `generateQrCodeDataUrl` e o titulo da lâmina.
 - Correção posterior: `financas.js` mantém o tipo operacional visível em contas a pagar, mas bloqueia a lâmina de boleto nessas linhas para preservar a lógica de cobrança.
 - Validação posterior: `npm run lint`, `npm run typecheck`, pacote direcionado PWA/empresa/storage/financeiro e `npm test` completo passaram.
+- Correção posterior: `node --test tests/financas-contas-pagar-edit.test.mjs` cobre a edição de conta a pagar vinda de compras, trocando `tipoPagamento` legado de boleto para pix sem deixar o valor antigo dominar a exibição.
 
 ## File List
 - `js/pix-brcode.js`
@@ -43,6 +45,7 @@ Nas contas a pagar, o financeiro continua exibindo o tipo operacional e o víncu
 - `src/services/firebaseService.js`
 - `sw.js`
 - `tests/boleto-pix-lamina.test.mjs`
+- `tests/financas-contas-pagar-edit.test.mjs`
 - `tests/client-supplier-fiscal-fields.test.mjs`
 - `tests/pwa-install-icon.test.mjs`
 - `tests/pwa-mobile-menu-session.test.mjs`

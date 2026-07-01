@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-26-boleto-pix-lamina-v3';
+const APP_VERSION = '2026-07-01-finance-pay-edit-v1';
 const CACHE_NAME = `sisweb-runtime-${APP_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',

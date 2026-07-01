@@ -3676,9 +3676,9 @@ async function salvarContaPagar(event) {
             } else {
                 conta.status = 'pendente';
             }
-            const categoriaKey = normalizeCategoriaKey(categoria);
-            conta.categoria = getBaseCategoriaKeys().includes(categoriaKey) ? categoriaKey : 'outros';
-            conta.tipo = normalizeTipoKey(tipo || 'pagar');
+            const categoriaKey = normalizeCategoriaForFinanceSave(categoria, 'outros');
+            const tipoKey = applyContaFinanceiroTipoPagamento(conta, tipo, 'pagar');
+            conta.categoria = categoriaKey;
             conta.jurosTipo = jurosTipo;
             conta.jurosTaxa = jurosTaxa;
             conta.jurosBaseDate = conta.jurosBaseDate || contaOriginal.jurosBaseDate || null;
@@ -3722,6 +3722,8 @@ async function salvarContaPagar(event) {
                 id: String(conta.id),
                 mkOld,
                 mkNew,
+                tipoPagamento: tipoKey,
+                categoria: categoriaKey,
                 anexosCount: Array.isArray(conta.anexos) ? conta.anexos.length : 0,
                 hasAnexoUrl: !!conta.anexoUrl,
                 hasComprovanteUrl: !!conta.comprovanteUrl
@@ -3757,6 +3759,8 @@ async function salvarContaPagar(event) {
             const cfg = parcelConfigsPagar[i] || {};
             const valorParcela = parseCurrencyValue(cfg.valor || 0);
             const dataParcela = normalizeDateISOInput(cfg.data || dataVencimento);
+            const categoriaKey = normalizeCategoriaForFinanceSave(categoria, 'outros');
+            const tipoKey = normalizeTipoPagamentoForFinanceSave(tipo, 'pagar');
 
             const conta = {
                 id: generateUniqueId('CP'),
@@ -3768,8 +3772,10 @@ async function salvarContaPagar(event) {
                 valorRestante: valorParcela,
                 dataVencimento: dataParcela,
                 status: 'pendente',
-                categoria: (getBaseCategoriaKeys().includes(normalizeCategoriaKey(categoria)) ? normalizeCategoriaKey(categoria) : 'outros'),
-                tipo: normalizeTipoKey(tipo || 'pagar'),
+                categoria: categoriaKey,
+                tipo: tipoKey,
+                tipoPagamento: tipoKey,
+                tipo_pagamento: tipoKey,
                 jurosTipo,
                 jurosTaxa,
                 jurosBaseDate: null,
@@ -5950,7 +5956,7 @@ async function editarConta(id, tipo) {
                     }
                 } else {
                     let catAtual = String(conta.categoria || '').toLowerCase().trim();
-                    let tipoAtual = String(conta.tipo || '').toLowerCase().trim();
+                    let tipoAtual = String(resolveFinanceTipoOperacional(conta) || '').toLowerCase().trim();
                     
                     // Normalizar chaves
                     const normalizeTipo = (t) => {
@@ -7996,6 +8002,28 @@ function normalizeCategoriaKey(val) {
     return map[raw] || raw;
 }
 
+function normalizeCategoriaForFinanceSave(val, fallback = 'outros') {
+    const key = normalizeCategoriaKey(val);
+    if (!key || key === 'undefined' || key === 'null') return fallback;
+    return key;
+}
+
+function normalizeTipoPagamentoForFinanceSave(val, fallback = 'pagar') {
+    const key = normalizeTipoKey(val || fallback);
+    if (!key || key === 'undefined' || key === 'null') return fallback;
+    return key;
+}
+
+function applyContaFinanceiroTipoPagamento(conta, val, fallback = 'pagar') {
+    const tipoKey = normalizeTipoPagamentoForFinanceSave(val, fallback);
+    if (conta && typeof conta === 'object') {
+        conta.tipo = tipoKey;
+        conta.tipoPagamento = tipoKey;
+        conta.tipo_pagamento = tipoKey;
+    }
+    return tipoKey;
+}
+
 function resolveCategoriaPadrao(conta, tipoConta) {
     const origem = String(conta && conta.origem || '').toLowerCase();
     const origemTipo = String(conta && conta.origemTipo || '').toLowerCase();
@@ -8771,7 +8799,7 @@ function atualizarSelectTipos() {
                 if (fimTs && ts !== null && ts > fimTs) return false;
                 return true;
             });
-            const tiposPagKeys = uniqKeys([...baseKeys, ...(inRangePag.map(c => c && c.tipo).filter(Boolean))])
+            const tiposPagKeys = uniqKeys([...baseKeys, ...(inRangePag.map(c => resolveFinanceTipoOperacional(c)).filter(Boolean))])
                 .filter(k => String(k || '').trim() !== '')
                 .sort((a,b)=>String(getTipoLabel(a)).localeCompare(String(getTipoLabel(b)),'pt-BR',{sensitivity:'base'}));
             selectPag.innerHTML = '<option value="">Todos</option>' + tiposPagKeys.map(k=>`<option value="${k}">${getTipoLabel(k)}</option>`).join('');
