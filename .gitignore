@@ -48,6 +48,8 @@ node_modules
 # Build & Logs (AIOX)
 dist/
 build/
+hosting-dist/
+/nul
 .firebase/
 tmp/
 tmp/**

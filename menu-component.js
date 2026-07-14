@@ -2133,8 +2133,7 @@ if (window.customElements && !window.customElements.get('main-menu')) {
             const remotePaths = [
                 'system/operationalAlerts/firebaseBilling',
                 'system/deployHealth/firebase',
-                'system/googleCloudBilling/summary',
-                'system/googleCloudBilling/budgetNotifications'
+                'system/googleCloudBilling/summary'
             ];
             for (const path of remotePaths) {
                 try {

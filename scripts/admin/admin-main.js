@@ -1260,10 +1260,45 @@
                         setDebugStatus("loadGoogleCloudBilling", "error", "Serviço indisponível");
                         return;
                     }
-                    var result = await svc.loadFromFirebase("system/googleCloudBilling");
-                    var data = result && result.success !== false ? (result.data || null) : null;
+                    var billingPaths = [
+                        "summary",
+                        "invoices",
+                        "costSeries",
+                        "monthlyCostSeries",
+                        "serviceCosts",
+                        "companyUsageCostAllocation",
+                        "exportStatus"
+                    ];
+                    var results = await Promise.all(billingPaths.map(async function(key) {
+                        try {
+                            var result = await svc.loadFromFirebase("system/googleCloudBilling/" + key);
+                            return [key, result && result.success !== false ? (result.data || null) : null];
+                        } catch (error) {
+                            console.warn("Falha isolada ao carregar agregado de Billing:", key, error);
+                            return [key, null];
+                        }
+                    }));
+                    var data = {};
+                    results.forEach(function(entry) {
+                        if (entry[1] !== null) data[entry[0]] = entry[1];
+                    });
+                    if (typeof svc.loadRecentFromFirebase === "function") {
+                        try {
+                            var recentResult = await svc.loadRecentFromFirebase(
+                                "system/googleCloudBilling/budgetNotifications",
+                                "receivedAt",
+                                50
+                            );
+                            if (recentResult && recentResult.success !== false && recentResult.data) {
+                                data.budgetNotifications = recentResult.data;
+                            }
+                        } catch (error) {
+                            console.warn("Falha isolada ao carregar notificações recentes de Billing:", error);
+                        }
+                    }
                     renderGoogleCloudBillingDashboard(data);
-                    setDebugStatus("loadGoogleCloudBilling", data ? "ok" : "idle", data ? "Dados carregados" : "Sem dados");
+                    var hasData = Object.keys(data).length > 0;
+                    setDebugStatus("loadGoogleCloudBilling", hasData ? "ok" : "idle", hasData ? "Dados carregados" : "Sem dados");
                 } catch (error) {
                     renderGoogleCloudBillingDashboard(null);
                     setDebugStatus("loadGoogleCloudBilling", "error", error && error.message ? error.message : "Falha");

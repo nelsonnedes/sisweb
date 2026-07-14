@@ -1,9 +1,10 @@
 {
   "hosting": {
     "site": "sisweb-7ce82",
-    "public": ".",
+    "public": "hosting-dist",
     "ignore": [
       "firebase.json",
+      "hosting-files.json",
       "package.json",
       "package-lock.json",
       "**/.*",
@@ -218,10 +219,6 @@
   },
   "storage": {
     "rules": "storage.rules"
-  },
-  "firestore": {
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
   },
   "functions": {
     "source": "functions"

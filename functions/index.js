@@ -106,6 +106,8 @@ const CLOUD_BILLING_TABLE_SUFFIX = CLOUD_BILLING_ACCOUNT_ID.replace(/-/g, '_');
 const CLOUD_BILLING_STANDARD_TABLE_ID = `gcp_billing_export_v1_${CLOUD_BILLING_TABLE_SUFFIX}`;
 const CLOUD_BILLING_DETAILED_TABLE_ID = `gcp_billing_export_resource_v1_${CLOUD_BILLING_TABLE_SUFFIX}`;
 const CLOUD_BILLING_CUD_TABLE_ID = 'cud_subscriptions_export';
+const CLOUD_BILLING_NOTIFICATION_RETENTION_LIMIT = 200;
+const CLOUD_BILLING_NOTIFICATION_PRUNE_BATCH = 25;
 const CLOUD_BILLING_OPERATIONAL_BUDGET_NAMES = new Set([
     'firebase project sisweb-7ce82'
 ]);
@@ -2306,6 +2308,51 @@ function shouldPreferIncomingBillingBudget(previousSummary, normalized) {
     return true;
 }
 
+async function enforceCloudBillingNotificationRetention() {
+    const retentionRef = admin.database().ref('system/googleCloudBilling/notificationRetention');
+    const countRef = retentionRef.child('count');
+    const countResult = await countRef.transaction((current) => {
+        const parsed = Number.parseInt(current, 10);
+        return (Number.isFinite(parsed) && parsed >= 0 ? parsed : 0) + 1;
+    });
+    const currentCount = Number.parseInt(countResult.snapshot.val(), 10) || 0;
+    if (currentCount <= CLOUD_BILLING_NOTIFICATION_RETENTION_LIMIT) {
+        await retentionRef.update({
+            limit: CLOUD_BILLING_NOTIFICATION_RETENTION_LIMIT,
+            updatedAt: new Date().toISOString()
+        });
+        return;
+    }
+
+    const overflow = Math.min(
+        Math.max(currentCount - CLOUD_BILLING_NOTIFICATION_RETENTION_LIMIT, 1),
+        CLOUD_BILLING_NOTIFICATION_PRUNE_BATCH
+    );
+    const notificationsRef = admin.database().ref('system/googleCloudBilling/budgetNotifications');
+    const oldestSnap = await notificationsRef
+        .orderByChild('receivedAt')
+        .limitToFirst(overflow)
+        .get();
+    const removals = {};
+    oldestSnap.forEach((childSnap) => {
+        removals[childSnap.key] = null;
+    });
+    const removedCount = Object.keys(removals).length;
+    if (removedCount > 0) {
+        await notificationsRef.update(removals);
+        await countRef.transaction((current) => {
+            const parsed = Number.parseInt(current, 10);
+            return Math.max(0, (Number.isFinite(parsed) ? parsed : 0) - removedCount);
+        });
+    }
+    await retentionRef.update({
+        limit: CLOUD_BILLING_NOTIFICATION_RETENTION_LIMIT,
+        lastPrunedCount: removedCount,
+        lastPrunedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    });
+}
+
 function normalizeBigQueryNumber(value, fallback = 0) {
     if (value && typeof value === 'object' && Object.prototype.hasOwnProperty.call(value, 'value')) {
         return normalizeBigQueryNumber(value.value, fallback);
@@ -2558,7 +2605,12 @@ exports.ingestCloudBillingBudgetNotification = onMessagePublished(
         const message = event && event.data && event.data.message ? event.data.message : (event && event.data ? event.data : {});
         const normalized = normalizeCloudBillingBudgetMessage(message);
         const eventId = sanitizeText((event && event.id) || crypto.randomBytes(8).toString('hex'), crypto.randomBytes(8).toString('hex'));
-        const previousSummarySnap = await admin.database().ref('system/googleCloudBilling/summary').get().catch(() => null);
+        const notificationPath = `system/googleCloudBilling/budgetNotifications/${eventId}`;
+        const [previousSummarySnap, previousNotificationSnap] = await Promise.all([
+            admin.database().ref('system/googleCloudBilling/summary').get().catch(() => null),
+            admin.database().ref(notificationPath).get().catch(() => null)
+        ]);
+        if (previousNotificationSnap && previousNotificationSnap.exists()) return null;
         const previousSummary = previousSummarySnap && previousSummarySnap.exists() ? (previousSummarySnap.val() || {}) : {};
         const preferIncomingBudget = shouldPreferIncomingBillingBudget(previousSummary, normalized);
         const isIncomingOperationalBudget = isOperationalCloudBillingBudgetName(normalized.budgetDisplayName);
@@ -2581,7 +2633,9 @@ exports.ingestCloudBillingBudgetNotification = onMessagePublished(
         if (summaryUsagePercent >= 1) summarySeverity = 'error';
         else if (summaryUsagePercent >= 0.8) summarySeverity = 'warning';
         const updates = {};
-        updates[`system/googleCloudBilling/budgetNotifications/${eventId}`] = normalized;
+        const budgetKey = sanitizeFirebaseKey(normalized.budgetDisplayName || 'google-cloud-billing');
+        updates[notificationPath] = normalized;
+        updates[`system/googleCloudBilling/latestBudgetNotifications/${budgetKey}`] = normalized;
         updates['system/googleCloudBilling/summary'] = {
             ...(previousSummary && typeof previousSummary === 'object' ? previousSummary : {}),
             source: hasBigQueryCost ? 'cloud-billing-budget-pubsub+bigquery-export' : 'cloud-billing-budget-pubsub',
@@ -2627,6 +2681,7 @@ exports.ingestCloudBillingBudgetNotification = onMessagePublished(
             updates['system/operationalAlerts/firebaseBilling/cloudBudget'] = null;
         }
         await admin.database().ref().update(updates);
+        await enforceCloudBillingNotificationRetention();
         return null;
     }
 );

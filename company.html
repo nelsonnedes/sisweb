@@ -10,7 +10,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
     <script src="src/services/firebaseService.js?v=2026-06-11-company-profile-permissions-v3"></script>
@@ -873,7 +872,6 @@
     <script type="module" src="database-utils.js"></script>
     <script type="module">
         const authService = window.firebaseService.authService;
-        const dbService = window.firebaseService.dbService;
         const getAllImpl = async function(key) {
             let data = null;
             if (typeof window.getDataAsync === 'function') {

@@ -6,7 +6,7 @@
 
 // Importar configuração do Firebase
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getDatabase, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { getDatabase, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 import { 
     getAuth, 
     createUserWithEmailAndPassword,
@@ -1096,6 +1096,35 @@ async function loadFromFirebase(path) {
             data: null
         };
     }
+}
+
+async function loadRecentFromFirebase(path, orderBy = 'createdAt', maxItems = 50) {
+    const cleanPath = String(path || '').replace(/^\/+|\/+$/g, '');
+    const safeOrderBy = String(orderBy || 'createdAt').trim();
+    const safeLimit = Math.max(1, Math.min(200, Number.parseInt(maxItems, 10) || 50));
+    if (!cleanPath || !/^[-A-Za-z0-9_/]+$/.test(cleanPath)) {
+        throw new Error('Caminho inválido para consulta limitada.');
+    }
+    if (!safeOrderBy || !/^[-A-Za-z0-9_/]+$/.test(safeOrderBy)) {
+        throw new Error('Ordenação inválida para consulta limitada.');
+    }
+    const status = isFirebaseOperational();
+    if (!status.operational) {
+        throw new Error(`Firebase não operacional: ${status.message}`);
+    }
+    tenantAuditLog('READ_LIMITED', cleanPath, cleanPath, 'firebaseService');
+    const snapshot = await get(query(
+        child(ref(db), cleanPath),
+        orderByChild(safeOrderBy),
+        limitToLast(safeLimit)
+    ));
+    return {
+        success: true,
+        data: snapshot.exists() ? snapshot.val() : null,
+        source: 'firebase',
+        path: cleanPath,
+        limit: safeLimit
+    };
 }
 
 async function getAll(path) {
@@ -2946,6 +2975,7 @@ window.firebaseService = {
     isFirebaseOperational: isFirebaseOperational,
     authPersistenceReady: authPersistenceReady,
     loadFromFirebase: loadFromFirebase,
+    loadRecentFromFirebase: loadRecentFromFirebase,
     saveToFirebase: saveToFirebase,
     updatePaths: updatePaths,
     getTenantId: getTenantId,

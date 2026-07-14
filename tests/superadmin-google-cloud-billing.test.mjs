@@ -13,6 +13,9 @@ test('backend ingere notificacoes programaticas de budget do Google Cloud Billin
   assert.match(functionsIndex, /topic: CLOUD_BILLING_BUDGET_TOPIC/);
   assert.match(functionsIndex, /normalizeCloudBillingBudgetMessage/);
   assert.match(functionsIndex, /system\/googleCloudBilling\/budgetNotifications/);
+  assert.match(functionsIndex, /CLOUD_BILLING_NOTIFICATION_RETENTION_LIMIT = 200/);
+  assert.match(functionsIndex, /enforceCloudBillingNotificationRetention/);
+  assert.match(functionsIndex, /latestBudgetNotifications/);
   assert.match(functionsIndex, /system\/googleCloudBilling\/summary/);
   assert.match(functionsIndex, /system\/operationalAlerts\/firebaseBilling\/cloudBudget/);
   assert.match(functionsIndex, /CLOUD_BILLING_PROJECT_ID = 'sisweb-7ce82'/);
@@ -67,7 +70,7 @@ test('sininho superadmin consome budget e resumo do Google Cloud Billing', () =>
   const menu = read('menu-component.js');
 
   assert.match(menu, /system\/googleCloudBilling\/summary/);
-  assert.match(menu, /system\/googleCloudBilling\/budgetNotifications/);
+  assert.doesNotMatch(menu, /system\/googleCloudBilling\/budgetNotifications/);
   assert.match(menu, /admin_google_cloud_budget/);
   assert.match(menu, /Google Cloud • Orçamento/);
   assert.match(menu, /alertThresholdExceeded/);

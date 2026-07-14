@@ -84,6 +84,19 @@ test('firebase hosting nao publica ferramentas internas e backups', () => {
   assert.equal(ignore.includes('subscription-status.html'), false);
 });
 
+test('rotas ativas nao inicializam o Firestore desativado', () => {
+  const firebaseConfig = JSON.parse(read('firebase.json'));
+  const company = read('company.html');
+  const romaneioTora = read('romaneiotora.html');
+  const legacyCompanyService = read('src/services/firebaseService.js');
+
+  assert.equal(Object.hasOwn(firebaseConfig, 'firestore'), false);
+  assert.doesNotMatch(company, /firebase-firestore-compat\.js/);
+  assert.doesNotMatch(romaneioTora, /firebase-firestore-compat\.js/);
+  assert.doesNotMatch(legacyCompanyService, /firebase\.firestore\s*\(/);
+  assert.doesNotMatch(legacyCompanyService, /firestoreService/);
+});
+
 test('firebase hosting bloqueia segredos, dumps e dados reais', () => {
   const firebaseConfig = JSON.parse(read('firebase.json'));
   const ignore = firebaseConfig.hosting.ignore;

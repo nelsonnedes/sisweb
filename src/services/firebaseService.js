@@ -12,7 +12,6 @@ const firebaseConfig = {
 
 const app = !firebase.apps.length ? firebase.initializeApp(firebaseConfig) : firebase.getApp();
 const authService = firebase.auth();
-const firestoreService = typeof firebase.firestore === 'function' ? firebase.firestore() : null;
 const rtdbService = typeof firebase.database === 'function' ? firebase.database() : null;
 let tenantId = null;
 
@@ -543,7 +542,6 @@ async function createCompanyAndSetClaim(companyData, userUid) {
 window.firebaseService = {
     app,
     authService,
-    dbService: firestoreService,
     rtdbService,
     isOperational,
     isFirebaseOperational,

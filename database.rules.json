@@ -293,7 +293,12 @@
 
     "system": {
       ".read": "auth != null && auth.token.superadmin == true",
-      ".write": false
+      ".write": false,
+      "googleCloudBilling": {
+        "budgetNotifications": {
+          ".indexOn": ["receivedAt"]
+        }
+      }
     }
   }
 }
