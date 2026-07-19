@@ -20,7 +20,7 @@ test('perfil do usuario usa patch seguro e exibe campos compativeis com cadastro
 
   assert.match(profile, /USER_PROFILE_ASSET_VERSION = '2026-06-11-profile-admin-v1'/);
   assert.match(profile, /auth\.js\?v=2026-06-11-profile-admin-v1/);
-  assert.match(profile, /menu-component\.js\?v=2026-07-01-menu-global-dedupe-v1/);
+  assert.match(profile, /menu-component\.js\?v=2026-07-01-alerts-overflow-fix-v1/);
   assert.match(profile, /firebaseService\.js\?v=2026-06-11-profile-admin-v1/);
   assert.match(profile, /window\.firebaseService = \{ \.\.\.window\.firebaseService, \.\.\.svc \}/);
   assert.match(profile, /id="profileUid"/);

@@ -998,6 +998,63 @@ function extractFirebaseStoragePathFromUrlServer(pathOrUrl) {
     }
 }
 
+function normalizeCompanyLogoStoragePath(companyId, pathOrUrl) {
+    const prefix = `companies/${companyId}/profile/logo/`;
+    const storagePath = extractFirebaseStoragePathFromUrlServer(pathOrUrl);
+    if (!storagePath) return '';
+    if (storagePath.includes('..') || storagePath.includes('//') || !storagePath.startsWith(prefix)) {
+        throw new functions.https.HttpsError('invalid-argument', 'Caminho da logo não pertence à empresa informada.');
+    }
+    return storagePath;
+}
+
+function normalizeCompanyLogoProfilePayload(companyId, logoPayload) {
+    const payload = logoPayload && typeof logoPayload === 'object' ? { ...logoPayload } : {};
+    const keepPath = normalizeCompanyLogoStoragePath(companyId, payload.logoStoragePath || payload.logoPath || '');
+    if (!keepPath) return payload;
+    payload.logoStoragePath = keepPath;
+    payload.logoPath = keepPath;
+    if (!payload.logo || !/^https?:\/\//i.test(String(payload.logo))) payload.logo = keepPath;
+    return payload;
+}
+
+async function reconcileCompanyLogoObjects(companyId, keepPath) {
+    const prefix = `companies/${companyId}/profile/logo/`;
+    keepPath = normalizeCompanyLogoStoragePath(companyId, keepPath);
+    if (!keepPath) {
+        return { attempted: false, deletedCount: 0, failedCount: 0 };
+    }
+
+    let files;
+    try {
+        [files] = await admin.storage().bucket().getFiles({ prefix });
+    } catch (error) {
+        console.error('Falha ao listar logos antigas da empresa para reconciliação.', {
+            companyId,
+            code: error && error.code ? String(error.code) : ''
+        });
+        return { attempted: true, deletedCount: 0, failedCount: 1 };
+    }
+
+    const staleFiles = files.filter((file) => file.name !== keepPath);
+    const results = await Promise.allSettled(
+        staleFiles.map((file) => file.delete({ ignoreNotFound: true }))
+    );
+    const failedCount = results.filter((result) => result.status === 'rejected').length;
+    if (failedCount) {
+        console.error('Falha parcial ao remover logos antigas da empresa.', {
+            companyId,
+            attemptedCount: staleFiles.length,
+            failedCount
+        });
+    }
+    return {
+        attempted: true,
+        deletedCount: results.length - failedCount,
+        failedCount
+    };
+}
+
 function sanitizeTransactionMeta(rawMeta) {
     const meta = rawMeta && typeof rawMeta === 'object' ? rawMeta : {};
     const card = meta.card && typeof meta.card === 'object' ? meta.card : {};
@@ -1953,7 +2010,7 @@ exports.upsertCompanyProfile = https.onCall(async (data, context) => {
             );
         }
     }
-    const logoPayload = sanitizeLogoProfilePayload(payload, current);
+    const logoPayload = normalizeCompanyLogoProfilePayload(companyId, sanitizeLogoProfilePayload(payload, current));
     const extraProfilePayload = sanitizeCompanyProfileExtraPayload(payload, current);
     const geoProfilePayload = sanitizeCompanyGeolocationPayload(payload, current);
     const nextProfile = {
@@ -1974,7 +2031,8 @@ exports.upsertCompanyProfile = https.onCall(async (data, context) => {
         updatedBy: context.auth.uid
     };
     await profileRef.set(nextProfile);
-    return { success: true, companyId, profile: nextProfile };
+    const logoCleanup = await reconcileCompanyLogoObjects(companyId, nextProfile.logoStoragePath || nextProfile.logoPath || '');
+    return { success: true, companyId, profile: nextProfile, logoCleanup };
 });
 
 exports.updateMyCompanyProfile = https.onCall(async (data, context) => {
@@ -2003,7 +2061,7 @@ exports.updateMyCompanyProfile = https.onCall(async (data, context) => {
         ? currentSnap.val()
         : {};
     const preservedCnpj = sanitizeText(current.cnpj || current.cnpjCpf || current.cpfCnpj || current.documento || '', '');
-    const logoPayload = sanitizeLogoProfilePayload(payload, current);
+    const logoPayload = normalizeCompanyLogoProfilePayload(companyId, sanitizeLogoProfilePayload(payload, current));
     const extraProfilePayload = sanitizeCompanyProfileExtraPayload(payload, current);
     const geoProfilePayload = sanitizeCompanyGeolocationPayload(payload, current);
     const nextProfile = {
@@ -2024,7 +2082,8 @@ exports.updateMyCompanyProfile = https.onCall(async (data, context) => {
         updatedBy: uid
     };
     await profileRef.set(nextProfile);
-    return { success: true, companyId, profile: nextProfile };
+    const logoCleanup = await reconcileCompanyLogoObjects(companyId, nextProfile.logoStoragePath || nextProfile.logoPath || '');
+    return { success: true, companyId, profile: nextProfile, logoCleanup };
 });
 
 function normalizeSelfProfilePayload(payload) {
@@ -4347,7 +4406,8 @@ exports.grantReadOnlyGrace = https.onCall(async (_data, context) => {
 
     const subscription = user.subscription && typeof user.subscription === 'object' ? user.subscription : {};
     const endDate = subscription.endDate ? parseDateSafe(subscription.endDate) : null;
-    const isActive = (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trial_active') || (subscription.active === true && endDate && endDate.getTime() > Date.now());
+    const activeMarker = user.subscriptionStatus === 'active' || subscription.active === true;
+    const isActive = activeMarker && (!endDate || endDate.getTime() > Date.now());
     if (isActive) {
         throw new functions.https.HttpsError('failed-precondition', 'Assinatura ativa não requer modo leitura.');
     }
@@ -6074,3 +6134,13 @@ exports.nf_salvarConfiguracaoFiscal = nfFunctions.nf_salvarConfiguracaoFiscal;
 exports.nf_configurarCertNuvem = nfFunctions.nf_configurarCertNuvem;
 exports.nf_obterResumoCertificadoFiscal = nfFunctions.nf_obterResumoCertificadoFiscal;
 exports.nf_obterConfiguracaoFiscal = nfFunctions.nf_obterConfiguracaoFiscal;
+
+const financeFunctions = require('./finance-functions');
+financeFunctions.configure({ isCallerSuperAdmin });
+exports.financeNextSequence = financeFunctions.financeNextSequence;
+exports.financeCreateAccounts = financeFunctions.financeCreateAccounts;
+exports.financeUpdateAccount = financeFunctions.financeUpdateAccount;
+exports.financeDeleteAccount = financeFunctions.financeDeleteAccount;
+exports.financeUpdatePaymentReceipt = financeFunctions.financeUpdatePaymentReceipt;
+exports.financeRegisterPayment = financeFunctions.financeRegisterPayment;
+exports.financeDeletePayment = financeFunctions.financeDeletePayment;

@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Folha de Pagamento - Sistema SisWeb</title>
+    <script>
+        if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
+            document.write('<script src="../auth-performance-diagnostics.js?v=2026-07-14-auth-perf-baseline-v1"><\/script>');
+        }
+    </script>
     
     <!-- ✅ MESMOS IMPORTS DO ROMANEIOPCT -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -17,7 +22,7 @@
     <link rel="stylesheet" href="../ui-components.css">
     <link rel="stylesheet" href="folha.css">
     <link rel="stylesheet" href="folha-menu-original-completo.css">
-    <script src="../menu-component.js?v=2026-07-01-menu-global-dedupe-v1"></script>
+    <script src="../menu-component.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
     <!-- 🎨 LOADING E CONEXÃO OTIMIZADOS -->
     <link rel="stylesheet" href="folha-loading-styles.css">
     <style>
@@ -32,6 +37,10 @@
         import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getDatabase } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
         import { getAuth, onAuthStateChanged, signInAnonymously, setPersistence, browserLocalPersistence, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        const authPerfPayroll = (() => {
+            try { return window.__SISWEB_AUTH_PERF__ || null; } catch (_) { return null; }
+        })();
+        try { authPerfPayroll?.phase('firebase_init_start', 'payroll_page', 'started', 0); } catch (_) {}
         
         const firebaseConfig = {
             // ✅ MESMAS CREDENCIAIS DO ROMANEIO TL (compatível com PCT)
@@ -68,6 +77,7 @@
 
         window.database = getDatabase(app);
         const auth = getAuth(app);
+        try { authPerfPayroll?.phase('firebase_init_ready', 'payroll_page', 'ready', 0); } catch (_) {}
         // Expor objetos/funções necessárias para integração com guardas
         window.firebaseAuth = auth;
         window.firebaseOnAuthStateChanged = onAuthStateChanged;
@@ -81,11 +91,7 @@
         try { window._FIREBASE_APP = app; } catch(e) {}
         
         // ✅ TESTE DE CONEXÃO
-        console.log('🔥 Firebase inicializado:', {
-            app: !!app,
-            database: !!window.database,
-            databaseURL: firebaseConfig.databaseURL
-        });
+        console.log('🔥 Firebase inicializado para a Folha');
         
         // ✅ TESTE DE CONECTIVIDADE
         setTimeout(() => {
@@ -96,10 +102,8 @@
                 try {
                     // ✅ CORREÇÃO: Firebase v10 usa ref() como função importada
                     console.log('✅ Firebase database disponível para uso');
-                    console.log('📊 Tipo do database:', typeof window.database);
-                    console.log('📊 Propriedades do database:', Object.keys(window.database || {}));
                 } catch (error) {
-                    console.error('❌ Erro ao verificar Firebase database:', error);
+                    console.error('❌ Erro ao verificar Firebase database:', error && error.code ? error.code : 'unknown');
                 }
             } else {
                 console.error('❌ Firebase database não disponível');
@@ -108,21 +112,18 @@
         
         // ✅ TESTE ADICIONAL APÓS 3 SEGUNDOS
         setTimeout(() => {
-            console.log('🔍 Status final do Firebase:', {
-                database: !!window.database,
-                databaseType: typeof window.database,
-                databaseKeys: window.database ? Object.keys(window.database) : 'N/A',
-                documentReadyState: document.readyState
-            });
+            console.log(window.database ? '🔍 Firebase disponível após estabilização' : '🔍 Firebase indisponível após estabilização');
         }, 3000);
 
         // 🔐 AUTENTICAÇÃO PARA ESCRITA (regras com login habilitadas)
         let __anonAuthInFlight = false;
         // Desabilitar tentativa de login anônimo por padrão
         if (typeof window.ENABLE_ANON_AUTH === 'undefined') window.ENABLE_ANON_AUTH = false;
+        try { authPerfPayroll?.listener('auth', 'add', 'payroll_page', 0); } catch (_) {}
         onAuthStateChanged(auth, (user) => {
+            try { authPerfPayroll?.auth(user ? 'authenticated' : 'unauthenticated', 'payroll_page', 0); } catch (_) {}
             if (user) {
-                console.log('🔐 Usuário autenticado:', user.uid);
+                console.log('🔐 Usuário autenticado');
                 window.firebaseAuthUser = user;
             } else {
                 console.log('ℹ️ Usuário não autenticado. Aguardando login via UI.');
@@ -261,40 +262,6 @@
         });
       })();
     </script>
-    <!-- 🌐 Handler Global de Erros e Diagnóstico -->
-    <script>
-        (function(){
-            const logs = [];
-            function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-            function render(){
-                const el = document.getElementById('problems_and_diagnostics');
-                if (!el) return;
-                if (!logs.length) {
-                    el.innerHTML = '<div style="color:#2e7d32;">Nenhum erro capturado até agora.</div>';
-                    const diagSec = document.getElementById('diagnostico-section');
-                    if (diagSec) diagSec.style.display = 'none';
-                    return;
-                }
-                const items = logs.map(l => `<li>${esc(l.time)} — ${esc(l.msg)} ${l.src? '['+esc(l.src)+']':''} ${l.line? ('@'+l.line+':'+(l.col||'')) : ''}</li>`).join('');
-                el.innerHTML = `<ul style="font-size:12px;color:#c00;">${items}</ul>`;
-                const diagSec = document.getElementById('diagnostico-section');
-                if (diagSec) diagSec.style.display = 'block';
-            }
-            window.addEventListener('error', function(e){
-                const src = e.filename || (e.target && e.target.src) || '';
-                const msg = e.message || (e.error && e.error.message) || 'Erro';
-                logs.push({ time: new Date().toISOString(), msg, src, line: e.lineno, col: e.colno });
-                render();
-            }, true);
-            window.addEventListener('unhandledrejection', function(e){
-                const reason = e.reason || {};
-                const msg = (reason && reason.message) ? reason.message : String(reason);
-                logs.push({ time: new Date().toISOString(), msg: 'UnhandledPromiseRejection: ' + msg, src: '', line: 0, col: 0 });
-                render();
-            });
-            document.addEventListener('DOMContentLoaded', render);
-        })();
-    </script>
 </head>
 <body>
     <div class="container">
@@ -363,14 +330,6 @@
                         Ver no Sistema Financeiro
                     </a>
                 </div>
-            </div>
-        </section>
-
-        <!-- 🧪 DIAGNÓSTICO EM TEMPO REAL (oculto por padrão) -->
-        <section id="diagnostico-section" style="display:none;">
-            <h2>Diagnóstico</h2>
-            <div id="problems_and_diagnostics" style="background:#fff3cd; border:1px solid #ffeeba; padding:10px; border-radius:4px; color:#856404;">
-                Carregando diagnóstico...
             </div>
         </section>
 
@@ -458,10 +417,7 @@
                     if (window.folhaFuncionarios && typeof window.folhaFuncionarios.openFuncionariosListModal === 'function') {
                         return window.folhaFuncionarios.openFuncionariosListModal();
                     }
-                    const diag = document.getElementById('problems_and_diagnostics');
-                    if (diag) {
-                        diag.innerHTML += '<div style="color:#c00;">openFuncionariosListModal não disponível no momento. Aguarde módulos carregarem.</div>';
-                    }
+                    console.warn('Lista de funcionários ainda não disponível; aguardando módulos da Folha.');
                 };
             }
 		</script>
@@ -1383,8 +1339,6 @@
     </script>
 
     <!-- Scripts na ordem otimizada -->
-    <!-- 🐛 DEBUG: Carregar ANTES de folha-utils.js -->
-    <script src="debug-folha-utils.js"></script>
     <script src="folha-utils.js"></script>
     <script src="folha-config.js"></script>
     <script src="folha-calculos.js"></script>

@@ -353,7 +353,9 @@ function saveNewClient() {
         const nowIso = new Date().toISOString();
         const originalClient = clientFormModalContext.client || {};
         const isEditMode = clientFormModalContext.mode === 'edit' && originalClient.id;
-        const documentDigits = documento.replace(/\D/g, '');
+        const documentClean = documento.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+        const isCpf = documentClean.length === 11 && /^\d{11}$/.test(documentClean);
+        const isCnpj = documentClean.length === 14 && /^[A-Z0-9]{12}\d{2}$/.test(documentClean);
         const client = {
             ...originalClient,
             id: isEditMode ? String(originalClient.id) : originalClient.id,
@@ -364,8 +366,8 @@ function saveNewClient() {
             telefone: phone,
             address,
             endereco: address,
-            cnpj: documentDigits.length === 11 ? '' : documento,
-            cpf: documentDigits.length === 11 ? documento : '',
+            cnpj: isCnpj ? documento : '',
+            cpf: isCpf ? documento : '',
             documento,
             document: documento,
             tipoPessoa,

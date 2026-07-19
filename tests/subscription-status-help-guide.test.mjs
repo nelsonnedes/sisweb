@@ -81,7 +81,7 @@ test('subscription publica inclui guia rapido com busca e lightbox de prints', (
   assert.ok(plansIdx >= 0, 'container de planos precisa existir');
   assert.ok(messageIdx > plansIdx, 'CTA da Central de Mensagens deve ficar depois dos cards de planos');
   assert.ok(guideIdx > messageIdx, 'Guia Rapido deve ficar depois da Central de Mensagens');
-  assert.match(html, /menu-component\.js\?v=2026-07-01-menu-global-dedupe-v1/);
+  assert.match(html, /menu-component\.js\?v=2026-07-01-alerts-overflow-fix-v1/);
   assert.match(html, /id="subscriptionMessageCenterButton"/);
   assert.match(html, /Abrir Central de Mensagens/);
   assert.match(html, /function openSubscriptionPublicMessageCenter\(\)/);

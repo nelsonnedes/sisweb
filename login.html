@@ -12,6 +12,11 @@
     <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
     <title>Portal de Acesso - SisWeb</title>
+    <script>
+        if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
+            document.write('<script src="auth-performance-diagnostics.js?v=2026-07-14-auth-perf-baseline-v1"><\/script>');
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     
     <!-- Script para suprimir erros de extensões do navegador -->
@@ -78,7 +83,7 @@
                             }
                             return result;
                         } catch (error) {
-                            console.error('Erro em event listener:', error);
+                            console.error('Erro em event listener:', error && error.code ? error.code : 'unknown');
                             return false;
                         }
                     };
@@ -654,7 +659,7 @@
             <div class="system-health-text" id="systemHealthText">Aguarde enquanto validamos os módulos críticos.</div>
         </div>
         
-        <form id="loginForm" onsubmit="return handleLogin(event)">
+        <form id="loginForm" method="post" onsubmit="return handleLogin(event)">
             <div class="form-group">
                 <label for="email">Email</label>
                 <div class="input-group">
@@ -695,7 +700,7 @@
             <span class="close" onclick="closeRegisterModal()">&times;</span>
             <h2 style="margin-bottom: 30px; color: #2c3e50; text-align: center;">Criar Conta</h2>
             
-            <form id="registerForm" onsubmit="return handleRegister(event)">
+            <form id="registerForm" method="post" onsubmit="return handleRegister(event)">
                 <div class="form-group">
                     <label for="regUsername">Nome Completo</label>
                     <div class="input-group">
@@ -743,7 +748,7 @@
             <span class="close" onclick="closeForgotPasswordModal()">&times;</span>
             <h2 style="margin-bottom: 30px; color: #2c3e50; text-align: center;">Recuperar Senha</h2>
             
-            <form id="forgotPasswordForm" onsubmit="return handlePasswordReset(event)">
+            <form id="forgotPasswordForm" method="post" onsubmit="return handlePasswordReset(event)">
                 <div class="form-group">
                     <label for="resetEmail">Email da Conta</label>
                     <div class="input-group">
@@ -1025,16 +1030,9 @@
             runLoginHealthCheck(false);
 
             try {
-                console.log("Attempting login for:", email);
+                console.log("Attempting login");
                 if (window._FIREBASE_CONNECTED === false) {
-                    setSystemHealth('warn', 'Reconectando serviços', 'Conexão oscilando. Aguarde enquanto restabelecemos o Firebase...');
-                    const reconnected = await waitForFirebaseConnection(4500);
-                    if (!reconnected) {
-                        errorMessage.textContent = 'Conexão instável. Não foi possível conectar ao servidor de autenticação. Tente novamente em instantes.';
-                        errorMessage.style.display = 'block';
-                        setSystemHealth('error', 'Servidor indisponível', 'Não foi possível estabelecer conexão com o Firebase.');
-                        return;
-                    }
+                    setSystemHealth('warn', 'Dados em reconexão', 'A autenticação continuará enquanto o banco em tempo real reconecta.');
                 }
                 const executeLogin = await waitForLoginExecutor();
                 if (!executeLogin) {
@@ -1072,7 +1070,7 @@
                     setSystemHealth('warn', 'Não foi possível autenticar', 'Verifique suas credenciais e tente novamente.');
                 }
             } catch (error) {
-                console.error("Login error:", error);
+                console.error("Login error:", error && error.code ? error.code : 'unknown');
                 let errorMsg = error.message || 'Erro inesperado ao fazer login.';
                 if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') {
                     errorMsg = 'Email ou senha inválidos. Confira o email digitado e tente novamente.';
@@ -1101,7 +1099,7 @@
                 // Verificar se já existe um usuário logado
                 const currentUser = await window.getCurrentUserDetails();
                 if (currentUser) {
-                    console.log("⚠️ Usuário já está logado:", currentUser.email);
+                    console.log("⚠️ Usuário já está logado");
                     try {
                         if (typeof window.__toast === 'function') {
                             window.__toast(`Você já está logado com a conta ${currentUser.email}. Faça logout primeiro.`, 'warning', { duration: 5000 });
@@ -1185,7 +1183,7 @@
                     spinner.style.display = 'none';
                 }
             } catch (error) {
-                console.error("❌ Erro no registro:", error);
+                console.error("❌ Erro no registro:", error && error.code ? error.code : 'unknown');
                 
                 // Melhorar tratamento de erros específicos
                 let errorMsg = error.message || 'Erro ao criar conta';
@@ -1239,16 +1237,7 @@
                     return;
                 }
                 
-                // Verificar se o Firebase está online
-                if (window._FIREBASE_CONNECTED === false) {
-                    console.error("❌ Firebase offline - não é possível enviar email de recuperação");
-                    errorMessage.textContent = 'Sistema offline. Não é possível enviar email de recuperação neste momento.';
-                    errorMessage.style.display = 'block';
-                    spinner.style.display = 'none';
-                    return;
-                }
-                
-                console.log("🔑 Solicitando recuperação de senha para:", email);
+                console.log("🔑 Solicitando recuperação de senha");
                 
                 // Usar Firebase para enviar email de redefinição
                 await window.firebaseService.authService.sendPasswordResetEmail(email);
@@ -1270,7 +1259,7 @@
                 }, 5000);
                 
             } catch (error) {
-                console.error("❌ Erro ao enviar email de recuperação:", error);
+                console.error("❌ Erro ao enviar email de recuperação:", error && error.code ? error.code : 'unknown');
                 
                 let mensagemErro = 'Erro ao enviar email de recuperação.';
                 
@@ -1307,8 +1296,7 @@
             createUserWithEmailAndPassword,
             signInWithEmailAndPassword,
             signOut,
-            onAuthStateChanged,
-            sendPasswordResetEmail
+            onAuthStateChanged
         } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
         import { getApps } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getDatabase, ref, set, get, remove, child, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
@@ -1384,7 +1372,7 @@
                 }
                 return true;
             } catch (error) {
-                console.error("🔥 Erro crítico de autenticação:", error);
+                console.error("🔥 Erro crítico de autenticação:", error && error.code ? error.code : 'unknown');
                 if (typeof window.showMaintenanceMessage === 'function') {
                     window.showMaintenanceMessage(`Erro ao validar autenticação: ${error.message}`);
                 }
@@ -1461,7 +1449,7 @@
                 // Verificar se já existe um usuário logado
                 const currentUser = await authService.getCurrentUser();
                 if (currentUser) {
-                    console.log("⚠️ Usuário já está logado:", currentUser.email);
+                    console.log("⚠️ Usuário já está logado");
                     try {
                         if (typeof window.__toast === 'function') {
                             window.__toast(`Você já está logado com a conta ${currentUser.email}. Faça logout primeiro.`, 'warning', { duration: 5000 });
@@ -1545,7 +1533,7 @@
                     spinner.style.display = 'none';
                 }
             } catch (error) {
-                console.error("❌ Erro no registro:", error);
+                console.error("❌ Erro no registro:", error && error.code ? error.code : 'unknown');
                 
                 // Melhorar tratamento de erros específicos
                 let errorMsg = error.message || 'Erro ao criar conta';
@@ -1599,19 +1587,10 @@
                     return;
                 }
                 
-                // Verificar se o Firebase está online
-                if (window._FIREBASE_CONNECTED === false) {
-                    console.error("❌ Firebase offline - não é possível enviar email de recuperação");
-                    errorMessage.textContent = 'Sistema offline. Não é possível enviar email de recuperação neste momento.';
-                    errorMessage.style.display = 'block';
-                    spinner.style.display = 'none';
-                    return;
-                }
-                
-                console.log("🔑 Solicitando recuperação de senha para:", email);
+                console.log("🔑 Solicitando recuperação de senha");
                 
                 // Usar Firebase para enviar email de redefinição
-                await sendPasswordResetEmail(auth, email);
+                await authService.sendPasswordResetEmail(email);
                 
                 console.log("✅ Email de recuperação enviado com sucesso");
                 
@@ -1630,7 +1609,7 @@
                 }, 5000);
                 
             } catch (error) {
-                console.error("❌ Erro ao enviar email de recuperação:", error);
+                console.error("❌ Erro ao enviar email de recuperação:", error && error.code ? error.code : 'unknown');
                 
                 let mensagemErro = 'Erro ao enviar email de recuperação.';
                 
@@ -1699,16 +1678,23 @@
             
             // Forçar logout quando vindo do menu (sair)
             if (requestedLogout) {
+                let logoutConfirmed = false;
                 try {
                     console.log("🚪 Logout solicitado via parâmetro de URL, encerrando sessão...");
+                    let logoutResult = null;
                     if (window.authService && typeof window.authService.logout === 'function') {
-                        await window.authService.logout();
+                        logoutResult = await window.authService.logout();
                     } else if (window.firebaseService && window.firebaseService.authService && typeof window.firebaseService.authService.logout === 'function') {
-                        await window.firebaseService.authService.logout();
+                        logoutResult = await window.firebaseService.authService.logout();
                     }
+                    logoutConfirmed = !!(logoutResult && logoutResult.success === true);
+                    if (!logoutConfirmed) throw new Error(logoutResult && logoutResult.error || 'Logout remoto não confirmado.');
                 } catch (e) {
                     console.warn("⚠️ Falha ao executar logout programático:", e && e.message);
-                } finally {
+                    setSystemHealth('warn', 'Logout não confirmado', 'A sessão atual foi mantida. Tente sair novamente.');
+                    return;
+                }
+                if (logoutConfirmed) {
                     try {
                         sessionStorage.clear();
                         localStorage.removeItem('currentUser');
@@ -1787,25 +1773,15 @@
             }
             
             try {
-                // Verificar Firebase disponível
                 if (window._FIREBASE_CONNECTED === false) {
-                    console.log("⚠️ Firebase offline, aguardando reconexão...");
-                    setSystemHealth('warn', 'Conexão degradada', 'Aguardando reconexão do Firebase...');
-                    const reconnected = await waitForFirebaseConnection(4500);
-                    if (!reconnected) {
-                        showMaintenanceMessage('Conexão ainda instável. Você pode tentar login manualmente ou limpar cache.');
-                        setSystemHealth('warn', 'Conexão instável', 'O sistema segue tentando reconectar em segundo plano.');
-                    } else {
-                        hideMaintenanceMessage();
-                        runLoginHealthCheck(false);
-                    }
+                    setSystemHealth('warn', 'Dados em reconexão', 'Verificando a sessão do Firebase Auth independentemente do banco em tempo real.');
                 }
                 
                 // Verificar estado de autenticação
                 const user = await authService.getCurrentUser();
                 
                 if (user) {
-                    console.log("👤 Usuário já autenticado:", user.email);
+                    console.log("👤 Usuário já autenticado");
                     const autoForceHome = shouldForceHomeFromLoginContext();
                     const isAdminSession = (window.isSuperAdminSession ? await window.isSuperAdminSession() : false)
                         || (window.hasAnyAdminPanelAccess ? await window.hasAnyAdminPanelAccess() : false);
@@ -1856,7 +1832,7 @@
                     } catch (_) {}
                 }
             } catch (error) {
-                console.error("❌ Erro ao verificar autenticação:", error);
+                console.error("❌ Erro ao verificar autenticação:", error && error.code ? error.code : 'unknown');
                 showMaintenanceMessage('Falha ao validar sessão automaticamente. Tente login manual.');
                 setSystemHealth('warn', 'Verificação parcial', 'Não foi possível validar sessão automaticamente.');
             }
@@ -2040,7 +2016,7 @@
                             addLog('⚠️ Problema de conexão. Verifique sua internet.', 'warning');
                         }
                         
-                        console.error('Erro completo:', error);
+                        console.error('Erro na recuperação de senha:', error && error.code ? error.code : 'unknown');
                     }
                     
                     return false; // Não retornar true para evitar problemas com extensões
@@ -2106,7 +2082,11 @@
             }
             for (const fn of candidates) {
                 try {
-                    await fn();
+                    const candidateResult = await fn();
+                    if (candidateResult && candidateResult.success === false) {
+                        lastError = new Error(candidateResult.error || 'Logout remoto não confirmado.');
+                        continue;
+                    }
                     return { success: true };
                 } catch (error) {
                     lastError = error;
@@ -2118,26 +2098,21 @@
         async function forceLogoutSession() {
             try {
                 console.log("🚪 Forçando logout completo...");
-                let result = await tryRemoteSignOut();
-                if (!result.success && window._FIREBASE_CONNECTED === false) {
-                    await waitForFirebaseConnection(3500, 250);
-                    result = await tryRemoteSignOut();
-                }
-                clearAllAuthLocalState();
+                const result = await tryRemoteSignOut();
                 if (!result.success && result.error) {
                     throw result.error;
                 }
+                clearAllAuthLocalState();
                 window.location.href = 'login.html?noRedirect=true';
             } catch (error) {
-                clearAllAuthLocalState();
-                console.error("❌ Erro no logout:", error);
-                setSystemHealth('warn', 'Logout parcial', 'Sessão local foi limpa. Recarregue para confirmar o logout remoto.');
-                showMaintenanceMessage('Não foi possível confirmar logout remoto imediatamente. Tente novamente em alguns segundos.');
+                console.error("❌ Erro no logout:", error && error.code ? error.code : 'unknown');
+                setSystemHealth('warn', 'Logout não confirmado', 'A sessão foi mantida para evitar estado inconsistente. Tente novamente.');
+                showMaintenanceMessage('Não foi possível confirmar o logout. Tente novamente em alguns segundos.');
                 try {
                     if (typeof window.__toast === 'function') {
-                        window.__toast("Sessão local limpa. Faça nova tentativa de logout remoto.", 'warning', { duration: 5000 });
+                        window.__toast("Logout não confirmado. A sessão atual foi mantida.", 'warning', { duration: 5000 });
                     } else if (window.Utils && window.Utils.showToast) {
-                        window.Utils.showToast("Sessão local limpa. Faça nova tentativa de logout remoto.", 'warning');
+                        window.Utils.showToast("Logout não confirmado. A sessão atual foi mantida.", 'warning');
                     }
                 } catch (_) {}
             }

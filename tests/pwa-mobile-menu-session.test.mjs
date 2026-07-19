@@ -8,7 +8,7 @@ test('menu mobile usa gatilhos completos para alertas/configuracoes e exibe sair
   const menuComponent = read('menu-component.js');
   const menuCss = read('menu.css');
 
-  assert.match(menuComponent, /const PWA_VERSION = '2026-06-11-profile-admin-v1'/);
+  assert.match(menuComponent, /const PWA_VERSION = '2026-07-01-alerts-overflow-fix-v1'/);
   assert.match(menuComponent, /class="sisweb-menu-shell"/);
   assert.match(menuComponent, /class="menu-quick-actions" aria-label="Ações rápidas"/);
   assert.ok(
@@ -48,7 +48,7 @@ test('PWA verifica updates instalados e service worker responde versao atual', (
   const menuComponent = read('menu-component.js');
   const sw = read('sw.js');
 
-  assert.match(sw, /const APP_VERSION = '2026-07-01-menu-global-dedupe-v1'/);
+  assert.match(sw, /const APP_VERSION = '2026-07-19-finance-report-origin-print-v2'/);
   assert.match(menuComponent, /window\.addEventListener\('online', \(\) => checkForUpdate\(true\)\)/);
   assert.match(menuComponent, /window\.addEventListener\('pageshow', \(\) => checkForUpdate\(true\)\)/);
   assert.match(menuComponent, /window\.setTimeout\(\(\) => checkForUpdate\(true\), 1500\)/);
@@ -73,6 +73,8 @@ test('menu principal tem escopo proprio para manter visual igual entre paginas',
   assert.match(menuComponent, /\.sisweb-menu-shell \.dropdown-content a \{[\s\S]*text-overflow: ellipsis;/);
   assert.match(menuCss, /main-menu \.sisweb-menu-shell \.menu-item \{[\s\S]*font-weight: 700;[\s\S]*border-radius: 6px;/);
   assert.match(menuCss, /main-menu \.sisweb-menu-shell \.dropdown-content \{[\s\S]*z-index: 5000;/);
+  assert.match(menuComponent, /\.sisweb-menu-shell \.alerts-panel \{[\s\S]*width: min\(420px, calc\(100vw - 24px\)\);[\s\S]*max-width: 420px;/);
+  assert.match(menuCss, /main-menu \.sisweb-menu-shell \.alerts-panel \{[\s\S]*width: min\(420px, calc\(100vw - 24px\)\);[\s\S]*max-width: 420px;/);
   assert.match(menuCss, /@media \(max-width: 1024px\) \{[\s\S]*main-menu \.sisweb-menu-shell \.menu-item \{[\s\S]*width: 100%;/);
 });
 
@@ -96,7 +98,7 @@ test('sininho superadmin alerta bloqueio de faturamento firebase no hover deskto
   assert.match(menuComponent, /target="_blank" rel="noopener noreferrer"/);
 });
 
-test('auth PWA possui sessao duravel curta e fallback passa pelo guard de assinatura', () => {
+test('auth PWA mantem cache duravel para UX sem usa-lo como autorizacao', () => {
   const auth = read('auth.js');
   const login = read('login.html');
   const menuComponent = read('menu-component.js');
@@ -109,8 +111,8 @@ test('auth PWA possui sessao duravel curta e fallback passa pelo guard de assina
   assert.match(auth, /function getUsableCachedAuthSession\(\) \{/);
   assert.match(auth, /function clearCompanyContextCache\(\) \{/);
   assert.match(auth, /async function restoreCompanyContextFromCachedUser\(user\) \{/);
-  assert.match(auth, /await restoreCompanyContextFromCachedUser\(cached\.user\)/);
-  assert.match(auth, /async function tryAllowCachedAuthSession\(source\) \{[\s\S]*enforceSubscriptionGuard\(cached\.user, window\.location\.pathname\)/);
+  assert.match(auth, /async function tryAllowCachedAuthSession\(source\) \{\s*void source;\s*return \{ allowed: false \};\s*\}/);
+  assert.doesNotMatch(auth, /return \{ allowed: true, user: cached\.user \}/);
   assert.match(auth, /const cachedAuth = await tryAllowCachedAuthSession\('pwa_cached_session'\)/);
   assert.match(auth, /persistAuthenticatedSession\(guardUserDetails, \{ source: 'firebase_guard' \}\)/);
   assert.match(auth, /window\.markSiswebSessionAuthenticated = persistAuthenticatedSession/);
@@ -181,4 +183,3 @@ test('folha lancamentos vira cards no mobile sem trocar renderizacao desktop', (
   assert.match(folhaCss, /#folhasTable \.actions-cell,[\s\S]*position: static !important;/);
   assert.match(folhaCss, /#folhasTable tbody td\[colspan\] \{[\s\S]*text-align: center;/);
 });
-

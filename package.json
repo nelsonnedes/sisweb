@@ -4,6 +4,7 @@
     "lint": "eslint \"folha_pagamento/**/*.js\" --max-warnings=0",
     "typecheck": "tsc --noEmit --allowJs folha_pagamento/folha-lancamentos.js folha_pagamento/folha-main.js folha_pagamento/folha-filtros.js folha_pagamento/folha-funcionarios.js folha_pagamento/folha-paginacao.js",
     "test": "node --test tests/*.test.mjs",
+    "test:security:emulator": "firebase emulators:exec --only database --project demo-sisweb-rbac \"node --test tests/security-rbac-emulator.test.mjs\"",
     "build:hosting": "node scripts/build-hosting.mjs",
     "deploy:hosting": "npm run build:hosting && firebase deploy --only hosting",
     "security:postdeploy": "node tools/security/post-deploy-security-check.mjs",
@@ -11,6 +12,7 @@
     "migrate:company-logos": "node scripts/migrate-company-logos-to-storage.cjs"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
     "@types/node": "^24.1.0",
     "eslint": "^9.33.0",
     "prettier": "^3.6.2",

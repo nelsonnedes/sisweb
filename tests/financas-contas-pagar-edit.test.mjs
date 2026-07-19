@@ -76,8 +76,16 @@ test('salvarContaPagar usa contrato novo de tipo e cachebuster atualizado', () =
   assert.match(js, /tipoPagamento: tipoKey/);
   assert.match(js, /tipo_pagamento: tipoKey/);
   assert.match(js, /let tipoAtual = String\(resolveFinanceTipoOperacional\(conta\) \|\| ''\)\.toLowerCase\(\)\.trim\(\);/);
+  assert.match(js, /inRangeRec\.map\(c => resolveFinanceTipoOperacional\(c\)\)/);
   assert.match(js, /inRangePag\.map\(c => resolveFinanceTipoOperacional\(c\)\)/);
+  assert.match(js, /callFinanceCallable\('financeUpdateAccount'/);
+  assert.match(js, /callFinanceCallable\('financeDeleteAccount'/);
+  assert.match(js, /callFinanceCallable\('financeUpdatePaymentReceipt'/);
+  assert.match(js, /updateFinanceAccountAuthoritative\('pagar', contaOriginal, conta\)/);
+  assert.match(js, /updateFinanceAccountAuthoritative\('receber', contaOriginal, conta\)/);
+  assert.doesNotMatch(js, /saveToFirebase\(`financas\/(?:receber|pagar)\/\$\{mkDel\}`/);
+  assert.doesNotMatch(js, /salvarContaFinanceiraPersistida/);
   assert.doesNotMatch(js, /conta\.categoria = getBaseCategoriaKeys\(\)\.includes\(categoriaKey\) \? categoriaKey : 'outros';/);
-  assert.match(html, /financas\.js\?v=2026-07-01-finance-pay-edit-v1/);
-  assert.match(sw, /const APP_VERSION = '2026-07-01-menu-global-dedupe-v1'/);
+  assert.match(html, /financas\.js\?v=2026-07-19-finance-report-origin-print-v2/);
+  assert.match(sw, /const APP_VERSION = '2026-07-19-finance-report-origin-print-v2'/);
 });

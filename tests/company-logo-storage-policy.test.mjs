@@ -20,6 +20,86 @@ test('company logo flow is Storage-first and does not persist new base64 payload
   assert.doesNotMatch(companyHtml, /salvando logo como base64/i);
   assert.doesNotMatch(companyHtml, /usando armazenamento local/i);
   assert.doesNotMatch(functionsIndex, /payload\.logoBase64|input\.logoBase64/);
+  assert.match(companyHtml, /qrcode\.min\.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC\/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2\/bMnU" crossorigin="anonymous"/);
+});
+
+test('company page rejects failed envelopes, external redirects and unsafe action ids', () => {
+  const companyHtml = read('company.html');
+  const helper = companyHtml.match(/function normalizeSameOriginPathTarget[\s\S]*?(?=\n\s*function getCompanyOnboardingReturnTarget)/)?.[0];
+
+  assert.match(companyHtml, /if \(raw && raw\.success === false\) return \[\];/);
+  assert.doesNotMatch(companyHtml, /if \(redirect\) return redirect;/);
+  assert.equal((companyHtml.match(/escapeHtml\(JSON\.stringify\(companyId(?:Raw)?\)\)/g) || []).length, 2);
+  assert.doesNotMatch(companyHtml, /onclick="(?:editCompany|deleteCompany)\('\$\{safeCompanyId\}'\)"/);
+  assert.ok(helper, 'normalizador de redirect interno precisa existir');
+
+  const context = {
+    URL,
+    window: { location: { origin: 'https://sisweb.example' } }
+  };
+  vm.createContext(context);
+  vm.runInContext(`${helper}
+    this.targets = {
+      relative: normalizeSameOriginPathTarget('subscription.html?plan=pro#checkout'),
+      rooted: normalizeSameOriginPathTarget('/index.html'),
+      external: normalizeSameOriginPathTarget('https://evil.example/phish'),
+      protocolRelative: normalizeSameOriginPathTarget('//evil.example/phish'),
+      javascript: normalizeSameOriginPathTarget('javascript:alert(1)'),
+      backslash: normalizeSameOriginPathTarget('\\\\evil.example\\phish')
+    };`, context);
+
+  assert.equal(context.targets.relative, '/subscription.html?plan=pro#checkout');
+  assert.equal(context.targets.rooted, '/index.html');
+  assert.equal(context.targets.external, '');
+  assert.equal(context.targets.protocolRelative, '');
+  assert.equal(context.targets.javascript, '');
+  assert.equal(context.targets.backslash, '');
+});
+
+test('company logo cleanup is deferred until profile persistence succeeds', () => {
+  const companyHtml = read('company.html');
+  const adminMain = read('scripts/admin/admin-main.js');
+  const legacyService = read('src/services/firebaseService.js');
+  const functionsIndex = read('functions/index.js');
+
+  assert.match(legacyService, /const previousPathCandidate = String\(/);
+  assert.match(legacyService, /const previousPath = extractStoragePathFromUrl\(previousPathCandidate\)/);
+  assert.match(legacyService, /previousStoragePath/);
+  const uploadBody = legacyService.match(/async function uploadCompanyLogo[\s\S]*?async function deleteStorageFile/)?.[0] || '';
+  assert.doesNotMatch(uploadBody, /deleteStorageFile\(previousPath\)/);
+  assert.doesNotMatch(companyHtml, /cleanupReplacedCompanyLogo/);
+  assert.doesNotMatch(companyHtml, /firebaseService\.storage\.delete/);
+  assert.doesNotMatch(adminMain, /pendingPreviousLogoStoragePath|removePreviousLogo/);
+  assert.match(functionsIndex, /await profileRef\.set\(nextProfile\);[\s\S]*await reconcileCompanyLogoObjects\(companyId, nextProfile\.logoStoragePath/);
+});
+
+test('company logo reconciliation is tenant-scoped and runs after profile persistence', () => {
+  const functionsIndex = read('functions/index.js');
+  const helper = functionsIndex.match(/async function reconcileCompanyLogoObjects[\s\S]*?(?=\nfunction |\nasync function |\nexports\.)/)?.[0] || '';
+  const selfUpdate = functionsIndex.match(/exports\.updateMyCompanyProfile[\s\S]*?(?=\nfunction normalizeSelfProfilePayload)/)?.[0] || '';
+
+  assert.match(helper, /const prefix = `companies\/\$\{companyId\}\/profile\/logo\/`/);
+  assert.match(helper, /getFiles\(\{ prefix \}\)/);
+  assert.match(helper, /file\.name !== keepPath/);
+  assert.match(helper, /Promise\.allSettled/);
+  assert.match(selfUpdate, /await profileRef\.set\(nextProfile\);[\s\S]*await reconcileCompanyLogoObjects\(companyId, nextProfile\.logoStoragePath/);
+});
+
+test('active print modules consume tenant-scoped company identity', () => {
+  const modules = [
+    ['vendas.js', /getCompanyProfileForReport/],
+    ['compras.js', /getCompanyProfileForReport/],
+    ['estoque.js', /getCompanyProfileForReport/],
+    ['financas.js', /getCompanyProfileForReport/],
+    ['mdf-e.js', /getCompanyProfileForReport/],
+    ['folha_pagamento/folha-relatorios.js', /getCompanyProfileForReport/],
+    ['modules/reports/imprimir-romaneio.js', /getCompanyProfileForReport/],
+    ['modules/romaneiopct/imprimir-romaneio-pct.js', /getCompanyProfileForReport/]
+  ];
+
+  modules.forEach(([path, contract]) => {
+    assert.match(read(path), contract, `${path} precisa usar perfil empresarial tenant-scoped`);
+  });
 });
 
 test('company logo DataURL callable is tenant-scoped and avoids browser Storage CORS', () => {
@@ -235,7 +315,7 @@ test('login clears transient Firebase connection warnings after reconnect', () =
 
   assert.match(firebaseService, /notifyConnectionChange/);
   assert.match(firebaseService, /sisweb:firebase-connection/);
-  assert.match(firebaseService, /connected: isConnected/);
+  assert.match(firebaseService, /connected: rtdbConnected/);
   assert.match(login, /function clearTransientConnectionWarnings/);
   assert.match(login, /hasExplicitMaintenanceContext/);
   assert.match(login, /window\.addEventListener\('sisweb:firebase-connection'/);

@@ -112,4 +112,20 @@ describe('Lâmina de Cobrança PIX e Engine PIX Compartilhada', () => {
         assert.equal(helpers.shouldShowBoletoLamina({ tipo: 'pagar', tipoPagamento: 'boleto' }, 'pagar'), false);
         assert.equal(helpers.shouldShowBoletoLamina({ tipo: 'boleto' }, 'receber'), true);
     });
+
+    it('deve reutilizar o perfil tenant-safe preparado pelo Financeiro', () => {
+        const financeSource = read('financas.js');
+        const firebaseServiceSource = read('firebaseService.js');
+
+        assert.match(financeSource, /async function abrirBoletoPixLamina[\s\S]*const empresa = await prepareFinanceReportCompany\(\)/);
+        assert.doesNotMatch(financeSource, /loadFromFirebase\(`companies\/\$\{currentCompanyId\}\/profile`\)/);
+        assert.match(firebaseServiceSource, /const pixChaveCobranca = firstReportValue\(source\.pixChaveCobranca\)/);
+        assert.match(firebaseServiceSource, /normalized\.pixChaveCobranca = pixChaveCobranca/);
+        assert.match(firebaseServiceSource, /normalized\.pixTipoChaveCobranca = pixTipoChaveCobranca/);
+        assert.match(firebaseServiceSource, /normalized\.pixFavorecidoCobranca = pixFavorecidoCobranca/);
+        assert.match(firebaseServiceSource, /normalized\.pixBancoCobranca = pixBancoCobranca/);
+        const pdfSource = read('js/commerce-boleto-pix.js');
+        assert.match(pdfSource, /company\.logoDataUrl/);
+        assert.match(pdfSource, /getPdfImageFormat\(logoDataUrl\)/);
+    });
 });

@@ -80,12 +80,12 @@ test('vendas estorna financeiro ao voltar pedido para pendente ou cancelado', as
 
   const updates = helpers.montarUpdatesRemocaoContasReceberVenda(vinculadas);
   assert.equal(updates['financas/receber/2026-05/CR_PED17762596576691544_001'], null);
-  assert.equal(updates['financas/receber/CR_PED17762596576691544_001'], null);
+  assert.equal(updates['financas/receber/CR_PED17762596576691544_001'], undefined);
   assert.equal(updates['contasReceber/2026-05/CR_PED17762596576691544_001'], null);
 
   const updatesPermitidosProducao = helpers.montarUpdatesRemocaoContasReceberVenda(vinculadas, { includeLegacy: false });
   assert.equal(updatesPermitidosProducao['financas/receber/2026-05/CR_PED17762596576691544_001'], null);
-  assert.equal(updatesPermitidosProducao['financas/receber/CR_PED17762596576691544_001'], null);
+  assert.equal(updatesPermitidosProducao['financas/receber/CR_PED17762596576691544_001'], undefined);
   assert.equal(
     updatesPermitidosProducao['contasReceber/2026-05/CR_PED17762596576691544_001'],
     undefined,
@@ -95,7 +95,7 @@ test('vendas estorna financeiro ao voltar pedido para pendente ou cancelado', as
 
 test('vendas versiona script para derrubar cache da correcao financeira', () => {
   const html = read('vendas.html');
-  assert.match(html, /vendas\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
+  assert.match(html, /vendas\.js\?v=2026-07-17-finance-canonical-v2/);
 });
 
 test('vendas evita falso sucesso se estorno financeiro nao for atomico', () => {

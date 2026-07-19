@@ -15,6 +15,14 @@ try {
     console.warn('Firebase service não disponível:', error.message);
 }
 const runtimeMemoryStore = new Map();
+const SERVER_AUTHORITATIVE_SYNC_KEYS = new Set([
+    'financas/pagar',
+    'financas/receber'
+]);
+
+function isServerAuthoritativeSyncKey(key) {
+    return SERVER_AUTHORITATIVE_SYNC_KEYS.has(String(key || '').trim());
+}
 
 function getRuntimeFirebaseService() {
     try {
@@ -436,6 +444,10 @@ async function syncData(key) {
             console.log(`Sync ${key}: Firebase indisponível`);
             return false;
         }
+        if (isServerAuthoritativeSyncKey(key)) {
+            console.log(`Sync ${key}: gerenciado pelo módulo Financeiro, sincronização legada ignorada`);
+            return false;
+        }
         if (isTenantScopedKey(key) && !resolveCompanyId()) {
             console.log(`Sync ${key}: tenant indisponível, sincronização adiada`);
             return false;
@@ -451,14 +463,17 @@ async function syncData(key) {
         
         // ✅ CORREÇÃO: Usar loadFromFirebase ao invés de getUserData
         let firebaseData = null;
+        let firebaseLoadFailed = false;
         if (firebaseService.loadFromFirebase) {
             const result = await firebaseService.loadFromFirebase(key);
             if (result && result.success) {
                 firebaseData = result.data;
             } else if (result && !result.success) {
+                firebaseLoadFailed = true;
                 console.log(`Firebase retornou erro para ${key}:`, result.error);
             }
         }
+        if (firebaseLoadFailed) return false;
         
         // Se há dados no Firebase mas não no localStorage, baixar
         if (firebaseData && !localParsed) {
@@ -474,16 +489,20 @@ async function syncData(key) {
                 const perRecordKeys = new Set(['romaneiosPct', 'contasReceber', 'contasPagar']);
                 if (Array.isArray(localParsed) && perRecordKeys.has(String(key))) {
                     let ok = 0;
+                    let expected = 0;
                     for (const item of localParsed) {
                         if (!item || !item.id) continue;
+                        expected++;
                         const payload = { ...item };
                         Object.keys(payload).forEach(k => { if (payload[k] === undefined) delete payload[k]; });
                         const res = await firebaseService.saveToFirebase(String(key), String(item.id), payload);
                         if (res && res.success) ok++;
                     }
                     console.log(`⬆️ ${key} sincronizado por registro (${ok} itens)`);
+                    if (ok !== expected) return false;
                 } else {
-                    await firebaseService.saveToFirebase(key, null, localParsed);
+                    const saveResult = await firebaseService.saveToFirebase(key, null, localParsed);
+                    if (!saveResult || saveResult.success !== true) return false;
                     console.log(`⬆️ ${key} sincronizado do localStorage para Firebase`);
                 }
                 return true;
@@ -503,16 +522,20 @@ async function syncData(key) {
                     const perRecordKeys = new Set(['romaneiosPct', 'contasReceber', 'contasPagar']);
                     if (Array.isArray(localParsed) && perRecordKeys.has(String(key))) {
                         let ok2 = 0;
+                        let expected2 = 0;
                         for (const item of localParsed) {
                             if (!item || !item.id) continue;
+                            expected2++;
                             const payload = { ...item };
                             Object.keys(payload).forEach(k => { if (payload[k] === undefined) delete payload[k]; });
                             const res = await firebaseService.saveToFirebase(String(key), String(item.id), payload);
                             if (res && res.success) ok2++;
                         }
                         console.log(`⬆️ ${key} atualizado por registro (${ok2} itens)`);
+                        if (ok2 !== expected2) return false;
                     } else {
-                        await firebaseService.saveToFirebase(key, null, localParsed);
+                        const saveResult = await firebaseService.saveToFirebase(key, null, localParsed);
+                        if (!saveResult || saveResult.success !== true) return false;
                         console.log(`⬆️ ${key} atualizado no Firebase (mais recente)`);
                     }
                 }
@@ -544,7 +567,6 @@ async function syncAllData() {
         'clients',
         'especies',
         'romaneios/pct', 'romaneios/tora', 'romaneios/tl', 'romaneios/pes',
-        'financas/pagar', 'financas/receber',
         'companies'
     ];
     

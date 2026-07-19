@@ -61,6 +61,11 @@ test('sincronizacao global nao tenta ler systemConfig legado sem necessidade', (
 
   assert.match(syncAllBlock, /'companies'/);
   assert.doesNotMatch(syncAllBlock, /'systemConfig'/);
+  assert.doesNotMatch(syncAllBlock, /'financas\/pagar'/);
+  assert.doesNotMatch(syncAllBlock, /'financas\/receber'/);
+  assert.match(databaseUtils, /const SERVER_AUTHORITATIVE_SYNC_KEYS = new Set\(\[[\s\S]*'financas\/pagar',[\s\S]*'financas\/receber'/);
+  assert.match(databaseUtils, /if \(firebaseLoadFailed\) return false;/);
+  assert.match(databaseUtils, /if \(!saveResult \|\| saveResult\.success !== true\) return false;/);
 });
 
 test('company.html normaliza empresas legadas e renderiza cards responsivos sem acoes perigosas', () => {

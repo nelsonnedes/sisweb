@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciar Fornecedores - Sistema</title>
+    <script>
+        if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
+            document.write('<script src="auth-performance-diagnostics.js?v=2026-07-14-auth-perf-baseline-v1"><\/script>');
+        }
+    </script>
     
     <!-- CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -17,7 +22,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
     <!-- Menu Component -->
-    <script src="menu-component.js?v=2026-07-01-menu-global-dedupe-v1"></script>
+    <script src="menu-component.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
     <script src="schema-migration-contatos.js"></script>
     <script>
         (function () {

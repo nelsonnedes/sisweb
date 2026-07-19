@@ -199,22 +199,12 @@ async function obterDadosEmpresa() {
         }
         if (tenantId && svc && typeof svc.loadFromFirebase === 'function') {
             try {
-                const byPathRoot = await svc.loadFromFirebase(`companies/${tenantId}`);
-                const byPathRootData = byPathRoot && (byPathRoot.success ? byPathRoot.data : byPathRoot.data);
-                if (byPathRootData && typeof byPathRootData === 'object' && (byPathRootData.nome || byPathRootData.name)) {
-                    companyData = { ...byPathRootData, id: tenantId, companyId: tenantId, tenantId: tenantId };
+                const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
+                const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
+                if (byPathData && typeof byPathData === 'object') {
+                    companyData = { ...companyData, ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
                 }
             } catch (_) {}
-
-            if (!companyData || (!companyData.nome && !companyData.name)) {
-                try {
-                    const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
-                    const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
-                    if (byPathData && typeof byPathData === 'object') {
-                        companyData = { ...companyData, ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
-                    }
-                } catch (_) {}
-            }
         }
 
         if (!companyData || (!companyData.nome && !companyData.name)) {
@@ -568,9 +558,6 @@ async function garantirContextoEmpresaVendas() {
         const retried = await svc.resolveAuthenticatedTenant({ timeoutMs: 2500, allowCached: isOffline });
         if (retried && retried.success) return retried;
     }
-
-    const tenant = obterTenantServicoVendas();
-    if (tenant && isFirebaseOfflineModeVendas()) return { success: true, companyId: tenant, fallback: true, offline: true };
 
     limparContextoEmpresaVendasInseguro();
     return { success: false, code: 'missing-company-context', error: 'Empresa da sessão não identificada.' };
@@ -1562,7 +1549,6 @@ function montarUpdatesRemocaoContasReceberVenda(lista, options = {}) {
         const id = String(c.id);
         const mk = toMonthKey(c.dataVencimento || c.vencimento);
         updates[`financas/receber/${mk}/${id}`] = null;
-        updates[`financas/receber/${id}`] = null;
         if (includeLegacy) {
             updates[`contasReceber/${mk}/${id}`] = null;
             updates[`contasReceber/${id}`] = null;
@@ -2252,7 +2238,6 @@ async function removerContasReceberAnteriores(pedidoId) {
                 if (c && c.id) {
                     const mk = toMonthKey(c.dataVencimento || c.vencimento);
                     await window.firebaseService.saveToFirebase(`financas/receber/${mk}`, String(c.id), null);
-                    await window.firebaseService.saveToFirebase('financas/receber', String(c.id), null);
                 }
             }
             if (semRecebimento.length > 0) console.log(`🗑️ Removidas ${semRecebimento.length} contas anteriores do pedido ${pedidoId}`);
@@ -2284,7 +2269,6 @@ async function removerContasReceberPorLista(lista) {
                 if (c && c.id) {
                     const mk = toMonthKey(c.dataVencimento || c.vencimento);
                     await window.firebaseService.saveToFirebase(`financas/receber/${mk}`, String(c.id), null);
-                    await window.firebaseService.saveToFirebase('financas/receber', String(c.id), null);
                 }
             }
         } else {

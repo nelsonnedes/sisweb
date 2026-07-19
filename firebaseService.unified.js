@@ -154,40 +154,40 @@ function createMockFirebase() {
             ref: (path) => ({
                 once: (eventType) => Promise.resolve({
                     val: () => {
-                        console.log(`🧪 Mock: Carregando dados de '${path}'`);
+                        console.log('🧪 Mock: carregando dados');
                         
                         if (mockDatabase[path]) {
-                            console.log(`✅ Mock: ${Object.keys(mockDatabase[path]).length} registros encontrados em '${path}'`);
+                            console.log('✅ Mock: registros encontrados');
                             return mockDatabase[path];
                         }
                         
-                        console.log(`⚠️ Mock: Nenhum dado encontrado para '${path}'`);
+                        console.log('⚠️ Mock: nenhum dado encontrado');
                         return null;
                     },
                     exists: () => !!mockDatabase[path],
                     key: path?.split('/').pop() || null
                 }),
                 set: (data) => {
-                    console.log(`🧪 Mock database.ref(${path}).set():`, data);
+                    console.log('🧪 Mock database: set executado');
                     mockDatabase[path] = data;
                     return Promise.resolve();
                 },
                 push: (data) => {
-                    console.log(`🧪 Mock database.ref(${path}).push():`, data);
+                    console.log('🧪 Mock database: push executado');
                     const key = 'mock-key-' + Date.now();
                     if (!mockDatabase[path]) mockDatabase[path] = {};
                     mockDatabase[path][key] = data;
                     return Promise.resolve({ key });
                 },
                 remove: () => {
-                    console.log(`🧪 Mock database.ref(${path}).remove()`);
+                    console.log('🧪 Mock database: remove executado');
                     if (mockDatabase[path]) {
                         delete mockDatabase[path];
                     }
                     return Promise.resolve();
                 },
                 on: (eventType, callback) => {
-                    console.log(`🧪 Mock database.ref(${path}).on(${eventType})`);
+                    console.log('🧪 Mock database: listener executado');
                     setTimeout(() => callback({ val: () => mockDatabase[path] || null }), 100);
                 },
                 off: () => {}
@@ -319,7 +319,7 @@ class FirebaseService {
                         try {
                             auth.onAuthStateChanged((user) => {
                                 if (user) {
-                                    console.log('✅ Auth pronto (uid):', user.uid);
+                                    console.log('✅ Auth pronto');
                                     this.currentUid = user.uid;
                                     done(user);
                                 } else {
@@ -383,7 +383,7 @@ class FirebaseService {
         const tenant = this.getCurrentTenantId ? this.getCurrentTenantId() : null;
         if (tenant) {
             const nsPath = `companies/${tenant}/${normalized}`;
-            console.log(`${actionLabel} em namespace empresa: ${nsPath}`);
+            console.log(`${actionLabel} em namespace da empresa`);
             return nsPath;
         }
         if (this._isBusinessDataPath(normalized)) {
@@ -392,7 +392,7 @@ class FirebaseService {
         const uidPref = this.getCurrentUid ? this.getCurrentUid() : null;
         if (uidPref) {
             const nsPath = `users/${uidPref}/${normalized}`;
-            console.log(`${actionLabel} em namespace usuário: ${nsPath}`);
+            console.log(`${actionLabel} em namespace do usuário`);
             return nsPath;
         }
         return normalized;
@@ -410,7 +410,7 @@ class FirebaseService {
             // Normalizar caminho para acesso remoto ao Firebase
             let remotePath = this._normalizePath(path);
             if (remotePath !== path) {
-                console.log(`🔁 Alias detectado: '${path}' → '${remotePath}'`);
+                console.log('🔁 Alias de leitura detectado');
             }
             try {
                 remotePath = this._resolveRemotePath(remotePath, '📡 Leitura');
@@ -418,7 +418,7 @@ class FirebaseService {
                 console.warn('⚠️ Leitura bloqueada por contexto de empresa:', namespaceError.message || namespaceError);
                 return { success: false, error: namespaceError.message || String(namespaceError), data: null, isMock: this.isMock };
             }
-            console.log(`📡 Carregando dados de: ${remotePath}`);
+            console.log('📡 Carregando dados');
             
             // ✅ APLICAR PAGINAÇÃO E FILTROS (PLANO OTIMIZAÇÃO BLAZE)
             let query = this.database.ref(remotePath);
@@ -454,14 +454,14 @@ class FirebaseService {
             const data = snapshot.val();
             
             if (data) {
-                console.log(`✅ Dados carregados de ${remotePath}:`, Object.keys(data).length, 'itens');
+                console.log('✅ Dados carregados');
                 return { success: true, data, isMock: this.isMock };
             } else {
-                console.log(`⚠️ Nenhum dado encontrado em ${remotePath}`);
+                console.log('⚠️ Nenhum dado encontrado');
                 return { success: false, data: null, message: 'Nenhum dado encontrado', isMock: this.isMock };
             }
         } catch (error) {
-            console.error(`❌ Erro ao carregar dados de ${path}:`, error);
+            console.error('❌ Erro ao carregar dados:', error && error.code ? error.code : 'unknown');
             // 🔐 Fallback inteligente em permission_denied
             if (this._isPermissionDenied(error)) {
                 try {
@@ -485,10 +485,10 @@ class FirebaseService {
                     }
                 }
                 if (local !== null && local !== undefined) {
-                    console.warn(`🛡️ permission_denied em '${path}' — usando localStorage como fallback`);
+                    console.warn('🛡️ permission_denied; usando localStorage como fallback');
                     return { success: true, data: local, isLocalFallback: true, isMock: this.isMock };
                 }
-                console.warn(`⚠️ permission_denied e nenhum dado local para '${path}'`);
+                console.warn('⚠️ permission_denied e nenhum dado local disponível');
                 return { success: false, error: 'permission_denied', isLocalFallback: true, isMock: this.isMock };
             }
             // 🔄 Outros erros: ainda tentar localStorage para não bloquear UI
@@ -503,7 +503,7 @@ class FirebaseService {
                 }
             }
             if (local !== null && local !== undefined) {
-                console.warn(`🔄 Usando localStorage para '${path}' devido a erro de leitura`);
+                console.warn('🔄 Usando localStorage devido a erro de leitura');
                 return { success: true, data: local, isLocalFallback: true, isMock: this.isMock };
             }
             return { success: false, error: error.message, isMock: this.isMock };
@@ -512,7 +512,7 @@ class FirebaseService {
     
     // COMPATIBILIDADE: Método legado loadFromFirebase
     async loadFromFirebase(path) {
-        console.log(`🔄 Usando método legado loadFromFirebase para: ${path}`);
+        console.log('🔄 Usando método legado loadFromFirebase');
         return this.loadData(path);
     }
     // COMPATIBILIDADE: Alias getFromFirebase para módulos legados
@@ -572,7 +572,7 @@ class FirebaseService {
             // Normalizar caminho para salvar remotamente
             let remotePath = this._normalizePath(path);
             if (remotePath !== path) {
-                console.log(`🔁 Alias detectado para salvar: '${path}' → '${remotePath}'`);
+                console.log('🔁 Alias de escrita detectado');
             }
             try {
                 remotePath = this._resolveRemotePath(remotePath, '💾 Escrita');
@@ -580,15 +580,9 @@ class FirebaseService {
                 console.warn('⚠️ Escrita bloqueada por contexto de empresa:', namespaceError.message || namespaceError);
                 return { success: false, error: namespaceError.message || String(namespaceError), isMock: this.isMock };
             }
-            console.log(`💾 Salvando dados em: ${remotePath}`);
-            try {
-                const uidLog = this.getCurrentUid ? this.getCurrentUid() : null;
-                if (uidLog) {
-                    console.log(`🔐 UID atual: ${uidLog}`);
-                }
-            } catch (_) {}
+            console.log('💾 Salvando dados');
             await this.database.ref(remotePath).set(data);
-            console.log(`✅ Dados salvos em ${remotePath}`);
+            console.log('✅ Dados salvos');
             return { success: true, isMock: this.isMock };
         } catch (error) {
             // 🔐 Fallback inteligente para permission_denied (sem erro vermelho)
@@ -630,12 +624,12 @@ class FirebaseService {
                     this.enqueueLocalOp({ type: 'set', path, data, ts: Date.now() });
                     return { success: true, savedLocally: true, isLocalFallback: true, isMock: this.isMock };
                 } catch (localError) {
-                    console.error(`❌ Fallback local falhou para ${path}:`, localError);
+                    console.error('❌ Fallback local falhou:', localError && localError.code ? localError.code : 'unknown');
                     return { success: false, error: localError.message, isMock: this.isMock };
                 }
             }
             // Outros erros: logar erro e tentar salvar no localStorage como cache
-            console.error(`❌ Erro ao salvar dados em ${path}:`, error);
+            console.error('❌ Erro ao salvar dados:', error && error.code ? error.code : 'unknown');
             if (this._isBusinessDataPath(path)) {
                 return { success: false, error: error.message, isMock: this.isMock };
             }
@@ -654,7 +648,7 @@ class FirebaseService {
                         this._setLocal(normalizedBase, data);
                     }
                 }
-                console.warn(`🔄 Erro no Firebase — '${path}' cacheado no localStorage`);
+                console.warn('🔄 Erro no Firebase; dados mantidos no localStorage');
                 this.enqueueLocalOp({ type: 'set', path, data, ts: Date.now() });
                 return { success: true, savedLocally: true, isLocalFallback: true, isMock: this.isMock };
             } catch (localError) {
@@ -679,10 +673,10 @@ class FirebaseService {
                 return { success: false, error: namespaceError.message || String(namespaceError), isMock: this.isMock };
             }
             await this.database.ref(remotePath).remove();
-            console.log(`✅ Dados excluídos em ${remotePath}`);
+            console.log('✅ Dados excluídos');
             return { success: true, isMock: this.isMock };
         } catch (error) {
-            console.error(`❌ Erro ao excluir dados em ${path}:`, error);
+            console.error('❌ Erro ao excluir dados:', error && error.code ? error.code : 'unknown');
             // 🔐 Fallback inteligente para permission_denied
             if (this._isPermissionDenied(error)) {
                 try {
@@ -727,7 +721,7 @@ class FirebaseService {
                     this.enqueueLocalOp({ type: 'delete', path, ts: Date.now() });
                     return { success: true, savedLocally: true, isLocalFallback: true, isMock: this.isMock };
                 } catch (localError) {
-                    console.error(`❌ Fallback local falhou para ${path}:`, localError);
+                    console.error('❌ Fallback local falhou:', localError && localError.code ? localError.code : 'unknown');
                     return { success: false, error: localError.message, isMock: this.isMock };
                 }
             }
@@ -751,7 +745,7 @@ class FirebaseService {
                         this._setLocal(normalizedBase, []);
                     }
                 }
-                console.warn(`🔄 Erro no Firebase — delete '${path}' refletido no localStorage`);
+                console.warn('🔄 Erro no Firebase; remoção refletida no localStorage');
                 this._localOpsQueue.push({ type: 'delete', path, ts: Date.now() });
                 return { success: true, deletedLocally: true, isLocalFallback: true, isMock: this.isMock };
             } catch (localError) {
@@ -806,7 +800,7 @@ class FirebaseService {
         try {
             const raw = tenantId ? String(tenantId).trim() : '';
             this.currentTenantId = raw && !/[\/.#$\[\]\s]/.test(raw) ? raw : null;
-            console.log('🏷️ Tenant atualizado:', this.currentTenantId);
+            console.log('🏷️ Contexto da empresa atualizado');
         } catch(_) {}
     }
 
@@ -885,11 +879,6 @@ class FirebaseService {
                 const profile = await this.loadData(`companies/${companyId}/profile`);
                 if (profile && profile.success && profile.data && typeof profile.data === 'object') data = { ...data, ...profile.data };
             } catch (_) {}
-            try {
-                const root = await this.loadData(`companies/${companyId}`);
-                const rootData = root && root.success && root.data && typeof root.data === 'object' ? root.data : {};
-                data = { ...rootData, ...data };
-            } catch (_) {}
         }
         try {
             const raw = localStorage.getItem('company_info');
@@ -956,7 +945,7 @@ class FirebaseService {
                 obj[candidate] = { ...item, id: item.id || candidate };
             }
             await this.database.ref(remotePath).set(obj);
-            console.log(`✅ Normalizado para objeto por chave em '${remotePath}' (${Object.keys(obj).length} itens)`);
+            console.log('✅ Dados normalizados para objeto por chave');
             const { baseKey } = this._splitPath(remotePath);
             this._setLocal(baseKey, obj);
             return { success: true, normalized: true, count: Object.keys(obj).length };
@@ -1000,7 +989,7 @@ class FirebaseService {
                 const snap = await this.database.ref(path).once('value');
                 return snap && snap.val ? snap.val() : snap.val();
             } catch (e) {
-                console.warn(`⚠️ Falha ao ler '${path}':`, e.message);
+                console.warn('⚠️ Falha ao ler caminho do Firebase');
                 return null;
             }
         };
@@ -1118,7 +1107,7 @@ class FirebaseService {
                     } else {
                         await this.database.ref(remotePath).set(op.data);
                     }
-                    console.log(`✅ flushLocalOps: aplicado ${op.type} em ${remotePath}`);
+                    console.log('✅ flushLocalOps: operação aplicada');
                 } catch (e) {
                     // Se falhar por PERMISSION_DENIED, não adianta tentar de novo no mesmo loop
                     // Remover da fila para não travar o loop, ou implementar backoff

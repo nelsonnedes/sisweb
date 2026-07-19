@@ -490,6 +490,11 @@ main-menu .sisweb-menu-shell .dropdown-content {
     z-index: 5000;
 }
 
+main-menu .sisweb-menu-shell .alerts-panel {
+    width: min(420px, calc(100vw - 24px));
+    max-width: 420px;
+}
+
 main-menu .sisweb-menu-shell .dropdown-content.show-dropdown {
     display: block !important;
 }

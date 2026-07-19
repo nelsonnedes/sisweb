@@ -30,8 +30,8 @@ test('vendas e compras carregam camada responsiva compartilhada para PWA', () =>
     assert.match(html, /commerce-responsive\.js\?v=2026-06-07-print-context-v13/);
     assert.match(html, /commerce-pdf-share\.js\?v=2026-06-23-logo-print-dataurl-v1/);
   });
-  assert.match(vendasHtml, /vendas\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
-  assert.match(comprasHtml, /compras\.js\?v=2026-06-30-pedido-contact-modals-v1/);
+  assert.match(vendasHtml, /vendas\.js\?v=2026-07-17-finance-canonical-v2/);
+  assert.match(comprasHtml, /compras\.js\?v=2026-07-17-finance-canonical-v2/);
   assert.match(vendasHtml, /firebaseService\.js\?v=2026-06-12-tenant-auth-guard-v1/);
   assert.match(comprasHtml, /firebaseService\.js\?v=2026-06-12-tenant-auth-guard-v1/);
 
@@ -65,7 +65,7 @@ test('compras aguarda tenant autenticado antes de ler dados operacionais', () =>
   assert.doesNotMatch(beforeFirebaseModule, /localStorage\.getItem\('company_info'\)/);
   assert.doesNotMatch(beforeFirebaseModule, /window\.appTenantId\s*=\s*String\(tenant\)/);
   assert.match(html, /firebaseService\.js\?v=2026-06-12-tenant-auth-guard-v1/);
-  assert.match(html, /compras\.js\?v=2026-06-30-pedido-contact-modals-v1/);
+  assert.match(html, /compras\.js\?v=2026-07-17-finance-canonical-v2/);
 
   const initStart = js.indexOf("document.addEventListener('DOMContentLoaded', async () =>");
   const guardCall = js.indexOf('await garantirContextoEmpresaCompras();', initStart);
@@ -75,7 +75,7 @@ test('compras aguarda tenant autenticado antes de ler dados operacionais', () =>
   assert.match(js, /window\.__siswebFirebaseServiceReady/);
   assert.match(js, /function isFirebaseOfflineModeCompras\(\)/);
   assert.match(js, /resolveAuthenticatedTenant\(\{ timeoutMs: 4500, allowCached: isOffline \}\)/);
-  assert.match(js, /if \(tenant && isFirebaseOfflineModeCompras\(\)\) return \{ success: true, companyId: tenant, fallback: true, offline: true \};/);
+  assert.doesNotMatch(js, /fallback: true, offline: true/);
   assert.doesNotMatch(js, /if \(tenant\) return \{ success: true, companyId: tenant, fallback: true \};/);
   assert.ok(guardCall > initStart, 'guarda precisa estar dentro da inicializacao de compras');
   assert.ok(loadSuppliersCall > guardCall, 'fornecedores/produtos devem carregar depois da guarda');
@@ -348,6 +348,13 @@ test('HTML de impressao converte logo do Storage para DataURL antes de montar ca
   assert.doesNotMatch(html, /<img src="companies\//);
 });
 
+test('helper de impressao aceita janela aberta no clique antes da preparacao assincrona', () => {
+  const helper = read('commerce-pdf-share.js');
+
+  assert.match(helper, /options\.targetWindow && options\.targetWindow\.closed !== true/);
+  assert.match(helper, /const target = suppliedTarget \|\| window\.open/);
+});
+
 test('lista de pedidos usa impressao HTML no PC e PDF apenas em PWA', () => {
   const vendasJs = read('vendas.js');
   const comprasJs = read('compras.js');
@@ -435,8 +442,7 @@ test('paginas html nao mantem cachebuster antigo do menu PWA', () => {
   const offenders = walkHtml(root).filter((path) => {
     if (legacyOrNonRuntimePages.has(path)) return false;
     const html = read(path);
-    return /menu-component\.js\?v=(?!2026-07-01-menu-global-dedupe-v1)/.test(html);
+    return /menu-component\.js\?v=(?!2026-07-01-alerts-overflow-fix-v1)/.test(html);
   });
   assert.deepEqual(offenders, []);
 });
-

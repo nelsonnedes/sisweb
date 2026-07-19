@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-07-01-menu-global-dedupe-v1';
+const APP_VERSION = '2026-07-19-finance-report-origin-print-v2';
 const CACHE_NAME = `sisweb-runtime-${APP_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',

@@ -4,11 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Compras</title>
+    <script>
+        if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
+            document.write('<script src="auth-performance-diagnostics.js?v=2026-07-14-auth-perf-baseline-v1"><\/script>');
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
-    <script src="menu-component.js?v=2026-07-01-menu-global-dedupe-v1"></script>
+    <script src="menu-component.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
     <style>
         * {
             margin: 0;
@@ -843,6 +848,34 @@
                 min-width: auto;
                 width: 100%;
             }
+        }
+
+        /* ✅ CORREÇÃO: Tabelas responsivas sem overflow horizontal (Desktop) */
+        .purchase-suppliers-table,
+        #produtos .commerce-orders-table,
+        #relComprasPedidosTable {
+            table-layout: fixed;
+        }
+
+        .purchase-suppliers-table td,
+        .purchase-suppliers-table th,
+        #produtos .commerce-orders-table td,
+        #produtos .commerce-orders-table th,
+        #relComprasPedidosTable td,
+        #relComprasPedidosTable th {
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        /* Coluna de ações: largura mínima, sem quebra de texto */
+        .purchase-suppliers-table th:last-child,
+        .purchase-suppliers-table td:last-child,
+        #produtos .commerce-orders-table th:last-child,
+        #produtos .commerce-orders-table td:last-child,
+        #relComprasPedidosTable th:last-child,
+        #relComprasPedidosTable td:last-child {
+            white-space: nowrap;
+            width: 1%;
         }
     </style>
     <style>
@@ -2018,7 +2051,7 @@
     <script src="commerce-responsive.js?v=2026-06-07-print-context-v13"></script>
     <script src="commerce-pdf-share.js?v=2026-06-23-logo-print-dataurl-v1"></script>
     <!-- Carregar módulo de Compras -->
-    <script src="compras.js?v=2026-06-30-pedido-contact-modals-v1"></script>
+    <script src="compras.js?v=2026-07-17-finance-canonical-v2"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

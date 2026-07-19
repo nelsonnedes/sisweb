@@ -4,11 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle de Estoque - Sistema</title>
+    <script>
+        if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
+            document.write('<script src="auth-performance-diagnostics.js?v=2026-07-14-auth-perf-baseline-v1"><\/script>');
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
-    <script src="menu-component.js?v=2026-07-01-menu-global-dedupe-v1"></script>
+    <script src="menu-component.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
     <style>
         * {
             margin: 0;
@@ -2975,9 +2980,11 @@
         // Isso evita inicializar o Firebase duas vezes com versões diferentes
         if (fbService.authService && fbService.authService.onAuthStateChanged) {
              const auth = fbService.authService.getAuth();
+             try { window.__SISWEB_AUTH_PERF__?.listener('auth', 'add', 'auth_guard', 0); } catch (_) {}
              fbService.authService.onAuthStateChanged(auth, async (user) => {
+                 try { window.__SISWEB_AUTH_PERF__?.auth(user ? 'authenticated' : 'unauthenticated', 'auth_guard', 0); } catch (_) {}
                  if (user) {
-                     console.log('🔐 [Estoque] Usuário autenticado (via Service):', user.uid);
+                     console.log('🔐 [Estoque] Usuário autenticado via serviço');
                      window.firebaseAuthUser = user;
                      let companyId = null;
                      try {
@@ -2987,6 +2994,7 @@
                      } catch (_) {}
                      if (!companyId && typeof user.getIdTokenResult === 'function') {
                          try {
+                             try { window.__SISWEB_AUTH_PERF__?.tokenRefresh('legacy_unspecified', 'auth_guard', 'started', 0); } catch (_) {}
                              const token = await user.getIdTokenResult(true);
                              companyId = token && token.claims && (token.claims.companyId || token.claims.companyID || token.claims.tenantId) || null;
                          } catch (_) {}

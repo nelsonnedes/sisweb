@@ -618,7 +618,10 @@
     function printHtmlDocument(options = {}) {
         const html = options.html || buildPrintDocument(options);
         const delay = Number.isFinite(options.printDelay) ? options.printDelay : 250;
-        const target = window.open('', '_blank', options.windowFeatures || 'width=1100,height=800');
+        const suppliedTarget = options.targetWindow && options.targetWindow.closed !== true
+            ? options.targetWindow
+            : null;
+        const target = suppliedTarget || window.open('', '_blank', options.windowFeatures || 'width=1100,height=800');
 
         if (target) {
             let printed = false;
@@ -627,6 +630,7 @@
                 printed = true;
                 setTimeout(() => target.print(), delay);
             };
+            target.document.open();
             target.onload = triggerPrint;
             target.document.write(html);
             target.document.close();

@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Romaneio TL - Sistema Sisweb</title>
+    <script>
+        if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
+            document.write('<script src="auth-performance-diagnostics.js?v=2026-07-14-auth-perf-baseline-v1"><\/script>');
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
@@ -13,7 +18,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Loading / status styles reutilizáveis -->
     <link rel="stylesheet" href="folha_pagamento/folha-loading-styles.css">
-    <script src="menu-component.js?v=2026-07-01-menu-global-dedupe-v1"></script>
+    <script src="menu-component.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
     
     <!--
     ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -1810,6 +1815,11 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     
     <script>
+        const authPerfShipping = (() => {
+            try { return window.__SISWEB_AUTH_PERF__ || null; } catch (_) { return null; }
+        })();
+        try { authPerfShipping?.phase('firebase_init_start', 'shipping_page', 'started', 0); } catch (_) {}
+
         // ✅ CONFIGURAÇÃO FIREBASE CORRETA - PROJETO SISWEB-7CE82
         const firebaseConfig = {
             apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
@@ -1830,31 +1840,34 @@
             } else {
                 console.log('♻️ Reutilizando Firebase app existente (compat)');
             }
-            console.log('🌐 Database URL:', firebaseConfig.databaseURL);
+            try { authPerfShipping?.phase('firebase_init_ready', 'shipping_page', 'ready', 0); } catch (_) {}
         } else {
+            try { authPerfShipping?.phase('firebase_init_error', 'shipping_page', 'error', 0); } catch (_) {}
             console.warn('⚠️ Firebase SDK (compat) indisponível no ambiente atual. Operando em modo offline.');
         }
 
         // 🔐 AUTENTICAÇÃO ANÔNIMA PARA ESCRITA (regras com login)
         try {
             const auth = firebase.auth();
+            try { authPerfShipping?.listener('auth', 'add', 'shipping_page', 0); } catch (_) {}
             auth.onAuthStateChanged(function(user) {
+                try { authPerfShipping?.auth(user ? 'authenticated' : 'unauthenticated', 'shipping_page', 0); } catch (_) {}
                 if (user) {
-                    console.log('🔐 [TL] Usuário autenticado:', user.uid);
+                    console.log('🔐 [TL] Usuário autenticado');
                     window.firebaseAuthUser = user;
                 } else {
                     console.log('🔐 [TL] Nenhum usuário autenticado. Efetuando login anônimo...');
                     auth.signInAnonymously()
                         .then(function(cred){
-                            console.log('🔐 [TL] Login anônimo realizado:', cred.user && cred.user.uid);
+                            console.log('🔐 [TL] Login anônimo realizado');
                             window.firebaseAuthUser = cred.user;
                         })
                         .catch(function(err){
-                            console.error('❌ [TL] Falha no login anônimo:', err);
+                            console.error('❌ [TL] Falha no login anônimo:', err && err.code ? err.code : 'unknown');
                         });
                 }
             });
-        } catch(e){ console.error('❌ [TL] Erro ao configurar autenticação anônima:', e); }
+        } catch(e){ console.error('❌ [TL] Erro ao configurar autenticação anônima:', e && e.code ? e.code : 'unknown'); }
 
         // 📡 LISTENER REALTIME PARA ROMANEIOS TL
         try {
@@ -1867,12 +1880,18 @@
                     const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
                     const serviceTenant = svc && (typeof svc.getTenantId === 'function' ? svc.getTenantId() : (typeof svc.getCurrentTenantId === 'function' ? svc.getCurrentTenantId() : null));
                     const rawTenant = serviceTenant || window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
-                    if (rawTenant) return `companies/${String(rawTenant)}/${base}`;
+                    if (rawTenant) {
+                        try { authPerfShipping?.tenant(rawTenant, 'shipping_page'); } catch (_) {}
+                        return `companies/${String(rawTenant)}/${base}`;
+                    }
                     const stored = localStorage.getItem('company_info');
                     if (stored) {
                         const obj = JSON.parse(stored);
                         const t = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
-                        if (t) return `companies/${String(t)}/${base}`;
+                        if (t) {
+                            try { authPerfShipping?.tenant(t, 'shipping_page'); } catch (_) {}
+                            return `companies/${String(t)}/${base}`;
+                        }
                     }
                     return null;
                 } catch (_) { return null; }
@@ -1881,7 +1900,9 @@
             if (!usePath) {
                 console.warn('⚠️ [TL] Listener realtime não iniciado: empresa ativa não resolvida.');
             } else {
+                try { authPerfShipping?.listener('data', 'add', 'shipping_page', 0); } catch (_) {}
                 db.ref(usePath).on('value', function(snapshot){
+                    try { authPerfShipping?.read(usePath, 'shipping_page', 'listener_first_value', 'success', 0); } catch (_) {}
                     const val = snapshot.val() || {};
                     const arr = (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function')
                         ? window.RomaneioDataUtils.normalizeRomaneioCollection(val, { type: 'TL' })

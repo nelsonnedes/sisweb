@@ -355,9 +355,6 @@ async function garantirContextoEmpresaCompras() {
         if (retried && retried.success) return retried;
     }
 
-    const tenant = obterTenantServicoCompras();
-    if (tenant && isFirebaseOfflineModeCompras()) return { success: true, companyId: tenant, fallback: true, offline: true };
-
     limparContextoEmpresaComprasInseguro();
     return { success: false, code: 'missing-company-context', error: 'Empresa da sessão não identificada.' };
 }
@@ -1866,7 +1863,6 @@ function montarUpdatesRemocaoContasPagarCompra(lista) {
         const id = String(c.id);
         const mk = toMonthKey(c.dataVencimento || c.vencimento);
         updates[`financas/pagar/${mk}/${id}`] = null;
-        updates[`financas/pagar/${id}`] = null;
     });
     return updates;
 }
@@ -1989,16 +1985,6 @@ async function salvarPedido(event) {
                 // Salvar no caminho particionado por mês (padrão do sistema financeiro)
                 updates[`financas/pagar/${mk}/${contaId}`] = conta;
                 
-                // Salvar referência no caminho legado (sem mês) para garantir compatibilidade de leitura
-                // (alguns módulos leem direto de contasPagar/{id})
-                // Se o sistema financeiro usa apenas mk, isso pode ser redundante, mas seguro.
-                // Mas cuidado: se mudar o mês, o ID antigo no caminho legado será sobrescrito corretamente (mesmo ID).
-                // Se o sistema usa APENAS particionado, ok. Se usa "flat", precisamos atualizar lá também.
-                // O `getData('financas/pagar')` do financeiro geralmente varre tudo ou usa índice.
-                // Vamos salvar no flat também se o sistema suportar.
-                // O código original fazia: `updates['financas/pagar/' + oldId] = null` (linha 876)
-                // Então devemos salvar no flat também.
-                updates[`financas/pagar/${contaId}`] = conta;
             });
         }
         
@@ -3155,22 +3141,12 @@ async function obterDadosEmpresa() {
 
         if (tenantId && svc && typeof svc.loadFromFirebase === 'function') {
             try {
-                const byPathRoot = await svc.loadFromFirebase(`companies/${tenantId}`);
-                const byPathRootData = byPathRoot && (byPathRoot.success ? byPathRoot.data : byPathRoot.data);
-                if (byPathRootData && typeof byPathRootData === 'object' && (byPathRootData.nome || byPathRootData.name)) {
-                    companyData = { ...byPathRootData, id: tenantId, companyId: tenantId, tenantId: tenantId };
+                const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
+                const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
+                if (byPathData && typeof byPathData === 'object') {
+                    companyData = { ...companyData, ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
                 }
             } catch (_) {}
-
-            if (!companyData || (!companyData.nome && !companyData.name)) {
-                try {
-                    const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
-                    const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
-                    if (byPathData && typeof byPathData === 'object') {
-                        companyData = { ...companyData, ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
-                    }
-                } catch (_) {}
-            }
         }
 
         if (!companyData || (!companyData.nome && !companyData.name)) {

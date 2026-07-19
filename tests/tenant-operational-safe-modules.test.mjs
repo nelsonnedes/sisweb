@@ -19,20 +19,22 @@ test('estoque e financas exigem tenant autenticado online antes do carregamento 
   const financasJs = read('financas.js');
 
   assert.match(estoqueHtml, /estoque\.js\?v=2026-06-16-tenant-safe-v1/);
-  assert.match(financasHtml, /financas\.js\?v=2026-07-01-finance-pay-edit-v1/);
+  assert.match(financasHtml, /financas\.js\?v=2026-07-19-finance-report-origin-print-v2/);
   assert.match(financasHtml, /window\.__siswebFirebaseServiceReady = \(async function/);
   assert.match(financasHtml, /resolveAuthenticatedTenant: firebaseSvc\.resolveAuthenticatedTenant \|\| existingFirebaseService\.resolveAuthenticatedTenant/);
 
   assert.match(estoqueJs, /function isFirebaseOfflineModeEstoque\(\)/);
   assert.match(estoqueJs, /async function ensureTenantContext\(timeoutMs = 10000\)/);
   assert.match(estoqueJs, /resolveAuthenticatedTenant\(\{ timeoutMs: Math\.min\(timeoutMs, 4500\), allowCached: isOffline \}\)/);
-  assert.match(estoqueJs, /let tenant = isOffline \? getCachedTenant\(\) : null;/);
+  assert.match(estoqueJs, /let tenant = null;/);
+  assert.doesNotMatch(estoqueJs, /fallback: true, offline: true/);
   assert.match(estoqueJs, /if \(!tenant\) \{[\s\S]*if \(firebaseAvailable\) return;/);
 
   assert.match(financasJs, /function isFirebaseOfflineModeFinancas\(\)/);
   assert.match(financasJs, /async function ensureFinanceTenantContext\(timeoutMs = 7000\)/);
   assert.match(financasJs, /window\.__siswebFirebaseServiceReady/);
   assert.match(financasJs, /resolveAuthenticatedTenant\(\{ timeoutMs: Math\.min\(timeoutMs, 4500\), allowCached: isOffline \}\)/);
+  assert.doesNotMatch(financasJs, /let tenant = isOffline \? getCachedTenant\(\) : '';/);
   assert.match(financasJs, /const financeTenant = await ensureFinanceTenantContext\(\);/);
   assert.match(financasJs, /if \(firebaseAvailable && !financeTenant\) \{/);
   assert.match(financasJs, /mostrarNotificacao\('Empresa da sessão não identificada\. Faça login novamente para carregar o Financeiro\.', 'error'\)/);
@@ -43,7 +45,6 @@ test('notas fiscais resolve tenant autenticado antes de inicializar modulos e ev
   const firebaseService = read('firebaseService.js');
 
   assert.match(notas, /resolveAuthenticatedTenant/);
-  assert.match(notas, /function obterTenantIdNFCacheOffline\(\) \{\s*if \(!isFirebaseOfflineModeNF\(\)\) return '';/);
   assert.match(notas, /async function garantirContextoEmpresaNF\(timeoutMs = 7000\)/);
   assert.match(notas, /async function obterUidAutenticadoNF\(\)/);
   assert.match(notas, /resolveAuthenticatedTenant\(\{ timeoutMs: Math\.min\(timeoutMs, 4500\), allowCached: isOffline \}\)/);
@@ -59,7 +60,8 @@ test('notas fiscais resolve tenant autenticado antes de inicializar modulos e ev
   const tenantResolverBlock = blockBetween(notas, 'function obterTenantIdNF() {', 'function setEventoFiscalMsg');
   assert.match(tenantResolverBlock, /getCurrentTenantId/);
   assert.match(tenantResolverBlock, /getTenantId/);
-  assert.match(tenantResolverBlock, /return obterTenantIdNFCacheOffline\(\);/);
+  assert.match(tenantResolverBlock, /confirmed\.authenticated !== true/);
+  assert.doesNotMatch(tenantResolverBlock, /obterTenantIdNFCacheOffline/);
 
   const secureOps = [
     ['async function salvarTokenManual()', 'window.salvarTokenManual = salvarTokenManual;'],

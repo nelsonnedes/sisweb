@@ -298,7 +298,7 @@ class UnifiedFirebaseService {
     setupAuthStateListener() {
         this.auth.onAuthStateChanged((user) => {
             this.currentUser = user;
-            console.log(user ? `👤 Usuário logado: ${user.email}` : '👤 Usuário deslogado');
+            console.log(user ? '👤 Usuário logado' : '👤 Usuário deslogado');
             
             // Emitir evento de mudança de auth
             window.dispatchEvent(new CustomEvent('firebaseAuthChange', {
@@ -347,12 +347,12 @@ class UnifiedFirebaseService {
             }
 
             const path = this.getFirebasePath(key);
-            console.log(`📥 Carregando: ${key} → ${path}`);
+            console.log('📥 Carregando dados');
 
             // Verificar cache primeiro
             const cached = this.getFromCache(key);
             if (cached && this.isCacheValid(cached.timestamp)) {
-                console.log(`💾 Cache hit: ${key}`);
+                console.log('💾 Cache hit');
                 return {
                     success: true,
                     data: cached.data,
@@ -366,7 +366,7 @@ class UnifiedFirebaseService {
             
             if (snapshot.exists()) {
                 const data = snapshot.val();
-                console.log(`✅ Dados carregados: ${key} (${this.getDataSize(data)})`);
+                console.log('✅ Dados carregados');
                 
                 // Atualizar cache
                 this.updateCache(key, data);
@@ -377,7 +377,7 @@ class UnifiedFirebaseService {
                     source: 'firebase'
                 };
             } else {
-                console.log(`ℹ️ Nenhum dado encontrado: ${key}`);
+                console.log('ℹ️ Nenhum dado encontrado');
                 return {
                     success: true,
                     data: null,
@@ -386,12 +386,12 @@ class UnifiedFirebaseService {
             }
             
         } catch (error) {
-            console.error(`❌ Erro ao carregar ${key}:`, error);
+            console.error('❌ Erro ao carregar dados:', error && error.code ? error.code : 'unknown');
             
             // Fallback para cache em caso de erro
             const cached = this.getFromCache(key);
             if (cached) {
-                console.log(`🔄 Usando cache como fallback: ${key}`);
+                console.log('🔄 Usando cache como fallback');
                 return {
                     success: true,
                     data: cached.data,
@@ -418,7 +418,7 @@ class UnifiedFirebaseService {
             }
 
             const path = this.getFirebasePath(key);
-            console.log(`💾 Salvando: ${key} → ${path}`);
+            console.log('💾 Salvando dados');
 
             // Adicionar timestamp somente para objetos; manter arrays íntegros
             let dataWithTimestamp;
@@ -447,13 +447,13 @@ class UnifiedFirebaseService {
                 reference = this.db.ref(path);
                 await reference.set(dataWithTimestamp);
                 resultKey = path;
-                console.log(`✅ Coleção completa salva substituindo: ${key}`);
+                console.log('✅ Coleção completa salva por substituição');
             } else {
                 // Usar chave específica (salvar item individual)
                 reference = this.db.ref(`${path}/${itemKey}`);
                 await reference.set(dataWithTimestamp);
                 resultKey = itemKey;
-                console.log(`✅ Item salvo com chave: ${key}/${itemKey}`);
+                console.log('✅ Item salvo com chave gerada');
             }
 
             // Atualizar cache
@@ -466,7 +466,7 @@ class UnifiedFirebaseService {
             };
             
         } catch (error) {
-            console.error(`❌ Erro ao salvar ${key}:`, error);
+            console.error('❌ Erro ao salvar dados:', error && error.code ? error.code : 'unknown');
             
             // Adicionar à fila de operações pendentes com backoff
             this.enqueuePendingOperation({ type: 'save', key, itemKey, data });
@@ -494,7 +494,7 @@ class UnifiedFirebaseService {
                 `${this.getFirebasePath(key)}/${itemKey}` : 
                 this.getFirebasePath(key);
             
-            console.log(`🗑️ Removendo: ${key} → ${path}`);
+            console.log('🗑️ Removendo dados');
 
             const reference = this.db.ref(path);
             await reference.remove();
@@ -502,14 +502,14 @@ class UnifiedFirebaseService {
             // Remover do cache
             this.removeFromCache(key);
             
-            console.log(`✅ Removido: ${key}`);
+            console.log('✅ Dados removidos');
             return {
                 success: true,
                 source: 'firebase'
             };
             
         } catch (error) {
-            console.error(`❌ Erro ao remover ${key}:`, error);
+            console.error('❌ Erro ao remover dados:', error && error.code ? error.code : 'unknown');
             return {
                 success: false,
                 error: error.message
@@ -734,13 +734,13 @@ class UnifiedFirebaseService {
     async login(email, password) {
         try {
             const result = await this.auth.signInWithEmailAndPassword(email, password);
-            console.log(`✅ Login realizado: ${email}`);
+            console.log('✅ Login realizado');
             return {
                 success: true,
                 user: result.user
             };
         } catch (error) {
-            console.error(`❌ Erro no login:`, error);
+            console.error('❌ Erro no login:', error && error.code ? error.code : 'unknown');
             return {
                 success: false,
                 error: error.message

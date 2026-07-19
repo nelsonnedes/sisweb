@@ -15,6 +15,32 @@ const authService = firebase.auth();
 const rtdbService = typeof firebase.database === 'function' ? firebase.database() : null;
 let tenantId = null;
 
+function getAuthPerformanceDiagnosticsCompany() {
+    try { return window.__SISWEB_AUTH_PERF__ || null; } catch (_) { return null; }
+}
+
+function authPerfCompanyPhase(name, outcome = 'observed', durationMs = 0) {
+    try { getAuthPerformanceDiagnosticsCompany()?.phase(name, 'company_service', outcome, durationMs); } catch (_) {}
+}
+
+function authPerfCompanyRead(path, kind = 'logical', outcome = 'started', durationMs = 0) {
+    try { getAuthPerformanceDiagnosticsCompany()?.read(path, 'company_service', kind, outcome, durationMs); } catch (_) {}
+}
+
+function authPerfCompanyListener(kind, action, durationMs = 0) {
+    try { getAuthPerformanceDiagnosticsCompany()?.listener(kind, action, 'company_service', durationMs); } catch (_) {}
+}
+
+function authPerfCompanyTenant(value) {
+    try { getAuthPerformanceDiagnosticsCompany()?.tenant(value, 'company_service'); } catch (_) {}
+}
+
+function authPerfCompanyTokenRefresh(reason, outcome = 'started', durationMs = 0) {
+    try { getAuthPerformanceDiagnosticsCompany()?.tokenRefresh(reason, 'company_service', outcome, durationMs); } catch (_) {}
+}
+
+authPerfCompanyPhase('firebase_init_ready', 'ready');
+
 function sanitizeTenantId(value) {
     const raw = value ? String(value).trim() : '';
     if (!raw) return null;
@@ -54,17 +80,29 @@ function getNamespacedPath(path) {
 
 authService.getCurrentUser = function() {
     return new Promise((resolve) => {
+        const listenerStartedAt = Date.now();
+        let diagnosticsSettled = false;
+        const finishDiagnostics = (action) => {
+            if (diagnosticsSettled) return;
+            diagnosticsSettled = true;
+            authPerfCompanyListener('auth', action, Date.now() - listenerStartedAt);
+            authPerfCompanyListener('auth', 'remove', Date.now() - listenerStartedAt);
+        };
+        authPerfCompanyListener('auth', 'add');
         const unsubscribe = authService.onAuthStateChanged(
             (user) => {
+                finishDiagnostics('first_value');
                 try { unsubscribe(); } catch (_) {}
                 resolve(user || null);
             },
             () => {
+                finishDiagnostics('error');
                 try { unsubscribe(); } catch (_) {}
                 resolve(null);
             }
         );
         setTimeout(() => {
+            finishDiagnostics('timeout');
             try { unsubscribe(); } catch (_) {}
             resolve(authService.currentUser || null);
         }, 5000);
@@ -80,11 +118,14 @@ function isFirebaseOperational() {
 }
 
 async function loadFromFirebase(path) {
+    authPerfCompanyRead(path, 'logical');
     if (!rtdbService) {
         return { success: false, error: 'Realtime Database indisponível' };
     }
     try {
-        const snapshot = await rtdbService.ref(getNamespacedPath(path)).once('value');
+        const finalPath = getNamespacedPath(path);
+        authPerfCompanyRead(finalPath, 'physical');
+        const snapshot = await rtdbService.ref(finalPath).once('value');
         return { success: true, data: snapshot.val(), source: 'firebase' };
     } catch (error) {
         return { success: false, error: error.message };
@@ -212,21 +253,22 @@ async function uploadCompanyLogo(file, companyId, options = {}) {
     const safeName = String(file.name || 'logo.png').replace(/[^\w.\-]+/g, '_').slice(0, 90) || 'logo.png';
     const path = `companies/${tenant}/profile/logo/current`;
     const logoPrefix = `companies/${tenant}/profile/logo/`;
-    const previousPath = String(
+    const previousPathCandidate = String(
         options.previousStoragePath
         || options.logoStoragePath
         || options.logoPath
         || options.previousPath
         || extractStoragePathFromUrl(options.previousLogoUrl || options.logoUrl || '')
         || ''
-    ).trim().replace(/^\/+/, '');
+    ).trim();
+    const previousPath = extractStoragePathFromUrl(previousPathCandidate).trim().replace(/^\/+/, '');
     const result = await uploadFile(path, file);
     if (!result || result.success === false) {
         throw new Error((result && result.error) || 'Falha no upload da logo');
     }
-    if (previousPath && previousPath !== path && previousPath.startsWith(logoPrefix)) {
-        try { await deleteStorageFile(previousPath); } catch (_) {}
-    }
+    const previousStoragePath = previousPath && previousPath !== path && previousPath.startsWith(logoPrefix)
+        ? previousPath
+        : '';
     return {
         success: true,
         data: {
@@ -237,7 +279,8 @@ async function uploadCompanyLogo(file, companyId, options = {}) {
             name: safeName,
             contentType: type,
             size: Number(file.size || 0),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            previousStoragePath
         }
     };
 }
@@ -261,6 +304,7 @@ async function deleteStorageFile(pathOrUrl) {
 
 function setTenantId(id) {
     tenantId = sanitizeTenantId(id);
+    authPerfCompanyTenant(tenantId);
     try {
         if (typeof window !== 'undefined') window.appTenantId = tenantId || null;
     } catch (_) {}
@@ -452,10 +496,6 @@ async function getCompanyProfileForReport(options = {}) {
             const profile = await loadFromFirebase(`companies/${companyId}/profile`);
             if (profile && profile.success && profile.data && typeof profile.data === 'object') data = { ...data, ...profile.data };
         } catch (_) {}
-        try {
-            const root = await loadFromFirebase(`companies/${companyId}`);
-            if (root && root.success && root.data && typeof root.data === 'object') data = { ...root.data, ...data };
-        } catch (_) {}
     }
     try {
         const raw = localStorage.getItem('company_info');
@@ -506,6 +546,7 @@ async function createCompanyAndSetClaim(companyData, userUid) {
         const callable = firebase.functions().httpsCallable('setCompanyClaim');
         await callable({ targetUid: resolvedUid, companyId });
         if (currentUser && typeof currentUser.getIdTokenResult === 'function') {
+            authPerfCompanyTokenRefresh('claims_changed');
             await currentUser.getIdTokenResult(true);
         }
         setTenantId(companyId);

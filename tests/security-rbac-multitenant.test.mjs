@@ -27,7 +27,16 @@ test('rules nao permitem escrita herdada no tenant nem solicitacao direta de ass
   const tenantRules = rules.companies.$companyId;
 
   assert.equal(tenantRules['.write'], false);
-  assert.match(tenantRules['.read'], /root\.child\('companies\/' \+ \$companyId \+ '\/users\/' \+ auth\.uid\)\.exists\(\)/);
+  assert.equal(tenantRules['.read'], 'auth != null && auth.token.superadmin == true');
+  assert.match(tenantRules.profile['.read'], /root\.child\('companies\/' \+ \$companyId \+ '\/users\/' \+ auth\.uid\)\.exists\(\)/);
+  assert.match(tenantRules.financas['.read'], /permissions\/finance\/read/);
+  assert.match(tenantRules.financas['.read'], /adminActive'\)\.val\(\) != false/);
+  assert.match(tenantRules.financas['.read'], /profile\/email'\)\.isString\(\)/);
+  assert.match(tenantRules.financas['.read'], /users\/' \+ auth\.uid \+ '\/companyId'\)\.val\(\) == \$companyId/);
+  assert.match(tenantRules.financas.receber.$month.$accountId['.write'], /profile\/email'\)\.isString\(\)/);
+  assert.match(tenantRules.financas.pagar.$month.$accountId['.write'], /subscriptionStatus'\)\.val\(\) == 'active'/);
+  assert.match(tenantRules.printPreferences['.write'], /profile\/email'\)\.isString\(\)/);
+  assert.match(tenantRules.finance_snapshots['.write'], /profile\/email'\)\.isString\(\)/);
 
   for (const child of ['admin', 'adminSettings', 'roles', 'permissions', 'access', 'accessGovernance', 'system', 'settings']) {
     assert.match(tenantRules[child]['.write'], /auth\.token\.superadmin == true/);
@@ -46,14 +55,29 @@ test('rules liberam apenas caminhos operacionais seguros apos bloquear escrita h
     assert.ok(tenantRules[child], `${child} precisa ter regra propria`);
     assert.match(tenantRules[child]['.read'], /auth\.token\.companyID == \$companyId/);
     assert.match(tenantRules[child]['.read'], /root\.child\('companies\/' \+ \$companyId \+ '\/users\/' \+ auth\.uid\)\.exists\(\)/);
+    assert.match(tenantRules[child]['.read'], /permissions\/finance\/read/);
   }
 
   assert.match(tenantRules.printPreferences['.write'], /auth\.token\.tenantId == \$companyId/);
   assert.doesNotMatch(tenantRules.printPreferences['.write'], /subscriptionStatus == 'active'/);
+  assert.match(tenantRules.printPreferences['.write'], /permissions\/finance\/write/);
+  assert.doesNotMatch(tenantRules.printPreferences['.write'], /permissions\/finance\/read/);
 
-  for (const child of ['finance_snapshots', 'sequences']) {
-    assert.match(tenantRules[child]['.write'], /root\.child\('companies\/' \+ \$companyId \+ '\/users\/' \+ auth\.uid\)\.exists\(\)/);
-    assert.match(tenantRules[child]['.write'], /subscriptionStatus'\)\.val\(\) == 'trial_active'/);
+  assert.match(tenantRules.finance_snapshots['.write'], /root\.child\('companies\/' \+ \$companyId \+ '\/users\/' \+ auth\.uid\)\.exists\(\)/);
+  assert.match(tenantRules.finance_snapshots['.write'], /subscriptionStatus'\)\.val\(\) == 'trial_active'/);
+  assert.match(tenantRules.finance_snapshots['.write'], /permissions\/finance\/write/);
+  assert.equal(tenantRules.sequences['.write'], 'auth != null && auth.token.superadmin == true');
+
+  for (const type of ['receber', 'pagar']) {
+    const accountWrite = tenantRules.financas[type].$month.$accountId['.write'];
+    const accountValidate = tenantRules.financas[type].$month.$accountId['.validate'];
+    assert.match(accountWrite, /!data\.exists\(\)/);
+    assert.match(accountWrite, /!data\.hasChild\('historicosPagamento'\)/);
+    assert.match(accountWrite, /data\.child\('valorPago'\)\.val\(\) == 0/);
+    assert.match(accountWrite, /permissions\/finance\/write/);
+    assert.match(accountValidate, /newData\.child\('id'\)\.val\(\) == \$accountId/);
+    assert.match(accountValidate, /newData\.child\('valorOriginal'\)\.val\(\) == newData\.child\('valor'\)\.val\(\)/);
+    assert.match(accountValidate, /!newData\.hasChild\('anexos'\)/);
   }
 });
 

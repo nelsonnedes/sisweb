@@ -146,6 +146,10 @@ test('modais operacionais de cliente e fornecedor incluem campos fiscais opciona
   assert.match(openNewClientModalJs, /function openEditClientModal\(client, options = \{\}\)/);
   assert.match(openNewClientModalJs, /window\.openEditClientModal = openEditClientModal/);
   assert.match(openNewClientModalJs, /typeof window\.popularCidades === 'function'/);
+  assert.ok(openNewClientModalJs.includes("const documentClean = documento.replace(/[^0-9A-Za-z]/g, '').toUpperCase();"));
+  assert.ok(openNewClientModalJs.includes("const isCpf = documentClean.length === 11 && /^\\d{11}$/.test(documentClean);"));
+  assert.ok(openNewClientModalJs.includes("const isCnpj = documentClean.length === 14 && /^[A-Z0-9]{12}\\d{2}$/.test(documentClean);"));
+  assert.doesNotMatch(openNewClientModalJs, /const documentDigits = documento\.replace\(\/\\D\/g, ''\);/);
   assertHasIds(comprasHtml, [
     'fornDocumento',
     'fornTipoPessoa',
@@ -239,11 +243,11 @@ test('normalizadores preservam aliases fiscais usados pela emissão NF-e', () =>
 });
 
 test('PWA e abas comerciais usam cachebuster fiscal atual', () => {
-  assert.match(read('vendas.html'), /vendas\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
-  assert.match(read('vendas.html'), /openNewClientModal\.js\?v=2026-07-01-menu-global-dedupe-v1/);
-  assert.match(read('notas-fiscais.html'), /openNewClientModal\.js\?v=2026-07-01-menu-global-dedupe-v1/);
-  assert.match(read('compras.html'), /compras\.js\?v=2026-06-30-pedido-contact-modals-v1/);
+  assert.match(read('vendas.html'), /vendas\.js\?v=2026-07-17-finance-canonical-v2/);
+  assert.match(read('vendas.html'), /openNewClientModal\.js\?v=2026-07-01-alerts-overflow-fix-v1/);
+  assert.match(read('notas-fiscais.html'), /openNewClientModal\.js\?v=2026-07-01-alerts-overflow-fix-v1/);
+  assert.match(read('compras.html'), /compras\.js\?v=2026-07-17-finance-canonical-v2/);
   assert.match(read('client.html'), /js\/client\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
   assert.match(read('fornecedor.html'), /js\/fornecedor\.js\?v=2026-06-30-pedido-contact-modals-v1/);
-  assert.match(read('sw.js'), /const APP_VERSION = '2026-07-01-menu-global-dedupe-v1'/);
+  assert.match(read('sw.js'), /const APP_VERSION = '2026-07-19-finance-report-origin-print-v2'/);
 });

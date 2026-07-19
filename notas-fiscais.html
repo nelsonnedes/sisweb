@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notas Fiscais - Sistema de Gestão</title>
+    <script>
+        if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
+            document.write('<script src="auth-performance-diagnostics.js?v=2026-07-14-auth-perf-baseline-v1"><\/script>');
+        }
+    </script>
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
@@ -1802,10 +1807,10 @@
         };
     </script>
     <script src="auth.js"></script>
-    <script src="menu-component.js?v=2026-07-01-menu-global-dedupe-v1"></script>
+    <script src="menu-component.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
     <script src="cities-loader.js"></script>
     <script src="client-service.js"></script>
-    <script src="openNewClientModal.js?v=2026-07-01-menu-global-dedupe-v1"></script>
+    <script src="openNewClientModal.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
     <script src="storageService.js"></script>
     <!-- Módulos Fiscais -->
     <script src="nf-tables.js"></script>
@@ -1887,9 +1892,9 @@
       `;
     }
 
-    function clearOperationalAccessStateNF() {
+    function clearOperationalAccessStateNF(contexto = {}) {
       window.__siswebNFOperationalReady = true;
-      window.__siswebNFLastContext = null;
+      window.__siswebNFLastContext = contexto;
       const panel = document.getElementById('nfOperationalAccessState');
       if (panel) panel.remove();
     }
@@ -1910,12 +1915,6 @@
             return resolved;
           }
         } catch (_) {}
-      }
-      const cached = obterTenantIdNFCacheOffline();
-      if (cached) {
-        window.appTenantId = cached;
-        if (svc && svc.setTenantId) svc.setTenantId(cached);
-        return { success: true, companyId: cached, fallback: true, offline: true };
       }
       limparContextoEmpresaNFInseguro();
       return { success: false, code: 'missing-company-context', error: 'Empresa da sessao nao identificada.' };
@@ -1952,7 +1951,7 @@
         const tid = String(contexto && contexto.companyId || '').trim();
         const uid  = await obterUidAutenticadoNF();
         if (tid && window.NFService) {
-          clearOperationalAccessStateNF();
+          clearOperationalAccessStateNF(contexto);
           const cfg = await window.NFService.init(tid, uid);
           preencherCamposConfig(cfg);
           verificarStatusCert();
@@ -3600,6 +3599,10 @@
     }
 
     function obterTenantIdNF() {
+      const confirmed = window.__siswebNFOperationalReady === true
+        ? window.__siswebNFLastContext
+        : null;
+      if (!confirmed || confirmed.authenticated !== true || !confirmed.companyId) return '';
       try {
         const svc = window.firebaseService || window.FirebaseService || null;
         if (svc && typeof svc.getCurrentTenantId === 'function') {
@@ -3614,7 +3617,7 @@
       try {
         if (window.appTenantId) return String(window.appTenantId).trim();
       } catch (_) {}
-      return obterTenantIdNFCacheOffline();
+      return String(confirmed.companyId).trim();
     }
 
     function setEventoFiscalMsg(msg, tipo = 'warn') {
@@ -4302,7 +4305,6 @@
             if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
               const paths = [
                 `companies/${tenantId}/profile`,
-                `companies/${tenantId}`,
                 `tenants/${tenantId}/company`,
               ];
               for (const path of paths) {

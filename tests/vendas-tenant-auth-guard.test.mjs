@@ -13,7 +13,7 @@ test('vendas nao pre-carrega tenant por company_info antes do auth', () => {
   assert.doesNotMatch(beforeFirebaseModule, /localStorage\.getItem\('company_info'\)/);
   assert.doesNotMatch(beforeFirebaseModule, /window\.appTenantId\s*=\s*String\(tenant\)/);
   assert.match(html, /firebaseService\.js\?v=2026-06-12-tenant-auth-guard-v1/);
-  assert.match(html, /vendas\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
+  assert.match(html, /vendas\.js\?v=2026-07-17-finance-canonical-v2/);
 });
 
 test('vendas aguarda tenant autenticado antes de ler dados operacionais', () => {
@@ -26,7 +26,7 @@ test('vendas aguarda tenant autenticado antes de ler dados operacionais', () => 
   assert.match(js, /window\.__siswebFirebaseServiceReady/);
   assert.match(js, /function isFirebaseOfflineModeVendas\(\)/);
   assert.match(js, /resolveAuthenticatedTenant\(\{ timeoutMs: 4500, allowCached: isOffline \}\)/);
-  assert.match(js, /if \(tenant && isFirebaseOfflineModeVendas\(\)\) return \{ success: true, companyId: tenant, fallback: true, offline: true \};/);
+  assert.doesNotMatch(js, /fallback: true, offline: true/);
   assert.doesNotMatch(js, /if \(tenant\) return \{ success: true, companyId: tenant, fallback: true \};/);
   assert.ok(guardCall > initStart, 'guarda precisa estar dentro da inicializacao');
   assert.ok(loadCall > guardCall, 'carregarDados deve acontecer depois da guarda');
@@ -40,7 +40,7 @@ test('firebaseService expoe resolvedor central de tenant autenticado', () => {
   assert.match(service, /resolveAuthenticatedTenant: resolveAuthenticatedTenant/);
   assert.match(service, /resolveAuthenticatedTenant,/);
   assert.match(service, /const firebaseOffline = typeof window !== 'undefined'/);
-  assert.match(service, /if \(allowCached && firebaseOffline\)/);
+  assert.doesNotMatch(service, /authenticated: false, cached: true/);
   assert.match(service, /const previousTenant = normalizeTenantContextValue/);
   assert.match(service, /const safePrevious = previousTenant && previousTenant !== tenant \? \{\} : previous/);
 });

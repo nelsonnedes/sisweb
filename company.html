@@ -4,9 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadastro de Empresa</title>
+    <script>
+        if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
+            document.write('<script src="auth-performance-diagnostics.js?v=2026-07-14-auth-perf-baseline-v1"><\/script>');
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <script src="menu-component.js?v=2026-07-01-menu-global-dedupe-v1"></script>
+    <script src="menu-component.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -868,7 +873,7 @@
     <script src="auth.js?v=2026-06-11-company-profile-permissions-v3"></script>
     <script src="cities-loader.js"></script>
     <script src="commerce-pdf-share.js?v=2026-06-23-logo-print-dataurl-v1"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
     <script type="module" src="database-utils.js"></script>
     <script type="module">
         const authService = window.firebaseService.authService;
@@ -941,6 +946,7 @@
         const normalizeCompaniesResult = function(raw) {
             if (Array.isArray(raw)) return raw.map((company, index) => normalizeCompanyRecord(company, index)).filter(company => company.id || company.name);
             if (raw && raw.success === true) return normalizeCompaniesResult(raw.data);
+            if (raw && raw.success === false) return [];
             if (raw && typeof raw === 'object') return Object.entries(raw).map(([id, company]) => normalizeCompanyRecord(company, id)).filter(company => company.id || company.name);
             return [];
         };
@@ -995,23 +1001,6 @@
                     if (profile && typeof profile === 'object') {
                         mergedCompany = { ...profile };
                     }
-                    if (!mergedCompany || !mergedCompany.cnpj) {
-                        const rootRes = await svc.loadFromFirebase(`companies/${currentCompanyId}`);
-                        const rootData = rootRes && rootRes.success ? rootRes.data : rootRes;
-                        if (rootData && typeof rootData === 'object') {
-                            const rootProfile = rootData.profile && typeof rootData.profile === 'object' ? rootData.profile : {};
-                            const nestedLegacyRaw = rootData.companies;
-                            const nestedLegacy = Array.isArray(nestedLegacyRaw)
-                                ? (nestedLegacyRaw.find(item => item && typeof item === 'object') || {})
-                                : (nestedLegacyRaw && typeof nestedLegacyRaw === 'object' ? nestedLegacyRaw : {});
-                            mergedCompany = {
-                                ...(rootData || {}),
-                                ...(nestedLegacy || {}),
-                                ...(rootProfile || {}),
-                                ...(mergedCompany || {})
-                            };
-                        }
-                    }
                     if (mergedCompany && typeof mergedCompany === 'object') {
                         return [{ ...mergedCompany, id: currentCompanyId }];
                     }
@@ -1048,12 +1037,25 @@
             window.getAll = getAllImpl;
         }
 
+        function normalizeSameOriginPathTarget(value) {
+            const raw = String(value || '').trim();
+            if (!raw || raw.startsWith('//') || raw.includes('\\') || /^[a-z][a-z\d+.-]*:/i.test(raw)) return '';
+            try {
+                const target = new URL(raw, `${window.location.origin}/`);
+                if (target.origin !== window.location.origin) return '';
+                return `${target.pathname}${target.search || ''}${target.hash || ''}`;
+            } catch (_) {
+                return '';
+            }
+        }
+
         function getCompanyOnboardingReturnTarget() {
             const params = new URLSearchParams(window.location.search || '');
             const redirect = String(params.get('redirect') || '').trim();
             const plan = String(params.get('plan') || '').trim();
             const intent = String(params.get('intent') || '').trim();
-            if (redirect) return redirect;
+            const safeRedirect = normalizeSameOriginPathTarget(redirect);
+            if (safeRedirect) return safeRedirect;
             const target = new URL('subscription.html', window.location.href);
             if (plan) target.searchParams.set('plan', plan);
             if (intent) target.searchParams.set('intent', intent);
@@ -1200,7 +1202,7 @@
                             }
                             
                             const companyIdRaw = String(company.id || company.companyId || '');
-                            const safeCompanyId = companyIdRaw.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                            const editCompanyArg = escapeHtml(JSON.stringify(companyIdRaw));
                             row.innerHTML = `
                                 <td style="text-align: center; padding: 10px;">${logoHtml}</td>
                                 <td style="font-weight: bold;">${company.name || 'N/A'}</td>
@@ -1210,10 +1212,10 @@
                                 <td>${company.phone || 'N/A'}</td>
                                 <td>
                                     <div class="button-group" style="display: flex; gap: 5px;">
-                                        <button class="action-button" onclick="editCompany('${safeCompanyId}')" style="padding: 5px 10px; font-size: 12px;">
+                                        <button class="action-button" onclick="editCompany(${editCompanyArg})" style="padding: 5px 10px; font-size: 12px;">
                                             <i class="fas fa-edit"></i> Editar
                                         </button>
-                                        <button class="action-button delete-button" onclick="deleteCompany('${safeCompanyId}')" style="padding: 5px 10px; font-size: 12px;">
+                                        <button class="action-button delete-button" onclick="deleteCompany(${editCompanyArg})" style="padding: 5px 10px; font-size: 12px;">
                                             <i class="fas fa-trash"></i> Excluir
                                         </button>
                                     </div>
@@ -1496,11 +1498,12 @@
                     if (uid && window.firebaseService && typeof window.firebaseService.setCompanyClaim === 'function') {
                         await window.firebaseService.setCompanyClaim(uid, String(companyId || '').trim());
                         if (window.firebaseAuthUser && typeof window.firebaseAuthUser.getIdTokenResult === 'function') {
+                            try { window.__SISWEB_AUTH_PERF__?.tokenRefresh('claims_changed', 'company_service', 'started', 0); } catch (_) {}
                             await window.firebaseAuthUser.getIdTokenResult(true);
                         }
                     }
                 } catch (e) {
-                    console.warn('⚠️ Falha ao sincronizar claim/tenant antes do upload da logo:', e);
+                    console.warn('⚠️ Falha ao sincronizar empresa da sessão antes do upload da logo');
                 }
                 const safeFileName = String(file && file.name ? file.name : 'logo.png').replace(/[^\w.\-]+/g, '_');
                 const fileName = `companies/${companyId}/profile/logo/current`;
@@ -1527,7 +1530,7 @@
                 const storagePath = data && (data.path || data.storagePath || fileName);
                 if (uploadResult && uploadResult.success !== false && (url || storagePath)) {
                     console.log('✅ Logo enviada com sucesso para Firebase Storage');
-                    console.log('🔗 URL da logo:', url || storagePath);
+                    console.log('🔗 Referência da logo atualizada');
                     return normalizeLogoPayloadFromUpload({
                         ...data,
                         path: storagePath,
@@ -1875,6 +1878,7 @@
                 const out = { ...(obj || {}) };
                 try { delete out.logoBase64; } catch (_) {}
                 try { delete out.logoData; } catch (_) {}
+                try { delete out._cleanupPreviousStoragePath; } catch (_) {}
                 try {
                     if (isDataLogo(out.logo)) out.logo = '';
                     if (isDataLogo(out.logoUrl)) out.logoUrl = '';
@@ -1915,7 +1919,7 @@
                     }
                     console.log('📤 Fazendo upload da nova logo...');
                     logoPayload = await uploadLogoToFirebase(logoFile, draftCompanyId, existingLogoPayload);
-                    console.log('✅ Logo processada com sucesso:', String(logoPayload.logo || logoPayload.logoStoragePath || '').substring(0, 80) + '...');
+                    console.log('✅ Logo processada com sucesso');
                 } catch (error) {
                     console.error('❌ Erro ao processar logo:', error);
                     try {
@@ -1973,6 +1977,7 @@
                     effectiveCompany = { ...remoteCompany, id: cid, companyId: cid };
                     try {
                         if (window.firebaseAuthUser && typeof window.firebaseAuthUser.getIdTokenResult === 'function') {
+                            try { window.__SISWEB_AUTH_PERF__?.tokenRefresh('authenticated_retry', 'company_service', 'started', 0); } catch (_) {}
                             await window.firebaseAuthUser.getIdTokenResult(true);
                         }
                     } catch (_) {}
@@ -2011,6 +2016,7 @@
                             try {
                                 await window.firebaseService.setCompanyClaim(currentUid, profileCompanyId);
                                 if (window.firebaseAuthUser && typeof window.firebaseAuthUser.getIdTokenResult === 'function') {
+                                    try { window.__SISWEB_AUTH_PERF__?.tokenRefresh('claims_changed', 'company_service', 'started', 0); } catch (_) {}
                                     await window.firebaseAuthUser.getIdTokenResult(true);
                                 }
                             } catch (claimErr) {
@@ -2048,6 +2054,10 @@
                         const savedProfile = profileResult && profileResult.data && profileResult.data.profile
                             ? profileResult.data.profile
                             : profilePayload;
+                        const logoCleanup = profileResult && profileResult.data ? profileResult.data.logoCleanup : null;
+                        if (logoCleanup && Number(logoCleanup.failedCount || 0) > 0) {
+                            console.warn('⚠️ Perfil salvo, mas a reconciliação de logos antigas ficou parcialmente pendente.');
+                        }
                         effectiveCompany = savedProfile;
                         editingId = null;
                     }
@@ -2204,7 +2214,7 @@
                     for (const item of list) {
                         const company = normalizeCompanyRecord(item, item && (item.id || item.companyId));
                         const companyId = String(company.id || company.companyId || '').trim();
-                        const safeCompanyId = companyId.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                        const editCompanyArg = escapeHtml(JSON.stringify(companyId));
                         const displayName = company.name || 'Nome não informado';
                         const missingRequired = !company.name || !company.cnpj || !company.city || !company.state;
                         // Processar logo da empresa
@@ -2242,7 +2252,7 @@
                                     <div><strong>Georeferenciamento</strong>: ${escapeHtml([company.geoLatitude, company.geoLongitude].filter(Boolean).join(', ') || 'Não informado')}</div>
                                 </div>
                                 <div class="company-card-actions">
-                                    <button class="action-button" onclick="editCompany('${safeCompanyId}')" style="padding: 8px 12px; font-size: 12px; white-space: nowrap;">
+                                    <button class="action-button" onclick="editCompany(${editCompanyArg})" style="padding: 8px 12px; font-size: 12px; white-space: nowrap;">
                                         <i class="fas fa-edit"></i> Editar perfil
                                     </button>
                                 </div>
@@ -2315,6 +2325,7 @@
                             const callable = firebase.functions().httpsCallable('setCompanyClaim');
                             await callable({ targetUid: user.uid, companyId: tenant });
                             if (typeof user.getIdTokenResult === 'function') {
+                                try { window.__SISWEB_AUTH_PERF__?.tokenRefresh('claims_changed', 'company_service', 'started', 0); } catch (_) {}
                                 await user.getIdTokenResult(true);
                             }
                         }
@@ -2347,15 +2358,10 @@
                     const companies = await getCompaniesList();
                     company = companies.find(c => String(c.id) === String(id));
                     if (!company && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-                        const res = await window.firebaseService.loadFromFirebase(`companies/${id}`);
-                        const root = res && res.success ? res.data : res;
-                        if (root && typeof root === 'object') {
-                            const rootProfile = root.profile && typeof root.profile === 'object' ? root.profile : {};
-                            const nestedLegacyRaw = root.companies;
-                            const nestedLegacy = Array.isArray(nestedLegacyRaw)
-                                ? (nestedLegacyRaw.find(item => item && typeof item === 'object') || {})
-                                : (nestedLegacyRaw && typeof nestedLegacyRaw === 'object' ? nestedLegacyRaw : {});
-                            company = { ...root, ...nestedLegacy, ...rootProfile, id: id };
+                        const res = await window.firebaseService.loadFromFirebase(`companies/${id}/profile`);
+                        const profile = res && res.success ? res.data : res;
+                        if (profile && typeof profile === 'object') {
+                            company = { ...profile, id: id };
                         }
                     }
                 }
@@ -2522,6 +2528,7 @@
             let companyId = '';
             try {
                 if (typeof authUser.getIdTokenResult === 'function') {
+                    try { window.__SISWEB_AUTH_PERF__?.tokenRefresh('legacy_unspecified', 'company_service', 'started', 0); } catch (_) {}
                     const token = await authUser.getIdTokenResult(true);
                     companyId = String((token && token.claims && (token.claims.companyId || token.claims.companyID || token.claims.tenantId)) || '').trim();
                 }

@@ -4847,6 +4847,7 @@
                     return;
                 }
                 var logoPayload = {};
+                var current = companyProfilesById[companyId] || {};
                 var selectedLogoFile = logoInputEl && logoInputEl.files && logoInputEl.files[0] ? logoInputEl.files[0] : null;
                 if (selectedLogoFile) {
                     if (!window.firebaseService || typeof window.firebaseService.uploadCompanyLogo !== "function") {
@@ -4879,7 +4880,6 @@
                         return;
                     }
                 } else {
-                    var current = companyProfilesById[companyId] || {};
                     logoPayload = buildStoredLogoPayload(current);
                 }
                 var payload = { companyId: companyId, ...readCompanyProfileFormPayload(), ...logoPayload };
@@ -4902,6 +4902,10 @@
                     if (!result || result.success === false) {
                         notifyAdmin((result && result.error) || "Falha ao salvar perfil da empresa.", "error");
                         return;
+                    }
+                    var logoCleanup = result && result.data ? result.data.logoCleanup : (result && result.logoCleanup ? result.logoCleanup : null);
+                    if (logoCleanup && Number(logoCleanup.failedCount || 0) > 0) {
+                        console.warn("Perfil salvo, mas a reconciliação de logos antigas ficou parcialmente pendente.");
                     }
                     var profile = result && result.data && result.data.profile ? result.data.profile : (result && result.profile ? result.profile : payload);
                     companyProfilesById[companyId] = { ...(companyProfilesById[companyId] || {}), ...profile, id: companyId, companyId: companyId };

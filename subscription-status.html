@@ -6,7 +6,7 @@
     <title>Status da Assinatura - Sistema</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <script src="menu-component.js?v=2026-07-01-menu-global-dedupe-v1"></script>
+    <script src="menu-component.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
     <style>
         * {
             margin: 0;
@@ -1902,7 +1902,7 @@
                 box.style.border = '1px solid #bfdbfe';
                 box.style.background = '#eff6ff';
                 box.style.color = '#1e3a8a';
-                box.innerHTML = `<h3 style="margin-bottom:6px;">Modo leitura ativo até o vencimento</h3><p style="font-size:13px;line-height:1.45;">Sua assinatura está expirada. Você pode renovar agora ou continuar em modo leitura por prazo temporário. Vencimento registrado: <strong>${endText}</strong>.</p>`;
+                box.innerHTML = `<h3 style="margin-bottom:6px;">Modo leitura temporário disponível</h3><p style="font-size:13px;line-height:1.45;">Sua assinatura está expirada. Você pode renovar agora ou ativar um período temporário somente para consulta. Vencimento registrado: <strong>${endText}</strong>.</p>`;
                 return;
             }
             if (statusKey === 'blocked') {

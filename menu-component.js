@@ -1,12 +1,12 @@
 // Verificar se a classe já foi definida para evitar redefinição
 // Menu Component v2.3 - Correção navegação submenus - 2025-01-08 15:45
-// Force cache break: 20250108154500
+// Force cache break: 20260701001
 // CORREÇÃO: Força navegação manual dos links dos submenus para evitar preventDefault fantasma
 (function setupSiswebPWA() {
     if (typeof window === 'undefined' || window.__siswebPWAInitialized) return;
     window.__siswebPWAInitialized = true;
 
-    const PWA_VERSION = '2026-06-11-profile-admin-v1';
+    const PWA_VERSION = '2026-07-01-alerts-overflow-fix-v1';
     const state = {
         deferredPrompt: null,
         floatingButton: null,
@@ -303,16 +303,22 @@ if (window.customElements && !window.customElements.get('main-menu')) {
             const authService = window.firebaseService && window.firebaseService.authService ? window.firebaseService.authService : null;
             const signOutFn = authService && typeof authService.signOut === 'function' ? authService.signOut : null;
             const logoutFn = authService && typeof authService.logout === 'function' ? authService.logout : null;
-            if (signOutFn) {
-                await signOutFn();
-            } else if (logoutFn && logoutFn !== window.logout) {
-                await logoutFn();
+            if (logoutFn && logoutFn !== window.logout) {
+                const result = await logoutFn();
+                if (!result || result.success !== true) {
+                    throw new Error(result && result.error ? result.error : 'Logout remoto não confirmado.');
+                }
+            } else if (signOutFn) {
+                const authInstance = authService && typeof authService.getAuth === 'function' ? authService.getAuth() : null;
+                if (!authInstance) throw new Error('Serviço de autenticação indisponível para logout.');
+                await signOutFn(authInstance);
             } else if (typeof window.firebaseSignOut === 'function' && window.firebaseSignOut !== window.logout) {
-                await window.firebaseSignOut();
+                const result = await window.firebaseSignOut();
+                if (result && result.success === false) throw new Error(result.error || 'Logout remoto não confirmado.');
+            } else {
+                throw new Error('Serviço de logout indisponível.');
             }
-        } catch (err) {
-            console.error('Erro no logout:', err);
-        } finally {
+
             try {
                 localStorage.removeItem('currentUser');
                 localStorage.removeItem('persistentUser');
@@ -335,6 +341,15 @@ if (window.customElements && !window.customElements.get('main-menu')) {
             if (!isLoginPage) {
                 window.location.replace(`${loginUrl}?logout=1&reason=${encodeURIComponent(reason || 'logout_menu')}&redirect=${encodeURIComponent(currentPath)}`);
             }
+        } catch (err) {
+            console.error('Erro no logout:', err && err.code ? err.code : 'logout-not-confirmed');
+            try {
+                if (window.__toast) window.__toast('Não foi possível confirmar o logout. A sessão foi mantida.', 'warning');
+                else if (window.FolhaUtils && window.FolhaUtils.showToast) {
+                    window.FolhaUtils.showToast('Não foi possível confirmar o logout. A sessão foi mantida.', 'warning', 5000);
+                }
+            } catch (_) {}
+        } finally {
             window.__logoutInProgress = false;
         }
     }
@@ -737,11 +752,13 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                         background: rgba(255,255,255,0.08);
                         outline: none;
                     }
-                    .alerts-panel {
+                    .sisweb-menu-shell .alerts-panel {
                         right: 0;
                         left: auto;
                         width: min(420px, calc(100vw - 24px));
                         max-width: 420px;
+                        max-height: min(480px, calc(100vh - 80px));
+                        overflow: hidden;
                     }
                     .alerts-list {
                         max-height: 280px;
@@ -1061,6 +1078,10 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             color: #1f2937;
                             box-shadow: 0 16px 32px rgba(15, 23, 42, 0.22);
                             border: 1px solid #e5e7eb;
+                        }
+                        .menu-quick-actions .alerts-dropdown .alerts-panel {
+                            max-height: min(400px, calc(100vh - 100px));
+                            overflow: hidden;
                         }
                         .menu-quick-actions .dropdown-content a {
                             color: #2c3e50;
@@ -2942,18 +2963,19 @@ async function __siswebResolveFirebaseService(requiredFunction) {
 
     try {
         const version = window.SiswebPWA && window.SiswebPWA.version ? String(window.SiswebPWA.version) : String(Date.now());
-        const moduleUrl = `${__siswebResolveRootScriptPath('firebaseService.js')}?v=${encodeURIComponent(version)}`;
+        const moduleUrl = `${__siswebResolveRootScriptPath('support-callable-service.js')}?v=${encodeURIComponent(version)}`;
         const imported = await import(moduleUrl);
-        const merged = { ...(window.firebaseService || {}), ...imported };
-        if (imported && imported.authService) {
-            merged.authService = imported.authService;
-        }
-        window.firebaseService = merged;
-        if (!required || typeof merged[required] === 'function') {
-            return merged;
+        const adapter = imported && typeof imported.getSupportCallableService === 'function'
+            ? imported.getSupportCallableService()
+            : (imported && imported.default ? imported.default : {});
+        const target = window.firebaseService || {};
+        Object.assign(target, adapter);
+        window.firebaseService = target;
+        if (!required || typeof target[required] === 'function') {
+            return target;
         }
     } catch (error) {
-        console.warn('[Suporte Sisweb] Falha ao carregar firebaseService atualizado:', error);
+        console.warn('[Suporte Sisweb] Falha ao carregar adaptador de Functions:', error);
     }
 
     return null;
