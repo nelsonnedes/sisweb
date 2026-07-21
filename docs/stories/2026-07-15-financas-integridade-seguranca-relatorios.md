@@ -303,6 +303,7 @@ Esta lista e inicial e deve ser substituida pela File List real do Dev Agent, se
 
 | Data | Versao | Descricao | Autor |
 |---|---|---|---|
+| 2026-07-21 | 1.1 | Rollout da autorizacao financeira concluido com Rules, Functions e Hosting publicados e verificacao externa de CORS, autenticacao e igualdade das Rules. | Codex / equipe AIOX |
 | 2026-07-21 | 1.0 | Autorizacao financeira passou a reconhecer somente papeis/permissoes ou `ownerUid` canonico administrado pelo backend; prova mutavel por e-mail foi removida de Functions e Rules. | Codex / equipe AIOX |
 | 2026-07-21 | 0.9 | Revisao CodeRabbit endureceu carregamento de perfis, logout, escape da tabela empresarial, reconciliacao de logos pos-save, diagnostico tardio e formato de logos HTTP no PDF. | Codex / equipe AIOX |
 | 2026-07-21 | 0.8 | Lamina PIX deixou de montar caminhos Firebase com objetos de cliente legados; dependencias transitivas vulneraveis foram atualizadas sem mudanca de API. | Codex / equipe AIOX |
@@ -397,11 +398,15 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - Gate 2026-07-21: 282 testes aprovados, 1 skip esperado no comando geral, 13/13 cenarios RBAC no Emulator, lint, typecheck, build allowlisted e audit sem vulnerabilidades.
 - Gate CodeRabbit 2026-07-21: 287 testes aprovados, 1 skip esperado no comando geral, 92/92 testes focados, 13/13 cenarios RBAC no Emulator, lint raiz/Functions, typecheck, build de 448 arquivos, `git diff --check` e audit sem vulnerabilidades.
 - Gate de autorizacao financeira 2026-07-21: suite geral mantida em 287 aprovados e 1 skip esperado, 34/34 testes focados de transacoes/isolamento, 13/13 cenarios RBAC no Emulator, lint raiz/Functions, typecheck, build de 448 arquivos e audit sem vulnerabilidades.
+- Gate final do rollout 2026-07-21: 288 testes no total, 287 aprovados e 1 skip esperado; 42/42 testes focados, 14/14 cenarios RBAC no Emulator, postdeploy 37/37, lint raiz/Functions, typecheck, build de 448 arquivos e 19.446.518 bytes, `git diff --check` e audit sem vulnerabilidades.
 - Concluido: perfis empresariais diretos ou embrulhados sao preservados em Vendas, Compras e Estoque; envelopes de falha nao sao tratados como dados.
 - Concluido: falha de limpeza de logo depois do `profileRef.set` nao transforma uma gravacao confirmada em falso erro para o cliente.
 - Concluido: tabela de empresas escapa campos persistidos antes de `innerHTML`, e logout da tela publica so limpa cache apos confirmacao remota.
 - Concluido: o `403` de `financeNextSequence` para o proprietario operacional legado foi reproduzido e corrigido sem conceder acesso generico a membros sem permissao.
 - Backup anterior ao ajuste RBAC: `C:\Users\Nelson\AppData\Local\Temp\sisweb-membership-pre-owner-20260721.json` (SHA-256 `B203FAB465ECC457676AFB7F72AC7D1ECCB7F1F12671BF91F11B47B076A6855C`) e `C:\Users\Nelson\AppData\Local\Temp\sisweb-owneruid-pre-owner-20260721.json` (SHA-256 `D08E54F6AA60DC061AAD4C6F0BA7B19961B7762C35EA199FA23632B753241DB4`).
+- Rollout publicado: Realtime Database Rules; dez Functions (`financeNextSequence`, seis mutacoes financeiras complementares e as tres callables de perfil/onboarding); Hosting de producao em `https://sisweb-7ce82.web.app`.
+- Pos-deploy externo: as dez Functions ficaram `ACTIVE` em Node 22/us-central1; preflight retornou HTTP 204 com origem restrita ao Hosting e chamadas sem token retornaram HTTP 401 sem mutacao.
+- Rules remotas foram comparadas semanticamente com `database.rules.json` e ficaram identicas. O canal `rollback-fin-access-20260721` preserva a versao anterior do Hosting em `https://sisweb-7ce82--rollback-fin-access-20260721-m5gstmqp.web.app`.
 - Divida controlada: consolidar as duas implementacoes legadas de `uploadCompanyLogo` exige refatoracao isolada; o log do Romaneio permanece sem objeto bruto de erro para nao reintroduzir dados sensiveis no console.
 
 ### File List Real
