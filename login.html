@@ -2099,8 +2099,8 @@
             try {
                 console.log("🚪 Forçando logout completo...");
                 const result = await tryRemoteSignOut();
-                if (!result.success && result.error) {
-                    throw result.error;
+                if (!result.success) {
+                    throw result.error || new Error('Logout remoto não confirmado.');
                 }
                 clearAllAuthLocalState();
                 window.location.href = 'login.html?noRedirect=true';

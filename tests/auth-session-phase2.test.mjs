@@ -443,7 +443,8 @@ test('logout limpa caches somente depois de sign-out confirmado', () => {
   assert.doesNotMatch(authCatch, /removeItem\('currentUser'\)|clearCompanyContextCache\(\)/);
 
   assert.doesNotMatch(loginLogout, /waitForFirebaseConnection|_FIREBASE_CONNECTED/);
-  assert.ok(loginLogout.indexOf('if (!result.success') < loginLogout.indexOf('clearAllAuthLocalState()'));
+  assert.match(loginLogout, /if \(!result\.success\) \{[\s\S]*throw result\.error \|\| new Error\('Logout remoto não confirmado\.'\)/);
+  assert.ok(loginLogout.indexOf('if (!result.success)') < loginLogout.indexOf('clearAllAuthLocalState()'));
   const loginCatch = loginLogout.slice(loginLogout.indexOf('} catch (error)'));
   assert.doesNotMatch(loginCatch, /clearAllAuthLocalState\(\)/);
 });

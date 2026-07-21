@@ -79,10 +79,22 @@ test('company logo reconciliation is tenant-scoped and runs after profile persis
   const selfUpdate = functionsIndex.match(/exports\.updateMyCompanyProfile[\s\S]*?(?=\nfunction normalizeSelfProfilePayload)/)?.[0] || '';
 
   assert.match(helper, /const prefix = `companies\/\$\{companyId\}\/profile\/logo\/`/);
+  assert.match(helper, /try \{[\s\S]*normalizeCompanyLogoStoragePath\(companyId, keepPath\)[\s\S]*catch \(error\)/);
+  assert.match(helper, /return \{ attempted: false, deletedCount: 0, failedCount: 1 \}/);
   assert.match(helper, /getFiles\(\{ prefix \}\)/);
   assert.match(helper, /file\.name !== keepPath/);
   assert.match(helper, /Promise\.allSettled/);
   assert.match(selfUpdate, /await profileRef\.set\(nextProfile\);[\s\S]*await reconcileCompanyLogoObjects\(companyId, nextProfile\.logoStoragePath/);
+});
+
+test('company table escapes profile fields before writing innerHTML', () => {
+  const companyHtml = read('company.html');
+  const tableRow = companyHtml.match(/const companyIdRaw[\s\S]*?companyList\.appendChild\(row\);/)?.[0] || '';
+
+  assert.match(companyHtml, /escapeHtml\(logoUrl\)/);
+  for (const field of ['name', 'cnpj', 'city', 'state', 'phone']) {
+    assert.match(tableRow, new RegExp(`escapeHtml\\(company\\.${field} \\|\\| 'N/A'\\)`));
+  }
 });
 
 test('active print modules consume tenant-scoped company identity', () => {

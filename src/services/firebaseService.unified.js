@@ -173,7 +173,7 @@ class UnifiedFirebaseService {
             await waitForFirebaseGlobal();
             await this.initialize();
         } catch (error) {
-            console.error('❌ Erro ao aguardar Firebase:', error);
+            console.error('❌ Erro ao aguardar Firebase:', error && error.code ? error.code : 'unknown');
             this.initError = error;
         }
     }
@@ -223,7 +223,7 @@ class UnifiedFirebaseService {
             
             return true;
         } catch (error) {
-            console.error('❌ Erro ao inicializar Firebase:', error);
+            console.error('❌ Erro ao inicializar Firebase:', error && error.code ? error.code : 'unknown');
             this.initError = error;
             this.isInitialized = false;
             return false;
@@ -755,7 +755,7 @@ class UnifiedFirebaseService {
             console.log(`✅ Logout realizado`);
             return { success: true };
         } catch (error) {
-            console.error(`❌ Erro no logout:`, error);
+            console.error(`❌ Erro no logout:`, error && error.code ? error.code : 'unknown');
             return {
                 success: false,
                 error: error.message

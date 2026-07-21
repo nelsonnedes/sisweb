@@ -1020,7 +1020,15 @@ function normalizeCompanyLogoProfilePayload(companyId, logoPayload) {
 
 async function reconcileCompanyLogoObjects(companyId, keepPath) {
     const prefix = `companies/${companyId}/profile/logo/`;
-    keepPath = normalizeCompanyLogoStoragePath(companyId, keepPath);
+    try {
+        keepPath = normalizeCompanyLogoStoragePath(companyId, keepPath);
+    } catch (error) {
+        console.error('Falha ao normalizar caminho da logo para reconciliação.', {
+            companyId,
+            code: error && error.code ? String(error.code) : ''
+        });
+        return { attempted: false, deletedCount: 0, failedCount: 1 };
+    }
     if (!keepPath) {
         return { attempted: false, deletedCount: 0, failedCount: 0 };
     }

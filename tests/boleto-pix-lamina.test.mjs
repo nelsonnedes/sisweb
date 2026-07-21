@@ -53,6 +53,15 @@ function loadFinanceBoletoHelpers() {
     return context.helpers;
 }
 
+function loadPdfImageFormat() {
+    const source = read('js/commerce-boleto-pix.js');
+    const helper = blockBetween(source, 'function getPdfImageFormat', 'const CommerceBoletoPixPdf');
+    const context = {};
+    vm.createContext(context);
+    vm.runInContext(`${helper}\nthis.getPdfImageFormat = getPdfImageFormat;`, context, { filename: 'commerce-pdf-format.vm.js' });
+    return context.getPdfImageFormat;
+}
+
 describe('Lâmina de Cobrança PIX e Engine PIX Compartilhada', () => {
     const PixBrCode = loadPixBrCode();
 
@@ -138,5 +147,13 @@ describe('Lâmina de Cobrança PIX e Engine PIX Compartilhada', () => {
         const pdfSource = read('js/commerce-boleto-pix.js');
         assert.match(pdfSource, /company\.logoDataUrl/);
         assert.match(pdfSource, /getPdfImageFormat\(logoDataUrl\)/);
+    });
+
+    it('deve inferir o formato de logos HTTP para o jsPDF', () => {
+        const getPdfImageFormat = loadPdfImageFormat();
+        assert.equal(getPdfImageFormat('https://cdn.example/logo.jpg?token=1'), 'JPEG');
+        assert.equal(getPdfImageFormat('https://cdn.example/logo.webp#preview'), 'WEBP');
+        assert.equal(getPdfImageFormat('https://cdn.example/logo.png'), 'PNG');
+        assert.equal(getPdfImageFormat('data:image/jpeg;base64,AAAA'), 'JPEG');
     });
 });

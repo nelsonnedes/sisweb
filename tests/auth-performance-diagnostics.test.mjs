@@ -265,6 +265,22 @@ test('servicos da baseline usam a API tipada sem interceptar o Firebase', () => 
   assert.doesNotMatch(source, /prototype\.|Proxy\(|firebase\s*=|onAuthStateChanged\s*=/);
 });
 
+test('compatibilidade de conexao consulta diagnostico de forma tardia', () => {
+  const compat = read('firebase-connection-manager-compat.js');
+  assert.match(compat, /function getAuthPerfConnection\(\)/);
+  assert.match(compat, /getAuthPerfConnection\(\)\?\.internet/);
+  assert.match(compat, /getAuthPerfConnection\(\)\?\.listener/);
+  assert.match(compat, /getAuthPerfConnection\(\)\?\.rtdb/);
+  assert.doesNotMatch(compat, /const authPerfConnection =/);
+});
+
+test('servico unificado nao registra objetos brutos de erro no bootstrap ou logout', () => {
+  const unified = read('src/services/firebaseService.unified.js');
+  assert.match(unified, /Erro ao aguardar Firebase:', error && error\.code \? error\.code : 'unknown'/);
+  assert.match(unified, /Erro ao inicializar Firebase:', error && error\.code \? error\.code : 'unknown'/);
+  assert.match(unified, /Erro no logout:`, error && error\.code \? error\.code : 'unknown'/);
+});
+
 test('todo refresh forcado inventariado possui motivo diagnostico fechado', () => {
   for (const file of forcedRefreshFiles) {
     const content = read(file);

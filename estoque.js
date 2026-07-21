@@ -6912,7 +6912,7 @@ async function obterDadosEmpresaRelatorio() {
         if (tenantId && svc && typeof svc.loadFromFirebase === 'function') {
             try {
                 const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
-                const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
+                const byPathData = byPath && (byPath.success === true ? byPath.data : (byPath.success === false ? null : byPath));
                 if (byPathData && typeof byPathData === 'object') {
                     empresa = { ...empresa, ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
                 }

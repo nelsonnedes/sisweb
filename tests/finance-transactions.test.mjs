@@ -749,10 +749,16 @@ test('callable exige membership ativa e permissão financeira', async () => {
     exists: () => value !== undefined,
     val: () => value,
   });
-  const databaseFor = (member, role) => ({
+  const databaseFor = (member, role, user, profile) => ({
     ref(path) {
       return {
-        get: async () => snapshot(path.includes('/users/') ? member : role),
+        get: async () => {
+          if (path.startsWith('companies/') && path.includes('/users/')) return snapshot(member);
+          if (path.startsWith('roles/')) return snapshot(role);
+          if (path.startsWith('users/')) return snapshot(user);
+          if (path.endsWith('/profile')) return snapshot(profile);
+          return snapshot(undefined);
+        },
       };
     },
   });
@@ -789,6 +795,47 @@ test('callable exige membership ativa e permissão financeira', async () => {
   );
   await assert.doesNotReject(
     assertFinanceAccess(context, databaseFor({ role: 'viewer' }, { role: 'finance', companyId: 'tenant-0001' }), async () => false),
+  );
+  await assert.doesNotReject(
+    assertFinanceAccess(
+      context,
+      databaseFor(
+        { accountStatus: 'active' },
+        undefined,
+        { companyId: 'tenant-0001', email: 'owner@example.com' },
+        { email: 'OWNER@example.com' },
+      ),
+      async () => false,
+    ),
+  );
+  await assert.rejects(
+    assertFinanceAccess(
+      context,
+      databaseFor(
+        { accountStatus: 'active' },
+        undefined,
+        { companyId: 'tenant-0001', email: 'user@example.com' },
+        { email: 'owner@example.com' },
+      ),
+      async () => false,
+    ),
+    (error) => error instanceof FinanceValidationError
+      && error.reason === 'permission-denied'
+      && /Permissão financeira/.test(error.message),
+  );
+  await assert.rejects(
+    assertFinanceAccess(
+      context,
+      databaseFor(
+        undefined,
+        undefined,
+        { companyId: 'tenant-0001', email: 'owner@example.com' },
+        { email: 'owner@example.com' },
+      ),
+      async () => false,
+    ),
+    (error) => error instanceof FinanceValidationError
+      && /Membership financeira/.test(error.message),
   );
 });
 

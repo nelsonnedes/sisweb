@@ -987,32 +987,7 @@ async function ensureFinanceTenantContext(timeoutMs = 7000) {
         } catch (_) {}
     }
 
-    const getCachedTenant = () => {
-        try {
-            const currentSvc = getFinanceFirebaseService();
-            if (currentSvc && typeof currentSvc.getCurrentTenantId === 'function') {
-                const t = currentSvc.getCurrentTenantId();
-                if (t) return String(t);
-            }
-            if (currentSvc && typeof currentSvc.getTenantId === 'function') {
-                const t = currentSvc.getTenantId();
-                if (t) return String(t);
-            }
-        } catch (_) {}
-        try {
-            if (window.appTenantId) return String(window.appTenantId);
-            const raw = localStorage.getItem('company_info');
-            if (raw) {
-                const obj = JSON.parse(raw);
-                const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
-                if (id) return String(id);
-            }
-        } catch (_) {}
-        return '';
-    };
-
-    let tenant = '';
-    while (!tenant && (Date.now() - startedAt) < timeoutMs) {
+    while ((Date.now() - startedAt) < timeoutMs) {
         await new Promise((resolve) => setTimeout(resolve, 250));
         svc = getFinanceFirebaseService();
         if (svc && typeof svc.resolveAuthenticatedTenant === 'function') {
@@ -1021,15 +996,6 @@ async function ensureFinanceTenantContext(timeoutMs = 7000) {
                 if (retry && retry.success && retry.companyId) return String(retry.companyId);
             } catch (_) {}
         }
-        tenant = '';
-    }
-
-    if (tenant) {
-        try {
-            const currentSvc = getFinanceFirebaseService();
-            if (currentSvc && typeof currentSvc.setTenantId === 'function') currentSvc.setTenantId(tenant);
-        } catch (_) {}
-        return tenant;
     }
 
     if (!isOffline) limparContextoEmpresaFinancasInseguro();

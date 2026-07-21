@@ -24,7 +24,7 @@ Nas contas a pagar, o financeiro continua exibindo o tipo operacional e o víncu
 - **[MODIFY] `financas.js`**: O filtro Tipo de contas a receber usa o mesmo normalizador operacional de contas a pagar, exibindo `boleto`, `pix` e demais formas reais em vez do rótulo genérico `receber`.
 - **[MODIFY] `company.html`**: Recomposta a proteção do perfil da empresa via `updateMyCompanyProfile`, georeferenciamento com QR de navegação, cachebusters atuais e cards operacionais sem ação destrutiva de tenant.
 - **[MODIFY] `src/services/firebaseService.js`**: Upload de logo usa caminho canônico `companies/{tenant}/profile/logo/current`, normaliza URL tokenizada e delega a limpeza para depois da persistência do perfil.
-- **[MODIFY] `firebaseService.js`**: O perfil normalizado para relatorios preserva `pixChaveCobranca`, `pixTipoChaveCobranca`, `pixFavorecidoCobranca` e `pixBancoCobranca`, evitando falso cadastro incompleto na lamina.
+- **[MODIFY] `firebaseService.js`**: O perfil normalizado para relatorios preserva `pixChaveCobranca`, `pixTipoChaveCobranca`, `pixFavorecidoCobranca` e `pixBancoCobranca`, evitando falso cadastro incompleto na lâmina.
 
 ## Evidencias
 - `node --test tests/boleto-pix-lamina.test.mjs`: OK.
@@ -36,10 +36,10 @@ Nas contas a pagar, o financeiro continua exibindo o tipo operacional e o víncu
 - Correção posterior: `financas.js` mantém o tipo operacional visível em contas a pagar, mas bloqueia a lâmina de boleto nessas linhas para preservar a lógica de cobrança.
 - Validação posterior: `npm run lint`, `npm run typecheck`, pacote direcionado PWA/empresa/storage/financeiro e `npm test` completo passaram.
 - Correção posterior: `node --test tests/financas-contas-pagar-edit.test.mjs` cobre a edição de conta a pagar vinda de compras, trocando `tipoPagamento` legado de boleto para pix sem deixar o valor antigo dominar a exibição.
-- Revisao CodeRabbit de 2026-07-15: dropdown Tipo de contas a receber normalizado simetricamente; teste focado e suite completa 223/223 aprovados.
+- Revisao CodeRabbit de 2026-07-15: dropdown Tipo de contas a receber normalizado simetricamente; teste focado e suíte completa 223/223 aprovados.
 - Correcao publicada no Hosting live na versao `a6dee04d9afafb59`. O smoke autenticado final ficou pendente porque a sessao salva expirou; sem sessao, a Home redirecionou corretamente ao Login e nenhum dado real foi alterado.
 - Correcao final publicada no Hosting em 2026-07-18 com cache `2026-07-19-finance-print-pix-v1`; verificacao HTTP confirmou os assets atualizados.
-- Smoke autenticado pos-deploy: uma conta a receber filtrada como boleto acionou a lamina sem o erro "Complete os dados PIX da Empresa". Os quatro campos ja estavam persistidos e passaram pelo normalizador do perfil.
+- Smoke autenticado pos-deploy: uma conta a receber filtrada como boleto acionou a lâmina sem o erro "Complete os dados PIX da Empresa". Os quatro campos ja estavam persistidos e passaram pelo normalizador do perfil.
 - `node --test tests/boleto-pix-lamina.test.mjs tests/financas-relatorios-exportacoes.test.mjs`: coberturas focadas aprovadas; `npm test` finalizou com 277 aprovados, 0 falhas e 1 skip esperado do Emulator.
 
 ## File List

@@ -1189,7 +1189,7 @@
                                 try {
                                     const logoUrl = await loadCompanyLogo(logoRef);
                                     if (logoUrl) {
-                                        logoHtml = `<img src="${logoUrl}" alt="Logo" style="width: 40px; height: 40px; object-fit: contain; border-radius: 4px;">`;
+                                        logoHtml = `<img src="${escapeHtml(logoUrl)}" alt="Logo" style="width: 40px; height: 40px; object-fit: contain; border-radius: 4px;">`;
                                     } else {
                                         logoHtml = '<span style="color: #999; font-size: 12px;">Sem logo</span>';
                                     }
@@ -1205,11 +1205,11 @@
                             const editCompanyArg = escapeHtml(JSON.stringify(companyIdRaw));
                             row.innerHTML = `
                                 <td style="text-align: center; padding: 10px;">${logoHtml}</td>
-                                <td style="font-weight: bold;">${company.name || 'N/A'}</td>
-                                <td>${company.cnpj || 'N/A'}</td>
-                                <td>${company.city || 'N/A'}</td>
-                                <td>${company.state || 'N/A'}</td>
-                                <td>${company.phone || 'N/A'}</td>
+                                <td style="font-weight: bold;">${escapeHtml(company.name || 'N/A')}</td>
+                                <td>${escapeHtml(company.cnpj || 'N/A')}</td>
+                                <td>${escapeHtml(company.city || 'N/A')}</td>
+                                <td>${escapeHtml(company.state || 'N/A')}</td>
+                                <td>${escapeHtml(company.phone || 'N/A')}</td>
                                 <td>
                                     <div class="button-group" style="display: flex; gap: 5px;">
                                         <button class="action-button" onclick="editCompany(${editCompanyArg})" style="padding: 5px 10px; font-size: 12px;">

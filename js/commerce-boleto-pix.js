@@ -99,6 +99,10 @@
     const value = String(dataUrl || '');
     if (/^data:image\/jpe?g;base64,/i.test(value)) return 'JPEG';
     if (/^data:image\/webp;base64,/i.test(value)) return 'WEBP';
+    if (/^https?:\/\//i.test(value)) {
+      if (/\.jpe?g(?:[?#]|$)/i.test(value)) return 'JPEG';
+      if (/\.webp(?:[?#]|$)/i.test(value)) return 'WEBP';
+    }
     return 'PNG';
   }
 

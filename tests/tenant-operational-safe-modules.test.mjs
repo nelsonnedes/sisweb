@@ -35,9 +35,24 @@ test('estoque e financas exigem tenant autenticado online antes do carregamento 
   assert.match(financasJs, /window\.__siswebFirebaseServiceReady/);
   assert.match(financasJs, /resolveAuthenticatedTenant\(\{ timeoutMs: Math\.min\(timeoutMs, 4500\), allowCached: isOffline \}\)/);
   assert.doesNotMatch(financasJs, /let tenant = isOffline \? getCachedTenant\(\) : '';/);
+  assert.doesNotMatch(financasJs, /const getCachedTenant = \(\) =>/);
+  assert.doesNotMatch(financasJs, /let tenant = '';/);
+  assert.doesNotMatch(financasJs, /if \(tenant\) \{[\s\S]*setTenantId\(tenant\)/);
   assert.match(financasJs, /const financeTenant = await ensureFinanceTenantContext\(\);/);
   assert.match(financasJs, /if \(firebaseAvailable && !financeTenant\) \{/);
   assert.match(financasJs, /mostrarNotificacao\('Empresa da sessão não identificada\. Faça login novamente para carregar o Financeiro\.', 'error'\)/);
+});
+
+test('perfis empresariais aceitam respostas Firebase embrulhadas e diretas', () => {
+  for (const file of ['compras.js', 'estoque.js', 'vendas.js']) {
+    const source = read(file);
+    assert.match(
+      source,
+      /byPath\.success === true \? byPath\.data : \(byPath\.success === false \? null : byPath\)/,
+      `${file} precisa preservar payload direto e rejeitar envelope de falha`
+    );
+    assert.doesNotMatch(source, /byPath\.success \? byPath\.data : byPath\.data/);
+  }
 });
 
 test('notas fiscais resolve tenant autenticado antes de inicializar modulos e eventos fiscais', () => {

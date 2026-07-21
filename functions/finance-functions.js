@@ -1633,6 +1633,26 @@ function accessRecordAllowsFinance(value) {
     return false;
 }
 
+async function hasLegacyOperationalOwnerFinanceAccess(db, resolved) {
+    const [userSnapshot, profileSnapshot] = await Promise.all([
+        db.ref(`users/${resolved.uid}`).get(),
+        db.ref(`companies/${resolved.companyId}/profile`).get(),
+    ]);
+    if (!userSnapshot || !userSnapshot.exists() || !profileSnapshot || !profileSnapshot.exists()) {
+        return false;
+    }
+    if (isInactiveAccessRecord(userSnapshot)) return false;
+    const user = userSnapshot.val();
+    const profile = profileSnapshot.val();
+    if (!isPlainObject(user) || !isPlainObject(profile)) return false;
+    const userCompanyId = String(user.companyId || '').trim();
+    const userEmail = String(user.email || '').trim().toLowerCase();
+    const profileEmail = String(profile.email || '').trim().toLowerCase();
+    return userCompanyId === resolved.companyId
+        && !!userEmail
+        && userEmail === profileEmail;
+}
+
 function isSiswebStorageBucket(bucketName) {
     const projectId = String(process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || 'sisweb-7ce82').trim();
     const bucket = String(bucketName || '').trim().toLowerCase();
@@ -1773,7 +1793,12 @@ async function assertFinanceAccess(context, db, isSuperAdmin) {
         const role = roleSnapshot && roleSnapshot.exists() ? roleSnapshot.val() : null;
         const roleCompanyId = String(role && (role.companyId || role.companyID || role.tenantId) || '').trim();
         const roleMatchesTenant = !!roleCompanyId && roleCompanyId === resolved.companyId;
-        if (!accessRecordAllowsFinance(member) && !(roleMatchesTenant && accessRecordAllowsFinance(role))) {
+        const explicitFinanceAccess = accessRecordAllowsFinance(member)
+            || (roleMatchesTenant && accessRecordAllowsFinance(role));
+        const operationalOwnerAccess = explicitFinanceAccess
+            ? false
+            : await hasLegacyOperationalOwnerFinanceAccess(db, resolved);
+        if (!explicitFinanceAccess && !operationalOwnerAccess) {
             throw new FinanceValidationError(
                 'Permissão financeira não concedida para o membro.',
                 'permission-denied',

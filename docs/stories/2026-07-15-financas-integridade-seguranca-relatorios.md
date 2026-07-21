@@ -303,6 +303,8 @@ Esta lista e inicial e deve ser substituida pela File List real do Dev Agent, se
 
 | Data | Versao | Descricao | Autor |
 |---|---|---|---|
+| 2026-07-21 | 1.0 | Functions financeiras passaram a reconhecer o proprietario operacional legado pelos mesmos criterios seguros das Rules, preservando membership ativa e isolamento por empresa/e-mail. | Codex / equipe AIOX |
+| 2026-07-21 | 0.9 | Revisao CodeRabbit endureceu carregamento de perfis, logout, escape da tabela empresarial, reconciliacao de logos pos-save, diagnostico tardio e formato de logos HTTP no PDF. | Codex / equipe AIOX |
 | 2026-07-21 | 0.8 | Lamina PIX deixou de montar caminhos Firebase com objetos de cliente legados; dependencias transitivas vulneraveis foram atualizadas sem mudanca de API. | Codex / equipe AIOX |
 | 2026-07-18 | 0.7 | Relatorios passaram a selecionar contas a receber ou pagar, adaptar tipos e substituir CSV por impressao com cabecalho empresarial compartilhado. | Codex / equipe AIOX |
 | 2026-07-18 | 0.6 | Impressao de contas selecionadas corrigida para substituir integralmente o documento de carregamento, usar A4 adaptavel e preservar colunas; perfil de relatorio passou a manter os dados PIX cadastrados. | Codex / equipe AIOX |
@@ -381,6 +383,7 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - Relatorios e exportacoes compartilham dataset confirmado, neutralizam HTML/formulas CSV e usam selects dinamicos construidos por DOM seguro.
 - `database.rules.json` bloqueia mutacoes financeiras diretas do cliente e preserva somente os fluxos canonicos de origem explicitamente validados.
 - As Rules reconhecem o proprietario operacional legado pelo `companyId`, membership ativa e e-mail coincidente com o perfil da empresa, sem abrir acesso a usuario sem membership ou permissao financeira.
+- As sete Functions financeiras agora aplicam o mesmo fallback seguro para esse proprietario legado; membership ausente, usuario inativo, empresa divergente ou e-mail diferente continuam bloqueados.
 - `database-utils.js` deixou de sincronizar os pais financeiros protegidos e nao interpreta falha de leitura como base vazia para reenvio de cache local.
 - Nao houve migracao, exclusao ou alteracao de dados financeiros reais durante implementacao, testes e preview.
 - Residual conhecido: o ledger de idempotencia da exclusao de conta e best effort depois da remocao; uma perda simultanea da resposta e do ledger pode exigir reconciliacao, mas nao produz falso sucesso nem recria a conta.
@@ -391,12 +394,20 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - Concluido: relatorios de receber e pagar possuem origem explicita, tipos semanticamente compativeis e impressao baseada no mesmo modelo confirmado da tela e do PDF.
 - Concluido: a resolucao do sacado da lamina PIX aceita identificadores legados, mas rejeita objetos sem ID e chaves invalidas antes de montar `clientes/{id}`.
 - Gate 2026-07-21: 282 testes aprovados, 1 skip esperado no comando geral, 13/13 cenarios RBAC no Emulator, lint, typecheck, build allowlisted e audit sem vulnerabilidades.
+- Gate CodeRabbit 2026-07-21: 287 testes aprovados, 1 skip esperado no comando geral, 92/92 testes focados, 13/13 cenarios RBAC no Emulator, lint raiz/Functions, typecheck, build de 448 arquivos, `git diff --check` e audit sem vulnerabilidades.
+- Gate de autorizacao financeira 2026-07-21: suite geral mantida em 287 aprovados e 1 skip esperado, 34/34 testes focados de transacoes/isolamento, 13/13 cenarios RBAC no Emulator, lint raiz/Functions, typecheck, build de 448 arquivos e audit sem vulnerabilidades.
+- Concluido: perfis empresariais diretos ou embrulhados sao preservados em Vendas, Compras e Estoque; envelopes de falha nao sao tratados como dados.
+- Concluido: falha de limpeza de logo depois do `profileRef.set` nao transforma uma gravacao confirmada em falso erro para o cliente.
+- Concluido: tabela de empresas escapa campos persistidos antes de `innerHTML`, e logout da tela publica so limpa cache apos confirmacao remota.
+- Concluido: o `403` de `financeNextSequence` para o proprietario operacional legado foi reproduzido e corrigido sem conceder acesso generico a membros sem permissao.
+- Divida controlada: consolidar as duas implementacoes legadas de `uploadCompanyLogo` exige refatoracao isolada; o log do Romaneio permanece sem objeto bruto de erro para nao reintroduzir dados sensiveis no console.
 
 ### File List Real
 
 - `functions/finance-functions.js`
 - `functions/index.js`
 - `auth.js`
+- `firebase-connection-manager-compat.js`
 - `firebaseService.js`
 - `company.html`
 - `scripts/admin/admin-main.js`
@@ -409,11 +420,13 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - `compras.html`
 - `vendas.js`
 - `vendas.html`
+- `estoque.js`
 - `database.rules.json`
 - `database-utils.js`
 - `package-lock.json`
 - `sw.js`
 - `tests/finance-transactions.test.mjs`
+- `tests/auth-performance-diagnostics.test.mjs`
 - `tests/subscription-readonly-expiry.test.mjs`
 - `tests/company-logo-storage-policy.test.mjs`
 - `tests/financas-relatorios-exportacoes.test.mjs`
@@ -434,6 +447,8 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - `docs/superpowers/plans/2026-07-18-financas-cabecalho-relatorios-multitenant.md`
 - `docs/superpowers/plans/2026-07-18-financas-relatorios-origem-impressao.md`
 - `docs/stories/2026-07-15-financas-integridade-seguranca-relatorios.md`
+- `docs/stories/2026-06-26-boleto-pix-lamina-cobranca.md`
+- `src/services/firebaseService.unified.js`
 
 ## QA Results
 
