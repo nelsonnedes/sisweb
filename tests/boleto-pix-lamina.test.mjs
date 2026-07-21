@@ -47,7 +47,8 @@ function loadFinanceBoletoHelpers() {
     vm.runInContext(`${helpersBlock}
       this.helpers = {
         resolveFinanceTipoOperacional,
-        shouldShowBoletoLamina
+        shouldShowBoletoLamina,
+        getFinanceSacadoReferenceId
       };`, context, { filename: 'financas-boleto-helpers.vm.js' });
     return context.helpers;
 }
@@ -111,6 +112,16 @@ describe('Lâmina de Cobrança PIX e Engine PIX Compartilhada', () => {
         assert.equal(helpers.resolveFinanceTipoOperacional({ tipo: 'boleto' }), 'boleto');
         assert.equal(helpers.shouldShowBoletoLamina({ tipo: 'pagar', tipoPagamento: 'boleto' }, 'pagar'), false);
         assert.equal(helpers.shouldShowBoletoLamina({ tipo: 'boleto' }, 'receber'), true);
+    });
+
+    it('deve montar caminho do sacado apenas com identificador Firebase válido', () => {
+        const helpers = loadFinanceBoletoHelpers();
+        assert.equal(helpers.getFinanceSacadoReferenceId({ clienteId: 'CLI-10' }), 'CLI-10');
+        assert.equal(helpers.getFinanceSacadoReferenceId({ cliente: { id: 'CLI-20', nome: 'Cliente' } }), 'CLI-20');
+        assert.equal(helpers.getFinanceSacadoReferenceId({ cliente: { clienteId: 'CLI-30' } }), 'CLI-30');
+        assert.equal(helpers.getFinanceSacadoReferenceId({ cliente: 'CLI-40' }), 'CLI-40');
+        assert.equal(helpers.getFinanceSacadoReferenceId({ cliente: { nome: 'Sem ID' } }), '');
+        assert.equal(helpers.getFinanceSacadoReferenceId({ cliente: 'cliente/invalido' }), '');
     });
 
     it('deve reutilizar o perfil tenant-safe preparado pelo Financeiro', () => {

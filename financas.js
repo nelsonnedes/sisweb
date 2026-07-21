@@ -8336,6 +8336,15 @@ function shouldShowBoletoLamina(conta, tipoConta) {
     return String(tipoConta || '').toLowerCase() === 'receber' && resolveFinanceTipoOperacional(conta) === 'boleto';
 }
 
+function getFinanceSacadoReferenceId(conta) {
+    const cliente = conta && conta.cliente;
+    const candidate = (conta && conta.clienteId)
+        || (cliente && typeof cliente === 'object' ? (cliente.id || cliente.clienteId) : cliente);
+    if (typeof candidate !== 'string' && typeof candidate !== 'number') return '';
+    const id = String(candidate).trim();
+    return id && !/[.#$\[\]\/]/.test(id) ? id : '';
+}
+
 function getCategoriaLabel(val) {
     const map = {
         'vendas': 'Vendas',
@@ -9235,7 +9244,7 @@ async function abrirBoletoPixLamina(contaId, tipo) {
 
         // Tentar obter dados do cliente/fornecedor (sacado)
         let sacado = null;
-        const sacadoId = conta.clienteId || conta.cliente;
+        const sacadoId = getFinanceSacadoReferenceId(conta);
         if (sacadoId && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
             const path = `clientes/${sacadoId}`;
             try {

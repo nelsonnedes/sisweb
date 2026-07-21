@@ -4,7 +4,7 @@ Data: 2026-07-15
 
 ## Status
 
-In Progress - implementacao, gates locais e rollout controlado concluidos em 2026-07-18. Functions, Hosting e Rules estao publicados; o tenant operacional real voltou a carregar o Financeiro em modo online e os relatorios usam o cabecalho empresarial compartilhado. O smoke autenticado com um segundo tenant descartavel permanece pendente porque a credencial fornecida nao autenticou.
+Ready for Review - implementacao, gates locais e rollout controlado concluidos. Functions, Hosting e Rules estao publicados; o tenant operacional real voltou a carregar o Financeiro em modo online e os relatorios usam o cabecalho empresarial compartilhado. O smoke autenticado com um segundo tenant descartavel permanece como ressalva conhecida porque a credencial fornecida nao autenticou.
 
 ## Decisao De Backlog E Nao Duplicacao
 
@@ -303,6 +303,7 @@ Esta lista e inicial e deve ser substituida pela File List real do Dev Agent, se
 
 | Data | Versao | Descricao | Autor |
 |---|---|---|---|
+| 2026-07-21 | 0.8 | Lamina PIX deixou de montar caminhos Firebase com objetos de cliente legados; dependencias transitivas vulneraveis foram atualizadas sem mudanca de API. | Codex / equipe AIOX |
 | 2026-07-18 | 0.7 | Relatorios passaram a selecionar contas a receber ou pagar, adaptar tipos e substituir CSV por impressao com cabecalho empresarial compartilhado. | Codex / equipe AIOX |
 | 2026-07-18 | 0.6 | Impressao de contas selecionadas corrigida para substituir integralmente o documento de carregamento, usar A4 adaptavel e preservar colunas; perfil de relatorio passou a manter os dados PIX cadastrados. | Codex / equipe AIOX |
 | 2026-07-18 | 0.5 | Cabecalho empresarial unificado em preview, impressoes, PDF e lamina PIX; protecao anti-GET nos formularios de autenticacao e smoke de producao atualizado. | Codex / equipe AIOX |
@@ -388,6 +389,8 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - Concluido: logo canonica recuperada, referencia persistida, duplicatas removidas pelo backend e cabecalho com imagem real validado no Financeiro em producao.
 - Concluido: o normalizador do perfil empresarial preserva chave, tipo, favorecido e banco PIX; a lamina volta a usar os dados ja persistidos sem exigir novo cadastro.
 - Concluido: relatorios de receber e pagar possuem origem explicita, tipos semanticamente compativeis e impressao baseada no mesmo modelo confirmado da tela e do PDF.
+- Concluido: a resolucao do sacado da lamina PIX aceita identificadores legados, mas rejeita objetos sem ID e chaves invalidas antes de montar `clientes/{id}`.
+- Gate 2026-07-21: 282 testes aprovados, 1 skip esperado no comando geral, 13/13 cenarios RBAC no Emulator, lint, typecheck, build allowlisted e audit sem vulnerabilidades.
 
 ### File List Real
 
@@ -408,6 +411,7 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - `vendas.html`
 - `database.rules.json`
 - `database-utils.js`
+- `package-lock.json`
 - `sw.js`
 - `tests/finance-transactions.test.mjs`
 - `tests/subscription-readonly-expiry.test.mjs`
