@@ -16,6 +16,7 @@ const {
   buildAccountMutation,
   buildReceiptMutation,
   buildSequenceMutation,
+  createHandlers,
   currentFinancialState,
   normalizePaymentRequest,
   normalizeAccountCreateRequest,
@@ -25,6 +26,7 @@ const {
   normalizeSequenceRequest,
   pruneOperationRecords,
   resolveAuthenticatedTenant,
+  resolveFinanceAccountLocation,
 } = __test;
 
 const FIXED_NOW = '2026-07-17T12:00:00.000Z';
@@ -229,6 +231,146 @@ test('exclusao de conta localiza particao movida e nao finge sucesso ausente', (
   assert.equal(committed.deletedMonth, '2026-08');
   assert.equal(committed.tree['2026-08'][account.id], undefined);
   assert.deepEqual(absent, { outcome: 'not-found' });
+});
+
+test('baixa localiza conta em outra particao ou no formato plano legado', () => {
+  const request = {
+    type: 'pagar',
+    month: '2026-07',
+    accountId: 'account-moved-0001',
+  };
+  const account = {
+    ...createOpenAccount(),
+    id: request.accountId,
+    dataVencimento: '2026-06-10',
+  };
+
+  assert.deepEqual(
+    resolveFinanceAccountLocation({ '2026-06': { [request.accountId]: account } }, request),
+    {
+      outcome: 'found',
+      month: '2026-06',
+      path: '2026-06/account-moved-0001',
+      legacy: false,
+    },
+  );
+  assert.deepEqual(
+    resolveFinanceAccountLocation({ [request.accountId]: account }, request),
+    {
+      outcome: 'found',
+      month: '2026-06',
+      path: 'account-moved-0001',
+      legacy: true,
+    },
+  );
+  assert.deepEqual(resolveFinanceAccountLocation({}, request), { outcome: 'not-found' });
+  assert.deepEqual(
+    resolveFinanceAccountLocation({
+      '2026-06': { [request.accountId]: account },
+      '2026-07': { [request.accountId]: { ...account, dataVencimento: '2026-07-10' } },
+    }, request),
+    { outcome: 'conflict', reason: 'duplicate-remote-id' },
+  );
+});
+
+test('callable de baixa transaciona a conta recuperada em outra particao', async () => {
+  const accountId = 'account-recovered-0001';
+  const rootPath = 'companies/tenant-0001/financas/pagar';
+  const tree = {
+    '2026-06': {
+      [accountId]: {
+        ...createOpenAccount(),
+        id: accountId,
+        dataVencimento: '2026-06-10',
+      },
+    },
+  };
+  const snapshot = (value) => ({
+    exists: () => value !== undefined && value !== null,
+    val: () => value,
+  });
+  const database = {
+    ref(path) {
+      return {
+        async get() {
+          if (path === 'companies/tenant-0001/users/member-0001') {
+            return snapshot({ role: 'owner', active: true });
+          }
+          if (path === 'roles/member-0001') return snapshot(undefined);
+          if (path === 'companies/tenant-0001/ownerUid') return snapshot('member-0001');
+          if (path === rootPath) return snapshot(tree);
+          return snapshot(undefined);
+        },
+        async transaction(update) {
+          const requestedPath = `${rootPath}/2026-07/${accountId}`;
+          const recoveredPath = `${rootPath}/2026-06/${accountId}`;
+          if (path !== requestedPath && path !== recoveredPath) {
+            throw new Error(`Unexpected transaction path: ${path}`);
+          }
+          const current = path === recoveredPath ? tree['2026-06'][accountId] : null;
+          const next = update(current);
+          if (next === undefined) {
+            return { committed: false, snapshot: snapshot(current) };
+          }
+          tree['2026-06'][accountId] = next;
+          return { committed: true, snapshot: snapshot(next) };
+        },
+      };
+    },
+  };
+  class TestHttpsError extends Error {
+    constructor(code, message) {
+      super(message);
+      this.code = code;
+    }
+  }
+  const handlers = createHandlers({
+    database: () => database,
+    HttpsError: TestHttpsError,
+    isSuperAdmin: async () => false,
+    now: () => FIXED_NOW,
+  });
+  const operationId = 'payment-recovered-0001';
+  const response = await handlers.financeRegisterPayment({
+    tipo: 'pagar',
+    mes: '2026-07',
+    contaId: accountId,
+    operationId,
+    expected: {
+      historyLength: 0,
+      valorPago: 0,
+      valorRestante: 10.01,
+      status: 'pendente',
+      revision: 4,
+    },
+    patch: {
+      historicosPagamento: [{
+        data: '2026-07-17',
+        valor: 3.33,
+        metodo: 'pix',
+        jurosAplicado: 0,
+        diasAtraso: 37,
+        operationId,
+      }],
+      valorPago: 3.33,
+      valorRestante: 6.68,
+      status: 'parcial',
+      dataPagamento: null,
+      metodoPagamento: 'pix',
+      jurosBaseDate: '2026-07-17',
+    },
+  }, {
+    auth: {
+      uid: 'member-0001',
+      token: { companyId: 'tenant-0001', subscriptionStatus: 'active' },
+    },
+  });
+
+  assert.equal(response.success, true);
+  assert.equal(response.resolvedMonth, '2026-06');
+  assert.equal(response.legacyPath, false);
+  assert.equal(response.account.valorPago, 3.33);
+  assert.equal(tree['2026-06'][accountId].revision, 5);
 });
 
 test('pagamento parcial preserva os valores exatos em centavos', () => {

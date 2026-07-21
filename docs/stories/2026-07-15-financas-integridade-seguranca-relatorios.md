@@ -303,6 +303,7 @@ Esta lista e inicial e deve ser substituida pela File List real do Dev Agent, se
 
 | Data | Versao | Descricao | Autor |
 |---|---|---|---|
+| 2026-07-21 | 1.2 | Baixas e comprovantes passaram a recuperar, dentro do mesmo tenant e tipo, contas cuja competencia informada diverge da particao real ou ainda usa o formato plano legado. | Codex / equipe AIOX |
 | 2026-07-21 | 1.1 | Rollout da autorizacao financeira concluido com Rules, Functions e Hosting publicados e verificacao externa de CORS, autenticacao e igualdade das Rules. | Codex / equipe AIOX |
 | 2026-07-21 | 1.0 | Autorizacao financeira passou a reconhecer somente papeis/permissoes ou `ownerUid` canonico administrado pelo backend; prova mutavel por e-mail foi removida de Functions e Rules. | Codex / equipe AIOX |
 | 2026-07-21 | 0.9 | Revisao CodeRabbit endureceu carregamento de perfis, logout, escape da tabela empresarial, reconciliacao de logos pos-save, diagnostico tardio e formato de logos HTTP no PDF. | Codex / equipe AIOX |
@@ -407,6 +408,11 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - Rollout publicado: Realtime Database Rules; dez Functions (`financeNextSequence`, seis mutacoes financeiras complementares e as tres callables de perfil/onboarding); Hosting de producao em `https://sisweb-7ce82.web.app`.
 - Pos-deploy externo: as dez Functions ficaram `ACTIVE` em Node 22/us-central1; preflight retornou HTTP 204 com origem restrita ao Hosting e chamadas sem token retornaram HTTP 401 sem mutacao.
 - Rules remotas foram comparadas semanticamente com `database.rules.json` e ficaram identicas. O canal `rollback-fin-access-20260721` preserva a versao anterior do Hosting em `https://sisweb-7ce82--rollback-fin-access-20260721-m5gstmqp.web.app`.
+- Diagnostico somente leitura do `404` de baixa confirmou que a conta permanecia gravada, enquanto o tenant continha oito particoes mensais e dez contas planas legadas; nenhum lancamento foi alterado durante a investigacao.
+- `financeRegisterPayment`, `financeDeletePayment` e `financeUpdatePaymentReceipt` mantem a transacao rapida no caminho solicitado e, apenas quando ele nao existe, resolvem o ID autoritativamente no mesmo tenant/tipo. IDs ausentes ou duplicados continuam bloqueados.
+- Gate do hotfix de baixa: 290 testes no total, 289 aprovados e 1 skip esperado; teste focado 27/27, Emulator 14/14, lint raiz/Functions, typecheck, build de 448 arquivos, `git diff --check` e audit sem vulnerabilidades. CodeRabbit local indisponivel porque o host nao possui distribuicao WSL; revisao remota mantida no PR.
+- Deploy seletivo concluiu somente `financeRegisterPayment`, `financeDeletePayment` e `financeUpdatePaymentReceipt`, todas `ACTIVE` em Node 22/us-central1 na revisao `2a760a736b8ce4fa3cfd2df2e8dc40722d537cad`; Hosting, Rules e Storage nao exigiram alteracao.
+- Pos-deploy das tres callables: preflight HTTP 204 restrito a `https://sisweb-7ce82.web.app` e chamadas sem autenticacao rejeitadas com HTTP 401. Nenhuma baixa real foi criada ou removida pelo smoke automatizado.
 - Divida controlada: consolidar as duas implementacoes legadas de `uploadCompanyLogo` exige refatoracao isolada; o log do Romaneio permanece sem objeto bruto de erro para nao reintroduzir dados sensiveis no console.
 
 ### File List Real

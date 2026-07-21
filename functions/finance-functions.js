@@ -1603,6 +1603,44 @@ function buildReceiptMutation(currentValue, request, nowIso) {
     return { outcome: 'commit', account };
 }
 
+function isFinanceAccountRecord(value, accountId) {
+    if (!isPlainObject(value)) return false;
+    const payloadId = String(value.id || accountId || '').trim();
+    if (!payloadId || payloadId !== String(accountId || '').trim()) return false;
+    return hasOwn(value, 'valor')
+        || hasOwn(value, 'valorOriginal')
+        || hasOwn(value, 'valorRestante');
+}
+
+function resolveFinanceAccountLocation(currentTree, request) {
+    const tree = isPlainObject(currentTree) ? currentTree : {};
+    const matches = [];
+    for (const [month, bucket] of Object.entries(tree)) {
+        if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || !isPlainObject(bucket)) continue;
+        if (isFinanceAccountRecord(bucket[request.accountId], request.accountId)) {
+            matches.push({
+                month,
+                path: `${month}/${request.accountId}`,
+                legacy: false,
+            });
+        }
+    }
+    if (isFinanceAccountRecord(tree[request.accountId], request.accountId)) {
+        const legacyAccount = tree[request.accountId];
+        const dueDate = String(
+            legacyAccount.dataVencimento || legacyAccount.vencimento || '',
+        ).trim();
+        matches.push({
+            month: /^\d{4}-\d{2}-\d{2}$/.test(dueDate) ? dueDate.slice(0, 7) : request.month,
+            path: request.accountId,
+            legacy: true,
+        });
+    }
+    if (matches.length === 0) return { outcome: 'not-found' };
+    if (matches.length > 1) return { outcome: 'conflict', reason: 'duplicate-remote-id' };
+    return { outcome: 'found', ...matches[0] };
+}
+
 function isInactiveAccessRecord(snapshot) {
     if (!snapshot || typeof snapshot.exists !== 'function' || !snapshot.exists()) return false;
     const value = snapshot.val();
@@ -1821,6 +1859,46 @@ function createHandlers(options = {}) {
             if (error instanceof FinanceValidationError) throwInputAsHttps(error);
             throw new HttpsError('unavailable', 'Transação financeira indisponível.');
         }
+    }
+
+    async function transactLocatedAccount(db, access, request, buildDecision) {
+        const rootPath = `companies/${access.companyId}/financas/${request.type}`;
+        const requestedLocation = {
+            month: request.month,
+            path: `${request.month}/${request.accountId}`,
+            legacy: false,
+        };
+        const executeAt = async (location) => {
+            let decision;
+            const transaction = await db.ref(`${rootPath}/${location.path}`).transaction((current) => {
+                decision = buildDecision(current);
+                return decision.outcome === 'commit' ? decision.account
+                    : (decision.outcome === 'idempotent' ? current : undefined);
+            }, undefined, false);
+            return { decision, transaction, location };
+        };
+
+        let attempt = await executeAt(requestedLocation);
+        if (attempt.decision && attempt.decision.outcome !== 'not-found') return attempt;
+
+        const treeSnapshot = await db.ref(rootPath).get();
+        const located = resolveFinanceAccountLocation(
+            treeSnapshot && treeSnapshot.exists() ? treeSnapshot.val() : null,
+            request,
+        );
+        if (located.outcome !== 'found') {
+            return { decision: located, transaction: null, location: requestedLocation };
+        }
+        if (located.path !== requestedLocation.path) {
+            console.warn('Finance account location recovered', {
+                type: request.type,
+                requestedMonth: request.month,
+                resolvedMonth: located.month,
+                legacy: located.legacy,
+            });
+        }
+        attempt = await executeAt(located);
+        return attempt;
     }
 
     async function financeNextSequence(data, context) {
@@ -2046,22 +2124,20 @@ function createHandlers(options = {}) {
             } catch (error) {
                 throwInputAsHttps(error);
             }
-            const reference = db.ref(
-                `companies/${access.companyId}/financas/${request.type}/${request.month}/${request.accountId}`,
+            const result = await transactLocatedAccount(
+                db,
+                access,
+                request,
+                (current) => buildReceiptMutation(current, request, now()),
             );
-            let decision;
-            const transaction = await reference.transaction((current) => {
-                decision = buildReceiptMutation(current, request, now());
-                return decision.outcome === 'commit' ? decision.account
-                    : (decision.outcome === 'idempotent' ? current : undefined);
-            }, undefined, false);
+            const { decision, transaction, location } = result;
             if (!decision || decision.outcome === 'not-found') {
                 throw new HttpsError('not-found', 'Conta financeira não encontrada.');
             }
             if (decision.outcome === 'invalid') {
                 throw new HttpsError('invalid-argument', decision.reason);
             }
-            if (decision.outcome === 'conflict' || !transaction.committed) {
+            if (decision.outcome === 'conflict' || !transaction || !transaction.committed) {
                 throw new HttpsError('aborted', 'Conflito ao atualizar o comprovante financeiro.');
             }
             const account = transaction.snapshot.val();
@@ -2072,6 +2148,8 @@ function createHandlers(options = {}) {
                 success: true,
                 idempotent: decision.outcome === 'idempotent',
                 revision: account.revision,
+                resolvedMonth: location.month,
+                legacyPath: location.legacy === true,
                 account,
             };
         });
@@ -2086,22 +2164,20 @@ function createHandlers(options = {}) {
             } catch (error) {
                 throwInputAsHttps(error);
             }
-            const reference = db.ref(
-                `companies/${access.companyId}/financas/${request.type}/${request.month}/${request.accountId}`,
+            const result = await transactLocatedAccount(
+                db,
+                access,
+                request,
+                (current) => buildAccountMutation(current, request, kind, now()),
             );
-            let decision;
-            const transaction = await reference.transaction((current) => {
-                decision = buildAccountMutation(current, request, kind, now());
-                return decision.outcome === 'commit' ? decision.account
-                    : (decision.outcome === 'idempotent' ? current : undefined);
-            }, undefined, false);
+            const { decision, transaction, location } = result;
             if (!decision || decision.outcome === 'not-found') {
                 throw new HttpsError('not-found', 'Conta financeira não encontrada.');
             }
             if (decision.outcome === 'invalid') {
                 throw new HttpsError('invalid-argument', decision.reason);
             }
-            if (decision.outcome === 'conflict' || !transaction.committed) {
+            if (decision.outcome === 'conflict' || !transaction || !transaction.committed) {
                 throw new HttpsError('aborted', 'Conflito com a versão atual da conta financeira.');
             }
             const account = transaction.snapshot.val();
@@ -2112,6 +2188,8 @@ function createHandlers(options = {}) {
                 success: true,
                 idempotent: decision.outcome === 'idempotent',
                 revision: account.revision,
+                resolvedMonth: location.month,
+                legacyPath: location.legacy === true,
                 account,
             };
         });
@@ -2169,5 +2247,6 @@ exports.__test = {
     normalizeSequenceRequest,
     pruneOperationRecords,
     resolveAuthenticatedTenant,
+    resolveFinanceAccountLocation,
     stableStringify,
 };
