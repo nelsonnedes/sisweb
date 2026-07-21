@@ -114,6 +114,7 @@ if (!EMULATOR_HOST) {
         },
         companies: {
           [TENANT_A]: {
+            ownerUid: LEGACY_OWNER_UID,
             profile: { displayName: "Tenant A", email: "owner@tenant-a.test" },
             users: {
               [MEMBER_UID]: { role: "finance" },
@@ -239,6 +240,14 @@ if (!EMULATOR_HOST) {
       companies.child(`${TENANT_B}/users/managed-user/role`).val(),
       "admin",
     );
+  });
+
+  test("perfil empresarial so pode ser gravado pelo backend ou superadmin", async () => {
+    const profilePath = `companies/${TENANT_A}/profile`;
+
+    await assertFails(update(ref(memberDatabase(), profilePath), { email: "member@tenant-a.test" }));
+    await assertFails(update(ref(legacyOwnerDatabase(), profilePath), { email: "owner-changed@tenant-a.test" }));
+    await assertSucceeds(update(ref(superadminDatabase(), profilePath), { phone: "5500000000000" }));
   });
 
   test("tenant operacional le perfil especifico, mas nao o no raiz nem outro tenant", async () => {

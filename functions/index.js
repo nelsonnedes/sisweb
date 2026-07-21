@@ -380,34 +380,16 @@ function roleAllowsCompanyProfileWrite(source) {
     return role === 'owner' || role === 'admin' || role === 'company_admin';
 }
 
-function isPrimaryCompanyAccountForProfile(uid, tenant, userData, token, companyData) {
+function isPrimaryCompanyAccountForProfile(uid, tenant, userData, companyData) {
     const userCompanyId = String(
         userData && (userData.companyId || userData.companyID || userData.tenantId) || ''
     ).trim();
     if (!uid || !tenant || userCompanyId !== tenant) return false;
-    const profile = companyData && companyData.profile && typeof companyData.profile === 'object'
-        ? companyData.profile
-        : {};
     const ownerUid = String(
         (companyData && (companyData.ownerUid || companyData.adminOwnerUid || companyData.primaryUserUid || companyData.createdBy || companyData.createdByUid))
-        || profile.ownerUid
-        || profile.adminOwnerUid
-        || profile.primaryUserUid
-        || profile.createdBy
-        || profile.createdByUid
         || ''
     ).trim();
-    if (ownerUid && ownerUid === uid) return true;
-    const authEmail = sanitizeText((token && token.email) || (userData && userData.email) || '', '').toLowerCase();
-    const companyEmail = sanitizeText(
-        profile.email
-        || profile.emailContato
-        || profile.contactEmail
-        || (companyData && (companyData.email || companyData.emailContato || companyData.contactEmail))
-        || '',
-        ''
-    ).toLowerCase();
-    return !!authEmail && !!companyEmail && authEmail === companyEmail;
+    return !!ownerUid && ownerUid === uid;
 }
 
 async function assertCompanyProfileWriteAccess(context, companyId, userData, token) {
@@ -438,10 +420,9 @@ async function assertCompanyProfileWriteAccess(context, companyId, userData, tok
     if (memberData.active === false || roleData.active === false || userData.adminActive === false) {
         throw new functions.https.HttpsError('permission-denied', 'Administrador da empresa está inativo.');
     }
-    const primaryCompanyAccount = isPrimaryCompanyAccountForProfile(uid, tenant, userData, token, companyData);
+    const primaryCompanyAccount = isPrimaryCompanyAccountForProfile(uid, tenant, userData, companyData);
     const roleCompanyId = String(roleData.companyId || roleData.companyID || roleData.tenantId || '').trim();
-    const profileData = companyData.profile && typeof companyData.profile === 'object' ? companyData.profile : {};
-    const createdBy = String(companyData.createdBy || companyData.createdByUid || profileData.createdBy || profileData.createdByUid || '').trim();
+    const createdBy = String(companyData.createdBy || companyData.createdByUid || '').trim();
     const allowed = roleAllowsCompanyProfileWrite(userData)
         || roleAllowsCompanyProfileWrite(memberData)
         || (roleCompanyId === tenant && roleAllowsCompanyProfileWrite(roleData))
@@ -1568,7 +1549,8 @@ exports.createCompanyOnboarding = https.onCall(async (data, context) => {
         timestamp: nowIso,
         createdAt: nowIso,
         updatedAt: nowIso,
-        createdBy: uid
+        createdBy: uid,
+        ownerUid: uid
     };
     await companyRef.update(companyPayload);
     const userRecord = await admin.auth().getUser(uid);

@@ -151,7 +151,7 @@ test('company.html preserva edicao apos falha e nao envia logo para tenant Date.
   assert.match(saveBlock, /effectiveCompany = savedProfile;[\s\S]*editingId = null;/);
 });
 
-test('updateMyCompanyProfile permite conta primaria legada por email sem depender da assinatura', () => {
+test('updateMyCompanyProfile permite somente conta primaria marcada por ownerUid', () => {
   const source = read('functions/index.js');
   const accessBlock = blockBetween(
     source,
@@ -159,9 +159,12 @@ test('updateMyCompanyProfile permite conta primaria legada por email sem depende
     'function buildMirrorUserPatch'
   );
 
-  assert.match(source, /function isPrimaryCompanyAccountForProfile\(uid, tenant, userData, token, companyData\)/);
-  assert.match(source, /authEmail === companyEmail/);
-  assert.match(accessBlock, /const primaryCompanyAccount = isPrimaryCompanyAccountForProfile\(uid, tenant, userData, token, companyData\)/);
+  assert.match(source, /function isPrimaryCompanyAccountForProfile\(uid, tenant, userData, companyData\)/);
+  assert.match(source, /return !!ownerUid && ownerUid === uid/);
+  assert.doesNotMatch(source, /authEmail === companyEmail/);
+  assert.doesNotMatch(source, /profile\.ownerUid/);
+  assert.doesNotMatch(accessBlock, /profileData\.createdBy/);
+  assert.match(accessBlock, /const primaryCompanyAccount = isPrimaryCompanyAccountForProfile\(uid, tenant, userData, companyData\)/);
   assert.match(accessBlock, /\|\| primaryCompanyAccount/);
   assert.doesNotMatch(accessBlock, /subscriptionStatus\s*={0,3}\s*'active'/);
 });

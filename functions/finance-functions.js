@@ -1633,26 +1633,6 @@ function accessRecordAllowsFinance(value) {
     return false;
 }
 
-async function hasLegacyOperationalOwnerFinanceAccess(db, resolved) {
-    const [userSnapshot, profileSnapshot] = await Promise.all([
-        db.ref(`users/${resolved.uid}`).get(),
-        db.ref(`companies/${resolved.companyId}/profile`).get(),
-    ]);
-    if (!userSnapshot || !userSnapshot.exists() || !profileSnapshot || !profileSnapshot.exists()) {
-        return false;
-    }
-    if (isInactiveAccessRecord(userSnapshot)) return false;
-    const user = userSnapshot.val();
-    const profile = profileSnapshot.val();
-    if (!isPlainObject(user) || !isPlainObject(profile)) return false;
-    const userCompanyId = String(user.companyId || '').trim();
-    const userEmail = String(user.email || '').trim().toLowerCase();
-    const profileEmail = String(profile.email || '').trim().toLowerCase();
-    return userCompanyId === resolved.companyId
-        && !!userEmail
-        && userEmail === profileEmail;
-}
-
 function isSiswebStorageBucket(bucketName) {
     const projectId = String(process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || 'sisweb-7ce82').trim();
     const bucket = String(bucketName || '').trim().toLowerCase();
@@ -1772,9 +1752,10 @@ async function assertFinanceAccess(context, db, isSuperAdmin) {
             'permission-denied',
         );
     }
-    const [memberSnapshot, roleSnapshot] = await Promise.all([
+    const [memberSnapshot, roleSnapshot, ownerSnapshot] = await Promise.all([
         db.ref(`companies/${resolved.companyId}/users/${resolved.uid}`).get(),
         db.ref(`roles/${resolved.uid}`).get(),
+        db.ref(`companies/${resolved.companyId}/ownerUid`).get(),
     ]);
     if (!superAdmin && (!memberSnapshot || !memberSnapshot.exists())) {
         throw new FinanceValidationError(
@@ -1795,10 +1776,10 @@ async function assertFinanceAccess(context, db, isSuperAdmin) {
         const roleMatchesTenant = !!roleCompanyId && roleCompanyId === resolved.companyId;
         const explicitFinanceAccess = accessRecordAllowsFinance(member)
             || (roleMatchesTenant && accessRecordAllowsFinance(role));
-        const operationalOwnerAccess = explicitFinanceAccess
-            ? false
-            : await hasLegacyOperationalOwnerFinanceAccess(db, resolved);
-        if (!explicitFinanceAccess && !operationalOwnerAccess) {
+        const canonicalOwnerAccess = ownerSnapshot
+            && ownerSnapshot.exists()
+            && String(ownerSnapshot.val() || '').trim() === resolved.uid;
+        if (!explicitFinanceAccess && !canonicalOwnerAccess) {
             throw new FinanceValidationError(
                 'Permissão financeira não concedida para o membro.',
                 'permission-denied',

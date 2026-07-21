@@ -303,7 +303,7 @@ Esta lista e inicial e deve ser substituida pela File List real do Dev Agent, se
 
 | Data | Versao | Descricao | Autor |
 |---|---|---|---|
-| 2026-07-21 | 1.0 | Functions financeiras passaram a reconhecer o proprietario operacional legado pelos mesmos criterios seguros das Rules, preservando membership ativa e isolamento por empresa/e-mail. | Codex / equipe AIOX |
+| 2026-07-21 | 1.0 | Autorizacao financeira passou a reconhecer somente papeis/permissoes ou `ownerUid` canonico administrado pelo backend; prova mutavel por e-mail foi removida de Functions e Rules. | Codex / equipe AIOX |
 | 2026-07-21 | 0.9 | Revisao CodeRabbit endureceu carregamento de perfis, logout, escape da tabela empresarial, reconciliacao de logos pos-save, diagnostico tardio e formato de logos HTTP no PDF. | Codex / equipe AIOX |
 | 2026-07-21 | 0.8 | Lamina PIX deixou de montar caminhos Firebase com objetos de cliente legados; dependencias transitivas vulneraveis foram atualizadas sem mudanca de API. | Codex / equipe AIOX |
 | 2026-07-18 | 0.7 | Relatorios passaram a selecionar contas a receber ou pagar, adaptar tipos e substituir CSV por impressao com cabecalho empresarial compartilhado. | Codex / equipe AIOX |
@@ -382,10 +382,11 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - O frontend somente confirma sucesso apos resposta autoritativa, compensa uploads sem referencia e limpa arquivos removidos depois da persistencia confirmada.
 - Relatorios e exportacoes compartilham dataset confirmado, neutralizam HTML/formulas CSV e usam selects dinamicos construidos por DOM seguro.
 - `database.rules.json` bloqueia mutacoes financeiras diretas do cliente e preserva somente os fluxos canonicos de origem explicitamente validados.
-- As Rules reconhecem o proprietario operacional legado pelo `companyId`, membership ativa e e-mail coincidente com o perfil da empresa, sem abrir acesso a usuario sem membership ou permissao financeira.
-- As sete Functions financeiras agora aplicam o mesmo fallback seguro para esse proprietario legado; membership ausente, usuario inativo, empresa divergente ou e-mail diferente continuam bloqueados.
+- As Rules reconhecem o proprietario operacional legado pelo `companyId`, membership ativa e `ownerUid` canonico da empresa, sem usar e-mail editavel como prova de autorizacao.
+- As sete Functions financeiras aplicam o mesmo marcador imutavel; membership ausente, membro inativo, tenant divergente ou UID diferente continuam bloqueados.
+- O perfil empresarial deixou de aceitar escrita direta de usuarios comuns; alteracoes operacionais continuam pela callable sanitizada `updateMyCompanyProfile`.
 - `database-utils.js` deixou de sincronizar os pais financeiros protegidos e nao interpreta falha de leitura como base vazia para reenvio de cache local.
-- Nao houve migracao, exclusao ou alteracao de dados financeiros reais durante implementacao, testes e preview.
+- Nao houve migracao, exclusao ou alteracao de lancamentos financeiros reais; somente os metadados RBAC `ownerUid` e `role: owner` do tenant operacional foram reconciliados com backup previo.
 - Residual conhecido: o ledger de idempotencia da exclusao de conta e best effort depois da remocao; uma perda simultanea da resposta e do ledger pode exigir reconciliacao, mas nao produz falso sucesso nem recria a conta.
 - Residual observado no smoke: um aviso generico e isolado de permissao ainda aparece durante o bootstrap, mas a conexao muda para `Modo Online` e os dados reais carregam. A instrumentacao de origem desse aviso permanece na story `2026-07-14-auth-navigation-performance-ux.md`, sem bloquear este rollout financeiro.
 - Pendente: smoke autenticado com um segundo tenant e dados descartaveis para fechar AC-05/AC-34; e necessario obter uma sessao valida do tenant B antes da nova tentativa.
@@ -400,6 +401,7 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - Concluido: falha de limpeza de logo depois do `profileRef.set` nao transforma uma gravacao confirmada em falso erro para o cliente.
 - Concluido: tabela de empresas escapa campos persistidos antes de `innerHTML`, e logout da tela publica so limpa cache apos confirmacao remota.
 - Concluido: o `403` de `financeNextSequence` para o proprietario operacional legado foi reproduzido e corrigido sem conceder acesso generico a membros sem permissao.
+- Backup anterior ao ajuste RBAC: `C:\Users\Nelson\AppData\Local\Temp\sisweb-membership-pre-owner-20260721.json` (SHA-256 `B203FAB465ECC457676AFB7F72AC7D1ECCB7F1F12671BF91F11B47B076A6855C`) e `C:\Users\Nelson\AppData\Local\Temp\sisweb-owneruid-pre-owner-20260721.json` (SHA-256 `D08E54F6AA60DC061AAD4C6F0BA7B19961B7762C35EA199FA23632B753241DB4`).
 - Divida controlada: consolidar as duas implementacoes legadas de `uploadCompanyLogo` exige refatoracao isolada; o log do Romaneio permanece sem objeto bruto de erro para nao reintroduzir dados sensiveis no console.
 
 ### File List Real

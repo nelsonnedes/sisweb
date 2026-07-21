@@ -749,14 +749,13 @@ test('callable exige membership ativa e permissão financeira', async () => {
     exists: () => value !== undefined,
     val: () => value,
   });
-  const databaseFor = (member, role, user, profile) => ({
+  const databaseFor = (member, role, ownerUid) => ({
     ref(path) {
       return {
         get: async () => {
           if (path.startsWith('companies/') && path.includes('/users/')) return snapshot(member);
           if (path.startsWith('roles/')) return snapshot(role);
-          if (path.startsWith('users/')) return snapshot(user);
-          if (path.endsWith('/profile')) return snapshot(profile);
+          if (path.endsWith('/ownerUid')) return snapshot(ownerUid);
           return snapshot(undefined);
         },
       };
@@ -802,8 +801,7 @@ test('callable exige membership ativa e permissão financeira', async () => {
       databaseFor(
         { accountStatus: 'active' },
         undefined,
-        { companyId: 'tenant-0001', email: 'owner@example.com' },
-        { email: 'OWNER@example.com' },
+        'member-0001',
       ),
       async () => false,
     ),
@@ -814,8 +812,7 @@ test('callable exige membership ativa e permissão financeira', async () => {
       databaseFor(
         { accountStatus: 'active' },
         undefined,
-        { companyId: 'tenant-0001', email: 'user@example.com' },
-        { email: 'owner@example.com' },
+        'other-member',
       ),
       async () => false,
     ),
@@ -829,13 +826,24 @@ test('callable exige membership ativa e permissão financeira', async () => {
       databaseFor(
         undefined,
         undefined,
-        { companyId: 'tenant-0001', email: 'owner@example.com' },
-        { email: 'owner@example.com' },
+        'member-0001',
       ),
       async () => false,
     ),
     (error) => error instanceof FinanceValidationError
       && /Membership financeira/.test(error.message),
+  );
+  await assert.rejects(
+    assertFinanceAccess(context, databaseFor({ role: 'owner', active: false }, undefined, 'member-0001'), async () => false),
+    (error) => error instanceof FinanceValidationError
+      && error.reason === 'permission-denied'
+      && /inativo/.test(error.message),
+  );
+  await assert.rejects(
+    assertFinanceAccess(context, databaseFor({ role: 'owner', adminActive: false }, undefined, 'member-0001'), async () => false),
+    (error) => error instanceof FinanceValidationError
+      && error.reason === 'permission-denied'
+      && /inativo/.test(error.message),
   );
 });
 

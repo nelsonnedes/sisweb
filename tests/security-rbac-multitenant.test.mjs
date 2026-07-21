@@ -29,14 +29,17 @@ test('rules nao permitem escrita herdada no tenant nem solicitacao direta de ass
   assert.equal(tenantRules['.write'], false);
   assert.equal(tenantRules['.read'], 'auth != null && auth.token.superadmin == true');
   assert.match(tenantRules.profile['.read'], /root\.child\('companies\/' \+ \$companyId \+ '\/users\/' \+ auth\.uid\)\.exists\(\)/);
+  assert.equal(tenantRules.profile['.write'], 'auth != null && auth.token.superadmin == true');
   assert.match(tenantRules.financas['.read'], /permissions\/finance\/read/);
   assert.match(tenantRules.financas['.read'], /adminActive'\)\.val\(\) != false/);
-  assert.match(tenantRules.financas['.read'], /profile\/email'\)\.isString\(\)/);
+  assert.match(tenantRules.financas['.read'], /ownerUid'\)\.val\(\) == auth\.uid/);
+  assert.doesNotMatch(tenantRules.financas['.read'], /profile\/email/);
   assert.match(tenantRules.financas['.read'], /users\/' \+ auth\.uid \+ '\/companyId'\)\.val\(\) == \$companyId/);
-  assert.match(tenantRules.financas.receber.$month.$accountId['.write'], /profile\/email'\)\.isString\(\)/);
+  assert.match(tenantRules.financas.receber.$month.$accountId['.write'], /ownerUid'\)\.val\(\) == auth\.uid/);
   assert.match(tenantRules.financas.pagar.$month.$accountId['.write'], /subscriptionStatus'\)\.val\(\) == 'active'/);
-  assert.match(tenantRules.printPreferences['.write'], /profile\/email'\)\.isString\(\)/);
-  assert.match(tenantRules.finance_snapshots['.write'], /profile\/email'\)\.isString\(\)/);
+  assert.match(tenantRules.printPreferences['.write'], /ownerUid'\)\.val\(\) == auth\.uid/);
+  assert.match(tenantRules.finance_snapshots['.write'], /ownerUid'\)\.val\(\) == auth\.uid/);
+  assert.doesNotMatch(JSON.stringify(tenantRules.financas), /profile\/email/);
 
   for (const child of ['admin', 'adminSettings', 'roles', 'permissions', 'access', 'accessGovernance', 'system', 'settings']) {
     assert.match(tenantRules[child]['.write'], /auth\.token\.superadmin == true/);
@@ -108,6 +111,7 @@ test('onboarding gera companyId no servidor e primeiro usuario vira admin da emp
   assert.match(block, /companies\/\$\{companyId\}\/users\/\$\{uid\}/);
   assert.match(block, /role: 'admin'/);
   assert.match(block, /adminActive: true/);
+  assert.match(block, /ownerUid: uid/);
 });
 
 test('updateMyCompanyProfile resolve empresa server-side e rejeita IDOR', () => {
