@@ -4086,6 +4086,13 @@ async function salvarContaPagar(event) {
         window.__financeSaveInProgress = false;
         window.__financeSaving = false;
         try { const ps = document.getElementById('pagarForm')?.querySelector('button[type="submit"]'); setSubmitButtonLoading(ps, false); } catch(_) {}
+        const msg = String((error && error.message) || error || '').toLowerCase();
+        if (msg.includes('permission_denied') || msg.includes('permission denied')) {
+            try { mostrarNotificacao('Sessão expirada ou sem permissão. Faça login novamente.', 'error'); } catch(_) {}
+            try { if (window.firebaseService && window.firebaseService.authService && window.firebaseService.authService.logout) await window.firebaseService.authService.logout(); } catch(_) {}
+            try { setTimeout(() => { window.location.href = 'login.html'; }, 500); } catch(_) {}
+            return;
+        }
         mostrarNotificacao('Erro ao salvar conta a pagar. Tente novamente.', 'error');
     }
 }
