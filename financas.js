@@ -905,9 +905,9 @@ function configurarDatasDoMesAtual() {
         }
     });
     
-    // Configurar campos de vencimento e pagamento com data atual
+    // Configurar campos de vencimento, emissão e pagamento com data atual
     // Evitar sobrescrever datas de edição; sempre atualizar pagamentoData
-    const camposDataAtual = ['receberDataVencimento', 'pagarDataVencimento', 'pagamentoData'];
+    const camposDataAtual = ['receberDataEmissao', 'pagarDataEmissao', 'receberDataVencimento', 'pagarDataVencimento', 'pagamentoData'];
     camposDataAtual.forEach(campoId => {
         const campo = document.getElementById(campoId);
         if (!campo) return;
@@ -933,6 +933,21 @@ function configurarDatasDoMesAtual() {
         ultimoDia: ultimoDiaStr,
         hoje: hojeStr
     };
+}
+
+// ─── Helper: loading state em botoes de submit ────────────────────────────────
+function setSubmitButtonLoading(btn, loading, loadingText) {
+    if (!btn) return;
+    if (loading) {
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+        btn.dataset.originalText = btn.textContent || btn.innerText || '';
+        btn.textContent = loadingText || 'Processando...';
+    } else {
+        btn.disabled = false;
+        btn.removeAttribute('aria-busy');
+        btn.textContent = btn.dataset.originalText || 'Salvar';
+    }
 }
 
 function getFinanceFirebaseService() {
@@ -2438,7 +2453,7 @@ async function imprimirTabela(tipo) {
             ? (safeClientes.find(c => String(c.id) === String(filtro.clienteId))?.nome || 'Todos')
             : (safeFornecedores.find(f => String(f.id) === String(filtro.fornecedorId))?.nome || safeFuncionarios.find(f => String(f.id) === String(filtro.fornecedorId))?.nome || 'Todos');
 
-        const labelMap = { pedidoNumero:'Doc', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valorOriginal:'Original', valorPago:'Pago', valor:'Saldo', juros:'Juros', totalGeral:'Total', vencimento:'Venc.', status:'Status' };
+        const labelMap = { pedidoNumero:'Doc', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valorOriginal:'Original', valorPago:'Pago', valor:'Saldo', juros:'Juros', totalGeral:'Total', vencimento:'Venc.', dataEmissao:'Emissão', status:'Status' };
         const columnClassMap = {
             pedidoNumero: 'finance-print-nowrap finance-print-doc',
             valorOriginal: 'right finance-print-nowrap finance-print-money',
@@ -2447,9 +2462,10 @@ async function imprimirTabela(tipo) {
             juros: 'right finance-print-nowrap finance-print-money',
             totalGeral: 'right finance-print-nowrap finance-print-money',
             vencimento: 'finance-print-nowrap finance-print-date',
+            dataEmissao: 'finance-print-nowrap finance-print-date',
             status: 'finance-print-nowrap finance-print-status'
         };
-        const order = tipo === 'receber' ? ['pedidoNumero','cliente','descricao','valorOriginal','valorPago','valor','juros','totalGeral','vencimento','status'] : ['pedidoNumero','fornecedor','descricao','valorOriginal','valorPago','valor','juros','totalGeral','vencimento','status'];
+        const order = tipo === 'receber' ? ['pedidoNumero','cliente','descricao','valorOriginal','valorPago','valor','juros','totalGeral','vencimento','dataEmissao','status'] : ['pedidoNumero','fornecedor','descricao','valorOriginal','valorPago','valor','juros','totalGeral','vencimento','dataEmissao','status'];
         
         const thead = `<thead><tr>${order.map(k => `<th class="${columnClassMap[k] || ''}">${labelMap[k]}</th>`).join('')}</tr></thead>`;
         const tbody = itemsWithInfo.map(({ conta, info, statusFinal, valDisplay, totalComJuros, jurosLinha }) => `
@@ -2463,6 +2479,7 @@ async function imprimirTabela(tipo) {
                 <td class="right juros-val finance-print-nowrap finance-print-money">${escapeFinanceHtml(formatCurrency(jurosLinha))}</td>
                 <td class="right bold finance-print-nowrap finance-print-money">${escapeFinanceHtml(formatCurrency(totalComJuros))}</td>
                 <td class="finance-print-nowrap finance-print-date">${escapeFinanceHtml(formatDate(conta.dataVencimento || conta.vencimento))}</td>
+                <td class="finance-print-nowrap finance-print-date">${conta.dataEmissao ? escapeFinanceHtml(formatDate(conta.dataEmissao)) : '-'}</td>
                 <td class="finance-print-nowrap finance-print-status">${escapeFinanceHtml(statusFinal.toUpperCase())}</td>
             </tr>
         `).join('');
@@ -2705,8 +2722,8 @@ function buildFinanceReportPreviewHeader(company, model) {
 }
 
 const defaultPrintColumns = {
-    receber: ['pedidoNumero','cliente','descricao','valor','vencimento','juros','status','categoria','tipo'],
-    pagar: ['pedidoNumero','fornecedor','descricao','valor','vencimento','juros','status','categoria','tipo']
+    receber: ['pedidoNumero','cliente','descricao','valor','vencimento','dataEmissao','juros','status','categoria','tipo'],
+    pagar: ['pedidoNumero','fornecedor','descricao','valor','vencimento','dataEmissao','juros','status','categoria','tipo']
 };
 
 function getPrintPreferencesKey(tipo) {
@@ -2812,29 +2829,36 @@ function openColumnsConfig(tipo) {
         columnsConfigEditing.order = enforceJurosAfterVencimento([...orderRaw.filter(k => baseOrder.includes(k)), ...baseOrder.filter(k => !orderRaw.includes(k))]);
         const visibleRaw = (prefs && prefs.visible) ? { ...prefs.visible } : Object.fromEntries(baseOrder.map(k=>[k,true]));
         columnsConfigEditing.visible = Object.fromEntries(baseOrder.map(k => [k, visibleRaw[k] !== false]));
-        const labelMap = { pedidoNumero:'Pedido Nº', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valor:'Valor', juros:'Juros', vencimento:'Vencimento', status:'Status', categoria:'Categoria', tipo:'Tipo' };
-        document.getElementById('printColumnsModalTitle').textContent = `Configurar colunas (${tipo.toUpperCase()})`;
-        const list = document.getElementById('printColumnsList');
-        list.innerHTML = columnsConfigEditing.order.map(colKey => {
-            const checked = columnsConfigEditing.visible[colKey] ? 'checked' : '';
-            const label = labelMap[colKey];
-            return `
-                <div class="columns-item" data-col="${colKey}">
-                    <span>${label}</span>
-                    <span>
-                        <label style="margin-right:8px;"><input type="checkbox" ${checked} onchange="toggleColumnVisible('${colKey}', this.checked)"> Exibir</label>
-                        <button type="button" onclick="moveColumn('${colKey}', -1)"><i class="fas fa-arrow-up"></i></button>
-                        <button type="button" onclick="moveColumn('${colKey}', 1)"><i class="fas fa-arrow-down"></i></button>
-                    </span>
-                </div>
-            `;
-        }).join('');
+        renderColumnsList();
         document.getElementById('printColumnsModal').style.display = 'block';
     } catch (e) { console.warn('Falha ao abrir configuração de colunas:', e); }
 }
 
 function toggleColumnVisible(colKey, visible) {
     columnsConfigEditing.visible[colKey] = !!visible;
+}
+
+function renderColumnsList() {
+    const tipo = columnsConfigEditing.tipo;
+    if (!tipo) return;
+    const labelMap = { pedidoNumero:'Pedido Nº', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valor:'Valor', juros:'Juros', vencimento:'Vencimento', dataEmissao:'Emissão', status:'Status', categoria:'Categoria', tipo:'Tipo' };
+    document.getElementById('printColumnsModalTitle').textContent = `Configurar colunas (${tipo.toUpperCase()})`;
+    const list = document.getElementById('printColumnsList');
+    if (!list) return;
+    list.innerHTML = columnsConfigEditing.order.map(colKey => {
+        const checked = columnsConfigEditing.visible[colKey] ? 'checked' : '';
+        const label = labelMap[colKey];
+        return `
+            <div class="columns-item" data-col="${colKey}">
+                <span>${label}</span>
+                <span>
+                    <label style="margin-right:8px;"><input type="checkbox" ${checked} onchange="toggleColumnVisible('${colKey}', this.checked)"> Exibir</label>
+                    <button type="button" onclick="moveColumn('${colKey}', -1)"><i class="fas fa-arrow-up"></i></button>
+                    <button type="button" onclick="moveColumn('${colKey}', 1)"><i class="fas fa-arrow-down"></i></button>
+                </span>
+            </div>
+        `;
+    }).join('');
 }
 
 function moveColumn(colKey, dir) {
@@ -2845,8 +2869,7 @@ function moveColumn(colKey, dir) {
     const arr = columnsConfigEditing.order;
     const [el] = arr.splice(idx, 1);
     arr.splice(newIdx, 0, el);
-    // Re-render list
-    openColumnsConfig(columnsConfigEditing.tipo);
+    renderColumnsList();
 }
 
 function saveColumnsConfig() {
@@ -2930,8 +2953,16 @@ function computeFilteredReceber(filtro = {}) {
     }
     const inicioTs = normalizeDateToTimestamp(filtro.dataInicio);
     const fimTs = normalizeDateToTimestamp(filtro.dataFim);
-    if (inicioTs) contasFiltradas = contasFiltradas.filter(c => { const ts = getContaVencimentoTimestamp(c); return ts !== null && ts >= inicioTs; });
-    if (fimTs) contasFiltradas = contasFiltradas.filter(c => { const ts = getContaVencimentoTimestamp(c); return ts !== null && ts <= fimTs; });
+    if (inicioTs) contasFiltradas = contasFiltradas.filter(c => {
+        const tsVenc = getContaVencimentoTimestamp(c);
+        const tsEmi = normalizeDateToTimestamp(c && c.dataEmissao);
+        return (tsVenc !== null && tsVenc >= inicioTs) || (tsEmi !== null && tsEmi >= inicioTs);
+    });
+    if (fimTs) contasFiltradas = contasFiltradas.filter(c => {
+        const tsVenc = getContaVencimentoTimestamp(c);
+        const tsEmi = normalizeDateToTimestamp(c && c.dataEmissao);
+        return (tsVenc !== null && tsVenc <= fimTs) || (tsEmi !== null && tsEmi <= fimTs);
+    });
     contasFiltradas.sort((a, b) => { const ta = getContaVencimentoTimestamp(a) ?? 0; const tb = getContaVencimentoTimestamp(b) ?? 0; return ta - tb; });
     return contasFiltradas;
 }
@@ -3002,8 +3033,16 @@ function computeFilteredPagar(filtro = {}) {
     }
     const inicioTs = normalizeDateToTimestamp(filtro.dataInicio);
     const fimTs = normalizeDateToTimestamp(filtro.dataFim);
-    if (inicioTs) contasFiltradas = contasFiltradas.filter(c => { const ts = getContaVencimentoTimestamp(c); return ts !== null && ts >= inicioTs; });
-    if (fimTs) contasFiltradas = contasFiltradas.filter(c => { const ts = getContaVencimentoTimestamp(c); return ts !== null && ts <= fimTs; });
+    if (inicioTs) contasFiltradas = contasFiltradas.filter(c => {
+        const tsVenc = getContaVencimentoTimestamp(c);
+        const tsEmi = normalizeDateToTimestamp(c && c.dataEmissao);
+        return (tsVenc !== null && tsVenc >= inicioTs) || (tsEmi !== null && tsEmi >= inicioTs);
+    });
+    if (fimTs) contasFiltradas = contasFiltradas.filter(c => {
+        const tsVenc = getContaVencimentoTimestamp(c);
+        const tsEmi = normalizeDateToTimestamp(c && c.dataEmissao);
+        return (tsVenc !== null && tsVenc <= fimTs) || (tsEmi !== null && tsEmi <= fimTs);
+    });
     contasFiltradas.sort((a, b) => { const ta = getContaVencimentoTimestamp(a) ?? 0; const tb = getContaVencimentoTimestamp(b) ?? 0; return ta - tb; });
     return contasFiltradas;
 }
@@ -3083,6 +3122,14 @@ function mudarPaginaPagar(novaPagina) {
 
 // Funções de navegação entre tabs
 function showTab(tabName) {
+    // ✅ CORREÇÃO: Resetar estado de edição e botão ao trocar de aba
+    if (window.contaEmEdicao) {
+        window.contaEmEdicao = null;
+        ['pagarForm', 'receberForm'].forEach(function(formId) {
+            const btn = document.getElementById(formId)?.querySelector('button[type="submit"]');
+            if (btn) btn.innerHTML = '<i class="fas fa-save"></i> Salvar';
+        });
+    }
     // Ocultar todas as tabs
     const tabContents = document.querySelectorAll('.tab-content');
     tabContents.forEach(tab => tab.classList.remove('active'));
@@ -3522,6 +3569,7 @@ async function salvarContaReceber(event) {
         const descricao = document.getElementById('receberDescricao').value;
         const valorTotal = parseCurrencyValue(document.getElementById('receberValorTotal').value);
         const parcelas = parseInt(document.getElementById('receberParcelas').value);
+        const dataEmissao = document.getElementById('receberDataEmissao')?.value || '';
         const dataVencimento = document.getElementById('receberDataVencimento').value;
         const categoriaValor = document.getElementById('receberCategoria').value || 'vendas';
         const tipoValor = (document.getElementById('receberTipo')?.value || 'receber');
@@ -3568,6 +3616,14 @@ async function salvarContaReceber(event) {
         // ✅ NOVO: Verificar se estamos editando uma conta existente
         const novasContas = [];
         if (window.contaEmEdicao && window.contaEmEdicao.tipo === 'receber') {
+            if (window.__financeSaving) {
+                console.warn('⚠️ Salvamento já em andamento, ignorando clique duplo.');
+                return;
+            }
+            window.__financeSaving = true;
+            window.__financeSaveInProgress = true;
+            const receberSubmitBtn = document.getElementById('receberForm')?.querySelector('button[type="submit"]');
+            setSubmitButtonLoading(receberSubmitBtn, true, 'Salvando...');
             
             const index = contasReceber.findIndex(c => c.id == window.contaEmEdicao.id);
             if (index === -1) throw new Error('Conta a receber não encontrada para edição.');
@@ -3591,6 +3647,7 @@ async function salvarContaReceber(event) {
                 valor: valorTotal,
                 valorOriginal: valorOriginalEdit, // ✅ Valor original preservado ou ajustado
                 valorRestante: valorRestanteEdit, // ✅ Recalcular restante com base em valorPago
+                dataEmissao: normalizeDateISOInput(dataEmissao) || '',
                 dataVencimento: vencISO,
                 status: statusCalc, // ✅ Recalcular status com base em vencimento e pagamentos
                 categoria: categoriaLabel,
@@ -3670,6 +3727,7 @@ async function salvarContaReceber(event) {
                 } catch (_) {}
             } catch(errSave) {
                 console.error('❌ Erro ao salvar conta editada no RTDB:', errSave);
+                window.__financeSaveInProgress = false;
                 const msg = String((errSave && errSave.message) || errSave || '').toLowerCase();
                 if (msg.includes('permission_denied') || msg.includes('permission denied')) {
                     try { mostrarNotificacao('Sessão expirada ou sem permissão. Faça login novamente.', 'error'); } catch(_) {}
@@ -3686,7 +3744,9 @@ async function salvarContaReceber(event) {
             try { limparFormulario('receberForm'); } catch(_) {}
             try { const parcelasField = document.getElementById('receberParcelas'); if (parcelasField) parcelasField.disabled = false; } catch(_) {}
             try { prepareNumeroReceber(); } catch(_) {}
-            
+            window.__financeSaveInProgress = false;
+            window.__financeSaving = false;
+            try { const rs = document.getElementById('receberForm')?.querySelector('button[type="submit"]'); setSubmitButtonLoading(rs, false); } catch(_) {}
             mostrarNotificacao('Conta a receber editada com sucesso!', 'success');
         } else {
             // ✅ CRIAÇÃO DE NOVA CONTA (comportamento original)
@@ -3707,6 +3767,7 @@ async function salvarContaReceber(event) {
                 valor: valorParcela,
                 valorOriginal: valorParcela, // ✅ NOVO: Valor original da parcela
                 valorRestante: valorParcela, // ✅ NOVO: Valor restante a receber
+                dataEmissao: normalizeDateISOInput(dataEmissao) || '',
                 dataVencimento: dataParcela,
                 status: 'pendente',
                     categoria: categoriaLabel,
@@ -3776,6 +3837,9 @@ async function salvarContaReceber(event) {
         
     } catch (error) {
         console.error('❌ Erro ao salvar conta a receber:', error);
+        window.__financeSaveInProgress = false;
+        window.__financeSaving = false;
+        try { const rs = document.getElementById('receberForm')?.querySelector('button[type="submit"]'); setSubmitButtonLoading(rs, false); } catch(_) {}
         const msg = String((error && error.message) || error || '').toLowerCase();
         if (msg.includes('permission_denied') || msg.includes('permission denied')) {
             try { mostrarNotificacao('Sessão expirada ou sem permissão. Faça login novamente.', 'error'); } catch(_) {}
@@ -3798,6 +3862,7 @@ async function salvarContaPagar(event) {
         const descricao = document.getElementById('pagarDescricao')?.value || '';
         const valorTotal = parseCurrencyValue(document.getElementById('pagarValorTotal')?.value || 0);
         const parcelas = parseInt(document.getElementById('pagarParcelas')?.value || '0');
+        const dataEmissao = document.getElementById('pagarDataEmissao')?.value || '';
         const dataVencimento = document.getElementById('pagarDataVencimento')?.value || '';
         const categoria = document.getElementById('pagarCategoria')?.value || '';
         const tipo = document.getElementById('pagarTipo')?.value || 'pagar';
@@ -3832,11 +3897,21 @@ async function salvarContaPagar(event) {
         }
 
         if (window.contaEmEdicao && window.contaEmEdicao.tipo === 'pagar') {
+            if (window.__financeSaving) {
+                console.warn('⚠️ Salvamento já em andamento, ignorando clique duplo.');
+                return;
+            }            window.__financeSaving = true;
+            window.__financeSaveInProgress = true;
+            const pagarSubmitBtn = document.getElementById('pagarForm')?.querySelector('button[type="submit"]');
+            setSubmitButtonLoading(pagarSubmitBtn, true, 'Salvando...');
             const editId = window.contaEmEdicao.id;
             const contaOriginal = window.contaEmEdicao.contaOriginal || {};
             const contaIndex = contasPagar.findIndex(c => c && String(c.id) === String(editId));
             if (contaIndex === -1) {
-                mostrarNotificacao('Conta não encontrada para edição.', 'error');
+                window.__financeSaveInProgress = false;
+                window.__financeSaving = false;
+                setSubmitButtonLoading(pagarSubmitBtn, false);
+            mostrarNotificacao('Conta não encontrada para edição.', 'error');
                 return;
             }
             const conta = { ...contasPagar[contaIndex] };
@@ -3847,6 +3922,7 @@ async function salvarContaPagar(event) {
             conta.valorOriginal = valorTotal;
             conta.valor = valorTotal;
             conta.valorRestante = Math.max(0, (Math.round(valorTotal * 100) - Math.round(valorPago * 100)) / 100);
+            conta.dataEmissao = normalizeDateISOInput(dataEmissao) || '';
             conta.dataVencimento = normalizeDateISOInput(dataVencimento);
             if (conta.valorRestante === 0) {
                 conta.status = 'pago';
@@ -3909,6 +3985,9 @@ async function salvarContaPagar(event) {
             try { const parcelasField = document.getElementById('pagarParcelas'); if (parcelasField) parcelasField.disabled = false; } catch(_) {}
             try { prepareNumeroPagar(); } catch(_) {}
             window.contaEmEdicao = null;
+            window.__financeSaveInProgress = false;
+            window.__financeSaving = false;
+            setSubmitButtonLoading(pagarSubmitBtn, false);
             mostrarNotificacao('Conta a pagar editada com sucesso!', 'success');
             try { atualizarSelectCategorias(); atualizarSelectTipos(); } catch(_) {}
             return;
@@ -3938,6 +4017,7 @@ async function salvarContaPagar(event) {
                 valor: valorParcela,
                 valorOriginal: valorParcela,
                 valorRestante: valorParcela,
+                dataEmissao: normalizeDateISOInput(dataEmissao) || '',
                 dataVencimento: dataParcela,
                 status: 'pendente',
                 categoria: categoriaKey,
@@ -4003,6 +4083,9 @@ async function salvarContaPagar(event) {
         
     } catch (error) {
         console.error('❌ Erro ao salvar conta a pagar:', error);
+        window.__financeSaveInProgress = false;
+        window.__financeSaving = false;
+        try { const ps = document.getElementById('pagarForm')?.querySelector('button[type="submit"]'); setSubmitButtonLoading(ps, false); } catch(_) {}
         mostrarNotificacao('Erro ao salvar conta a pagar. Tente novamente.', 'error');
     }
 }
@@ -4218,6 +4301,10 @@ async function carregarTabelaReceber(filtro = {}) {
     // ✅ CORREÇÃO: Filtrar apenas contas válidas (não nulas/undefined)
     let contasFiltradas = contasReceber.filter(conta => conta && conta.id);
     
+    // ✅ Dedup por ID para evitar duplicação na tabela
+    const seenIdsReceber = new Set();
+    contasFiltradas = contasFiltradas.filter(c => { if (!c || !c.id) return true; const k = String(c.id); if (seenIdsReceber.has(k)) return false; seenIdsReceber.add(k); return true; });
+
     // ✅ Normalizar campos e status pago/parcial/vencido
     const hojeTs = getTodayStartTimestampLocal();
     contasFiltradas.forEach(conta => {
@@ -4326,7 +4413,7 @@ async function carregarTabelaReceber(filtro = {}) {
     const order = enforceJurosAfterVencimento([...orderRaw.filter(k => allowed.has(k)), ...defaultCols.filter(k => !orderRaw.includes(k))]);
     const visibleRaw = (prefs && prefs.visible) ? prefs.visible : Object.fromEntries(defaultCols.map(k=>[k,true]));
     const visible = Object.fromEntries([...allowed].map(k => [k, visibleRaw[k] !== false]));
-    const labelMap = { pedidoNumero:'Pedido Nº', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valor:'Valor', juros:'Juros', vencimento:'Vencimento', status:'Status', categoria:'Categoria', tipo:'Tipo' };
+    const labelMap = { pedidoNumero:'Pedido Nº', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valor:'Valor', juros:'Juros', vencimento:'Vencimento', dataEmissao:'Emissão', status:'Status', categoria:'Categoria', tipo:'Tipo' };
     const theadEl = document.getElementById('receberTableHead');
     if (theadEl) {
         const selTh = `<th style="width:36px; text-align:center;"><input type="checkbox" id="selReceberAll" onchange="toggleSelecionarTodosReceber(this.checked)" aria-label="Selecionar todos"></th>`;
@@ -4415,8 +4502,9 @@ async function carregarTabelaReceber(filtro = {}) {
                 case 'cliente': rowCells.push(`<td>${escapeFinanceHtml(nomeCliente)}</td>`); break;
                 case 'descricao': rowCells.push(`<td>${escapeFinanceHtml(conta.descricao || '-')}</td>`); break;
                 case 'valor': rowCells.push(`<td style="text-align: right;" ${tooltipValor}>${formatCurrency(valorExibir)}</td>`); break;
-                case 'juros': rowCells.push(`<td style="text-align: right;" ${jurosInfo.tooltip}>${formatCurrency(jurosInfo.totalComJuros)}</td>`); break;
+                case 'juros': rowCells.push(`<td style="text-align: right;" ${jurosInfo.tooltip}>${formatCurrency(jurosInfo.juros)}</td>`); break;
                 case 'vencimento': rowCells.push(`<td style="text-align: center;">${formatDate(conta.dataVencimento || conta.vencimento)}</td>`); break;
+                case 'dataEmissao': rowCells.push(`<td style="text-align: center;">${conta.dataEmissao ? formatDate(conta.dataEmissao) : '-'}</td>`); break;
                 case 'status': rowCells.push(`<td style="text-align: center;"><span class="status-indicator status-${statusNorm}">${escapeFinanceHtml(statusExibir)}</span></td>`); break;
                 case 'categoria': rowCells.push(`<td>${escapeFinanceHtml(getCategoriaLabel(conta.categoria))}</td>`); break;
                 case 'tipo': rowCells.push(`<td>${escapeFinanceHtml(getTipoLabel(resolveFinanceTipoOperacional(conta)))}</td>`); break;
@@ -4499,6 +4587,10 @@ async function carregarTabelaPagar(filtro = {}) {
     
     let contasFiltradas = [...contasPagar];
     
+    // ✅ Dedup por ID para evitar duplicação na tabela
+    const seenIdsPagar = new Set();
+    contasFiltradas = contasFiltradas.filter(c => { if (!c || !c.id) return true; const k = String(c.id); if (seenIdsPagar.has(k)) return false; seenIdsPagar.add(k); return true; });
+
     // ✅ Normalizar campos e status pago/parcial/vencido
     const hojeTs = getTodayStartTimestampLocal();
     contasFiltradas.forEach(conta => {
@@ -4610,7 +4702,7 @@ async function carregarTabelaPagar(filtro = {}) {
     const order = enforceJurosAfterVencimento([...orderRaw.filter(k => allowed.has(k)), ...defaultCols.filter(k => !orderRaw.includes(k))]);
     const visibleRaw = (prefs && prefs.visible) ? prefs.visible : Object.fromEntries(defaultCols.map(k=>[k,true]));
     const visible = Object.fromEntries([...allowed].map(k => [k, visibleRaw[k] !== false]));
-    const labelMap = { pedidoNumero:'Pedido Nº', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valor:'Valor', juros:'Juros', vencimento:'Vencimento', status:'Status', categoria:'Categoria', tipo:'Tipo' };
+    const labelMap = { pedidoNumero:'Pedido Nº', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valor:'Valor', juros:'Juros', vencimento:'Vencimento', dataEmissao:'Emissão', status:'Status', categoria:'Categoria', tipo:'Tipo' };
     const theadEl = document.getElementById('pagarTableHead');
     if (theadEl) {
         const selTh = `<th style="width:36px; text-align:center;"><input type="checkbox" id="selPagarAll" onchange="toggleSelecionarTodosPagar(this.checked)" aria-label="Selecionar todos"></th>`;
@@ -4667,8 +4759,9 @@ async function carregarTabelaPagar(filtro = {}) {
                 case 'fornecedor': rowCells.push(`<td>${escapeFinanceHtml(nomeFornecedor)}</td>`); break;
                 case 'descricao': rowCells.push(`<td>${escapeFinanceHtml(conta.descricao || '-')}</td>`); break;
                 case 'valor': rowCells.push(`<td style="text-align: right;" ${tooltipValor}>${formatCurrency(valorExibir)}</td>`); break;
-                case 'juros': rowCells.push(`<td style="text-align: right;" ${jurosInfo.tooltip}>${formatCurrency(jurosInfo.totalComJuros)}</td>`); break;
+                case 'juros': rowCells.push(`<td style="text-align: right;" ${jurosInfo.tooltip}>${formatCurrency(jurosInfo.juros)}</td>`); break;
                 case 'vencimento': rowCells.push(`<td style="text-align: center;">${formatDate(conta.dataVencimento || conta.vencimento)}</td>`); break;
+                case 'dataEmissao': rowCells.push(`<td style="text-align: center;">${conta.dataEmissao ? formatDate(conta.dataEmissao) : '-'}</td>`); break;
                 case 'status': rowCells.push(`<td style="text-align: center;"><span class="status-indicator status-${statusNorm}">${escapeFinanceHtml(statusExibir)}</span></td>`); break;
                 case 'categoria': rowCells.push(`<td>${escapeFinanceHtml(getCategoriaLabel(conta.categoria))}</td>`); break;
                 case 'tipo': rowCells.push(`<td>${escapeFinanceHtml(getTipoLabel(resolveFinanceTipoOperacional(conta)))}</td>`); break;
@@ -4960,7 +5053,9 @@ function subscribeReceberMonths(months) {
                             contasReceber = mergeFinanceMonthData(contasReceber, arr, mk, 'contasReceber_deletedIds');
                             financeDevLog('listener.receber.applied', { month: mk, records: Array.isArray(arr) ? arr.length : 0 });
                             window.financeOffline = false; updateOfflineBadge();
-                            carregarTabelaReceber(lastFiltroReceber || {});
+                            if (!window.__financeSaveInProgress) {
+                                carregarTabelaReceber(lastFiltroReceber || {});
+                            }
                         } catch(e) { console.warn('recv onValue merge falhou:', e); }
                     };
                     r.on('value', h);
@@ -5004,7 +5099,9 @@ function subscribePagarMonths(months) {
                             contasPagar = mergeFinanceMonthData(contasPagar, arr, mk, 'contasPagar_deletedIds');
                             financeDevLog('listener.pagar.applied', { month: mk, records: Array.isArray(arr) ? arr.length : 0 });
                             window.financeOffline = false; updateOfflineBadge();
-                            carregarTabelaPagar(lastFiltroPagar || {});
+                            if (!window.__financeSaveInProgress) {
+                                carregarTabelaPagar(lastFiltroPagar || {});
+                            }
                         } catch(e) { console.warn('pagar onValue merge falhou:', e); }
                     };
                     r.on('value', h);
@@ -5894,6 +5991,9 @@ function scrollToForm(formId) {
 }
 
 async function editarConta(id, tipo) {
+    // ✅ Prevenir duplo clique
+    if (window.__financeEditing) return;
+    window.__financeEditing = true;
     try {
         let conta;
         
@@ -5962,6 +6062,8 @@ async function editarConta(id, tipo) {
                 const iso = normalizeDateISOInput(rawVenc);
                 dataField.value = iso;
             }
+            const emissaoFieldRec = document.getElementById('receberDataEmissao');
+            if (emissaoFieldRec) emissaoFieldRec.value = normalizeDateISOInput(conta.dataEmissao || '');
             if (observacoesField) observacoesField.value = conta.observacoes || '';
             if (jurosTipoField) jurosTipoField.value = normalizeJurosTipoKey(conta.jurosTipo);
             if (jurosTaxaField) jurosTaxaField.value = parseJurosTaxa(conta.jurosTaxa || 0);
@@ -6181,6 +6283,8 @@ async function editarConta(id, tipo) {
                 const iso = normalizeDateISOInput(rawVenc);
                 dataField.value = iso;
             }
+            const emissaoFieldPag = document.getElementById('pagarDataEmissao');
+            if (emissaoFieldPag) emissaoFieldPag.value = normalizeDateISOInput(conta.dataEmissao || '');
             // ✅ CORREÇÃO PADRONIZADA: Separar Categoria de Tipo (Pagar)
             if (categoriaField && tipoField) {
                 // Lógica específica para folha de pagamento (mantida)
@@ -6273,7 +6377,12 @@ async function editarConta(id, tipo) {
         }
         updateManualAttachmentButtonState(tipo);
 
-        
+        // ✅ Alterar texto do botão de submit para "Atualizar" quando editando
+        try {
+            const formId = tipo === 'receber' ? 'receberForm' : 'pagarForm';
+            const btn = document.getElementById(formId)?.querySelector('button[type="submit"]');
+            if (btn) btn.innerHTML = '<i class="fas fa-edit"></i> Atualizar';
+        } catch(_) {}
     } catch (error) {
         console.error('❌ Erro ao editar conta:', error);
         try {
@@ -6281,6 +6390,8 @@ async function editarConta(id, tipo) {
             if (typeof window.__toast === 'function') window.__toast(msg, 'error', { duration: 5000 });
             else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'error');
         } catch (_) {}
+    } finally {
+        window.__financeEditing = false;
     }
 }
 
@@ -6291,6 +6402,7 @@ async function confirmarPagamento(event) {
     const paymentAccountId = String(contaAtualEdicao || '').trim();
     const paymentType = String(tipoContaAtual || '').trim().toLowerCase();
     const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+    setSubmitButtonLoading(submitBtn, true, 'Registrando...');
     setPaymentModalBusy(true);
 
     try {
@@ -6299,6 +6411,7 @@ async function confirmarPagamento(event) {
         const metodoEl = document.getElementById('pagamentoMetodo');
         const obsEl = document.getElementById('pagamentoObservacoes');
         if (!valorEl || !dataEl || !metodoEl) {
+            setSubmitButtonLoading(submitBtn, false);
             mostrarNotificacao('Formulário de pagamento não está ativo.', 'warning');
             return;
         }
@@ -6309,17 +6422,20 @@ async function confirmarPagamento(event) {
         const observacoesPagamento = isAllCaps(observacoesPagamentoRaw) ? toTitleCasePt(observacoesPagamentoRaw) : observacoesPagamentoRaw;
         
         if (!valorPago || valorPago <= 0) {
+            setSubmitButtonLoading(submitBtn, false);
             mostrarNotificacao('Por favor, insira um valor válido.', 'warning');
             return;
         }
         
         if (!dataPagamento) {
+            setSubmitButtonLoading(submitBtn, false);
             mostrarNotificacao('Por favor, informe a data do pagamento.', 'warning');
             return;
         }
 
         // ✅ CORREÇÃO: Usar variáveis globais para identificar a conta
         if (!paymentAccountId || !['receber', 'pagar'].includes(paymentType)) {
+            setSubmitButtonLoading(submitBtn, false);
             mostrarNotificacao('Erro: conta não identificada para pagamento.', 'error');
             return;
         }
@@ -6329,6 +6445,7 @@ async function confirmarPagamento(event) {
             : contasPagar.find(c => String(c && c.id) === paymentAccountId);
 
         if (!conta) {
+            setSubmitButtonLoading(submitBtn, false);
             mostrarNotificacao('Conta não encontrada.', 'error');
             return;
         }
@@ -6342,6 +6459,7 @@ async function confirmarPagamento(event) {
         const pagamentoCents = financeMoneyToCents(valorPago);
         const exigivelCents = financeMoneyToCents(expected.valorRestante) + jurosCents;
         if (pagamentoCents > exigivelCents) {
+            setSubmitButtonLoading(submitBtn, false);
             mostrarNotificacao(`O valor informado supera o saldo exigível de ${formatCurrency(exigivelCents / 100)}.`, 'warning');
             return;
         }
@@ -6451,8 +6569,8 @@ async function confirmarPagamento(event) {
             'error'
         );
     } finally {
+        setSubmitButtonLoading(submitBtn, false);
         setPaymentModalBusy(false);
-        if (submitBtn) submitBtn.removeAttribute('aria-busy');
     }
 }
 
@@ -7947,6 +8065,11 @@ function limparFormulario(formId) {
         updateManualAttachmentButtonState('pagar');
     }
     
+    // ✅ Resetar botão de submit para "Salvar"
+    try {
+        const btn = document.getElementById(formId)?.querySelector('button[type="submit"]');
+        if (btn) btn.innerHTML = '<i class="fas fa-save"></i> Salvar';
+    } catch(_) {}
 }
 
 function updateFinanceModalBodyScrollLock() {
@@ -8549,8 +8672,9 @@ function computeContaJurosInfo(conta, referenceDate = null) {
     const status = String((conta && conta.status) || 'pendente').toLowerCase();
     const tsVenc = getContaVencimentoTimestamp(conta);
     const tsBaseJuros = normalizeDateToTimestamp(conta && conta.jurosBaseDate);
+    const tsEmissao = normalizeDateToTimestamp(conta && conta.dataEmissao);
     const tsRef = referenceDate ? normalizeDateToTimestamp(referenceDate) : getTodayStartTimestampLocal();
-    const tsStart = Math.max(tsVenc || 0, tsBaseJuros || 0);
+    const tsStart = Math.max(tsVenc || 0, tsBaseJuros || 0, tsEmissao || 0);
     if (!tsVenc || !tsRef || tsRef <= tsStart || taxa <= 0 || tipo === 'none' || status === 'pago') {
         const baseNoJuros = status === 'parcial'
             ? parseCurrencyValue((conta && conta.valorRestante) ?? (conta && conta.valor) ?? 0)
@@ -8618,7 +8742,7 @@ function getContaFinanceInfo(conta) {
     }
 
     // ─── CAMINHO 2: Conta com histórico de pagamentos (usa timeline completa) ─
-    if (temHistorico || (temJuros && statusRaw !== 'pendente')) {
+    if (temHistorico || (temJuros && statusRaw === 'parcial')) {
         const timeline = buildContaJurosTimeline(conta);
         const valorOriginal = timeline.valorInicialCents / 100;
         const valorPago = timeline.rows.reduce((s, r) => s + r.pagamentoCents, 0) / 100;
@@ -8669,19 +8793,24 @@ function getContaFinanceInfo(conta) {
 
     const tsVenc = getContaVencimentoTimestamp(conta);
     const tsBaseJuros = normalizeDateToTimestamp(conta.jurosBaseDate);
-    const tsStart = Math.max(tsVenc || 0, tsBaseJuros || 0);
+    const tsEmissao = normalizeDateToTimestamp(conta && conta.dataEmissao);
     const tsHoje = getTodayStartTimestampLocal();
-    const diasAtraso = (tsStart && tsHoje > tsStart) ? Math.floor((tsHoje - tsStart) / 86400000) : 0;
-    const jurosAberto = (temJuros && valorRestante > 0 && diasAtraso > 0)
-        ? computeJurosByPeriod(valorRestante, taxa, diasAtraso, tipo)
+
+    // ✅ Juros CONTRATUAIS: período emissao->vencimento (nao juros de mora acumulados)
+    const tsInicio = Math.max(tsBaseJuros || 0, tsEmissao || 0) || tsVenc || tsHoje;
+    const tsFim = tsVenc || tsHoje;
+    const diasContrato = (tsFim > tsInicio) ? Math.floor((tsFim - tsInicio) / 86400000) : 0;
+    const jurosAberto = (temJuros && valorRestante > 0 && diasContrato > 0)
+        ? computeJurosByPeriod(valorRestante, taxa, diasContrato, tipo)
         : 0;
     const totalAtualizado = valorRestante + jurosAberto;
+    const diasAtraso = (tsVenc && tsHoje > tsVenc) ? Math.floor((tsHoje - tsVenc) / 86400000) : 0;
 
     let statusNorm = statusRaw;
     if (statusNorm === 'pendente' && tsVenc && tsVenc < tsHoje) statusNorm = 'vencido';
 
     const tipoLabel = tipo === 'composto' ? 'Composto' : (tipo === 'simples' ? 'Simples' : 'Sem juros');
-    const tooltip = `title="Tipo: ${tipoLabel} | Taxa: ${taxa.toFixed(2)}% | Dias atraso: ${diasAtraso} | Juros: ${formatCurrency(jurosAberto)}"`;
+    const tooltip = `title="Tipo: ${tipoLabel} | Taxa: ${taxa.toFixed(2)}% | Dias contrato: ${diasContrato} | Juros: ${formatCurrency(jurosAberto)}"`;
 
     return {
         valorOriginal,
@@ -8721,18 +8850,19 @@ function buildContaJurosTimeline(conta) {
     const taxa = parseJurosTaxa(conta && conta.jurosTaxa);
     const tsVenc = getContaVencimentoTimestamp(conta);
     const tsBaseJuros = normalizeDateToTimestamp(conta && conta.jurosBaseDate);
+    const tsEmissao = normalizeDateToTimestamp(conta && conta.dataEmissao);
     const historicosRaw = Array.isArray(conta && conta.historicosPagamento) ? conta.historicosPagamento : [];
     const historicos = historicosRaw
         .map((h, idx) => ({ ...h, __idx: idx, __ts: normalizeDateToTimestamp(h && h.data) || 0 }))
         .sort((a, b) => (a.__ts - b.__ts) || (a.__idx - b.__idx));
     let saldoCents = valorInicialCents;
-    let tsBase = tsVenc || null;
+    let tsBase = tsVenc || tsEmissao || null;
     let totalJurosCents = 0;
     const rows = [];
     historicos.forEach((h) => {
         const pagamentoCents = Math.max(0, toCents(h && h.valor));
         const tsPg = normalizeDateToTimestamp(h && h.data) || tsBase || tsVenc || getTodayStartTimestampLocal();
-        const tsStart = Math.max(tsVenc || 0, tsBase || 0) || tsPg;
+        const tsStart = Math.max(tsVenc || 0, tsBase || 0, tsEmissao || 0) || tsPg;
         const dias = Math.max(0, Math.floor((tsPg - tsStart) / 86400000));
         let jurosCents = 0;
         if (tipo !== 'none' && taxa > 0 && saldoCents > 0 && dias > 0) {
@@ -8773,8 +8903,9 @@ function buildContaJurosTimeline(conta) {
 
 function getOpenJurosPeriod(conta, timeline) {
     const tsVenc = getContaVencimentoTimestamp(conta) || 0;
+    const tsEmissao = normalizeDateToTimestamp(conta && conta.dataEmissao) || 0;
     const tsLast = (timeline && timeline.lastPaymentTimestamp) ? timeline.lastPaymentTimestamp : 0;
-    const tsStart = Math.max(tsVenc, tsLast) || getTodayStartTimestampLocal();
+    const tsStart = Math.max(tsVenc, tsLast, tsEmissao) || getTodayStartTimestampLocal();
     const tsEnd = getTodayStartTimestampLocal();
     const dias = Math.max(0, Math.floor((tsEnd - tsStart) / 86400000));
     return { tsStart, tsEnd, dias };
