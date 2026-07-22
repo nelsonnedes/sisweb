@@ -258,6 +258,7 @@
   "financas.js",
   "find_romaneios.js",
   "firebase-connection-manager-compat.js",
+  "firebase-compat-bridge.js",
   "firebase-init.js",
   "firebaseService.js",
   "firebaseService.unified.js",
