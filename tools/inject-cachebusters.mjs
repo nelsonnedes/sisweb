@@ -41,8 +41,8 @@ function processHtml(filePath) {
     const docWriteRegex = /(document\.write\s*\(\s*['"]<script[^>]*src\s*=\s*["'])([^"']+?)(\?v=[^"'\s]*)?(["'][^>]*><\\\/script>['"]\s*\))/gi;
     const importRegex = /(import\s*\(\s*['"]\.\/)([^"']+?)(\?v=[^"'\s]*)?(["'][\s)]*\))/gi;
     // Regex: import { ... } from './file.js?v=...'
-    // Captura imports estáticos de ES Module
-    const staticImportRegex = /(import\s+\{[^}]*\}\s+from\s+['"]\.\/)([^"']+?\.js)(\?v=[^"'\s]*)?(['"])/gi;
+    // Captura imports estáticos de ES Module (suporta multi-linha)
+    const staticImportRegex = /(import\s+\{[\s\S]*?\}\s+from\s+['"]\.\/)([^"']+?\.js)(\?v=[^"'\s]*)?(['"])/gsi;
 
     let changed = false;
 
