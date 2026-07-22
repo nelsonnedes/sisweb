@@ -1,8 +1,18 @@
 # Correções: Juros Financeiros, Login e Infraestrutura de Deploy
 
 **Data:** 2026-07-22
-**Status:** ✅ IMPLEMENTADO E DEPLOYADO
-**Versão:** 1.0.0
+**Status:** ✅ IMPLEMENTADO, DEPLOYADO E VERIFICADO EM PRODUÇÃO
+**Versão:** 1.1.0
+
+---
+
+## 📋 Commits
+
+| Commit | Descrição |
+|--------|-----------|
+| `5334623` | Juros contratuais + campo data emissão + loading states + inject-cachebusters ES Module + firebase-init.js |
+| `f8a2508` | firebase-compat-bridge.js no hosting-files.json |
+| `e9142ad` | Regex multiline para imports estáticos |
 
 ---
 
@@ -150,8 +160,70 @@ curl https://sisweb-7ce82.web.app/firebaseService.js?v=676ba9f2a922 → HTTP 200
 
 ### Deploys executados
 ```
-firebase deploy --only hosting (múltiplas vezes)
+firebase deploy --only hosting (3 deploys)
 ```
+
+---
+
+## 🌐 6. Correção Adicional: firebase-compat-bridge.js 404
+
+### Problema
+`index.html` linha 62 importa `import './firebase-compat-bridge.js'` mas o arquivo não estava no `hosting-files.json`, causando HTTP 404.
+
+### Correção
+Adicionado `"firebase-compat-bridge.js"` ao `hosting-files.json` (linha 261). Rebuild passou de 449 para 450 arquivos.
+
+### Arquivos modificados
+- `hosting-files.json`
+
+---
+
+## 🔧 7. Melhoria: Regex Multiline no inject-cachebusters
+
+### Problema
+A regex `staticImportRegex` usava `[^}]*` que não match newlines — se um import ES Module fosse reformatado em múltiplas linhas, o cachebuster não seria atualizado.
+
+### Correção
+```javascript
+// Antes:  /(import\s+\{[^}]*\}.../gi
+// Depois: /(import\s+\{[\s\S]*?\}.../gsi
+```
+
+### Arquivos modificados
+- `tools/inject-cachebusters.mjs`
+
+---
+
+## 📋 8. Auditoria Completa de Imports ES Module
+
+Varrimento completo de todos os **54 arquivos HTML** em busca de imports relativos de `.js`. Resultado:
+
+| Arquivo JS importado | Presente no hosting-files.json |
+|---------------------|:---:|
+| `firebase-init.js` | ✅ (foi adicionado) |
+| `firebase-compat-bridge.js` | ✅ (foi adicionado) |
+| `firebaseService.js` | ✅ (já existia) |
+| `modules/core/firebase-service.js` | ✅ (já existia) |
+
+**Nenhum arquivo faltando.** Todos os imports estão cobertos.
+
+---
+
+## ✅ Verificação em Produção
+
+Teste realizado em `https://sisweb-7ce82.web.app/` em 22/07/2026:
+
+| Recurso | Resultado |
+|---------|:--------:|
+| `login.html` | ✅ HTTP 200 (104KB) |
+| `financas.js` | ✅ Hash `6c61f599f40e` (match local) |
+| `firebase-init.js` | ✅ HTTP 200 (5.7KB) |
+| `firebase-compat-bridge.js` | ✅ HTTP 200 (7KB) |
+| `firebaseService.js?` | ✅ HTTP 200 (189KB) |
+| Login sem erro crítico | ✅ (logs do usuário confirmam) |
+
+**Preview local (empresa principal):**
+- Conta PX000039: Juros R$ **3.100,00** ✅ | Emissão 11/03/2026 ✅ | Vencimento 11/04/2026 ✅
 
 ---
 
