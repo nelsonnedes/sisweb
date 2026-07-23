@@ -2,52 +2,19 @@
 
 // Verificar se o Firebase está disponível e inicializado
 async function initFirebase() {
-    if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+    if (typeof window.firebase !== 'undefined' && window.firebase.apps.length > 0) {
         console.log("Firebase já inicializado, reutilizando...");
-        return { firebase, db: firebase.database() };
+        return { firebase: window.firebase, db: window.firebase.database() };
     }
     
     try {
-        // Carregar o Firebase se ainda não estiver disponível
-        if (typeof firebase === 'undefined') {
-            console.log("Carregando módulos do Firebase dinamicamente...");
-            
-            // Carregar o script do Firebase App
-            await new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js';
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            });
-            
-            // Carregar o script do Firebase Database
-            await new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js';
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            });
+        console.log("Carregando ponte Firebase compartilhada...");
+        await import('./firebase-compat-bridge.js');
+        if (!window.firebase || typeof window.firebase.database !== 'function') {
+            throw new Error('Ponte Firebase indisponível.');
         }
-        
-        // Configuração do Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
-            authDomain: "sisweb-7ce82.firebaseapp.com",
-            databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "sisweb-7ce82",
-            storageBucket: "sisweb-7ce82.firebasestorage.app",
-            messagingSenderId: "240003261222",
-            appId: "1:240003261222:web:1aeaf919ddc7e5c691d7e7",
-            measurementId: "G-FTC6JZ5ZGX"
-        };
-
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        console.log("Firebase inicializado com sucesso");
-        
-        return { firebase, db: firebase.database() };
+        console.log("Firebase compartilhado disponível");
+        return { firebase: window.firebase, db: window.firebase.database() };
     } catch (error) {
         console.error("Erro ao inicializar Firebase:", error);
         alert("Erro ao inicializar Firebase. Será usado localStorage como fallback.");

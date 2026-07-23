@@ -3,6 +3,10 @@
  * Serviço especializado para gerenciar dados do sistema de romaneio no Firebase
  */
 
+function getAuthPerformanceDiagnosticsRomaneio() {
+    try { return window.__SISWEB_AUTH_PERF__ || null; } catch (_) { return null; }
+}
+
 class RomaneioFirebaseService {
     constructor() {
         this.db = null;
@@ -40,14 +44,16 @@ class RomaneioFirebaseService {
             }));
             
         } catch (error) {
-            console.error('❌ Erro ao inicializar Romaneio Firebase Service:', error);
+            console.error('❌ Erro ao inicializar Romaneio Firebase Service:', error && error.code ? error.code : 'unknown');
             this.isReady = false;
         }
     }
 
     setupConnectionListener() {
+        try { getAuthPerformanceDiagnosticsRomaneio()?.listener('rtdb', 'add', 'shipping_page', 0); } catch (_) {}
         this.db.ref('.info/connected').on('value', (snapshot) => {
             this.isOnline = snapshot.val() === true;
+            try { getAuthPerformanceDiagnosticsRomaneio()?.rtdb(this.isOnline, 'shipping_page'); } catch (_) {}
             console.log(`🌐 Firebase ${this.isOnline ? 'conectado' : 'desconectado'}`);
             
             if (this.isOnline) {
@@ -57,9 +63,11 @@ class RomaneioFirebaseService {
     }
 
     setupAuthListener() {
+        try { getAuthPerformanceDiagnosticsRomaneio()?.listener('auth', 'add', 'shipping_page', 0); } catch (_) {}
         this.auth.onAuthStateChanged((user) => {
+            try { getAuthPerformanceDiagnosticsRomaneio()?.auth(user ? 'authenticated' : 'unauthenticated', 'shipping_page', 0); } catch (_) {}
             if (user) {
-                console.log('👤 Usuário autenticado:', user.uid);
+                console.log('👤 Usuário autenticado');
             } else {
                 console.log('👤 Usuário não autenticado, usando modo anônimo');
                 // Autenticar anonimamente para ter acesso ao Firebase

@@ -391,7 +391,7 @@ async function deleteFolhaDataCore(key) {
 
         const manager = (window.getFirebaseManager && window.getFirebaseManager()) || window.firebaseManager || null;
         if (manager && manager.database) {
-            const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, remove } = await import('../firebase-init.js');
             try { await remove(ref(manager.database, `folha/${mappedKey}`)); } catch {}
             try { await remove(ref(manager.database, `${mappedKey}`)); } catch {}
             console.log(`🗑️ Dados deletados: ${key}`);

@@ -106,6 +106,8 @@ const CLOUD_BILLING_TABLE_SUFFIX = CLOUD_BILLING_ACCOUNT_ID.replace(/-/g, '_');
 const CLOUD_BILLING_STANDARD_TABLE_ID = `gcp_billing_export_v1_${CLOUD_BILLING_TABLE_SUFFIX}`;
 const CLOUD_BILLING_DETAILED_TABLE_ID = `gcp_billing_export_resource_v1_${CLOUD_BILLING_TABLE_SUFFIX}`;
 const CLOUD_BILLING_CUD_TABLE_ID = 'cud_subscriptions_export';
+const CLOUD_BILLING_NOTIFICATION_RETENTION_LIMIT = 200;
+const CLOUD_BILLING_NOTIFICATION_PRUNE_BATCH = 25;
 const CLOUD_BILLING_OPERATIONAL_BUDGET_NAMES = new Set([
     'firebase project sisweb-7ce82'
 ]);
@@ -378,34 +380,16 @@ function roleAllowsCompanyProfileWrite(source) {
     return role === 'owner' || role === 'admin' || role === 'company_admin';
 }
 
-function isPrimaryCompanyAccountForProfile(uid, tenant, userData, token, companyData) {
+function isPrimaryCompanyAccountForProfile(uid, tenant, userData, companyData) {
     const userCompanyId = String(
         userData && (userData.companyId || userData.companyID || userData.tenantId) || ''
     ).trim();
     if (!uid || !tenant || userCompanyId !== tenant) return false;
-    const profile = companyData && companyData.profile && typeof companyData.profile === 'object'
-        ? companyData.profile
-        : {};
     const ownerUid = String(
         (companyData && (companyData.ownerUid || companyData.adminOwnerUid || companyData.primaryUserUid || companyData.createdBy || companyData.createdByUid))
-        || profile.ownerUid
-        || profile.adminOwnerUid
-        || profile.primaryUserUid
-        || profile.createdBy
-        || profile.createdByUid
         || ''
     ).trim();
-    if (ownerUid && ownerUid === uid) return true;
-    const authEmail = sanitizeText((token && token.email) || (userData && userData.email) || '', '').toLowerCase();
-    const companyEmail = sanitizeText(
-        profile.email
-        || profile.emailContato
-        || profile.contactEmail
-        || (companyData && (companyData.email || companyData.emailContato || companyData.contactEmail))
-        || '',
-        ''
-    ).toLowerCase();
-    return !!authEmail && !!companyEmail && authEmail === companyEmail;
+    return !!ownerUid && ownerUid === uid;
 }
 
 async function assertCompanyProfileWriteAccess(context, companyId, userData, token) {
@@ -436,10 +420,9 @@ async function assertCompanyProfileWriteAccess(context, companyId, userData, tok
     if (memberData.active === false || roleData.active === false || userData.adminActive === false) {
         throw new functions.https.HttpsError('permission-denied', 'Administrador da empresa está inativo.');
     }
-    const primaryCompanyAccount = isPrimaryCompanyAccountForProfile(uid, tenant, userData, token, companyData);
+    const primaryCompanyAccount = isPrimaryCompanyAccountForProfile(uid, tenant, userData, companyData);
     const roleCompanyId = String(roleData.companyId || roleData.companyID || roleData.tenantId || '').trim();
-    const profileData = companyData.profile && typeof companyData.profile === 'object' ? companyData.profile : {};
-    const createdBy = String(companyData.createdBy || companyData.createdByUid || profileData.createdBy || profileData.createdByUid || '').trim();
+    const createdBy = String(companyData.createdBy || companyData.createdByUid || '').trim();
     const allowed = roleAllowsCompanyProfileWrite(userData)
         || roleAllowsCompanyProfileWrite(memberData)
         || (roleCompanyId === tenant && roleAllowsCompanyProfileWrite(roleData))
@@ -465,7 +448,7 @@ function buildMirrorUserPatch(baseUser, patch, companyId) {
         companyId: String(companyId || ''),
         updatedAt: incoming.updatedAt || new Date().toISOString()
     };
-    const keys = ['subscriptionStatus', 'accountStatus', 'statusReason', 'pendingPayment', 'subscription', 'subscriptionStart', 'subscriptionEnd', 'subscriptionEndDate', 'trialStart', 'trialEnd', 'trialUsed', 'trialConsumed', 'freeTrialUsed', 'adminTrialGrant', 'payments', 'campaignLedger', 'updatedBy', 'role', 'adminPermissions', 'adminActive', 'superadmin', 'readOnlyUntil', 'readOnlyGrantedAt', 'readOnlyGrantedBy', 'readOnlyGraceConsumed', 'readOnlyReason'];
+    const keys = ['subscriptionStatus', 'accountStatus', 'statusReason', 'pendingPayment', 'subscription', 'subscriptionStart', 'subscriptionEnd', 'subscriptionEndDate', 'trialStart', 'trialEnd', 'trialUsed', 'trialConsumed', 'freeTrialUsed', 'adminTrialGrant', 'payments', 'campaignLedger', 'updatedBy', 'role', 'permissions', 'adminPermissions', 'active', 'adminActive', 'superadmin', 'readOnlyUntil', 'readOnlyGrantedAt', 'readOnlyGrantedBy', 'readOnlyGraceConsumed', 'readOnlyReason'];
     keys.forEach((k) => {
         if (Object.prototype.hasOwnProperty.call(incoming, k)) out[k] = incoming[k];
         else if (Object.prototype.hasOwnProperty.call(base, k)) out[k] = base[k];
@@ -497,7 +480,17 @@ async function applyUserPatchAcrossScopes(uid, patch, options = {}) {
     if (companyId) patchPayload.companyId = companyId;
     await userRef.update(patchPayload);
     if (companyId && !isSuperAdminUser) {
-        const mirrorPayload = buildMirrorUserPatch({ ...before, ...patchPayload }, patchPayload, companyId);
+        const roleSnap = await admin.database().ref(`roles/${userUid}`).get().catch(() => null);
+        const roleData = roleSnap && roleSnap.exists() && roleSnap.val() && typeof roleSnap.val() === 'object'
+            ? roleSnap.val()
+            : {};
+        const roleCompanyId = String(roleData.companyId || roleData.companyID || roleData.tenantId || '').trim();
+        const matchingRoleData = roleCompanyId === companyId ? roleData : {};
+        const mirrorPayload = buildMirrorUserPatch(
+            { ...matchingRoleData, ...before, ...patchPayload },
+            patchPayload,
+            companyId
+        );
         await admin.database().ref(`companies/${companyId}/users/${userUid}`).update(mirrorPayload);
     } else if (isSuperAdminUser) {
         try {
@@ -994,6 +987,71 @@ function extractFirebaseStoragePathFromUrlServer(pathOrUrl) {
     } catch (_) {
         return '';
     }
+}
+
+function normalizeCompanyLogoStoragePath(companyId, pathOrUrl) {
+    const prefix = `companies/${companyId}/profile/logo/`;
+    const storagePath = extractFirebaseStoragePathFromUrlServer(pathOrUrl);
+    if (!storagePath) return '';
+    if (storagePath.includes('..') || storagePath.includes('//') || !storagePath.startsWith(prefix)) {
+        throw new functions.https.HttpsError('invalid-argument', 'Caminho da logo não pertence à empresa informada.');
+    }
+    return storagePath;
+}
+
+function normalizeCompanyLogoProfilePayload(companyId, logoPayload) {
+    const payload = logoPayload && typeof logoPayload === 'object' ? { ...logoPayload } : {};
+    const keepPath = normalizeCompanyLogoStoragePath(companyId, payload.logoStoragePath || payload.logoPath || '');
+    if (!keepPath) return payload;
+    payload.logoStoragePath = keepPath;
+    payload.logoPath = keepPath;
+    if (!payload.logo || !/^https?:\/\//i.test(String(payload.logo))) payload.logo = keepPath;
+    return payload;
+}
+
+async function reconcileCompanyLogoObjects(companyId, keepPath) {
+    const prefix = `companies/${companyId}/profile/logo/`;
+    try {
+        keepPath = normalizeCompanyLogoStoragePath(companyId, keepPath);
+    } catch (error) {
+        console.error('Falha ao normalizar caminho da logo para reconciliação.', {
+            companyId,
+            code: error && error.code ? String(error.code) : ''
+        });
+        return { attempted: false, deletedCount: 0, failedCount: 1 };
+    }
+    if (!keepPath) {
+        return { attempted: false, deletedCount: 0, failedCount: 0 };
+    }
+
+    let files;
+    try {
+        [files] = await admin.storage().bucket().getFiles({ prefix });
+    } catch (error) {
+        console.error('Falha ao listar logos antigas da empresa para reconciliação.', {
+            companyId,
+            code: error && error.code ? String(error.code) : ''
+        });
+        return { attempted: true, deletedCount: 0, failedCount: 1 };
+    }
+
+    const staleFiles = files.filter((file) => file.name !== keepPath);
+    const results = await Promise.allSettled(
+        staleFiles.map((file) => file.delete({ ignoreNotFound: true }))
+    );
+    const failedCount = results.filter((result) => result.status === 'rejected').length;
+    if (failedCount) {
+        console.error('Falha parcial ao remover logos antigas da empresa.', {
+            companyId,
+            attemptedCount: staleFiles.length,
+            failedCount
+        });
+    }
+    return {
+        attempted: true,
+        deletedCount: results.length - failedCount,
+        failedCount
+    };
 }
 
 function sanitizeTransactionMeta(rawMeta) {
@@ -1501,7 +1559,8 @@ exports.createCompanyOnboarding = https.onCall(async (data, context) => {
         timestamp: nowIso,
         createdAt: nowIso,
         updatedAt: nowIso,
-        createdBy: uid
+        createdBy: uid,
+        ownerUid: uid
     };
     await companyRef.update(companyPayload);
     const userRecord = await admin.auth().getUser(uid);
@@ -1951,7 +2010,7 @@ exports.upsertCompanyProfile = https.onCall(async (data, context) => {
             );
         }
     }
-    const logoPayload = sanitizeLogoProfilePayload(payload, current);
+    const logoPayload = normalizeCompanyLogoProfilePayload(companyId, sanitizeLogoProfilePayload(payload, current));
     const extraProfilePayload = sanitizeCompanyProfileExtraPayload(payload, current);
     const geoProfilePayload = sanitizeCompanyGeolocationPayload(payload, current);
     const nextProfile = {
@@ -1972,7 +2031,8 @@ exports.upsertCompanyProfile = https.onCall(async (data, context) => {
         updatedBy: context.auth.uid
     };
     await profileRef.set(nextProfile);
-    return { success: true, companyId, profile: nextProfile };
+    const logoCleanup = await reconcileCompanyLogoObjects(companyId, nextProfile.logoStoragePath || nextProfile.logoPath || '');
+    return { success: true, companyId, profile: nextProfile, logoCleanup };
 });
 
 exports.updateMyCompanyProfile = https.onCall(async (data, context) => {
@@ -1995,13 +2055,20 @@ exports.updateMyCompanyProfile = https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('permission-denied', 'companyId informado não pertence ao usuário autenticado.');
     }
     await assertCompanyProfileWriteAccess(context, companyId, userData, token);
+    await applyUserPatchAcrossScopes(uid, {
+        companyId,
+        updatedAt: new Date().toISOString()
+    }, {
+        companyId,
+        email: sanitizeText(token.email || userData.email || '', '')
+    });
     const profileRef = admin.database().ref(`companies/${companyId}/profile`);
     const currentSnap = await profileRef.get();
     const current = currentSnap.exists() && currentSnap.val() && typeof currentSnap.val() === 'object'
         ? currentSnap.val()
         : {};
     const preservedCnpj = sanitizeText(current.cnpj || current.cnpjCpf || current.cpfCnpj || current.documento || '', '');
-    const logoPayload = sanitizeLogoProfilePayload(payload, current);
+    const logoPayload = normalizeCompanyLogoProfilePayload(companyId, sanitizeLogoProfilePayload(payload, current));
     const extraProfilePayload = sanitizeCompanyProfileExtraPayload(payload, current);
     const geoProfilePayload = sanitizeCompanyGeolocationPayload(payload, current);
     const nextProfile = {
@@ -2022,7 +2089,8 @@ exports.updateMyCompanyProfile = https.onCall(async (data, context) => {
         updatedBy: uid
     };
     await profileRef.set(nextProfile);
-    return { success: true, companyId, profile: nextProfile };
+    const logoCleanup = await reconcileCompanyLogoObjects(companyId, nextProfile.logoStoragePath || nextProfile.logoPath || '');
+    return { success: true, companyId, profile: nextProfile, logoCleanup };
 });
 
 function normalizeSelfProfilePayload(payload) {
@@ -2306,6 +2374,51 @@ function shouldPreferIncomingBillingBudget(previousSummary, normalized) {
     return true;
 }
 
+async function enforceCloudBillingNotificationRetention() {
+    const retentionRef = admin.database().ref('system/googleCloudBilling/notificationRetention');
+    const countRef = retentionRef.child('count');
+    const countResult = await countRef.transaction((current) => {
+        const parsed = Number.parseInt(current, 10);
+        return (Number.isFinite(parsed) && parsed >= 0 ? parsed : 0) + 1;
+    });
+    const currentCount = Number.parseInt(countResult.snapshot.val(), 10) || 0;
+    if (currentCount <= CLOUD_BILLING_NOTIFICATION_RETENTION_LIMIT) {
+        await retentionRef.update({
+            limit: CLOUD_BILLING_NOTIFICATION_RETENTION_LIMIT,
+            updatedAt: new Date().toISOString()
+        });
+        return;
+    }
+
+    const overflow = Math.min(
+        Math.max(currentCount - CLOUD_BILLING_NOTIFICATION_RETENTION_LIMIT, 1),
+        CLOUD_BILLING_NOTIFICATION_PRUNE_BATCH
+    );
+    const notificationsRef = admin.database().ref('system/googleCloudBilling/budgetNotifications');
+    const oldestSnap = await notificationsRef
+        .orderByChild('receivedAt')
+        .limitToFirst(overflow)
+        .get();
+    const removals = {};
+    oldestSnap.forEach((childSnap) => {
+        removals[childSnap.key] = null;
+    });
+    const removedCount = Object.keys(removals).length;
+    if (removedCount > 0) {
+        await notificationsRef.update(removals);
+        await countRef.transaction((current) => {
+            const parsed = Number.parseInt(current, 10);
+            return Math.max(0, (Number.isFinite(parsed) ? parsed : 0) - removedCount);
+        });
+    }
+    await retentionRef.update({
+        limit: CLOUD_BILLING_NOTIFICATION_RETENTION_LIMIT,
+        lastPrunedCount: removedCount,
+        lastPrunedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    });
+}
+
 function normalizeBigQueryNumber(value, fallback = 0) {
     if (value && typeof value === 'object' && Object.prototype.hasOwnProperty.call(value, 'value')) {
         return normalizeBigQueryNumber(value.value, fallback);
@@ -2558,7 +2671,12 @@ exports.ingestCloudBillingBudgetNotification = onMessagePublished(
         const message = event && event.data && event.data.message ? event.data.message : (event && event.data ? event.data : {});
         const normalized = normalizeCloudBillingBudgetMessage(message);
         const eventId = sanitizeText((event && event.id) || crypto.randomBytes(8).toString('hex'), crypto.randomBytes(8).toString('hex'));
-        const previousSummarySnap = await admin.database().ref('system/googleCloudBilling/summary').get().catch(() => null);
+        const notificationPath = `system/googleCloudBilling/budgetNotifications/${eventId}`;
+        const [previousSummarySnap, previousNotificationSnap] = await Promise.all([
+            admin.database().ref('system/googleCloudBilling/summary').get().catch(() => null),
+            admin.database().ref(notificationPath).get().catch(() => null)
+        ]);
+        if (previousNotificationSnap && previousNotificationSnap.exists()) return null;
         const previousSummary = previousSummarySnap && previousSummarySnap.exists() ? (previousSummarySnap.val() || {}) : {};
         const preferIncomingBudget = shouldPreferIncomingBillingBudget(previousSummary, normalized);
         const isIncomingOperationalBudget = isOperationalCloudBillingBudgetName(normalized.budgetDisplayName);
@@ -2581,7 +2699,9 @@ exports.ingestCloudBillingBudgetNotification = onMessagePublished(
         if (summaryUsagePercent >= 1) summarySeverity = 'error';
         else if (summaryUsagePercent >= 0.8) summarySeverity = 'warning';
         const updates = {};
-        updates[`system/googleCloudBilling/budgetNotifications/${eventId}`] = normalized;
+        const budgetKey = sanitizeFirebaseKey(normalized.budgetDisplayName || 'google-cloud-billing');
+        updates[notificationPath] = normalized;
+        updates[`system/googleCloudBilling/latestBudgetNotifications/${budgetKey}`] = normalized;
         updates['system/googleCloudBilling/summary'] = {
             ...(previousSummary && typeof previousSummary === 'object' ? previousSummary : {}),
             source: hasBigQueryCost ? 'cloud-billing-budget-pubsub+bigquery-export' : 'cloud-billing-budget-pubsub',
@@ -2627,6 +2747,7 @@ exports.ingestCloudBillingBudgetNotification = onMessagePublished(
             updates['system/operationalAlerts/firebaseBilling/cloudBudget'] = null;
         }
         await admin.database().ref().update(updates);
+        await enforceCloudBillingNotificationRetention();
         return null;
     }
 );
@@ -4292,7 +4413,8 @@ exports.grantReadOnlyGrace = https.onCall(async (_data, context) => {
 
     const subscription = user.subscription && typeof user.subscription === 'object' ? user.subscription : {};
     const endDate = subscription.endDate ? parseDateSafe(subscription.endDate) : null;
-    const isActive = (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trial_active') || (subscription.active === true && endDate && endDate.getTime() > Date.now());
+    const activeMarker = user.subscriptionStatus === 'active' || subscription.active === true;
+    const isActive = activeMarker && (!endDate || endDate.getTime() > Date.now());
     if (isActive) {
         throw new functions.https.HttpsError('failed-precondition', 'Assinatura ativa não requer modo leitura.');
     }
@@ -6019,3 +6141,13 @@ exports.nf_salvarConfiguracaoFiscal = nfFunctions.nf_salvarConfiguracaoFiscal;
 exports.nf_configurarCertNuvem = nfFunctions.nf_configurarCertNuvem;
 exports.nf_obterResumoCertificadoFiscal = nfFunctions.nf_obterResumoCertificadoFiscal;
 exports.nf_obterConfiguracaoFiscal = nfFunctions.nf_obterConfiguracaoFiscal;
+
+const financeFunctions = require('./finance-functions');
+financeFunctions.configure({ isCallerSuperAdmin });
+exports.financeNextSequence = financeFunctions.financeNextSequence;
+exports.financeCreateAccounts = financeFunctions.financeCreateAccounts;
+exports.financeUpdateAccount = financeFunctions.financeUpdateAccount;
+exports.financeDeleteAccount = financeFunctions.financeDeleteAccount;
+exports.financeUpdatePaymentReceipt = financeFunctions.financeUpdatePaymentReceipt;
+exports.financeRegisterPayment = financeFunctions.financeRegisterPayment;
+exports.financeDeletePayment = financeFunctions.financeDeletePayment;

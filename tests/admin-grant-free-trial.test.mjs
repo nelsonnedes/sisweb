@@ -10,8 +10,8 @@ test('admin concede trial 30 dias por callable seguro com auditoria e comunicaca
   const functionsIndex = read('functions/index.js');
   const firebaseService = read('firebaseService.js');
 
-  assert.match(adminHtml, /firebaseService\.js\?v=2026-06-11-profile-admin-v1/);
-  assert.match(adminHtml, /scripts\/admin\/admin-main\.js\?v=2026-06-11-profile-admin-v1/);
+  assert.match(adminHtml, /firebaseService\.js\?v=[^"'\s]+/);
+  assert.match(adminHtml, /scripts\/admin\/admin-main\.js\?v=[^"'\s]+/);
   assert.match(adminMain, /ADMIN_ASSET_VERSION = "2026-06-11-profile-admin-v1"/);
   assert.match(adminMain, /function canGrantAdminTrialForStatus/);
   assert.match(adminMain, /function isNoSubscriptionStatus/);

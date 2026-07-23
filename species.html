@@ -12,12 +12,15 @@
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <!-- Firebase via módulo compartilhado (singleton) -->
 
-    <!-- Menu Component -->
-    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
+    <script type="module">
+
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js';
+import './firebase-compat-bridge.js';  // compat shim
+
+    </script><!-- Menu Component -->
+    <script src="menu-component.js?v=a26e67eb025d"></script>
     
     <style>
         * {
@@ -354,13 +357,13 @@
     </div>
 
     <!-- Scripts -->
-    <script src="species-utils.js"></script>
-    <script src="species-modal-standard.js"></script>
+    <script src="species-utils.js?v=4c5147a6f4fe"></script>
+    <script src="species-modal-standard.js?v=fa1c091a5294"></script>
     <script type="module">
-        import * as svc from './modules/core/firebase-service.js';
+        import * as svc from './modules/core/firebase-service.js?v=f1a56093d8d4';
         if (!window.firebaseService) window.firebaseService = svc;
     </script>
-    <script type="module" src="js/species.js?v=202602271"></script>
+    <script type="module" src="js/species.js?v=69013102d2bb"></script>
 
 </body>
 </html>

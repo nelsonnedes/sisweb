@@ -32,8 +32,8 @@ test('vendas compras financeiro e notas usam botoes de aba sem submit implicito'
 test('fornecedores usa cards responsivos e camada compartilhada de comercio no mobile', () => {
   const html = read('fornecedor.html');
 
-  assert.match(html, /commerce-responsive\.css\?v=2026-06-07-print-context-v13/);
-  assert.match(html, /commerce-responsive\.js\?v=2026-06-07-print-context-v13/);
+  assert.match(html, /commerce-responsive\.css\?v=[^"'\s]+/);
+  assert.match(html, /commerce-responsive\.js\?v=[^"'\s]+/);
   assert.match(html, /<div class="table-responsive mobile-cards">/);
   assert.match(html, /@media \(max-width: 768px\)/);
   assert.match(html, /\.actions-bar,[\s\S]*\.form-row \{[\s\S]*grid-template-columns: 1fr;/);
@@ -43,8 +43,8 @@ test('clientes preserva pagina responsiva e modo embutido legado', () => {
   const html = read('client.html');
   const js = read('js/client.js');
 
-  assert.match(html, /commerce-responsive\.css\?v=2026-06-07-print-context-v13/);
-  assert.match(html, /commerce-responsive\.js\?v=2026-06-07-print-context-v13/);
+  assert.match(html, /commerce-responsive\.css\?v=[^"'\s]+/);
+  assert.match(html, /commerce-responsive\.js\?v=[^"'\s]+/);
   assert.match(html, /<div class="table-responsive mobile-cards">/);
   assert.match(html, /document\.documentElement\.classList\.add\('sisweb-embedded'\)/);
   assert.match(js, /data-label="Nome \/ Razão Social"/);
@@ -139,10 +139,10 @@ test('lista de pedidos usa PDF compartilhavel em PWA para vendas e compras', () 
   const sw = read('sw.js');
 
   [vendasHtml, comprasHtml].forEach((html) => {
-    assert.match(html, /commerce-pdf-share\.js\?v=2026-06-23-logo-print-dataurl-v1/);
+    assert.match(html, /commerce-pdf-share\.js\?v=[^"'\s]+/);
   });
-  assert.match(vendasHtml, /vendas\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
-  assert.match(comprasHtml, /compras\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
+  assert.match(vendasHtml, /vendas\.js\?v=[^"'\s]+/);
+  assert.match(comprasHtml, /compras\.js\?v=[^"'\s]+/);
 
   assert.match(helper, /JSPDF_LOCAL = '\/assets\/vendor\/jspdf\.umd\.min\.js'/);
   assert.match(helper, /navigator\.canShare/);
@@ -228,9 +228,8 @@ test('service worker publica nova versao PWA para invalidar cache visual', () =>
   const sw = read('sw.js');
   const menuComponent = read('menu-component.js');
 
-  assert.match(sw, /const APP_VERSION = '2026-06-25-storage-replace-v1'/);
-  assert.match(menuComponent, /const PWA_VERSION = '2026-06-11-profile-admin-v1'/);
+  assert.match(sw, /const APP_VERSION = '2026-07-23-firebase-bootstrap-rollout-v1'/);
+  assert.match(menuComponent, /const PWA_VERSION = '2026-07-23-firebase-bootstrap-rollout-v1'/);
   assert.match(sw, /cache: 'no-store'/);
   assert.match(sw, /SISWEB_PWA_UPDATED/);
 });
-

@@ -1,6 +1,86 @@
-// Função para abrir o modal de novo cliente
-function openNewClientModal() {
-    console.log("Abrindo modal para cadastrar novo cliente");
+let clientFormModalContext = {
+    mode: 'create',
+    client: null,
+    onSaved: null,
+    selectAfterSave: true
+};
+
+function clientModalText(client, ...keys) {
+    for (const key of keys) {
+        const value = client && client[key];
+        if (value !== undefined && value !== null && String(value).trim() !== '') {
+            return String(value).trim();
+        }
+    }
+    return '';
+}
+
+function setClientModalValue(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.value = value || '';
+}
+
+async function loadClientModalCities(uf, selectedCity = '') {
+    const citySelect = document.getElementById('newClientCity');
+    if (!citySelect) return;
+    if (!uf) {
+        citySelect.innerHTML = '<option value="">Selecione primeiro o estado</option>';
+        return;
+    }
+    if (typeof window.popularCidades === 'function') {
+        await window.popularCidades(citySelect.id, uf, selectedCity);
+        return;
+    }
+    if (typeof window.populateCitySelect === 'function') {
+        await window.populateCitySelect(uf, citySelect.id);
+        if (selectedCity) citySelect.value = selectedCity;
+        return;
+    }
+    citySelect.innerHTML = '';
+    const option = document.createElement('option');
+    option.value = selectedCity || '';
+    option.textContent = selectedCity || 'Cidade não carregada';
+    citySelect.appendChild(option);
+}
+
+async function populateClientFormModal(client = null) {
+    const form = document.getElementById('newClientForm');
+    if (form) form.reset();
+
+    const isEdit = !!(clientFormModalContext.mode === 'edit' && client);
+    const title = document.getElementById('newClientModalLabel');
+    const saveButton = document.getElementById('saveNewClient');
+    if (title) title.textContent = isEdit ? 'Editar Cliente' : 'Novo Cliente';
+    if (saveButton) saveButton.textContent = isEdit ? 'Atualizar' : 'Salvar';
+
+    setClientModalValue('newClientName', clientModalText(client, 'nome', 'name', 'razao', 'razaoSocial'));
+    setClientModalValue('newClientCnpj', clientModalText(client, 'documento', 'document', 'cnpj', 'cpf', 'cpfCnpj'));
+    setClientModalValue('newClientPhone', clientModalText(client, 'telefone', 'phone', 'celular'));
+    setClientModalValue('newClientEmail', clientModalText(client, 'email'));
+    setClientModalValue('newClientTipoPessoa', clientModalText(client, 'tipoPessoa', 'personType', 'fiscalPersonType'));
+    setClientModalValue('newClientIndIEDest', clientModalText(client, 'indIEDest', 'indicadorInscricaoEstadual', 'ieIndicator'));
+    setClientModalValue('newClientInscricaoEstadual', clientModalText(client, 'inscricaoEstadual', 'stateRegistration', 'ie'));
+    setClientModalValue('newClientInscricaoMunicipal', clientModalText(client, 'inscricaoMunicipal', 'municipalRegistration', 'im'));
+    setClientModalValue('newClientSuframa', clientModalText(client, 'suframa', 'SUFRAMA'));
+    setClientModalValue('newClientCep', clientModalText(client, 'cep', 'postalCode', 'zipCode', 'zip'));
+    setClientModalValue('newClientAddress', clientModalText(client, 'endereco', 'address', 'logradouro'));
+    setClientModalValue('newClientNumber', clientModalText(client, 'numero', 'number'));
+    setClientModalValue('newClientNeighborhood', clientModalText(client, 'bairro', 'neighborhood', 'district'));
+    setClientModalValue('newClientComplement', clientModalText(client, 'complemento', 'complement'));
+    const state = clientModalText(client, 'estado', 'state', 'uf').toUpperCase();
+    const city = clientModalText(client, 'cidade', 'city', 'municipio');
+    setClientModalValue('newClientState', state);
+    await loadClientModalCities(state, city);
+    setClientModalValue('newClientMunicipalityCode', clientModalText(client, 'codigoMunicipio', 'municipioCodigo', 'municipalityCode', 'cMun', 'codigoIBGE', 'ibge', 'ibgeCode'));
+    setClientModalValue('newClientCountryCode', clientModalText(client, 'paisCodigo', 'countryCode', 'cPais') || '1058');
+    setClientModalValue('newClientCountryName', clientModalText(client, 'pais', 'country', 'countryName', 'xPais') || 'Brasil');
+    setClientModalValue('newClientObs', clientModalText(client, 'obs', 'observacoes', 'observations'));
+}
+
+// Modal canônico de cliente para fluxos operacionais.
+function openClientFormModal(options = {}) {
+    const opts = (options && typeof options === 'object') ? options : {};
+    console.log(opts.mode === 'edit' ? "Abrindo modal para editar cliente" : "Abrindo modal para cadastrar novo cliente");
     // ✅ Fechar lista de clientes/fornecedores se estiver aberta para evitar dois modais
     try {
         const listModal = document.getElementById('clientListModal');
@@ -26,39 +106,95 @@ function openNewClientModal() {
         modal.setAttribute('aria-hidden', 'true');
         
         modal.innerHTML = `
-            <div class="modal-content">
+            <div class="modal-content" style="display:flex; flex-direction:column; margin:24px auto; max-width:940px; max-height:calc(100dvh - 48px); overflow:hidden; padding:0; width:min(96vw, 940px);">
                 <div class="modal-header" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: #fff; padding: 15px 20px; min-height: 56px; border-radius: 8px 8px 0 0;">
                     <h3 class="modal-title" id="newClientModalLabel" style="color:#fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.4);">Novo Cliente</h3>
                     <button type="button" id="newClientCloseBtn" class="close-modal" aria-label="Fechar">&times;</button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" style="flex:1 1 auto; min-height:0; overflow-y:auto; padding:20px; -webkit-overflow-scrolling:touch;">
                     <form id="newClientForm">
                         <div class="form-group">
-                            <label for="newClientName">Nome</label>
-                            <input type="text" id="newClientName" required>
+                            <label for="newClientName">Nome / Razão Social *</label>
+                            <input type="text" id="newClientName" required placeholder="Ex: João da Silva / Silva Comércio">
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="newClientCnpj">Documento (CNPJ/CPF)</label>
-                                <input type="text" id="newClientCnpj" placeholder="Ex: 12.345.678/0001-90">
+                                <label for="newClientCnpj">CNPJ / CPF</label>
+                                <input type="text" id="newClientCnpj" placeholder="00.000.000/0000-00">
                             </div>
                             <div class="form-group">
-                                <label for="newClientPhone">Telefone</label>
-                                <input type="text" id="newClientPhone" placeholder="(xx) xxxxx-xxxx">
+                                <label for="newClientPhone">Telefone / Celular</label>
+                                <input type="text" id="newClientPhone" placeholder="(00) 00000-0000">
                             </div>
+                        </div>
+                        <div class="form-row">
                             <div class="form-group">
                                 <label for="newClientEmail">Email</label>
-                                <input type="email" id="newClientEmail" placeholder="email@exemplo.com">
+                                <input type="email" id="newClientEmail" placeholder="contato@empresa.com">
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="newClientAddress">Endereço</label>
-                            <input type="text" id="newClientAddress" placeholder="Rua, nº, bairro">
+                            <div class="form-group">
+                                <label for="newClientTipoPessoa">Tipo de pessoa</label>
+                                <select id="newClientTipoPessoa">
+                                    <option value="">Não informado</option>
+                                    <option value="juridica">Pessoa jurídica</option>
+                                    <option value="fisica">Pessoa física</option>
+                                    <option value="estrangeiro">Estrangeiro</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="clientState">Estado</label>
-                                <select id="clientState">
+                                <label for="newClientIndIEDest">Indicador IE</label>
+                                <select id="newClientIndIEDest">
+                                    <option value="">Não informado</option>
+                                    <option value="1">Contribuinte ICMS</option>
+                                    <option value="2">Contribuinte isento</option>
+                                    <option value="9">Não contribuinte</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="newClientInscricaoEstadual">Inscrição Estadual</label>
+                                <input type="text" id="newClientInscricaoEstadual" placeholder="IE / ISENTO">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="newClientInscricaoMunicipal">Inscrição Municipal</label>
+                                <input type="text" id="newClientInscricaoMunicipal" placeholder="Opcional">
+                            </div>
+                            <div class="form-group">
+                                <label for="newClientSuframa">SUFRAMA</label>
+                                <input type="text" id="newClientSuframa" placeholder="Opcional">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="newClientCep">CEP</label>
+                                <input type="text" id="newClientCep" placeholder="00000-000">
+                            </div>
+                            <div class="form-group form-group-large">
+                                <label for="newClientAddress">Endereço</label>
+                                <input type="text" id="newClientAddress" placeholder="Rua, Avenida">
+                            </div>
+                            <div class="form-group">
+                                <label for="newClientNumber">Número</label>
+                                <input type="text" id="newClientNumber" placeholder="Nº">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="newClientNeighborhood">Bairro</label>
+                                <input type="text" id="newClientNeighborhood" placeholder="Bairro">
+                            </div>
+                            <div class="form-group">
+                                <label for="newClientComplement">Complemento</label>
+                                <input type="text" id="newClientComplement" placeholder="Sala, lote, referência">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="newClientState">Estado</label>
+                                <select id="newClientState">
                                     <option value="">Selecione o estado</option>
                                     <option value="AC">Acre</option>
                                     <option value="AL">Alagoas</option>
@@ -90,13 +226,31 @@ function openNewClientModal() {
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="clientCity">Cidade</label>
-                                <select id="clientCity"><option value="">Selecione primeiro o estado</option></select>
+                                <label for="newClientCity">Cidade</label>
+                                <select id="newClientCity"><option value="">Selecione primeiro o estado</option></select>
                             </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="newClientMunicipalityCode">Código IBGE do município</label>
+                                <input type="text" id="newClientMunicipalityCode" placeholder="Ex: 1501402">
+                            </div>
+                            <div class="form-group">
+                                <label for="newClientCountryCode">Código do país</label>
+                                <input type="text" id="newClientCountryCode" value="1058" placeholder="1058">
+                            </div>
+                            <div class="form-group">
+                                <label for="newClientCountryName">País</label>
+                                <input type="text" id="newClientCountryName" value="Brasil" placeholder="Brasil">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="newClientObs">Observações</label>
+                            <textarea id="newClientObs" rows="2" placeholder="Informações adicionais..."></textarea>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer" style="display:flex; gap:10px; justify-content:flex-end;">
+                <div class="modal-footer" style="align-items:center; background:#fff; border-top:1px solid #e5e7eb; display:flex; flex:0 0 auto; gap:10px; justify-content:flex-end; margin:0; padding:14px 20px;">
                     <button type="button" class="btn btn-danger" id="cancelNewClient">Cancelar</button>
                     <button type="button" class="btn btn-success" id="saveNewClient">Salvar</button>
                 </div>
@@ -110,16 +264,10 @@ function openNewClientModal() {
         if (saveButton) saveButton.addEventListener('click', saveNewClient);
 
         // Adicionar evento ao select de estado para carregar cidades
-        const stateSelect = modal.querySelector('#clientState');
+        const stateSelect = modal.querySelector('#newClientState');
         if (stateSelect) {
             stateSelect.addEventListener('change', function() {
-                const citySelect = modal.querySelector('#clientCity');
-                if (citySelect && typeof window.populateCitySelect === 'function') {
-                    window.populateCitySelect(this.value, citySelect.id);
-                } else if (citySelect) {
-                    console.warn('Função populateCitySelect não encontrada. Verifique se cities.js está carregado.');
-                    citySelect.innerHTML = '<option value="">Erro ao carregar cidades</option>';
-                }
+                loadClientModalCities(this.value);
             });
         }
 
@@ -135,11 +283,15 @@ function openNewClientModal() {
         });
     }
     
-    // Limpar formulário
-    const form = document.getElementById('newClientForm');
-    if (form) {
-        form.reset();
-    }
+    clientFormModalContext = {
+        mode: opts.mode === 'edit' ? 'edit' : 'create',
+        client: opts.client || null,
+        onSaved: typeof opts.onSaved === 'function' ? opts.onSaved : null,
+        selectAfterSave: opts.selectAfterSave !== false
+    };
+    Promise.resolve(populateClientFormModal(clientFormModalContext.client)).catch((error) => {
+        console.warn('Falha ao preencher modal de cliente:', error);
+    });
     
     // Mostrar modal
     modal.style.display = 'block';
@@ -148,16 +300,48 @@ function openNewClientModal() {
 }
 
 // Expor a função para o escopo global
+function openNewClientModal() {
+    return openClientFormModal({ mode: 'create' });
+}
+
+function openEditClientModal(client, options = {}) {
+    if (!client) {
+        try {
+            const msg = 'Selecione um cliente para editar';
+            if (typeof window.__toast === 'function') window.__toast(msg, 'warning');
+            else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
+        } catch (_) {}
+        return;
+    }
+    return openClientFormModal({ ...options, mode: 'edit', client });
+}
+
+window.openClientFormModal = openClientFormModal;
 window.openNewClientModal = openNewClientModal;
+window.openEditClientModal = openEditClientModal;
 function saveNewClient() {
     try {
-        const name = (document.getElementById('newClientName')?.value || '').trim();
-        const email = (document.getElementById('newClientEmail')?.value || '').trim();
-        const phone = (document.getElementById('newClientPhone')?.value || '').trim();
-        const address = (document.getElementById('newClientAddress')?.value || '').trim();
-        const cnpj = (document.getElementById('newClientCnpj')?.value || '').trim();
-        const state = (document.getElementById('clientState')?.value || '').trim();
-        const city = (document.getElementById('clientCity')?.value || '').trim();
+        const field = (id) => (document.getElementById(id)?.value || '').trim();
+        const name = field('newClientName');
+        const documento = field('newClientCnpj');
+        const phone = field('newClientPhone');
+        const email = field('newClientEmail');
+        const tipoPessoa = field('newClientTipoPessoa');
+        const indIEDest = field('newClientIndIEDest');
+        const inscricaoEstadual = field('newClientInscricaoEstadual');
+        const inscricaoMunicipal = field('newClientInscricaoMunicipal');
+        const suframa = field('newClientSuframa');
+        const cep = field('newClientCep');
+        const address = field('newClientAddress');
+        const numero = field('newClientNumber');
+        const bairro = field('newClientNeighborhood');
+        const complemento = field('newClientComplement');
+        const state = field('newClientState');
+        const city = field('newClientCity');
+        const codigoMunicipio = field('newClientMunicipalityCode');
+        const paisCodigo = field('newClientCountryCode') || '1058';
+        const pais = field('newClientCountryName') || 'Brasil';
+        const obs = field('newClientObs');
         if (!name) { 
             try {
                 const msg = 'Informe o nome do cliente';
@@ -166,9 +350,75 @@ function saveNewClient() {
             } catch (_) {}
             return; 
         }
-        // ✅ PRIORIDADE: Usar a função global window.saveClient se disponível (pela romaneios-client-save-fix.js)
-        const client = { name, email, phone, address, cnpj, state, city };
-        const saveFn = window.saveClient || (window.clientService && window.clientService.saveClient);
+        const nowIso = new Date().toISOString();
+        const originalClient = clientFormModalContext.client || {};
+        const isEditMode = clientFormModalContext.mode === 'edit' && originalClient.id;
+        const documentClean = documento.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+        const isCpf = documentClean.length === 11 && /^\d{11}$/.test(documentClean);
+        const isCnpj = documentClean.length === 14 && /^[A-Z0-9]{12}\d{2}$/.test(documentClean);
+        const client = {
+            ...originalClient,
+            id: isEditMode ? String(originalClient.id) : originalClient.id,
+            name,
+            nome: name,
+            email,
+            phone,
+            telefone: phone,
+            address,
+            endereco: address,
+            cnpj: isCnpj ? documento : '',
+            cpf: isCpf ? documento : '',
+            documento,
+            document: documento,
+            tipoPessoa,
+            personType: tipoPessoa,
+            fiscalPersonType: tipoPessoa,
+            indIEDest,
+            indicadorInscricaoEstadual: indIEDest,
+            ieIndicator: indIEDest,
+            inscricaoEstadual,
+            stateRegistration: inscricaoEstadual,
+            ie: inscricaoEstadual,
+            inscricaoMunicipal,
+            municipalRegistration: inscricaoMunicipal,
+            suframa,
+            cep,
+            postalCode: cep,
+            numero,
+            number: numero,
+            bairro,
+            neighborhood: bairro,
+            complemento,
+            complement: complemento,
+            state,
+            estado: state,
+            city,
+            cidade: city,
+            codigoMunicipio,
+            municipioCodigo: codigoMunicipio,
+            municipalityCode: codigoMunicipio,
+            cMun: codigoMunicipio,
+            paisCodigo,
+            countryCode: paisCodigo,
+            cPais: paisCodigo,
+            pais,
+            country: pais,
+            countryName: pais,
+            xPais: pais,
+            obs,
+            observacoes: obs,
+            observations: obs,
+            status: originalClient.status || 'ativo',
+            createdAt: originalClient.createdAt || originalClient.created || nowIso,
+            updatedAt: nowIso,
+            updated: nowIso
+        };
+        const saveFn = (window.clientService && typeof window.clientService.saveClient === 'function')
+            ? (payload) => window.clientService.saveClient(payload)
+            : window.saveClient;
+        if (typeof saveFn !== 'function') {
+            throw new Error('Serviço de clientes indisponível');
+        }
         
         Promise.resolve(saveFn(client)).then((saved) => {
             const savedId = (saved && saved.id) ? saved.id : (client.id || null);
@@ -183,9 +433,22 @@ function saveNewClient() {
             }
             
             // ✅ Selecionar o novo cliente no dropdown passando o savedId
-            try { if (typeof atualizarSelectClientes === 'function') atualizarSelectClientes(savedId); } catch (_) {}
             try {
-                const msg = 'Cliente salvo com sucesso';
+                if (clientFormModalContext.selectAfterSave && typeof atualizarSelectClientes === 'function') {
+                    atualizarSelectClientes(savedId);
+                }
+            } catch (_) {}
+            try {
+                if (typeof clientFormModalContext.onSaved === 'function') {
+                    Promise.resolve(clientFormModalContext.onSaved(saved || client)).catch((callbackError) => {
+                        console.warn('Falha no callback pós-salvamento do cliente:', callbackError);
+                    });
+                }
+            } catch (callbackError) {
+                console.warn('Falha no callback pós-salvamento do cliente:', callbackError);
+            }
+            try {
+                const msg = isEditMode ? 'Cliente atualizado com sucesso' : 'Cliente salvo com sucesso';
                 if (typeof window.__toast === 'function') window.__toast(msg, 'success');
                 else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'success');
             } catch (_) {}

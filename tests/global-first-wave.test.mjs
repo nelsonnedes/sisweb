@@ -84,6 +84,19 @@ test('firebase hosting nao publica ferramentas internas e backups', () => {
   assert.equal(ignore.includes('subscription-status.html'), false);
 });
 
+test('rotas ativas nao inicializam o Firestore desativado', () => {
+  const firebaseConfig = JSON.parse(read('firebase.json'));
+  const company = read('company.html');
+  const romaneioTora = read('romaneiotora.html');
+  const legacyCompanyService = read('src/services/firebaseService.js');
+
+  assert.equal(Object.hasOwn(firebaseConfig, 'firestore'), false);
+  assert.doesNotMatch(company, /firebase-firestore-compat\.js/);
+  assert.doesNotMatch(romaneioTora, /firebase-firestore-compat\.js/);
+  assert.doesNotMatch(legacyCompanyService, /firebase\.firestore\s*\(/);
+  assert.doesNotMatch(legacyCompanyService, /firestoreService/);
+});
+
 test('firebase hosting bloqueia segredos, dumps e dados reais', () => {
   const firebaseConfig = JSON.parse(read('firebase.json'));
   const ignore = firebaseConfig.hosting.ignore;
@@ -279,10 +292,8 @@ test('menu global expoe suporte profissional no desktop e no mobile', () => {
   const source = read('menu-component.js');
 
   assert.match(source, /class="[^"]*support-link/);
-  assert.match(source, /class="menu-item mobile-menu-link mobile-support-link support-link"/);
-  assert.match(source, /class="menu-item mobile-menu-link"><i class="fas fa-book-open"><\/i> Ajuda/);
-  assert.match(source, /subscription-status\.html'\)\}" class="menu-item mobile-menu-link"/);
-  assert.match(source, /class="menu-item mobile-logout-link logout-link"/);
+  assert.doesNotMatch(source, /mobile-menu-link/);
+  assert.doesNotMatch(source, /mobile-logout-link/);
   assert.match(source, /showSupport/);
   assert.match(source, /supportModal/);
   assert.match(source, /sendSiswebSupportWhatsApp/);

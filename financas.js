@@ -11,6 +11,9 @@ let fornecedores = [];
 let funcionarios = [];
 let contaAtualEdicao = null;
 let tipoContaAtual = '';
+let financeSessionTenant = '';
+let financeModalPreviousFocus = null;
+let financeReportCompanyCache = null;
 // Paginação
 let currentPageReceber = 1;
 let currentPagePagar = 1;
@@ -32,22 +35,16 @@ let fluxoDetalhadoChart = null;
 function mostrarNotificacao(mensagem, tipo = 'info') {
     const notification = document.createElement('div');
     notification.className = `notification notification-${tipo}`;
-    notification.innerHTML = `
-        <div style="
-            position: fixed; 
-            top: 20px; 
-            right: 20px; 
-            background: ${tipo === 'error' ? '#dc3545' : tipo === 'success' ? '#28a745' : '#007bff'};
-            color: white;
-            padding: 15px 20px;
-            border-radius: 5px;
-            z-index: 9999;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        ">
-            <i class="fas fa-${tipo === 'error' ? 'exclamation-triangle' : tipo === 'success' ? 'check-circle' : 'info-circle'}"></i>
-            ${mensagem}
-        </div>
-    `;
+    const content = document.createElement('div');
+    content.style.cssText = `position:fixed;top:20px;right:20px;background:${tipo === 'error' ? '#dc3545' : tipo === 'success' ? '#28a745' : '#007bff'};color:white;padding:15px 20px;border-radius:5px;z-index:9999;box-shadow:0 4px 15px rgba(0,0,0,0.2);`;
+    content.setAttribute('role', tipo === 'error' ? 'alert' : 'status');
+    const icon = document.createElement('i');
+    icon.className = `fas fa-${tipo === 'error' ? 'exclamation-triangle' : tipo === 'success' ? 'check-circle' : 'info-circle'}`;
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.textContent = ` ${String(mensagem || '')}`;
+    content.append(icon, text);
+    notification.appendChild(content);
     
     document.body.appendChild(notification);
     
@@ -57,6 +54,301 @@ function mostrarNotificacao(mensagem, tipo = 'info') {
             notification.parentNode.removeChild(notification);
         }
     }, 4000);
+}
+
+function expectFinanceWrite(result, operation = 'Operação financeira', options = {}) {
+    const failed = !result || result.success !== true || result.queued === true;
+    const degradedAtomicWrite = options.atomic === true && !!result && !!result.fallback;
+    if (!failed && !degradedAtomicWrite) return result;
+    const error = new Error(`${operation} não foi confirmada pelo banco online.`);
+    error.code = degradedAtomicWrite ? 'finance/non-atomic-write' : 'finance/write-not-confirmed';
+    error.result = result || null;
+    throw error;
+}
+
+async function callFinanceCallable(functionName, payload = {}) {
+    if (window.__siswebFirebaseServiceReady) await window.__siswebFirebaseServiceReady;
+    const service = window.firebaseService;
+    if (!service || typeof service.callFunction !== 'function') {
+        throw new Error('Serviço transacional financeiro indisponível. Atualize a página e tente novamente.');
+    }
+    const result = await service.callFunction(functionName, payload);
+    if (!result || result.success !== true) {
+        const error = new Error((result && result.error) || 'Operação financeira não confirmada pelo servidor.');
+        error.code = (result && result.code) || 'finance/callable-not-confirmed';
+        throw error;
+    }
+    return result;
+}
+
+async function createFinanceAccountsAuthoritative(tipo, accounts, operationId) {
+    const normalizedType = tipo === 'receber' ? 'receber' : 'pagar';
+    const sourceAccounts = Array.isArray(accounts) ? accounts : [];
+    if (!sourceAccounts.length) throw new Error('Nenhuma conta financeira foi preparada para criação.');
+    const confirmedOperationId = String(operationId || '').trim()
+        || createFinanceOperationId(`create_${normalizedType}`);
+    const payloadAccounts = sourceAccounts.map((account) => {
+        const month = getMonthKeyFromDateVal(account && (account.dataVencimento || account.vencimento));
+        if (!month || !account || !String(account.id || '').trim()) {
+            throw new Error('Conta ou partição mensal inválida para criação.');
+        }
+        return { mes: month, account };
+    });
+    try {
+        const result = await callFinanceCallable('financeCreateAccounts', {
+            tipo: normalizedType,
+            operationId: confirmedOperationId,
+            accounts: payloadAccounts
+        });
+        if (!Array.isArray(result.accounts) || result.accounts.length !== sourceAccounts.length) {
+            throw new Error('Servidor não confirmou todas as contas do lote.');
+        }
+        return {
+            accounts: result.accounts.map((account, index) => ({
+                ...(account || {}),
+                id: String((account && account.id) || sourceAccounts[index].id)
+            })),
+            operationId: confirmedOperationId,
+            idempotent: result.idempotent === true
+        };
+    } catch (error) {
+        try {
+            const reconciled = [];
+            for (const item of payloadAccounts) {
+                const accountId = String(item.account.id);
+                const remote = await reconcileFinanceAccount(normalizedType, item.mes, accountId);
+                if (!financeOperationWasCommitted(remote, confirmedOperationId, 'create')) throw error;
+                reconciled.push(remote);
+            }
+            return {
+                accounts: reconciled,
+                operationId: confirmedOperationId,
+                idempotent: true,
+                reconciled: true
+            };
+        } catch (_) {}
+        throw error;
+    }
+}
+
+function mergeFinanceCreatedAccounts(tipo, accounts) {
+    const normalizedType = tipo === 'receber' ? 'receber' : 'pagar';
+    return (Array.isArray(accounts) ? accounts : []).map((account) => (
+        replaceFinanceAccountInMemory(normalizedType, account && account.id, account)
+    ));
+}
+
+async function cleanupRejectedFinanceCreateUploads(accounts) {
+    const seen = new Set();
+    for (const account of Array.isArray(accounts) ? accounts : []) {
+        for (const attachment of normalizeAttachmentsList(account && account.anexos)) {
+            const storagePath = resolveAttachmentStoragePath(attachment);
+            if (!storagePath || seen.has(storagePath)) continue;
+            seen.add(storagePath);
+            await deleteStorageFileSafely(storagePath, attachment.url);
+        }
+    }
+}
+
+function isDefinitiveFinanceCreateError(error) {
+    const code = String(error && error.code || '').toLowerCase();
+    return code.includes('invalid-argument')
+        || code.includes('already-exists')
+        || code.includes('aborted')
+        || code.includes('permission-denied')
+        || code.includes('unauthenticated');
+}
+
+async function retryPendingFinanceCreation(tipo, form) {
+    const pending = form && form.__financePendingCreate;
+    if (!pending || pending.tipo !== tipo || !Array.isArray(pending.accounts)) return null;
+    try {
+        const committed = await createFinanceAccountsAuthoritative(
+            tipo,
+            pending.accounts,
+            pending.operationId
+        );
+        form.__financePendingCreate = null;
+        return mergeFinanceCreatedAccounts(tipo, committed.accounts);
+    } catch (error) {
+        if (isDefinitiveFinanceCreateError(error)) {
+            form.__financePendingCreate = null;
+            await cleanupRejectedFinanceCreateUploads(pending.accounts);
+        }
+        throw error;
+    }
+}
+
+async function updateFinanceAccountAuthoritative(tipo, originalAccount, editedAccount, options = {}) {
+    const source = originalAccount && typeof originalAccount === 'object' ? originalAccount : {};
+    const target = editedAccount && typeof editedAccount === 'object' ? editedAccount : {};
+    const accountId = String(source.id || target.id || '').trim();
+    const fromMonth = getMonthKeyFromDateVal(source.dataVencimento || source.vencimento);
+    const toMonth = getMonthKeyFromDateVal(target.dataVencimento || target.vencimento);
+    if (!accountId || !fromMonth || !toMonth) {
+        throw new Error('Conta ou partição mensal inválida para edição.');
+    }
+    const explicitOperationId = String(options.operationId || '').trim();
+    const editContext = window.contaEmEdicao || {};
+    const operationId = explicitOperationId
+        || editContext.financeEditOperationId
+        || createFinanceOperationId('edit_account');
+    if (!explicitOperationId) {
+        editContext.financeEditOperationId = operationId;
+        window.contaEmEdicao = editContext;
+    }
+    let result;
+    try {
+        result = await callFinanceCallable('financeUpdateAccount', {
+            tipo,
+            mesOrigem: fromMonth,
+            mesDestino: toMonth,
+            contaId: accountId,
+            operationId,
+            expected: buildFinanceExpectedState(source),
+            account: target
+        });
+    } catch (error) {
+        try {
+            const reconciled = await reconcileFinanceAccount(tipo, toMonth, accountId);
+            if (financeOperationWasCommitted(reconciled, operationId, 'edit')) {
+                return { account: reconciled, fromMonth, toMonth, operationId, reconciled: true };
+            }
+            error.financeReconciledAccount = reconciled;
+        } catch (_) {}
+        throw error;
+    }
+    if (!result.account || typeof result.account !== 'object') {
+        throw new Error('Servidor não confirmou a conta financeira editada.');
+    }
+    return {
+        account: { ...result.account, id: String(result.account.id || accountId) },
+        fromMonth,
+        toMonth,
+        operationId
+    };
+}
+
+async function updateFinancePaymentReceiptAuthoritative(tipo, conta, registroRef, receipt, operationId) {
+    const source = conta && typeof conta === 'object' ? conta : {};
+    const accountId = String(source.id || '').trim();
+    const month = getMonthKeyFromDateVal(source.dataVencimento || source.vencimento);
+    if (!accountId || !month) throw new Error('Conta ou partição mensal inválida para o comprovante.');
+    const confirmedOperationId = String(operationId || '').trim() || createFinanceOperationId('receipt');
+    try {
+        const result = await callFinanceCallable('financeUpdatePaymentReceipt', {
+            tipo,
+            mes: month,
+            contaId: accountId,
+            operationId: confirmedOperationId,
+            expected: buildFinanceExpectedState(source),
+            registroRef,
+            receipt: receipt || {}
+        });
+        if (!result.account || typeof result.account !== 'object') {
+            throw new Error('Servidor não confirmou o comprovante financeiro.');
+        }
+        return replaceFinanceAccountInMemory(tipo, accountId, result.account);
+    } catch (error) {
+        try {
+            const reconciled = await reconcileFinanceAccount(tipo, month, accountId);
+            if (financeOperationWasCommitted(reconciled, confirmedOperationId, 'receipt')) return reconciled;
+            error.financeReconciledAccount = reconciled;
+        } catch (_) {}
+        throw error;
+    }
+}
+
+function createFinanceOperationId(prefix = 'finance') {
+    const safePrefix = String(prefix || 'finance').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 24) || 'finance';
+    try {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            return `${safePrefix}_${window.crypto.randomUUID()}`;
+        }
+        if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+            const bytes = new Uint8Array(16);
+            window.crypto.getRandomValues(bytes);
+            return `${safePrefix}_${Array.from(bytes, (value) => value.toString(16).padStart(2, '0')).join('')}`;
+        }
+    } catch (_) {}
+    return `${safePrefix}_${Date.now()}_${Math.floor(Math.random() * 1e9)}`;
+}
+
+function financeMoneyToCents(value) {
+    const parsed = typeof value === 'number' ? value : parseCurrencyValue(value);
+    if (!Number.isFinite(parsed)) return 0;
+    return Math.round(parsed * 100);
+}
+
+function buildFinanceExpectedState(conta) {
+    const source = conta && typeof conta === 'object' ? conta : {};
+    const history = Array.isArray(source.historicosPagamento) ? source.historicosPagamento : [];
+    const status = String(source.status || 'pendente').trim().toLowerCase();
+    const originalCents = financeMoneyToCents(
+        Object.prototype.hasOwnProperty.call(source, 'valorOriginal') ? source.valorOriginal : source.valor
+    );
+    const historyPaidCents = history.reduce((sum, entry) => sum + financeMoneyToCents(entry && entry.valor), 0);
+    const paidCents = Object.prototype.hasOwnProperty.call(source, 'valorPago')
+        ? financeMoneyToCents(source.valorPago)
+        : (status === 'pago' && history.length === 0 ? originalCents : historyPaidCents);
+    const remainingCents = Object.prototype.hasOwnProperty.call(source, 'valorRestante')
+        ? financeMoneyToCents(source.valorRestante)
+        : (status === 'pago' ? 0 : Math.max(0, originalCents - paidCents));
+    return {
+        historyLength: history.length,
+        valorPago: paidCents / 100,
+        valorRestante: remainingCents / 100,
+        status,
+        revision: Number.isSafeInteger(Number(source.revision)) ? Number(source.revision) : 0
+    };
+}
+
+function replaceFinanceAccountInMemory(tipo, accountId, authoritativeAccount) {
+    const target = tipo === 'receber' ? contasReceber : contasPagar;
+    const index = target.findIndex((item) => String(item && item.id) === String(accountId));
+    const normalized = { ...(authoritativeAccount || {}), id: String((authoritativeAccount && authoritativeAccount.id) || accountId) };
+    if (index >= 0) target[index] = normalized;
+    else target.push(normalized);
+    return normalized;
+}
+
+async function reconcileFinanceAccount(tipo, monthKey, accountId) {
+    const service = window.firebaseService;
+    if (!service || typeof service.loadFromFirebase !== 'function') {
+        throw new Error('Serviço financeiro indisponível para reconciliar a conta.');
+    }
+    const result = await service.loadFromFirebase(`financas/${tipo}/${monthKey}/${String(accountId)}`);
+    if (!result || result.success !== true || !result.data || typeof result.data !== 'object') {
+        throw new Error('Conta financeira não pôde ser reconciliada com o servidor.');
+    }
+    return replaceFinanceAccountInMemory(tipo, accountId, result.data);
+}
+
+function financeOperationWasCommitted(account, operationId, kind) {
+    const operation = account
+        && account._financeOperations
+        && account._financeOperations[operationId];
+    return !!operation && (!kind || operation.kind === kind);
+}
+
+function clearFinancePaymentAttemptState(form, options = {}) {
+    if (!form) return;
+    const pendingUpload = form.__financePendingPaymentUpload || null;
+    const operationId = String(form.dataset && form.dataset.financeOperationId || '').trim();
+    if (pendingUpload && options.uncertain === true) {
+        const pendingReview = Array.isArray(window.__financePendingStorageReview)
+            ? window.__financePendingStorageReview
+            : [];
+        pendingReview.push({
+            operationId,
+            storagePath: pendingUpload.storagePath || null,
+            url: pendingUpload.url || null,
+            createdAt: new Date().toISOString()
+        });
+        window.__financePendingStorageReview = pendingReview.slice(-10);
+    }
+    form.__financePendingPaymentUpload = null;
+    if (form.dataset) delete form.dataset.financeOperationId;
 }
 
 function debounce(fn, delay) {
@@ -366,7 +658,7 @@ async function saveFinanceClienteModal() {
         if (window.clientService && typeof window.clientService.saveClient === 'function') {
             await window.clientService.saveClient(cliente);
         } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            await window.firebaseService.saveToFirebase('clients', id, cliente);
+            expectFinanceWrite(await window.firebaseService.saveToFirebase('clients', id, cliente), 'Cadastro do cliente');
         }
         clientes = Array.isArray(clientes) ? clientes.filter((c) => String(c.id) !== String(id)) : [];
         clientes.push(cliente);
@@ -458,7 +750,7 @@ async function saveFinanceFornecedorModal() {
 
     try {
         if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            await window.firebaseService.saveToFirebase('fornecedores', id, fornecedor);
+            expectFinanceWrite(await window.firebaseService.saveToFirebase('fornecedores', id, fornecedor), 'Cadastro do fornecedor');
         }
         fornecedores = Array.isArray(fornecedores) ? fornecedores.filter((f) => String(f.id) !== String(id)) : [];
         fornecedores.push(fornecedor);
@@ -600,7 +892,7 @@ function configurarDatasDoMesAtual() {
     // Configurar datas de início (início do mês anterior)
     camposDataInicio.forEach(campoId => {
         const campo = document.getElementById(campoId);
-        if (campo) {
+        if (campo && !campo.value) {
             campo.value = primeiroDiaStr;
         }
     });
@@ -608,14 +900,14 @@ function configurarDatasDoMesAtual() {
     // Configurar datas de fim (fim do próximo mês)
     camposDataFim.forEach(campoId => {
         const campo = document.getElementById(campoId);
-        if (campo) {
+        if (campo && !campo.value) {
             campo.value = ultimoDiaStr;
         }
     });
     
-    // Configurar campos de vencimento e pagamento com data atual
+    // Configurar campos de vencimento, emissão e pagamento com data atual
     // Evitar sobrescrever datas de edição; sempre atualizar pagamentoData
-    const camposDataAtual = ['receberDataVencimento', 'pagarDataVencimento', 'pagamentoData'];
+    const camposDataAtual = ['receberDataEmissao', 'pagarDataEmissao', 'receberDataVencimento', 'pagarDataVencimento', 'pagamentoData'];
     camposDataAtual.forEach(campoId => {
         const campo = document.getElementById(campoId);
         if (!campo) return;
@@ -641,6 +933,21 @@ function configurarDatasDoMesAtual() {
         ultimoDia: ultimoDiaStr,
         hoje: hojeStr
     };
+}
+
+// ─── Helper: loading state em botoes de submit ────────────────────────────────
+function setSubmitButtonLoading(btn, loading, loadingText) {
+    if (!btn) return;
+    if (loading) {
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+        btn.dataset.originalText = btn.textContent || btn.innerText || '';
+        btn.textContent = loadingText || 'Processando...';
+    } else {
+        btn.disabled = false;
+        btn.removeAttribute('aria-busy');
+        btn.textContent = btn.dataset.originalText || 'Salvar';
+    }
 }
 
 function getFinanceFirebaseService() {
@@ -695,32 +1002,7 @@ async function ensureFinanceTenantContext(timeoutMs = 7000) {
         } catch (_) {}
     }
 
-    const getCachedTenant = () => {
-        try {
-            const currentSvc = getFinanceFirebaseService();
-            if (currentSvc && typeof currentSvc.getCurrentTenantId === 'function') {
-                const t = currentSvc.getCurrentTenantId();
-                if (t) return String(t);
-            }
-            if (currentSvc && typeof currentSvc.getTenantId === 'function') {
-                const t = currentSvc.getTenantId();
-                if (t) return String(t);
-            }
-        } catch (_) {}
-        try {
-            if (window.appTenantId) return String(window.appTenantId);
-            const raw = localStorage.getItem('company_info');
-            if (raw) {
-                const obj = JSON.parse(raw);
-                const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
-                if (id) return String(id);
-            }
-        } catch (_) {}
-        return '';
-    };
-
-    let tenant = isOffline ? getCachedTenant() : '';
-    while (!tenant && (Date.now() - startedAt) < timeoutMs) {
+    while ((Date.now() - startedAt) < timeoutMs) {
         await new Promise((resolve) => setTimeout(resolve, 250));
         svc = getFinanceFirebaseService();
         if (svc && typeof svc.resolveAuthenticatedTenant === 'function') {
@@ -729,15 +1011,6 @@ async function ensureFinanceTenantContext(timeoutMs = 7000) {
                 if (retry && retry.success && retry.companyId) return String(retry.companyId);
             } catch (_) {}
         }
-        tenant = isOffline ? getCachedTenant() : '';
-    }
-
-    if (tenant) {
-        try {
-            const currentSvc = getFinanceFirebaseService();
-            if (currentSvc && typeof currentSvc.setTenantId === 'function') currentSvc.setTenantId(tenant);
-        } catch (_) {}
-        return tenant;
     }
 
     if (!isOffline) limparContextoEmpresaFinancasInseguro();
@@ -842,7 +1115,9 @@ function updateManualAttachmentButtonState(tipo) {
     if (!btn) return;
     const file = input && input.files && input.files[0] ? input.files[0] : null;
     const editCtx = window.contaEmEdicao && window.contaEmEdicao.tipo === tipo ? window.contaEmEdicao : null;
-    const editAttachmentUrl = editCtx && editCtx.contaOriginal ? getContaPrimaryAttachmentUrl(editCtx.contaOriginal) : null;
+    const editAttachmentUrl = editCtx && editCtx.contaOriginal
+        ? getSafeFinanceDownloadUrl(getContaPrimaryAttachmentUrl(editCtx.contaOriginal))
+        : null;
     const icon = btn.querySelector('i');
     if (file) {
         btn.title = 'Visualizar anexo selecionado';
@@ -873,7 +1148,8 @@ function handleManualAttachmentAction(tipo) {
     const file = input && input.files && input.files[0] ? input.files[0] : null;
     if (!input) return;
     if (!file && btn && btn.dataset.mode === 'preview-existing' && btn.dataset.url) {
-        try { window.open(String(btn.dataset.url), '_blank'); return; } catch (_) {}
+        openFinanceAttachment(btn.dataset.url);
+        return;
     }
     if (!file) {
         input.click();
@@ -1170,13 +1446,10 @@ async function uploadFinanceStorageMeta(file, path, extra = {}, uploadOptions = 
 }
 
 async function anexarArquivoContaInternal(contaId, tipo, file) {
+    let uploadedMeta = null;
     try {
         if (!window.storageService || typeof window.storageService.uploadFile !== 'function') {
             mostrarNotificacao('Upload indisponível: Storage não inicializado.', 'warning');
-            return;
-        }
-        if (!window.firebaseService || typeof window.firebaseService.saveToFirebase !== 'function') {
-            mostrarNotificacao('Banco indisponível: Firebase não inicializado.', 'warning');
             return;
         }
         const arr = tipo === 'receber' ? contasReceber : contasPagar;
@@ -1188,17 +1461,18 @@ async function anexarArquivoContaInternal(contaId, tipo, file) {
 
         mostrarNotificacao('Enviando anexo...', 'info');
         const meta = await uploadAttachmentMetaForConta(file, tipo, conta.id);
+        uploadedMeta = meta;
         if (!meta || !meta.url) {
             mostrarNotificacao('Falha ao gerar URL do anexo.', 'error');
             return;
         }
-        if (!Array.isArray(conta.anexos)) conta.anexos = [];
-        conta.anexos.push(meta);
-        conta.anexoUrl = meta.url;
-
-        const mk = getMonthKeyFromDateVal(conta.dataVencimento || conta.vencimento);
-        const base = tipo === 'receber' ? `financas/receber/${mk}` : `financas/pagar/${mk}`;
-        await window.firebaseService.saveToFirebase(base, String(conta.id), conta);
+        const original = cloneContaSnapshotForEdit(conta);
+        const edited = cloneContaSnapshotForEdit(conta);
+        edited.anexos.push(meta);
+        const committed = await updateFinanceAccountAuthoritative(tipo, original, edited, {
+            operationId: createFinanceOperationId('attach_account')
+        });
+        replaceFinanceAccountInMemory(tipo, conta.id, committed.account);
         renderAnexosModalTable();
         if (tipo === 'receber') carregarTabelaReceber(lastFiltroReceber || {});
         else carregarTabelaPagar(lastFiltroPagar || {});
@@ -1206,6 +1480,15 @@ async function anexarArquivoContaInternal(contaId, tipo, file) {
         mostrarNotificacao('Anexo adicionado com sucesso.', 'success');
     } catch (e) {
         console.error('Erro ao anexar arquivo:', e);
+        if (uploadedMeta && e && e.financeReconciledAccount) {
+            const remoteAttachments = getContaAttachments(e.financeReconciledAccount);
+            const uploadedPath = resolveAttachmentStoragePath(uploadedMeta);
+            const isReferenced = remoteAttachments.some((item) => isSameStorageObject(
+                resolveAttachmentStoragePath(item),
+                uploadedPath
+            ));
+            if (!isReferenced) await deleteStorageFileSafely(uploadedPath, uploadedMeta.url);
+        }
         mostrarNotificacao('Falha ao anexar arquivo. Verifique permissões e tipo de arquivo.', 'error');
     } finally {
         // Habilitar a interface novamente
@@ -1221,10 +1504,6 @@ async function substituirAnexoContaInternal(contaId, tipo, index, file) {
     try {
         if (!window.storageService || typeof window.storageService.uploadFile !== 'function') {
             mostrarNotificacao('Upload indisponível: Storage não inicializado.', 'warning');
-            return;
-        }
-        if (!window.firebaseService || typeof window.firebaseService.saveToFirebase !== 'function') {
-            mostrarNotificacao('Banco indisponível: Firebase não inicializado.', 'warning');
             return;
         }
         const arr = tipo === 'receber' ? contasReceber : contasPagar;
@@ -1254,11 +1533,22 @@ async function substituirAnexoContaInternal(contaId, tipo, index, file) {
         newMeta.fileName = newMeta.fileName || target.fileName || newMeta.name;
         newMeta.contentType = newMeta.contentType || target.contentType || '';
 
-        applyAttachmentReplacement(conta, index, newMeta);
-
-        const mk = getMonthKeyFromDateVal(conta.dataVencimento || conta.vencimento);
-        const base = tipo === 'receber' ? `financas/receber/${mk}` : `financas/pagar/${mk}`;
-        await window.firebaseService.saveToFirebase(base, String(conta.id), conta);
+        const original = cloneContaSnapshotForEdit(conta);
+        const isTopLevelReceipt = !original.anexos.some((item) => String(item && item.url) === String(target.url))
+            && String(original.comprovanteUrl || '') === String(target.url);
+        if (isTopLevelReceipt) {
+            await updateFinancePaymentReceiptAuthoritative(tipo, original, 'total', {
+                url: newMeta.url,
+                storagePath: resolveAttachmentStoragePath(newMeta)
+            }, createFinanceOperationId('replace_receipt'));
+        } else {
+            const edited = cloneContaSnapshotForEdit(conta);
+            applyAttachmentReplacement(edited, index, newMeta);
+            const committed = await updateFinanceAccountAuthoritative(tipo, original, edited, {
+                operationId: createFinanceOperationId('replace_attachment')
+            });
+            replaceFinanceAccountInMemory(tipo, conta.id, committed.account);
+        }
         const newStoragePath = resolveAttachmentStoragePath(newMeta);
         if (previousStoragePath && !isSameStorageObject(previousStoragePath, newStoragePath)) {
             await deleteStorageFileSafely(previousStoragePath, target.url);
@@ -1296,6 +1586,48 @@ function getContaAttachments(conta) {
     });
 
     return list;
+}
+
+function getFinanceAccountStorageReferences(conta) {
+    const references = getContaAttachments(conta).slice();
+    const history = Array.isArray(conta && conta.historicosPagamento)
+        ? conta.historicosPagamento
+        : [];
+    history.forEach((payment) => {
+        if (!payment || (!payment.comprovanteUrl && !payment.comprovanteStoragePath)) return;
+        references.push(normalizeFinanceAttachmentMeta({
+            url: payment.comprovanteUrl || '',
+            storagePath: payment.comprovanteStoragePath || null,
+            name: 'comprovante'
+        }, true));
+    });
+    const seen = new Set();
+    return references.filter((reference) => {
+        const storagePath = resolveAttachmentStoragePath(reference);
+        if (!storagePath || seen.has(storagePath)) return false;
+        seen.add(storagePath);
+        return true;
+    });
+}
+
+async function cleanupDeletedFinanceAccountStorage(conta, operationId) {
+    const pending = [];
+    for (const reference of getFinanceAccountStorageReferences(conta)) {
+        const storagePath = resolveAttachmentStoragePath(reference);
+        const removed = await deleteStorageFileSafely(storagePath, reference.url);
+        if (!removed) pending.push({ storagePath, url: reference.url || null });
+    }
+    if (pending.length) {
+        const current = Array.isArray(window.__financePendingStorageReview)
+            ? window.__financePendingStorageReview
+            : [];
+        window.__financePendingStorageReview = current.concat(pending.map((item) => ({
+            ...item,
+            operationId,
+            createdAt: new Date().toISOString()
+        }))).slice(-20);
+    }
+    return pending.length === 0;
 }
 
 function applyAttachmentReplacement(conta, index, newMeta) {
@@ -1437,34 +1769,6 @@ function resolveHistoricoPagamento(conta, registroRef) {
     };
 }
 
-function applyHistoricoComprovante(conta, registroRef, nextMeta) {
-    if (!conta || typeof conta !== 'object') return false;
-    const meta = resolveHistoricoPagamento(conta, registroRef);
-    if (!meta) return false;
-    const nextUrl = nextMeta && nextMeta.url ? String(nextMeta.url) : null;
-    const nextStoragePath = nextMeta && nextMeta.storagePath ? String(nextMeta.storagePath) : null;
-    if (meta.kind === 'total') {
-        conta.comprovanteUrl = nextUrl;
-        conta.comprovanteStoragePath = nextStoragePath;
-        return true;
-    }
-    const historicos = Array.isArray(conta.historicosPagamento) ? conta.historicosPagamento : [];
-    const target = historicos[meta.index];
-    if (!target || typeof target !== 'object') return false;
-    target.comprovanteUrl = nextUrl;
-    target.comprovanteStoragePath = nextStoragePath;
-    return true;
-}
-
-async function salvarContaFinanceiraPersistida(conta, tipo) {
-    if (!window.firebaseService || typeof window.firebaseService.saveToFirebase !== 'function') {
-        throw new Error('Firebase indisponível para salvar a conta.');
-    }
-    const mk = getMonthKeyFromDateVal(conta.dataVencimento || conta.vencimento);
-    const base = tipo === 'receber' ? `financas/receber/${mk}` : `financas/pagar/${mk}`;
-    await window.firebaseService.saveToFirebase(base, String(conta.id), conta);
-}
-
 async function removerAnexoContaInternal(contaId, tipo, index) {
     try {
         const arr = tipo === 'receber' ? contasReceber : contasPagar;
@@ -1482,19 +1786,26 @@ async function removerAnexoContaInternal(contaId, tipo, index) {
 
         if (!confirm('Remover este anexo?')) return;
 
-        if (Array.isArray(conta.anexos)) {
-            conta.anexos = conta.anexos.filter(a => !(a && String(a.url) === String(target.url)));
+        const original = cloneContaSnapshotForEdit(conta);
+        const isTopLevelReceipt = !original.anexos.some((item) => String(item && item.url) === String(target.url))
+            && String(original.comprovanteUrl || '') === String(target.url);
+        if (isTopLevelReceipt) {
+            await updateFinancePaymentReceiptAuthoritative(
+                tipo,
+                original,
+                'total',
+                { url: null, storagePath: null },
+                createFinanceOperationId('remove_receipt')
+            );
+        } else {
+            const edited = cloneContaSnapshotForEdit(conta);
+            edited.anexos = edited.anexos.filter((item) => String(item && item.url) !== String(target.url));
+            const committed = await updateFinanceAccountAuthoritative(tipo, original, edited, {
+                operationId: createFinanceOperationId('remove_attachment')
+            });
+            replaceFinanceAccountInMemory(tipo, conta.id, committed.account);
         }
-        if (String(conta.anexoUrl || '') === String(target.url)) conta.anexoUrl = null;
-        if (String(conta.comprovanteUrl || '') === String(target.url)) conta.comprovanteUrl = null;
-
-        if (target.storagePath && window.firebaseService && window.firebaseService.storage && typeof window.firebaseService.storage.delete === 'function') {
-            try { await window.firebaseService.storage.delete(target.storagePath); } catch (_) {}
-        }
-
-        const mk = getMonthKeyFromDateVal(conta.dataVencimento || conta.vencimento);
-        const base = tipo === 'receber' ? `financas/receber/${mk}` : `financas/pagar/${mk}`;
-        await window.firebaseService.saveToFirebase(base, String(conta.id), conta);
+        await deleteStorageFileSafely(resolveAttachmentStoragePath(target), target.url);
         renderAnexosModalTable();
         if (tipo === 'receber') carregarTabelaReceber(lastFiltroReceber || {});
         else carregarTabelaPagar(lastFiltroPagar || {});
@@ -1553,26 +1864,21 @@ function renderAnexosModalTable() {
             return d.toLocaleString('pt-BR');
         } catch (_) { return '-'; }
     };
-    const escapeHtml = (str) => String(str || '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-    const escapeJs = (str) => String(str || '')
-        .replace(/\\/g, '\\\\')
-        .replace(/'/g, "\\'")
-        .replace(/\r/g, '')
-        .replace(/\n/g, ' ');
+    const contaIdArg = getFinanceInlineStringArgument(conta.id);
+    const tipoArg = getFinanceInlineStringArgument(tipo);
 
     tbody.innerHTML = atts.map((a, idx) => {
         const rawName = String(a.name || 'arquivo');
-        const name = escapeHtml(rawName);
-        const type = escapeHtml(a.contentType || (a.legacy ? 'legado' : '-'));
-        const uploaded = fmtDate(a.uploadedAt);
-        const url = String(a.url);
-        const urlJs = escapeJs(url);
-        const filenameJs = escapeJs(rawName);
-        const storagePathJs = escapeJs(a.storagePath || '');
+        const name = escapeFinanceHtml(rawName);
+        const type = escapeFinanceHtml(a.contentType || (a.legacy ? 'legado' : '-'));
+        const uploaded = escapeFinanceHtml(fmtDate(a.uploadedAt));
+        const urlArg = getFinanceInlineStringArgument(a.url);
+        const filenameArg = getFinanceInlineStringArgument(rawName);
+        const storagePathArg = getFinanceInlineStringArgument(a.storagePath || '');
         
         // Criar função de download nativo para forçar download em vez de abrir nova aba
         const downloadBtnHtml = `
-            <button type="button" class="btn btn-primary btn-small" style="min-width:28px;" onclick="baixarAnexoForcado('${urlJs}', '${filenameJs}', '${storagePathJs}')" title="Baixar anexo">
+            <button type="button" class="btn btn-primary btn-small" style="min-width:28px;" onclick="baixarAnexoForcado(${urlArg}, ${filenameArg}, ${storagePathArg})" title="Baixar anexo">
                 <i class="fas fa-download"></i>
             </button>
         `;
@@ -1584,14 +1890,14 @@ function renderAnexosModalTable() {
                 <td style="text-align:right;">${fmtSize(a.size)}</td>
                 <td>${uploaded}</td>
                 <td>
-                    <button type="button" class="btn btn-primary btn-small" style="min-width:28px;" onclick="window.open('${urlJs}', '_blank')" title="Ver anexo">
+                    <button type="button" class="btn btn-primary btn-small" style="min-width:28px;" onclick="openFinanceAttachment(${urlArg})" title="Ver anexo">
                         <i class="fas fa-eye"></i>
                     </button>
                     ${downloadBtnHtml}
-                    <button type="button" class="btn btn-primary btn-small" style="min-width:28px;" onclick="substituirAnexoConta('${contaId}', '${tipo}', ${idx})" title="Substituir">
+                    <button type="button" class="btn btn-primary btn-small" style="min-width:28px;" onclick="substituirAnexoConta(${contaIdArg}, ${tipoArg}, ${idx})" title="Substituir">
                         <i class="fas fa-upload"></i>
                     </button>
-                    <button type="button" class="btn btn-danger btn-small" style="min-width:28px;" onclick="removerAnexoConta('${contaId}', '${tipo}', ${idx})" title="Excluir">
+                    <button type="button" class="btn btn-danger btn-small" style="min-width:28px;" onclick="removerAnexoConta(${contaIdArg}, ${tipoArg}, ${idx})" title="Excluir">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -1602,12 +1908,14 @@ function renderAnexosModalTable() {
 
 function buildForcedDownloadUrl(rawUrl, filename) {
     try {
-        const u = new URL(String(rawUrl || ''), window.location.href);
+        const safeUrl = getSafeFinanceDownloadUrl(rawUrl);
+        if (!safeUrl) throw new Error('URL de anexo inválida');
+        const u = new URL(safeUrl);
         const name = String(filename || 'anexo_financas').trim() || 'anexo_financas';
         u.searchParams.set('response-content-disposition', `attachment; filename="${name}"`);
         return u.toString();
     } catch (_) {
-        return String(rawUrl || '');
+        return '';
     }
 }
 
@@ -1616,6 +1924,7 @@ window.baixarAnexoForcado = function(url, filename, storagePath) {
     try {
         const cleanName = String(filename || 'anexo_financas').trim() || 'anexo_financas';
         const dlUrl = buildForcedDownloadUrl(url, cleanName);
+        if (!dlUrl) throw new Error('URL de anexo inválida');
         mostrarNotificacao('Iniciando download...', 'info');
         const a = document.createElement('a');
         a.style.display = 'none';
@@ -1627,7 +1936,7 @@ window.baixarAnexoForcado = function(url, filename, storagePath) {
         document.body.removeChild(a);
     } catch (e) {
         console.warn('Falha ao iniciar download, abrindo anexo:', e);
-        window.open(String(url || ''), '_blank');
+        openFinanceAttachment(url);
     }
 };
 
@@ -1749,23 +2058,22 @@ async function carregarDados() {
             mostrarNotificacao('Empresa da sessão não identificada. Faça login novamente para carregar o Financeiro.', 'error');
             return;
         }
+        financeSessionTenant = String(financeTenant || '');
         // Garantir que company_info esteja carregado em memória
         try {
             const ci = localStorage.getItem('company_info');
-            if (ci) { window.companyInfo = JSON.parse(ci); }
-            else {
-                const companiesRaw = localStorage.getItem('companies');
-                if (companiesRaw) {
-                    const companies = JSON.parse(companiesRaw);
-                    if (Array.isArray(companies) && companies.length > 0) {
-                        const sorted = companies.slice().sort((a,b)=>{
-                            const ta = Date.parse(a.timestamp||a.updatedAt||a.createdAt||'') || 0;
-                            const tb = Date.parse(b.timestamp||b.updatedAt||b.createdAt||'') || 0;
-                            return tb - ta;
-                        });
-                        window.companyInfo = sorted[0];
-                    }
-                }
+            if (ci) {
+                const cachedCompany = JSON.parse(ci) || {};
+                const cachedTenant = String(
+                    cachedCompany.companyId
+                    || cachedCompany.companyID
+                    || cachedCompany.tenantId
+                    || cachedCompany.id
+                    || ''
+                ).trim();
+                window.companyInfo = cachedTenant === financeSessionTenant ? cachedCompany : null;
+            } else {
+                window.companyInfo = null;
             }
         } catch (e) { console.warn('Falha ao preparar companyInfo:', e); }
         
@@ -2002,6 +2310,17 @@ function configurarEventos() {
             el.addEventListener('keyup', deb);
         }
     });
+    ['relContaOrigem', 'tipoRelatorio', 'relDataInicio', 'relDataFim'].forEach((id) => {
+        const field = document.getElementById(id);
+        if (field && field.dataset.reportInvalidationBound !== '1') {
+            field.dataset.reportInvalidationBound = '1';
+            field.addEventListener('change', () => {
+                if (id === 'relContaOrigem') syncFinanceReportTypeOptions();
+                invalidateFinanceReport();
+            });
+        }
+    });
+    syncFinanceReportTypeOptions();
     // Atualizar estado dos ícones de colunas customizadas
     updateCustomColumnsIcon('receber');
     updateCustomColumnsIcon('pagar');
@@ -2043,6 +2362,7 @@ async function imprimirTabela(tipo) {
             </body>
         </html>
     `);
+    win.document.close();
 
     try {
         const filtro = {};
@@ -2086,7 +2406,7 @@ async function imprimirTabela(tipo) {
                 copia.valorPago = valorPago;
                 copia.valorRestante = valorRestante;
                 let sNorm = (copia.status || 'pendente').toLowerCase();
-                if (Math.round(valorRestante * 100) <= 1) sNorm = 'pago';
+                if (Math.round(valorRestante * 100) === 0) sNorm = 'pago';
                 else if (pagoCents > 0) sNorm = 'parcial';
                 else if (sNorm === 'pendente') {
                     const ts = getContaVencimentoTimestamp(copia);
@@ -2109,7 +2429,7 @@ async function imprimirTabela(tipo) {
             const statusFinal = info.statusNorm;
             const valDisplay = statusFinal === 'pago' ? 0 : (statusFinal === 'parcial' ? info.valorRestante : info.valorOriginal);
             const totalComJuros = statusFinal === 'pago' ? 0 : info.totalAtualizado;
-            const jurosLinha = Math.max(0, totalComJuros - valDisplay);
+            const jurosLinha = Math.max(0, info.jurosAberto || 0);
 
             if (statusFinal !== 'pago') {
                 totalsByStatus[statusFinal] = (totalsByStatus[statusFinal] || 0) + totalComJuros;
@@ -2120,8 +2440,8 @@ async function imprimirTabela(tipo) {
             return { conta, info, statusFinal, valDisplay, totalComJuros, jurosLinha };
         });
 
-        await ensureCompanyInfoForPrint();
-        const company = getCompanyPrintInfo();
+        const company = await prepareFinanceReportCompany();
+        const helper = getFinanceReportDocumentHelper();
         const headerTitle = tipo === 'receber' ? 'Relatório de Contas a Receber' : 'Relatório de Contas a Pagar';
         const periodo = `${filtro.dataInicio ? formatDate(filtro.dataInicio) : '-'} a ${filtro.dataFim ? formatDate(filtro.dataFim) : '-'}`;
         
@@ -2133,86 +2453,100 @@ async function imprimirTabela(tipo) {
             ? (safeClientes.find(c => String(c.id) === String(filtro.clienteId))?.nome || 'Todos')
             : (safeFornecedores.find(f => String(f.id) === String(filtro.fornecedorId))?.nome || safeFuncionarios.find(f => String(f.id) === String(filtro.fornecedorId))?.nome || 'Todos');
 
-        const styles = `
-            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-            <style>
-            * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
-            body { font-family: 'Inter', sans-serif; color: #1e293b; margin: 0; padding: 25px; background: #fff; line-height: 1.4; }
-            .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 25px; }
-            .logo { width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border-radius: 8px; overflow: hidden; }
-            .logo img { max-width: 90%; max-height: 90%; object-fit: contain; }
-            .company-name { font-size: 20px; font-weight: 700; color: #0f172a; text-transform: uppercase; }
-            .meta-bar { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; font-size: 12px; background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            th { background: #0f172a; color: #fff; font-size: 10px; text-transform: uppercase; padding: 12px 8px; text-align: left; }
-            tr { border-bottom: 1px solid #f1f5f9; }
-            tr:nth-child(even) { background: #f8fafc; }
-            td { padding: 10px 8px; font-size: 11px; }
-            .right { text-align: right; } .bold { font-weight: 600; } .juros-val { color: #dc2626; }
-            .totals-table { width: 450px; margin-left: auto; border-top: 2px solid #0f172a; border-collapse: collapse; }
-            .totals-table td { padding: 10px 15px; font-size: 13px; }
-            .grand-total { background: #f8fafc; color: #2563eb; font-weight: 700; font-size: 16px !important; }
-            @media print { body { padding:0; } .header { border-bottom-color: #000; } }
-            </style>
-        `;
-
-        const labelMap = { pedidoNumero:'Doc', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valorOriginal:'Original', valorPago:'Pago', valor:'Saldo', juros:'Juros', totalGeral:'Total', vencimento:'Venc.', status:'Status' };
-        const order = tipo === 'receber' ? ['pedidoNumero','cliente','descricao','valorOriginal','valorPago','valor','juros','totalGeral','vencimento','status'] : ['pedidoNumero','fornecedor','descricao','valorOriginal','valorPago','valor','juros','totalGeral','vencimento','status'];
+        const labelMap = { pedidoNumero:'Doc', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valorOriginal:'Original', valorPago:'Pago', valor:'Saldo', juros:'Juros', totalGeral:'Total', vencimento:'Venc.', dataEmissao:'Emissão', status:'Status', categoria:'Categoria', tipo:'Tipo' };
+        const columnClassMap = {
+            pedidoNumero: 'finance-print-nowrap finance-print-doc',
+            cliente:'', fornecedor:'', descricao:'finance-print-description',
+            valorOriginal: 'right finance-print-nowrap finance-print-money',
+            valorPago: 'right finance-print-nowrap finance-print-money',
+            valor: 'right finance-print-nowrap finance-print-money bold',
+            juros: 'right finance-print-nowrap finance-print-money juros-val',
+            totalGeral: 'right finance-print-nowrap finance-print-money bold',
+            vencimento: 'finance-print-nowrap finance-print-date',
+            dataEmissao: 'finance-print-nowrap finance-print-date',
+            status: 'finance-print-nowrap finance-print-status',
+            categoria: '', tipo: ''
+        };
+        const printPrefs = sanitizePrintPreferencesFor(tipo);
+        const baseOrder = printPrefs && Array.isArray(printPrefs.order) ? printPrefs.order : defaultPrintColumns[tipo] || ['pedidoNumero','cliente','descricao','valor','vencimento','dataEmissao','juros','status'];
+        const visible = printPrefs && printPrefs.visible ? printPrefs.visible : {};
+        const order = baseOrder.filter(k => visible[k] !== false);
         
-        const thead = `<thead><tr>${order.map(k => `<th>${labelMap[k]}</th>`).join('')}</tr></thead>`;
+        const _cellVal = (conta, info, statusFinal, valDisplay, totalComJuros, jurosLinha, k) => {
+            const map = {
+                pedidoNumero: conta.pedidoNumero || conta.numero || '-',
+                cliente: tipo === 'receber' ? (conta.cliente?.nome || conta.cliente || 'N/I') : '',
+                fornecedor: tipo === 'pagar' ? (conta.fornecedor || conta.funcionarioNome || 'N/I') : '',
+                descricao: conta.descricao || '-',
+                valorOriginal: formatCurrency(info.valorOriginal),
+                valorPago: formatCurrency(info.valorPago),
+                valor: formatCurrency(valDisplay),
+                juros: formatCurrency(jurosLinha),
+                totalGeral: formatCurrency(totalComJuros),
+                vencimento: formatDate(conta.dataVencimento || conta.vencimento),
+                dataEmissao: conta.dataEmissao ? formatDate(conta.dataEmissao) : '-',
+                status: statusFinal.toUpperCase(),
+                categoria: conta.categoria || '',
+                tipo: conta.tipo || ''
+            };
+            return map[k] !== undefined ? map[k] : '-';
+        };
+        const thead = `<thead><tr>${order.map(k => `<th class="${columnClassMap[k] || ''}">${labelMap[k]}</th>`).join('')}</tr></thead>`;
         const tbody = itemsWithInfo.map(({ conta, info, statusFinal, valDisplay, totalComJuros, jurosLinha }) => `
-            <tr>
-                <td>${conta.pedidoNumero || conta.numero || '-'}</td>
-                <td>${tipo === 'receber' ? (conta.cliente?.nome || conta.cliente || 'N/I') : (conta.fornecedor || conta.funcionarioNome || 'N/I')}</td>
-                <td>${conta.descricao || '-'}</td>
-                <td class="right">${formatCurrency(info.valorOriginal)}</td>
-                <td class="right">${formatCurrency(info.valorPago)}</td>
-                <td class="right bold">${formatCurrency(valDisplay)}</td>
-                <td class="right juros-val">${formatCurrency(jurosLinha)}</td>
-                <td class="right bold">${formatCurrency(totalComJuros)}</td>
-                <td>${formatDate(conta.dataVencimento || conta.vencimento)}</td>
-                <td>${statusFinal.toUpperCase()}</td>
-            </tr>
+            <tr>${order.map(k => `<td class="${columnClassMap[k] || 'finance-print-nowrap'}">${escapeFinanceHtml(_cellVal(conta, info, statusFinal, valDisplay, totalComJuros, jurosLinha, k))}</td>`).join('')}</tr>
         `).join('');
 
-        const summaryItems = Object.entries(totalsByStatus).map(([st, sum]) => `<tr><td>Subtotal ${st.toUpperCase()}</td><td class="right">${formatCurrency(sum)}</td></tr>`).join('');
-
-        const html = `
-            <!DOCTYPE html>
-            <html lang="pt-br">
-            <head><meta charset="utf-8"><title>${headerTitle}</title>${styles}</head>
-            <body>
-                <div class="header">
-                    <div style="display:flex; align-items:center; gap:20px;">
-                        <div class="logo"><img src="${company.logoUrl || ''}"></div>
-                        <div>
-                            <div class="company-name">${company.name}</div>
-                            <div style="font-size:11px; color:#64748b;">${company.cnpj ? 'CNPJ: '+company.cnpj : ''} ${company.phone ? ' | Tel: '+company.phone : ''}</div>
-                        </div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="font-size:18px; font-weight:700;">${headerTitle}</div>
-                        <div style="font-size:12px; color:#64748b;">Emissão: ${new Date().toLocaleDateString('pt-BR')}</div>
-                    </div>
+        const summaryItems = Object.entries(totalsByStatus).map(([st, sum]) => `<tr><td>Subtotal ${escapeFinanceHtml(st.toUpperCase())}</td><td class="right">${escapeFinanceHtml(formatCurrency(sum))}</td></tr>`).join('');
+        const bodyHtml = `
+            <section class="sisweb-print-section">
+                <div class="finance-print-meta">
+                    <div><strong>Período:</strong> ${escapeFinanceHtml(periodo)}</div>
+                    <div><strong>${escapeFinanceHtml(entityLabel)}:</strong> ${escapeFinanceHtml(entityValue)}</div>
+                    ${sel.length > 0 ? `<div><strong>Seleção:</strong> ${sel.length} itens</div>` : ''}
                 </div>
-                <div class="meta-bar">
-                    <div><strong>Período:</strong> ${periodo} | <strong>${entityLabel}:</strong> ${entityValue}</div>
-                    ${sel.length > 0 ? `<div style="color:#2563eb; font-weight:600;">${sel.length} itens selecionados</div>` : ''}
-                </div>
-                <table>${thead}<tbody>${tbody || '<tr><td colspan="10">Nenhum dado</td></tr>'}</tbody></table>
-                <table class="totals-table">
-                    ${summaryItems}
-                    <tr><td>PRINCIPAL ACUMULADO</td><td class="right">${formatCurrency(tOrig)}</td></tr>
-                    <tr><td>ENCARGOS ACUMULADOS</td><td class="right juros-val">${formatCurrency(tJuros)}</td></tr>
-                    <tr class="grand-total"><td>TOTAL GERAL ATUALIZADO</td><td class="right">${formatCurrency(tGeral)}</td></tr>
+                <table class="sisweb-print-table finance-print-table">
+                    <colgroup>
+                        ${order.map(() => '<col>').join('\n                        ')}
+                    </colgroup>
+                    ${thead}<tbody>${tbody || `<tr><td colspan="${order.length || 1}">Nenhum dado</td></tr>`}</tbody>
                 </table>
-                <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 700); };</script>
-            </body>
-        </html>`;
-
-        win.document.open();
-        win.document.write(html);
-        win.document.close();
+                <table class="finance-print-totals">
+                    <tbody>
+                        ${summaryItems}
+                        <tr><td>Principal acumulado</td><td class="right">${escapeFinanceHtml(formatCurrency(tOrig))}</td></tr>
+                        <tr><td>Encargos acumulados</td><td class="right finance-print-interest">${escapeFinanceHtml(formatCurrency(tJuros))}</td></tr>
+                        <tr class="finance-print-grand-total"><td>Total geral atualizado</td><td class="right">${escapeFinanceHtml(formatCurrency(tGeral))}</td></tr>
+                    </tbody>
+                </table>
+            </section>`;
+        const printOptions = buildFinanceReportHeaderOptions(company, headerTitle, {
+            subtitle: periodo,
+            metaRows: [`${entityLabel}: ${entityValue}`]
+        });
+        const prepared = await helper.preparePrintOptions({
+            ...printOptions,
+            bodyHtml,
+            compact: itemsWithInfo.length > 18,
+            targetWindow: win,
+            printDelay: 300,
+            extraCss: `
+                @page { size: A4; margin: 8mm; }
+                .sisweb-print-page { max-width: 100%; }
+                .sisweb-print-section { break-inside: auto; page-break-inside: auto; }
+                .finance-print-meta { display:flex; flex-wrap:wrap; gap:8px 20px; margin-bottom:12px; }
+                .finance-print-table { width: 100%; table-layout: fixed; }
+                .finance-print-table th { padding:4px; text-transform:uppercase; font-size:7.8px; }
+                .finance-print-table td { padding:4px; font-size:8px; line-height:1.25; }
+                .finance-print-nowrap { white-space:nowrap; overflow-wrap:normal; word-break:normal; }
+                .finance-print-description { overflow-wrap:anywhere; }
+                .right { text-align:right; }
+                .finance-print-totals { width:min(100%, 420px); margin-left:auto; }
+                .finance-print-totals td { padding:7px 10px; }
+                .finance-print-interest { color:#b91c1c; }
+                .finance-print-grand-total { font-size:12px; font-weight:800; }
+            `
+        });
+        window.SiswebCommercePdf.printHtmlDocument(prepared);
         
     } catch (e) {
         console.error('Erro ao imprimir:', e);
@@ -2267,250 +2601,139 @@ function normalizeStatusFilterKey(raw) {
     }
 }
 
-function getCompanyPrintInfo() {
-    try {
-        let info = null;
-        const local = localStorage.getItem('company_info');
-        if (local) info = JSON.parse(local);
-        if (!info && window.companyInfo) info = window.companyInfo;
-        // Fallback: buscar da lista de companies no localStorage
-        if (!info) {
-            try {
-                const companiesRaw = localStorage.getItem('companies');
-                if (companiesRaw) {
-                    const parsed = JSON.parse(companiesRaw);
-                    const companies = Array.isArray(parsed) ? parsed : (parsed && typeof parsed === 'object' ? Object.values(parsed) : []);
-                    if (Array.isArray(companies) && companies.length > 0) {
-                        // Selecionar a mais recente com logo
-                        const sorted = companies.slice().sort((a,b)=>{
-                            const ta = Date.parse(a.timestamp||a.updatedAt||a.createdAt||'') || 0;
-                            const tb = Date.parse(b.timestamp||b.updatedAt||b.createdAt||'') || 0;
-                            return tb - ta;
-                        });
-                        info = sorted.find(c => c.logoUrl || c.logoURL || c.logoDownloadURL || c.logoStoragePath || c.logoPath || c.logo || c.logoBase64) || sorted[0];
-                    }
-                }
-            } catch (_) {}
-        }
-        let logoUrl = '';
-        const logoEl = document.querySelector('#companyLogo img, #companyLogo, .company-logo img');
-        if (logoEl) logoUrl = logoEl.src || logoEl.getAttribute('src') || '';
-        // Mapear possíveis chaves de logo
-        const candidates = [
-            info && info.logoUrl,
-            info && info.logoURL,
-            info && info.logoDownloadURL,
-            info && info.logoStoragePath,
-            info && info.logoPath,
-            info && info.logo,
-            info && info.logoBase64,
-            info && info.logoData
-        ].filter(Boolean);
-        for (const c of candidates) {
-            if (!c) continue;
-            const s = String(c);
-            if (s.startsWith('data:') || s.startsWith('blob:') || s.startsWith('file:')) { logoUrl = s; break; }
-            if (/^https?:\/\//i.test(s)) { logoUrl = s; break; }
-            if (/^[A-Za-z0-9+/=]+$/i.test(s)) { logoUrl = `data:image/png;base64,${s}`; break; }
-            if (/^(\.\/|\.\.\/|\/)/.test(s) || /\.(png|jpg|jpeg|webp|svg)$/i.test(s)) { logoUrl = s; break; }
-        }
-        if (!logoUrl) { logoUrl = ''; }
-        return {
-            name: (info && (info.nome || info.fantasia || info.name)) || 'Sisweb',
-            cnpj: info && (info.cnpj || info.taxId) || '',
-            address: info && (info.endereco || info.address) || '',
-            phone: info && (info.telefone || info.phone) || '',
-            logoUrl: logoUrl || ''
-        };
-    } catch (_) { return { name: 'Sisweb' }; }
+function clearFinanceReportCompanyCache() {
+    financeReportCompanyCache = null;
 }
 
-async function ensureCompanyInfoForPrint() {
+function hasFinanceReportCompanyIdentity(company) {
+    if (!company || typeof company !== 'object') return false;
+    const name = String(company.nome || company.name || '').trim();
+    const cnpj = String(company.cnpj || company.taxId || '').trim();
+    return (!!name && name !== 'Empresa não informada')
+        || (!!cnpj && cnpj !== '-')
+        || !!(company.logo || company.logoUrl || company.logoStoragePath || company.logoPath);
+}
+
+async function getFinanceReportCompanyProfile(options = {}) {
+    const tenantId = String(financeSessionTenant || '').trim();
+    if (!tenantId) throw new Error('Tenant autenticado não confirmado para o relatório.');
+
+    if (options.force === true) clearFinanceReportCompanyCache();
+    if (financeReportCompanyCache && financeReportCompanyCache.tenantId === tenantId) {
+        if (financeReportCompanyCache.company) return { ...financeReportCompanyCache.company };
+        if (financeReportCompanyCache.promise) return { ...(await financeReportCompanyCache.promise) };
+    }
+
+    const pending = (async () => {
+        if (window.__siswebFirebaseServiceReady) await window.__siswebFirebaseServiceReady;
+        const service = window.firebaseService;
+        if (!service || typeof service.getCompanyProfileForReport !== 'function') {
+            throw new Error('Perfil empresarial indisponível para o relatório.');
+        }
+
+        const result = await service.getCompanyProfileForReport({ companyId: tenantId });
+        if (!result || result.success === false) {
+            throw new Error('Perfil empresarial não confirmado para o relatório.');
+        }
+        const company = result.data || result;
+        const returnedTenant = String(
+            result.companyId
+            || (company && (company.companyId || company.tenantId || company.id))
+            || ''
+        ).trim();
+        if (!company || returnedTenant !== tenantId || !hasFinanceReportCompanyIdentity(company)) {
+            throw new Error('Perfil empresarial divergente do tenant autenticado.');
+        }
+
+        const normalized = {
+            ...company,
+            id: tenantId,
+            companyId: tenantId,
+            tenantId,
+            nome: company.nome || company.name || '',
+            name: company.name || company.nome || '',
+            endereco: company.endereco || company.address || '',
+            address: company.address || company.endereco || '',
+            telefone: company.telefone || company.phone || '',
+            phone: company.phone || company.telefone || ''
+        };
+        if (String(financeSessionTenant || '').trim() !== tenantId) {
+            throw new Error('Tenant alterado durante a preparação do relatório.');
+        }
+        financeReportCompanyCache = { tenantId, company: normalized, preparedCompany: null, promise: null };
+        return normalized;
+    })();
+
+    financeReportCompanyCache = { tenantId, company: null, preparedCompany: null, promise: pending };
     try {
-        const resolveCompanyId = () => {
-            try {
-                const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
-                if (svc && typeof svc.getCurrentTenantId === 'function') {
-                    const t = svc.getCurrentTenantId();
-                    if (t) return String(t);
-                }
-                if (svc && typeof svc.getTenantId === 'function') {
-                    const t = svc.getTenantId();
-                    if (t) return String(t);
-                }
-            } catch (_) {}
-            try {
-                if (window.appTenantId) return String(window.appTenantId);
-                if (window.companyInfo) {
-                    const raw = window.companyInfo;
-                    const id = raw && (raw.companyId || raw.companyID || raw.tenantId || raw.id);
-                    if (id) return String(id);
-                }
-                const stored = localStorage.getItem('company_info');
-                if (stored) {
-                    const obj = JSON.parse(stored);
-                    const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
-                    if (id) return String(id);
-                }
-            } catch (_) {}
-            try {
-                const current = JSON.parse(localStorage.getItem('currentUser') || 'null') || {};
-                const persistent = JSON.parse(localStorage.getItem('persistentUser') || 'null') || {};
-                const id = current.companyId || current.tenantId || persistent.companyId || persistent.tenantId;
-                if (id) return String(id);
-            } catch (_) {}
-            return null;
-        };
-
-        const normalizeLogo = (value) => {
-            if (!value) return '';
-            const s = String(value).trim();
-            if (!s) return '';
-            if (s.startsWith('data:') || s.startsWith('blob:') || s.startsWith('file:')) return s;
-            if (/^https?:\/\//i.test(s)) return s;
-            if (/^[A-Za-z0-9+/=]+$/.test(s) && s.length > 80) return `data:image/png;base64,${s}`;
-            if (/^(\.\/|\.\.\/|\/)/.test(s) || /\.(png|jpg|jpeg|webp|svg)$/i.test(s)) return s;
-            return s;
-        };
-
-        const centralSvc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
-        if (centralSvc && typeof centralSvc.getCompanyProfileForReport === 'function') {
-            try {
-                const centralResult = await centralSvc.getCompanyProfileForReport();
-                const centralCompany = centralResult && centralResult.success !== false
-                    ? (centralResult.data || centralResult)
-                    : null;
-                if (centralCompany && typeof centralCompany === 'object') {
-                    const name = centralCompany.nome || centralCompany.name || '';
-                    const hasIdentity = (name && name !== 'Empresa não informada')
-                        || (centralCompany.cnpj && centralCompany.cnpj !== '-')
-                        || centralCompany.logo
-                        || centralCompany.logoUrl;
-                    if (hasIdentity) {
-                        const existing = (() => {
-                            try {
-                                const raw = localStorage.getItem('company_info');
-                                return raw ? (JSON.parse(raw) || {}) : {};
-                            } catch (_) { return {}; }
-                        })();
-                        const merged = { ...existing };
-                        Object.entries(centralCompany).forEach(([key, value]) => {
-                            if (value === undefined || value === null || value === '') return;
-                            if (value === '-' && existing[key]) return;
-                            if ((key === 'nome' || key === 'name') && value === 'Empresa não informada' && existing[key]) return;
-                            merged[key] = value;
-                        });
-                        localStorage.setItem('company_info', JSON.stringify(merged));
-                        window.companyInfo = merged;
-                    }
-                    return;
-                }
-            } catch (error) {
-                console.warn('Aviso ao obter empresa pelo helper central:', error);
-            }
+        return { ...(await pending) };
+    } catch (error) {
+        if (financeReportCompanyCache && financeReportCompanyCache.promise === pending) {
+            clearFinanceReportCompanyCache();
         }
+        throw error;
+    }
+}
 
-        const tenantId = resolveCompanyId();
-        const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
-        let company = null;
+async function prepareFinanceReportCompany(options = {}) {
+    const tenantId = String(financeSessionTenant || '').trim();
+    if (!options.force && financeReportCompanyCache
+        && financeReportCompanyCache.tenantId === tenantId
+        && financeReportCompanyCache.preparedCompany) {
+        return { ...financeReportCompanyCache.preparedCompany };
+    }
 
-        if (tenantId && svc && typeof svc.setTenantId === 'function') {
-            try { svc.setTenantId(tenantId); } catch (_) {}
-        }
+    const company = await getFinanceReportCompanyProfile(options);
+    const helper = window.SiswebCommercePdf;
+    if (!helper || typeof helper.resolveCompanyLogoDataUrl !== 'function') {
+        throw new Error('Gerador compartilhado de documentos indisponível.');
+    }
+    const logoDataUrl = await helper.resolveCompanyLogoDataUrl(company, {
+        timeoutMs: options.logoTimeoutMs || 10000
+    });
+    const prepared = logoDataUrl
+        ? { ...company, logo: logoDataUrl, logoUrl: logoDataUrl, logoDataUrl, logoSvg: false }
+        : { ...company, logo: '', logoUrl: '', logoDataUrl: '' };
+    if (String(financeSessionTenant || '').trim() !== tenantId) {
+        throw new Error('Tenant alterado durante a preparação do relatório.');
+    }
+    financeReportCompanyCache = { tenantId, company: { ...company }, preparedCompany: prepared, promise: null };
+    return { ...prepared };
+}
 
-        if (tenantId && svc && typeof svc.loadFromFirebase === 'function') {
-            try {
-                const byPathRoot = await svc.loadFromFirebase(`companies/${tenantId}`);
-                const byPathRootData = byPathRoot && (byPathRoot.success ? byPathRoot.data : byPathRoot.data);
-                if (byPathRootData && typeof byPathRootData === 'object' && (byPathRootData.nome || byPathRootData.name)) {
-                    company = { ...(company || {}), ...byPathRootData, id: tenantId, companyId: tenantId, tenantId: tenantId };
-                }
-            } catch (_) {}
+function getFinanceReportDocumentHelper() {
+    const helper = window.SiswebCommercePdf;
+    if (!helper
+        || typeof helper.buildPrintHeader !== 'function'
+        || typeof helper.preparePrintOptions !== 'function'
+        || typeof helper.printHtmlDocument !== 'function'
+        || typeof helper.exportTableReportPdf !== 'function') {
+        throw new Error('Gerador compartilhado de documentos indisponível.');
+    }
+    return helper;
+}
 
-            if (!company || (!company.nome && !company.name)) {
-                try {
-                    const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
-                    const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
-                    if (byPathData && typeof byPathData === 'object') {
-                        company = { ...(company || {}), ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
-                    }
-                } catch (_) {}
-            }
-        }
+function buildFinanceReportHeaderOptions(company, title, options = {}) {
+    return {
+        company,
+        title,
+        documentTitle: title,
+        badgeText: 'Financeiro',
+        subtitle: options.subtitle || '',
+        metaRows: Array.isArray(options.metaRows) ? options.metaRows.filter(Boolean) : []
+    };
+}
 
-        if (tenantId && (!company || (!company.nome && !company.name))) {
-            try {
-                let payload = null;
-                if (typeof window.getData === 'function') {
-                    payload = await window.getData(`companies/${tenantId}/profile`);
-                } else if (typeof getDataAsync === 'function') {
-                    payload = await getDataAsync(`companies/${tenantId}/profile`);
-                }
-                if (payload && typeof payload === 'object') {
-                    company = { ...(company || {}), ...payload, id: tenantId, companyId: tenantId, tenantId: tenantId };
-                }
-            } catch (_) {}
-        }
-
-        if (!company && tenantId) {
-            try {
-                const raw = localStorage.getItem('companies');
-                if (raw) {
-                    const parsed = JSON.parse(raw);
-                    const arr = Array.isArray(parsed) ? parsed : (parsed && typeof parsed === 'object' ? Object.values(parsed) : []);
-                    company = (arr || []).find(item => {
-                        if (!item || typeof item !== 'object') return false;
-                        const id = item.id || item.companyId || item.companyID || item.tenantId;
-                        return id && String(id) === String(tenantId);
-                    }) || null;
-                }
-            } catch (_) {}
-        }
-
-        if (!company || typeof company !== 'object') return;
-
-        const existing = (() => {
-            try {
-                const raw = localStorage.getItem('company_info');
-                return raw ? (JSON.parse(raw) || {}) : {};
-            } catch (_) { return {}; }
-        })();
-
-        const name = company.nome || company.fantasia || company.name || existing.nome || existing.name || '';
-        const cnpj = company.cnpj || company.taxId || existing.cnpj || existing.taxId || '';
-        const address = company.endereco || company.address || existing.endereco || existing.address || '';
-        const phone = company.telefone || company.phone || existing.telefone || existing.phone || '';
-        const logoCandidate = company.logoUrl || company.logoURL || company.logoDownloadURL || company.logoStoragePath || company.logoPath || company.logo || company.logoBase64 || company.logoData || existing.logoUrl || existing.logoURL || existing.logoDownloadURL || existing.logoStoragePath || existing.logoPath || existing.logo || existing.logoBase64 || existing.logoData || '';
-        const logoUrl = normalizeLogo(logoCandidate);
-        const merged = { ...existing };
-
-        if (name) {
-            merged.nome = name;
-            merged.name = name;
-        }
-        if (cnpj) merged.cnpj = cnpj;
-        if (address) {
-            merged.endereco = address;
-            merged.address = address;
-        }
-        if (phone) {
-            merged.telefone = phone;
-            merged.phone = phone;
-        }
-        if (logoUrl) {
-            merged.logoUrl = logoUrl;
-            merged.logo = logoUrl;
-        }
-
-        if (merged && (merged.nome || merged.name || merged.cnpj || merged.logoUrl || merged.logo)) {
-            localStorage.setItem('company_info', JSON.stringify(merged));
-        }
-    } catch (_) {}
+function buildFinanceReportPreviewHeader(company, model) {
+    const options = buildFinanceReportHeaderOptions(company, model.titulo, {
+        subtitle: `${model.origemLabel} | ${formatDate(model.dataInicio)} a ${formatDate(model.dataFim)}`
+    });
+    return window.SiswebCommercePdf.buildPrintHeader(options);
 }
 
 const defaultPrintColumns = {
-    receber: ['pedidoNumero','cliente','descricao','valor','vencimento','juros','status','categoria','tipo'],
-    pagar: ['pedidoNumero','fornecedor','descricao','valor','vencimento','juros','status','categoria','tipo']
+    receber: ['pedidoNumero','cliente','descricao','valor','vencimento','dataEmissao','juros','status','categoria','tipo'],
+    pagar: ['pedidoNumero','fornecedor','descricao','valor','vencimento','dataEmissao','juros','status','categoria','tipo']
 };
 
 function getPrintPreferencesKey(tipo) {
@@ -2565,7 +2788,7 @@ function sanitizePrintPreferencesFor(tipo) {
         const order = enforceJurosAfterVencimento([...orderRaw.filter(k => baseOrder.includes(k)), ...baseOrder.filter(k => !orderRaw.includes(k))]);
         const visRaw = (prefs && prefs.visible) ? prefs.visible : Object.fromEntries(baseOrder.map(k=>[k,true]));
         const visible = Object.fromEntries(baseOrder.map(k => [k, visRaw[k] !== false]));
-        savePrintPreferences(tipo, { order, visible });
+        savePrintPreferences(tipo, { order, visible }, { persistRemote: false });
     } catch (_) {}
 }
 
@@ -2576,18 +2799,14 @@ function sanitizeAllPrintPreferences() {
     } catch (_) {}
 }
 
-async function savePrintPreferences(tipo, prefs) {
+async function savePrintPreferences(tipo, prefs, options = {}) {
     try {
         const key = getPrintPreferencesKey(tipo);
         localStorage.setItem(key, JSON.stringify(prefs));
         updateCustomColumnsIcon(tipo);
-        // Opcional: salvar em Firebase, se disponível
-        if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
-            const updates = {}; updates[`printPreferences/finance/${tipo}`] = prefs; await window.firebaseService.updatePaths(updates);
-        } else if (window.firebaseSet && window.firebaseRef && window.database) {
-            // Fallback usando set direto
-            const path = `printPreferences/finance/${tipo}`;
-            try { window.firebaseSet(window.firebaseRef(window.database, path), prefs); } catch (_) {}
+        const shouldPersistRemote = options.persistRemote !== false && !!financeSessionTenant;
+        if (shouldPersistRemote && window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
+            const updates = {}; updates[`printPreferences/finance/${tipo}`] = prefs; expectFinanceWrite(await window.firebaseService.updatePaths(updates), 'Preferências de impressão', { atomic: true });
         }
     } catch (e) { console.warn('Falha ao salvar preferências de impressão:', e); }
 }
@@ -2620,29 +2839,36 @@ function openColumnsConfig(tipo) {
         columnsConfigEditing.order = enforceJurosAfterVencimento([...orderRaw.filter(k => baseOrder.includes(k)), ...baseOrder.filter(k => !orderRaw.includes(k))]);
         const visibleRaw = (prefs && prefs.visible) ? { ...prefs.visible } : Object.fromEntries(baseOrder.map(k=>[k,true]));
         columnsConfigEditing.visible = Object.fromEntries(baseOrder.map(k => [k, visibleRaw[k] !== false]));
-        const labelMap = { pedidoNumero:'Pedido Nº', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valor:'Valor', juros:'Juros', vencimento:'Vencimento', status:'Status', categoria:'Categoria', tipo:'Tipo' };
-        document.getElementById('printColumnsModalTitle').textContent = `Configurar colunas (${tipo.toUpperCase()})`;
-        const list = document.getElementById('printColumnsList');
-        list.innerHTML = columnsConfigEditing.order.map(colKey => {
-            const checked = columnsConfigEditing.visible[colKey] ? 'checked' : '';
-            const label = labelMap[colKey];
-            return `
-                <div class="columns-item" data-col="${colKey}">
-                    <span>${label}</span>
-                    <span>
-                        <label style="margin-right:8px;"><input type="checkbox" ${checked} onchange="toggleColumnVisible('${colKey}', this.checked)"> Exibir</label>
-                        <button type="button" onclick="moveColumn('${colKey}', -1)"><i class="fas fa-arrow-up"></i></button>
-                        <button type="button" onclick="moveColumn('${colKey}', 1)"><i class="fas fa-arrow-down"></i></button>
-                    </span>
-                </div>
-            `;
-        }).join('');
+        renderColumnsList();
         document.getElementById('printColumnsModal').style.display = 'block';
     } catch (e) { console.warn('Falha ao abrir configuração de colunas:', e); }
 }
 
 function toggleColumnVisible(colKey, visible) {
     columnsConfigEditing.visible[colKey] = !!visible;
+}
+
+function renderColumnsList() {
+    const tipo = columnsConfigEditing.tipo;
+    if (!tipo) return;
+    const labelMap = { pedidoNumero:'Pedido Nº', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valor:'Valor', juros:'Juros', vencimento:'Vencimento', dataEmissao:'Emissão', status:'Status', categoria:'Categoria', tipo:'Tipo' };
+    document.getElementById('printColumnsModalTitle').textContent = `Configurar colunas (${tipo.toUpperCase()})`;
+    const list = document.getElementById('printColumnsList');
+    if (!list) return;
+    list.innerHTML = columnsConfigEditing.order.map(colKey => {
+        const checked = columnsConfigEditing.visible[colKey] ? 'checked' : '';
+        const label = labelMap[colKey];
+        return `
+            <div class="columns-item" data-col="${colKey}">
+                <span>${label}</span>
+                <span>
+                    <label style="margin-right:8px;"><input type="checkbox" ${checked} onchange="toggleColumnVisible('${colKey}', this.checked)"> Exibir</label>
+                    <button type="button" onclick="moveColumn('${colKey}', -1)"><i class="fas fa-arrow-up"></i></button>
+                    <button type="button" onclick="moveColumn('${colKey}', 1)"><i class="fas fa-arrow-down"></i></button>
+                </span>
+            </div>
+        `;
+    }).join('');
 }
 
 function moveColumn(colKey, dir) {
@@ -2653,8 +2879,7 @@ function moveColumn(colKey, dir) {
     const arr = columnsConfigEditing.order;
     const [el] = arr.splice(idx, 1);
     arr.splice(newIdx, 0, el);
-    // Re-render list
-    openColumnsConfig(columnsConfigEditing.tipo);
+    renderColumnsList();
 }
 
 function saveColumnsConfig() {
@@ -2722,7 +2947,7 @@ function computeFilteredReceber(filtro = {}) {
         contasFiltradas = contasFiltradas.filter(c => {
             const catCmp = normalizeCategoriaKey(c.categoria);
             if (tipoKeys[catKey]) {
-                const tipoCmp = normalizeTipoKey(c.tipo);
+                const tipoCmp = resolveFinanceTipoOperacional(c);
                 return catCmp === catKey || tipoCmp === catKey;
             }
             return catCmp === catKey;
@@ -2730,7 +2955,7 @@ function computeFilteredReceber(filtro = {}) {
     }
     if (filtro.tipo) {
         const tkey = normalizeTipoKey(filtro.tipo);
-        contasFiltradas = contasFiltradas.filter(c => normalizeTipoKey(c.tipo) === tkey);
+        contasFiltradas = contasFiltradas.filter(c => resolveFinanceTipoOperacional(c) === tkey);
     }
     if (filtro.pedidoNumero) {
         const needle = String(filtro.pedidoNumero).trim().toLowerCase();
@@ -2738,8 +2963,16 @@ function computeFilteredReceber(filtro = {}) {
     }
     const inicioTs = normalizeDateToTimestamp(filtro.dataInicio);
     const fimTs = normalizeDateToTimestamp(filtro.dataFim);
-    if (inicioTs) contasFiltradas = contasFiltradas.filter(c => { const ts = getContaVencimentoTimestamp(c); return ts !== null && ts >= inicioTs; });
-    if (fimTs) contasFiltradas = contasFiltradas.filter(c => { const ts = getContaVencimentoTimestamp(c); return ts !== null && ts <= fimTs; });
+    if (inicioTs) contasFiltradas = contasFiltradas.filter(c => {
+        const tsVenc = getContaVencimentoTimestamp(c);
+        const tsEmi = normalizeDateToTimestamp(c && c.dataEmissao);
+        return (tsVenc !== null && tsVenc >= inicioTs) || (tsEmi !== null && tsEmi >= inicioTs);
+    });
+    if (fimTs) contasFiltradas = contasFiltradas.filter(c => {
+        const tsVenc = getContaVencimentoTimestamp(c);
+        const tsEmi = normalizeDateToTimestamp(c && c.dataEmissao);
+        return (tsVenc !== null && tsVenc <= fimTs) || (tsEmi !== null && tsEmi <= fimTs);
+    });
     contasFiltradas.sort((a, b) => { const ta = getContaVencimentoTimestamp(a) ?? 0; const tb = getContaVencimentoTimestamp(b) ?? 0; return ta - tb; });
     return contasFiltradas;
 }
@@ -2798,7 +3031,7 @@ function computeFilteredPagar(filtro = {}) {
         contasFiltradas = contasFiltradas.filter(c => {
             const catCmp = normalizeCategoriaKey(c.categoria);
             if (tipoKeys[catKey]) {
-                const tipoCmp = normalizeTipoKey(c.tipo);
+                const tipoCmp = resolveFinanceTipoOperacional(c);
                 return catCmp === catKey || tipoCmp === catKey;
             }
             return catCmp === catKey;
@@ -2810,8 +3043,16 @@ function computeFilteredPagar(filtro = {}) {
     }
     const inicioTs = normalizeDateToTimestamp(filtro.dataInicio);
     const fimTs = normalizeDateToTimestamp(filtro.dataFim);
-    if (inicioTs) contasFiltradas = contasFiltradas.filter(c => { const ts = getContaVencimentoTimestamp(c); return ts !== null && ts >= inicioTs; });
-    if (fimTs) contasFiltradas = contasFiltradas.filter(c => { const ts = getContaVencimentoTimestamp(c); return ts !== null && ts <= fimTs; });
+    if (inicioTs) contasFiltradas = contasFiltradas.filter(c => {
+        const tsVenc = getContaVencimentoTimestamp(c);
+        const tsEmi = normalizeDateToTimestamp(c && c.dataEmissao);
+        return (tsVenc !== null && tsVenc >= inicioTs) || (tsEmi !== null && tsEmi >= inicioTs);
+    });
+    if (fimTs) contasFiltradas = contasFiltradas.filter(c => {
+        const tsVenc = getContaVencimentoTimestamp(c);
+        const tsEmi = normalizeDateToTimestamp(c && c.dataEmissao);
+        return (tsVenc !== null && tsVenc <= fimTs) || (tsEmi !== null && tsEmi <= fimTs);
+    });
     contasFiltradas.sort((a, b) => { const ta = getContaVencimentoTimestamp(a) ?? 0; const tb = getContaVencimentoTimestamp(b) ?? 0; return ta - tb; });
     return contasFiltradas;
 }
@@ -2891,6 +3132,14 @@ function mudarPaginaPagar(novaPagina) {
 
 // Funções de navegação entre tabs
 function showTab(tabName) {
+    // ✅ CORREÇÃO: Resetar estado de edição e botão ao trocar de aba
+    if (window.contaEmEdicao) {
+        window.contaEmEdicao = null;
+        ['pagarForm', 'receberForm'].forEach(function(formId) {
+            const btn = document.getElementById(formId)?.querySelector('button[type="submit"]');
+            if (btn) btn.innerHTML = '<i class="fas fa-save"></i> Salvar';
+        });
+    }
     // Ocultar todas as tabs
     const tabContents = document.querySelectorAll('.tab-content');
     tabContents.forEach(tab => tab.classList.remove('active'));
@@ -3089,7 +3338,7 @@ async function atualizarSnapshotMensal() {
             updatedAt: new Date().toISOString()
         };
         if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            try { await window.firebaseService.saveToFirebase('finance_snapshots', monthKey, snapshot); }
+            try { expectFinanceWrite(await window.firebaseService.saveToFirebase('finance_snapshots', monthKey, snapshot), 'Atualização do resumo financeiro'); }
             catch(e) { /* noop: snapshot é opcional */ }
         }
     } catch (_) { /* noop */ }
@@ -3330,6 +3579,7 @@ async function salvarContaReceber(event) {
         const descricao = document.getElementById('receberDescricao').value;
         const valorTotal = parseCurrencyValue(document.getElementById('receberValorTotal').value);
         const parcelas = parseInt(document.getElementById('receberParcelas').value);
+        const dataEmissao = document.getElementById('receberDataEmissao')?.value || '';
         const dataVencimento = document.getElementById('receberDataVencimento').value;
         const categoriaValor = document.getElementById('receberCategoria').value || 'vendas';
         const tipoValor = (document.getElementById('receberTipo')?.value || 'receber');
@@ -3349,6 +3599,19 @@ async function salvarContaReceber(event) {
             } catch (_) {}
             return;
         }
+        const receberForm = document.getElementById('receberForm');
+        if (!window.contaEmEdicao && receberForm && receberForm.__financePendingCreate) {
+            const retriedAccounts = await retryPendingFinanceCreation('receber', receberForm);
+            carregarTabelaReceber();
+            limparFormulario('receberForm');
+            try { await atualizarSnapshotMensal(); } catch(_) {}
+            try { atualizarSelectCategorias(); atualizarSelectTipos(); } catch(_) {}
+            mostrarNotificacao(
+                `${retriedAccounts.length} parcela(s) de conta a receber confirmada(s) com sucesso!`,
+                'success'
+            );
+            return;
+        }
 
         // 🔎 Resolver nome do cliente a partir do ID selecionado
         const clienteObj = Array.isArray(clientes) ? clientes.find(c => String(c.id) === String(clienteSel)) : null;
@@ -3363,12 +3626,17 @@ async function salvarContaReceber(event) {
         // ✅ NOVO: Verificar se estamos editando uma conta existente
         const novasContas = [];
         if (window.contaEmEdicao && window.contaEmEdicao.tipo === 'receber') {
-            
-            // Remover a conta original
-            const index = contasReceber.findIndex(c => c.id == window.contaEmEdicao.id);
-            if (index !== -1) {
-                contasReceber.splice(index, 1);
+            if (window.__financeSaving) {
+                console.warn('⚠️ Salvamento já em andamento, ignorando clique duplo.');
+                return;
             }
+            window.__financeSaving = true;
+            window.__financeSaveInProgress = true;
+            const receberSubmitBtn = document.getElementById('receberForm')?.querySelector('button[type="submit"]');
+            setSubmitButtonLoading(receberSubmitBtn, true, 'Salvando...');
+            
+            const index = contasReceber.findIndex(c => c.id == window.contaEmEdicao.id);
+            if (index === -1) throw new Error('Conta a receber não encontrada para edição.');
             
             // Usar o ID original e preservar dados importantes
             const contaOriginal = window.contaEmEdicao.contaOriginal;
@@ -3389,6 +3657,7 @@ async function salvarContaReceber(event) {
                 valor: valorTotal,
                 valorOriginal: valorOriginalEdit, // ✅ Valor original preservado ou ajustado
                 valorRestante: valorRestanteEdit, // ✅ Recalcular restante com base em valorPago
+                dataEmissao: normalizeDateISOInput(dataEmissao) || '',
                 dataVencimento: vencISO,
                 status: statusCalc, // ✅ Recalcular status com base em vencimento e pagamentos
                 categoria: categoriaLabel,
@@ -3431,8 +3700,6 @@ async function salvarContaReceber(event) {
             } catch(_) {} 
             */
             
-            contasReceber.push(conta);
-            
             // Salvar somente a conta editada
             try {
                 const mkOld = String((contaOriginal.dataVencimento || contaOriginal.vencimento || '').slice(0,7) || getTodayISODateLocal().slice(0,7));
@@ -3450,19 +3717,8 @@ async function salvarContaReceber(event) {
                         console.warn('Falha ao anexar arquivo manual na edição de receber:', uploadErr);
                     }
                 }
-                if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
-                    const updates = {};
-                    if (mkOld && mkNew && mkOld !== mkNew) {
-                        updates[`financas/receber/${mkOld}/${String(conta.id)}`] = null;
-                    }
-                    updates[`financas/receber/${mkNew}/${String(conta.id)}`] = conta;
-                    await window.firebaseService.updatePaths(updates);
-                } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-                    if (mkOld && mkNew && mkOld !== mkNew) {
-                        try { await window.firebaseService.saveToFirebase(`financas/receber/${mkOld}`, String(conta.id), null); } catch(_) {}
-                    }
-                    await window.firebaseService.saveToFirebase(`financas/receber/${mkNew}`, String(conta.id), conta);
-                }
+                const authoritativeEdit = await updateFinanceAccountAuthoritative('receber', contaOriginal, conta);
+                contasReceber[index] = authoritativeEdit.account;
                 financeDevLog('edit.receber.persist', {
                     id: String(conta.id),
                     mkOld,
@@ -3481,6 +3737,7 @@ async function salvarContaReceber(event) {
                 } catch (_) {}
             } catch(errSave) {
                 console.error('❌ Erro ao salvar conta editada no RTDB:', errSave);
+                window.__financeSaveInProgress = false;
                 const msg = String((errSave && errSave.message) || errSave || '').toLowerCase();
                 if (msg.includes('permission_denied') || msg.includes('permission denied')) {
                     try { mostrarNotificacao('Sessão expirada ou sem permissão. Faça login novamente.', 'error'); } catch(_) {}
@@ -3489,6 +3746,7 @@ async function salvarContaReceber(event) {
                     return;
                 }
                 mostrarNotificacao('Erro ao salvar conta editada no banco. Verifique os campos.', 'error');
+                return;
             }
             
             // Limpar estado de edição
@@ -3496,7 +3754,9 @@ async function salvarContaReceber(event) {
             try { limparFormulario('receberForm'); } catch(_) {}
             try { const parcelasField = document.getElementById('receberParcelas'); if (parcelasField) parcelasField.disabled = false; } catch(_) {}
             try { prepareNumeroReceber(); } catch(_) {}
-            
+            window.__financeSaveInProgress = false;
+            window.__financeSaving = false;
+            try { const rs = document.getElementById('receberForm')?.querySelector('button[type="submit"]'); setSubmitButtonLoading(rs, false); } catch(_) {}
             mostrarNotificacao('Conta a receber editada com sucesso!', 'success');
         } else {
             // ✅ CRIAÇÃO DE NOVA CONTA (comportamento original)
@@ -3517,6 +3777,7 @@ async function salvarContaReceber(event) {
                 valor: valorParcela,
                 valorOriginal: valorParcela, // ✅ NOVO: Valor original da parcela
                 valorRestante: valorParcela, // ✅ NOVO: Valor restante a receber
+                dataEmissao: normalizeDateISOInput(dataEmissao) || '',
                 dataVencimento: dataParcela,
                 status: 'pendente',
                     categoria: categoriaLabel,
@@ -3534,7 +3795,6 @@ async function salvarContaReceber(event) {
             };
 
             novasContas.push(conta);
-            contasReceber.push(conta);
         }
 
         const anexosPorParcelaReceber = getGeneratedParcelAttachmentFiles('receber');
@@ -3557,51 +3817,27 @@ async function salvarContaReceber(event) {
             }
         }
 
-            mostrarNotificacao(`${parcelas} parcela(s) de conta a receber salva(s) com sucesso!`, 'success');
         }
 
-        // Para criação, salvar cada parcela criada
-        if (!window.contaEmEdicao && window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            const months = Array.from(new Set(novasContas.map(c => getMonthKeyFromDateVal(c.dataVencimento || c.vencimento)).filter(Boolean)));
-            const existingByMonth = {};
-            for (const mk of months) {
-                try {
-                    const res = await window.firebaseService.loadFromFirebase(`financas/receber/${mk}`);
-                    const arr = (res && res.success && res.data) ? (Array.isArray(res.data)?res.data:Object.values(res.data||{})) : [];
-                    existingByMonth[mk] = new Set(arr.map(x => String(x && x.numero)).filter(Boolean));
-                } catch(_) { existingByMonth[mk] = new Set(); }
+        if (!window.contaEmEdicao) {
+            const form = document.getElementById('receberForm');
+            const operationId = createFinanceOperationId('create_receber');
+            if (form) form.__financePendingCreate = { tipo: 'receber', operationId, accounts: novasContas };
+            try {
+                const committed = await createFinanceAccountsAuthoritative('receber', novasContas, operationId);
+                novasContas.splice(0, novasContas.length, ...committed.accounts);
+                if (form) form.__financePendingCreate = null;
+            } catch (error) {
+                if (form && isDefinitiveFinanceCreateError(error)) {
+                    form.__financePendingCreate = null;
+                    await cleanupRejectedFinanceCreateUploads(novasContas);
+                }
+                throw error;
             }
-            if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
-                const updates = {};
-                for (const conta of novasContas) {
-                    const mk = getMonthKeyFromDateVal(conta.dataVencimento || conta.vencimento);
-                    if (mk) {
-                        const ex = existingByMonth[mk] || new Set();
-                        if (conta.numero && ex.has(String(conta.numero))) {
-                            const base = await getNextManualNumero();
-                            conta.numero = conta.totalParcelas === 1 ? base : `${base}-${String(conta.parcela||1).padStart(2,'0')}`;
-                        }
-                        if (conta.numero) ex.add(String(conta.numero));
-                        updates[`financas/receber/${mk}/${String(conta.id)}`] = conta;
-                    }
-                }
-                if (Object.keys(updates).length > 0) {
-                    await window.firebaseService.updatePaths(updates);
-                }
-            } else {
-                for (const conta of novasContas) {
-                    const mk = getMonthKeyFromDateVal(conta.dataVencimento || conta.vencimento);
-                    if (mk) {
-                        const ex = existingByMonth[mk] || new Set();
-                        if (conta.numero && ex.has(String(conta.numero))) {
-                            const base = await getNextManualNumero();
-                            conta.numero = conta.totalParcelas === 1 ? base : `${base}-${String(conta.parcela||1).padStart(2,'0')}`;
-                        }
-                        if (conta.numero) ex.add(String(conta.numero));
-                        await window.firebaseService.saveToFirebase(`financas/receber/${mk}`, String(conta.id), conta);
-                    }
-                }
-            }
+        }
+        if (!window.contaEmEdicao) {
+            mergeFinanceCreatedAccounts('receber', novasContas);
+            mostrarNotificacao(`${novasContas.length} parcela(s) de conta a receber salva(s) com sucesso!`, 'success');
         }
         
         carregarTabelaReceber();
@@ -3611,6 +3847,9 @@ async function salvarContaReceber(event) {
         
     } catch (error) {
         console.error('❌ Erro ao salvar conta a receber:', error);
+        window.__financeSaveInProgress = false;
+        window.__financeSaving = false;
+        try { const rs = document.getElementById('receberForm')?.querySelector('button[type="submit"]'); setSubmitButtonLoading(rs, false); } catch(_) {}
         const msg = String((error && error.message) || error || '').toLowerCase();
         if (msg.includes('permission_denied') || msg.includes('permission denied')) {
             try { mostrarNotificacao('Sessão expirada ou sem permissão. Faça login novamente.', 'error'); } catch(_) {}
@@ -3633,6 +3872,7 @@ async function salvarContaPagar(event) {
         const descricao = document.getElementById('pagarDescricao')?.value || '';
         const valorTotal = parseCurrencyValue(document.getElementById('pagarValorTotal')?.value || 0);
         const parcelas = parseInt(document.getElementById('pagarParcelas')?.value || '0');
+        const dataEmissao = document.getElementById('pagarDataEmissao')?.value || '';
         const dataVencimento = document.getElementById('pagarDataVencimento')?.value || '';
         const categoria = document.getElementById('pagarCategoria')?.value || '';
         const tipo = document.getElementById('pagarTipo')?.value || 'pagar';
@@ -3652,15 +3892,39 @@ async function salvarContaPagar(event) {
             } catch (_) {}
             return;
         }
+        const pagarForm = document.getElementById('pagarForm');
+        if (!window.contaEmEdicao && pagarForm && pagarForm.__financePendingCreate) {
+            const retriedAccounts = await retryPendingFinanceCreation('pagar', pagarForm);
+            carregarTabelaPagar(lastFiltroPagar || {});
+            limparFormulario('pagarForm');
+            try { await atualizarSnapshotMensal(); } catch(_) {}
+            try { atualizarSelectCategorias(); atualizarSelectTipos(); } catch(_) {}
+            mostrarNotificacao(
+                `${retriedAccounts.length} parcela(s) de conta a pagar confirmada(s) com sucesso!`,
+                'success'
+            );
+            return;
+        }
 
         if (window.contaEmEdicao && window.contaEmEdicao.tipo === 'pagar') {
+            if (window.__financeSaving) {
+                console.warn('⚠️ Salvamento já em andamento, ignorando clique duplo.');
+                return;
+            }            window.__financeSaving = true;
+            window.__financeSaveInProgress = true;
+            const pagarSubmitBtn = document.getElementById('pagarForm')?.querySelector('button[type="submit"]');
+            setSubmitButtonLoading(pagarSubmitBtn, true, 'Salvando...');
             const editId = window.contaEmEdicao.id;
             const contaOriginal = window.contaEmEdicao.contaOriginal || {};
-            const conta = contasPagar.find(c => c.id === editId) || contasPagar.find(c => c.id == editId) || contasPagar.find(c => String(c.id) === String(editId));
-            if (!conta) {
-                mostrarNotificacao('Conta não encontrada para edição.', 'error');
+            const contaIndex = contasPagar.findIndex(c => c && String(c.id) === String(editId));
+            if (contaIndex === -1) {
+                window.__financeSaveInProgress = false;
+                window.__financeSaving = false;
+                setSubmitButtonLoading(pagarSubmitBtn, false);
+            mostrarNotificacao('Conta não encontrada para edição.', 'error');
                 return;
             }
+            const conta = { ...contasPagar[contaIndex] };
             conta.fornecedorId = fornecedorId;
             conta.fornecedor = fornecedorNome;
             conta.descricao = descricaoNorm;
@@ -3668,6 +3932,7 @@ async function salvarContaPagar(event) {
             conta.valorOriginal = valorTotal;
             conta.valor = valorTotal;
             conta.valorRestante = Math.max(0, (Math.round(valorTotal * 100) - Math.round(valorPago * 100)) / 100);
+            conta.dataEmissao = normalizeDateISOInput(dataEmissao) || '';
             conta.dataVencimento = normalizeDateISOInput(dataVencimento);
             if (conta.valorRestante === 0) {
                 conta.status = 'pago';
@@ -3676,9 +3941,9 @@ async function salvarContaPagar(event) {
             } else {
                 conta.status = 'pendente';
             }
-            const categoriaKey = normalizeCategoriaKey(categoria);
-            conta.categoria = getBaseCategoriaKeys().includes(categoriaKey) ? categoriaKey : 'outros';
-            conta.tipo = normalizeTipoKey(tipo || 'pagar');
+            const categoriaKey = normalizeCategoriaForFinanceSave(categoria, 'outros');
+            const tipoKey = applyContaFinanceiroTipoPagamento(conta, tipo, 'pagar');
+            conta.categoria = categoriaKey;
             conta.jurosTipo = jurosTipo;
             conta.jurosTaxa = jurosTaxa;
             conta.jurosBaseDate = conta.jurosBaseDate || contaOriginal.jurosBaseDate || null;
@@ -3705,23 +3970,14 @@ async function salvarContaPagar(event) {
             
             const mkOld = getMonthKeyFromDateVal(window.contaEmEdicao.contaOriginal && (window.contaEmEdicao.contaOriginal.dataVencimento || window.contaEmEdicao.contaOriginal.vencimento));
             const mkNew = getMonthKeyFromDateVal(conta.dataVencimento || conta.vencimento);
-            if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
-                const updates = {};
-                if (mkOld && mkNew && mkOld !== mkNew) {
-                    updates[`financas/pagar/${mkOld}/${String(conta.id)}`] = null;
-                }
-                updates[`financas/pagar/${mkNew}/${String(conta.id)}`] = conta;
-                await window.firebaseService.updatePaths(updates);
-            } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-                if (mkOld && mkNew && mkOld !== mkNew) {
-                    try { await window.firebaseService.saveToFirebase(`financas/pagar/${mkOld}`, String(conta.id), null); } catch(_) {}
-                }
-                await window.firebaseService.saveToFirebase(`financas/pagar/${mkNew}`, String(conta.id), conta);
-            }
+            const authoritativeEdit = await updateFinanceAccountAuthoritative('pagar', contaOriginal, conta);
+            contasPagar[contaIndex] = authoritativeEdit.account;
             financeDevLog('edit.pagar.persist', {
                 id: String(conta.id),
                 mkOld,
                 mkNew,
+                tipoPagamento: tipoKey,
+                categoria: categoriaKey,
                 anexosCount: Array.isArray(conta.anexos) ? conta.anexos.length : 0,
                 hasAnexoUrl: !!conta.anexoUrl,
                 hasComprovanteUrl: !!conta.comprovanteUrl
@@ -3739,6 +3995,9 @@ async function salvarContaPagar(event) {
             try { const parcelasField = document.getElementById('pagarParcelas'); if (parcelasField) parcelasField.disabled = false; } catch(_) {}
             try { prepareNumeroPagar(); } catch(_) {}
             window.contaEmEdicao = null;
+            window.__financeSaveInProgress = false;
+            window.__financeSaving = false;
+            setSubmitButtonLoading(pagarSubmitBtn, false);
             mostrarNotificacao('Conta a pagar editada com sucesso!', 'success');
             try { atualizarSelectCategorias(); atualizarSelectTipos(); } catch(_) {}
             return;
@@ -3757,6 +4016,8 @@ async function salvarContaPagar(event) {
             const cfg = parcelConfigsPagar[i] || {};
             const valorParcela = parseCurrencyValue(cfg.valor || 0);
             const dataParcela = normalizeDateISOInput(cfg.data || dataVencimento);
+            const categoriaKey = normalizeCategoriaForFinanceSave(categoria, 'outros');
+            const tipoKey = normalizeTipoPagamentoForFinanceSave(tipo, 'pagar');
 
             const conta = {
                 id: generateUniqueId('CP'),
@@ -3766,10 +4027,13 @@ async function salvarContaPagar(event) {
                 valor: valorParcela,
                 valorOriginal: valorParcela,
                 valorRestante: valorParcela,
+                dataEmissao: normalizeDateISOInput(dataEmissao) || '',
                 dataVencimento: dataParcela,
                 status: 'pendente',
-                categoria: (getBaseCategoriaKeys().includes(normalizeCategoriaKey(categoria)) ? normalizeCategoriaKey(categoria) : 'outros'),
-                tipo: normalizeTipoKey(tipo || 'pagar'),
+                categoria: categoriaKey,
+                tipo: tipoKey,
+                tipoPagamento: tipoKey,
+                tipo_pagamento: tipoKey,
                 jurosTipo,
                 jurosTaxa,
                 jurosBaseDate: null,
@@ -3782,7 +4046,6 @@ async function salvarContaPagar(event) {
             };
 
             novasContas.push(conta);
-            contasPagar.push(conta);
         }
 
         const anexosPorParcelaPagar = getGeneratedParcelAttachmentFiles('pagar');
@@ -3805,62 +4068,41 @@ async function salvarContaPagar(event) {
             }
         }
 
-        const monthKeySaveP = getMonthKeyFromDateVal(novasContas[0] && novasContas[0].dataVencimento);
-        if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            try {
-                const monthsP = Array.from(new Set(novasContas.map(c => getMonthKeyFromDateVal(c.dataVencimento || c.vencimento)).filter(Boolean)));
-                const existingByMonthP = {};
-                for (const mk of monthsP) {
-                    try {
-                        const res = await window.firebaseService.loadFromFirebase(`financas/pagar/${mk}`);
-                        const arr = (res && res.success && res.data) ? (Array.isArray(res.data)?res.data:Object.values(res.data||{})) : [];
-                        existingByMonthP[mk] = new Set(arr.map(x => String(x && x.numero)).filter(Boolean));
-                    } catch(_) { existingByMonthP[mk] = new Set(); }
-                }
-                if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
-                    const updates = {};
-                    for (const conta of novasContas) {
-                        const mk = getMonthKeyFromDateVal(conta.dataVencimento || conta.vencimento) || monthKeySaveP;
-                        if (mk) {
-                            const ex = existingByMonthP[mk] || new Set();
-                            if (conta.numero && ex.has(String(conta.numero))) {
-                                const base = await getNextManualNumeroPagar();
-                                conta.numero = conta.totalParcelas === 1 ? base : `${base}-${String(conta.parcela||1).padStart(2,'0')}`;
-                            }
-                            if (conta.numero) ex.add(String(conta.numero));
-                            updates[`financas/pagar/${mk}/${String(conta.id)}`] = conta;
-                        }
-                    }
-                    if (Object.keys(updates).length > 0) {
-                        await window.firebaseService.updatePaths(updates);
-                    }
-                } else {
-                    for (const conta of novasContas) {
-                        const mk = getMonthKeyFromDateVal(conta.dataVencimento || conta.vencimento) || monthKeySaveP;
-                        if (mk) {
-                            const ex = existingByMonthP[mk] || new Set();
-                            if (conta.numero && ex.has(String(conta.numero))) {
-                                const base = await getNextManualNumeroPagar();
-                                conta.numero = conta.totalParcelas === 1 ? base : `${base}-${String(conta.parcela||1).padStart(2,'0')}`;
-                            }
-                            if (conta.numero) ex.add(String(conta.numero));
-                            await window.firebaseService.saveToFirebase(`financas/pagar/${mk}`, String(conta.id), conta);
-                        }
-                    }
-                }
-            } catch (e) {
+        const form = document.getElementById('pagarForm');
+        const operationId = createFinanceOperationId('create_pagar');
+        if (form) form.__financePendingCreate = { tipo: 'pagar', operationId, accounts: novasContas };
+        try {
+            const committed = await createFinanceAccountsAuthoritative('pagar', novasContas, operationId);
+            novasContas.splice(0, novasContas.length, ...committed.accounts);
+            if (form) form.__financePendingCreate = null;
+        } catch (error) {
+            if (form && isDefinitiveFinanceCreateError(error)) {
+                form.__financePendingCreate = null;
+                await cleanupRejectedFinanceCreateUploads(novasContas);
             }
+            throw error;
         }
+        mergeFinanceCreatedAccounts('pagar', novasContas);
         
         carregarTabelaPagar(lastFiltroPagar || {});
         limparFormulario('pagarForm');
         try { await atualizarSnapshotMensal(); } catch(_) {}
         try { atualizarSelectCategorias(); atualizarSelectTipos(); } catch(_) {}
         
-        mostrarNotificacao(`${parcelas} parcela(s) de conta a pagar salva(s) com sucesso!`, 'success');
+        mostrarNotificacao(`${novasContas.length} parcela(s) de conta a pagar salva(s) com sucesso!`, 'success');
         
     } catch (error) {
         console.error('❌ Erro ao salvar conta a pagar:', error);
+        window.__financeSaveInProgress = false;
+        window.__financeSaving = false;
+        try { const ps = document.getElementById('pagarForm')?.querySelector('button[type="submit"]'); setSubmitButtonLoading(ps, false); } catch(_) {}
+        const msg = String((error && error.message) || error || '').toLowerCase();
+        if (msg.includes('permission_denied') || msg.includes('permission denied')) {
+            try { mostrarNotificacao('Sessão expirada ou sem permissão. Faça login novamente.', 'error'); } catch(_) {}
+            try { if (window.firebaseService && window.firebaseService.authService && window.firebaseService.authService.logout) await window.firebaseService.authService.logout(); } catch(_) {}
+            try { setTimeout(() => { window.location.href = 'login.html'; }, 500); } catch(_) {}
+            return;
+        }
         mostrarNotificacao('Erro ao salvar conta a pagar. Tente novamente.', 'error');
     }
 }
@@ -4076,6 +4318,10 @@ async function carregarTabelaReceber(filtro = {}) {
     // ✅ CORREÇÃO: Filtrar apenas contas válidas (não nulas/undefined)
     let contasFiltradas = contasReceber.filter(conta => conta && conta.id);
     
+    // ✅ Dedup por ID para evitar duplicação na tabela
+    const seenIdsReceber = new Set();
+    contasFiltradas = contasFiltradas.filter(c => { if (!c || !c.id) return true; const k = String(c.id); if (seenIdsReceber.has(k)) return false; seenIdsReceber.add(k); return true; });
+
     // ✅ Normalizar campos e status pago/parcial/vencido
     const hojeTs = getTodayStartTimestampLocal();
     contasFiltradas.forEach(conta => {
@@ -4141,7 +4387,7 @@ async function carregarTabelaReceber(filtro = {}) {
         contasFiltradas = contasFiltradas.filter(c => {
             const catCmp = normalizeCategoriaKey(c.categoria);
             if (tipoKeys[catKey]) {
-                const tipoCmp = normalizeTipoKey(c.tipo);
+                const tipoCmp = resolveFinanceTipoOperacional(c);
                 return catCmp === catKey || tipoCmp === catKey;
             }
             return catCmp === catKey;
@@ -4149,7 +4395,7 @@ async function carregarTabelaReceber(filtro = {}) {
     }
     if (filtro.tipo && String(filtro.tipo).toLowerCase() !== 'todos') {
         const tkey = normalizeTipoKey(filtro.tipo);
-        contasFiltradas = contasFiltradas.filter(c => normalizeTipoKey(c.tipo) === tkey);
+        contasFiltradas = contasFiltradas.filter(c => resolveFinanceTipoOperacional(c) === tkey);
     }
     
     // ✅ Comparação robusta por datas (normalizadas para timestamp)
@@ -4184,7 +4430,7 @@ async function carregarTabelaReceber(filtro = {}) {
     const order = enforceJurosAfterVencimento([...orderRaw.filter(k => allowed.has(k)), ...defaultCols.filter(k => !orderRaw.includes(k))]);
     const visibleRaw = (prefs && prefs.visible) ? prefs.visible : Object.fromEntries(defaultCols.map(k=>[k,true]));
     const visible = Object.fromEntries([...allowed].map(k => [k, visibleRaw[k] !== false]));
-    const labelMap = { pedidoNumero:'Pedido Nº', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valor:'Valor', juros:'Juros', vencimento:'Vencimento', status:'Status', categoria:'Categoria', tipo:'Tipo' };
+    const labelMap = { pedidoNumero:'Pedido Nº', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valor:'Valor', juros:'Juros', vencimento:'Vencimento', dataEmissao:'Emissão', status:'Status', categoria:'Categoria', tipo:'Tipo' };
     const theadEl = document.getElementById('receberTableHead');
     if (theadEl) {
         const selTh = `<th style="width:36px; text-align:center;"><input type="checkbox" id="selReceberAll" onchange="toggleSelecionarTodosReceber(this.checked)" aria-label="Selecionar todos"></th>`;
@@ -4225,7 +4471,8 @@ async function carregarTabelaReceber(filtro = {}) {
             }
         }
 
-        const statusNorm = (conta.status || 'pendente').toLowerCase();
+        const rawStatus = String(conta.status || 'pendente').toLowerCase();
+        const statusNorm = ['pendente', 'parcial', 'pago', 'vencido'].includes(rawStatus) ? rawStatus : 'pendente';
         const statusExibir = statusNorm.toUpperCase();
         let valorExibir = conta.valor;
         let tooltipValor = '';
@@ -4268,56 +4515,55 @@ async function carregarTabelaReceber(filtro = {}) {
         orderRow.forEach(colKey => {
             if (!visibleRow[colKey]) return;
             switch (colKey) {
-                case 'pedidoNumero': rowCells.push(`<td style="text-align:center;">${conta.pedidoNumero || conta.numero || '-'}</td>`); break;
-                case 'cliente': rowCells.push(`<td>${nomeCliente}</td>`); break;
-                case 'descricao': rowCells.push(`<td>${conta.descricao || '-'}</td>`); break;
+                case 'pedidoNumero': rowCells.push(`<td style="text-align:center;">${escapeFinanceHtml(conta.pedidoNumero || conta.numero || '-')}</td>`); break;
+                case 'cliente': rowCells.push(`<td>${escapeFinanceHtml(nomeCliente)}</td>`); break;
+                case 'descricao': rowCells.push(`<td>${escapeFinanceHtml(conta.descricao || '-')}</td>`); break;
                 case 'valor': rowCells.push(`<td style="text-align: right;" ${tooltipValor}>${formatCurrency(valorExibir)}</td>`); break;
-                case 'juros': rowCells.push(`<td style="text-align: right;" ${jurosInfo.tooltip}>${formatCurrency(jurosInfo.totalComJuros)}</td>`); break;
+                case 'juros': rowCells.push(`<td style="text-align: right;" ${jurosInfo.tooltip}>${formatCurrency(jurosInfo.juros)}</td>`); break;
                 case 'vencimento': rowCells.push(`<td style="text-align: center;">${formatDate(conta.dataVencimento || conta.vencimento)}</td>`); break;
-                case 'status': rowCells.push(`<td style="text-align: center;"><span class="status-indicator status-${statusNorm}">${statusExibir}</span></td>`); break;
-                case 'categoria': rowCells.push(`<td>${getCategoriaLabel(conta.categoria)}</td>`); break;
-                case 'tipo': rowCells.push(`<td>${getTipoLabel(conta.tipo)}</td>`); break;
+                case 'dataEmissao': rowCells.push(`<td style="text-align: center;">${conta.dataEmissao ? formatDate(conta.dataEmissao) : '-'}</td>`); break;
+                case 'status': rowCells.push(`<td style="text-align: center;"><span class="status-indicator status-${statusNorm}">${escapeFinanceHtml(statusExibir)}</span></td>`); break;
+                case 'categoria': rowCells.push(`<td>${escapeFinanceHtml(getCategoriaLabel(conta.categoria))}</td>`); break;
+                case 'tipo': rowCells.push(`<td>${escapeFinanceHtml(getTipoLabel(resolveFinanceTipoOperacional(conta)))}</td>`); break;
             }
         });
 
         const disabledSel = '';
         const isSelected = (()=>{ try { return (window.selReceberSelection || new Set()).has(String(conta.id)); } catch(_) { return false; } })();
-        const primaryAttachmentUrl = getContaPrimaryAttachmentUrl(conta);
-        const attachmentJs = String(primaryAttachmentUrl || '')
-            .replace(/\\/g, '\\\\')
-            .replace(/'/g, "\\'")
-            .replace(/\r/g, '')
-            .replace(/\n/g, ' ');
+        const primaryAttachmentUrl = getSafeFinanceDownloadUrl(getContaPrimaryAttachmentUrl(conta));
+        const accountIdArg = getFinanceInlineStringArgument(conta.id);
+        const attachmentArg = getFinanceInlineStringArgument(primaryAttachmentUrl);
+        const accountIdAttr = escapeFinanceHtml(conta.id);
         return `
-        <tr data-conta-id="${conta.id}" data-status="${statusNorm}">
+        <tr data-conta-id="${accountIdAttr}" data-status="${statusNorm}">
             <td style="text-align:center;"><input type="checkbox" class="sel-receber" onchange="onReceberSelectChange(this)" ${disabledSel} ${isSelected?'checked':''} aria-label="Selecionar conta"></td>
             ${rowCells.join('')}
             <td class="actions-cell" style="text-align: left; white-space: nowrap;">
                 <div class="actions-inline">
                     ${statusNorm === 'pendente' || statusNorm === 'parcial' || statusNorm === 'vencido' ? `
-                        <button onclick="abrirModalPagamento('${conta.id}', 'receber')" class="btn btn-success btn-small" style="min-width: 28px;" title="${statusNorm === 'parcial' ? 'Completar Recebimento' : 'Registrar Recebimento'}">
+                        <button onclick="abrirModalPagamento(${accountIdArg}, 'receber')" class="btn btn-success btn-small" style="min-width: 28px;" title="${statusNorm === 'parcial' ? 'Completar Recebimento' : 'Registrar Recebimento'}">
                             <i class="fas fa-check"></i>
                         </button>
                     ` : `
                         <div style="width: 28px; min-width: 28px; height: 28px; display: inline-block;"></div>
                     `}
-                    ${String(conta.tipo || '').toLowerCase() === 'boleto' ? `
-                        <button onclick="abrirBoletoPixLamina('${conta.id}', 'receber')" class="btn btn-warning btn-small boleto-pix-btn" style="min-width: 28px; background-color: #f59e0b; border-color: #d97706; color: white;" title="Gerar Lâmina de Cobrança PIX">
+                    ${shouldShowBoletoLamina(conta, 'receber') ? `
+                        <button onclick="abrirBoletoPixLamina(${accountIdArg}, 'receber')" class="btn btn-warning btn-small boleto-pix-btn" style="min-width: 28px; background-color: #f59e0b; border-color: #d97706; color: white;" title="Gerar Lâmina de Cobrança PIX">
                             <i class="fas fa-barcode"></i>
                         </button>
                     ` : ''}
-                    <button onclick="editarConta('${conta.id}', 'receber')" class="btn btn-primary btn-small" style="min-width: 28px;" title="Editar">
+                    <button onclick="editarConta(${accountIdArg}, 'receber')" class="btn btn-primary btn-small" style="min-width: 28px;" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
                     ${((Array.isArray(conta.historicosPagamento) && conta.historicosPagamento.length > 0) || statusNorm === 'parcial' || statusNorm === 'pago' || (conta.valorPago && conta.valorPago > 0) || !!conta.dataPagamento) ? `
-                        <button onclick="verHistoricoPagamentos('${conta.id}', 'receber')" class="btn btn-warning btn-small" style="min-width: 28px;" title="Histórico de Pagamentos">
+                        <button onclick="verHistoricoPagamentos(${accountIdArg}, 'receber')" class="btn btn-warning btn-small" style="min-width: 28px;" title="Histórico de Pagamentos">
                             <i class="fas fa-history"></i>
                         </button>
                     ` : ''}
-                    <button onclick="${primaryAttachmentUrl ? `window.open('${attachmentJs}', '_blank')` : `abrirModalAnexos('${conta.id}', 'receber')`}" class="btn btn-info btn-small" style="min-width: 28px;" title="${primaryAttachmentUrl ? 'Ver Anexo' : 'Anexar arquivo'}">
+                    <button onclick="${primaryAttachmentUrl ? `openFinanceAttachment(${attachmentArg})` : `abrirModalAnexos(${accountIdArg}, 'receber')`}" class="btn btn-info btn-small" style="min-width: 28px;" title="${primaryAttachmentUrl ? 'Ver Anexo' : 'Anexar arquivo'}">
                         <i class="fas ${primaryAttachmentUrl ? 'fa-eye' : 'fa-paperclip'}"></i>
                     </button>
-                    <button onclick="excluirConta('${conta.id}', 'receber')" class="btn btn-danger btn-small" style="min-width: 28px;" title="Excluir">
+                    <button onclick="excluirConta(${accountIdArg}, 'receber')" class="btn btn-danger btn-small" style="min-width: 28px;" title="Excluir">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -4358,6 +4604,10 @@ async function carregarTabelaPagar(filtro = {}) {
     
     let contasFiltradas = [...contasPagar];
     
+    // ✅ Dedup por ID para evitar duplicação na tabela
+    const seenIdsPagar = new Set();
+    contasFiltradas = contasFiltradas.filter(c => { if (!c || !c.id) return true; const k = String(c.id); if (seenIdsPagar.has(k)) return false; seenIdsPagar.add(k); return true; });
+
     // ✅ Normalizar campos e status pago/parcial/vencido
     const hojeTs = getTodayStartTimestampLocal();
     contasFiltradas.forEach(conta => {
@@ -4426,7 +4676,7 @@ async function carregarTabelaPagar(filtro = {}) {
         contasFiltradas = contasFiltradas.filter(c => {
             const catCmp = normalizeCategoriaKey(c.categoria);
             if (tipoKeys[catKey]) {
-                const tipoCmp = normalizeTipoKey(c.tipo);
+                const tipoCmp = resolveFinanceTipoOperacional(c);
                 return catCmp === catKey || tipoCmp === catKey;
             }
             return catCmp === catKey;
@@ -4434,7 +4684,7 @@ async function carregarTabelaPagar(filtro = {}) {
     }
     if (filtro.tipo && String(filtro.tipo).toLowerCase() !== 'todos') {
         const tkey = normalizeTipoKey(filtro.tipo);
-        contasFiltradas = contasFiltradas.filter(c => normalizeTipoKey(c.tipo) === tkey);
+        contasFiltradas = contasFiltradas.filter(c => resolveFinanceTipoOperacional(c) === tkey);
     }
     
     // ✅ Comparação robusta por datas (normalizadas para timestamp)
@@ -4469,7 +4719,7 @@ async function carregarTabelaPagar(filtro = {}) {
     const order = enforceJurosAfterVencimento([...orderRaw.filter(k => allowed.has(k)), ...defaultCols.filter(k => !orderRaw.includes(k))]);
     const visibleRaw = (prefs && prefs.visible) ? prefs.visible : Object.fromEntries(defaultCols.map(k=>[k,true]));
     const visible = Object.fromEntries([...allowed].map(k => [k, visibleRaw[k] !== false]));
-    const labelMap = { pedidoNumero:'Pedido Nº', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valor:'Valor', juros:'Juros', vencimento:'Vencimento', status:'Status', categoria:'Categoria', tipo:'Tipo' };
+    const labelMap = { pedidoNumero:'Pedido Nº', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valor:'Valor', juros:'Juros', vencimento:'Vencimento', dataEmissao:'Emissão', status:'Status', categoria:'Categoria', tipo:'Tipo' };
     const theadEl = document.getElementById('pagarTableHead');
     if (theadEl) {
         const selTh = `<th style="width:36px; text-align:center;"><input type="checkbox" id="selPagarAll" onchange="toggleSelecionarTodosPagar(this.checked)" aria-label="Selecionar todos"></th>`;
@@ -4496,7 +4746,8 @@ async function carregarTabelaPagar(filtro = {}) {
     const pageItems = contasFiltradas.slice(startIndex, endIndex);
 
     const rowsHtml2 = pageItems.map(conta => {
-        const statusNorm = (conta.status || 'pendente').toLowerCase();
+        const rawStatus = String(conta.status || 'pendente').toLowerCase();
+        const statusNorm = ['pendente', 'parcial', 'pago', 'vencido'].includes(rawStatus) ? rawStatus : 'pendente';
         const statusExibir = statusNorm.toUpperCase();
         const temHistorico = (Array.isArray(conta.historicosPagamento) && conta.historicosPagamento.length > 0) || (conta.valorPago && conta.valorPago > 0) || !!conta.dataPagamento;
         const nomeFornecedor = conta.fornecedor || conta.funcionarioNome || 'Fornecedor não encontrado';
@@ -4521,55 +4772,54 @@ async function carregarTabelaPagar(filtro = {}) {
         orderRow.forEach(colKey => {
             if (!visibleRow[colKey]) return;
             switch (colKey) {
-                case 'pedidoNumero': rowCells.push(`<td style="text-align:center;">${conta.pedidoNumero || conta.numero || '-'}</td>`); break;
-                case 'fornecedor': rowCells.push(`<td>${nomeFornecedor}</td>`); break;
-                case 'descricao': rowCells.push(`<td>${conta.descricao || '-'}</td>`); break;
+                case 'pedidoNumero': rowCells.push(`<td style="text-align:center;">${escapeFinanceHtml(conta.pedidoNumero || conta.numero || '-')}</td>`); break;
+                case 'fornecedor': rowCells.push(`<td>${escapeFinanceHtml(nomeFornecedor)}</td>`); break;
+                case 'descricao': rowCells.push(`<td>${escapeFinanceHtml(conta.descricao || '-')}</td>`); break;
                 case 'valor': rowCells.push(`<td style="text-align: right;" ${tooltipValor}>${formatCurrency(valorExibir)}</td>`); break;
-                case 'juros': rowCells.push(`<td style="text-align: right;" ${jurosInfo.tooltip}>${formatCurrency(jurosInfo.totalComJuros)}</td>`); break;
+                case 'juros': rowCells.push(`<td style="text-align: right;" ${jurosInfo.tooltip}>${formatCurrency(jurosInfo.juros)}</td>`); break;
                 case 'vencimento': rowCells.push(`<td style="text-align: center;">${formatDate(conta.dataVencimento || conta.vencimento)}</td>`); break;
-                case 'status': rowCells.push(`<td style="text-align: center;"><span class="status-indicator status-${statusNorm}">${statusExibir}</span></td>`); break;
-                case 'categoria': rowCells.push(`<td>${getCategoriaLabel(conta.categoria)}</td>`); break;
-                case 'tipo': rowCells.push(`<td>${getTipoLabel(conta.tipo)}</td>`); break;
+                case 'dataEmissao': rowCells.push(`<td style="text-align: center;">${conta.dataEmissao ? formatDate(conta.dataEmissao) : '-'}</td>`); break;
+                case 'status': rowCells.push(`<td style="text-align: center;"><span class="status-indicator status-${statusNorm}">${escapeFinanceHtml(statusExibir)}</span></td>`); break;
+                case 'categoria': rowCells.push(`<td>${escapeFinanceHtml(getCategoriaLabel(conta.categoria))}</td>`); break;
+                case 'tipo': rowCells.push(`<td>${escapeFinanceHtml(getTipoLabel(resolveFinanceTipoOperacional(conta)))}</td>`); break;
             }
         });
     const disabledSel = '';
     const isSelected = (()=>{ try { return (window.selPagarSelection || new Set()).has(String(conta.id)); } catch(_) { return false; } })();
-    const primaryAttachmentUrl = getContaPrimaryAttachmentUrl(conta);
-    const attachmentJs = String(primaryAttachmentUrl || '')
-        .replace(/\\/g, '\\\\')
-        .replace(/'/g, "\\'")
-        .replace(/\r/g, '')
-        .replace(/\n/g, ' ');
+    const primaryAttachmentUrl = getSafeFinanceDownloadUrl(getContaPrimaryAttachmentUrl(conta));
+    const accountIdArg = getFinanceInlineStringArgument(conta.id);
+    const attachmentArg = getFinanceInlineStringArgument(primaryAttachmentUrl);
+    const accountIdAttr = escapeFinanceHtml(conta.id);
     return `
-    <tr data-conta-id="${conta.id}" data-status="${statusNorm}">
+    <tr data-conta-id="${accountIdAttr}" data-status="${statusNorm}">
         <td style="text-align:center;"><input type="checkbox" class="sel-pagar" onchange="onPagarSelectChange(this)" ${disabledSel} ${isSelected?'checked':''} aria-label="Selecionar conta"></td>
         ${rowCells.join('')}
         <td class="actions-cell" style="text-align: left; white-space: nowrap;">
             <div class="actions-inline">
                 ${statusNorm === 'pendente' || statusNorm === 'parcial' || statusNorm === 'vencido' ? `
-                    <button onclick="abrirModalPagamento('${conta.id}', 'pagar')" class="btn btn-success btn-small" style="min-width: 28px;" title="${statusNorm === 'parcial' ? 'Completar Pagamento' : 'Registrar Pagamento'}">
+                    <button onclick="abrirModalPagamento(${accountIdArg}, 'pagar')" class="btn btn-success btn-small" style="min-width: 28px;" title="${statusNorm === 'parcial' ? 'Completar Pagamento' : 'Registrar Pagamento'}">
                             <i class="fas fa-check"></i>
                         </button>
                     ` : `
                         <div style="width: 28px; min-width: 28px; height: 28px; display: inline-block;"></div>
                     `}
-                    ${String(conta.tipo || '').toLowerCase() === 'boleto' ? `
-                        <button onclick="abrirBoletoPixLamina('${conta.id}', 'pagar')" class="btn btn-warning btn-small boleto-pix-btn" style="min-width: 28px; background-color: #f59e0b; border-color: #d97706; color: white;" title="Gerar Lâmina de Cobrança PIX">
+                    ${shouldShowBoletoLamina(conta, 'pagar') ? `
+                        <button onclick="abrirBoletoPixLamina(${accountIdArg}, 'pagar')" class="btn btn-warning btn-small boleto-pix-btn" style="min-width: 28px; background-color: #f59e0b; border-color: #d97706; color: white;" title="Gerar Lâmina de Cobrança PIX">
                             <i class="fas fa-barcode"></i>
                         </button>
                     ` : ''}
-                    <button onclick="editarConta('${conta.id}', 'pagar')" class="btn btn-primary btn-small" style="min-width: 28px;" title="Editar">
+                    <button onclick="editarConta(${accountIdArg}, 'pagar')" class="btn btn-primary btn-small" style="min-width: 28px;" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
                     ${temHistorico || statusNorm === 'parcial' || statusNorm === 'pago' ? `
-                        <button onclick="verHistoricoPagamentos('${conta.id}', 'pagar')" class="btn btn-warning btn-small" style="min-width: 28px;" title="Histórico de Pagamentos">
+                        <button onclick="verHistoricoPagamentos(${accountIdArg}, 'pagar')" class="btn btn-warning btn-small" style="min-width: 28px;" title="Histórico de Pagamentos">
                             <i class="fas fa-history"></i>
                         </button>
                     ` : ''}
-                    <button onclick="${primaryAttachmentUrl ? `window.open('${attachmentJs}', '_blank')` : `abrirModalAnexos('${conta.id}', 'pagar')`}" class="btn btn-info btn-small" style="min-width: 28px;" title="${primaryAttachmentUrl ? 'Ver Anexo' : 'Anexar arquivo'}">
+                    <button onclick="${primaryAttachmentUrl ? `openFinanceAttachment(${attachmentArg})` : `abrirModalAnexos(${accountIdArg}, 'pagar')`}" class="btn btn-info btn-small" style="min-width: 28px;" title="${primaryAttachmentUrl ? 'Ver Anexo' : 'Anexar arquivo'}">
                         <i class="fas ${primaryAttachmentUrl ? 'fa-eye' : 'fa-paperclip'}"></i>
                     </button>
-                    <button onclick="excluirConta('${conta.id}', 'pagar')" class="btn btn-danger btn-small" style="min-width: 28px;" title="Excluir">
+                    <button onclick="excluirConta(${accountIdArg}, 'pagar')" class="btn btn-danger btn-small" style="min-width: 28px;" title="Excluir">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -4820,7 +5070,9 @@ function subscribeReceberMonths(months) {
                             contasReceber = mergeFinanceMonthData(contasReceber, arr, mk, 'contasReceber_deletedIds');
                             financeDevLog('listener.receber.applied', { month: mk, records: Array.isArray(arr) ? arr.length : 0 });
                             window.financeOffline = false; updateOfflineBadge();
-                            carregarTabelaReceber(lastFiltroReceber || {});
+                            if (!window.__financeSaveInProgress) {
+                                carregarTabelaReceber(lastFiltroReceber || {});
+                            }
                         } catch(e) { console.warn('recv onValue merge falhou:', e); }
                     };
                     r.on('value', h);
@@ -4864,7 +5116,9 @@ function subscribePagarMonths(months) {
                             contasPagar = mergeFinanceMonthData(contasPagar, arr, mk, 'contasPagar_deletedIds');
                             financeDevLog('listener.pagar.applied', { month: mk, records: Array.isArray(arr) ? arr.length : 0 });
                             window.financeOffline = false; updateOfflineBadge();
-                            carregarTabelaPagar(lastFiltroPagar || {});
+                            if (!window.__financeSaveInProgress) {
+                                carregarTabelaPagar(lastFiltroPagar || {});
+                            }
                         } catch(e) { console.warn('pagar onValue merge falhou:', e); }
                     };
                     r.on('value', h);
@@ -4889,9 +5143,52 @@ function detachFinanceListeners() {
     } catch(_) {}
 }
 
+function clearFinancePrivateSessionState() {
+    detachFinanceListeners();
+    clearFinanceReportCompanyCache();
+    contasReceber = [];
+    contasPagar = [];
+    clientes = [];
+    fornecedores = [];
+    funcionarios = [];
+    contaAtualEdicao = null;
+    tipoContaAtual = '';
+    financeSessionTenant = '';
+    window.selReceberSelection = new Set();
+    window.selPagarSelection = new Set();
+    window.financeMonthsLoadedReceber = new Set();
+    window.financeMonthsLoadedPagar = new Set();
+    window.financeReportMonthsConfirmedReceber = new Set();
+    window.financeReportMonthsConfirmedPagar = new Set();
+    window.__financeReportState = null;
+    window.__financePendingStorageReview = [];
+    const paymentForm = document.getElementById('pagamentoForm');
+    clearFinancePaymentAttemptState(paymentForm);
+}
+
 try {
     window.addEventListener('beforeunload', detachFinanceListeners);
-    document.addEventListener('visibilitychange', function(){ if (document.hidden) detachFinanceListeners(); });
+    window.addEventListener('pagehide', clearFinancePrivateSessionState);
+    window.addEventListener('pageshow', (event) => {
+        if (event && event.persisted) window.location.reload();
+    });
+    window.addEventListener('sisweb:session-state', (event) => {
+        const detail = event && event.detail || {};
+        if (detail.authenticated !== true) {
+            clearFinancePrivateSessionState();
+            return;
+        }
+        if (detail.tenantReady !== true) return;
+        const currentTenant = String(
+            window.firebaseService && typeof window.firebaseService.getCurrentTenantId === 'function'
+                ? window.firebaseService.getCurrentTenantId() || ''
+                : ''
+        );
+        if (financeSessionTenant && currentTenant && currentTenant !== financeSessionTenant) {
+            clearFinancePrivateSessionState();
+        }
+        financeSessionTenant = currentTenant;
+    });
 } catch(_) {}
 
 // Reaplicar render após meses carregados (rede lenta)
@@ -4951,6 +5248,86 @@ function filtrarContas(tipo) {
 }
 
 // Funções de pagamento/recebimento
+function isPaymentModalBusy() {
+    const form = document.getElementById('pagamentoForm');
+    return !!form && form.dataset.financeBusy === 'true';
+}
+
+function setPaymentModalBusy(busy) {
+    const form = document.getElementById('pagamentoForm');
+    const modal = document.getElementById('pagamentoModal');
+    if (!form || !modal) return;
+    form.dataset.financeBusy = busy ? 'true' : 'false';
+    form.setAttribute('aria-busy', busy ? 'true' : 'false');
+    modal.querySelectorAll('button').forEach((button) => {
+        if (busy) {
+            button.dataset.financeWasDisabled = button.disabled ? 'true' : 'false';
+            button.disabled = true;
+        } else if (button.dataset.financeWasDisabled !== undefined) {
+            button.disabled = button.dataset.financeWasDisabled === 'true';
+            delete button.dataset.financeWasDisabled;
+        }
+    });
+}
+
+function getFinanceModalFocusable(modal) {
+    if (!modal) return [];
+    return Array.from(modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+        .filter((element) => !element.disabled && element.getAttribute('aria-hidden') !== 'true');
+}
+
+function openFinanceModalDialog(modalId, preferredFocusSelector) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    if (String(modal.style.display || '').toLowerCase() !== 'block') {
+        financeModalPreviousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
+    modal.style.display = 'block';
+    modal.setAttribute('aria-hidden', 'false');
+    if (modalId === 'pagamentoModal') setPaymentModalBusy(false);
+    updateFinanceModalBodyScrollLock();
+    const focusTarget = preferredFocusSelector ? modal.querySelector(preferredFocusSelector) : null;
+    const fallbackTarget = getFinanceModalFocusable(modal)[0] || modal.querySelector('.modal-content');
+    const target = focusTarget || fallbackTarget;
+    if (target) {
+        if (!target.hasAttribute('tabindex') && !target.matches('button, input, select, textarea, [href]')) target.setAttribute('tabindex', '-1');
+        window.requestAnimationFrame(() => target.focus());
+    }
+}
+
+function handleFinanceModalKeydown(event) {
+    const modal = document.getElementById('pagamentoModal');
+    if (!modal || String(modal.style.display || '').toLowerCase() !== 'block') return;
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        if (!isPaymentModalBusy()) fecharModal('pagamentoModal');
+        return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = getFinanceModalFocusable(modal);
+    if (!focusable.length) {
+        event.preventDefault();
+        return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (!modal.contains(document.activeElement)) {
+        event.preventDefault();
+        first.focus();
+    } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+    }
+}
+
+if (!window.__financePaymentDialogKeyboardBound) {
+    document.addEventListener('keydown', handleFinanceModalKeydown);
+    window.__financePaymentDialogKeyboardBound = true;
+}
+
 function abrirModalPagamento(contaId, tipo) {
     contaAtualEdicao = contaId;
     tipoContaAtual = tipo;
@@ -4970,6 +5347,7 @@ function abrirModalPagamento(contaId, tipo) {
     
     // ✅ CORREÇÃO: Restaurar formulário antes de configurar (caso tenha sido usado para histórico)
     const form = document.getElementById('pagamentoForm');
+    clearFinancePaymentAttemptState(form, { uncertain: !!form.__financePendingPaymentUpload });
     const originalContent = form.getAttribute('data-original-content');
     if (originalContent) {
         form.innerHTML = originalContent;
@@ -5025,8 +5403,7 @@ function abrirModalPagamento(contaId, tipo) {
     }
     
     // Abrir modal
-    document.getElementById('pagamentoModal').style.display = 'block';
-    updateFinanceModalBodyScrollLock();
+    openFinanceModalDialog('pagamentoModal', '#pagamentoData');
 }
 
 // Seleção Receber
@@ -5165,8 +5542,10 @@ async function anexarComprovanteHistorico(contaId, tipo = 'receber', registroRef
                     return;
                 }
 
-                applyHistoricoComprovante(conta, registroRef, { url: nextUrl, storagePath: nextStoragePath });
-                await salvarContaFinanceiraPersistida(conta, tipo);
+                await updateFinancePaymentReceiptAuthoritative(tipo, conta, registroRef, {
+                    url: nextUrl,
+                    storagePath: nextStoragePath
+                }, createFinanceOperationId('attach_receipt'));
                 if (previous && previous.url && !isSameStorageObject(previousStoragePath, nextStoragePath)) {
                     await deleteStorageFileSafely(previousStoragePath || previous.storagePath, previous.url);
                 }
@@ -5213,8 +5592,13 @@ async function excluirComprovanteHistorico(contaId, tipo = 'receber', registroRe
         }
         if (!confirm('Remover comprovante deste registro?')) return;
 
-        applyHistoricoComprovante(conta, registroRef, { url: null, storagePath: null });
-        await salvarContaFinanceiraPersistida(conta, tipo);
+        await updateFinancePaymentReceiptAuthoritative(
+            tipo,
+            conta,
+            registroRef,
+            { url: null, storagePath: null },
+            createFinanceOperationId('remove_receipt')
+        );
         await deleteStorageFileSafely(current.storagePath, current.url);
         if (tipo === 'receber') await carregarTabelaReceber(lastFiltroReceber || {});
         else await carregarTabelaPagar(lastFiltroPagar || {});
@@ -5265,12 +5649,9 @@ function verHistoricoPagamentos(contaId, tipo = 'receber') {
 
     
     
-    const escapeHtml = (str) => String(str || '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-    const escapeJs = (str) => String(str || '')
-        .replace(/\\/g, '\\\\')
-        .replace(/'/g, "\\'")
-        .replace(/\r/g, '')
-        .replace(/\n/g, ' ');
+    const escapeHtml = escapeFinanceHtml;
+    const contaIdArg = getFinanceInlineStringArgument(contaId);
+    const tipoArg = getFinanceInlineStringArgument(tipo);
 
     let historico = '<div style="overflow-x:hidden; width:100%;">';
     historico += '<table style="width: 100%; border-collapse: collapse; table-layout: fixed; font-size:11px; line-height:1.1;">';
@@ -5283,8 +5664,8 @@ function verHistoricoPagamentos(contaId, tipo = 'receber') {
         timeline.rows.forEach((row, index) => {
             const pagamento = row.originalRef || {};
             const historicoIndex = Number.isInteger(pagamento.__idx) ? pagamento.__idx : index;
-            const comprovanteUrl = String(pagamento.comprovanteUrl || '');
-            const comprovanteUrlJs = escapeJs(comprovanteUrl);
+            const comprovanteUrl = getSafeFinanceDownloadUrl(pagamento.comprovanteUrl);
+            const comprovanteUrlArg = getFinanceInlineStringArgument(comprovanteUrl);
             const metodo = escapeHtml(pagamento.metodo || '-');
             const observacoes = escapeHtml(pagamento.observacoes || '-');
             historico += `
@@ -5297,18 +5678,18 @@ function verHistoricoPagamentos(contaId, tipo = 'receber') {
                     <td style="padding: 3px 5px; border: 1px solid #ddd; white-space: nowrap; overflow:hidden; text-overflow:ellipsis;">${observacoes}</td>
                     <td style="padding: 3px 5px; border: 1px solid #ddd; text-align: center;">
                         ${comprovanteUrl
-                            ? `<button type="button" class="btn btn-sm btn-info" onclick="window.open('${comprovanteUrlJs}')" title="Ver Comprovante" style="padding:1px 5px; font-size:11px;"><i class="fas fa-eye"></i></button>`
-                            : `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="anexarComprovanteHistorico('${conta.id}', '${tipo}', ${historicoIndex})" title="Anexar comprovante" style="padding:1px 5px; font-size:11px;"><i class="fas fa-paperclip" style="opacity:.75;"></i></button>`}
+                            ? `<button type="button" class="btn btn-sm btn-info" onclick="openFinanceAttachment(${comprovanteUrlArg})" title="Ver Comprovante" style="padding:1px 5px; font-size:11px;"><i class="fas fa-eye"></i></button>`
+                            : `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="anexarComprovanteHistorico(${contaIdArg}, ${tipoArg}, ${historicoIndex})" title="Anexar comprovante" style="padding:1px 5px; font-size:11px;"><i class="fas fa-paperclip" style="opacity:.75;"></i></button>`}
                     </td>
                     <td style="padding: 3px 5px; border: 1px solid #ddd; text-align: center;">
-                        <button type="button" onclick="excluirPagamento('${conta.id}', '${tipo}', ${historicoIndex})" class="btn btn-sm btn-danger" title="Excluir pagamento" style="padding:1px 5px; font-size:11px;"><i class="fas fa-trash"></i></button>
+                        <button type="button" onclick="excluirPagamento(${contaIdArg}, ${tipoArg}, ${historicoIndex}, this)" class="btn btn-sm btn-danger" title="Excluir pagamento" style="padding:1px 5px; font-size:11px;"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
             `;
         });
     } else if (statusNorm === 'pago' && conta.dataPagamento) {
-        const comprovanteUrl = String(conta.comprovanteUrl || '');
-        const comprovanteUrlJs = escapeJs(comprovanteUrl);
+        const comprovanteUrl = getSafeFinanceDownloadUrl(conta.comprovanteUrl);
+        const comprovanteUrlArg = getFinanceInlineStringArgument(comprovanteUrl);
         const metodo = escapeHtml(conta.metodoPagamento || 'Não informado');
         const observacoes = escapeHtml(conta.observacoesPagamento || 'Pagamento completo');
         // ✅ CORREÇÃO: Para contas pagas sem histórico, exibir o pagamento único
@@ -5322,11 +5703,11 @@ function verHistoricoPagamentos(contaId, tipo = 'receber') {
                 <td style="padding: 3px 5px; border: 1px solid #ddd; white-space: nowrap; overflow:hidden; text-overflow:ellipsis;">${observacoes}</td>
                 <td style="padding: 3px 5px; border: 1px solid #ddd; text-align: center;">
                     ${comprovanteUrl
-                        ? `<button type="button" class="btn btn-sm btn-info" onclick="window.open('${comprovanteUrlJs}')" title="Ver Comprovante" style="padding:1px 5px; font-size:11px;"><i class="fas fa-eye"></i></button>`
-                        : `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="anexarComprovanteHistorico('${conta.id}', '${tipo}', 'total')" title="Anexar comprovante" style="padding:1px 5px; font-size:11px;"><i class="fas fa-paperclip" style="opacity:.75;"></i></button>`}
+                        ? `<button type="button" class="btn btn-sm btn-info" onclick="openFinanceAttachment(${comprovanteUrlArg})" title="Ver Comprovante" style="padding:1px 5px; font-size:11px;"><i class="fas fa-eye"></i></button>`
+                        : `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="anexarComprovanteHistorico(${contaIdArg}, ${tipoArg}, 'total')" title="Anexar comprovante" style="padding:1px 5px; font-size:11px;"><i class="fas fa-paperclip" style="opacity:.75;"></i></button>`}
                 </td>
                 <td style="padding: 3px 5px; border: 1px solid #ddd; text-align: center;">
-                    <button type="button" onclick="excluirPagamento('${conta.id}', '${tipo}', 'total')" class="btn btn-sm btn-danger" title="Excluir pagamento" style="padding:1px 5px; font-size:11px;"><i class="fas fa-trash"></i></button>
+                    <button type="button" onclick="excluirPagamento(${contaIdArg}, ${tipoArg}, 'total', this)" class="btn btn-sm btn-danger" title="Excluir pagamento" style="padding:1px 5px; font-size:11px;"><i class="fas fa-trash"></i></button>
                 </td>
             </tr>
         `;
@@ -5379,8 +5760,8 @@ function verHistoricoPagamentos(contaId, tipo = 'receber') {
         <div style="padding: 10px;">
             ${historico}
             <div style="text-align: center; margin-top: 20px;">
-                <button type="button" onclick="imprimirHistoricoConta('${conta.id}', '${tipo}')" class="btn btn-success" style="margin-right:10px;">Imprimir</button>
-                <button type="button" onclick="fecharModal('pagamentoModal')" class="btn btn-primary">Fechar</button>
+                <button type="button" onclick="imprimirHistoricoConta(${contaIdArg}, ${tipoArg})" class="btn btn-success" style="margin-right:10px;">Imprimir</button>
+                <button type="button" data-payment-modal-close onclick="fecharModal('pagamentoModal')" class="btn btn-primary">Fechar</button>
             </div>
         </div>
     `;
@@ -5397,11 +5778,11 @@ function verHistoricoPagamentos(contaId, tipo = 'receber') {
     }
     
     // Abrir modal
-    document.getElementById('pagamentoModal').style.display = 'block';
-    updateFinanceModalBodyScrollLock();
+    openFinanceModalDialog('pagamentoModal', '#pagamentoForm button');
 }
 
 async function imprimirHistoricoConta(contaId, tipo) {
+    let win = null;
     try {
         const lista = tipo === 'receber' ? contasReceber : contasPagar;
         const conta = lista.find(c => c.id === contaId) || lista.find(c => String(c.id) === String(contaId));
@@ -5413,8 +5794,16 @@ async function imprimirHistoricoConta(contaId, tipo) {
             } catch (_) {}
             return; 
         }
-        await ensureCompanyInfoForPrint();
-        const company = getCompanyPrintInfo();
+        win = window.open('', '_blank');
+        if (!win) {
+            mostrarNotificacao('O bloqueador de pop-ups impediu a abertura do histórico.', 'warning');
+            return;
+        }
+        win.document.open();
+        win.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Preparando histórico</title></head><body><p role="status">Preparando histórico financeiro...</p></body></html>');
+        win.document.close();
+        const company = await prepareFinanceReportCompany();
+        const helper = getFinanceReportDocumentHelper();
         const nome = tipo === 'receber' ? (conta.cliente ? (typeof conta.cliente === 'object' ? (conta.cliente.nome || conta.cliente.name || 'Nome não informado') : conta.cliente) : (clientes.find(c=>c.id===conta.clienteId)?.nome || 'Cliente não encontrado')) : (conta.fornecedor || conta.funcionarioNome || 'Fornecedor não encontrado');
         const statusNorm = (conta.status || 'pendente').toUpperCase();
         const valorOriginalNum = parseCurrencyValue(conta.valorOriginal ?? conta.valor);
@@ -5428,49 +5817,16 @@ async function imprimirHistoricoConta(contaId, tipo) {
         const periodoFimAberto = formatDate(openPeriod.tsEnd);
         const hasJurosConfigured = normalizeJurosTipoKey(conta && conta.jurosTipo) !== 'none' && parseJurosTaxa(conta && conta.jurosTaxa) > 0;
         const headerTitle = tipo === 'receber' ? 'Histórico de Pagamentos - Contas a Receber' : 'Histórico de Pagamentos - Contas a Pagar';
-        const styles = `
-            <style>
-            *{box-sizing:border-box} body{font-family:Arial,sans-serif;color:#222;margin:16px;font-size:11px;line-height:1.15}
-            .header{display:flex;align-items:center;justify-content:flex-start;gap:20px;flex-wrap:nowrap;margin-bottom:20px;padding-bottom:15px;border-bottom:3px solid #2c3e50}
-            .logo{flex:0 0 100px;text-align:center}
-            .logo img{max-width:100px;max-height:100px;object-fit:contain}
-            .company-info{flex:1 1 auto;text-align:left;margin-left:20px;min-width:0;word-break:break-word}
-            .company-name{font-size:18px;font-weight:bold;color:#2c3e50;margin-bottom:5px}
-            .company-details{font-size:11px;color:#666;margin:2px 0}
-            .title{font-size:14px;font-weight:bold;text-align:center;margin:10px 0 8px 0;color:#2c3e50}
-            .filters{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;margin-bottom:8px}
-            table{width:100%;border-collapse:collapse;table-layout:auto}
-            thead th{background:#f5f5f5;border:1px solid #ddd;padding:4px 6px;text-align:left;white-space:nowrap;font-size:11px}
-            tbody td{border:1px solid #ddd;padding:3px 6px;word-break:break-word;font-size:11px;line-height:1.1}
-            .right{text-align:right} .center{text-align:center} .nowrap{white-space:nowrap} .clip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0}
-            @media print { body{margin:8mm;font-size:10.5px} }
-            </style>
-        `;
-        const now = new Date();
-        const header = `
-            <div class="header">
-                <div class="logo"><img src="${company.logoUrl || ''}" alt="Logo"></div>
-                <div class="company-info">
-                    <div class="company-name">${company.name || 'Sisweb'}</div>
-                    <div class="company-details">
-                        ${company.cnpj ? `CNPJ: ${company.cnpj}` : ''}
-                        ${company.address ? ` • ${company.address}` : ''}
-                        ${company.phone ? ` • ${company.phone}` : ''}
-                    </div>
-                </div>
-            </div>
-            <div class="title">${headerTitle} <span style="font-size:12px;font-weight:normal;color:#555;margin-left:8px;">${formatDate(formatISODateLocal(now))}</span></div>
-        `;
         const meta = `
             <div class="filters">
-                <div><strong>${tipo==='receber'?'Cliente':'Fornecedor'}:</strong> ${nome}</div>
-                ${conta.pedidoNumero ? `<div><strong>Nº Pedido:</strong> ${conta.pedidoNumero}</div>` : ''}
-                ${conta.numero ? `<div><strong>Número:</strong> ${conta.numero}</div>` : ''}
-                ${conta.descricao ? `<div><strong>Descrição:</strong> ${conta.descricao}</div>` : ''}
-                ${conta.categoria ? `<div><strong>Categoria:</strong> ${conta.categoria}</div>` : ''}
-                ${conta.tipo ? `<div><strong>Tipo:</strong> ${conta.tipo}</div>` : ''}
+                <div><strong>${tipo==='receber'?'Cliente':'Fornecedor'}:</strong> ${escapeFinanceHtml(nome)}</div>
+                ${conta.pedidoNumero ? `<div><strong>Nº Pedido:</strong> ${escapeFinanceHtml(conta.pedidoNumero)}</div>` : ''}
+                ${conta.numero ? `<div><strong>Número:</strong> ${escapeFinanceHtml(conta.numero)}</div>` : ''}
+                ${conta.descricao ? `<div><strong>Descrição:</strong> ${escapeFinanceHtml(conta.descricao)}</div>` : ''}
+                ${conta.categoria ? `<div><strong>Categoria:</strong> ${escapeFinanceHtml(conta.categoria)}</div>` : ''}
+                ${conta.tipo ? `<div><strong>Tipo:</strong> ${escapeFinanceHtml(conta.tipo)}</div>` : ''}
                 ${conta.vencimento || conta.dataVencimento ? `<div><strong>Vencimento:</strong> ${formatDate(conta.dataVencimento || conta.vencimento)}</div>` : ''}
-                <div><strong>Status:</strong> ${statusNorm}</div>
+                <div><strong>Status:</strong> ${escapeFinanceHtml(statusNorm)}</div>
             </div>
         `;
         const resumoRows = [];
@@ -5513,8 +5869,8 @@ async function imprimirHistoricoConta(contaId, tipo) {
                     <td class="right nowrap">${formatCurrency(r.jurosCents / 100)}</td>
                     <td class="right nowrap">${formatCurrency(r.pagamentoCents / 100)}</td>
                     <td class="right nowrap">${formatCurrency(r.saldoDepoisCents / 100)}</td>
-                    <td class="clip">${r.metodo || '-'}</td>
-                    <td class="clip">${r.observacoes || '-'}</td>
+                    <td class="clip">${escapeFinanceHtml(r.metodo || '-')}</td>
+                    <td class="clip">${escapeFinanceHtml(r.observacoes || '-')}</td>
                 </tr>
             `).join('');
         } else if (statusNorm === 'PAGO' && conta.dataPagamento) {
@@ -5524,8 +5880,8 @@ async function imprimirHistoricoConta(contaId, tipo) {
                     <td class="right nowrap">${formatCurrency(0)}</td>
                     <td class="right nowrap">${formatCurrency(valorOriginalNum)}</td>
                     <td class="right nowrap">${formatCurrency(0)}</td>
-                    <td class="clip">${conta.metodoPagamento || 'Não informado'}</td>
-                    <td class="clip">${conta.observacoesPagamento || 'Pagamento completo'}</td>
+                    <td class="clip">${escapeFinanceHtml(conta.metodoPagamento || 'Não informado')}</td>
+                    <td class="clip">${escapeFinanceHtml(conta.observacoesPagamento || 'Pagamento completo')}</td>
                 </tr>
             `;
         }
@@ -5536,25 +5892,29 @@ async function imprimirHistoricoConta(contaId, tipo) {
                 <tbody>${pagamentosRows || `<tr><td colspan="6" class="center">Sem pagamentos registrados</td></tr>`}</tbody>
             </table>
         `;
-        const html = `
-            <!DOCTYPE html>
-            <html><head><meta charset="utf-8"><title>${headerTitle}</title>${styles}</head>
-            <body>
-                ${header}
-                ${meta}
-                ${resumo}
-                ${pagamentos}
-                <script>
-                    (function(){
-                        function ready(){ setTimeout(function(){ window.print(); }, 150); }
-                        if (document.readyState === 'complete') ready(); else window.addEventListener('load', ready);
-                    })();
-                </script>
-            </body></html>
-        `;
-        const win = window.open('', '_blank');
-        win.document.open(); win.document.write(html); win.document.close(); win.focus();
-    } catch (e) { console.warn('Falha ao imprimir histórico:', e); }
+        const prepared = await helper.preparePrintOptions({
+            ...buildFinanceReportHeaderOptions(company, headerTitle, {
+                subtitle: formatDate(formatISODateLocal(new Date())),
+                metaRows: [`${tipo === 'receber' ? 'Cliente' : 'Fornecedor'}: ${nome}`]
+            }),
+            bodyHtml: `<section class="sisweb-print-section">${meta}${resumo}${pagamentos}</section>`,
+            targetWindow: win,
+            printDelay: 250,
+            extraCss: `
+                .filters { display:flex; flex-wrap:wrap; gap:8px 16px; margin-bottom:10px; }
+                table { table-layout:auto; }
+                .right { text-align:right; }
+                .center { text-align:center; }
+                .nowrap { white-space:nowrap; }
+                .clip { overflow-wrap:anywhere; }
+            `
+        });
+        window.SiswebCommercePdf.printHtmlDocument(prepared);
+    } catch (e) {
+        console.warn('Falha ao imprimir histórico:', e);
+        if (win && !win.closed) win.close();
+        mostrarNotificacao('Não foi possível preparar o histórico para impressão.', 'error');
+    }
 }
 
 // Função para editar conta
@@ -5648,6 +6008,9 @@ function scrollToForm(formId) {
 }
 
 async function editarConta(id, tipo) {
+    // ✅ Prevenir duplo clique
+    if (window.__financeEditing) return;
+    window.__financeEditing = true;
     try {
         let conta;
         
@@ -5716,6 +6079,8 @@ async function editarConta(id, tipo) {
                 const iso = normalizeDateISOInput(rawVenc);
                 dataField.value = iso;
             }
+            const emissaoFieldRec = document.getElementById('receberDataEmissao');
+            if (emissaoFieldRec) emissaoFieldRec.value = normalizeDateISOInput(conta.dataEmissao || '');
             if (observacoesField) observacoesField.value = conta.observacoes || '';
             if (jurosTipoField) jurosTipoField.value = normalizeJurosTipoKey(conta.jurosTipo);
             if (jurosTaxaField) jurosTaxaField.value = parseJurosTaxa(conta.jurosTaxa || 0);
@@ -5935,6 +6300,8 @@ async function editarConta(id, tipo) {
                 const iso = normalizeDateISOInput(rawVenc);
                 dataField.value = iso;
             }
+            const emissaoFieldPag = document.getElementById('pagarDataEmissao');
+            if (emissaoFieldPag) emissaoFieldPag.value = normalizeDateISOInput(conta.dataEmissao || '');
             // ✅ CORREÇÃO PADRONIZADA: Separar Categoria de Tipo (Pagar)
             if (categoriaField && tipoField) {
                 // Lógica específica para folha de pagamento (mantida)
@@ -5950,7 +6317,7 @@ async function editarConta(id, tipo) {
                     }
                 } else {
                     let catAtual = String(conta.categoria || '').toLowerCase().trim();
-                    let tipoAtual = String(conta.tipo || '').toLowerCase().trim();
+                    let tipoAtual = String(resolveFinanceTipoOperacional(conta) || '').toLowerCase().trim();
                     
                     // Normalizar chaves
                     const normalizeTipo = (t) => {
@@ -6027,7 +6394,12 @@ async function editarConta(id, tipo) {
         }
         updateManualAttachmentButtonState(tipo);
 
-        
+        // ✅ Alterar texto do botão de submit para "Atualizar" quando editando
+        try {
+            const formId = tipo === 'receber' ? 'receberForm' : 'pagarForm';
+            const btn = document.getElementById(formId)?.querySelector('button[type="submit"]');
+            if (btn) btn.innerHTML = '<i class="fas fa-edit"></i> Atualizar';
+        } catch(_) {}
     } catch (error) {
         console.error('❌ Erro ao editar conta:', error);
         try {
@@ -6035,24 +6407,29 @@ async function editarConta(id, tipo) {
             if (typeof window.__toast === 'function') window.__toast(msg, 'error', { duration: 5000 });
             else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'error');
         } catch (_) {}
+    } finally {
+        window.__financeEditing = false;
     }
 }
 
 // Função para confirmar pagamento
 async function confirmarPagamento(event) {
     event.preventDefault();
-    
+    const form = document.getElementById('pagamentoForm');
+    const paymentAccountId = String(contaAtualEdicao || '').trim();
+    const paymentType = String(tipoContaAtual || '').trim().toLowerCase();
+    const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+    setSubmitButtonLoading(submitBtn, true, 'Registrando...');
+    setPaymentModalBusy(true);
+
     try {
-        const form = document.getElementById('pagamentoForm');
-        const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
-        if (submitBtn) submitBtn.disabled = true;
         const valorEl = document.getElementById('pagamentoValor');
         const dataEl = document.getElementById('pagamentoData');
         const metodoEl = document.getElementById('pagamentoMetodo');
         const obsEl = document.getElementById('pagamentoObservacoes');
         if (!valorEl || !dataEl || !metodoEl) {
+            setSubmitButtonLoading(submitBtn, false);
             mostrarNotificacao('Formulário de pagamento não está ativo.', 'warning');
-            if (submitBtn) submitBtn.disabled = false;
             return;
         }
         const valorPago = parseCurrencyValue(valorEl.value);
@@ -6062,160 +6439,168 @@ async function confirmarPagamento(event) {
         const observacoesPagamento = isAllCaps(observacoesPagamentoRaw) ? toTitleCasePt(observacoesPagamentoRaw) : observacoesPagamentoRaw;
         
         if (!valorPago || valorPago <= 0) {
+            setSubmitButtonLoading(submitBtn, false);
             mostrarNotificacao('Por favor, insira um valor válido.', 'warning');
-            if (submitBtn) submitBtn.disabled = false;
             return;
         }
         
         if (!dataPagamento) {
+            setSubmitButtonLoading(submitBtn, false);
             mostrarNotificacao('Por favor, informe a data do pagamento.', 'warning');
-            if (submitBtn) submitBtn.disabled = false;
             return;
         }
 
         // ✅ CORREÇÃO: Usar variáveis globais para identificar a conta
-        if (!contaAtualEdicao || !tipoContaAtual) {
+        if (!paymentAccountId || !['receber', 'pagar'].includes(paymentType)) {
+            setSubmitButtonLoading(submitBtn, false);
             mostrarNotificacao('Erro: conta não identificada para pagamento.', 'error');
-            if (submitBtn) submitBtn.disabled = false;
             return;
         }
 
-        let conta;
-        let array;
-        
-        if (tipoContaAtual === 'receber') {
-            conta = contasReceber.find(c => c.id == contaAtualEdicao);
-            array = contasReceber;
-        } else {
-            conta = contasPagar.find(c => c.id == contaAtualEdicao);
-            array = contasPagar;
-        }
+        const conta = paymentType === 'receber'
+            ? contasReceber.find(c => String(c && c.id) === paymentAccountId)
+            : contasPagar.find(c => String(c && c.id) === paymentAccountId);
 
         if (!conta) {
+            setSubmitButtonLoading(submitBtn, false);
             mostrarNotificacao('Conta não encontrada.', 'error');
-            if (submitBtn) submitBtn.disabled = false;
             return;
         }
         mostrarNotificacao('Registrando pagamento...', 'info');
 
-        // ✅ SUPORTE A ANEXOS (Firebase Storage)
-        let comprovanteUrl = null;
-        let comprovanteStoragePath = null;
-        try {
-            const fileInput = document.getElementById('pagamentoComprovante');
-            const file = fileInput && fileInput.files ? fileInput.files[0] : null;
-            if (file && window.storageService && typeof window.storageService.uploadFile === 'function') {
-                const subfolder = tipoContaAtual === 'receber' ? 'recebimentos' : 'pagamentos';
-                const comprovanteMeta = await uploadFinanceStorageMeta(file, `financas/${subfolder}/${conta.id}`, {
-                    tipo: tipoContaAtual,
-                    entityId: String(conta.id),
-                    finalidade: 'comprovante-pagamento'
-                });
-                comprovanteUrl = comprovanteMeta && comprovanteMeta.url ? comprovanteMeta.url : null;
-                comprovanteStoragePath = comprovanteMeta && comprovanteMeta.storagePath ? comprovanteMeta.storagePath : null;
-            }
-        } catch (errUpload) {
-            console.warn('⚠️ Falha ao subir comprovante para o Storage:', errUpload);
+        const financeDbg = (...args) => { try { if (window.__DEBUG_MODE__) console.log(...args); } catch (_) {} };
+        const monthKey = getMonthKeyFromDateVal(conta.dataVencimento || conta.vencimento);
+        const expected = buildFinanceExpectedState(conta);
+        const jurosNoMomento = computeContaJurosInfo(conta, dataPagamento);
+        const jurosCents = financeMoneyToCents(jurosNoMomento.juros || 0);
+        const pagamentoCents = financeMoneyToCents(valorPago);
+        const exigivelCents = financeMoneyToCents(expected.valorRestante) + jurosCents;
+        if (pagamentoCents > exigivelCents) {
+            setSubmitButtonLoading(submitBtn, false);
+            mostrarNotificacao(`O valor informado supera o saldo exigível de ${formatCurrency(exigivelCents / 100)}.`, 'warning');
+            return;
         }
 
-        const financeDbg = (...args) => { try { if (window.__DEBUG_MODE__) console.log(...args); } catch (_) {} };
-        const toCents = (v) => {
-            const n = typeof v === 'number' ? v : parseCurrencyValue(v);
-            if (!isFinite(n) || isNaN(n)) return 0;
-            return Math.round(n * 100);
-        };
+        const operationId = form.dataset.financeOperationId || createFinanceOperationId('payment');
+        form.dataset.financeOperationId = operationId;
+        let pendingUpload = form.__financePendingPaymentUpload || null;
+        const fileInput = document.getElementById('pagamentoComprovante');
+        const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+        if (file && !pendingUpload) {
+            const subfolder = paymentType === 'receber' ? 'recebimentos' : 'pagamentos';
+            pendingUpload = await uploadFinanceStorageMeta(file, `financas/${subfolder}/${conta.id}`, {
+                tipo: paymentType,
+                entityId: String(conta.id),
+                finalidade: 'comprovante-pagamento'
+            });
+            form.__financePendingPaymentUpload = pendingUpload || null;
+        }
 
-        const jurosNoMomento = computeContaJurosInfo(conta, dataPagamento);
-        const valorOriginalNum = parseCurrencyValue(conta.valorOriginal ?? conta.valor ?? 0);
-        const historicosArr = Array.isArray(conta.historicosPagamento) ? conta.historicosPagamento : [];
-        const somaHistoricosNum = historicosArr.reduce((sum, h) => sum + parseCurrencyValue(h && h.valor), 0);
-        const valorPagoCampoNum = parseCurrencyValue(conta.valorPago ?? 0);
-        const pagoSoFarNum = Math.max(valorPagoCampoNum, somaHistoricosNum);
-        const saldoAtualComJuros = Math.max(0, parseCurrencyValue(jurosNoMomento.totalComJuros || 0));
-        const originalCents = toCents(valorOriginalNum);
-        const pagoSoFarCents = toCents(pagoSoFarNum);
-        const restanteAntesCents = toCents(saldoAtualComJuros);
-        const pagamentoCents = toCents(valorPago);
-        const pagamentoEfetivoCents = Math.min(restanteAntesCents, pagamentoCents);
-        const novoPagoCents = pagoSoFarCents + pagamentoEfetivoCents;
-        const novoRestanteCents = Math.max(0, restanteAntesCents - pagamentoEfetivoCents);
-
-        financeDbg('[financas][baixa:start]', { tipo: tipoContaAtual, contaId: contaAtualEdicao, valorOriginal: valorOriginalNum, pagoSoFar: pagoSoFarNum, restanteAntes: restanteAntesCents / 100, pagamento: pagamentoCents / 100 });
-
-        conta.valorOriginal = originalCents / 100;
-        conta.historicosPagamento = historicosArr;
-        conta.historicosPagamento.push({
+        const comprovanteUrl = pendingUpload && pendingUpload.url ? pendingUpload.url : null;
+        const comprovanteStoragePath = pendingUpload && pendingUpload.storagePath ? pendingUpload.storagePath : null;
+        const historicos = (Array.isArray(conta.historicosPagamento) ? conta.historicosPagamento : [])
+            .map((item) => ({ ...(item || {}) }));
+        historicos.push({
             data: dataPagamento,
-            valor: pagamentoEfetivoCents / 100,
+            valor: pagamentoCents / 100,
             metodo: metodoPagamento,
-            observacoes: observacoesPagamento || `${tipoContaAtual === 'receber' ? 'Recebimento' : 'Pagamento'} de ${formatCurrency(pagamentoEfetivoCents / 100)}`,
-            comprovanteUrl: comprovanteUrl,
-            comprovanteStoragePath: comprovanteStoragePath,
-            jurosAplicado: parseCurrencyValue(jurosNoMomento.juros || 0),
-            diasAtraso: Number(jurosNoMomento.diasAtraso || 0)
+            observacoes: observacoesPagamento || `${paymentType === 'receber' ? 'Recebimento' : 'Pagamento'} de ${formatCurrency(pagamentoCents / 100)}`,
+            comprovanteUrl,
+            comprovanteStoragePath,
+            jurosAplicado: jurosCents / 100,
+            diasAtraso: Math.max(0, Number(jurosNoMomento.diasAtraso || 0)),
+            operationId
+        });
+        const novoPagoCents = financeMoneyToCents(expected.valorPago) + pagamentoCents;
+        const novoRestanteCents = Math.max(0, exigivelCents - pagamentoCents);
+        const quitado = novoRestanteCents === 0;
+        const patch = {
+            historicosPagamento: historicos,
+            valorPago: novoPagoCents / 100,
+            valorRestante: novoRestanteCents / 100,
+            status: quitado ? 'pago' : 'parcial',
+            dataPagamento: quitado ? dataPagamento : null,
+            metodoPagamento,
+            observacoesPagamento: observacoesPagamento || null,
+            jurosBaseDate: dataPagamento
+        };
+        if (comprovanteUrl || comprovanteStoragePath) {
+            patch.comprovanteUrl = comprovanteUrl;
+            patch.comprovanteStoragePath = comprovanteStoragePath;
+        }
+
+        financeDbg('[financas][baixa:start]', {
+            tipo: paymentType,
+            historyLength: expected.historyLength,
+            revision: expected.revision,
+            remainingCents: financeMoneyToCents(expected.valorRestante)
         });
 
-        conta.valorPago = novoPagoCents / 100;
-        conta.valorRestante = novoRestanteCents / 100;
-        conta.metodoPagamento = metodoPagamento;
-        conta.observacoesPagamento = observacoesPagamento;
-        if (comprovanteUrl) {
-            conta.comprovanteUrl = comprovanteUrl;
-            conta.comprovanteStoragePath = comprovanteStoragePath;
-        }
-
-        const quitado = novoRestanteCents <= 1;
-        if (quitado) {
-            conta.status = 'pago';
-            conta.dataPagamento = dataPagamento;
-            conta.valorRestante = 0;
-            conta.jurosBaseDate = dataPagamento;
-        } else {
-            conta.status = (novoPagoCents > 0) ? 'parcial' : 'pendente';
-            conta.jurosBaseDate = dataPagamento;
-        }
-
-        financeDbg('[financas][baixa:calc]', { originalCents, pagoSoFarCents, restanteAntesCents, pagamentoCents, novoPagoCents, novoRestanteCents, status: conta.status });
-
-
-        window.__financeLastBaixa = { contaId: String(conta.id), tipo: String(tipoContaAtual), at: new Date().toISOString() };
+        let authoritativeAccount;
         try {
-            if (tipoContaAtual === 'receber') {
-                const mk = String((conta.dataVencimento || conta.vencimento || '').slice(0,7) || getTodayISODateLocal().slice(0,7));
-                const path = `financas/receber/${mk}`;
-                await window.firebaseService.saveToFirebase(path, String(conta.id), conta);
-                financeDbg('[financas][baixa:saved]', { tipo: 'receber', path, id: String(conta.id), status: conta.status, restante: conta.valorRestante });
-                await carregarTabelaReceber(lastFiltroReceber || {});
+            const result = await callFinanceCallable('financeRegisterPayment', {
+                tipo: paymentType,
+                mes: monthKey,
+                contaId: String(conta.id),
+                operationId,
+                expected,
+                patch
+            });
+            authoritativeAccount = replaceFinanceAccountInMemory(paymentType, conta.id, result.account);
+        } catch (transactionError) {
+            let reconciledAccount = null;
+            try {
+                reconciledAccount = await reconcileFinanceAccount(paymentType, monthKey, conta.id);
+            } catch (_) {}
+            if (financeOperationWasCommitted(reconciledAccount, operationId, 'register')) {
+                authoritativeAccount = reconciledAccount;
             } else {
-                const mk = String((conta.dataVencimento || conta.vencimento || '').slice(0,7) || getTodayISODateLocal().slice(0,7));
-                const path = `financas/pagar/${mk}`;
-                await window.firebaseService.saveToFirebase(path, String(conta.id), conta);
-                financeDbg('[financas][baixa:saved]', { tipo: 'pagar', path, id: String(conta.id), status: conta.status, restante: conta.valorRestante });
-                await carregarTabelaPagar(lastFiltroPagar || {});
+                if (reconciledAccount && pendingUpload) {
+                    await deleteStorageFileSafely(comprovanteStoragePath, comprovanteUrl);
+                    clearFinancePaymentAttemptState(form);
+                }
+                throw transactionError;
             }
-        } catch(_) {
-            mostrarNotificacao('Falha ao salvar no banco online. Verifique conexão.', 'warning');
         }
+
+        clearFinancePaymentAttemptState(form);
+        window.__financeLastBaixa = { tipo: paymentType, revision: Number(authoritativeAccount.revision || 0), at: new Date().toISOString() };
+        if (paymentType === 'receber') await carregarTabelaReceber(lastFiltroReceber || {});
+        else await carregarTabelaPagar(lastFiltroPagar || {});
         atualizarDashboard();
         try { await atualizarSnapshotMensal(); } catch(_) {}
 
+        const baixaLabel = paymentType === 'receber' ? 'Recebimento' : 'Pagamento';
+        setPaymentModalBusy(false);
         fecharModal('pagamentoModal');
-        mostrarNotificacao(`Pagamento de ${formatCurrency(valorPago)} confirmado com sucesso!`, 'success');
-        if (submitBtn) submitBtn.disabled = false;
+        mostrarNotificacao(`${baixaLabel} de ${formatCurrency(pagamentoCents / 100)} confirmado com sucesso!`, 'success');
         
     } catch (error) {
         console.error('❌ Erro ao confirmar pagamento:', error);
-        mostrarNotificacao('Erro ao confirmar pagamento. Tente novamente.', 'error');
-        try {
-            const form = document.getElementById('pagamentoForm');
-            const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
-            if (submitBtn) submitBtn.disabled = false;
-        } catch (_) {}
+        const rawMessage = String(error && error.message ? error.message : error || '');
+        const isConflict = /aborted|conflito|stale-state/i.test(`${error && error.code || ''} ${rawMessage}`);
+        mostrarNotificacao(
+            isConflict
+                ? 'A conta foi alterada em outra sessão. Os dados foram reconciliados; revise e tente novamente.'
+                : 'Não foi possível confirmar a baixa no servidor. Os dados do formulário foram preservados.',
+            'error'
+        );
+    } finally {
+        setSubmitButtonLoading(submitBtn, false);
+        setPaymentModalBusy(false);
     }
 }
 
 // Função para excluir um pagamento (parcial ou total)
-async function excluirPagamento(contaId, tipo = 'receber', registroRef) {
+async function excluirPagamento(contaId, tipo = 'receber', registroRef, triggerButton = null) {
+    const deleteKey = `${String(tipo)}:${String(contaId)}:${String(registroRef)}`;
+    window.__financeDeleteInFlight = window.__financeDeleteInFlight || new Set();
+    if (window.__financeDeleteInFlight.has(deleteKey)) return;
+    const confirmed = window.confirm('Excluir este pagamento? O saldo da conta será recalculado.');
+    if (!confirmed) return;
+    window.__financeDeleteInFlight.add(deleteKey);
+    if (triggerButton) triggerButton.disabled = true;
+    setPaymentModalBusy(true);
     try {
         // Localizar conta com busca robusta
         const conta = tipo === 'receber'
@@ -6228,13 +6613,11 @@ async function excluirPagamento(contaId, tipo = 'receber', registroRef) {
         }
 
         const financeDbg = (...args) => { try { if (window.__DEBUG_MODE__) console.log(...args); } catch (_) {} };
-        const toCents = (v) => {
-            const n = typeof v === 'number' ? v : parseCurrencyValue(v);
-            if (!isFinite(n) || isNaN(n)) return 0;
-            return Math.round(n * 100);
-        };
-        const valorOriginalNum = parseCurrencyValue(conta.valorOriginal ?? conta.valor ?? 0);
-        const valorOriginalCents = toCents(valorOriginalNum);
+        const monthKey = getMonthKeyFromDateVal(conta.dataVencimento || conta.vencimento);
+        const expected = buildFinanceExpectedState(conta);
+        const valorOriginalCents = financeMoneyToCents(conta.valorOriginal ?? conta.valor ?? 0);
+        const nextHistory = (Array.isArray(conta.historicosPagamento) ? conta.historicosPagamento : [])
+            .map((item) => ({ ...(item || {}) }));
 
         // Exclusão sem diálogo de confirmação; feedback via toast
 
@@ -6253,74 +6636,93 @@ async function excluirPagamento(contaId, tipo = 'receber', registroRef) {
             (Array.isArray(conta.historicosPagamento) ? conta.historicosPagamento : []).forEach((pagamento) => {
                 registrarComprovanteRemovido(pagamento && pagamento.comprovanteUrl, pagamento && pagamento.comprovanteStoragePath);
             });
-            conta.historicosPagamento = [];
-            conta.valorPago = 0;
-            conta.valorRestante = valorOriginalCents / 100;
-            conta.status = 'pendente';
-            conta.dataPagamento = null;
-            conta.metodoPagamento = null;
-            conta.observacoesPagamento = null;
-            conta.comprovanteUrl = null;
-            conta.comprovanteStoragePath = null;
+            nextHistory.length = 0;
         } else {
             // Exclusão de pagamento parcial (registro no histórico)
             const idx = parseInt(registroRef, 10);
-            if (!Array.isArray(conta.historicosPagamento) || isNaN(idx) || idx < 0 || idx >= conta.historicosPagamento.length) {
+            if (isNaN(idx) || idx < 0 || idx >= nextHistory.length) {
                 mostrarNotificacao('Registro de pagamento não encontrado.', 'warning');
                 return;
             }
-            const pagamentoRemovido = conta.historicosPagamento[idx] || {};
+            const pagamentoRemovido = nextHistory[idx] || {};
             registrarComprovanteRemovido(pagamentoRemovido.comprovanteUrl || null, pagamentoRemovido.comprovanteStoragePath || null);
-            conta.historicosPagamento.splice(idx, 1);
-
-            const somaHistoricosCents = (conta.historicosPagamento || []).reduce((sum, p) => sum + toCents(p && p.valor), 0);
-            const restanteCents = Math.max(0, valorOriginalCents - somaHistoricosCents);
-            conta.valorOriginal = valorOriginalCents / 100;
-            conta.valorPago = somaHistoricosCents / 100;
-            conta.valorRestante = restanteCents / 100;
-
-            if (restanteCents <= 1) {
-                conta.status = 'pago';
-                conta.valorRestante = 0;
-            } else if (somaHistoricosCents > 0) {
-                conta.status = 'parcial';
-            } else {
-                conta.status = 'pendente';
-                conta.dataPagamento = null;
-            }
-            const ultimoComAnexo = (conta.historicosPagamento || []).slice().reverse().find(p => p && p.comprovanteUrl);
-            conta.comprovanteUrl = ultimoComAnexo ? (ultimoComAnexo.comprovanteUrl || null) : null;
-            conta.comprovanteStoragePath = ultimoComAnexo ? (ultimoComAnexo.comprovanteStoragePath || null) : null;
+            nextHistory.splice(idx, 1);
         }
 
-        financeDbg('[financas][excluirPagamento]', { tipo, contaId: String(conta.id), registroRef: String(registroRef), status: conta.status, pago: conta.valorPago, restante: conta.valorRestante });
+        const somaHistoricosCents = nextHistory.reduce((sum, payment) => sum + financeMoneyToCents(payment && payment.valor), 0);
+        const jurosHistoricosCents = nextHistory.reduce((sum, payment) => sum + financeMoneyToCents(payment && payment.jurosAplicado), 0);
+        const restanteCents = Math.max(0, valorOriginalCents + jurosHistoricosCents - somaHistoricosCents);
+        const ultimoPagamento = nextHistory.length ? nextHistory[nextHistory.length - 1] : null;
+        const ultimoComAnexo = nextHistory.slice().reverse().find((payment) => payment && (payment.comprovanteUrl || payment.comprovanteStoragePath));
+        const status = restanteCents === 0 ? 'pago' : (somaHistoricosCents > 0 ? 'parcial' : 'pendente');
+        const patch = {
+            historicosPagamento: nextHistory,
+            valorPago: somaHistoricosCents / 100,
+            valorRestante: restanteCents / 100,
+            status,
+            dataPagamento: status === 'pago' && ultimoPagamento ? ultimoPagamento.data : null,
+            metodoPagamento: ultimoPagamento && ultimoPagamento.metodo ? String(ultimoPagamento.metodo) : null,
+            observacoesPagamento: ultimoPagamento && ultimoPagamento.observacoes ? String(ultimoPagamento.observacoes) : null,
+            comprovanteUrl: ultimoComAnexo && ultimoComAnexo.comprovanteUrl ? String(ultimoComAnexo.comprovanteUrl) : null,
+            comprovanteStoragePath: ultimoComAnexo && ultimoComAnexo.comprovanteStoragePath ? String(ultimoComAnexo.comprovanteStoragePath) : null,
+            jurosBaseDate: ultimoPagamento && ultimoPagamento.data ? ultimoPagamento.data : null
+        };
+        const pendingKey = `${tipo}:${monthKey}:${String(conta.id)}:${String(registroRef)}`;
+        window.__financeDeleteOperations = window.__financeDeleteOperations || {};
+        const operationId = window.__financeDeleteOperations[pendingKey] || createFinanceOperationId('delete');
+        window.__financeDeleteOperations[pendingKey] = operationId;
 
-        // Salvar no banco e recarregar tabela adequada
+        financeDbg('[financas][excluirPagamento]', {
+            tipo,
+            historyLength: expected.historyLength,
+            revision: expected.revision,
+            nextHistoryLength: nextHistory.length
+        });
+
+        let authoritativeAccount;
         try {
-            if (tipo === 'receber') {
-                await salvarContaFinanceiraPersistida(conta, tipo);
-                await carregarTabelaReceber();
+            const result = await callFinanceCallable('financeDeletePayment', {
+                tipo,
+                mes: monthKey,
+                contaId: String(conta.id),
+                operationId,
+                expected,
+                patch
+            });
+            authoritativeAccount = replaceFinanceAccountInMemory(tipo, conta.id, result.account);
+        } catch (transactionError) {
+            let reconciledAccount = null;
+            try {
+                reconciledAccount = await reconcileFinanceAccount(tipo, monthKey, conta.id);
+            } catch (_) {}
+            if (financeOperationWasCommitted(reconciledAccount, operationId, 'delete')) {
+                authoritativeAccount = reconciledAccount;
             } else {
-                await salvarContaFinanceiraPersistida(conta, tipo);
-                await carregarTabelaPagar();
+                if (reconciledAccount) delete window.__financeDeleteOperations[pendingKey];
+                throw transactionError;
             }
-        } catch(_) {
-            mostrarNotificacao('Falha ao salvar no banco online. Verifique conexão.', 'warning');
-            return;
         }
+        delete window.__financeDeleteOperations[pendingKey];
 
         for (const meta of comprovantesParaRemover) {
             await deleteStorageFileSafely(meta.storagePath, meta.url);
         }
 
+        if (tipo === 'receber') await carregarTabelaReceber(lastFiltroReceber || {});
+        else await carregarTabelaPagar(lastFiltroPagar || {});
+        atualizarDashboard();
         mostrarNotificacao('Pagamento excluído com sucesso!', 'success');
 
         // Atualizar visualização do histórico no modal
-        verHistoricoPagamentos(contaId, tipo);
+        verHistoricoPagamentos(authoritativeAccount.id || contaId, tipo);
 
     } catch (error) {
         console.error('❌ Erro ao excluir pagamento:', error);
         mostrarNotificacao('Erro ao excluir pagamento. Tente novamente.', 'error');
+    } finally {
+        window.__financeDeleteInFlight.delete(deleteKey);
+        if (triggerButton) triggerButton.disabled = false;
+        setPaymentModalBusy(false);
     }
 }
 
@@ -6447,7 +6849,7 @@ async function reativarBotaoRomaneio(romaneioId, tipo = 'tl') {
             
             // ✅ CORREÇÃO: Atualizar APENAS o registro alvo no caminho canônico.
             if (typeof service.saveToFirebase === 'function') {
-                await service.saveToFirebase(collection, registroId, registroAtualizado);
+                expectFinanceWrite(await service.saveToFirebase(collection, registroId, registroAtualizado), 'Reativação do romaneio');
             } else if (typeof service.saveData === 'function') {
                 await service.saveData(`${collection}/${registroId}`, registroAtualizado);
             }
@@ -6572,86 +6974,67 @@ async function reativarBotaoRomaneio(romaneioId, tipo = 'tl') {
 
 // Função para excluir conta
 async function excluirConta(id, tipo) {
+    const normalizedType = tipo === 'receber' ? 'receber' : 'pagar';
+    const accountId = String(id);
+    const lockKey = `${normalizedType}:${accountId}`;
+    window.__financeAccountDeleteInFlight = window.__financeAccountDeleteInFlight || new Set();
+    if (window.__financeAccountDeleteInFlight.has(lockKey)) return;
     try {
-        if (!confirm('Tem certeza que deseja excluir esta conta?')) {
+        const target = normalizedType === 'receber' ? contasReceber : contasPagar;
+        const index = target.findIndex((conta) => String(conta && conta.id) === accountId);
+        if (index < 0) {
+            mostrarNotificacao('Conta não encontrada para exclusão.', 'warning');
             return;
         }
+        if (!confirm('Tem certeza que deseja excluir esta conta?')) return;
+        window.__financeAccountDeleteInFlight.add(lockKey);
+        const contaExcluida = target[index];
+        const month = getMonthKeyFromDateVal(contaExcluida.dataVencimento || contaExcluida.vencimento);
+        const operationId = createFinanceOperationId('delete_account');
+        const result = await callFinanceCallable('financeDeleteAccount', {
+            tipo: normalizedType,
+            mes: month,
+            contaId: accountId,
+            operationId,
+            expected: buildFinanceExpectedState(contaExcluida)
+        });
+        if (result.deleted !== true) throw new Error('Servidor não confirmou a exclusão da conta.');
 
-        if (tipo === 'receber') {
-            // ✅ CORREÇÃO: Tentar buscar com comparação estrita e flexível
-            let index = contasReceber.findIndex(c => c.id === id);
-            if (index === -1) {
-                // Tentar busca flexível (string vs number)
-                index = contasReceber.findIndex(c => c.id == id);
+        target.splice(index, 1);
+        const storageClean = await cleanupDeletedFinanceAccountStorage(contaExcluida, operationId);
+        const tombstoneKey = normalizedType === 'receber'
+            ? 'contasReceber_deletedIds'
+            : 'contasPagar_deletedIds';
+        try { addTombstone(tombstoneKey, accountId, month); } catch (_) {}
+        try { await saveDataAsync(normalizedType === 'receber' ? 'contasReceber' : 'contasPagar', target); } catch (_) {}
+
+        if (normalizedType === 'receber') {
+            if (contaExcluida.origem === 'romaneio_tl' && contaExcluida.origemId) {
+                await reativarBotaoRomaneio(contaExcluida.origemId);
+            } else if (contaExcluida.origem === 'romaneio_pct' && contaExcluida.origemId) {
+                await reativarBotaoRomaneio(contaExcluida.origemId, 'pct');
             }
-            if (index === -1) {
-                // Tentar busca convertendo para string
-                index = contasReceber.findIndex(c => String(c.id) === String(id));
-            }
-            if (index !== -1) {
-                const contaExcluida = contasReceber[index];
-                // ✅ NOVO: Se a conta era de um romaneio, reativar o botão
-                if (contaExcluida.origem === 'romaneio_tl' && contaExcluida.origemId) {
-                    await reativarBotaoRomaneio(contaExcluida.origemId);
-                } else if (contaExcluida.origem === 'romaneio_pct' && contaExcluida.origemId) {
-                    await reativarBotaoRomaneio(contaExcluida.origemId, 'pct');
-                }
-                
-                contasReceber.splice(index, 1);
-                // ✅ Remover do RTDB
-                try {
-                    const mkDel = getMonthKeyFromDateVal(contaExcluida && (contaExcluida.dataVencimento || contaExcluida.vencimento));
-                    await window.firebaseService.saveToFirebase(`financas/receber/${mkDel}`, String(id), null);
-                } catch(_) {}
-                // ✅ Tombstone local para evitar reintrodução por RTDB
-                try {
-                    addTombstone('contasReceber_deletedIds', String(id), mkDel);
-                } catch(_) {}
-                try { await saveDataAsync('contasReceber', contasReceber); } catch(_) {}
-                carregarTabelaReceber();
-                
-                // ✅ CORREÇÃO: Atualizar dashboard após exclusão
-                atualizarDashboard();
-                try { await atualizarSnapshotMensal(); } catch(_) {}
-                
-                
-                // ✅ MELHORIA: Mostrar notificação de sucesso
-                mostrarNotificacao('Conta a receber excluída com sucesso!', 'success');
-            } else {
-                console.warn(`⚠️ Conta a receber ${id} não encontrada para exclusão`);
-            }
+            carregarTabelaReceber();
         } else {
-            const index = contasPagar.findIndex(c => c && String(c.id) === String(id));
-            if (index !== -1) {
-                const contaExcluida = contasPagar[index];
-                contasPagar.splice(index, 1);
-                try {
-                    const mkDel = getMonthKeyFromDateVal(contaExcluida && (contaExcluida.dataVencimento || contaExcluida.vencimento));
-                    await window.firebaseService.saveToFirebase(`financas/pagar/${mkDel}`, String(id), null);
-                } catch(_) {}
-                try {
-                    addTombstone('contasPagar_deletedIds', String(id), mkDel);
-                } catch(_) {}
-                try { await saveDataAsync('contasPagar', contasPagar); } catch(_) {}
-                carregarTabelaPagar();
-                
-                // ✅ CORREÇÃO: Atualizar dashboard após exclusão
-                atualizarDashboard();
-                try { await atualizarSnapshotMensal(); } catch(_) {}
-                
-                
-                // ✅ MELHORIA: Mostrar notificação de sucesso
-                mostrarNotificacao('Conta a pagar excluída com sucesso!', 'success');
-            }
+            carregarTabelaPagar();
         }
-        
+        atualizarDashboard();
+        try { await atualizarSnapshotMensal(); } catch (_) {}
+        mostrarNotificacao(
+            storageClean
+                ? `Conta a ${normalizedType === 'receber' ? 'receber' : 'pagar'} excluída com sucesso!`
+                : 'Conta excluída; alguns anexos ficaram pendentes de limpeza no Storage.',
+            storageClean ? 'success' : 'warning'
+        );
     } catch (error) {
         console.error('❌ Erro ao excluir conta:', error);
         try {
-            const msg = 'Erro ao excluir conta. Tente novamente.';
+            const msg = error && error.message ? error.message : 'Erro ao excluir conta. Tente novamente.';
             if (typeof window.__toast === 'function') window.__toast(msg, 'error', { duration: 5000 });
             else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'error');
         } catch (_) {}
+    } finally {
+        window.__financeAccountDeleteInFlight.delete(lockKey);
     }
 }
 
@@ -6771,567 +7154,677 @@ function calcularFluxoPeriodo(dataInicio, dataFim) {
     return { labels, entradas, saidas };
 }
 
-// Funções de relatórios
-function gerarRelatorio() {
-    const tipoRelatorio = document.getElementById('tipoRelatorio').value;
-    const dataInicio = document.getElementById('relDataInicio').value;
-    const dataFim = document.getElementById('relDataFim').value;
-    
-    let conteudo = '';
-    let titulo = '';
-    
-    switch (tipoRelatorio) {
-        case 'inadimplencia':
-            titulo = 'Relatório de Inadimplência';
-            conteudo = gerarRelatorioInadimplencia();
-            break;
-        case 'faturamento':
-            titulo = 'Relatório de Faturamento';
-            conteudo = gerarRelatorioFaturamento(dataInicio, dataFim);
-            break;
-        case 'categorias':
-            titulo = 'Análise por Categorias';
-            conteudo = gerarRelatorioCategorias(dataInicio, dataFim);
-            break;
-        case 'clientes':
-            titulo = 'Ranking de Clientes';
-            conteudo = gerarRelatorioClientes(dataInicio, dataFim);
-            break;
-        case 'fornecedores':
-            titulo = 'Ranking de Fornecedores';
-            conteudo = gerarRelatorioFornecedores(dataInicio, dataFim);
-            break;
-    }
-    
-    document.getElementById('relatorioTitulo').textContent = titulo;
-    document.getElementById('relatorioContent').innerHTML = conteudo;
-    document.getElementById('relatorioResult').style.display = 'block';
+// Relatórios: uma única fonte para tela, impressão e PDF.
+const FINANCE_REPORT_TITLES = Object.freeze({
+    inadimplencia: 'Relatório de Inadimplência',
+    faturamento: 'Relatório de Faturamento',
+    pagamentos: 'Relatório de Pagamentos',
+    categorias: 'Análise por Categorias',
+    clientes: 'Ranking de Clientes',
+    fornecedores: 'Ranking de Fornecedores'
+});
+
+const FINANCE_REPORT_ORIGIN_LABELS = Object.freeze({
+    receber: 'Contas a Receber',
+    pagar: 'Contas a Pagar'
+});
+
+const FINANCE_REPORT_TYPE_OPTIONS = Object.freeze({
+    receber: Object.freeze([
+        { value: 'inadimplencia', label: 'Inadimplência' },
+        { value: 'faturamento', label: 'Faturamento por Período' },
+        { value: 'categorias', label: 'Análise por Categorias' },
+        { value: 'clientes', label: 'Ranking de Clientes' }
+    ]),
+    pagar: Object.freeze([
+        { value: 'inadimplencia', label: 'Inadimplência' },
+        { value: 'pagamentos', label: 'Pagamentos por Período' },
+        { value: 'categorias', label: 'Análise por Categorias' },
+        { value: 'fornecedores', label: 'Ranking de Fornecedores' }
+    ])
+});
+
+function syncFinanceReportTypeOptions() {
+    const originSelect = document.getElementById('relContaOrigem');
+    const typeSelect = document.getElementById('tipoRelatorio');
+    if (!originSelect || !typeSelect) return;
+    const origem = String(originSelect.value || 'receber').trim();
+    const options = FINANCE_REPORT_TYPE_OPTIONS[origem] || FINANCE_REPORT_TYPE_OPTIONS.receber;
+    const currentValue = String(typeSelect.value || '').trim();
+    typeSelect.replaceChildren();
+    options.forEach((item) => {
+        const option = document.createElement('option');
+        option.value = item.value;
+        option.textContent = item.label;
+        typeSelect.appendChild(option);
+    });
+    typeSelect.value = options.some((item) => item.value === currentValue)
+        ? currentValue
+        : options[0].value;
 }
 
-function gerarRelatorioInadimplencia() {
-    const hoje = getTodayISODateLocal();
-    
-    // ✅ MELHORIA: Separar por tipo e gravidade
-    const receberVencidas = contasReceber.filter(c => c.status === 'pendente' && c.dataVencimento < hoje);
-    const pagarVencidas = contasPagar.filter(c => 
-        c.status === 'pendente' && 
-        c.dataVencimento < hoje &&
-        (c.origem !== 'folha_pagamento' || c.funcionarioAtivo !== false)
-    );
-    
-    const totalReceberVencido = receberVencidas.reduce((total, conta) => total + (conta.valor || 0), 0);
-    const totalPagarVencido = pagarVencidas.reduce((total, conta) => total + (conta.valor || 0), 0);
-    
-    // Classificar por gravidade (dias de atraso)
-    const classificarPorGravidade = (contas) => {
-        const gravidade = { leve: [], media: [], grave: [] };
-        contas.forEach(conta => {
-            const diasAtraso = Math.floor((new Date() - new Date(conta.dataVencimento)) / (1000 * 60 * 60 * 24));
-            if (diasAtraso <= 15) gravidade.leve.push({...conta, diasAtraso});
-            else if (diasAtraso <= 30) gravidade.media.push({...conta, diasAtraso});
-            else gravidade.grave.push({...conta, diasAtraso});
-        });
-        return gravidade;
-    };
-    
-    const receberClassificado = classificarPorGravidade(receberVencidas);
-    const pagarClassificado = classificarPorGravidade(pagarVencidas);
-    
-    let conteudo = `
-        <div class="summary-row">
-            <span>Total a Receber em Atraso:</span>
-            <span style="color: #dc3545; font-weight: bold;">${formatCurrency(totalReceberVencido)}</span>
-        </div>
-        <div class="summary-row">
-            <span>Total a Pagar em Atraso:</span>
-            <span style="color: #dc3545; font-weight: bold;">${formatCurrency(totalPagarVencido)}</span>
-        </div>
-        <div class="summary-row">
-            <span>Impacto no Fluxo:</span>
-            <span style="color: ${totalReceberVencido - totalPagarVencido >= 0 ? '#28a745' : '#dc3545'}; font-weight: bold;">
-                ${formatCurrency(totalReceberVencido - totalPagarVencido)}
-            </span>
-        </div>
-    `;
-    
-    // Detalhamento por gravidade
-    const adicionarSecaoGravidade = (titulo, contas, cor) => {
-        if (contas.length > 0) {
-            conteudo += `<h4 style="color: ${cor}; margin-top: 20px;">${titulo} (${contas.length} contas)</h4>`;
-            contas.forEach(conta => {
-                const nomeCliente = conta.cliente ? 
-                    (typeof conta.cliente === 'object' ? 
-                        (conta.cliente.nome || conta.cliente.name || conta.cliente.nomeCompleto) : conta.cliente) : 
-                    (conta.fornecedor || 'Não identificado');
-                
-            conteudo += `
-                    <div class="summary-row" style="padding-left: 20px;">
-                        <span>${nomeCliente} - ${conta.descricao} ${conta.pedidoNumero ? `(Pedido Nº ${conta.pedidoNumero})` : ''}</span>
-                        <span>${formatCurrency(conta.valor)} (${conta.diasAtraso} dias)</span>
-                </div>
-            `;
-        });
-        }
-    };
-    
-    if (receberVencidas.length > 0) {
-        conteudo += '<h3 style="color: #dc3545;">📈 Contas a Receber Vencidas</h3>';
-        adicionarSecaoGravidade('🟡 Atraso Leve (até 15 dias)', receberClassificado.leve, '#ffc107');
-        adicionarSecaoGravidade('🟠 Atraso Médio (16-30 dias)', receberClassificado.media, '#fd7e14');
-        adicionarSecaoGravidade('🔴 Atraso Grave (>30 dias)', receberClassificado.grave, '#dc3545');
-    }
-    
-    if (pagarVencidas.length > 0) {
-        conteudo += '<h3 style="color: #dc3545;">📉 Contas a Pagar Vencidas</h3>';
-        adicionarSecaoGravidade('🟡 Atraso Leve (até 15 dias)', pagarClassificado.leve, '#ffc107');
-        adicionarSecaoGravidade('🟠 Atraso Médio (16-30 dias)', pagarClassificado.media, '#fd7e14');
-        adicionarSecaoGravidade('🔴 Atraso Grave (>30 dias)', pagarClassificado.grave, '#dc3545');
-    }
-    
-    if (receberVencidas.length === 0 && pagarVencidas.length === 0) {
-        conteudo += '<div style="text-align: center; color: #28a745; font-size: 1.2em; margin: 20px 0;">✅ Nenhuma conta vencida encontrada!</div>';
-    }
-    
-    return conteudo;
+function escapeFinanceHtml(value) {
+    return String(value === undefined || value === null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
-function gerarRelatorioFaturamento(dataInicio, dataFim) {
-    if (!dataInicio || !dataFim) {
-        return '<p>Informe o período para o relatório de faturamento.</p>';
+function getFinanceInlineStringArgument(value) {
+    return escapeFinanceHtml(JSON.stringify(String(value === undefined || value === null ? '' : value)));
+}
+
+function getSafeFinanceImageUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^data:image\/(?:png|jpeg|jpg|gif|webp);base64,[A-Za-z0-9+/=]+$/i.test(raw)) return raw;
+    if (/^blob:/i.test(raw)) return raw;
+    try {
+        const parsed = new URL(raw, window.location.origin);
+        return /^(https?:)$/.test(parsed.protocol) ? parsed.href : '';
+    } catch (_) {
+        return '';
     }
-    
-    const contasPeriodo = contasReceber.filter(c => 
-        c.status === 'pago' && 
-        c.dataPagamento >= dataInicio && 
-        c.dataPagamento <= dataFim
+}
+
+function getSafeFinanceDownloadUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    try {
+        const parsed = new URL(raw);
+        const host = String(parsed.hostname || '').toLowerCase();
+        if (
+            parsed.protocol !== 'https:'
+            || !(host === 'firebasestorage.googleapis.com' || host.endsWith('.firebasestorage.app'))
+        ) return '';
+        return parsed.href;
+    } catch (_) {
+        return '';
+    }
+}
+
+function openFinanceAttachment(value) {
+    const safeUrl = getSafeFinanceDownloadUrl(value);
+    if (!safeUrl) {
+        mostrarNotificacao('O anexo informado não possui uma URL segura.', 'error');
+        return null;
+    }
+    const opened = window.open(safeUrl, '_blank', 'noopener,noreferrer');
+    if (opened) opened.opener = null;
+    return opened;
+}
+
+window.openFinanceAttachment = openFinanceAttachment;
+
+function getFinanceReportRange() {
+    const origem = String(document.getElementById('relContaOrigem')?.value || '').trim();
+    const tipo = String(document.getElementById('tipoRelatorio')?.value || '').trim();
+    const dataInicio = String(document.getElementById('relDataInicio')?.value || '').trim();
+    const dataFim = String(document.getElementById('relDataFim')?.value || '').trim();
+    const validTypes = FINANCE_REPORT_TYPE_OPTIONS[origem];
+    if (!validTypes) throw new Error('Origem das contas inválida.');
+    if (!FINANCE_REPORT_TITLES[tipo] || !validTypes.some((item) => item.value === tipo)) {
+        throw new Error('Tipo de relatório inválido para a origem selecionada.');
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dataInicio) || !/^\d{4}-\d{2}-\d{2}$/.test(dataFim)) {
+        throw new Error('Informe a data inicial e a data final do relatório.');
+    }
+    if (dataInicio > dataFim) throw new Error('A data inicial não pode ser posterior à data final.');
+    return { origem, tipo, dataInicio, dataFim, signature: `${origem}|${tipo}|${dataInicio}|${dataFim}` };
+}
+
+function normalizeFinanceReportCollection(raw) {
+    if (Array.isArray(raw)) return raw.filter(Boolean);
+    if (!raw || typeof raw !== 'object') return [];
+    return Object.entries(raw).map(([id, value]) => ({ ...(value || {}), id: String((value && value.id) || id) }));
+}
+
+async function loadFinanceReportMonthsStrict(tipo, months) {
+    const service = window.firebaseService;
+    if (!service || typeof service.loadFromFirebase !== 'function') throw new Error('Firebase indisponível para carregar o relatório.');
+    const normalizedMonths = Array.from(new Set((months || []).filter((month) => /^\d{4}-\d{2}$/.test(String(month)))));
+    const confirmedKey = tipo === 'receber' ? 'financeReportMonthsConfirmedReceber' : 'financeReportMonthsConfirmedPagar';
+    const loadedKey = tipo === 'receber' ? 'financeMonthsLoadedReceber' : 'financeMonthsLoadedPagar';
+    window[confirmedKey] = window[confirmedKey] || new Set();
+    window[loadedKey] = window[loadedKey] || new Set();
+    for (const month of normalizedMonths) {
+        if (window[confirmedKey].has(month)) continue;
+        const result = await service.loadFromFirebase(`financas/${tipo}/${month}`);
+        if (!result || result.success !== true) throw new Error(`Não foi possível confirmar a partição ${month} do relatório.`);
+        const records = normalizeFinanceReportCollection(result.data);
+        if (tipo === 'receber') contasReceber = mergeFinanceMonthData(contasReceber, records, month, 'contasReceber_deletedIds');
+        else contasPagar = mergeFinanceMonthData(contasPagar, records, month, 'contasPagar_deletedIds');
+        window[confirmedKey].add(month);
+        window[loadedKey].add(month);
+    }
+    if (tipo === 'receber') subscribeReceberMonths(normalizedMonths);
+    else subscribePagarMonths(normalizedMonths);
+}
+
+async function loadAllFinanceReportPartitionsStrict(tipo) {
+    const service = window.firebaseService;
+    if (!service || typeof service.loadFromFirebase !== 'function') throw new Error('Firebase indisponível para carregar o relatório.');
+    const result = await service.loadFromFirebase(`financas/${tipo}`);
+    if (!result || result.success !== true) throw new Error('Não foi possível confirmar todas as partições do relatório.');
+    const partitions = result.data && typeof result.data === 'object' ? result.data : {};
+    const months = Object.keys(partitions).filter((month) => /^\d{4}-\d{2}$/.test(month));
+    for (const month of months) {
+        const records = normalizeFinanceReportCollection(partitions[month]);
+        if (tipo === 'receber') contasReceber = mergeFinanceMonthData(contasReceber, records, month, 'contasReceber_deletedIds');
+        else contasPagar = mergeFinanceMonthData(contasPagar, records, month, 'contasPagar_deletedIds');
+    }
+    const confirmedKey = tipo === 'receber' ? 'financeReportMonthsConfirmedReceber' : 'financeReportMonthsConfirmedPagar';
+    const loadedKey = tipo === 'receber' ? 'financeMonthsLoadedReceber' : 'financeMonthsLoadedPagar';
+    window[confirmedKey] = window[confirmedKey] || new Set();
+    window[loadedKey] = window[loadedKey] || new Set();
+    months.forEach((month) => { window[confirmedKey].add(month); window[loadedKey].add(month); });
+    if (tipo === 'receber') subscribeReceberMonths(months);
+    else subscribePagarMonths(months);
+}
+
+async function ensureFinanceReportScope({ origem, tipo, dataInicio, dataFim }) {
+    if (['faturamento', 'pagamentos'].includes(tipo)) {
+        await loadAllFinanceReportPartitionsStrict(origem);
+        return;
+    }
+    const months = listMonthsBetween(dataInicio, dataFim);
+    await loadFinanceReportMonthsStrict(origem, months);
+}
+
+function isFinanceDateInRange(value, start, end) {
+    const normalized = normalizeDateISOInput(value || '');
+    return !!normalized && normalized >= start && normalized <= end;
+}
+
+function getFinancePartyName(conta, tipo) {
+    const candidate = tipo === 'receber' ? conta && conta.cliente : conta && conta.fornecedor;
+    if (candidate && typeof candidate === 'object') {
+        return candidate.nome || candidate.name || candidate.nomeCompleto || candidate.razaoSocial || candidate.fantasia || 'Não identificado';
+    }
+    if (typeof candidate === 'string' && candidate.trim()) return candidate.trim();
+    if (tipo === 'pagar' && conta && conta.funcionarioNome) return String(conta.funcionarioNome);
+    return 'Não identificado';
+}
+
+function buildFinanceReportModel({ origem, tipo, dataInicio, dataFim, signature }) {
+    const records = origem === 'receber' ? contasReceber : contasPagar;
+    const partyLabel = origem === 'receber' ? 'Cliente' : 'Fornecedor';
+    const model = {
+        origem,
+        origemLabel: FINANCE_REPORT_ORIGIN_LABELS[origem],
+        tipo,
+        signature,
+        titulo: FINANCE_REPORT_TITLES[tipo],
+        dataInicio,
+        dataFim,
+        columns: [],
+        rows: [],
+        summaries: []
+    };
+
+    const isEligibleRecord = (conta) => (
+        origem !== 'pagar'
+        || conta.origem !== 'folha_pagamento'
+        || conta.funcionarioAtivo !== false
     );
-    
-    const totalFaturamento = contasPeriodo.reduce((total, conta) => total + (conta.valorPago || conta.valor || 0), 0);
-    
+
+    if (tipo === 'inadimplencia') {
+        const today = getTodayISODateLocal();
+        model.rows = records
+            .filter((conta) => isFinanceDateInRange(conta.dataVencimento || conta.vencimento, dataInicio, dataFim))
+            .filter(isEligibleRecord)
+            .map((conta) => {
+                const info = getContaFinanceInfo(conta);
+                const due = normalizeDateISOInput(conta.dataVencimento || conta.vencimento || '');
+                if (!due || due >= today || !['pendente', 'parcial', 'vencido'].includes(info.statusNorm)) return null;
+                return {
+                    parte: getFinancePartyName(conta, origem),
+                    descricao: conta.descricao || '',
+                    numero: conta.pedidoNumero || conta.numero || '',
+                    vencimento: due,
+                    diasAtraso: Math.max(0, Math.floor((getTodayStartTimestampLocal() - normalizeDateToTimestamp(due)) / 86400000)),
+                    categoria: getCategoriaLabel(conta.categoria),
+                    valor: Math.max(0, parseCurrencyValue(info.totalAtualizado || info.valorRestante || 0))
+                };
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+        const total = model.rows.reduce((sum, row) => sum + row.valor, 0);
+        model.columns = [
+            { key: 'parte', label: partyLabel },
+            { key: 'descricao', label: 'Descrição' }, { key: 'numero', label: 'Número' },
+            { key: 'vencimento', label: 'Vencimento', format: 'date' }, { key: 'diasAtraso', label: 'Dias em atraso' },
+            { key: 'categoria', label: 'Categoria' }, { key: 'valor', label: 'Saldo atualizado', format: 'currency' }
+        ];
+        model.summaries = [
+            { label: `Total ${origem === 'receber' ? 'a receber' : 'a pagar'} em atraso`, value: total, format: 'currency' },
+            { label: 'Títulos vencidos', value: model.rows.length }
+        ];
+    } else if (['faturamento', 'pagamentos'].includes(tipo)) {
+        const rows = [];
+        records.filter(isEligibleRecord).forEach((conta) => {
+            const history = Array.isArray(conta.historicosPagamento) ? conta.historicosPagamento : [];
+            if (history.length) {
+                history.forEach((payment) => {
+                    const paymentDate = payment && (payment.data || payment.dataPagamento);
+                    if (!isFinanceDateInRange(paymentDate, dataInicio, dataFim)) return;
+                    rows.push({
+                        parte: getFinancePartyName(conta, origem),
+                        descricao: conta.descricao || '',
+                        numero: conta.pedidoNumero || conta.numero || '',
+                        data: paymentDate,
+                        metodo: payment.metodo || payment.formaPagamento || conta.metodoPagamento || resolveFinanceTipoOperacional(conta) || '',
+                        valor: parseCurrencyValue(payment.valor || 0)
+                    });
+                });
+                return;
+            }
+            const info = getContaFinanceInfo(conta);
+            const paidDate = conta.dataPagamento || (origem === 'receber' ? conta.dataRecebimento : '');
+            if (info.statusNorm === 'pago' && isFinanceDateInRange(paidDate, dataInicio, dataFim)) {
+                rows.push({
+                    parte: getFinancePartyName(conta, origem),
+                    descricao: conta.descricao || '',
+                    numero: conta.pedidoNumero || conta.numero || '',
+                    data: paidDate,
+                    metodo: conta.metodoPagamento || resolveFinanceTipoOperacional(conta) || '',
+                    valor: parseCurrencyValue(info.valorPago || info.valorOriginal || 0)
+                });
+            }
+        });
+        model.rows = rows.sort((a, b) => a.data.localeCompare(b.data));
+        const total = model.rows.reduce((sum, row) => sum + row.valor, 0);
+        const isReceivable = origem === 'receber';
+        model.columns = [
+            { key: 'parte', label: partyLabel }, { key: 'descricao', label: 'Descrição' },
+            { key: 'numero', label: 'Número' }, { key: 'data', label: `Data do ${isReceivable ? 'recebimento' : 'pagamento'}`, format: 'date' },
+            { key: 'metodo', label: 'Método' }, { key: 'valor', label: `Valor ${isReceivable ? 'recebido' : 'pago'}`, format: 'currency' }
+        ];
+        model.summaries = [
+            { label: isReceivable ? 'Total faturado' : 'Total pago', value: total, format: 'currency' },
+            { label: `Número de ${isReceivable ? 'recebimentos' : 'pagamentos'}`, value: model.rows.length },
+            { label: `Valor médio por ${isReceivable ? 'recebimento' : 'pagamento'}`, value: model.rows.length ? total / model.rows.length : 0, format: 'currency' }
+        ];
+    } else {
+        const isCategories = tipo === 'categorias';
+        const grouped = new Map();
+        records
+            .filter((conta) => isFinanceDateInRange(conta.dataVencimento || conta.vencimento, dataInicio, dataFim))
+            .filter(isEligibleRecord)
+            .forEach((conta) => {
+                const keyName = isCategories ? getCategoriaLabel(conta.categoria) : getFinancePartyName(conta, origem);
+                const current = grouped.get(keyName) || { nome: keyName, quantidade: 0, total: 0 };
+                current.quantidade += 1;
+                current.total += parseCurrencyValue(getContaFinanceInfo(conta).valorOriginal || conta.valor || 0);
+                grouped.set(keyName, current);
+            });
+        model.rows = Array.from(grouped.values())
+            .sort((a, b) => b.total - a.total)
+            .map((row, index) => ({ posicao: index + 1, ...row }));
+        model.columns = [
+            { key: 'posicao', label: 'Posição' },
+            { key: 'nome', label: isCategories ? 'Categoria' : partyLabel },
+            { key: 'quantidade', label: 'Quantidade' }, { key: 'total', label: 'Valor total', format: 'currency' }
+        ];
+        model.summaries = [{ label: 'Total geral', value: model.rows.reduce((sum, row) => sum + row.total, 0), format: 'currency' }];
+    }
+    return model;
+}
+
+function formatFinanceReportValue(value, format) {
+    if (format === 'currency') return formatCurrency(parseCurrencyValue(value || 0));
+    if (format === 'date') return formatDate(value);
+    return String(value === undefined || value === null || value === '' ? '-' : value);
+}
+
+function renderFinanceReportModel(model) {
+    const summaries = model.summaries.map((item) => `
+        <div class="summary-row"><span>${escapeFinanceHtml(item.label)}</span><strong>${escapeFinanceHtml(formatFinanceReportValue(item.value, item.format))}</strong></div>
+    `).join('');
+    const table = model.rows.length ? `
+        <div class="table-container finance-report-table-wrap" role="region" aria-label="Dados do relatório" tabindex="0">
+            <table class="table finance-report-table">
+                <caption class="finance-sr-only">${escapeFinanceHtml(model.titulo)}</caption>
+                <thead><tr>${model.columns.map((column) => `<th>${escapeFinanceHtml(column.label)}</th>`).join('')}</tr></thead>
+                <tbody>${model.rows.map((row) => `<tr>${model.columns.map((column) => `<td>${escapeFinanceHtml(formatFinanceReportValue(row[column.key], column.format))}</td>`).join('')}</tr>`).join('')}</tbody>
+            </table>
+        </div>
+    ` : '<p class="finance-report-empty">Nenhum dado encontrado para o período informado.</p>';
     return `
-        <div class="summary-row">
-            <span>Período:</span>
-            <span>${formatDate(dataInicio)} a ${formatDate(dataFim)}</span>
+        <div class="finance-report-period">
+            <strong>Origem:</strong> ${escapeFinanceHtml(model.origemLabel)}
+            <span aria-hidden="true">|</span>
+            <strong>Período:</strong> ${escapeFinanceHtml(formatDate(model.dataInicio))} a ${escapeFinanceHtml(formatDate(model.dataFim))}
         </div>
-        <div class="summary-row">
-            <span>Total Faturado:</span>
-            <span style="color: #28a745; font-weight: bold;">${formatCurrency(totalFaturamento)}</span>
-        </div>
-        <div class="summary-row">
-            <span>Número de Recebimentos:</span>
-            <span>${contasPeriodo.length}</span>
-        </div>
-        <div class="summary-row">
-            <span>Ticket Médio:</span>
-            <span>${formatCurrency(contasPeriodo.length > 0 ? totalFaturamento / contasPeriodo.length : 0)}</span>
-        </div>
+        ${summaries}${table}
     `;
 }
 
-function gerarRelatorioCategorias(dataInicio, dataFim) {
-    const categoriasReceber = {};
-    const categoriasPagar = {};
-    
-    // Analisar contas a receber
-    contasReceber
-        .filter(c => !dataInicio || !dataFim || (c.dataVencimento >= dataInicio && c.dataVencimento <= dataFim))
-        .forEach(conta => {
-            if (!categoriasReceber[conta.categoria]) {
-                categoriasReceber[conta.categoria] = { total: 0, quantidade: 0 };
-            }
-            categoriasReceber[conta.categoria].total += conta.valor || 0;
-            categoriasReceber[conta.categoria].quantidade++;
-        });
-    
-    // Analisar contas a pagar
-    contasPagar
-        .filter(c => 
-            (!dataInicio || !dataFim || (c.dataVencimento >= dataInicio && c.dataVencimento <= dataFim)) &&
-            (c.origem !== 'folha_pagamento' || c.funcionarioAtivo !== false)
-        )
-        .forEach(conta => {
-            if (!categoriasPagar[conta.categoria]) {
-                categoriasPagar[conta.categoria] = { total: 0, quantidade: 0 };
-            }
-            categoriasPagar[conta.categoria].total += conta.valor || 0;
-            categoriasPagar[conta.categoria].quantidade++;
-        });
-    
-    let conteudo = '<h4>Receitas por Categoria:</h4>';
-    Object.entries(categoriasReceber).forEach(([categoria, dados]) => {
-        conteudo += `
-            <div class="summary-row">
-                <span>${categoria.toUpperCase()}:</span>
-                <span>${formatCurrency(dados.total)} (${dados.quantidade} contas)</span>
-            </div>
-        `;
-    });
-    
-    conteudo += '<h4>Despesas por Categoria:</h4>';
-    Object.entries(categoriasPagar).forEach(([categoria, dados]) => {
-        conteudo += `
-            <div class="summary-row">
-                <span>${categoria.toUpperCase()}:</span>
-                <span>${formatCurrency(dados.total)} (${dados.quantidade} contas)</span>
-            </div>
-        `;
-    });
-    
-    return conteudo;
+function invalidateFinanceReport() {
+    window.__financeReportRequestId = Number(window.__financeReportRequestId || 0) + 1;
+    window.__financeReportState = null;
+    const result = document.getElementById('relatorioResult');
+    const content = document.getElementById('relatorioContent');
+    if (content) content.replaceChildren();
+    if (result) result.style.display = 'none';
 }
 
-function gerarRelatorioClientes(dataInicio, dataFim) {
-    const clientesMap = {};
-    
-    contasReceber
-        .filter(c => !dataInicio || !dataFim || (c.dataVencimento >= dataInicio && c.dataVencimento <= dataFim))
-        .forEach(conta => {
-            const clienteNome = conta.cliente ? (conta.cliente.nome || conta.cliente.name) : 'Cliente não encontrado';
-            
-            if (!clientesMap[clienteNome]) {
-                clientesMap[clienteNome] = { total: 0, quantidade: 0 };
-            }
-            
-            clientesMap[clienteNome].total += conta.valor || 0;
-            clientesMap[clienteNome].quantidade++;
+function setFinanceReportBusy(busy) {
+    const actions = document.querySelector('.report-actions');
+    if (actions) actions.setAttribute('aria-busy', busy ? 'true' : 'false');
+    document.querySelectorAll('.report-actions button').forEach((button) => {
+        if (busy) {
+            button.dataset.financeWasDisabled = button.disabled ? 'true' : 'false';
+            button.disabled = true;
+        } else if (button.dataset.financeWasDisabled !== undefined) {
+            button.disabled = button.dataset.financeWasDisabled === 'true';
+            delete button.dataset.financeWasDisabled;
+        }
+    });
+    window.__financeReportBusy = busy;
+}
+
+function getFinanceReportFriendlyError(error) {
+    const raw = String(error && error.message ? error.message : error || '');
+    const code = String(error && error.code || '');
+    if (/permission|unauth|auth\//i.test(`${code} ${raw}`)) {
+        return 'Sua sessão não pôde acessar todos os dados do relatório. Entre novamente e tente de novo.';
+    }
+    if (/network|offline|unavailable|failed to fetch/i.test(`${code} ${raw}`)) {
+        return 'Não foi possível confirmar os dados online. Verifique a conexão e tente novamente.';
+    }
+    return 'Não foi possível gerar o relatório com segurança. Revise o período e tente novamente.';
+}
+
+async function gerarRelatorio(options = {}) {
+    const alreadyBusy = window.__financeReportBusy === true;
+    if (alreadyBusy && options.allowWhenBusy !== true) return null;
+    const resultElement = document.getElementById('relatorioResult');
+    const titleElement = document.getElementById('relatorioTitulo');
+    const contentElement = document.getElementById('relatorioContent');
+    if (!resultElement || !titleElement || !contentElement) return null;
+    const ownsBusyState = !alreadyBusy;
+    if (ownsBusyState) setFinanceReportBusy(true);
+    resultElement.style.display = 'block';
+    resultElement.setAttribute('aria-busy', 'true');
+    titleElement.textContent = 'Gerando relatório';
+    contentElement.textContent = 'Carregando e confirmando todas as partições do período...';
+    window.__financeReportState = null;
+    const requestId = Number(window.__financeReportRequestId || 0) + 1;
+    window.__financeReportRequestId = requestId;
+    try {
+        const range = getFinanceReportRange();
+        await ensureFinanceReportScope(range);
+        if (window.__financeReportRequestId !== requestId) return null;
+        const model = buildFinanceReportModel(range);
+        const company = await prepareFinanceReportCompany();
+        if (window.__financeReportRequestId !== requestId) return null;
+        model.company = company;
+        titleElement.textContent = model.titulo;
+        const header = buildFinanceReportPreviewHeader(company, model);
+        contentElement.innerHTML = `${header}${renderFinanceReportModel(model)}`;
+        window.__financeReportState = model;
+        return model;
+    } catch (error) {
+        if (window.__financeReportRequestId !== requestId) return null;
+        const friendlyMessage = getFinanceReportFriendlyError(error);
+        titleElement.textContent = 'Relatório não gerado';
+        contentElement.textContent = friendlyMessage;
+        mostrarNotificacao(friendlyMessage, 'error');
+        return null;
+    } finally {
+        resultElement.setAttribute('aria-busy', 'false');
+        if (ownsBusyState) setFinanceReportBusy(false);
+    }
+}
+
+function sanitizeFinanceCsvCell(value) {
+    let text = String(value === undefined || value === null ? '' : value).replace(/\r?\n/g, ' ');
+    if (/^[\t ]*[=+\-@]/.test(text)) text = `'${text}`;
+    return `"${text.replace(/"/g, '""')}"`;
+}
+
+function downloadFinanceCsv(headers, rows, filename, summaries = []) {
+    if (!Array.isArray(rows) || rows.length === 0) throw new Error('Nenhum dado encontrado para exportar.');
+    const csvLines = [headers.map((header) => sanitizeFinanceCsvCell(header.label)).join(',')];
+    rows.forEach((row) => {
+        csvLines.push(headers.map((header) => sanitizeFinanceCsvCell(formatFinanceReportValue(row[header.key], header.format))).join(','));
+    });
+    if (summaries.length) {
+        csvLines.push('');
+        summaries.forEach((summary) => csvLines.push([
+            sanitizeFinanceCsvCell(summary.label),
+            sanitizeFinanceCsvCell(formatFinanceReportValue(summary.value, summary.format))
+        ].join(',')));
+    }
+    const blob = new Blob(['\ufeff' + csvLines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${String(filename || 'relatorio').replace(/[^A-Za-z0-9_-]/g, '_')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+async function getCurrentFinanceReportModel(options = {}) {
+    const range = getFinanceReportRange();
+    const current = window.__financeReportState;
+    if (current && current.signature === range.signature) return current;
+    const generated = await gerarRelatorio({ allowWhenBusy: options.allowWhenBusy === true });
+    if (!generated) throw new Error('Gere um relatório válido antes de exportar.');
+    return generated;
+}
+
+function buildFinanceReportPrintBody(model) {
+    const summaries = model.summaries.map((item) => `
+        <tr>
+            <td>${escapeFinanceHtml(item.label)}</td>
+            <td class="right">${escapeFinanceHtml(formatFinanceReportValue(item.value, item.format))}</td>
+        </tr>
+    `).join('');
+    const table = model.rows.length ? `
+        <table class="sisweb-print-table finance-report-print-table">
+            <thead>
+                <tr>${model.columns.map((column) => `<th>${escapeFinanceHtml(column.label)}</th>`).join('')}</tr>
+            </thead>
+            <tbody>
+                ${model.rows.map((row) => `
+                    <tr>${model.columns.map((column) => `
+                        <td class="${column.format === 'currency' ? 'right finance-report-print-nowrap' : column.format === 'date' ? 'finance-report-print-nowrap' : ''}">
+                            ${escapeFinanceHtml(formatFinanceReportValue(row[column.key], column.format))}
+                        </td>
+                    `).join('')}</tr>
+                `).join('')}
+            </tbody>
+        </table>
+    ` : '<p class="finance-report-print-empty">Nenhum dado encontrado para o período informado.</p>';
+    return `
+        <section class="sisweb-print-section">
+            <div class="finance-report-print-meta">
+                <div><strong>Origem:</strong> ${escapeFinanceHtml(model.origemLabel)}</div>
+                <div><strong>Período:</strong> ${escapeFinanceHtml(formatDate(model.dataInicio))} a ${escapeFinanceHtml(formatDate(model.dataFim))}</div>
+            </div>
+            ${summaries ? `<table class="finance-report-print-summary"><tbody>${summaries}</tbody></table>` : ''}
+            <div class="finance-report-print-table-wrap">${table}</div>
+        </section>
+    `;
+}
+
+async function imprimirRelatorioAtual() {
+    if (window.__financeReportBusy === true) return null;
+    const win = window.open('', '_blank');
+    if (!win) {
+        mostrarNotificacao('O bloqueador de pop-ups impediu a abertura do relatório.', 'warning');
+        return null;
+    }
+    win.document.open();
+    win.document.write(`
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+            <head><meta charset="UTF-8"><title>Preparando relatório</title></head>
+            <body style="font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f8fafc;color:#475569;">
+                <div style="text-align:center;padding:24px;">
+                    <strong style="display:block;font-size:22px;color:#0f172a;margin-bottom:8px;">Preparando seu relatório...</strong>
+                    <span>Confirmando dados e formatando a impressão.</span>
+                </div>
+            </body>
+        </html>
+    `);
+    win.document.close();
+    setFinanceReportBusy(true);
+    try {
+        const model = await getCurrentFinanceReportModel({ allowWhenBusy: true });
+        const helper = getFinanceReportDocumentHelper();
+        const company = model.company || await prepareFinanceReportCompany();
+        model.company = company;
+        const prepared = await helper.preparePrintOptions({
+            ...buildFinanceReportHeaderOptions(company, model.titulo, {
+                subtitle: `${model.origemLabel} | ${formatDate(model.dataInicio)} a ${formatDate(model.dataFim)}`
+            }),
+            bodyHtml: buildFinanceReportPrintBody(model),
+            targetWindow: win,
+            printDelay: 300,
+            extraCss: `
+                @page { size: A4; margin: 8mm; }
+                .sisweb-print-page { max-width: 100%; }
+                .sisweb-print-section { break-inside: auto; page-break-inside: auto; }
+                .finance-report-print-meta { display:flex; flex-wrap:wrap; gap:8px 20px; margin-bottom:12px; }
+                .finance-report-print-summary { width:min(100%, 420px); margin:0 0 14px auto; border-collapse:collapse; }
+                .finance-report-print-summary td { border:1px solid #cbd5e1; padding:7px 10px; }
+                .finance-report-print-table-wrap { width:100%; overflow:visible; }
+                .finance-report-print-table { width:100%; table-layout:auto; border-collapse:collapse; }
+                .finance-report-print-table th { padding:5px; font-size:8px; text-transform:uppercase; }
+                .finance-report-print-table td { padding:5px; font-size:8.4px; line-height:1.25; overflow-wrap:anywhere; }
+                .finance-report-print-nowrap { white-space:nowrap; overflow-wrap:normal; word-break:normal; }
+                .finance-report-print-empty { padding:16px; text-align:center; border:1px solid #cbd5e1; }
+                .right { text-align:right; }
+            `
         });
-    
-    // Ordenar por valor total
-    const clientesOrdenados = Object.entries(clientesMap)
-        .sort(([,a], [,b]) => b.total - a.total);
-    
-    let conteudo = '<h4>Ranking de Clientes por Faturamento:</h4>';
-    clientesOrdenados.forEach(([cliente, dados], index) => {
-        conteudo += `
-            <div class="summary-row">
-                <span>${index + 1}º - ${cliente}:</span>
-                <span>${formatCurrency(dados.total)} (${dados.quantidade} contas)</span>
-            </div>
-        `;
-    });
-    
-    return conteudo;
+        return helper.printHtmlDocument(prepared);
+    } catch (error) {
+        const friendlyMessage = getFinanceReportFriendlyError(error);
+        win.document.open();
+        win.document.write(`
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+                <head><meta charset="UTF-8"><title>Relatório não gerado</title></head>
+                <body style="font-family:Arial,sans-serif;padding:32px;color:#7f1d1d;background:#fff7f7;">
+                    <h1 style="font-size:22px;">Relatório não gerado</h1>
+                    <p>${escapeFinanceHtml(friendlyMessage)}</p>
+                </body>
+            </html>
+        `);
+        win.document.close();
+        mostrarNotificacao(friendlyMessage, 'error');
+        return null;
+    } finally {
+        setFinanceReportBusy(false);
+    }
 }
 
-function gerarRelatorioFornecedores(dataInicio, dataFim) {
-    const fornecedoresMap = {};
-
-    const contasFiltradas = contasPagar
-        .filter(c => !dataInicio || !dataFim || (c.dataVencimento >= dataInicio && c.dataVencimento <= dataFim));
-
-    contasFiltradas.forEach(conta => {
-        let fornecedorNome = '';
-        const f = conta.fornecedor;
-        if (f && typeof f === 'object') {
-            fornecedorNome = f.nome || f.name || f.razaoSocial || f.fantasia || '';
-        } else if (typeof f === 'string') {
-            fornecedorNome = f.trim();
+async function exportarDados(formato) {
+    if (window.__financeReportBusy === true) return;
+    setFinanceReportBusy(true);
+    try {
+        const model = await getCurrentFinanceReportModel({ allowWhenBusy: true });
+        if (formato === 'excel') {
+            downloadFinanceCsv(model.columns, model.rows, `relatorio_${model.tipo}_${getTodayISODateLocal()}`, model.summaries);
+            mostrarNotificacao('Relatório exportado em CSV.', 'success');
+        } else if (formato === 'pdf') {
+            await exportarPDF(model);
         }
-        if (!fornecedorNome && conta.funcionarioNome) {
-            fornecedorNome = conta.funcionarioNome;
-        }
-        if (!fornecedorNome && conta.fornecedorId && Array.isArray(fornecedores)) {
-            const found = fornecedores.find(x => String(x.id) === String(conta.fornecedorId));
-            if (found) fornecedorNome = found.nome || found.name || '';
-        }
-        if (!fornecedorNome) fornecedorNome = 'Fornecedor não informado';
-
-        if (!fornecedoresMap[fornecedorNome]) {
-            fornecedoresMap[fornecedorNome] = { total: 0, quantidade: 0 };
-        }
-        const valorConta = parseCurrencyValue(conta.valor || 0);
-        fornecedoresMap[fornecedorNome].total += valorConta;
-        fornecedoresMap[fornecedorNome].quantidade++;
-    });
-
-    const fornecedoresOrdenados = Object.entries(fornecedoresMap)
-        .sort(([,a], [,b]) => b.total - a.total);
-
-    let conteudo = '<h4>Ranking de Fornecedores por Valor:</h4>';
-    fornecedoresOrdenados.forEach(([fornecedor, dados], index) => {
-        conteudo += `
-            <div class="summary-row">
-                <span>${index + 1}º - ${fornecedor}:</span>
-                <span>${formatCurrency(dados.total)} (${dados.quantidade} contas)</span>
-            </div>
-        `;
-    });
-
-    return conteudo;
-}
-
-// ✅ NOVO: Funções de Exportação
-function exportarDados(formato) {
-    const tipoRelatorio = document.getElementById('tipoRelatorio').value;
-    const dataInicio = document.getElementById('relDataInicio').value;
-    const dataFim = document.getElementById('relDataFim').value;
-    
-    if (formato === 'excel') {
-        exportarExcel(tipoRelatorio, dataInicio, dataFim);
-    } else if (formato === 'pdf') {
-        exportarPDF(tipoRelatorio, dataInicio, dataFim);
+    } catch (error) {
+        mostrarNotificacao(getFinanceReportFriendlyError(error), 'error');
+    } finally {
+        setFinanceReportBusy(false);
     }
 }
 
 function exportarTabela(tipo, formato) {
-    const dados = tipo === 'receber' ? contasReceber : contasPagar;
-    const nomeArquivo = `contas_${tipo}_${new Date().toISOString().split('T')[0]}`;
-    
-    if (formato === 'excel') {
-        exportarTabelaExcel(dados, nomeArquivo, tipo);
-    }
+    if (formato !== 'excel') return;
+    const allFiltered = tipo === 'receber'
+        ? computeFilteredReceber(lastFiltroReceber || {})
+        : computeFilteredPagar(lastFiltroPagar || {});
+    const selected = tipo === 'receber' ? (window.selReceberSelection || new Set()) : (window.selPagarSelection || new Set());
+    const data = selected.size ? allFiltered.filter((conta) => selected.has(String(conta.id))) : allFiltered;
+    exportarTabelaExcel(data, `contas_${tipo}_${getTodayISODateLocal()}`, tipo);
 }
 
-function exportarTabelaExcel(dados, nomeArquivo, tipo) {
+function exportarTabelaExcel(data, filename, tipo) {
     try {
-        // Criar dados para o Excel
-        const dadosExcel = dados.map(conta => {
-            const linha = {
-                'ID': conta.id,
-                'Número': conta.numero || '',
-                'Pedido Nº': conta.pedidoNumero || '',
-                'Data Vencimento': formatDate(conta.dataVencimento),
-                'Descrição': conta.descricao,
-                'Valor': conta.valor,
-                'Status': conta.status?.toUpperCase() || 'PENDENTE',
-                'Categoria': conta.categoria || 'Não informado'
-            };
-            
-            if (tipo === 'receber') {
-                linha['Cliente'] = conta.cliente ? 
-                    (typeof conta.cliente === 'object' ? 
-                        (conta.cliente.nome || conta.cliente.name || conta.cliente.nomeCompleto) : conta.cliente) : 
-                    'Cliente não encontrado';
-            } else {
-                linha['Fornecedor'] = conta.fornecedor || conta.funcionarioNome || 'Fornecedor não encontrado';
-                linha['Tipo'] = conta.tipo || 'Não informado';
-            }
-            
-            if (conta.observacoes) {
-                linha['Observações'] = conta.observacoes;
-            }
-            
-            return linha;
-        });
-        
-        // Converter para CSV (compatível com Excel)
-        const headers = Object.keys(dadosExcel[0] || {});
-        const csvContent = [
-            headers.join(','),
-            ...dadosExcel.map(row => 
-                headers.map(header => `"${(row[header] || '').toString().replace(/"/g, '""')}"`).join(',')
-            )
-        ].join('\n');
-        
-        // Criar e baixar arquivo
-        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `${nomeArquivo}.csv`;
-        link.click();
-        
-        mostrarNotificacao(`Dados exportados para ${nomeArquivo}.csv`, 'success');
-        
-    } catch (error) {
-        console.error('Erro ao exportar para Excel:', error);
-        mostrarNotificacao('Erro ao exportar dados para Excel', 'error');
-    }
-}
-
-function exportarExcel(tipoRelatorio, dataInicio, dataFim) {
-    try {
-        let dados = [];
-        let nomeArquivo = `relatorio_${tipoRelatorio}_${new Date().toISOString().split('T')[0]}`;
-        
-        switch (tipoRelatorio) {
-            case 'inadimplencia':
-                const hoje = getTodayISODateLocal();
-                const receberVencidas = contasReceber.filter(c => c.status === 'pendente' && c.dataVencimento < hoje);
-                const pagarVencidas = contasPagar.filter(c => c.status === 'pendente' && c.dataVencimento < hoje);
-                
-                dados = [
-                    ...receberVencidas.map(c => ({
-                        'Tipo': 'Receber',
-                        'Número': c.numero || '',
-                        'Pedido Nº': c.pedidoNumero || '',
-                        'Cliente/Fornecedor': c.cliente ? (typeof c.cliente === 'object' ? (c.cliente.nome || c.cliente.name) : c.cliente) : 'Não identificado',
-                        'Descrição': c.descricao,
-                        'Valor': c.valor,
-                        'Data Vencimento': formatDate(c.dataVencimento),
-                        'Dias Atraso': Math.floor((new Date() - new Date(c.dataVencimento)) / (1000 * 60 * 60 * 24)),
-                        'Categoria': c.categoria || 'Não informado'
-                    })),
-                    ...pagarVencidas.map(c => ({
-                        'Tipo': 'Pagar',
-                        'Número': c.numero || '',
-                        'Pedido Nº': c.pedidoNumero || '',
-                        'Cliente/Fornecedor': c.fornecedor || c.funcionarioNome || 'Não identificado',
-                        'Descrição': c.descricao,
-                        'Valor': c.valor,
-                        'Data Vencimento': formatDate(c.dataVencimento),
-                        'Dias Atraso': Math.floor((new Date() - new Date(c.dataVencimento)) / (1000 * 60 * 60 * 24)),
-                        'Categoria': c.categoria || 'Não informado'
-                    }))
-                ];
-                break;
-                
-            case 'faturamento':
-                if (!dataInicio || !dataFim) {
-                    mostrarNotificacao('Informe o período para o relatório de faturamento', 'error');
-                    return;
+        const printPrefs = sanitizePrintPreferencesFor(tipo);
+        const baseOrder = printPrefs && Array.isArray(printPrefs.order) ? printPrefs.order : defaultPrintColumns[tipo] || ['pedidoNumero','cliente','fornecedor','descricao','valor','vencimento','dataEmissao','juros','status','categoria','tipo'];
+        const visible = printPrefs && printPrefs.visible ? printPrefs.visible : {};
+        const order = baseOrder.filter(k => visible[k] !== false);
+        const formatMap = { vencimento: 'date', dataEmissao: 'date', valor: 'currency', juros: 'currency' };
+        const columns = order.map((k) => ({
+            key: k,
+            label: labelMap[k] || k,
+            ...(formatMap[k] ? { format: formatMap[k] } : {})
+        }));
+        const rows = (data || []).map((conta) => {
+            const info = getContaFinanceInfo(conta);
+            const row = {};
+            order.forEach((k) => {
+                switch (k) {
+                    case 'pedidoNumero': row.pedidoNumero = conta.pedidoNumero || conta.numero || ''; break;
+                    case 'cliente': row.cliente = tipo === 'receber' ? getFinancePartyName(conta, tipo) : ''; break;
+                    case 'fornecedor': row.fornecedor = tipo === 'pagar' ? getFinancePartyName(conta, tipo) : ''; break;
+                    case 'descricao': row.descricao = conta.descricao || ''; break;
+                    case 'valor': row.valor = info.totalAtualizado; break;
+                    case 'juros': row.juros = Math.max(0, info.jurosAberto || 0); break;
+                    case 'vencimento': row.vencimento = conta.dataVencimento || conta.vencimento || ''; break;
+                    case 'dataEmissao': row.dataEmissao = conta.dataEmissao || ''; break;
+                    case 'status': row.status = info.statusNorm; break;
+                    case 'categoria': row.categoria = getCategoriaLabel(conta.categoria); break;
+                    case 'tipo': row.tipo = conta.tipo || ''; break;
+                    default: row[k] = (conta[k] !== undefined && conta[k] !== null) ? String(conta[k]) : '';
                 }
-                
-                dados = contasReceber
-                    .filter(c => c.status === 'pago' && c.dataPagamento >= dataInicio && c.dataPagamento <= dataFim)
-                    .map(c => ({
-                        'Número': c.numero || '',
-                        'Pedido Nº': c.pedidoNumero || '',
-                        'Cliente': c.cliente ? (typeof c.cliente === 'object' ? (c.cliente.nome || c.cliente.name) : c.cliente) : 'Não identificado',
-                        'Descrição': c.descricao,
-                        'Valor': c.valorPago || c.valor,
-                        'Data Pagamento': formatDate(c.dataPagamento),
-                        'Categoria': c.categoria || 'Não informado'
-                    }));
-                break;
-                
-            default:
-                mostrarNotificacao('Tipo de relatório não suportado para exportação', 'error');
-                return;
-        }
-        
-        if (dados.length === 0) {
-            mostrarNotificacao('Nenhum dado encontrado para exportar', 'error');
-            return;
-        }
-        
-        // Converter para CSV
-        const headers = Object.keys(dados[0]);
-        const csvContent = [
-            headers.join(','),
-            ...dados.map(row => 
-                headers.map(header => `"${(row[header] || '').toString().replace(/"/g, '""')}"`).join(',')
-            )
-        ].join('\n');
-        
-        // Criar e baixar arquivo
-        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `${nomeArquivo}.csv`;
-        link.click();
-        
-        mostrarNotificacao(`Relatório exportado para ${nomeArquivo}.csv`, 'success');
-        
+            });
+            return row;
+        });
+        downloadFinanceCsv(columns, rows, filename);
+        mostrarNotificacao('Dados filtrados exportados em CSV.', 'success');
     } catch (error) {
-        console.error('Erro ao exportar relatório:', error);
-        mostrarNotificacao('Erro ao exportar relatório', 'error');
+        mostrarNotificacao(String(error && error.message ? error.message : 'Falha ao exportar os dados.'), 'error');
     }
 }
 
-async function exportarPDF(tipoRelatorio, dataInicio, dataFim) {
-    try {
-        await ensureCompanyInfoForPrint();
-        const company = getCompanyPrintInfo();
-
-        // Gerar conteúdo do relatório
-        let conteudo = '';
-        let titulo = '';
-        
-        switch (tipoRelatorio) {
-            case 'inadimplencia':
-                titulo = 'Relatório de Inadimplência';
-                conteudo = gerarRelatorioInadimplencia();
-                break;
-            case 'faturamento':
-                titulo = 'Relatório de Faturamento';
-                conteudo = gerarRelatorioFaturamento(dataInicio, dataFim);
-                break;
-            case 'categorias':
-                titulo = 'Análise por Categorias';
-                conteudo = gerarRelatorioCategorias(dataInicio, dataFim);
-                break;
-            case 'clientes':
-                titulo = 'Ranking de Clientes';
-                conteudo = gerarRelatorioClientes(dataInicio, dataFim);
-                break;
-            case 'fornecedores':
-                titulo = 'Ranking de Fornecedores';
-                conteudo = gerarRelatorioFornecedores(dataInicio, dataFim);
-                break;
-            default:
-                mostrarNotificacao('Tipo de relatório não suportado', 'error');
-                return;
-        }
-        
-        // Criar janela para impressão/PDF
-        const janelaImpressao = window.open('', '_blank');
-        const detailsLine1 = [company.cnpj && `CNPJ: ${company.cnpj}`, company.address && `${company.address}`].filter(Boolean).join(' • ');
-        const detailsLine2 = [company.phone && `Tel: ${company.phone}`].filter(Boolean).join(' • ');
-        janelaImpressao.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>${titulo}</title>
-                <meta charset="utf-8">
-                <style>
-                    body { font-family: Arial, sans-serif; margin: 20px; }
-                    h1, h2, h3 { color: #2c3e50; }
-                    .header { display:flex; align-items:flex-start; gap:20px; flex-wrap:nowrap; margin-bottom:15px; padding-bottom:10px; border-bottom:2px solid #333; }
-                    .logo { width: 120px; text-align:center; margin-right: 10px; flex-shrink: 0; }
-                    .logo img { max-width: 100%; height: auto; max-height: 100px; }
-                    .company-info { flex:1; padding-left: 5px; }
-                    .company-name { font-size: 18px; font-weight: bold; margin-bottom: 6px; color: #2c3e50; text-transform: uppercase; }
-                    .company-details { font-size: 12px; color:#333; margin: 2px 0; line-height: 1.3; }
-                    .title { text-align:center; font-size:18px; font-weight:bold; color:#2c3e50; margin: 12px 0 10px 0; }
-                    .summary-row { 
-                        display: flex; 
-                        justify-content: space-between; 
-                        padding: 8px 0; 
-                        border-bottom: 1px solid #eee; 
-                    }
-                    .summary-row:last-child { 
-                        border-bottom: 2px solid #2c3e50; 
-                        font-weight: bold; 
-                    }
-                    @media print {
-                        body { margin: 0; }
-                        .no-print { display: none; }
-                        .header { margin-bottom: 5px !important; padding-bottom: 5px !important; }
-                        .company-name { font-size: 16px !important; margin-bottom: 3px !important; }
-                        .company-details { font-size: 10px !important; line-height: 1.2 !important; }
-                        .title { font-size: 16px !important; margin: 6px 0 !important; }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="no-print" style="text-align: right; margin-bottom: 20px;">
-                    <button onclick="window.print()">🖨️ Imprimir/PDF</button>
-                    <button onclick="window.close()">❌ Fechar</button>
-                </div>
-                <div class="header">
-                    <div class="logo">${company.logoUrl ? `<img src="${company.logoUrl}" alt="Logo">` : ''}</div>
-                    <div class="company-info">
-                        <div class="company-name">${company.name || 'Sisweb'}</div>
-                        ${detailsLine1 ? `<div class="company-details">${detailsLine1}</div>` : ''}
-                        ${detailsLine2 ? `<div class="company-details">${detailsLine2}</div>` : ''}
-                    </div>
-                </div>
-                <div class="title">${titulo}</div>
-                <p><strong>Data de Geração:</strong> ${new Date().toLocaleDateString('pt-BR')}</p>
-                ${dataInicio && dataFim ? `<p><strong>Período:</strong> ${formatDate(dataInicio)} a ${formatDate(dataFim)}</p>` : ''}
-                <hr>
-                ${conteudo}
-            </body>
-            </html>
-        `);
-        janelaImpressao.document.close();
-        
-        mostrarNotificacao('Relatório aberto para impressão/PDF', 'success');
-        
-    } catch (error) {
-        console.error('Erro ao gerar PDF:', error);
-        mostrarNotificacao('Erro ao gerar PDF', 'error');
+async function exportarPDF(model) {
+    getFinanceReportDocumentHelper();
+    const company = model.company || await prepareFinanceReportCompany();
+    const result = await window.SiswebCommercePdf.exportTableReportPdf({
+        ...buildFinanceReportHeaderOptions(company, model.titulo, {
+            subtitle: `${model.origemLabel} | ${formatDate(model.dataInicio)} a ${formatDate(model.dataFim)}`
+        }),
+        fileName: `relatorio_${model.origem}_${model.tipo}_${getTodayISODateLocal()}.pdf`,
+        shareText: 'PDF de relatório financeiro gerado pelo Sisweb.',
+        summaryRows: model.summaries.map((item) => ({
+            label: item.label,
+            value: formatFinanceReportValue(item.value, item.format)
+        })),
+        columns: model.columns.map((column) => ({
+            label: column.label,
+            key: column.key,
+            align: column.format === 'currency' ? 'right' : 'left'
+        })),
+        rows: model.rows.map((row) => model.columns.map((column) => (
+            formatFinanceReportValue(row[column.key], column.format)
+        ))),
+        emptyText: 'Nenhum dado encontrado para o período informado.',
+        orientation: 'landscape'
+    });
+    if (result && result.mode !== 'cancelled') {
+        const message = result.mode === 'share'
+            ? 'PDF pronto para compartilhar ou imprimir.'
+            : `PDF gerado: ${result.fileName}`;
+        mostrarNotificacao(message, 'success');
     }
+    return result;
 }
 
 // ✅ NOVO: Funções de Backup e Restore
@@ -7516,6 +8009,22 @@ function atualizarSelectClientes() {
     });
 }
 
+function replaceFinanceSelectOptions(select, initialLabel, items) {
+    if (!select) return;
+    const fragment = document.createDocumentFragment();
+    const initial = document.createElement('option');
+    initial.value = '';
+    initial.textContent = String(initialLabel || 'Selecione');
+    fragment.appendChild(initial);
+    (items || []).forEach((item) => {
+        const option = document.createElement('option');
+        option.value = String(item && item.value !== undefined ? item.value : '');
+        option.textContent = String(item && item.label !== undefined ? item.label : '');
+        fragment.appendChild(option);
+    });
+    select.replaceChildren(fragment);
+}
+
 function atualizarSelectFornecedores() {
     const selects = ['pagarFornecedor', 'filtroPagarFornecedor'];
     if (!Array.isArray(fornecedores)) fornecedores = [];
@@ -7534,8 +8043,11 @@ function atualizarSelectFornecedores() {
     selects.forEach(selectId => {
         const select = document.getElementById(selectId);
         if (!select) return;
-        const opcaoInicial = selectId.includes('filtro') ? '<option value="">Todos os fornecedores</option>' : '<option value="">Selecione um fornecedor</option>';
-        select.innerHTML = opcaoInicial + combined.map(item => `<option value="${item.id}">${item.nome || ''}</option>`).join('');
+        replaceFinanceSelectOptions(
+            select,
+            selectId.includes('filtro') ? 'Todos os fornecedores' : 'Selecione um fornecedor',
+            combined.map((item) => ({ value: item.id, label: item.nome || '' })),
+        );
     });
 }
 
@@ -7589,6 +8101,11 @@ function limparFormulario(formId) {
         updateManualAttachmentButtonState('pagar');
     }
     
+    // ✅ Resetar botão de submit para "Salvar"
+    try {
+        const btn = document.getElementById(formId)?.querySelector('button[type="submit"]');
+        if (btn) btn.innerHTML = '<i class="fas fa-save"></i> Salvar';
+    } catch(_) {}
 }
 
 function updateFinanceModalBodyScrollLock() {
@@ -7604,14 +8121,21 @@ function updateFinanceModalBodyScrollLock() {
     } catch (_) {}
 }
 
-function fecharModal(modalId) {
+function fecharModal(modalId, options = {}) {
+    if (modalId === 'pagamentoModal' && isPaymentModalBusy() && options.force !== true) {
+        mostrarNotificacao('Aguarde a conclusão da operação financeira.', 'info');
+        return false;
+    }
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
     }
     
     if (modalId === 'pagamentoModal') {
         const form = document.getElementById('pagamentoForm');
+        const hasUncertainUpload = !!form.__financePendingPaymentUpload;
+        clearFinancePaymentAttemptState(form, { uncertain: hasUncertainUpload });
         
         // Verificar se há conteúdo original salvo (caso seja modal de histórico)
         const originalContent = form.getAttribute('data-original-content');
@@ -7638,8 +8162,16 @@ function fecharModal(modalId) {
         // ✅ CRÍTICO: Limpar variáveis de controle
         contaAtualEdicao = null;
         tipoContaAtual = '';
+        if (hasUncertainUpload) {
+            mostrarNotificacao('O comprovante ficou aguardando reconciliação segura antes da limpeza.', 'info');
+        }
     }
     updateFinanceModalBodyScrollLock();
+    if (modalId === 'pagamentoModal' && financeModalPreviousFocus && document.contains(financeModalPreviousFocus)) {
+        financeModalPreviousFocus.focus();
+        financeModalPreviousFocus = null;
+    }
+    return true;
 }
 
 function limparFiltros(tipo) {
@@ -7917,6 +8449,27 @@ function getTipoLabel(val) {
     return m[k] || (val || 'Não informado');
 }
 
+function resolveFinanceTipoOperacional(conta) {
+    const tipoPagamento = normalizeTipoKey(conta && conta.tipoPagamento);
+    const tipo = normalizeTipoKey(conta && conta.tipo);
+    if (tipoPagamento && tipoPagamento !== 'pagar' && tipoPagamento !== 'receber') return tipoPagamento;
+    if (tipo && tipo !== 'pagar' && tipo !== 'receber') return tipo;
+    return tipoPagamento || tipo || '';
+}
+
+function shouldShowBoletoLamina(conta, tipoConta) {
+    return String(tipoConta || '').toLowerCase() === 'receber' && resolveFinanceTipoOperacional(conta) === 'boleto';
+}
+
+function getFinanceSacadoReferenceId(conta) {
+    const cliente = conta && conta.cliente;
+    const candidate = (conta && conta.clienteId)
+        || (cliente && typeof cliente === 'object' ? (cliente.id || cliente.clienteId) : cliente);
+    if (typeof candidate !== 'string' && typeof candidate !== 'number') return '';
+    const id = String(candidate).trim();
+    return id && !/[.#$\[\]\/]/.test(id) ? id : '';
+}
+
 function getCategoriaLabel(val) {
     const map = {
         'vendas': 'Vendas',
@@ -7982,6 +8535,28 @@ function normalizeCategoriaKey(val) {
         'permuta': 'permuta'
     };
     return map[raw] || raw;
+}
+
+function normalizeCategoriaForFinanceSave(val, fallback = 'outros') {
+    const key = normalizeCategoriaKey(val);
+    if (!key || key === 'undefined' || key === 'null') return fallback;
+    return key;
+}
+
+function normalizeTipoPagamentoForFinanceSave(val, fallback = 'pagar') {
+    const key = normalizeTipoKey(val || fallback);
+    if (!key || key === 'undefined' || key === 'null') return fallback;
+    return key;
+}
+
+function applyContaFinanceiroTipoPagamento(conta, val, fallback = 'pagar') {
+    const tipoKey = normalizeTipoPagamentoForFinanceSave(val, fallback);
+    if (conta && typeof conta === 'object') {
+        conta.tipo = tipoKey;
+        conta.tipoPagamento = tipoKey;
+        conta.tipo_pagamento = tipoKey;
+    }
+    return tipoKey;
 }
 
 function resolveCategoriaPadrao(conta, tipoConta) {
@@ -8080,13 +8655,13 @@ async function normalizarFinanceiroCategoriasETipos({ dryRun = false } = {}) {
         if (!keys.length) return { success: true, updated: 0 };
         if (dryRun) return { success: true, updated: keys.length };
         if (typeof svc.updatePaths === 'function') {
-            await svc.updatePaths(updates);
+            expectFinanceWrite(await svc.updatePaths(updates), 'Normalização financeira', { atomic: true });
         } else if (typeof svc.saveToFirebase === 'function') {
             for (const [path, payload] of Object.entries(updates)) {
                 const parts = String(path).split('/');
                 const key = parts.pop();
                 const base = parts.join('/');
-                await svc.saveToFirebase(base, key, payload);
+                expectFinanceWrite(await svc.saveToFirebase(base, key, payload), 'Normalização financeira');
             }
         } else {
             mostrarNotificacao('Serviço financeiro indisponível para normalização.', 'error');
@@ -8133,8 +8708,9 @@ function computeContaJurosInfo(conta, referenceDate = null) {
     const status = String((conta && conta.status) || 'pendente').toLowerCase();
     const tsVenc = getContaVencimentoTimestamp(conta);
     const tsBaseJuros = normalizeDateToTimestamp(conta && conta.jurosBaseDate);
+    const tsEmissao = normalizeDateToTimestamp(conta && conta.dataEmissao);
     const tsRef = referenceDate ? normalizeDateToTimestamp(referenceDate) : getTodayStartTimestampLocal();
-    const tsStart = Math.max(tsVenc || 0, tsBaseJuros || 0);
+    const tsStart = Math.max(tsVenc || 0, tsBaseJuros || 0, tsEmissao || 0);
     if (!tsVenc || !tsRef || tsRef <= tsStart || taxa <= 0 || tipo === 'none' || status === 'pago') {
         const baseNoJuros = status === 'parcial'
             ? parseCurrencyValue((conta && conta.valorRestante) ?? (conta && conta.valor) ?? 0)
@@ -8202,7 +8778,7 @@ function getContaFinanceInfo(conta) {
     }
 
     // ─── CAMINHO 2: Conta com histórico de pagamentos (usa timeline completa) ─
-    if (temHistorico || (temJuros && statusRaw !== 'pendente')) {
+    if (temHistorico || (temJuros && statusRaw === 'parcial')) {
         const timeline = buildContaJurosTimeline(conta);
         const valorOriginal = timeline.valorInicialCents / 100;
         const valorPago = timeline.rows.reduce((s, r) => s + r.pagamentoCents, 0) / 100;
@@ -8253,19 +8829,24 @@ function getContaFinanceInfo(conta) {
 
     const tsVenc = getContaVencimentoTimestamp(conta);
     const tsBaseJuros = normalizeDateToTimestamp(conta.jurosBaseDate);
-    const tsStart = Math.max(tsVenc || 0, tsBaseJuros || 0);
+    const tsEmissao = normalizeDateToTimestamp(conta && conta.dataEmissao);
     const tsHoje = getTodayStartTimestampLocal();
-    const diasAtraso = (tsStart && tsHoje > tsStart) ? Math.floor((tsHoje - tsStart) / 86400000) : 0;
-    const jurosAberto = (temJuros && valorRestante > 0 && diasAtraso > 0)
-        ? computeJurosByPeriod(valorRestante, taxa, diasAtraso, tipo)
+
+    // ✅ Juros CONTRATUAIS: período emissao->vencimento (nao juros de mora acumulados)
+    const tsInicio = Math.max(tsBaseJuros || 0, tsEmissao || 0) || tsVenc || tsHoje;
+    const tsFim = tsVenc || tsHoje;
+    const diasContrato = (tsFim > tsInicio) ? Math.floor((tsFim - tsInicio) / 86400000) : 0;
+    const jurosAberto = (temJuros && valorRestante > 0 && diasContrato > 0)
+        ? computeJurosByPeriod(valorRestante, taxa, diasContrato, tipo)
         : 0;
     const totalAtualizado = valorRestante + jurosAberto;
+    const diasAtraso = (tsVenc && tsHoje > tsVenc) ? Math.floor((tsHoje - tsVenc) / 86400000) : 0;
 
     let statusNorm = statusRaw;
     if (statusNorm === 'pendente' && tsVenc && tsVenc < tsHoje) statusNorm = 'vencido';
 
     const tipoLabel = tipo === 'composto' ? 'Composto' : (tipo === 'simples' ? 'Simples' : 'Sem juros');
-    const tooltip = `title="Tipo: ${tipoLabel} | Taxa: ${taxa.toFixed(2)}% | Dias atraso: ${diasAtraso} | Juros: ${formatCurrency(jurosAberto)}"`;
+    const tooltip = `title="Tipo: ${tipoLabel} | Taxa: ${taxa.toFixed(2)}% | Dias contrato: ${diasContrato} | Juros: ${formatCurrency(jurosAberto)}"`;
 
     return {
         valorOriginal,
@@ -8305,18 +8886,19 @@ function buildContaJurosTimeline(conta) {
     const taxa = parseJurosTaxa(conta && conta.jurosTaxa);
     const tsVenc = getContaVencimentoTimestamp(conta);
     const tsBaseJuros = normalizeDateToTimestamp(conta && conta.jurosBaseDate);
+    const tsEmissao = normalizeDateToTimestamp(conta && conta.dataEmissao);
     const historicosRaw = Array.isArray(conta && conta.historicosPagamento) ? conta.historicosPagamento : [];
     const historicos = historicosRaw
         .map((h, idx) => ({ ...h, __idx: idx, __ts: normalizeDateToTimestamp(h && h.data) || 0 }))
         .sort((a, b) => (a.__ts - b.__ts) || (a.__idx - b.__idx));
     let saldoCents = valorInicialCents;
-    let tsBase = tsVenc || null;
+    let tsBase = tsVenc || tsEmissao || null;
     let totalJurosCents = 0;
     const rows = [];
     historicos.forEach((h) => {
         const pagamentoCents = Math.max(0, toCents(h && h.valor));
         const tsPg = normalizeDateToTimestamp(h && h.data) || tsBase || tsVenc || getTodayStartTimestampLocal();
-        const tsStart = Math.max(tsVenc || 0, tsBase || 0) || tsPg;
+        const tsStart = Math.max(tsVenc || 0, tsBase || 0, tsEmissao || 0) || tsPg;
         const dias = Math.max(0, Math.floor((tsPg - tsStart) / 86400000));
         let jurosCents = 0;
         if (tipo !== 'none' && taxa > 0 && saldoCents > 0 && dias > 0) {
@@ -8357,8 +8939,9 @@ function buildContaJurosTimeline(conta) {
 
 function getOpenJurosPeriod(conta, timeline) {
     const tsVenc = getContaVencimentoTimestamp(conta) || 0;
+    const tsEmissao = normalizeDateToTimestamp(conta && conta.dataEmissao) || 0;
     const tsLast = (timeline && timeline.lastPaymentTimestamp) ? timeline.lastPaymentTimestamp : 0;
-    const tsStart = Math.max(tsVenc, tsLast) || getTodayStartTimestampLocal();
+    const tsStart = Math.max(tsVenc, tsLast, tsEmissao) || getTodayStartTimestampLocal();
     const tsEnd = getTodayStartTimestampLocal();
     const dias = Math.max(0, Math.floor((tsEnd - tsStart) / 86400000));
     return { tsStart, tsEnd, dias };
@@ -8387,7 +8970,7 @@ function formatDate(dateValue) {
     }
     // Fallback genérico
     const d = parseDateLocalSafe(s);
-    return isNaN(d.getTime()) ? s : d.toLocaleDateString('pt-BR');
+    return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('pt-BR');
 }
 
 // ✅ NORMALIZAÇÃO DE DATAS PARA COMPARAÇÃO
@@ -8429,51 +9012,21 @@ function generateUniqueId(prefix = '') {
 }
 
 async function getNextManualNumero() {
-    try {
-        const svc = window.firebaseService;
-        if (!svc || typeof svc.loadFromFirebase !== 'function' || typeof svc.updatePaths !== 'function') {
-            const ts = Date.now();
-            return `RX${String(ts).slice(-6)}`;
-        }
-        const seqPath = 'sequences/contasReceberManual';
-        const curRes = await svc.loadFromFirebase(seqPath);
-        let current = 0;
-        if (curRes && curRes.success && curRes.data && typeof curRes.data.current === 'number') {
-            current = curRes.data.current;
-        }
-        const next = Math.max(current, 0) + 1;
-        const padded = String(next).padStart(6, '0');
-        const numero = `RX${padded}`;
-        await svc.updatePaths({ [`${seqPath}/current`]: next, [`${seqPath}/last`]: numero });
-        return numero;
-    } catch(_) {
-        const ts = Date.now();
-        return `RX${String(ts).slice(-6)}`;
-    }
+    const result = await callFinanceCallable('financeNextSequence', {
+        sequence: 'contasReceberManual',
+        operationId: createFinanceOperationId('sequence_rx')
+    });
+    if (!/^RX\d{6,}$/.test(String(result.numero || ''))) throw new Error('Sequência RX inválida retornada pelo servidor.');
+    return String(result.numero);
 }
 
 async function getNextManualNumeroPagar() {
-    try {
-        const svc = window.firebaseService;
-        if (!svc || typeof svc.loadFromFirebase !== 'function' || typeof svc.updatePaths !== 'function') {
-            const ts = Date.now();
-            return `PX${String(ts).slice(-6)}`;
-        }
-        const seqPath = 'sequences/contasPagarManual';
-        const curRes = await svc.loadFromFirebase(seqPath);
-        let current = 0;
-        if (curRes && curRes.success && curRes.data && typeof curRes.data.current === 'number') {
-            current = curRes.data.current;
-        }
-        const next = Math.max(current, 0) + 1;
-        const padded = String(next).padStart(6, '0');
-        const numero = `PX${padded}`;
-        await svc.updatePaths({ [`${seqPath}/current`]: next, [`${seqPath}/last`]: numero });
-        return numero;
-    } catch(_) {
-        const ts = Date.now();
-        return `PX${String(ts).slice(-6)}`;
-    }
+    const result = await callFinanceCallable('financeNextSequence', {
+        sequence: 'contasPagarManual',
+        operationId: createFinanceOperationId('sequence_px')
+    });
+    if (!/^PX\d{6,}$/.test(String(result.numero || ''))) throw new Error('Sequência PX inválida retornada pelo servidor.');
+    return String(result.numero);
 }
 
 async function prepareNumeroPagar() {
@@ -8500,7 +9053,7 @@ async function getData(key) {
         // ✅ CORREÇÃO: Usar Firebase diretamente se disponível
         if (window.database) {
             try {
-                const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                const { ref, get } = await import('./firebase-init.js');
                 const dataRef = ref(window.database, key);
                 const snapshot = await get(dataRef);
                 
@@ -8601,9 +9154,10 @@ window.excluirPagamento = excluirPagamento;
 window.reativarBotaoRomaneio = reativarBotaoRomaneio;
 window.limparDadosInvalidos = limparDadosInvalidos;
 
-window.gerarFluxoCaixa = gerarFluxoCaixa;
-window.gerarRelatorio = gerarRelatorio;
-window.limparFormulario = limparFormulario;
+    window.gerarFluxoCaixa = gerarFluxoCaixa;
+    window.gerarRelatorio = gerarRelatorio;
+    window.imprimirRelatorioAtual = imprimirRelatorioAtual;
+    window.limparFormulario = limparFormulario;
 window.fecharModal = fecharModal;
 window.exportarDados = exportarDados;
 window.exportarTabela = exportarTabela;
@@ -8713,13 +9267,21 @@ function atualizarSelectCategorias() {
             const catsRecKeys = uniqKeys([...baseKeys, ...((contasReceber || []).map(c => c && c.categoria).filter(Boolean))])
                 .filter(k => String(k || '').trim() !== '')
                 .sort((a,b)=>String(getCategoriaLabel(a)).localeCompare(String(getCategoriaLabel(b)),'pt-BR',{sensitivity:'base'}));
-            selectRec.innerHTML = '<option value="">Todas</option>' + catsRecKeys.map(k=>`<option value="${k}">${getCategoriaLabel(k)}</option>`).join('');
+            replaceFinanceSelectOptions(
+                selectRec,
+                'Todas',
+                catsRecKeys.map((key) => ({ value: key, label: getCategoriaLabel(key) })),
+            );
         }
         if (selectPag) {
             const catsPagKeys = uniqKeys([...baseKeys, ...((contasPagar || []).map(c => c && c.categoria).filter(Boolean))])
                 .filter(k => String(k || '').trim() !== '')
                 .sort((a,b)=>String(getCategoriaLabel(a)).localeCompare(String(getCategoriaLabel(b)),'pt-BR',{sensitivity:'base'}));
-            selectPag.innerHTML = '<option value="">Todas</option>' + catsPagKeys.map(k=>`<option value="${k}">${getCategoriaLabel(k)}</option>`).join('');
+            replaceFinanceSelectOptions(
+                selectPag,
+                'Todas',
+                catsPagKeys.map((key) => ({ value: key, label: getCategoriaLabel(key) })),
+            );
         }
     } catch (e) { console.warn('Falha ao atualizar categorias:', e); }
 }
@@ -8742,10 +9304,14 @@ function atualizarSelectTipos() {
                 if (fimTs && ts !== null && ts > fimTs) return false;
                 return true;
             });
-            const tiposRecKeys = uniqKeys([...baseKeys, ...(inRangeRec.map(c => c && c.tipo).filter(Boolean))])
+            const tiposRecKeys = uniqKeys([...baseKeys, ...(inRangeRec.map(c => resolveFinanceTipoOperacional(c)).filter(Boolean))])
                 .filter(k => String(k || '').trim() !== '')
                 .sort((a,b)=>String(getTipoLabel(a)).localeCompare(String(getTipoLabel(b)),'pt-BR',{sensitivity:'base'}));
-            selectRec.innerHTML = '<option value="">Todos</option>' + tiposRecKeys.map(k=>`<option value="${k}">${getTipoLabel(k)}</option>`).join('');
+            replaceFinanceSelectOptions(
+                selectRec,
+                'Todos',
+                tiposRecKeys.map((key) => ({ value: key, label: getTipoLabel(key) })),
+            );
         }
         // Pagar: aplicar período atual (se definido)
         if (selectPag) {
@@ -8759,10 +9325,14 @@ function atualizarSelectTipos() {
                 if (fimTs && ts !== null && ts > fimTs) return false;
                 return true;
             });
-            const tiposPagKeys = uniqKeys([...baseKeys, ...(inRangePag.map(c => c && c.tipo).filter(Boolean))])
+            const tiposPagKeys = uniqKeys([...baseKeys, ...(inRangePag.map(c => resolveFinanceTipoOperacional(c)).filter(Boolean))])
                 .filter(k => String(k || '').trim() !== '')
                 .sort((a,b)=>String(getTipoLabel(a)).localeCompare(String(getTipoLabel(b)),'pt-BR',{sensitivity:'base'}));
-            selectPag.innerHTML = '<option value="">Todos</option>' + tiposPagKeys.map(k=>`<option value="${k}">${getTipoLabel(k)}</option>`).join('');
+            replaceFinanceSelectOptions(
+                selectPag,
+                'Todos',
+                tiposPagKeys.map((key) => ({ value: key, label: getTipoLabel(key) })),
+            );
         }
     } catch (e) { console.warn('Falha ao atualizar tipos:', e); }
 }
@@ -8785,29 +9355,18 @@ function renderRowsChunked(tbody, rowsHtml, chunkSize = 300) {
 
 async function abrirBoletoPixLamina(contaId, tipo) {
     try {
+        const tipoConta = String(tipo || '').toLowerCase();
+        if (tipoConta !== 'receber') {
+            throw new Error('A Lâmina de Cobrança PIX é exclusiva para contas a receber.');
+        }
         mostrarLoading(true, 'Gerando Lâmina de Cobrança PIX...');
-        const lista = tipo === 'receber' ? (typeof contasReceber !== 'undefined' ? contasReceber : (window.contasReceber || [])) : (typeof contasPagar !== 'undefined' ? contasPagar : (window.contasPagar || []));
+        const lista = typeof contasReceber !== 'undefined' ? contasReceber : (window.contasReceber || []);
         const conta = lista.find(c => String(c.id) === String(contaId));
         if (!conta) {
             throw new Error('Conta não encontrada.');
         }
 
-        let empresa = window.companyInfo || {};
-        if (!empresa.cnpj) {
-            try {
-                const raw = localStorage.getItem('company_info');
-                if (raw) empresa = JSON.parse(raw);
-            } catch (_) {}
-        }
-
-        if (!empresa.cnpj && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-            const currentCompanyId = window.appTenantId || empresa.id || empresa.companyId;
-            if (currentCompanyId) {
-                const res = await window.firebaseService.loadFromFirebase(`companies/${currentCompanyId}/profile`);
-                const profile = res && res.success ? res.data : res;
-                if (profile) empresa = { ...empresa, ...profile };
-            }
-        }
+        const empresa = await prepareFinanceReportCompany();
 
         const validPix = window.PixBrCode.validateCompanyPix(empresa);
         if (!validPix.valid) {
@@ -8818,9 +9377,9 @@ async function abrirBoletoPixLamina(contaId, tipo) {
 
         // Tentar obter dados do cliente/fornecedor (sacado)
         let sacado = null;
-        const sacadoId = conta.clienteId || conta.fornecedorId || conta.cliente || conta.fornecedor;
+        const sacadoId = getFinanceSacadoReferenceId(conta);
         if (sacadoId && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-            const path = tipo === 'receber' ? `clientes/${sacadoId}` : `fornecedores/${sacadoId}`;
+            const path = `clientes/${sacadoId}`;
             try {
                 const res = await window.firebaseService.loadFromFirebase(path);
                 if (res && res.success) {
@@ -8831,7 +9390,7 @@ async function abrirBoletoPixLamina(contaId, tipo) {
 
         // Busca local fallback no array de clientes/fornecedores carregados na página
         if (!sacado) {
-            const cObj = tipo === 'receber' ? conta.cliente : conta.fornecedor;
+            const cObj = conta.cliente;
             if (cObj && typeof cObj === 'object') {
                 sacado = {
                     nome: cObj.nome || cObj.name || cObj.nomeCompleto || cObj.razaoSocial,
@@ -8841,16 +9400,14 @@ async function abrirBoletoPixLamina(contaId, tipo) {
                 };
             } else {
                 const searchName = String(cObj || sacadoId || conta.clienteNome || conta.fornecedorNome || '');
-                if (tipo === 'receber' && typeof clientes !== 'undefined' && Array.isArray(clientes)) {
+                if (typeof clientes !== 'undefined' && Array.isArray(clientes)) {
                     sacado = clientes.find(c => String(c.id) === String(sacadoId) || (c.nome || c.name || c.nomeCompleto || '').toLowerCase() === searchName.toLowerCase());
-                } else if (tipo === 'pagar' && typeof fornecedores !== 'undefined' && Array.isArray(fornecedores)) {
-                    sacado = fornecedores.find(f => String(f.id) === String(sacadoId) || (f.nome || f.name || f.nomeCompleto || '').toLowerCase() === searchName.toLowerCase());
                 }
                 
                 if (!sacado && searchName) {
                     sacado = {
                         nome: searchName,
-                        documento: conta.clienteDocumento || conta.fornecedorDocumento || conta.documento || conta.cpfCnpj || conta.cnpjCpf
+                        documento: conta.clienteDocumento || conta.documento || conta.cpfCnpj || conta.cnpjCpf
                     };
                 }
             }
@@ -8873,4 +9430,3 @@ async function abrirBoletoPixLamina(contaId, tipo) {
         mostrarLoading(false);
     }
 }
-

@@ -27,7 +27,19 @@ test('rules nao permitem escrita herdada no tenant nem solicitacao direta de ass
   const tenantRules = rules.companies.$companyId;
 
   assert.equal(tenantRules['.write'], false);
-  assert.match(tenantRules['.read'], /root\.child\('companies\/' \+ \$companyId \+ '\/users\/' \+ auth\.uid\)\.exists\(\)/);
+  assert.equal(tenantRules['.read'], 'auth != null && auth.token.superadmin == true');
+  assert.match(tenantRules.profile['.read'], /root\.child\('companies\/' \+ \$companyId \+ '\/users\/' \+ auth\.uid\)\.exists\(\)/);
+  assert.equal(tenantRules.profile['.write'], 'auth != null && auth.token.superadmin == true');
+  assert.match(tenantRules.financas['.read'], /permissions\/finance\/read/);
+  assert.match(tenantRules.financas['.read'], /adminActive'\)\.val\(\) != false/);
+  assert.match(tenantRules.financas['.read'], /ownerUid'\)\.val\(\) == auth\.uid/);
+  assert.doesNotMatch(tenantRules.financas['.read'], /profile\/email/);
+  assert.match(tenantRules.financas['.read'], /users\/' \+ auth\.uid \+ '\/companyId'\)\.val\(\) == \$companyId/);
+  assert.match(tenantRules.financas.receber.$month.$accountId['.write'], /ownerUid'\)\.val\(\) == auth\.uid/);
+  assert.match(tenantRules.financas.pagar.$month.$accountId['.write'], /subscriptionStatus'\)\.val\(\) == 'active'/);
+  assert.match(tenantRules.printPreferences['.write'], /ownerUid'\)\.val\(\) == auth\.uid/);
+  assert.match(tenantRules.finance_snapshots['.write'], /ownerUid'\)\.val\(\) == auth\.uid/);
+  assert.doesNotMatch(JSON.stringify(tenantRules.financas), /profile\/email/);
 
   for (const child of ['admin', 'adminSettings', 'roles', 'permissions', 'access', 'accessGovernance', 'system', 'settings']) {
     assert.match(tenantRules[child]['.write'], /auth\.token\.superadmin == true/);
@@ -46,14 +58,32 @@ test('rules liberam apenas caminhos operacionais seguros apos bloquear escrita h
     assert.ok(tenantRules[child], `${child} precisa ter regra propria`);
     assert.match(tenantRules[child]['.read'], /auth\.token\.companyID == \$companyId/);
     assert.match(tenantRules[child]['.read'], /root\.child\('companies\/' \+ \$companyId \+ '\/users\/' \+ auth\.uid\)\.exists\(\)/);
+    assert.match(tenantRules[child]['.read'], /permissions\/finance\/read/);
   }
 
   assert.match(tenantRules.printPreferences['.write'], /auth\.token\.tenantId == \$companyId/);
   assert.doesNotMatch(tenantRules.printPreferences['.write'], /subscriptionStatus == 'active'/);
+  assert.match(tenantRules.printPreferences['.write'], /permissions\/finance\/write/);
+  assert.doesNotMatch(tenantRules.printPreferences['.write'], /permissions\/finance\/read/);
 
-  for (const child of ['finance_snapshots', 'sequences']) {
-    assert.match(tenantRules[child]['.write'], /root\.child\('companies\/' \+ \$companyId \+ '\/users\/' \+ auth\.uid\)\.exists\(\)/);
-    assert.match(tenantRules[child]['.write'], /subscriptionStatus'\)\.val\(\) == 'trial_active'/);
+  assert.match(tenantRules.finance_snapshots['.write'], /root\.child\('companies\/' \+ \$companyId \+ '\/users\/' \+ auth\.uid\)\.exists\(\)/);
+  assert.match(tenantRules.finance_snapshots['.write'], /subscriptionStatus'\)\.val\(\) == 'trial_active'/);
+  assert.match(tenantRules.finance_snapshots['.write'], /permissions\/finance\/write/);
+  assert.equal(tenantRules.sequences['.write'], 'auth != null && auth.token.superadmin == true');
+
+  for (const type of ['receber', 'pagar']) {
+    const accountWrite = tenantRules.financas[type].$month.$accountId['.write'];
+    const accountValidate = tenantRules.financas[type].$month.$accountId['.validate'];
+    assert.match(accountWrite, /!data\.exists\(\)/);
+    assert.match(accountWrite, /!data\.hasChild\('historicosPagamento'\)/);
+    assert.match(accountWrite, /data\.child\('valorPago'\)\.val\(\) == 0/);
+    assert.match(accountWrite, /permissions\/finance\/write/);
+    assert.match(accountWrite, /roles\/' \+ auth\.uid \+ '\/companyId/);
+    assert.match(accountWrite, /roles\/' \+ auth\.uid \+ '\/role/);
+    assert.match(accountWrite, /root\.child\('companies\/' \+ \$companyId \+ '\/users\/' \+ auth\.uid\)\.exists\(\)/);
+    assert.match(accountValidate, /newData\.child\('id'\)\.val\(\) == \$accountId/);
+    assert.match(accountValidate, /newData\.child\('valorOriginal'\)\.val\(\) == newData\.child\('valor'\)\.val\(\)/);
+    assert.match(accountValidate, /!newData\.hasChild\('anexos'\)/);
   }
 });
 
@@ -84,6 +114,7 @@ test('onboarding gera companyId no servidor e primeiro usuario vira admin da emp
   assert.match(block, /companies\/\$\{companyId\}\/users\/\$\{uid\}/);
   assert.match(block, /role: 'admin'/);
   assert.match(block, /adminActive: true/);
+  assert.match(block, /ownerUid: uid/);
 });
 
 test('updateMyCompanyProfile resolve empresa server-side e rejeita IDOR', () => {
@@ -110,6 +141,17 @@ test('updateMyUserProfile salva perfil proprio por Admin SDK sem aceitar targetU
   assert.match(block, /applyUserPatchAcrossScopes\(uid, patch/);
   assert.doesNotMatch(block, /targetUid/);
   assert.doesNotMatch(block, /companyId\s*=/);
+});
+
+test('sincronizacao de usuario repara membership legado apenas com papel global do mesmo tenant', () => {
+  const source = read('functions/index.js');
+  const mirrorBlock = blockBetween(source, 'function buildMirrorUserPatch', 'async function syncRequestInScopes');
+
+  assert.match(mirrorBlock, /admin\.database\(\)\.ref\(`roles\/\$\{userUid\}`\)\.get\(\)/);
+  assert.match(mirrorBlock, /const roleCompanyId = String\(roleData\.companyId \|\| roleData\.companyID \|\| roleData\.tenantId \|\| ''\)\.trim\(\)/);
+  assert.match(mirrorBlock, /const matchingRoleData = roleCompanyId === companyId \? roleData : \{\}/);
+  assert.match(mirrorBlock, /\{ \.\.\.matchingRoleData, \.\.\.before, \.\.\.patchPayload \}/);
+  assert.match(mirrorBlock, /'role', 'permissions', 'adminPermissions', 'active', 'adminActive'/);
 });
 
 test('NF Functions validam tenant antes de certificado, escrita ou remocao', () => {

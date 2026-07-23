@@ -191,7 +191,7 @@ class FolhaLancamentos {
                 }
                 return;
             }
-            const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, get } = await import('../firebase-init.js');
             const primaryRef = ref(window.database, this._resolvePath('folhas'));
             const primarySnap = await get(primaryRef);
             const primaryArr = primarySnap.val() ? Object.entries(primarySnap.val()).map(([key, val]) => ({ ...(val || {}), id: key })) : [];
@@ -239,7 +239,7 @@ class FolhaLancamentos {
                 console.warn('⚠️ Firebase database não disponível em buscarTodasFolhas. Retornando cache atual.');
                 return Array.isArray(this.lancamentos) ? this.lancamentos : [];
             }
-            const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, get } = await import('../firebase-init.js');
             const primaryRef = ref(window.database, this._resolvePath('folhas'));
             const primarySnap = await get(primaryRef);
             const primaryArr = primarySnap.val() ? Object.entries(primarySnap.val()).map(([key, val]) => ({ id: key, ...(val || {}) })) : [];
@@ -600,7 +600,7 @@ class FolhaLancamentos {
         // Fallback: buscar diretamente do Firebase
         if (!lancamento && window.database) {
             try {
-                const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                const { ref, get } = await import('../firebase-init.js');
                 const snap = await get(ref(window.database, this._resolvePath(`folhas/${lancamentoId}`)));
                 if (snap.exists()) {
                     lancamento = { id: lancamentoId, ...(snap.val() || {}) };
@@ -848,7 +848,7 @@ class FolhaLancamentos {
             }
             if (!out && window.database) {
                 try {
-                    const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                    const { ref, get } = await import('../firebase-init.js');
                     const primaryPath = this._resolvePath(`folhas/${lancamentoId}`);
                     let snap = await get(ref(window.database, primaryPath));
                     if (!snap.exists() && primaryPath !== `folhas/${lancamentoId}`) {
@@ -1862,7 +1862,7 @@ class FolhaLancamentos {
                     // Tentar gerar ID compatível com Firebase
                     // Se estiver online ou com SDK carregado
                     if (window.database) {
-                        const { ref, push } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                        const { ref, push } = await import('../firebase-init.js');
                         newId = push(ref(window.database, 'folhas')).key;
                     }
                 } catch(e) {}
@@ -3239,7 +3239,7 @@ async function __findLancamentoById(id) {
     }
     if (!l && window.database) {
         try {
-            const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, get } = await import('../firebase-init.js');
             const resolvePath = (p) => {
                 try {
                     if (window.folhaLancamentos && typeof window.folhaLancamentos._resolvePath === 'function') {

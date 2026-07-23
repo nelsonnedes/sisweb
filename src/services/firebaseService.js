@@ -1,20 +1,38 @@
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
-  authDomain: "sisweb-7ce82.firebaseapp.com",
-  databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "sisweb-7ce82",
-  storageBucket: "sisweb-7ce82.firebasestorage.app",
-  messagingSenderId: "240003261222",
-  appId: "1:240003261222:web:1aeaf919ddc7e5c691d7e7",
-  measurementId: "G-FTC6JZ5ZGX"
-};
+import '../../firebase-compat-bridge.js';
 
-const app = !firebase.apps.length ? firebase.initializeApp(firebaseConfig) : firebase.getApp();
+const firebase = window.firebase;
+if (!firebase) throw new Error('Ponte Firebase compartilhada indisponível.');
+
+const app = firebase.app;
 const authService = firebase.auth();
-const firestoreService = typeof firebase.firestore === 'function' ? firebase.firestore() : null;
 const rtdbService = typeof firebase.database === 'function' ? firebase.database() : null;
 let tenantId = null;
+
+function getAuthPerformanceDiagnosticsCompany() {
+    try { return window.__SISWEB_AUTH_PERF__ || null; } catch (_) { return null; }
+}
+
+function authPerfCompanyPhase(name, outcome = 'observed', durationMs = 0) {
+    try { getAuthPerformanceDiagnosticsCompany()?.phase(name, 'company_service', outcome, durationMs); } catch (_) {}
+}
+
+function authPerfCompanyRead(path, kind = 'logical', outcome = 'started', durationMs = 0) {
+    try { getAuthPerformanceDiagnosticsCompany()?.read(path, 'company_service', kind, outcome, durationMs); } catch (_) {}
+}
+
+function authPerfCompanyListener(kind, action, durationMs = 0) {
+    try { getAuthPerformanceDiagnosticsCompany()?.listener(kind, action, 'company_service', durationMs); } catch (_) {}
+}
+
+function authPerfCompanyTenant(value) {
+    try { getAuthPerformanceDiagnosticsCompany()?.tenant(value, 'company_service'); } catch (_) {}
+}
+
+function authPerfCompanyTokenRefresh(reason, outcome = 'started', durationMs = 0) {
+    try { getAuthPerformanceDiagnosticsCompany()?.tokenRefresh(reason, 'company_service', outcome, durationMs); } catch (_) {}
+}
+
+authPerfCompanyPhase('firebase_init_ready', 'ready');
 
 function sanitizeTenantId(value) {
     const raw = value ? String(value).trim() : '';
@@ -55,17 +73,29 @@ function getNamespacedPath(path) {
 
 authService.getCurrentUser = function() {
     return new Promise((resolve) => {
+        const listenerStartedAt = Date.now();
+        let diagnosticsSettled = false;
+        const finishDiagnostics = (action) => {
+            if (diagnosticsSettled) return;
+            diagnosticsSettled = true;
+            authPerfCompanyListener('auth', action, Date.now() - listenerStartedAt);
+            authPerfCompanyListener('auth', 'remove', Date.now() - listenerStartedAt);
+        };
+        authPerfCompanyListener('auth', 'add');
         const unsubscribe = authService.onAuthStateChanged(
             (user) => {
+                finishDiagnostics('first_value');
                 try { unsubscribe(); } catch (_) {}
                 resolve(user || null);
             },
             () => {
+                finishDiagnostics('error');
                 try { unsubscribe(); } catch (_) {}
                 resolve(null);
             }
         );
         setTimeout(() => {
+            finishDiagnostics('timeout');
             try { unsubscribe(); } catch (_) {}
             resolve(authService.currentUser || null);
         }, 5000);
@@ -81,11 +111,14 @@ function isFirebaseOperational() {
 }
 
 async function loadFromFirebase(path) {
+    authPerfCompanyRead(path, 'logical');
     if (!rtdbService) {
         return { success: false, error: 'Realtime Database indisponível' };
     }
     try {
-        const snapshot = await rtdbService.ref(getNamespacedPath(path)).once('value');
+        const finalPath = getNamespacedPath(path);
+        authPerfCompanyRead(finalPath, 'physical');
+        const snapshot = await rtdbService.ref(finalPath).once('value');
         return { success: true, data: snapshot.val(), source: 'firebase' };
     } catch (error) {
         return { success: false, error: error.message };
@@ -180,6 +213,27 @@ async function getDownloadURLFromStorage(pathOrUrl) {
     return await storage.ref().child(raw).getDownloadURL();
 }
 
+function extractStoragePathFromUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^gs:\/\//i.test(raw)) {
+        return raw.replace(/^gs:\/\/[^/]+\//i, '').replace(/^\/+/, '');
+    }
+    if (!/^https?:\/\//i.test(raw)) return raw.replace(/^\/+/, '');
+    try {
+        const url = new URL(raw, window.location && window.location.origin ? window.location.origin : undefined);
+        const host = String(url.hostname || '').toLowerCase();
+        const isStorageHost = host.includes('firebasestorage.googleapis.com') || host.endsWith('.firebasestorage.app');
+        if (!isStorageHost) return '';
+        const marker = '/o/';
+        const index = url.pathname.indexOf(marker);
+        if (index < 0) return '';
+        return decodeURIComponent(url.pathname.slice(index + marker.length)).replace(/^\/+/, '');
+    } catch (_) {
+        return '';
+    }
+}
+
 async function uploadCompanyLogo(file, companyId, options = {}) {
     if (!file) throw new Error('Arquivo de logo não informado');
     const tenant = sanitizeTenantId(companyId || options.companyId || getTenantId());
@@ -190,11 +244,24 @@ async function uploadCompanyLogo(file, companyId, options = {}) {
     if (Number(file.size || 0) > maxSize) throw new Error('A logo deve ter no máximo 2MB para cumprir as regras do Storage');
 
     const safeName = String(file.name || 'logo.png').replace(/[^\w.\-]+/g, '_').slice(0, 90) || 'logo.png';
-    const path = `companies/${tenant}/profile/logo/${Date.now()}_${safeName}`;
+    const path = `companies/${tenant}/profile/logo/current`;
+    const logoPrefix = `companies/${tenant}/profile/logo/`;
+    const previousPathCandidate = String(
+        options.previousStoragePath
+        || options.logoStoragePath
+        || options.logoPath
+        || options.previousPath
+        || extractStoragePathFromUrl(options.previousLogoUrl || options.logoUrl || '')
+        || ''
+    ).trim();
+    const previousPath = extractStoragePathFromUrl(previousPathCandidate).trim().replace(/^\/+/, '');
     const result = await uploadFile(path, file);
     if (!result || result.success === false) {
         throw new Error((result && result.error) || 'Falha no upload da logo');
     }
+    const previousStoragePath = previousPath && previousPath !== path && previousPath.startsWith(logoPrefix)
+        ? previousPath
+        : '';
     return {
         success: true,
         data: {
@@ -205,7 +272,8 @@ async function uploadCompanyLogo(file, companyId, options = {}) {
             name: safeName,
             contentType: type,
             size: Number(file.size || 0),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            previousStoragePath
         }
     };
 }
@@ -229,6 +297,7 @@ async function deleteStorageFile(pathOrUrl) {
 
 function setTenantId(id) {
     tenantId = sanitizeTenantId(id);
+    authPerfCompanyTenant(tenantId);
     try {
         if (typeof window !== 'undefined') window.appTenantId = tenantId || null;
     } catch (_) {}
@@ -420,10 +489,6 @@ async function getCompanyProfileForReport(options = {}) {
             const profile = await loadFromFirebase(`companies/${companyId}/profile`);
             if (profile && profile.success && profile.data && typeof profile.data === 'object') data = { ...data, ...profile.data };
         } catch (_) {}
-        try {
-            const root = await loadFromFirebase(`companies/${companyId}`);
-            if (root && root.success && root.data && typeof root.data === 'object') data = { ...root.data, ...data };
-        } catch (_) {}
     }
     try {
         const raw = localStorage.getItem('company_info');
@@ -474,6 +539,7 @@ async function createCompanyAndSetClaim(companyData, userUid) {
         const callable = firebase.functions().httpsCallable('setCompanyClaim');
         await callable({ targetUid: resolvedUid, companyId });
         if (currentUser && typeof currentUser.getIdTokenResult === 'function') {
+            authPerfCompanyTokenRefresh('claims_changed');
             await currentUser.getIdTokenResult(true);
         }
         setTenantId(companyId);
@@ -510,7 +576,6 @@ async function createCompanyAndSetClaim(companyData, userUid) {
 window.firebaseService = {
     app,
     authService,
-    dbService: firestoreService,
     rtdbService,
     isOperational,
     isFirebaseOperational,
@@ -524,6 +589,7 @@ window.firebaseService = {
     uploadFile,
     getDownloadURL: getDownloadURLFromStorage,
     getStorageDownloadURL: getDownloadURLFromStorage,
+    extractStoragePathFromUrl,
     uploadCompanyLogo,
     storage: {
         upload: async (path, file, options = {}) => {

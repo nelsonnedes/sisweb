@@ -1,0 +1,225 @@
+/**
+ * firebase-compat-bridge.js
+ *
+ * Ponte de compatibilidade: emula a API compat do Firebase (window.firebase.xxx())
+ * usando o SDK modular do firebase-init.js. Permite que páginas legadas continuem
+ * usando firebase.database().ref(), firebase.auth(), etc. sem carregar o SDK compat
+ * do CDN.
+ *
+ * Uso: import './firebase-compat-bridge.js';  // define window.firebase automaticamente
+ *
+ * API emulada:
+ *   firebase.initializeApp()          → no-op (app já inicializado)
+ *   firebase.apps / firebase.apps.length → app list
+ *   firebase.auth()                    → auth wrapper
+ *   firebase.auth().currentUser        → auth.currentUser
+ *   firebase.auth().onAuthStateChanged(cb) → onAuthStateChanged(auth, cb)
+ *   firebase.auth().signOut()          → signOut(auth)
+ *   firebase.database()               → database wrapper
+ *   firebase.database().ref(path)      → Reference wrapper
+ *   firebase.database().ref(path).once('value') → get()
+ *   firebase.database().ref(path).set(data)     → set()
+ *   firebase.database().ref(path).update(data)  → update()
+ *   firebase.database().ref(path).remove()      → remove()
+ *   firebase.database().ref(path).push(data)    → push()
+ *   firebase.database().ref(path).on('value', cb) → onValue()
+ *   firebase.database().ref(path).off()          → off()
+ *   firebase.database().ServerValue.TIMESTAMP    → serverTimestamp()
+ *   firebase.functions()               → functions wrapper
+ *   firebase.functions().httpsCallable(name)     → httpsCallable(functions, name)
+ *   firebase.storage()                 → storage wrapper (se necessário)
+ */
+
+import {
+  app, auth, db, storage, functions,
+  ref, set, get, remove, push, update, child,
+  onValue, off, serverTimestamp,
+  onAuthStateChanged, signOut,
+  signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  httpsCallable,
+  storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject
+} from './firebase-init.js';
+
+// ─── Database Reference Wrapper ──────────────────────────────────────────────
+
+function createCompatRef(databaseRef) {
+  const compatRef = {
+    _ref: databaseRef,
+
+    once(eventType) {
+      if (eventType === 'value') {
+        return get(databaseRef).then(snapshot => ({
+          val: () => snapshot.val(),
+          exists: () => snapshot.exists(),
+          forEach: (cb) => { snapshot.forEach(cb); }
+        }));
+      }
+      return get(databaseRef).then(snapshot => ({
+        val: () => snapshot.val(),
+        exists: () => snapshot.exists()
+      }));
+    },
+
+    set(value) {
+      return set(databaseRef, value);
+    },
+
+    update(value) {
+      return update(databaseRef, value);
+    },
+
+    remove() {
+      return remove(databaseRef);
+    },
+
+    push(value) {
+      const newRef = push(databaseRef);
+      if (value !== undefined) {
+        return set(newRef, value).then(() => newRef);
+      }
+      return Promise.resolve(newRef);
+    },
+
+    on(eventType, callback, cancelCallback) {
+      if (eventType === 'value') {
+        return onValue(databaseRef, (snapshot) => {
+          callback({
+            val: () => snapshot.val(),
+            exists: () => snapshot.exists(),
+            forEach: (cb) => { snapshot.forEach(cb); }
+          });
+        }, cancelCallback);
+      }
+    },
+
+    off(eventType, callback) {
+      return off(databaseRef, eventType, callback);
+    },
+
+    child(path) {
+      return createCompatRef(child(databaseRef, path));
+    },
+
+    toString() {
+      return databaseRef.toString();
+    }
+  };
+  return compatRef;
+}
+
+// ─── Database Wrapper ────────────────────────────────────────────────────────
+
+function createCompatDatabase() {
+  return {
+    ref(path) {
+      return createCompatRef(ref(db, path));
+    },
+    ServerValue: {
+      TIMESTAMP: serverTimestamp()
+    }
+  };
+}
+
+// ─── Auth Wrapper ────────────────────────────────────────────────────────────
+
+function createCompatAuth() {
+  const compatAuth = {
+    get currentUser() { return auth.currentUser; },
+
+    onAuthStateChanged(callback) {
+      return onAuthStateChanged(auth, callback);
+    },
+
+    signOut() {
+      return signOut(auth);
+    },
+
+    signInWithEmailAndPassword(email, password) {
+      return signInWithEmailAndPassword(auth, email, password)
+        .then(userCredential => ({
+          user: userCredential.user
+        }));
+    },
+
+    createUserWithEmailAndPassword(email, password) {
+      return createUserWithEmailAndPassword(auth, email, password)
+        .then(userCredential => ({
+          user: userCredential.user
+        }));
+    }
+  };
+  return compatAuth;
+}
+
+// ─── Functions Wrapper ───────────────────────────────────────────────────────
+
+function createCompatFunctions() {
+  return {
+    httpsCallable(name) {
+      const callable = httpsCallable(functions, name);
+      return (data) => callable(data).then(result => ({
+        data: result.data
+      }));
+    }
+  };
+}
+
+// ─── Storage Wrapper ─────────────────────────────────────────────────────────
+
+function createCompatStorage() {
+  return {
+    ref(path) {
+      const storageReference = storageRef(storage, path);
+      return {
+        put(file) {
+          return uploadBytes(storageReference, file).then(snapshot => ({
+            ref: storageReference,
+            snapshot
+          }));
+        },
+        getDownloadURL() {
+          return getDownloadURL(storageReference);
+        },
+        delete() {
+          return deleteObject(storageReference);
+        },
+        child(subPath) {
+          const childRef = storageRef(storage, path ? `${path}/${subPath}` : subPath);
+          return createCompatStorageRef(childRef);
+        }
+      };
+    }
+  };
+}
+
+function createCompatStorageRef(storageReference) {
+  return {
+    put(file) {
+      return uploadBytes(storageReference, file).then(snapshot => ({
+        ref: storageReference,
+        snapshot
+      }));
+    },
+    getDownloadURL() {
+      return getDownloadURL(storageReference);
+    },
+    delete() {
+      return deleteObject(storageReference);
+    }
+  };
+}
+
+// ─── Global firebase object ──────────────────────────────────────────────────
+
+window.firebase = {
+  app,
+  apps: [app],
+  initializeApp: () => app,
+
+  auth: createCompatAuth,
+  database: createCompatDatabase,
+  functions: createCompatFunctions,
+  storage: createCompatStorage
+};
+
+console.log('✅ firebase-compat-bridge: API compat emulada via firebase-init.js (modular)');

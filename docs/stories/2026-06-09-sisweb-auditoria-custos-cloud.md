@@ -2,6 +2,8 @@
 
 Data: 2026-06-09
 
+Status: Ready for Review
+
 ## Contexto
 
 O Console Billing mostrou custo atual do projeto `sisweb-7ce82` em torno de R$ 17,42 no mes e previsao aproximada de R$ 70,03. O maior servico visivel no print foi `Cloud SQL`, com aproximadamente R$ 15,11.
@@ -25,6 +27,22 @@ Como o Sisweb em producao usa Firebase Hosting, Realtime Database, Storage e Clo
 - [x] Verificacao complementar em 2026-06-16 confirmou via Firebase CLI que o Data Connect `nelsonnedesbrito` existe em `us-east4`, apontando para a instancia Cloud SQL `nelsonnedesbrito-fdc` e banco `fdcdb`.
 - [x] Owner autorizou exclusao; apos logs sem trafego desde 2026-06-10, o servico Data Connect `nelsonnedesbrito` e a instancia Cloud SQL `nelsonnedesbrito-fdc` foram excluidos em 2026-06-16.
 
+## Hardening e reducao de custos - 2026-07-14
+
+- [x] Hosting deixou de publicar a raiz do repositorio e passou a usar `hosting-dist`, gerado por allowlist de 446 arquivos.
+- [x] Versoes antigas do Hosting que expunham arquivos internos foram removidas; retencao do canal `live` reduzida de 50 para 10 releases.
+- [x] Varredura completa do historico Git com Gitleaks confirmou apenas chaves Web Firebase publicas e falsos positivos; as tres chaves Web foram restringidas por dominio/API e os alertas GitHub foram encerrados sem expor valores.
+- [x] Backup Firestore concluido em `gs://sisweb-7ce82-firestore-backup-sae1/firestore-decommission-20260714`, com lifecycle de 30 dias e soft delete de 7 dias.
+- [x] PITR desativado, banco Firestore vazio removido e APIs Firestore, Key Visualizer, Data Connect, Vertex AI e SQL Admin desativadas.
+- [x] `datastore.googleapis.com` e `sql-component.googleapis.com` foram mantidas porque a plataforma reportou dependencias ativas; nenhuma desativacao forcada foi executada.
+- [x] Configuracao local de Firestore/Data Connect removida e rotas ativas deixaram de inicializar o SDK Firestore sem uso.
+- [x] Historico de notificacoes de Billing foi respaldado em `D:\Sisweb-cloud-billing-budgetNotifications-20260714-133547.json` e reduzido de 2.059 para 200 registros.
+- [x] Function de Billing passou a deduplicar eventos, manter agregado por budget e podar automaticamente o historico acima de 200 registros.
+- [x] Menu e dashboard SuperAdmin deixaram de carregar a arvore completa de notificacoes; o painel consulta no maximo 50 eventos recentes e agrega leituras isoladamente.
+- [x] Artifact Registry `gcf-artifacts` foi mantido por sustentar Cloud Functions em producao; a policy gerenciada `firebase-functions-cleanup` ja remove artefatos antigos.
+- [x] Rules, Function e Hosting publicados; versao final do Hosting `2f04bcbb871c9881` validada com rotas criticas em HTTP 200 e caminhos internos em HTTP 404.
+- [x] Quality gates finais: lint, typecheck, lint das Functions, build do Hosting e 193 testes aprovados.
+
 ## Achados
 
 1. `Cloud SQL` parece ser o principal custo atual no Console, mas nao apareceu uso direto de `mysql`, `postgres`, `cloudsql`, `sqladmin` ou conexao SQL no codigo Sisweb analisado.
@@ -39,6 +57,9 @@ Como o Sisweb em producao usa Firebase Hosting, Realtime Database, Storage e Clo
 10. Em 2026-06-16, `firebase dataconnect:services:list --project sisweb-7ce82` confirmou o servico Data Connect `nelsonnedesbrito`, local `us-east4`, Data Source `CloudSQL Instance: nelsonnedesbrito-fdc`, Database `fdcdb`, Schema Last Updated `2026-06-08T19:18:11.965689459Z`, sem Connector ID preenchido.
 11. Embora o ambiente local nao possua `gcloud`, a checagem de logs foi feita usando a autenticacao do Firebase CLI contra as APIs Google.
 12. Logs de Cloud SQL e Data Connect desde `2026-06-10T00:00:00Z` retornaram zero entradas; em seguida Data Connect e Cloud SQL foram excluidos e as listagens finais retornaram sem servicos/instancias.
+13. O Hosting antigo servia a raiz do repositorio e permitia acesso publico ao historico `.git`; a entrega por allowlist eliminou esse vetor.
+14. `budgetNotifications` acumulava mais de duas mil entradas e era lido integralmente pelo menu e pelo Admin, aumentando armazenamento e transferencia sem ganho operacional.
+15. As referencias Firestore alcancaveis em `company.html` e `romaneiotora.html` carregavam apenas o SDK; nao havia leitura/escrita, e o export do banco confirmou ausencia de dados.
 
 ## Fila recomendada
 
@@ -54,17 +75,35 @@ Como o Sisweb em producao usa Firebase Hosting, Realtime Database, Storage e Clo
 - Cloud Logging API: zero entradas para Cloud SQL/Data Connect desde `2026-06-10T00:00:00Z`
 - Exclusao 2026-06-16: Data Connect `projects/sisweb-7ce82/locations/us-east4/services/nelsonnedesbrito` e Cloud SQL `nelsonnedesbrito-fdc`
 - Validacao final 2026-06-16: `firebase dataconnect:services:list --project sisweb-7ce82` sem servicos e Cloud SQL Admin API com `count: 0`
+- `gcloud services list --enabled --project=sisweb-7ce82` em 2026-07-14: APIs Firestore, Data Connect, Vertex AI e SQL Admin ausentes; APIs dependentes mantidas sem `--force`.
+- `firebase functions:list --project sisweb-7ce82`: `ingestCloudBillingBudgetNotification` ACTIVE, Node.js 22, 2nd Gen.
+- `firebase hosting:channel:list --site sisweb-7ce82`: versao `2f04bcbb871c9881`, FINALIZED, retencao 10.
+- Backup das notificacoes: 2.059 registros, 1.137.066 bytes, SHA-256 `DBE856DA3BA0783E6FBF9F89E50505994E77DE9F0BEE2A94F424723DE97C7F27`.
+- Smoke HTTP: `/`, `/company.html`, `/romaneiotora.html`, `/admin.html`, `/firebaseService.js` e `/scripts/admin/admin-main.js` em 200; `.git`, `.claude`, Data Connect e service account em 404.
+- `npm run lint`, `npm run typecheck`, `npm --prefix functions run lint`, `npm test` e `npm run build:hosting` aprovados.
 - `rg` por `cloudsql`, `mysql`, `postgres`, `sqladmin`, `setInterval`, `onValue`, `loadFromFirebase`, `getAll`, `base64`, `data:image`
 - Prints do Console Billing enviados em 2026-06-09
 
 ## Arquivos
 
 - `functions/index.js`
+- `.gitignore`
+- `firebase.json`
+- `hosting-files.json`
+- `scripts/build-hosting.mjs`
+- `database.rules.json`
 - `admin.html`
 - `scripts/admin/admin-main.js`
+- `menu-component.js`
+- `company.html`
+- `romaneiotora.html`
+- `src/services/firebaseService.js`
 - `styles/admin-premium.css`
 - `tests/superadmin-google-cloud-billing.test.mjs`
+- `tests/global-first-wave.test.mjs`
 - `firebaseService.js`
+- `dataconnect/dataconnect.yaml` (removido)
+- `dataconnect/schema/schema.gql` (removido)
 - `docs/runbooks/google-cloud-billing-cost-ops.md`
 - `docs/stories/2026-06-08-superadmin-alerta-faturamento-firebase.md`
 - `docs/stories/2026-06-09-sisweb-auditoria-custos-cloud.md`

@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseio.com https://*.firebasedatabase.app https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://apis.google.com https://www.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com; script-src-elem 'self' 'unsafe-inline' https://*.firebaseio.com https://*.firebasedatabase.app https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://apis.google.com https://www.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebaseio.com wss://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://cdn.jsdelivr.net https://www.googleapis.com https://firebasestorage.googleapis.com https://www.google-analytics.com https://us-central1-sisweb-7ce82.cloudfunctions.net;">
     <title>Dashboard - Sistema Sisweb</title>
+    <script>
+        if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
+            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
+        }
+    </script>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
@@ -47,16 +52,20 @@
         })();
     </script>
     
-    <script defer src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
+    <script defer src="menu-component.js?v=a26e67eb025d"></script>
     <!-- Firebase SDK -->
-    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    
-    <!-- Módulos do Dashboard -->
-    <script defer src="modules/core/firebase-service.js"></script>
-    <script defer src="modules/core/responsive-manager.js"></script>
-    <script defer src="modules/dashboard/dashboard-core.js"></script>
-    <script defer src="modules/dashboard/dashboard-widgets.js"></script>
+    <!-- Firebase via módulo compartilhado (singleton) -->
+
+    <script type="module">
+
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js';
+import './firebase-compat-bridge.js';  // compat shim
+
+    </script><!-- Módulos do Dashboard -->
+    <script defer src="modules/core/firebase-service.js?v=f1a56093d8d4"></script>
+    <script defer src="modules/core/responsive-manager.js?v=dee4c97c8f56"></script>
+    <script defer src="modules/dashboard/dashboard-core.js?v=e417c7a5ccc8"></script>
+    <script defer src="modules/dashboard/dashboard-widgets.js?v=4b0c758f6662"></script>
     <!-- Adicionar fontes do Google para melhorar a tipografia -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -909,30 +918,39 @@
                     return window.firebaseServiceTL || window.firebaseService || window.FirebaseService || null;
                 }
 
-                function isOfflineDashboardFallbackAllowed() {
-                    try {
-                        if (window._FIREBASE_CONNECTED === false) return true;
-                    } catch (_) {}
+                let dashboardRecoverySubscribed = false;
+                let dashboardRecoveryInFlight = false;
+
+                async function retryDashboardAfterSessionRecovery() {
+                    if (dashboardRecoveryInFlight) return;
+                    dashboardRecoveryInFlight = true;
                     try {
                         const svc = getDashboardFirebaseService();
-                        if (svc && typeof svc.isFirebaseAvailable === 'boolean') {
-                            return svc.isFirebaseAvailable === false;
-                        }
-                    } catch (_) {}
-                    return false;
+                        if (!svc || typeof svc.resolveAuthenticatedTenant !== 'function') return;
+                        const context = await svc.resolveAuthenticatedTenant({ timeoutMs: 5000, refreshContext: true });
+                        if (context && context.success) window.location.reload();
+                    } catch (_) {
+                    } finally {
+                        dashboardRecoveryInFlight = false;
+                    }
                 }
 
-                function getCachedDashboardTenant() {
-                    try {
-                        if (window.appTenantId) return String(window.appTenantId);
-                        const raw = localStorage.getItem('company_info');
-                        if (!raw) return null;
-                        const info = JSON.parse(raw);
-                        const id = info && (info.companyId || info.companyID || info.tenantId || info.id);
-                        return id ? String(id) : null;
-                    } catch (_) {
-                        return null;
+                function scheduleDashboardSessionRecovery() {
+                    if (dashboardRecoverySubscribed) return;
+                    dashboardRecoverySubscribed = true;
+                    const svc = getDashboardFirebaseService();
+                    const subscribe = svc && typeof svc.subscribeAuthState === 'function'
+                        ? (callback) => svc.subscribeAuthState(callback)
+                        : (svc && svc.authService && typeof svc.authService.onAuthStateChanged === 'function'
+                            ? (callback) => svc.authService.onAuthStateChanged(callback)
+                            : null);
+                    if (subscribe) {
+                        subscribe((user) => {
+                            if (user) void retryDashboardAfterSessionRecovery();
+                        });
                     }
+                    window.addEventListener('online', retryDashboardAfterSessionRecovery, { once: true });
+                    window.setTimeout(retryDashboardAfterSessionRecovery, 1500);
                 }
 
                 function clearDashboardTenantContext() {
@@ -957,62 +975,51 @@
                 async function enforceTenantContext() {
                     try {
                         const svc = getDashboardFirebaseService();
-                        if (svc && typeof svc.waitForAuthReady === 'function') {
-                            try { await svc.waitForAuthReady(2500); } catch (_) {}
+                        if (!svc || typeof svc.resolveAuthenticatedTenant !== 'function') {
+                            return { success: false, code: 'session-service-unavailable' };
                         }
-                        const auth = (window.firebase && typeof window.firebase.auth === 'function') ? window.firebase.auth() : null;
-                        const user = auth && auth.currentUser ? auth.currentUser : null;
-                        if (!user) {
-                            const allowOfflineFallback = isOfflineDashboardFallbackAllowed();
-                            const fallbackTenant = allowOfflineFallback ? getCachedDashboardTenant() : null;
-                            if (allowOfflineFallback && fallbackTenant) {
-                                if (svc && typeof svc.setTenantId === 'function') svc.setTenantId(fallbackTenant);
-                                window.appTenantId = fallbackTenant;
-                                try { window.dispatchEvent(new CustomEvent('tenantContextReady', { detail: { tenantId: fallbackTenant } })); } catch (_) {}
-                                return { success: true, authenticated: false, offline: true, companyId: fallbackTenant };
+                        const context = await svc.resolveAuthenticatedTenant({ timeoutMs: 5000 });
+                        if (context && context.success) {
+                            if (context.companyId) {
+                                const companyId = String(context.companyId);
+                                try { window.dispatchEvent(new CustomEvent('tenantContextReady', { detail: { tenantId: companyId } })); } catch (_) {}
+                            } else if (context.superAdmin === true) {
+                                try { window.dispatchEvent(new CustomEvent('tenantContextReady', { detail: { tenantId: null, superAdmin: true } })); } catch (_) {}
+                                window.location.replace('admin.html?tab=dashboard');
+                                return { ...context, redirected: true };
                             }
+                            return context;
+                        }
+
+                        if (context && (
+                            context.code === 'auth-timeout'
+                            || context.code === 'auth-observer-error'
+                            || context.code === 'session-context-error'
+                            || context.code === 'stale-auth-generation'
+                        )) {
+                            scheduleDashboardSessionRecovery();
+                            return context;
+                        }
+
+                        if (context && context.code === 'firebase-auth-required') {
                             clearDashboardTenantContext();
                             redirectDashboardToLogin('tenant_required');
                             return { success: false, redirected: true, code: 'tenant_required' };
                         }
-                        let companyId = null;
-                        if (svc && typeof svc.loadData === 'function') {
-                            try {
-                                const profileRes = await svc.loadData(`users/${user.uid}`);
-                                const profile = profileRes && profileRes.success ? profileRes.data : profileRes;
-                                companyId = profile && (profile.companyId || profile.companyID || profile.tenantId) || null;
-                            } catch (_) {}
-                        }
-                        if (!companyId) {
-                            try {
-                                if (typeof user.getIdTokenResult === 'function') {
-                                    const token = await user.getIdTokenResult(true);
-                                    companyId = token && token.claims && (token.claims.companyId || token.claims.companyID || token.claims.tenantId) || null;
-                                }
-                            } catch (_) {}
-                        }
-                        if (companyId) {
-                            if (svc && typeof svc.setTenantId === 'function') svc.setTenantId(companyId);
-                            window.appTenantId = String(companyId);
-                            try {
-                                const raw = localStorage.getItem('company_info');
-                                const prev = raw ? JSON.parse(raw) : {};
-                                const next = { ...prev, companyId: String(companyId), id: prev.id || String(companyId) };
-                                localStorage.setItem('company_info', JSON.stringify(next));
-                                window.companyInfo = next;
-                            } catch (_) {}
-                            try { window.dispatchEvent(new CustomEvent('tenantContextReady', { detail: { tenantId: String(companyId) } })); } catch (_) {}
-                            return { success: true, authenticated: true, companyId: String(companyId) };
-                        } else {
+                        if (context && context.code === 'missing-companyId') {
                             clearDashboardTenantContext();
-                            return { success: false, authenticated: true, companyId: null, code: 'missing-companyId' };
+                            return context;
                         }
+                        return context || { success: false, code: 'tenant-guard-error' };
                     } catch (_) {
                         return { success: false, code: 'tenant-guard-error' };
                     }
                 }
                 const tenantContext = await enforceTenantContext();
-                if (tenantContext && tenantContext.redirected) return;
+                if (!tenantContext || tenantContext.success !== true || tenantContext.redirected) {
+                    console.warn('Dashboard aguardando uma sessão autenticada e tenant confirmado.');
+                    return;
+                }
                 
                 try {
                     if (window.hybridSync) {
@@ -1315,67 +1322,6 @@
                 
                 return true;
             };
-    </script>
-    <script>
-        // Verificação de segurança de acesso à empresa
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Aguardar um momento para o Firebase inicializar
-            setTimeout(async () => {
-                try {
-                    const isSuperAdmin = window.isSuperAdminSession && await window.isSuperAdminSession();
-                    const hasAdminPanelAccess = window.hasAnyAdminPanelAccess && await window.hasAnyAdminPanelAccess();
-                    if (isSuperAdmin || hasAdminPanelAccess) {
-                        if (!window.location.pathname.toLowerCase().includes('admin.html')) {
-                            window.location.href = 'admin.html?tab=dashboard';
-                            return;
-                        }
-                    }
-                } catch (_) {}
-                const path = window.location.pathname;
-                const isCompanyPage = path.includes('company.html') || path.includes('login.html') || path.includes('reset-system.html');
-                
-                if (!isCompanyPage) {
-                    try {
-                        // Tentar obter informações da empresa do localStorage primeiro (mais rápido)
-                        const localCompany = localStorage.getItem('company_info');
-                        if (!localCompany) {
-                            console.warn('⚠️ Nenhuma empresa detectada no cache local. Verificando Firebase...');
-
-                            let restoredCompany = null;
-                            if (window.firebaseService && typeof window.firebaseService.getCompanyProfileForReport === 'function') {
-                                try {
-                                    const result = await window.firebaseService.getCompanyProfileForReport();
-                                    restoredCompany = result && result.success !== false ? (result.data || result) : null;
-                                    if (restoredCompany && restoredCompany.companyId) {
-                                        localStorage.setItem('company_info', JSON.stringify(restoredCompany));
-                                        window.companyInfo = restoredCompany;
-                                        window.appTenantId = restoredCompany.companyId;
-                                    }
-                                } catch (companyErr) {
-                                    console.warn('⚠️ Falha ao restaurar empresa do usuário logado:', companyErr.message);
-                                }
-                            }
-
-                            if (!restoredCompany && window.isSuperAdminSession && await window.isSuperAdminSession() && window.firebaseService && typeof window.firebaseService.getAll === 'function') {
-                                try {
-                                    const companies = await window.firebaseService.getAll('companies');
-                                    if (!companies || companies.length === 0) {
-                                        console.warn('⚠️ Nenhuma empresa cadastrada no sistema. Redirecionando para cadastro...');
-                                        if (!sessionStorage.getItem('ignore_company_redirect')) {
-                                            window.location.href = 'company.html?reason=setup_required';
-                                        }
-                                    }
-                                } catch (compErr) {
-                                    console.warn('⚠️ Falha ao verificar companies na raiz:', compErr.message);
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        console.error('Erro na verificação de empresa:', e);
-                    }
-                }
-            }, 350); // Evitar redirecionamento tardio que causa piscada visível no dashboard
-        });
     </script>
     </div>
 </body>

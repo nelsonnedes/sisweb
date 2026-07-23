@@ -1063,14 +1063,7 @@ async function ensureTenantContext(timeoutMs = 10000) {
         } catch (_) {}
     }
 
-    let tenant = isOffline ? getCachedTenant() : null;
-    if (tenant) {
-        try {
-            const svc = getEstoqueFirebaseService();
-            if (svc && typeof svc.setTenantId === 'function') svc.setTenantId(tenant);
-        } catch (_) {}
-        return tenant;
-    }
+    let tenant = null;
 
     while (!tenant && (Date.now() - start) < timeoutMs) {
         try {
@@ -1114,7 +1107,7 @@ async function ensureTenantContext(timeoutMs = 10000) {
         } catch (_) {}
         if (tenant) break;
         await new Promise((resolve) => setTimeout(resolve, 250));
-        tenant = isOffline ? getCachedTenant() : null;
+        tenant = null;
     }
     if (!tenant && !isOffline) limparContextoEmpresaEstoqueInseguro();
     return tenant;
@@ -6918,22 +6911,12 @@ async function obterDadosEmpresaRelatorio() {
 
         if (tenantId && svc && typeof svc.loadFromFirebase === 'function') {
             try {
-                const byPathRoot = await svc.loadFromFirebase(`companies/${tenantId}`);
-                const byPathRootData = byPathRoot && (byPathRoot.success ? byPathRoot.data : byPathRoot.data);
-                if (byPathRootData && typeof byPathRootData === 'object' && (byPathRootData.nome || byPathRootData.name)) {
-                    empresa = { ...byPathRootData, id: tenantId, companyId: tenantId, tenantId: tenantId };
+                const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
+                const byPathData = byPath && (byPath.success === true ? byPath.data : (byPath.success === false ? null : byPath));
+                if (byPathData && typeof byPathData === 'object') {
+                    empresa = { ...empresa, ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
                 }
             } catch (_) {}
-
-            if (!empresa || (!empresa.nome && !empresa.name)) {
-                try {
-                    const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
-                    const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
-                    if (byPathData && typeof byPathData === 'object') {
-                        empresa = { ...empresa, ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
-                    }
-                } catch (_) {}
-            }
         }
 
         if (!empresa || (!empresa.nome && !empresa.name)) {

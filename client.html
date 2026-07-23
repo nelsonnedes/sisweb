@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciar Clientes - Sistema Sisweb</title>
+    <script>
+        if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
+            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
+        }
+    </script>
     
     <!-- CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -12,13 +17,16 @@
     <link rel="stylesheet" href="commerce-responsive.css?v=2026-06-07-print-context-v13">
     
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <!-- Firebase via módulo compartilhado (singleton) -->
 
-    <!-- Menu Component -->
-    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
-    <script src="schema-migration-contatos.js"></script>
+    <script type="module">
+
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js';
+import './firebase-compat-bridge.js';  // compat shim
+
+    </script><!-- Menu Component -->
+    <script src="menu-component.js?v=a26e67eb025d"></script>
+    <script src="schema-migration-contatos.js?v=f086747ad6d7"></script>
     <script>
         (function () {
             try {
@@ -126,11 +134,56 @@
             box-shadow: 0 0 0 2px rgba(52,152,219,0.2);
         }
 
+        #modalForm {
+            overflow: hidden;
+            padding: 24px 12px;
+        }
+
+        #modalForm .modal-content {
+            display: flex;
+            flex-direction: column;
+            margin: 0 auto;
+            max-width: 1000px;
+            width: min(100%, 1000px);
+            max-height: calc(100dvh - 48px);
+            overflow: hidden;
+        }
+
+        #modalForm #mainForm {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        #modalForm .modal-header,
+        #modalForm .modal-footer {
+            flex: 0 0 auto;
+        }
+
+        #modalForm .modal-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         /* Responsive specific styles */
         @media (max-width: 768px) {
             .actions-bar { flex-direction: column; }
             .search-box { width: 100%; }
             .actions-bar .btn { width: 100%; }
+            #modalForm { padding: 0; }
+            #modalForm .modal-content {
+                width: 100%;
+                height: 100dvh;
+                max-height: 100dvh;
+                border-radius: 0;
+            }
+            #modalForm .modal-header,
+            #modalForm .modal-footer {
+                border-radius: 0;
+            }
         }
 
         /* Loading Overlay */
@@ -468,13 +521,13 @@
 
     <!-- Scripts -->
     <script type="module">
-        import * as svc from './modules/core/firebase-service.js';
+        import * as svc from './modules/core/firebase-service.js?v=f1a56093d8d4';
         if (!window.firebaseService) window.firebaseService = svc;
     </script>
     <!-- ✅ FIX: Correção Unificada de Clientes (Salvar/Excluir/Multi-tenant) -->
-    <script src="romaneios-client-save-fix.js?v=202602271"></script>
-    <script type="module" src="js/client.js?v=2026-06-23-cadastro-fiscal-nfe-v1"></script>
-    <script src="commerce-responsive.js?v=2026-06-07-print-context-v13"></script>
+    <script src="romaneios-client-save-fix.js?v=a5d20ef9cd6d"></script>
+    <script type="module" src="js/client.js?v=5c515460d1b7"></script>
+    <script src="commerce-responsive.js?v=f83575783f61"></script>
 
 </body>
 </html>

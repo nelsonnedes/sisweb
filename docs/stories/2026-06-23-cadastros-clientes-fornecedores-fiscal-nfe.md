@@ -38,6 +38,18 @@ GPT-5 Codex
 - `npm test`
 - `firebase deploy --only hosting --project sisweb-7ce82 --non-interactive`
 - `npm run security:postdeploy`
+- `node --test tests/client-supplier-fiscal-fields.test.mjs tests/qa-visual-pwa-routes.test.mjs`
+- `git diff --check`
+- Smoke HTTP publicado: `sw.js`, `client.html`, `fornecedor.html`, `compras.html`
+- `node --test tests/client-supplier-fiscal-fields.test.mjs`
+- `node --test tests/commerce-responsive-pwa.test.mjs tests/qa-visual-pwa-routes.test.mjs tests/compras-financeiro-status.test.mjs tests/operational-route-state.test.mjs`
+- `npm run lint`
+- `npm run typecheck`
+- `npm test` (188/188)
+- `firebase deploy --only hosting --project sisweb-7ce82 --non-interactive`
+- `npm run security:postdeploy`
+- Smoke HTTP publicado: `vendas.html`, `compras.html`, `fornecedor.html`, `openNewClientModal.js`, `compras.js`, `js/fornecedor.js`, `sw.js`
+- Smoke de conteúdo publicado: cachebusters novos, `modalFornecedor`, ausência de `clientModal`, ausência de scripts de cliente em `compras.html`
 
 ### Completion Notes List
 - Campos fiscais opcionais adicionados aos cadastros principais, abas nativas e modais operacionais de cliente/fornecedor.
@@ -48,6 +60,15 @@ GPT-5 Codex
 - Hosting publicado em `https://sisweb-7ce82.web.app`; smoke HTTP e `security:postdeploy` concluídos.
 - Varredura posterior alinhou também `romaneiopct.html` e o modal dinâmico de `romaneiotora_modais.js`.
 - Revalidação final após a extensão: `npm test` com 178/178, smoke HTTP dos arquivos publicados e `security:postdeploy` com 37/37.
+- Correção visual posterior limitou altura dos modais longos de cliente/fornecedor, colocou campos em área rolável e manteve rodapé/botões visíveis em desktop e PWA.
+- Service worker atualizado para `2026-06-30-client-supplier-modal-layout-v1` para invalidar cache visual.
+- Hosting publicado após a correção e smoke HTTP confirmou os arquivos alterados no ambiente online.
+- Modal rápido de cliente em pedido de venda passou a expor os campos fiscais opcionais completos e salvar priorizando `clientService.saveClient`.
+- Modal rápido de fornecedor em pedido de compra foi padronizado com os campos fiscais, ganhou `Observações` e salva somente pelo serviço de fornecedores.
+- `compras.html` não mantém mais o `clientModal` legado de fornecedor nem scripts de cliente que poderiam chamar `saveClient()` no fluxo de compras.
+- `compras.js` e `js/fornecedor.js` deixaram de carregar `clients` como fallback de fornecedores, evitando mistura de entidades e gravação em caminhos errados.
+- Modal principal de `fornecedor.html` alinhado ao visual do modal de clientes: cabeçalho escuro, fechamento por botão e ordem de campos fiscais equivalente.
+- Service worker atualizado para `2026-06-30-pedido-contact-modals-v1`; Hosting publicado e smoke pós-deploy aprovado.
 
 ### File List
 - `client.html`
@@ -68,6 +89,7 @@ GPT-5 Codex
 - `client-modal-handler.js`
 - `fornecedor-modals.js`
 - `romaneiotora.js`
+- `openNewClientModal.js`
 - `modules/modals/modal-clientes.js`
 - `modules/romaneiopct/modal-clientes-pct.js`
 - `modules/crud/gerenciar-clientes.js`
@@ -89,3 +111,7 @@ GPT-5 Codex
 - 2026-06-23: Deploy de Hosting concluído e smoke pós-deploy aprovado.
 - 2026-06-23: Correção estendida para o modal ativo de cliente PCT e modal dinâmico de fornecedor Tora.
 - 2026-06-23: Revalidação final pós-deploy aprovada em produção.
+- 2026-06-30: Ajuste responsivo dos modais longos de cliente/fornecedor e cobertura de teste contra rodapé oculto.
+- 2026-06-30: Deploy de Hosting e smoke HTTP concluídos para cliente, fornecedor, compras e service worker.
+- 2026-06-30: Modais rápidos de pedido alinhados aos cadastros fiscais e caminhos canônicos `clients`/`fornecedores` reforçados.
+- 2026-06-30: Removido `clientModal` legado de compras e fallback indevido de fornecedores para `clients`; Hosting republicado.

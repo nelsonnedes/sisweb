@@ -85,16 +85,25 @@
   }
 
   async function resolveCompanyLogo(company) {
-    const logoUrl = company.logoUrl || company.logoURL || company.logo || '';
-    if (!logoUrl) return '';
-    if (logoUrl.startsWith('data:image')) return logoUrl;
+    const logoUrl = company.logoDataUrl || company.logoDataURL || company.logoUrl || company.logoURL || company.logo || '';
+    if (/^data:image\/(png|jpe?g|webp);base64,/i.test(String(logoUrl || '').trim())) return logoUrl;
     try {
-      if (window.firebaseService && typeof window.firebaseService.getDownloadURL === 'function') {
-        const downloadUrl = await window.firebaseService.getDownloadURL(logoUrl);
-        if (downloadUrl) return downloadUrl;
+      if (window.SiswebCommercePdf && typeof window.SiswebCommercePdf.resolveCompanyLogoDataUrl === 'function') {
+        return await window.SiswebCommercePdf.resolveCompanyLogoDataUrl(company);
       }
     } catch (_) {}
-    return logoUrl;
+    return '';
+  }
+
+  function getPdfImageFormat(dataUrl) {
+    const value = String(dataUrl || '');
+    if (/^data:image\/jpe?g;base64,/i.test(value)) return 'JPEG';
+    if (/^data:image\/webp;base64,/i.test(value)) return 'WEBP';
+    if (/^https?:\/\//i.test(value)) {
+      if (/\.jpe?g(?:[?#]|$)/i.test(value)) return 'JPEG';
+      if (/\.webp(?:[?#]|$)/i.test(value)) return 'WEBP';
+    }
+    return 'PNG';
   }
 
   const CommerceBoletoPixPdf = {
@@ -128,7 +137,7 @@
 
       if (logoDataUrl && (logoDataUrl.startsWith('data:image') || logoDataUrl.startsWith('http'))) {
         try {
-          doc.addImage(logoDataUrl, 'PNG', startX + width - 35, startY - 2, 35, 14);
+          doc.addImage(logoDataUrl, getPdfImageFormat(logoDataUrl), startX + width - 35, startY - 2, 35, 14);
         } catch (e) {
           console.warn('Falha ao adicionar imagem da logo no PDF:', e);
         }

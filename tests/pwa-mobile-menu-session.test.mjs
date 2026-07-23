@@ -8,7 +8,7 @@ test('menu mobile usa gatilhos completos para alertas/configuracoes e exibe sair
   const menuComponent = read('menu-component.js');
   const menuCss = read('menu.css');
 
-  assert.match(menuComponent, /const PWA_VERSION = '2026-06-11-profile-admin-v1'/);
+  assert.match(menuComponent, /const PWA_VERSION = '2026-07-23-firebase-bootstrap-rollout-v1'/);
   assert.match(menuComponent, /class="sisweb-menu-shell"/);
   assert.match(menuComponent, /class="menu-quick-actions" aria-label="Ações rápidas"/);
   assert.ok(
@@ -23,7 +23,10 @@ test('menu mobile usa gatilhos completos para alertas/configuracoes e exibe sair
   assert.match(menuComponent, /class="settings-section-title">Conta/);
   assert.match(menuComponent, /class="settings-section-title">Operação/);
   assert.match(menuComponent, /class="settings-section-title">Ajuda/);
-  assert.match(menuComponent, /class="menu-item mobile-logout-link logout-link"/);
+  assert.match(menuComponent, /class="settings-section settings-exit"/);
+  assert.match(menuComponent, /class="settings-action logout-link"/);
+  assert.doesNotMatch(menuComponent, /mobile-menu-link/);
+  assert.doesNotMatch(menuComponent, /mobile-logout-link/);
   assert.match(menuComponent, /\$\{!adminContext\.isSuperAdmin \? `<a href="#" class="[^"]*support-link/);
   assert.match(menuComponent, /admin\.html\?tab=support/);
   assert.match(menuComponent, /const settingsTrigger = this\.querySelector\('\.settings-dropdown \.menu-item-trigger'\)/);
@@ -34,8 +37,8 @@ test('menu mobile usa gatilhos completos para alertas/configuracoes e exibe sair
   assert.doesNotMatch(menuComponent, /settingsIcon\.addEventListener\('click'/);
   assert.doesNotMatch(menuComponent, /alertsIcon\.addEventListener\('click'/);
 
-  assert.match(menuCss, /\.mobile-logout-link \{\s*display: none;/);
-  assert.match(menuCss, /@media \(max-width: 1024px\) \{[\s\S]*\.mobile-logout-link \{[\s\S]*display: flex;/);
+  assert.doesNotMatch(menuCss, /mobile-menu-link/);
+  assert.doesNotMatch(menuCss, /mobile-logout-link/);
   assert.match(menuCss, /\.menu-quick-actions \{[\s\S]*display: flex;/);
   assert.match(menuCss, /@media \(max-width: 1024px\) \{[\s\S]*\.menu-quick-actions \{[\s\S]*margin-left: 0;/);
   assert.match(menuCss, /\.menu-quick-actions \.menu-item-trigger \{[\s\S]*width: 42px;/);
@@ -45,7 +48,7 @@ test('PWA verifica updates instalados e service worker responde versao atual', (
   const menuComponent = read('menu-component.js');
   const sw = read('sw.js');
 
-  assert.match(sw, /const APP_VERSION = '2026-06-25-storage-replace-v1'/);
+  assert.match(sw, /const APP_VERSION = '2026-07-23-firebase-bootstrap-rollout-v1'/);
   assert.match(menuComponent, /window\.addEventListener\('online', \(\) => checkForUpdate\(true\)\)/);
   assert.match(menuComponent, /window\.addEventListener\('pageshow', \(\) => checkForUpdate\(true\)\)/);
   assert.match(menuComponent, /window\.setTimeout\(\(\) => checkForUpdate\(true\), 1500\)/);
@@ -59,6 +62,20 @@ test('PWA verifica updates instalados e service worker responde versao atual', (
   assert.match(sw, /cache: 'no-store'/);
   assert.match(menuComponent, /sessionStorage\.setItem\('siswebPwaUpdateReady', PWA_VERSION\)/);
   assert.doesNotMatch(menuComponent, /window\.location\.reload\(\)/);
+});
+
+test('menu principal tem escopo proprio para manter visual igual entre paginas', () => {
+  const menuComponent = read('menu-component.js');
+  const menuCss = read('menu.css');
+
+  assert.match(menuComponent, /\.sisweb-menu-shell \.menu-item \{[\s\S]*font-weight: 700;[\s\S]*border-radius: 6px;/);
+  assert.match(menuComponent, /\.sisweb-menu-shell \.dropdown-content \{[\s\S]*width: max-content;[\s\S]*z-index: 5000;/);
+  assert.match(menuComponent, /\.sisweb-menu-shell \.dropdown-content a \{[\s\S]*text-overflow: ellipsis;/);
+  assert.match(menuCss, /main-menu \.sisweb-menu-shell \.menu-item \{[\s\S]*font-weight: 700;[\s\S]*border-radius: 6px;/);
+  assert.match(menuCss, /main-menu \.sisweb-menu-shell \.dropdown-content \{[\s\S]*z-index: 5000;/);
+  assert.match(menuComponent, /\.sisweb-menu-shell \.alerts-panel \{[\s\S]*width: min\(420px, calc\(100vw - 24px\)\);[\s\S]*max-width: 420px;/);
+  assert.match(menuCss, /main-menu \.sisweb-menu-shell \.alerts-panel \{[\s\S]*width: min\(420px, calc\(100vw - 24px\)\);[\s\S]*max-width: 420px;/);
+  assert.match(menuCss, /@media \(max-width: 1024px\) \{[\s\S]*main-menu \.sisweb-menu-shell \.menu-item \{[\s\S]*width: 100%;/);
 });
 
 test('sininho superadmin alerta bloqueio de faturamento firebase no hover desktop', () => {
@@ -81,7 +98,7 @@ test('sininho superadmin alerta bloqueio de faturamento firebase no hover deskto
   assert.match(menuComponent, /target="_blank" rel="noopener noreferrer"/);
 });
 
-test('auth PWA possui sessao duravel curta e fallback passa pelo guard de assinatura', () => {
+test('auth PWA mantem cache duravel para UX sem usa-lo como autorizacao', () => {
   const auth = read('auth.js');
   const login = read('login.html');
   const menuComponent = read('menu-component.js');
@@ -94,8 +111,8 @@ test('auth PWA possui sessao duravel curta e fallback passa pelo guard de assina
   assert.match(auth, /function getUsableCachedAuthSession\(\) \{/);
   assert.match(auth, /function clearCompanyContextCache\(\) \{/);
   assert.match(auth, /async function restoreCompanyContextFromCachedUser\(user\) \{/);
-  assert.match(auth, /await restoreCompanyContextFromCachedUser\(cached\.user\)/);
-  assert.match(auth, /async function tryAllowCachedAuthSession\(source\) \{[\s\S]*enforceSubscriptionGuard\(cached\.user, window\.location\.pathname\)/);
+  assert.match(auth, /async function tryAllowCachedAuthSession\(source\) \{\s*void source;\s*return \{ allowed: false \};\s*\}/);
+  assert.doesNotMatch(auth, /return \{ allowed: true, user: cached\.user \}/);
   assert.match(auth, /const cachedAuth = await tryAllowCachedAuthSession\('pwa_cached_session'\)/);
   assert.match(auth, /persistAuthenticatedSession\(guardUserDetails, \{ source: 'firebase_guard' \}\)/);
   assert.match(auth, /window\.markSiswebSessionAuthenticated = persistAuthenticatedSession/);
@@ -106,8 +123,8 @@ test('auth PWA possui sessao duravel curta e fallback passa pelo guard de assina
   assert.match(login, /window\.markSiswebSessionAuthenticated\(result\.user \|\| result\.currentUser \|\| \{ email \}, \{ source: 'login_page' \}\)/);
   assert.match(login, /const email = String\(\(emailInput && emailInput\.value\) \|\| ''\)\.trim\(\)\.toLowerCase\(\)/);
   assert.match(login, /id="email" name="email" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false"/);
-  assert.match(login, /auth\.js\?v=2026-06-10-subscription-status-ux-v1/);
-  assert.match(login, /\.\/firebaseService\.js\?v=2026-06-10-subscription-status-ux-v1/);
+  assert.match(login, /auth\.js\?v=[^"'\s]+/);
+  assert.match(login, /\.\/firebaseService\.js\?v=[^"'\s]+/);
   assert.match(login, /window\.firebaseService = \{ \.\.\.\(window\.firebaseService \|\| \{\}\), authService, isFirebaseOperational, setCompanyClaim \}/);
   assert.match(login, /localStorage\.removeItem\('siswebAuthSession'\)/);
   assert.match(login, /localStorage\.removeItem\('company_info'\)/);
@@ -132,8 +149,8 @@ test('auth PWA possui sessao duravel curta e fallback passa pelo guard de assina
   assert.match(subscriptionHtml, /Oferta pública carregada sem sessão autenticada/);
   assert.match(subscriptionHtml, /async function requireSubscriptionLogin\(reason, options = \{\}\)/);
   assert.match(subscriptionHtml, /redirect', getSubscriptionReturnTarget\(\)/);
-  assert.match(subscriptionHtml, /auth\.js\?v=2026-06-10-subscription-status-ux-v1/);
-  assert.match(subscriptionStatusHtml, /auth\.js\?v=2026-06-10-subscription-status-ux-v1/);
+  assert.match(subscriptionHtml, /auth\.js\?v=[^"'\s]+/);
+  assert.match(subscriptionStatusHtml, /auth\.js\?v=[^"'\s]+/);
   assert.doesNotMatch(subscriptionHtml, /login\.html\?redirect=subscription\.html/);
   assert.doesNotMatch(subscriptionHtml, /statusKey === 'active'[\s\S]{0,180}window\.location\.href = 'index\.html'/);
 });
@@ -166,4 +183,3 @@ test('folha lancamentos vira cards no mobile sem trocar renderizacao desktop', (
   assert.match(folhaCss, /#folhasTable \.actions-cell,[\s\S]*position: static !important;/);
   assert.match(folhaCss, /#folhasTable tbody td\[colspan\] \{[\s\S]*text-align: center;/);
 });
-

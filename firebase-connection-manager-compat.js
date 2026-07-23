@@ -14,6 +14,10 @@
     return;
   }
 
+  function getAuthPerfConnection() {
+    try { return window.__SISWEB_AUTH_PERF__ || null; } catch (_) { return null; }
+  }
+
   class FirebaseConnectionManagerCompat {
     constructor() {
       if (FirebaseConnectionManagerCompat.instance) {
@@ -62,10 +66,12 @@
       if (this._networkListenersConfigured) return;
       window.addEventListener('online', () => {
         this.isOnline = true;
+        try { getAuthPerfConnection()?.internet(true, 'firebase_event'); } catch (_) {}
         this.emit('networkChange', 'online');
       });
       window.addEventListener('offline', () => {
         this.isOnline = false;
+        try { getAuthPerfConnection()?.internet(false, 'firebase_event'); } catch (_) {}
         this.emit('networkChange', 'offline');
       });
       this._networkListenersConfigured = true;
@@ -78,8 +84,10 @@
           this.connectionRef.off('value');
         }
         this.connectionRef = this.database.ref('.info/connected');
+        try { getAuthPerfConnection()?.listener('rtdb', 'add', 'firebase_event', 0); } catch (_) {}
         this.connectionRef.on('value', snap => {
           const connected = snap.val() === true;
+          try { getAuthPerfConnection()?.rtdb(connected, 'firebase_event'); } catch (_) {}
           const prev = this.isConnected;
           this.isConnected = connected;
           this.updateConnectionStatus(connected);
@@ -93,7 +101,10 @@
       if (!window._compatManagerUnloadConfigured) {
         window.addEventListener('beforeunload', () => {
           try {
-            if (this.connectionRef) this.connectionRef.off('value');
+            if (this.connectionRef) {
+              this.connectionRef.off('value');
+              try { getAuthPerfConnection()?.listener('rtdb', 'remove', 'firebase_event', 0); } catch (_) {}
+            }
             for (const [path, offFn] of this.activeListeners.entries()) {
               try { offFn && offFn(); } catch {}
             }

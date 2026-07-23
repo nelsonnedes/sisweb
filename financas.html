@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finanças - Sistema de Gestão</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script>
+        if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
+            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
@@ -58,7 +63,7 @@
         }
     </style>
     <link rel="stylesheet" href="print-styles.css">
-    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
+    <script src="menu-component.js?v=a26e67eb025d"></script>
     <style>
         /* Note: Container styles are now in layout-comum.css */
 
@@ -637,6 +642,184 @@
             font-size: 1.1em;
         }
 
+        .report-criteria-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(150px, 1fr));
+            align-items: end;
+            gap: 15px;
+            margin-bottom: 0;
+        }
+
+        .report-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            grid-column: 1 / -1;
+        }
+
+        .report-actions .btn {
+            min-height: 42px;
+            white-space: nowrap;
+        }
+
+        .report-actions .btn-primary { background: #0056b3; }
+        .report-actions .btn-pdf { background: #495057; color: #fff; }
+
+        .finance-report-period {
+            margin-bottom: 12px;
+            color: #334155;
+        }
+
+        #relatorioContent .sisweb-print-header {
+            display: grid;
+            grid-template-columns: 92px minmax(0, 1fr) minmax(180px, 240px);
+            gap: 14px;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            border: 1px solid #d6dde8;
+            border-top: 5px solid #2c3e50;
+            background: #fff;
+        }
+
+        #relatorioContent .sisweb-print-logo {
+            width: 82px;
+            height: 74px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        #relatorioContent .sisweb-print-logo img {
+            max-width: 76px;
+            max-height: 68px;
+            object-fit: contain;
+        }
+
+        #relatorioContent .sisweb-print-logo-mark {
+            width: 54px;
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #2c3e50;
+            color: #fff;
+            font-weight: 800;
+        }
+
+        #relatorioContent .sisweb-print-company,
+        #relatorioContent .sisweb-print-meta {
+            min-width: 0;
+        }
+
+        #relatorioContent .sisweb-print-company-name,
+        #relatorioContent .sisweb-print-title {
+            color: #1f2937;
+            font-weight: 800;
+            overflow-wrap: anywhere;
+        }
+
+        #relatorioContent .sisweb-print-company-name { font-size: 16px; }
+        #relatorioContent .sisweb-print-title { font-size: 15px; }
+
+        #relatorioContent .sisweb-print-company-line,
+        #relatorioContent .sisweb-print-meta-line,
+        #relatorioContent .sisweb-print-subtitle {
+            color: #4b5563;
+            font-size: 11px;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+
+        #relatorioContent .sisweb-print-meta {
+            text-align: right;
+        }
+
+        #relatorioContent .sisweb-print-badge {
+            display: inline-block;
+            margin-bottom: 4px;
+            padding: 3px 7px;
+            background: #e9f7ef;
+            color: #176a3a;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .finance-report-table-wrap {
+            margin-top: 16px;
+            overflow-x: auto;
+        }
+
+        .finance-sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        #pagamentoModal .modal-content {
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        #pagamentoModal #pagamentoForm {
+            min-height: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        #pagamentoModal input,
+        #pagamentoModal select,
+        #pagamentoModal textarea {
+            box-sizing: border-box;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        #pagamentoComprovante {
+            display: block;
+            width: 100%;
+        }
+
+        #pagamentoModal .close {
+            border: 0;
+            background: transparent;
+            line-height: 1;
+            padding: 4px;
+        }
+
+        .finance-report-table {
+            min-width: 720px;
+        }
+
+        .finance-report-empty {
+            margin: 18px 0 4px;
+            padding: 14px;
+            text-align: center;
+            color: #475569;
+            background: #fff;
+            border: 1px solid #cbd5e1;
+        }
+
+        @media (max-width: 1100px) {
+            .report-criteria-grid {
+                grid-template-columns: repeat(2, minmax(180px, 1fr));
+            }
+        }
+
         @media (max-width: 768px) {
             .finance-container {
                 padding: 10px;
@@ -652,6 +835,64 @@
 
             .form-row {
                 grid-template-columns: 1fr;
+            }
+
+            .report-criteria-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .report-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                width: 100%;
+            }
+
+            .report-actions .btn {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .report-actions .report-generate {
+                grid-column: 1 / -1;
+            }
+
+            #relatorioContent .sisweb-print-header {
+                grid-template-columns: 72px minmax(0, 1fr);
+            }
+
+            #relatorioContent .sisweb-print-logo {
+                width: 64px;
+                height: 60px;
+            }
+
+            #relatorioContent .sisweb-print-logo img {
+                max-width: 58px;
+                max-height: 54px;
+            }
+
+            #relatorioContent .sisweb-print-meta {
+                grid-column: 1 / -1;
+                text-align: left;
+            }
+
+            .summary-box {
+                padding: 14px;
+            }
+
+            #pagamentoModal .modal-content {
+                width: calc(100% - 20px);
+                margin: 10px auto;
+                padding: 14px;
+                max-height: calc(100vh - 20px);
+            }
+
+            .summary-row {
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .summary-row strong {
+                text-align: right;
             }
 
             .filters-row {
@@ -712,6 +953,7 @@
         </div>
 
         <!-- Tabs Navigation -->
+        <script>window.showTab = window.showTab || function(){};</script>
         <div class="tabs">
             <button type="button" class="tab active" data-tab="dashboard" onclick="showTab('dashboard')">
                 <i class="fas fa-tachometer-alt"></i> Dashboard
@@ -802,6 +1044,10 @@
                         </div>
                     </div>
                     <div class="form-row">
+                        <div class="form-group">
+                            <label for="receberDataEmissao">Data de Emissão:</label>
+                            <input type="date" id="receberDataEmissao">
+                        </div>
                         <div class="form-group">
                             <label for="receberDataVencimento">Data do Primeiro Vencimento:</label>
                             <input type="date" id="receberDataVencimento" required>
@@ -1006,6 +1252,10 @@
                         </div>
                     </div>
                     <div class="form-row">
+                        <div class="form-group">
+                            <label for="pagarDataEmissao">Data de Emissão:</label>
+                            <input type="date" id="pagarDataEmissao">
+                        </div>
                         <div class="form-group">
                             <label for="pagarDataVencimento">Data do Primeiro Vencimento:</label>
                             <input type="date" id="pagarDataVencimento" required>
@@ -1215,7 +1465,14 @@
         <div id="relatorios" class="tab-content">
             <div class="form-section">
                 <h3>Gerar Relatórios</h3>
-                <div class="form-row">
+                <div class="report-criteria-grid">
+                    <div class="form-group">
+                        <label for="relContaOrigem">Origem das Contas:</label>
+                        <select id="relContaOrigem">
+                            <option value="receber">Contas a Receber</option>
+                            <option value="pagar">Contas a Pagar</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label for="tipoRelatorio">Tipo de Relatório:</label>
                         <select id="tipoRelatorio">
@@ -1223,7 +1480,6 @@
                             <option value="faturamento">Faturamento por Período</option>
                             <option value="categorias">Análise por Categorias</option>
                             <option value="clientes">Ranking de Clientes</option>
-                            <option value="fornecedores">Ranking de Fornecedores</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -1234,25 +1490,21 @@
                         <label for="relDataFim">Data Fim:</label>
                         <input type="date" id="relDataFim">
                     </div>
-                    <div class="form-group">
-                        <button class="btn btn-primary" onclick="gerarRelatorio()">
+                    <div class="report-actions" role="group" aria-label="Ações do relatório" aria-busy="false">
+                        <button id="financeReportGenerateBtn" type="button" class="btn btn-primary report-generate" onclick="gerarRelatorio()">
                             <i class="fas fa-file-alt"></i> Gerar Relatório
                         </button>
-                    </div>
-                    <div class="form-group">
-                        <button class="btn btn-success" onclick="exportarDados('excel')" title="Exportar para Excel">
-                            <i class="fas fa-file-excel"></i> Excel
+                        <button id="financeReportPrintBtn" type="button" class="btn btn-secondary" onclick="imprimirRelatorioAtual()" title="Imprimir relatório">
+                            <i class="fas fa-print"></i> Imprimir
                         </button>
-                    </div>
-                    <div class="form-group">
-                        <button class="btn btn-danger" onclick="exportarDados('pdf')" title="Exportar para PDF">
+                        <button id="financeReportPdfBtn" type="button" class="btn btn-pdf" onclick="exportarDados('pdf')" title="Exportar relatório em PDF">
                             <i class="fas fa-file-pdf"></i> PDF
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div id="relatorioResult" style="display: none;">
+            <div id="relatorioResult" style="display: none;" aria-live="polite" aria-busy="false">
                 <div class="summary-box">
                     <h3 id="relatorioTitulo">Relatório</h3>
                     <div id="relatorioContent"></div>
@@ -1260,8 +1512,8 @@
             </div>
             
             <!-- ✅ NOVO: Seção de Backup e Restore -->
-            <div class="form-section" id="backupRestoreSection">
-                <h3>🔄 Backup e Restore de Dados</h3>
+            <div class="form-section" id="backupRestoreSection" hidden>
+                <h3>Backup e restauração de dados</h3>
                 <div class="form-row">
                     <div class="form-group">
                         <button class="btn btn-warning" onclick="fazerBackup()">
@@ -1288,13 +1540,13 @@
     </div>
 
     <!-- Modal para Pagamento/Recebimento -->
-    <div id="pagamentoModal" class="modal">
+    <div id="pagamentoModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="pagamentoModalTitle" aria-hidden="true">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="pagamentoModalTitle">Registrar Pagamento</h3>
-                <span class="close" onclick="fecharModal('pagamentoModal')">&times;</span>
+                <button type="button" class="close" data-payment-modal-close aria-label="Fechar" onclick="fecharModal('pagamentoModal')"><i class="fas fa-times" aria-hidden="true"></i></button>
             </div>
-            <form id="pagamentoForm">
+            <form id="pagamentoForm" aria-busy="false">
                 <div class="form-row">
                     <div class="form-group">
                         <label for="pagamentoData">Data do Pagamento:</label>
@@ -1329,7 +1581,7 @@
                     <button type="submit" class="btn btn-success">
                         <i class="fas fa-check"></i> Confirmar
                     </button>
-                    <button type="button" class="btn btn-danger" onclick="fecharModal('pagamentoModal')">
+                    <button type="button" class="btn btn-danger" data-payment-modal-close onclick="fecharModal('pagamentoModal')">
                         <i class="fas fa-times"></i> Cancelar
                     </button>
                 </div>
@@ -1419,6 +1671,27 @@
         .table th, .table td { padding:5px; }
     }
     @media (max-width: 768px){
+        .tab-content .btn-group{
+            display:flex;
+            flex-wrap:wrap;
+            width:100%;
+            min-width:0;
+        }
+        .tab-content .btn-group .btn:not(.action-btn){
+            flex:1 1 130px;
+            min-width:0;
+        }
+        .tab-content .btn-group .action-btn{
+            flex:0 0 42px;
+            width:42px;
+            min-width:42px;
+            padding-inline:8px;
+        }
+        .tab-content .btn-group .sel-count-badge{
+            flex:1 0 100%;
+            min-width:0;
+            overflow-wrap:anywhere;
+        }
         .filters-row{ display:grid; grid-template-columns:1fr; gap:12px; }
         .filters-row .form-group,
         .filters-row #filtroReceberNumeroPedido,
@@ -1462,98 +1735,82 @@
         try {
             var h = window.location && window.location.hostname ? window.location.hostname : '';
             var prod = h.indexOf('sisweb-7ce82.web.app') !== -1 || h.indexOf('sisweb-7ce82.firebaseapp.com') !== -1;
-            var allow = !!localStorage.getItem('allow_backup_restore') || /\bdebug=1\b/.test(window.location.search || '');
+            var allow = /\bdebug=1\b/.test(window.location.search || '');
             var section = document.getElementById('backupRestoreSection');
-            if (prod && section && !allow) { section.style.display = 'none'; }
+            if (section) section.hidden = prod || !allow;
         } catch(_) {}
     });
     </script>
     
-    <!-- ✅ CORRIGIDO: Firebase inicializado diretamente -->
+    <!-- ✅ Firebase via módulo compartilhado (firebase-init.js) -->
     <script type="module">
-        import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, set, get, child, onValue, off, update, remove, serverTimestamp, push } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject, getBlob } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+        import { app, auth, db, storage, ref, set, get, remove, child, onValue, off, update, serverTimestamp, push, onAuthStateChanged, signOut, storageRef, uploadBytes, getDownloadURL, deleteObject, getStorage, getBlob } from './firebase-init.js';
         
-        const firebaseConfig = {
-            apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
-            authDomain: "sisweb-7ce82.firebaseapp.com",
-            databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "sisweb-7ce82",
-            storageBucket: "sisweb-7ce82.firebasestorage.app",
-            messagingSenderId: "240003261222",
-            appId: "1:240003261222:web:1aeaf919ddc7e5c691d7e7",
-            measurementId: "G-FTC6JZ5ZGX"
-        };
+        window.database = db;
+        window.firebaseRef = ref;
+        window.firebaseSet = set;
         
-        try {
-            let app;
-            if (window._FIREBASE_APP) {
-                app = window._FIREBASE_APP;
+        // 🔐 Autenticação para regras com login
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.firebaseAuthUser = user;
+                window.firebaseAuthDisabled = false;
+                try { if (typeof updateOfflineBadge === 'function') updateOfflineBadge(); } catch(_) {}
             } else {
-                const apps = getApps();
-                app = apps.length > 0 ? apps[0] : initializeApp(firebaseConfig);
+                window.firebaseAuthUser = null;
+                window.firebaseAuthDisabled = true;
+                try { if (typeof updateOfflineBadge === 'function') updateOfflineBadge(); } catch(_) {}
             }
-            window.database = getDatabase(app);
-            const auth = getAuth(app);
-            
-            window.firebaseRef = ref;
-            window.firebaseSet = set;
-            
-            // 🔐 Autenticação para regras com login
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    window.firebaseAuthUser = user;
-                    try { window.firebaseAuthDisabled = false; } catch(_) {}
-                    try { if (typeof updateOfflineBadge === 'function') updateOfflineBadge(); } catch(_) {}
-                } else {
-                    window.firebaseAuthUser = null;
-                    window.firebaseAuthDisabled = true;
-                    try { if (typeof updateOfflineBadge === 'function') updateOfflineBadge(); } catch(_) {}
-                }
-            });
-            
+        });
+        
 
-            function getTenantId() {
-                try {
-                    if (window.appTenantId) return String(window.appTenantId);
-                    const raw = localStorage.getItem('company_info');
-                    if (raw) {
-                        const obj = JSON.parse(raw);
-                        const tenant = obj.companyId || obj.companyID || obj.tenantId || obj.id;
-                        return tenant ? String(tenant).trim() : null;
-                    }
-                } catch (_) {}
-                return null;
-            }
-            function getNamespacedPath(path) {
-                try {
-                    if (!path || /^companies\//.test(path) || /^users\//.test(path) || String(path).startsWith('/')) return path;
-                    const t = getTenantId();
-                    if (t) return `companies/${t}/${path}`;
-                    return path;
-                } catch (_) { return path; }
-            }
-
-            function sanitizeFirebasePayload(val) {
-                if (val === undefined || val === null) return null;
-                if (Array.isArray(val)) return val.map(sanitizeFirebasePayload);
-                if (typeof val === 'object') {
-                    const out = {};
-                    Object.keys(val).forEach(k => {
-                        const v = val[k];
-                        if (v === undefined) return; // drop undefined keys
-                        out[k] = sanitizeFirebasePayload(v);
-                    });
-                    return out;
+        function getTenantId() {
+            try {
+                if (window.appTenantId) {
+                    return String(window.appTenantId);
                 }
-                if (typeof val === 'function') return null;
-                return val;
+                const raw = localStorage.getItem('company_info');
+                if (raw) {
+                    const obj = JSON.parse(raw);
+                    const tenant = obj.companyId || obj.companyID || obj.tenantId || obj.id;
+                    return tenant ? String(tenant).trim() : null;
+                }
+            } catch (_) {}
+            return null;
+        }
+        function getNamespacedPath(path) {
+            try {
+                if (!path || /^companies\//.test(path) || /^users\//.test(path) || String(path).startsWith('/')) return path;
+                const t = getTenantId();
+                if (t) return `companies/${t}/${path}`;
+                return path;
+            } catch (_) { return path; }
+        }
+
+        function sanitizeFirebasePayload(val) {
+            if (val === undefined || val === null) return null;
+            if (Array.isArray(val)) return val.map(sanitizeFirebasePayload);
+            if (typeof val === 'object') {
+                const out = {};
+                Object.keys(val).forEach(k => {
+                    const v = val[k];
+                    if (v === undefined) return;
+                    out[k] = sanitizeFirebasePayload(v);
+                });
+                return out;
             }
-            function handleAuthError(e, context = {}) {
-                try {
-                    const msg = String((e && e.message) || e || '').toLowerCase();
+            if (typeof val === 'function') return null;
+            return val;
+        }
+        function normalizeFinanceLegacyPath(path) {
+            return String(path || '')
+                .replace(/^\/+/, '')
+                .replace(/^contas_?pagar(\/|$)/i, 'financas/pagar$1')
+                .replace(/^contas_?receber(\/|$)/i, 'financas/receber$1');
+        }
+        function handleAuthError(e, context = {}) {
+            try {
+                const msg = String((e && e.message) || e || '').toLowerCase();
                     const code = String((e && e.code) || '').toLowerCase();
                     const path = String((context && context.path) || '').toLowerCase().replace(/^\/+/, '');
                     const isPermDenied = msg.includes('permission_denied') || msg.includes('permission denied') || code.includes('permission-denied');
@@ -1564,7 +1821,11 @@
                             /(^|\/)finance_snapshots\//.test(path) ||
                             path === 'multiple_paths_write';
                         if (isLowPriorityPath) {
-                            console.warn('⚠️ [Finanças] Permissão limitada em recurso opcional:', path || 'desconhecido');
+                            const optionalWarnAt = Number(window.__finOptionalPermWarnAt || 0);
+                            if (!optionalWarnAt || (Date.now() - optionalWarnAt) > 15000) {
+                                window.__finOptionalPermWarnAt = Date.now();
+                                console.warn('⚠️ [Finanças] Permissão limitada em recurso opcional');
+                            }
                             return true;
                         }
                         const now = Date.now();
@@ -1572,8 +1833,8 @@
                         if (!lastWarnAt || (now - lastWarnAt) > 15000) {
                             window.__finPermWarnAt = now;
                             try { mostrarNotificacao('Aviso de permissão. Verifique sua assinatura e dados da empresa.', 'warning'); } catch(_) {}
+                            console.warn('⚠️ [Finanças] Permissão negada em recurso operacional; sessão preservada para evitar loop de autenticação.');
                         }
-                        console.warn('⚠️ [Finanças] Erro de permissão detectado (não forçando logout automático para evitar loops). Verifique o tenant ID.');
                         return true;
                     }
                 } catch(_) {}
@@ -1581,32 +1842,29 @@
             }
             const financeFirebaseLocalService = {
                 loadFromFirebase: async (path) => {
-                    const base = String(path || '');
-                    const alts = new Set([base]);
-                    if (base.startsWith('contasPagar/')) {
-                        alts.add(base.replace('contasPagar/', 'contaspagar/'));
-                        alts.add(base.replace('contasPagar/', 'contas_pagar/'));
-                    }
-                    if (base.startsWith('contasReceber/')) {
-                        alts.add(base.replace('contasReceber/', 'contas_receber/'));
-                        alts.add(base.replace('contasReceber/', 'contasreceber/'));
-                    }
-                    const candidates = [];
-                    alts.forEach(a => { candidates.push(getNamespacedPath(a)); });
+                    const base = normalizeFinanceLegacyPath(path);
+                    const candidates = [getNamespacedPath(base)];
                     const dbRef = ref(window.database);
+                    let successfulRead = false;
+                    let lastReadError = null;
                     for (const candidate of candidates) {
                         try {
+
                             const snap = await get(child(dbRef, candidate));
+                            successfulRead = true;
                             if (snap.exists()) {
                                 return { success: true, data: snap.val(), source: 'firebase', path: candidate };
                             }
-                        } catch (_) {}
+                        } catch (error) {
+                            lastReadError = error;
+                            handleAuthError(error, { path: candidate });
+                        }
                     }
+                    if (!successfulRead && lastReadError) throw lastReadError;
                     return { success: true, data: null, source: 'firebase' };
                 },
                 saveToFirebase: async (path, key, data) => {
-                    let base = String(path || '');
-                    base = base.replace(/^contaspagar(\/|$)/, 'financas/pagar$1').replace(/^contas_pagar(\/|$)/, 'financas/pagar$1').replace(/^contasreceber(\/|$)/, 'financas/receber$1').replace(/^contas_receber(\/|$)/, 'financas/receber$1');
+                    const base = normalizeFinanceLegacyPath(path);
                     const writePath = getNamespacedPath(base);
                     const payload = sanitizeFirebasePayload(data);
                     try {
@@ -1625,24 +1883,23 @@
                             return { success: true, key: key, source: 'firebase' };
                         }
                     } catch (e) {
-                        if (handleAuthError(e, { path: writePath })) {
-                            return { success: false, error: 'auth', source: 'firebase' };
-                        }
+                        handleAuthError(e, { path: writePath });
                         throw e;
                     }
                 },
                 updatePaths: async (updatesObj) => {
                     const t = getTenantId();
-                    if (!t) { console.warn('⚠️ updatePaths travado: Sem tenant'); return { success: false, error: 'Sem tenant' }; }
+                    if (!t) {
+                        const error = new Error('Tenant autenticado não confirmado para gravação financeira.');
+                        error.code = 'finance/tenant-required';
+                        throw error;
+                    }
                     const out = {};
                     Object.entries(updatesObj || {}).forEach(([k,v]) => {
                         const ck = String(k)
-                            .replace(/^\/+/, '')
-                            .replace(/^contaspagar(\/|$)/, 'financas/pagar$1')
-                            .replace(/^contas_pagar(\/|$)/, 'financas/pagar$1')
-                            .replace(/^contasreceber(\/|$)/, 'financas/receber$1')
-                            .replace(/^contas_receber(\/|$)/, 'financas/receber$1');
-                        const np = String(getNamespacedPath(ck) || '').replace(/^\/+/, '');
+                            .replace(/^\/+/, '');
+                        const canonicalPath = normalizeFinanceLegacyPath(ck);
+                        const np = String(getNamespacedPath(canonicalPath) || '').replace(/^\/+/, '');
                         if (!np) return;
                         out[np] = sanitizeFirebasePayload(v);
                     });
@@ -1651,44 +1908,17 @@
                         await update(ref(window.database), out);
                         return { success: true };
                     } catch (e) {
-                        const msg = String((e && e.message) || e || '').toLowerCase();
-                        const code = String((e && e.code) || '').toLowerCase();
-                        const isPermDenied = msg.includes('permission_denied') || msg.includes('permission denied') || code.includes('permission-denied');
-                        if (isPermDenied) {
-                            let applied = 0;
-                            for (const [p, value] of Object.entries(out)) {
-                                try {
-                                    if (value === null) {
-                                        await remove(ref(window.database, p));
-                                    } else {
-                                        await set(ref(window.database, p), value);
-                                    }
-                                    applied += 1;
-                                } catch (_) {}
-                            }
-                            if (applied === Object.keys(out).length) {
-                                return { success: true, fallback: 'single_writes' };
-                            }
-                            if (handleAuthError(e, { path: 'multiple_paths_write' })) {
-                                return { success: false, error: 'auth', source: 'firebase' };
-                            }
-                            return { success: false, error: 'partial_write_failed', source: 'firebase' };
-                        }
-                        if (handleAuthError(e, { path: 'multiple_paths_write' })) {
-                            return { success: false, error: 'auth', source: 'firebase' };
-                        }
+                        handleAuthError(e, { path: 'multiple_paths_write' });
                         throw e;
                     }
                 },
                 removeFromFirebase: async (path) => {
-                    const base = String(path || '').replace(/^contaspagar(\/|$)/, 'financas/pagar$1').replace(/^contas_pagar(\/|$)/, 'financas/pagar$1').replace(/^contasreceber(\/|$)/, 'financas/receber$1').replace(/^contas_receber(\/|$)/, 'financas/receber$1');
+                    const base = normalizeFinanceLegacyPath(path);
                     try {
                         await remove(ref(window.database, getNamespacedPath(base)));
                         return { success: true };
                     } catch (e) {
-                        if (handleAuthError(e, { path: base })) {
-                            return { success: false, error: 'auth', source: 'firebase' };
-                        }
+                        handleAuthError(e, { path: base });
                         throw e;
                     }
                 },
@@ -1748,7 +1978,7 @@
                 ...financeFirebaseLocalService
             };
             window.__siswebFirebaseServiceReady = (async function () {
-                const firebaseSvc = await import('./firebaseService.js?v=2026-06-17-finance-tenant-auth-v2');
+                const firebaseSvc = await import('./firebaseService.js?v=676ba9f2a922');
                 const existingFirebaseService = window.firebaseService || {};
                 window.firebaseService = {
                     ...existingFirebaseService,
@@ -1771,21 +2001,19 @@
                 console.log("✅ firebaseService carregado e unificado no financas.html");
                 return window.firebaseService;
             })().catch((error) => {
-                console.error('❌ Erro ao unificar firebaseService no financeiro:', error);
+                console.error('❌ Erro ao unificar firebaseService no financeiro:', error && error.code ? error.code : 'unknown');
                 return window.firebaseService || financeFirebaseLocalService;
             });
-        } catch (error) {
-            console.error('❌ Erro ao inicializar Firebase no sistema financeiro:', error);
-        }
     </script>
     
-    <script src="storageService.js"></script>
-    <script src="client-service.js"></script>
-    <script src="schema-migration-contatos.js"></script>
+    <script src="storageService.js?v=91f2b2ba7396"></script>
+    <script src="client-service.js?v=fbb1e80d1713"></script>
+    <script src="schema-migration-contatos.js?v=f086747ad6d7"></script>
+    <script src="commerce-pdf-share.js?v=9659e27a66f7"></script>
     <!-- Geração de Lâmina de Cobrança PIX -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="js/pix-brcode.js"></script>
-    <script src="js/commerce-boleto-pix.js?v=2026-06-26-boleto-pix-lamina-v3"></script>
-    <script src="financas.js?v=2026-06-26-boleto-pix-lamina-v3"></script>
+    <script src="js/pix-brcode.js?v=a8925daa3ade"></script>
+    <script src="js/commerce-boleto-pix.js?v=1eb6dcd71285"></script>
+    <script src="financas.js?v=8ddee8f8f0c1"></script>
 </body>
 </html>

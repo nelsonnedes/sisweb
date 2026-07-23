@@ -13,6 +13,10 @@
  * - Listeners únicos sem duplicação
  */
 
+function getAuthPerformanceDiagnosticsPayrollManager() {
+    try { return window.__SISWEB_AUTH_PERF__ || null; } catch (_) { return null; }
+}
+
 class FirebaseConnectionManager {
     constructor() {
         // Implementar Singleton
@@ -178,12 +182,14 @@ class FirebaseConnectionManager {
         window.addEventListener('online', () => {
             console.log('🌐 Rede online detectada');
             this.isOnline = true;
+            try { getAuthPerformanceDiagnosticsPayrollManager()?.internet(true, 'payroll_page'); } catch (_) {}
             this.handleNetworkChange('online');
         });
         
         window.addEventListener('offline', () => {
             console.log('🌐 Rede offline detectada');
             this.isOnline = false;
+            try { getAuthPerformanceDiagnosticsPayrollManager()?.internet(false, 'payroll_page'); } catch (_) {}
             this.handleNetworkChange('offline');
         });
         
@@ -198,27 +204,32 @@ class FirebaseConnectionManager {
         if (!this.database) return;
         
         try {
-            const { ref, onValue, off } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, onValue, off } = await import('../firebase-init.js');
             
             const connectedRef = ref(this.database, '.info/connected');
             
             // Remover listener anterior se existir (usar callback salvo)
             if (this._connectedRef && this._connectedCb) {
-                try { off(this._connectedRef, 'value', this._connectedCb); } catch {}
+                try {
+                    off(this._connectedRef, 'value', this._connectedCb);
+                    getAuthPerformanceDiagnosticsPayrollManager()?.listener('rtdb', 'remove', 'payroll_page', 0);
+                } catch {}
             }
             
             // Configurar novo listener
             this._connectedRef = connectedRef;
             this._connectedCb = (snapshot) => {
                 const connected = snapshot.val() === true;
+                try { getAuthPerformanceDiagnosticsPayrollManager()?.rtdb(connected, 'payroll_page'); } catch (_) {}
                 this.handleConnectionChange(connected);
             };
+            try { getAuthPerformanceDiagnosticsPayrollManager()?.listener('rtdb', 'add', 'payroll_page', 0); } catch (_) {}
             onValue(connectedRef, this._connectedCb);
             
             console.log('✅ Listeners de conexão Firebase configurados');
             
         } catch (error) {
-            console.error('❌ Erro ao configurar listeners de conexão:', error);
+            console.error('❌ Erro ao configurar listeners de conexão:', error && error.code ? error.code : 'unknown');
         }
     }
     
@@ -375,21 +386,25 @@ class FirebaseConnectionManager {
     async _loadDataInternal(path, useCache, forceRefresh, options = {}) {
         const resolvedPath = this.resolvePath(path);
         const pathKey = resolvedPath || path;
+        try { getAuthPerformanceDiagnosticsPayrollManager()?.read(pathKey, 'payroll_page', 'logical', 'started', 0); } catch (_) {}
         // Verificar cache primeiro
         if (useCache && !forceRefresh && this.isCacheValid(pathKey)) {
-            console.log(`📦 Dados carregados do cache: ${pathKey}`);
+            try { getAuthPerformanceDiagnosticsPayrollManager()?.cache(pathKey, 'memory', 'hit', 'payroll_page'); } catch (_) {}
+            console.log('📦 Dados carregados do cache');
             return this.dataCache.get(pathKey);
         }
+        try { getAuthPerformanceDiagnosticsPayrollManager()?.cache(pathKey, 'memory', 'miss', 'payroll_page'); } catch (_) {}
         
         // Definir estado de loading
         this.setLoadingState(pathKey, true);
         
         try {
             // Não bloquear por this.isConnected: tentar buscar sempre que possível
-            const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, get } = await import('../firebase-init.js');
             const dataRef = ref(this.database, pathKey);
             
-            console.log(`📡 Carregando dados do Firebase: ${pathKey}`);
+            console.log('📡 Carregando dados do Firebase');
+            try { getAuthPerformanceDiagnosticsPayrollManager()?.read(pathKey, 'payroll_page', 'physical', 'started', 0); } catch (_) {}
             const snapshot = await get(dataRef);
             const data = snapshot.val() || {};
             
@@ -401,11 +416,11 @@ class FirebaseConnectionManager {
                 this.saveToLocalStorage(pathKey, data);
             }
             
-            console.log(`✅ Dados carregados: ${pathKey} (${Object.keys(data).length} itens)`);
+            console.log('✅ Dados carregados');
             return data;
             
         } catch (error) {
-            console.error(`❌ Erro ao carregar dados: ${pathKey}`, error);
+            console.error('❌ Erro ao carregar dados:', error && error.code ? error.code : 'unknown');
             
             // Se aparentemente offline, enfileirar e tentar fallback
             const looksOffline = !this.isOnline || (error && String(error.message || error).toLowerCase().includes('offline'));
@@ -416,7 +431,8 @@ class FirebaseConnectionManager {
             // Tentar fallback do cache ou localStorage
             const fallbackData = this.dataCache.get(pathKey) || this.getFromLocalStorage(pathKey);
             if (fallbackData) {
-                console.log(`📦 Usando dados de fallback: ${pathKey}`);
+                try { getAuthPerformanceDiagnosticsPayrollManager()?.cache(pathKey, 'local', 'hit', 'payroll_page'); } catch (_) {}
+                console.log('📦 Usando dados de fallback');
                 return fallbackData;
             }
             
@@ -461,7 +477,7 @@ class FirebaseConnectionManager {
         const operation = { type: 'save', path, data, options };
         
         if (!this.isConnected) {
-            console.log(`📝 Adicionando à fila (offline): ${pathKey}`);
+            console.log('📝 Adicionando operação à fila offline');
             this.addToQueue('save', pathKey, data);
             
             // Salvar no localStorage temporariamente
@@ -474,7 +490,7 @@ class FirebaseConnectionManager {
         }
         
         try {
-            const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, set } = await import('../firebase-init.js');
             const dataRef = ref(this.database, pathKey);
             
             await set(dataRef, data);
@@ -482,11 +498,11 @@ class FirebaseConnectionManager {
             // Atualizar cache
             this.updateCache(pathKey, data);
             
-            console.log(`✅ Dados salvos: ${pathKey}`);
+            console.log('✅ Dados salvos');
             return true;
             
         } catch (error) {
-            console.error(`❌ Erro ao salvar dados: ${pathKey}`, error);
+            console.error('❌ Erro ao salvar dados:', error && error.code ? error.code : 'unknown');
             const msg = String((error && error.message) || error || '').toLowerCase();
             const isPermissionDenied = msg.includes('permission_denied');
             const looksOffline = !this.isOnline || msg.includes('offline');
@@ -526,16 +542,21 @@ class FirebaseConnectionManager {
         
         // Evitar listeners duplicados
         if (this.activeListeners.has(pathKey)) {
-            console.log(`⚠️ Listener já ativo para: ${pathKey}`);
+            console.log('⚠️ Listener realtime já ativo');
             return this.activeListeners.get(pathKey);
         }
         
         try {
-            const { ref, onValue, off } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, onValue, off } = await import('../firebase-init.js');
             const dataRef = ref(this.database, pathKey);
-            
+            let firstSnapshot = true;
+            try { getAuthPerformanceDiagnosticsPayrollManager()?.listener('data', 'add', 'payroll_page', 0); } catch (_) {}
             const unsubscribe = onValue(dataRef, (snapshot) => {
                 const data = snapshot.val() || {};
+                if (firstSnapshot) {
+                    firstSnapshot = false;
+                    try { getAuthPerformanceDiagnosticsPayrollManager()?.read(pathKey, 'payroll_page', 'listener_first_value', 'success', 0); } catch (_) {}
+                }
                 
                 // Atualizar cache
                 this.updateCache(pathKey, data);
@@ -543,9 +564,9 @@ class FirebaseConnectionManager {
                 // Chamar callback
                 callback(data);
                 
-                console.log(`🔄 Dados atualizados em tempo real: ${pathKey}`);
+                console.log('🔄 Dados atualizados em tempo real');
             }, (error) => {
-                console.error(`❌ Erro no listener: ${pathKey}`, error);
+                console.error('❌ Erro no listener realtime:', error && error.code ? error.code : 'unknown');
                 callback(null, error);
             });
             
@@ -559,11 +580,11 @@ class FirebaseConnectionManager {
             
             this.activeListeners.set(pathKey, listenerInfo);
             
-            console.log(`👂 Listener configurado: ${pathKey}`);
+            console.log('👂 Listener realtime configurado');
             return listenerInfo;
             
         } catch (error) {
-            console.error(`❌ Erro ao configurar listener: ${pathKey}`, error);
+            console.error('❌ Erro ao configurar listener realtime:', error && error.code ? error.code : 'unknown');
             throw error;
         }
     }
@@ -577,8 +598,9 @@ class FirebaseConnectionManager {
         const listener = this.activeListeners.get(pathKey);
         if (listener) {
             listener.unsubscribe();
+            try { getAuthPerformanceDiagnosticsPayrollManager()?.listener('data', 'remove', 'payroll_page', 0); } catch (_) {}
             this.activeListeners.delete(pathKey);
-            console.log(`🗑️ Listener removido: ${pathKey}`);
+            console.log('🗑️ Listener realtime removido');
         }
     }
     
@@ -600,7 +622,7 @@ class FirebaseConnectionManager {
     invalidateCache(path) {
         this.dataCache.delete(path);
         this.cacheTimestamps.delete(path);
-        console.log(`🗑️ Cache invalidado: ${path}`);
+        console.log('🗑️ Cache invalidado');
     }
     
     refreshStaleData() {
@@ -717,7 +739,7 @@ class FirebaseConnectionManager {
             timestamp: Date.now()
         });
         
-        console.log(`📋 Operação adicionada à fila: ${operation} ${path}`);
+        console.log('📋 Operação adicionada à fila');
         this.persistQueue();
     }
     
@@ -740,11 +762,11 @@ class FirebaseConnectionManager {
                     await this.saveData(operation.path, operation.data);
                 }
                 
-                console.log(`✅ Operação processada: ${operation.operation} ${operation.path}`);
+                console.log('✅ Operação da fila processada');
                 this.persistQueue();
                 
             } catch (error) {
-                console.error(`❌ Erro ao processar operação: ${operation.operation} ${operation.path}`, error);
+                console.error('❌ Erro ao processar operação da fila:', error && error.code ? error.code : 'unknown');
                 
                 // Recolocar na fila se não for muito antiga (5 minutos)
                 if (Date.now() - operation.timestamp < 5 * 60 * 1000) {

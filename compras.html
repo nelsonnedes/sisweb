@@ -4,11 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Compras</title>
+    <script>
+        if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
+            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
-    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
+    <script src="menu-component.js?v=a26e67eb025d"></script>
     <style>
         * {
             margin: 0;
@@ -471,6 +476,48 @@
             flex: 1 1 auto;
         }
 
+        #modalFornecedor .modal-content {
+            display: flex;
+            flex-direction: column;
+            margin: 24px auto;
+            max-width: 940px;
+            max-height: calc(100dvh - 48px);
+            overflow: hidden;
+            padding: 0;
+            width: min(96vw, 940px);
+        }
+
+        #modalFornecedor .modal-header {
+            flex: 0 0 auto;
+        }
+
+        #modalFornecedor form {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        #modalFornecedor .modal-body {
+            min-height: 0;
+            overflow-y: auto;
+            padding: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #modalFornecedor .modal-footer {
+            align-items: center;
+            background: #fff;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            flex: 0 0 auto;
+            gap: 10px;
+            justify-content: flex-end;
+            margin: 0;
+            padding: 14px 20px;
+        }
+
         #listaPedidosModal .table-container {
             margin-top: 10px;
             flex: 1 1 auto;
@@ -650,6 +697,24 @@
                 width: 95%;
                 margin: 5% auto;
             }
+
+            #modalFornecedor .modal-content {
+                height: 100dvh;
+                margin: 0;
+                max-height: 100dvh;
+                width: 100%;
+            }
+
+            #modalFornecedor .modal-body {
+                padding: 16px;
+            }
+
+            #modalFornecedor .modal-footer {
+                display: grid;
+                gap: 8px;
+                grid-template-columns: 1fr;
+                padding: 12px 16px;
+            }
         }
 
         /* Sistema de Toasts/Notificações */
@@ -783,6 +848,34 @@
                 min-width: auto;
                 width: 100%;
             }
+        }
+
+        /* ✅ CORREÇÃO: Tabelas responsivas sem overflow horizontal (Desktop) */
+        .purchase-suppliers-table,
+        #produtos .commerce-orders-table,
+        #relComprasPedidosTable {
+            table-layout: fixed;
+        }
+
+        .purchase-suppliers-table td,
+        .purchase-suppliers-table th,
+        #produtos .commerce-orders-table td,
+        #produtos .commerce-orders-table th,
+        #relComprasPedidosTable td,
+        #relComprasPedidosTable th {
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        /* Coluna de ações: largura mínima, sem quebra de texto */
+        .purchase-suppliers-table th:last-child,
+        .purchase-suppliers-table td:last-child,
+        #produtos .commerce-orders-table th:last-child,
+        #produtos .commerce-orders-table td:last-child,
+        #relComprasPedidosTable th:last-child,
+        #relComprasPedidosTable td:last-child {
+            white-space: nowrap;
+            width: 1%;
         }
     </style>
     <style>
@@ -1772,284 +1865,152 @@
                 <span class="close" onclick="fecharModalFornecedor()">&times;</span>
             </div>
             <form onsubmit="salvarFornecedorInline(event)">
-                <div class="form-row">
-                    <div class="form-group form-group-large">
-                        <label for="fornNome">Nome</label>
-                        <input type="text" id="fornNome" required>
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group form-group-large">
+                            <label for="fornNome">Nome</label>
+                            <input type="text" id="fornNome" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fornDocumento">Documento (CNPJ/CPF)</label>
+                            <input type="text" id="fornDocumento" placeholder="Ex: 12.345.678/0001-90">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornTelefone">Telefone</label>
+                            <input type="text" id="fornTelefone" placeholder="(xx) xxxxx-xxxx">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fornEmail">Email</label>
+                            <input type="email" id="fornEmail" placeholder="email@exemplo.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornTipoPessoa">Tipo de pessoa</label>
+                            <select id="fornTipoPessoa">
+                                <option value="">Não informado</option>
+                                <option value="juridica">Pessoa jurídica</option>
+                                <option value="fisica">Pessoa física</option>
+                                <option value="estrangeiro">Estrangeiro</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fornIndIEDest">Indicador IE</label>
+                            <select id="fornIndIEDest">
+                                <option value="">Não informado</option>
+                                <option value="1">Contribuinte ICMS</option>
+                                <option value="2">Contribuinte isento</option>
+                                <option value="9">Não contribuinte</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="fornInscricaoEstadual">Inscrição Estadual</label>
+                            <input type="text" id="fornInscricaoEstadual" placeholder="IE / ISENTO">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fornInscricaoMunicipal">Inscrição Municipal</label>
+                            <input type="text" id="fornInscricaoMunicipal" placeholder="Opcional">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornSuframa">SUFRAMA</label>
+                            <input type="text" id="fornSuframa" placeholder="Opcional">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fornCep">CEP</label>
+                            <input type="text" id="fornCep" placeholder="00000-000">
+                        </div>
+                        <div class="form-group form-group-large">
+                            <label for="fornEndereco">Endereço</label>
+                            <input type="text" id="fornEndereco" placeholder="Rua, Avenida">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornNumero">Número</label>
+                            <input type="text" id="fornNumero" placeholder="Nº">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fornBairro">Bairro</label>
+                            <input type="text" id="fornBairro" placeholder="Bairro">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornComplemento">Complemento</label>
+                            <input type="text" id="fornComplemento" placeholder="Sala, lote, referência">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fornEstado">Estado</label>
+                            <select id="fornEstado" onchange="loadCities(this.value, 'fornCidade')">
+                                <option value="">Selecione o estado</option>
+                                <option value="AC">Acre</option>
+                                <option value="AL">Alagoas</option>
+                                <option value="AP">Amapá</option>
+                                <option value="AM">Amazonas</option>
+                                <option value="BA">Bahia</option>
+                                <option value="CE">Ceará</option>
+                                <option value="DF">Distrito Federal</option>
+                                <option value="ES">Espírito Santo</option>
+                                <option value="GO">Goiás</option>
+                                <option value="MA">Maranhão</option>
+                                <option value="MT">Mato Grosso</option>
+                                <option value="MS">Mato Grosso do Sul</option>
+                                <option value="MG">Minas Gerais</option>
+                                <option value="PA">Pará</option>
+                                <option value="PB">Paraíba</option>
+                                <option value="PR">Paraná</option>
+                                <option value="PE">Pernambuco</option>
+                                <option value="PI">Piauí</option>
+                                <option value="RJ">Rio de Janeiro</option>
+                                <option value="RN">Rio Grande do Norte</option>
+                                <option value="RS">Rio Grande do Sul</option>
+                                <option value="RO">Rondônia</option>
+                                <option value="RR">Roraima</option>
+                                <option value="SC">Santa Catarina</option>
+                                <option value="SP">São Paulo</option>
+                                <option value="SE">Sergipe</option>
+                                <option value="TO">Tocantins</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="fornCidade">Cidade</label>
+                            <select id="fornCidade">
+                                <option value="">Selecione primeiro o estado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fornCodigoMunicipio">Código IBGE do município</label>
+                            <input type="text" id="fornCodigoMunicipio" placeholder="Ex: 1501402">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornPaisCodigo">Código do país</label>
+                            <input type="text" id="fornPaisCodigo" value="1058" placeholder="1058">
+                        </div>
+                        <div class="form-group">
+                            <label for="fornPais">País</label>
+                            <input type="text" id="fornPais" value="Brasil" placeholder="Brasil">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fornObs">Observações</label>
+                        <textarea id="fornObs" rows="2" placeholder="Informações adicionais..."></textarea>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="fornDocumento">Documento (CNPJ/CPF)</label>
-                        <input type="text" id="fornDocumento" placeholder="Ex: 12.345.678/0001-90">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornTelefone">Telefone</label>
-                        <input type="text" id="fornTelefone" placeholder="(xx) xxxxx-xxxx">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornEmail">Email</label>
-                        <input type="email" id="fornEmail" placeholder="email@exemplo.com">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="fornTipoPessoa">Tipo de pessoa</label>
-                        <select id="fornTipoPessoa">
-                            <option value="">Não informado</option>
-                            <option value="juridica">Pessoa jurídica</option>
-                            <option value="fisica">Pessoa física</option>
-                            <option value="estrangeiro">Estrangeiro</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="fornIndIEDest">Indicador IE</label>
-                        <select id="fornIndIEDest">
-                            <option value="">Não informado</option>
-                            <option value="1">Contribuinte ICMS</option>
-                            <option value="2">Contribuinte isento</option>
-                            <option value="9">Não contribuinte</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="fornInscricaoEstadual">Inscrição Estadual</label>
-                        <input type="text" id="fornInscricaoEstadual" placeholder="IE / ISENTO">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="fornInscricaoMunicipal">Inscrição Municipal</label>
-                        <input type="text" id="fornInscricaoMunicipal" placeholder="Opcional">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornSuframa">SUFRAMA</label>
-                        <input type="text" id="fornSuframa" placeholder="Opcional">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="fornCep">CEP</label>
-                        <input type="text" id="fornCep" placeholder="00000-000">
-                    </div>
-                    <div class="form-group form-group-large">
-                        <label for="fornEndereco">Endereço</label>
-                        <input type="text" id="fornEndereco" placeholder="Rua, Avenida">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornNumero">Número</label>
-                        <input type="text" id="fornNumero" placeholder="Nº">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="fornBairro">Bairro</label>
-                        <input type="text" id="fornBairro" placeholder="Bairro">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornComplemento">Complemento</label>
-                        <input type="text" id="fornComplemento" placeholder="Sala, lote, referência">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="fornEstado">Estado</label>
-                        <select id="fornEstado" onchange="loadCities(this.value, 'fornCidade')">
-                            <option value="">Selecione o estado</option>
-                            <option value="AC">Acre</option>
-                            <option value="AL">Alagoas</option>
-                            <option value="AP">Amapá</option>
-                            <option value="AM">Amazonas</option>
-                            <option value="BA">Bahia</option>
-                            <option value="CE">Ceará</option>
-                            <option value="DF">Distrito Federal</option>
-                            <option value="ES">Espírito Santo</option>
-                            <option value="GO">Goiás</option>
-                            <option value="MA">Maranhão</option>
-                            <option value="MT">Mato Grosso</option>
-                            <option value="MS">Mato Grosso do Sul</option>
-                            <option value="MG">Minas Gerais</option>
-                            <option value="PA">Pará</option>
-                            <option value="PB">Paraíba</option>
-                            <option value="PR">Paraná</option>
-                            <option value="PE">Pernambuco</option>
-                            <option value="PI">Piauí</option>
-                            <option value="RJ">Rio de Janeiro</option>
-                            <option value="RN">Rio Grande do Norte</option>
-                            <option value="RS">Rio Grande do Sul</option>
-                            <option value="RO">Rondônia</option>
-                            <option value="RR">Roraima</option>
-                            <option value="SC">Santa Catarina</option>
-                            <option value="SP">São Paulo</option>
-                            <option value="SE">Sergipe</option>
-                            <option value="TO">Tocantins</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="fornCidade">Cidade</label>
-                        <select id="fornCidade">
-                            <option value="">Selecione primeiro o estado</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="fornCodigoMunicipio">Código IBGE do município</label>
-                        <input type="text" id="fornCodigoMunicipio" placeholder="Ex: 1501402">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornPaisCodigo">Código do país</label>
-                        <input type="text" id="fornPaisCodigo" value="1058" placeholder="1058">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornPais">País</label>
-                        <input type="text" id="fornPais" value="Brasil" placeholder="Brasil">
-                    </div>
-                </div>
-                <div class="action-buttons">
+                <div class="modal-footer action-buttons">
                     <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
                     <button type="button" onclick="fecharModalFornecedor()" class="btn btn-danger"><i class="fas fa-times"></i> Cancelar</button>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <!-- Modal de Cadastro/Edição de Fornecedor (romaneiotora) -->
-    <div id="clientModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <div class="modal-header" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: #fff; padding: 15px 20px; min-height: 56px; border-radius: 8px 8px 0 0;">
-                <h3 class="modal-title" id="clientModalTitle" style="color:#fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.4);">Novo Fornecedor</h3>
-                <span class="close-modal" style="color:#fff;" onclick="document.getElementById('clientModal').style.display='none'">&times;</span>
-            </div>
-            <div class="modal-body">
-                <form id="clientForm" onsubmit="saveClient(event); return false;">
-                    <input type="hidden" id="clientId">
-                    <div class="form-group">
-                        <label for="clientName">Nome:</label>
-                        <input type="text" id="clientName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="clientCnpj">CNPJ:</label>
-                        <input type="text" id="clientCnpj" placeholder="00.000.000/0000-00">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientPersonType">Tipo de pessoa:</label>
-                        <select id="clientPersonType">
-                            <option value="">Não informado</option>
-                            <option value="juridica">Pessoa jurídica</option>
-                            <option value="fisica">Pessoa física</option>
-                            <option value="estrangeiro">Estrangeiro</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="clientIndIEDest">Indicador IE:</label>
-                        <select id="clientIndIEDest">
-                            <option value="">Não informado</option>
-                            <option value="1">Contribuinte ICMS</option>
-                            <option value="2">Contribuinte isento</option>
-                            <option value="9">Não contribuinte</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="clientStateRegistration">Inscrição Estadual:</label>
-                        <input type="text" id="clientStateRegistration" placeholder="000.000.000.000">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientMunicipalRegistration">Inscrição Municipal:</label>
-                        <input type="text" id="clientMunicipalRegistration" placeholder="Opcional">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientSuframa">SUFRAMA:</label>
-                        <input type="text" id="clientSuframa" placeholder="Opcional">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientCep">CEP:</label>
-                        <input type="text" id="clientCep" placeholder="00000-000">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientAddress">Endereço:</label>
-                        <input type="text" id="clientAddress" placeholder="Rua, Avenida, etc.">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientNumber">Número:</label>
-                        <input type="text" id="clientNumber" placeholder="Número da residência/empresa">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientNeighborhood">Bairro:</label>
-                        <input type="text" id="clientNeighborhood" placeholder="Nome do bairro">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientComplement">Complemento:</label>
-                        <input type="text" id="clientComplement" placeholder="Sala, lote, referência">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientState">Estado:</label>
-                        <select id="clientState" onchange="carregarCidadesPorEstado(this.value)">
-                            <option value="">Selecione o estado</option>
-                            <option value="AC">Acre</option>
-                            <option value="AL">Alagoas</option>
-                            <option value="AP">Amapá</option>
-                            <option value="AM">Amazonas</option>
-                            <option value="BA">Bahia</option>
-                            <option value="CE">Ceará</option>
-                            <option value="DF">Distrito Federal</option>
-                            <option value="ES">Espírito Santo</option>
-                            <option value="GO">Goiás</option>
-                            <option value="MA">Maranhão</option>
-                            <option value="MT">Mato Grosso</option>
-                            <option value="MS">Mato Grosso do Sul</option>
-                            <option value="MG">Minas Gerais</option>
-                            <option value="PA">Pará</option>
-                            <option value="PB">Paraíba</option>
-                            <option value="PR">Paraná</option>
-                            <option value="PE">Pernambuco</option>
-                            <option value="PI">Piauí</option>
-                            <option value="RJ">Rio de Janeiro</option>
-                            <option value="RN">Rio Grande do Norte</option>
-                            <option value="RS">Rio Grande do Sul</option>
-                            <option value="RO">Rondônia</option>
-                            <option value="RR">Roraima</option>
-                            <option value="SC">Santa Catarina</option>
-                            <option value="SP">São Paulo</option>
-                            <option value="SE">Sergipe</option>
-                            <option value="TO">Tocantins</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="clientCity">Cidade:</label>
-                        <select id="clientCity">
-                            <option value="">Selecione primeiro o estado</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="clientMunicipalityCode">Código IBGE do município:</label>
-                        <input type="text" id="clientMunicipalityCode" placeholder="Ex: 1501402">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientCountryCode">Código do país:</label>
-                        <input type="text" id="clientCountryCode" value="1058" placeholder="1058">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientCountryName">País:</label>
-                        <input type="text" id="clientCountryName" value="Brasil" placeholder="Brasil">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientPhone">Telefone:</label>
-                        <input type="text" id="clientPhone" oninput="formatarTelefone(this)">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientEmail">Email:</label>
-                        <input type="email" id="clientEmail">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientObs">Observações:</label>
-                        <textarea id="clientObs" rows="3"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('clientModal').style.display='none';">Cancelar</button>
-                <button type="button" class="btn-save" id="saveClientBtn" onclick="saveClient()">Salvar</button>
-            </div>
         </div>
     </div>
 
@@ -2064,10 +2025,10 @@
         </div>
     </div>
 
-    <script src="auth.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
+    <script src="auth.js?v=cbbfbc7f784a"></script>
     <script>
         window.__siswebFirebaseServiceReady = (async function () {
-            const firebaseSvc = await import('./firebaseService.js?v=2026-06-12-tenant-auth-guard-v1');
+            const firebaseSvc = await import('./firebaseService.js?v=676ba9f2a922');
             const existingFirebaseService = window.firebaseService || {};
             window.firebaseService = {
                 ...existingFirebaseService,
@@ -2083,16 +2044,14 @@
         })();
     </script>
     <!-- Carregar gerenciador unificado de espécies para popular o select -->
-    <script src="species-manager.js?v=20260520a"></script>
+    <script src="species-manager.js?v=cb24148c8ab6"></script>
     <!-- Carregar gerenciador de cidades -->
-    <script src="cities.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
-    <script src="client-modal-handler.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
-    <script src="romaneios-client-save-fix.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
-    <script src="ui-config.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
-    <script src="commerce-responsive.js?v=2026-06-07-print-context-v13"></script>
-    <script src="commerce-pdf-share.js?v=2026-06-23-logo-print-dataurl-v1"></script>
+    <script src="cities.js?v=741c80084e54"></script>
+    <script src="ui-config.js?v=d073114e4641"></script>
+    <script src="commerce-responsive.js?v=f83575783f61"></script>
+    <script src="commerce-pdf-share.js?v=9659e27a66f7"></script>
     <!-- Carregar módulo de Compras -->
-    <script src="compras.js?v=2026-06-23-cadastro-fiscal-nfe-v1"></script>
+    <script src="compras.js?v=7ba3072133a0"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

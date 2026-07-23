@@ -79,14 +79,24 @@ test('compras estorna financeiro ao voltar pedido para pendente ou cancelado', a
 
   const updates = helpers.montarUpdatesRemocaoContasPagarCompra(vinculadas);
   assert.equal(updates['financas/pagar/2026-05/CP-PC-1776259657669-0'], null);
-  assert.equal(updates['financas/pagar/CP-PC-1776259657669-0'], null);
+  assert.equal(
+    updates['financas/pagar/CP-PC-1776259657669-0'],
+    undefined,
+    'estorno nao deve recriar o caminho flat financeiro legado',
+  );
 });
 
 test('compras versiona script e evita falso sucesso quando financeiro nao sincroniza', () => {
   const html = read('compras.html');
   const js = read('compras.js');
 
-  assert.match(html, /compras\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
+  assert.match(html, /compras\.js\?v=[^"'\s]+/);
+  assert.match(
+    js,
+    /const contaId = String\(c\.id \|\| `CP-\$\{pedido\.id\}-\$\{idx\}`\)\.trim\(\);/,
+    'o id persistido na conta precisa usar o mesmo tipo textual da chave do Realtime Database',
+  );
+  assert.match(js, /updates\[`financas\/pagar\/\$\{mk\}\/\$\{contaId\}`\] = conta;/);
   assert.match(js, /montarUpdatesRemocaoContasPagarCompra\(vinculadas\)/);
   assert.match(js, /Não foi possível sincronizar o financeiro do pedido de compra\. Nenhuma alteração foi concluída\./);
   assert.match(js, /Não foi possível remover o financeiro vinculado ao pedido de compra\. Nenhuma alteração foi concluída\./);

@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <link rel="stylesheet" href="print-styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
+    <script src="menu-component.js?v=a26e67eb025d"></script>
     
     <style>
         /* ==========================================================================
@@ -1339,17 +1339,20 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    
-    <!-- Configuração Firebase e Serviços (Unificados) -->
-    <script src="firebaseService.unified.js"></script>
-    <script src="auth.js"></script>
-    <script src="client-service.js"></script> <!-- Para autocompletes -->
-    <script src="species-utils.js"></script>
-    <script src="species-store.js"></script>
-    <script src="species-modal-standard.js"></script>
+    <!-- Firebase via módulo compartilhado (singleton) -->
+
+    <script type="module">
+
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js';
+import './firebase-compat-bridge.js';  // compat shim
+
+    </script><!-- Configuração Firebase e Serviços (Unificados) -->
+    <script src="firebaseService.unified.js?v=07d2b773a0fd"></script>
+    <script src="auth.js?v=cbbfbc7f784a"></script>
+    <script src="client-service.js?v=fbb1e80d1713"></script> <!-- Para autocompletes -->
+    <script src="species-utils.js?v=4c5147a6f4fe"></script>
+    <script src="species-store.js?v=67f7145c0a96"></script>
+    <script src="species-modal-standard.js?v=fa1c091a5294"></script>
     
     <!-- Modais (Lista de Clientes, Novo Cliente, Espécies, Meus Romaneios) -->
     
@@ -1846,11 +1849,11 @@
     </div>
 
     <!-- Scripts de Modais e Lógica -->
-    <script src="fornecedor-modals.js"></script>
-    <script src="preromaneio-modals.js"></script>
-    <script src="tora-geometry-utils.js?v=20260528a"></script>
-    <script src="romaneio-table-enhancements.js?v=20260601a"></script>
-    <script src="preromaneio.js"></script>
+    <script src="fornecedor-modals.js?v=9308ca4e254c"></script>
+    <script src="preromaneio-modals.js?v=8547c05572d0"></script>
+    <script src="tora-geometry-utils.js?v=f92ce76d2728"></script>
+    <script src="romaneio-table-enhancements.js?v=cbd0da360107"></script>
+    <script src="preromaneio.js?v=9daae6bbcf72"></script>
 
 </body>
 </html>

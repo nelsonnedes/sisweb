@@ -355,9 +355,6 @@ async function garantirContextoEmpresaCompras() {
         if (retried && retried.success) return retried;
     }
 
-    const tenant = obterTenantServicoCompras();
-    if (tenant && isFirebaseOfflineModeCompras()) return { success: true, companyId: tenant, fallback: true, offline: true };
-
     limparContextoEmpresaComprasInseguro();
     return { success: false, code: 'missing-company-context', error: 'Empresa da sessão não identificada.' };
 }
@@ -1154,7 +1151,7 @@ function adicionarContaPagar() {
             dataVencimentoISO = baseVencimentoISO;
             diasOffset = 0;
         } else {
-            baseVencimentoISO = vencimento;
+            baseVencimentoISO = pedidoDataISO || vencimento;
             dataVencimentoISO = addDaysISO(baseVencimentoISO, diasOffset);
         }
 
@@ -1168,6 +1165,7 @@ function adicionarContaPagar() {
             id: Date.now() + i,
             valor: valorPorParcela,
             vencimento: dataVencimentoISO,
+            dataEmissao: pedidoDataISO,
             baseVencimento: baseVencimentoISO, // ✅ Salvar base para cálculo de dias (Igual Vendas)
             dias: diasOffset,                   // ✅ Salvar offset para edição inline
             tipo,
@@ -1866,7 +1864,6 @@ function montarUpdatesRemocaoContasPagarCompra(lista) {
         const id = String(c.id);
         const mk = toMonthKey(c.dataVencimento || c.vencimento);
         updates[`financas/pagar/${mk}/${id}`] = null;
-        updates[`financas/pagar/${id}`] = null;
     });
     return updates;
 }
@@ -1957,7 +1954,7 @@ async function salvarPedido(event) {
                 const mk = toMonthKey(c.vencimento); // Nova chave de mês baseada na NOVA data
                 // Garantir ID único e persistente
                 // Se já tinha ID, mantém. Se não, gera.
-                const contaId = c.id || `CP-${pedido.id}-${idx}`;
+                const contaId = String(c.id || `CP-${pedido.id}-${idx}`).trim();
                 c.id = contaId; 
                 
                 const conta = {
@@ -1989,16 +1986,6 @@ async function salvarPedido(event) {
                 // Salvar no caminho particionado por mês (padrão do sistema financeiro)
                 updates[`financas/pagar/${mk}/${contaId}`] = conta;
                 
-                // Salvar referência no caminho legado (sem mês) para garantir compatibilidade de leitura
-                // (alguns módulos leem direto de contasPagar/{id})
-                // Se o sistema financeiro usa apenas mk, isso pode ser redundante, mas seguro.
-                // Mas cuidado: se mudar o mês, o ID antigo no caminho legado será sobrescrito corretamente (mesmo ID).
-                // Se o sistema usa APENAS particionado, ok. Se usa "flat", precisamos atualizar lá também.
-                // O `getData('financas/pagar')` do financeiro geralmente varre tudo ou usa índice.
-                // Vamos salvar no flat também se o sistema suportar.
-                // O código original fazia: `updates['financas/pagar/' + oldId] = null` (linha 876)
-                // Então devemos salvar no flat também.
-                updates[`financas/pagar/${contaId}`] = conta;
             });
         }
         
@@ -3155,22 +3142,12 @@ async function obterDadosEmpresa() {
 
         if (tenantId && svc && typeof svc.loadFromFirebase === 'function') {
             try {
-                const byPathRoot = await svc.loadFromFirebase(`companies/${tenantId}`);
-                const byPathRootData = byPathRoot && (byPathRoot.success ? byPathRoot.data : byPathRoot.data);
-                if (byPathRootData && typeof byPathRootData === 'object' && (byPathRootData.nome || byPathRootData.name)) {
-                    companyData = { ...byPathRootData, id: tenantId, companyId: tenantId, tenantId: tenantId };
+                const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
+                const byPathData = byPath && (byPath.success === true ? byPath.data : (byPath.success === false ? null : byPath));
+                if (byPathData && typeof byPathData === 'object') {
+                    companyData = { ...companyData, ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
                 }
             } catch (_) {}
-
-            if (!companyData || (!companyData.nome && !companyData.name)) {
-                try {
-                    const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
-                    const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
-                    if (byPathData && typeof byPathData === 'object') {
-                        companyData = { ...companyData, ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
-                    }
-                } catch (_) {}
-            }
         }
 
         if (!companyData || (!companyData.nome && !companyData.name)) {
@@ -3815,11 +3792,7 @@ function comprasFornecedoresNormalizarLista(lista) {
 }
 
 async function comprasFornecedoresCarregarDados() {
-    let lista = await getData('fornecedores') || [];
-    if (!Array.isArray(lista) || lista.length === 0) {
-        const clients = await getData('clients');
-        if (Array.isArray(clients) && clients.length > 0) lista = clients;
-    }
+    const lista = await getData('fornecedores') || [];
     return comprasFornecedoresNormalizarLista(lista);
 }
 
@@ -4302,61 +4275,74 @@ function configurarAbaFornecedoresCompras() {
 }
 
 // Modal Rápido de Fornecedor
-window.abrirModalFornecedor = function() {
+function abrirModalFornecedor() {
     document.getElementById('modalFornecedor').style.display = 'block';
-};
+}
 
-window.fecharModalFornecedor = function() {
+function fecharModalFornecedor() {
     document.getElementById('modalFornecedor').style.display = 'none';
-};
+}
 
-window.salvarFornecedorInline = async function(event) {
+async function salvarFornecedorInline(event) {
     event.preventDefault();
     LoadingManager.show('Salvando fornecedor...');
     try {
+        const nowIso = new Date().toISOString();
+        const obs = comprasFornecedoresCampo('fornObs');
         const novoFornecedor = {
             id: `FOR-${Date.now()}`,
-            nome: document.getElementById('fornNome').value,
-            documento: document.getElementById('fornDocumento').value,
-            document: document.getElementById('fornDocumento').value,
-            cnpj: document.getElementById('fornDocumento').value,
+            nome: comprasFornecedoresCampo('fornNome'),
+            name: comprasFornecedoresCampo('fornNome'),
+            documento: comprasFornecedoresCampo('fornDocumento'),
+            document: comprasFornecedoresCampo('fornDocumento'),
+            cnpj: comprasFornecedoresCampo('fornDocumento'),
             tipoPessoa: comprasFornecedoresCampo('fornTipoPessoa'),
             personType: comprasFornecedoresCampo('fornTipoPessoa'),
+            fiscalPersonType: comprasFornecedoresCampo('fornTipoPessoa'),
             indIEDest: comprasFornecedoresCampo('fornIndIEDest'),
             indicadorInscricaoEstadual: comprasFornecedoresCampo('fornIndIEDest'),
             ieIndicator: comprasFornecedoresCampo('fornIndIEDest'),
             inscricaoEstadual: comprasFornecedoresCampo('fornInscricaoEstadual'),
             stateRegistration: comprasFornecedoresCampo('fornInscricaoEstadual'),
+            ie: comprasFornecedoresCampo('fornInscricaoEstadual'),
             inscricaoMunicipal: comprasFornecedoresCampo('fornInscricaoMunicipal'),
             municipalRegistration: comprasFornecedoresCampo('fornInscricaoMunicipal'),
             suframa: comprasFornecedoresCampo('fornSuframa'),
             cep: comprasFornecedoresCampo('fornCep'),
             postalCode: comprasFornecedoresCampo('fornCep'),
-            telefone: document.getElementById('fornTelefone').value,
-            email: document.getElementById('fornEmail').value,
-            endereco: document.getElementById('fornEndereco').value,
-            address: document.getElementById('fornEndereco').value,
+            telefone: comprasFornecedoresCampo('fornTelefone'),
+            phone: comprasFornecedoresCampo('fornTelefone'),
+            email: comprasFornecedoresCampo('fornEmail'),
+            endereco: comprasFornecedoresCampo('fornEndereco'),
+            address: comprasFornecedoresCampo('fornEndereco'),
             numero: comprasFornecedoresCampo('fornNumero'),
             number: comprasFornecedoresCampo('fornNumero'),
             bairro: comprasFornecedoresCampo('fornBairro'),
             neighborhood: comprasFornecedoresCampo('fornBairro'),
             complemento: comprasFornecedoresCampo('fornComplemento'),
             complement: comprasFornecedoresCampo('fornComplemento'),
-            cidade: document.getElementById('fornCidade').value,
-            city: document.getElementById('fornCidade').value,
-            estado: document.getElementById('fornEstado').value,
-            state: document.getElementById('fornEstado').value,
+            cidade: comprasFornecedoresCampo('fornCidade'),
+            city: comprasFornecedoresCampo('fornCidade'),
+            estado: comprasFornecedoresCampo('fornEstado'),
+            state: comprasFornecedoresCampo('fornEstado'),
             codigoMunicipio: comprasFornecedoresCampo('fornCodigoMunicipio'),
             municipioCodigo: comprasFornecedoresCampo('fornCodigoMunicipio'),
             municipalityCode: comprasFornecedoresCampo('fornCodigoMunicipio'),
             cMun: comprasFornecedoresCampo('fornCodigoMunicipio'),
+            ibgeCode: comprasFornecedoresCampo('fornCodigoMunicipio'),
             paisCodigo: comprasFornecedoresCampo('fornPaisCodigo') || '1058',
             countryCode: comprasFornecedoresCampo('fornPaisCodigo') || '1058',
             cPais: comprasFornecedoresCampo('fornPaisCodigo') || '1058',
             pais: comprasFornecedoresCampo('fornPais') || 'Brasil',
             country: comprasFornecedoresCampo('fornPais') || 'Brasil',
             countryName: comprasFornecedoresCampo('fornPais') || 'Brasil',
-            xPais: comprasFornecedoresCampo('fornPais') || 'Brasil'
+            xPais: comprasFornecedoresCampo('fornPais') || 'Brasil',
+            obs,
+            observacoes: obs,
+            observations: obs,
+            createdAt: nowIso,
+            updatedAt: nowIso,
+            updated: nowIso
         };
 
         const service = comprasFornecedoresGetService();
@@ -4376,7 +4362,7 @@ window.salvarFornecedorInline = async function(event) {
     } finally {
         LoadingManager.hide();
     }
-};
+}
 
 // ============================================================================
 // 6. INICIALIZAÇÃO DO SISTEMA
@@ -4576,13 +4562,13 @@ window.loadCities = function(uf, targetId) {
     }
 };
 
-// Integração para o modal legado (clientModal)
+// Integração com selects de cidade usados pelos formulários de fornecedor.
 window.carregarCidadesPorEstado = function(uf) {
     // O modal legado usa 'clientCity' como ID fixo
     window.loadCities(uf, 'clientCity');
 };
 
-// Integração com sistema de modal externo (client-modal-handler)
+// Integração com atualizações externas de fornecedores.
 window.addEventListener('suppliers:updated', (e) => {
     if (e.detail) {
         carregarFornecedores().then(() => {

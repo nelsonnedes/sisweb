@@ -520,7 +520,7 @@ class FolhaCargos {
                 throw new Error('Firebase não inicializado');
             }
             
-            const { ref, push, set, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, push, set, update } = await import('../firebase-init.js');
             
             if (this.isEditMode && cargoData.id) {
                 // Atualizar cargo existente
@@ -567,7 +567,7 @@ class FolhaCargos {
                 return;
             }
             
-            const { ref, onValue, off } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, onValue, off } = await import('../firebase-init.js');
             
             const cargosConfig = (window.FolhaConfig && window.FolhaConfig.cargos) || window.CARGOS_CONFIG;
             const collection = (cargosConfig && cargosConfig.COLLECTION) || 'cargos';
@@ -948,7 +948,7 @@ class FolhaCargos {
                 throw new Error('Firebase não inicializado');
             }
             
-            const { ref, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, update } = await import('../firebase-init.js');
             
             // Soft delete - marcar como inativo
             const cargosConfig = (window.FolhaConfig && window.FolhaConfig.cargos) || window.CARGOS_CONFIG;

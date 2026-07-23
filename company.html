@@ -4,16 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadastro de Empresa</title>
+    <script>
+        if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
+            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <script src="menu-component.js?v=20260326"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
-    <script src="src/services/firebaseService.js"></script>
+    <script src="menu-component.js?v=a26e67eb025d"></script>
+    <!-- Firebase via módulo compartilhado (singleton) -->
+
+    <script type="module">
+
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js';
+import './firebase-compat-bridge.js';  // compat shim
+
+    </script><script type="module" src="src/services/firebaseService.js?v=da38f9c9c85e"></script>
     <style>
         * {
             margin: 0;
@@ -501,6 +507,97 @@
             color: #34495e;
             line-height: 1.6;
         }
+
+        .company-hero {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .company-context-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .company-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 14px;
+        }
+
+        .company-card {
+            border: 1px solid #dbe3ef;
+            border-radius: 8px;
+            padding: 16px;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+        }
+
+        .company-card.is-incomplete {
+            border-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .company-card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .company-card-logo {
+            width: 60px;
+            height: 60px;
+            flex: 0 0 60px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            object-fit: contain;
+            background: #f8fafc;
+        }
+
+        .company-card-placeholder {
+            width: 60px;
+            height: 60px;
+            flex: 0 0 60px;
+            border-radius: 8px;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+        }
+
+        .company-card-meta {
+            display: grid;
+            gap: 6px;
+            margin-top: 14px;
+            color: #475569;
+            font-size: 14px;
+        }
+
+        .company-card-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .company-card-note {
+            color: #64748b;
+            font-size: 13px;
+            align-self: center;
+        }
+
+        @media (max-width: 760px) {
+            .company-context-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .company-card-header {
+                align-items: flex-start;
+            }
+        }
     </style>
 </head>
 <body>
@@ -508,6 +605,11 @@
         <main-menu></main-menu>
         <h1><i class="fas fa-building"></i> Cadastro de Empresa</h1>
         <p class="page-subtitle">Cadastre, edite e selecione a empresa ativa com segurança e feedback visual claro.</p>
+        <div class="company-context-grid" id="companySecurityNotice" style="margin-bottom: 20px;">
+            <div><strong>Empresa</strong><br><span id="companyContextName">Não identificada</span></div>
+            <div><strong>Tenant</strong><br><span id="companyContextId">Não identificado</span></div>
+            <div><strong>Segurança</strong><br><span>Alterações restritas ao admin da empresa</span></div>
+        </div>
         
         <form id="companyForm">
             <div class="grid">
@@ -628,6 +730,31 @@
                 </div>
             </div>
 
+            <div style="margin-top: 25px; margin-bottom: 15px; padding: 18px; border: 1px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;">
+                <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-location-dot" style="color: #2563eb;"></i> <strong>Georeferenciamento</strong>
+                </h3>
+                <div class="grid">
+                    <div class="form-group">
+                        <label for="geoLatitude">Latitude:</label>
+                        <input type="text" id="geoLatitude" inputmode="decimal" placeholder="-1.455833">
+                    </div>
+                    <div class="form-group">
+                        <label for="geoLongitude">Longitude:</label>
+                        <input type="text" id="geoLongitude" inputmode="decimal" placeholder="-48.503889">
+                    </div>
+                </div>
+                <div class="button-container">
+                    <button type="button" id="btnLocateCompany" onclick="locateCompanyCoordinates()" style="width:auto;margin-top:0;">
+                        <i class="fas fa-crosshairs"></i> Localizar coordenadas
+                    </button>
+                    <button type="button" id="btnPrintCompany" onclick="printCompanyReport()" style="width:auto;margin-top:0;">
+                        <i class="fas fa-print"></i> Imprimir relatório
+                    </button>
+                </div>
+                <div id="companyGeoQrHolder" style="display:none;"></div>
+            </div>
+
             <div class="button-container">
                 <button type="submit" id="saveBtn"><i class="fas fa-save"></i> Salvar Empresa</button>
                 <button type="button" id="btnListCompanies" onclick="showCompanyList()" style="display:none;"><i class="fas fa-list"></i> Listar Empresas</button>
@@ -745,12 +872,13 @@
         </div>
     </div>
 
-    <script src="auth.js"></script>
-    <script src="cities-loader.js"></script>
-    <script type="module" src="database-utils.js"></script>
+    <script src="auth.js?v=cbbfbc7f784a"></script>
+    <script src="cities-loader.js?v=7cbcd32f8b64"></script>
+    <script src="commerce-pdf-share.js?v=9659e27a66f7"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
+    <script type="module" src="database-utils.js?v=b0f6b33f3f9c"></script>
     <script type="module">
         const authService = window.firebaseService.authService;
-        const dbService = window.firebaseService.dbService;
         const getAllImpl = async function(key) {
             let data = null;
             if (typeof window.getDataAsync === 'function') {
@@ -767,11 +895,73 @@
             if (data && typeof data === 'object') return Object.values(data);
             return [];
         };
+        const escapeHtml = function(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        };
+        const extractLegacyCompanyNode = function(source) {
+            if (!source || typeof source !== 'object') return {};
+            if (source.profile && typeof source.profile === 'object') return { ...source, ...source.profile };
+            if (source.companies && typeof source.companies === 'object') {
+                const raw = source.companies;
+                const nested = Array.isArray(raw)
+                    ? (raw.find(item => item && typeof item === 'object') || {})
+                    : (Object.entries(raw).find(([, value]) => value && typeof value === 'object') || [null, {}])[1];
+                return { ...source, ...(nested || {}) };
+            }
+            return source;
+        };
+        const normalizeCompanyRecord = function(company, fallbackId) {
+            const raw = extractLegacyCompanyNode(company);
+            const pick = (...keys) => {
+                for (const key of keys) {
+                    const value = raw[key];
+                    if (value !== undefined && value !== null && String(value).trim() !== '') return value;
+                }
+                return '';
+            };
+            const normalized = {};
+            Object.entries(raw).forEach(([key, value]) => {
+                if (value !== undefined) normalized[key] = value;
+            });
+            const id = String(pick('id', 'companyId', 'companyID', 'tenantId') || fallbackId || '').trim();
+            normalized.id = id;
+            normalized.companyId = id || String(normalized.companyId || '').trim();
+            normalized.name = String(pick('name', 'nome', 'razaoSocial', 'razao_social', 'fantasia', 'nomeFantasia')).trim();
+            normalized.cnpj = String(pick('cnpj', 'cnpjCpf', 'cpfCnpj', 'documento')).trim();
+            normalized.address = String(pick('address', 'endereco', 'logradouro')).trim();
+            normalized.city = String(pick('city', 'cidade', 'municipio')).trim();
+            normalized.state = String(pick('state', 'estado', 'uf')).trim();
+            normalized.phone = String(pick('phone', 'telefone', 'celular')).trim();
+            normalized.logo = String(pick('logoUrl', 'logoURL', 'logo', 'logoStoragePath', 'logoPath', 'image', 'imagem')).trim();
+            normalized.logoUrl = String(pick('logoUrl', 'logoURL')).trim();
+            normalized.logoStoragePath = String(pick('logoStoragePath', 'logoPath', 'storagePath')).trim();
+            normalized.geoLatitude = String(pick('geoLatitude', 'latitude', 'lat')).trim();
+            normalized.geoLongitude = String(pick('geoLongitude', 'longitude', 'lng', 'lon')).trim();
+            normalized.navigationUrl = String(pick('navigationUrl', 'mapUrl')).trim();
+            return normalized;
+        };
         const normalizeCompaniesResult = function(raw) {
-            if (Array.isArray(raw)) return raw.slice(0);
+            if (Array.isArray(raw)) return raw.map((company, index) => normalizeCompanyRecord(company, index)).filter(company => company.id || company.name);
             if (raw && raw.success === true) return normalizeCompaniesResult(raw.data);
-            if (raw && typeof raw === 'object') return Object.values(raw);
+            if (raw && raw.success === false) return [];
+            if (raw && typeof raw === 'object') return Object.entries(raw).map(([id, company]) => normalizeCompanyRecord(company, id)).filter(company => company.id || company.name);
             return [];
+        };
+        const formatCompanyCnpjDisplay = function(value) {
+            const digits = String(value || '').replace(/\D/g, '');
+            if (digits.length !== 14) return String(value || 'CNPJ não informado');
+            return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+        };
+        const formatCompanyPhoneDisplay = function(value) {
+            const digits = String(value || '').replace(/\D/g, '');
+            if (digits.length === 11) return digits.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+            if (digits.length === 10) return digits.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
+            return String(value || 'Telefone não informado');
         };
         const getCompaniesList = async function() {
             if (window.__companyOnboardingMode) return [];
@@ -813,23 +1003,6 @@
                     if (profile && typeof profile === 'object') {
                         mergedCompany = { ...profile };
                     }
-                    if (!mergedCompany || !mergedCompany.cnpj) {
-                        const rootRes = await svc.loadFromFirebase(`companies/${currentCompanyId}`);
-                        const rootData = rootRes && rootRes.success ? rootRes.data : rootRes;
-                        if (rootData && typeof rootData === 'object') {
-                            const rootProfile = rootData.profile && typeof rootData.profile === 'object' ? rootData.profile : {};
-                            const nestedLegacyRaw = rootData.companies;
-                            const nestedLegacy = Array.isArray(nestedLegacyRaw)
-                                ? (nestedLegacyRaw.find(item => item && typeof item === 'object') || {})
-                                : (nestedLegacyRaw && typeof nestedLegacyRaw === 'object' ? nestedLegacyRaw : {});
-                            mergedCompany = {
-                                ...(rootData || {}),
-                                ...(nestedLegacy || {}),
-                                ...(rootProfile || {}),
-                                ...(mergedCompany || {})
-                            };
-                        }
-                    }
                     if (mergedCompany && typeof mergedCompany === 'object') {
                         return [{ ...mergedCompany, id: currentCompanyId }];
                     }
@@ -864,6 +1037,44 @@
         }
         if (!window.getAll) {
             window.getAll = getAllImpl;
+        }
+
+        function normalizeSameOriginPathTarget(value) {
+            const raw = String(value || '').trim();
+            if (!raw || raw.startsWith('//') || raw.includes('\\') || /^[a-z][a-z\d+.-]*:/i.test(raw)) return '';
+            try {
+                const target = new URL(raw, `${window.location.origin}/`);
+                if (target.origin !== window.location.origin) return '';
+                return `${target.pathname}${target.search || ''}${target.hash || ''}`;
+            } catch (_) {
+                return '';
+            }
+        }
+
+        function getCompanyOnboardingReturnTarget() {
+            const params = new URLSearchParams(window.location.search || '');
+            const redirect = String(params.get('redirect') || '').trim();
+            const plan = String(params.get('plan') || '').trim();
+            const intent = String(params.get('intent') || '').trim();
+            const safeRedirect = normalizeSameOriginPathTarget(redirect);
+            if (safeRedirect) return safeRedirect;
+            const target = new URL('subscription.html', window.location.href);
+            if (plan) target.searchParams.set('plan', plan);
+            if (intent) target.searchParams.set('intent', intent);
+            return `${target.pathname}${target.search || ''}`;
+        }
+
+        function isSubscriptionOnboardingRequest() {
+            const params = new URLSearchParams(window.location.search || '');
+            return String(params.get('reason') || '').toLowerCase() === 'subscription_onboarding';
+        }
+
+        function updateCompanyContextNotice(company = {}) {
+            const source = normalizeCompanyRecord(company, window.appTenantId || '');
+            const nameEl = document.getElementById('companyContextName');
+            const idEl = document.getElementById('companyContextId');
+            if (nameEl) nameEl.textContent = source.name || (window.__companyOnboardingMode ? 'Cadastro inicial' : 'Empresa da sessão');
+            if (idEl) idEl.textContent = source.companyId || source.id || window.appTenantId || 'Não identificado';
         }
         
         let companyLogoPreviewObjectUrl = '';
@@ -980,7 +1191,7 @@
                                 try {
                                     const logoUrl = await loadCompanyLogo(logoRef);
                                     if (logoUrl) {
-                                        logoHtml = `<img src="${logoUrl}" alt="Logo" style="width: 40px; height: 40px; object-fit: contain; border-radius: 4px;">`;
+                                        logoHtml = `<img src="${escapeHtml(logoUrl)}" alt="Logo" style="width: 40px; height: 40px; object-fit: contain; border-radius: 4px;">`;
                                     } else {
                                         logoHtml = '<span style="color: #999; font-size: 12px;">Sem logo</span>';
                                     }
@@ -993,20 +1204,20 @@
                             }
                             
                             const companyIdRaw = String(company.id || company.companyId || '');
-                            const safeCompanyId = companyIdRaw.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                            const editCompanyArg = escapeHtml(JSON.stringify(companyIdRaw));
                             row.innerHTML = `
                                 <td style="text-align: center; padding: 10px;">${logoHtml}</td>
-                                <td style="font-weight: bold;">${company.name || 'N/A'}</td>
-                                <td>${company.cnpj || 'N/A'}</td>
-                                <td>${company.city || 'N/A'}</td>
-                                <td>${company.state || 'N/A'}</td>
-                                <td>${company.phone || 'N/A'}</td>
+                                <td style="font-weight: bold;">${escapeHtml(company.name || 'N/A')}</td>
+                                <td>${escapeHtml(company.cnpj || 'N/A')}</td>
+                                <td>${escapeHtml(company.city || 'N/A')}</td>
+                                <td>${escapeHtml(company.state || 'N/A')}</td>
+                                <td>${escapeHtml(company.phone || 'N/A')}</td>
                                 <td>
                                     <div class="button-group" style="display: flex; gap: 5px;">
-                                        <button class="action-button" onclick="editCompany('${safeCompanyId}')" style="padding: 5px 10px; font-size: 12px;">
+                                        <button class="action-button" onclick="editCompany(${editCompanyArg})" style="padding: 5px 10px; font-size: 12px;">
                                             <i class="fas fa-edit"></i> Editar
                                         </button>
-                                        <button class="action-button delete-button" onclick="deleteCompany('${safeCompanyId}')" style="padding: 5px 10px; font-size: 12px;">
+                                        <button class="action-button delete-button" onclick="deleteCompany(${editCompanyArg})" style="padding: 5px 10px; font-size: 12px;">
                                             <i class="fas fa-trash"></i> Excluir
                                         </button>
                                     </div>
@@ -1125,7 +1336,12 @@
                     logoFileName: String(pick('logoFileName', 'logoName')).trim(),
                     logoContentType: String(pick('logoContentType', 'logoMimeType')).trim(),
                     logoSize: pick('logoSize') || '',
-                    logoUpdatedAt: String(pick('logoUpdatedAt')).trim()
+                    logoUpdatedAt: String(pick('logoUpdatedAt')).trim(),
+                    geoLatitude: String(pick('geoLatitude', 'latitude', 'lat')).trim(),
+                    geoLongitude: String(pick('geoLongitude', 'longitude', 'lng', 'lon')).trim(),
+                    geoAccuracy: String(pick('geoAccuracy')).trim(),
+                    geoUpdatedAt: String(pick('geoUpdatedAt')).trim(),
+                    navigationUrl: String(pick('navigationUrl', 'mapUrl')).trim()
                 };
             };
 
@@ -1147,6 +1363,8 @@
                 document.getElementById('pixChaveCobranca').value = company.pixChaveCobranca || '';
                 document.getElementById('pixFavorecidoCobranca').value = company.pixFavorecidoCobranca || '';
                 document.getElementById('pixBancoCobranca').value = company.pixBancoCobranca || '';
+                document.getElementById('geoLatitude').value = normalized.geoLatitude || '';
+                document.getElementById('geoLongitude').value = normalized.geoLongitude || '';
 
                 if (normalized.logo) {
                     try {
@@ -1263,7 +1481,7 @@
         }
 
         // ✅ FUNÇÃO PARA UPLOAD DA LOGO NO FIREBASE STORAGE
-        async function uploadLogoToFirebase(file, companyId) {
+        async function uploadLogoToFirebase(file, companyId, existingLogoPayload = {}) {
             console.log('📤 Iniciando upload da logo para Firebase Storage...');
             
             try {
@@ -1282,20 +1500,28 @@
                     if (uid && window.firebaseService && typeof window.firebaseService.setCompanyClaim === 'function') {
                         await window.firebaseService.setCompanyClaim(uid, String(companyId || '').trim());
                         if (window.firebaseAuthUser && typeof window.firebaseAuthUser.getIdTokenResult === 'function') {
+                            try { window.__SISWEB_AUTH_PERF__?.tokenRefresh('claims_changed', 'company_service', 'started', 0); } catch (_) {}
                             await window.firebaseAuthUser.getIdTokenResult(true);
                         }
                     }
                 } catch (e) {
-                    console.warn('⚠️ Falha ao sincronizar claim/tenant antes do upload da logo:', e);
+                    console.warn('⚠️ Falha ao sincronizar empresa da sessão antes do upload da logo');
                 }
-                // Criar nome único para o arquivo
-                const timestamp = Date.now();
                 const safeFileName = String(file && file.name ? file.name : 'logo.png').replace(/[^\w.\-]+/g, '_');
-                const fileName = `companies/${companyId}/profile/logo/${timestamp}_${safeFileName}`;
+                const fileName = `companies/${companyId}/profile/logo/current`;
                 
                 let uploadResult = null;
                 if (typeof window.firebaseService.uploadCompanyLogo === 'function') {
-                    uploadResult = await window.firebaseService.uploadCompanyLogo(file, companyId);
+                    const extractStoragePathFromUrl = typeof window.firebaseService.extractStoragePathFromUrl === 'function'
+                        ? window.firebaseService.extractStoragePathFromUrl
+                        : (value) => String(value || '').trim();
+                    const previousLogoPath = existingLogoPayload.logoStoragePath
+                        || existingLogoPayload.logoPath
+                        || extractStoragePathFromUrl(existingLogoPayload.logoUrl || existingLogoPayload.logo || '');
+                    uploadResult = await window.firebaseService.uploadCompanyLogo(file, companyId, {
+                        previousStoragePath: previousLogoPath,
+                        previousLogoUrl: existingLogoPayload.logoUrl || existingLogoPayload.logo || ''
+                    });
                 } else {
                     console.log(`📤 Fazendo upload do arquivo: ${fileName}`);
                     uploadResult = await window.firebaseService.uploadFile(fileName, file);
@@ -1306,7 +1532,7 @@
                 const storagePath = data && (data.path || data.storagePath || fileName);
                 if (uploadResult && uploadResult.success !== false && (url || storagePath)) {
                     console.log('✅ Logo enviada com sucesso para Firebase Storage');
-                    console.log('🔗 URL da logo:', url || storagePath);
+                    console.log('🔗 Referência da logo atualizada');
                     return normalizeLogoPayloadFromUpload({
                         ...data,
                         path: storagePath,
@@ -1350,6 +1576,169 @@
             
             return logoPath; // Retornar o valor original se não conseguir carregar
         }
+
+        function buildCompanyNavigationUrl(latitude, longitude) {
+            const lat = String(latitude || '').trim().replace(',', '.');
+            const lng = String(longitude || '').trim().replace(',', '.');
+            if (!lat || !lng) return '';
+            return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${lat},${lng}`)}`;
+        }
+
+        function readCompanyGeoFromForm({ silent = true } = {}) {
+            const latitude = String(document.getElementById('geoLatitude')?.value || '').trim().replace(',', '.');
+            const longitude = String(document.getElementById('geoLongitude')?.value || '').trim().replace(',', '.');
+            if (!latitude && !longitude) {
+                return {
+                    geoLatitude: '',
+                    geoLongitude: '',
+                    geoAccuracy: '',
+                    geoUpdatedAt: '',
+                    geoSource: '',
+                    navigationUrl: '',
+                    geolocation: null
+                };
+            }
+            const latNumber = Number(latitude);
+            const lngNumber = Number(longitude);
+            const valid = Number.isFinite(latNumber) && Number.isFinite(lngNumber)
+                && latNumber >= -90 && latNumber <= 90
+                && lngNumber >= -180 && lngNumber <= 180;
+            if (!valid) {
+                if (!silent) {
+                    const msg = 'Coordenadas geográficas inválidas.';
+                    if (typeof window.__toast === 'function') window.__toast(msg, 'warning');
+                    else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
+                    else alert(msg);
+                }
+                throw new Error('Coordenadas geográficas inválidas.');
+            }
+            const navigationUrl = buildCompanyNavigationUrl(latitude, longitude);
+            return {
+                latitude,
+                longitude,
+                geoLatitude: latitude,
+                geoLongitude: longitude,
+                geoAccuracy: '',
+                geoUpdatedAt: new Date().toISOString(),
+                geoSource: 'company_form',
+                navigationUrl,
+                geolocation: {
+                    latitude: latNumber,
+                    longitude: lngNumber,
+                    navigationUrl,
+                    source: 'company_form',
+                    updatedAt: new Date().toISOString()
+                }
+            };
+        }
+
+        function renderCompanyNavigationQr(navigationUrl) {
+            const holder = document.getElementById('companyGeoQrHolder');
+            if (!holder || !navigationUrl || !window.QRCode) return '';
+            holder.innerHTML = '';
+            holder.style.display = 'block';
+            new window.QRCode(holder, {
+                text: navigationUrl,
+                width: 128,
+                height: 128,
+                correctLevel: window.QRCode.CorrectLevel ? window.QRCode.CorrectLevel.M : undefined
+            });
+            const img = holder.querySelector('img');
+            const canvas = holder.querySelector('canvas');
+            return img && img.src ? img.src : (canvas && typeof canvas.toDataURL === 'function' ? canvas.toDataURL('image/png') : '');
+        }
+
+        window.locateCompanyCoordinates = function locateCompanyCoordinates() {
+            if (!navigator.geolocation || typeof navigator.geolocation.getCurrentPosition !== 'function') {
+                const msg = 'Geolocalização indisponível neste navegador.';
+                if (typeof window.__toast === 'function') window.__toast(msg, 'warning');
+                else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
+                else alert(msg);
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const coords = position && position.coords ? position.coords : {};
+                    const lat = Number(coords.latitude);
+                    const lng = Number(coords.longitude);
+                    if (Number.isFinite(lat)) document.getElementById('geoLatitude').value = lat.toFixed(7);
+                    if (Number.isFinite(lng)) document.getElementById('geoLongitude').value = lng.toFixed(7);
+                    try {
+                        const geo = readCompanyGeoFromForm({ silent: false });
+                        renderCompanyNavigationQr(geo.navigationUrl);
+                    } catch (_) {}
+                },
+                (error) => {
+                    const msg = error && error.message ? error.message : 'Não foi possível localizar as coordenadas.';
+                    if (typeof window.__toast === 'function') window.__toast(msg, 'warning');
+                    else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
+                    else alert(msg);
+                },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+            );
+        };
+
+        window.printCompanyReport = async function printCompanyReport() {
+            const geoPayload = readCompanyGeoFromForm({ silent: false });
+            const company = applyLogoPayload({
+                id: String(editingId || window.appTenantId || '').trim(),
+                name: document.getElementById('name').value,
+                cnpj: document.getElementById('cnpj').value,
+                stateRegistration: document.getElementById('stateRegistration').value,
+                address: document.getElementById('address').value,
+                city: document.getElementById('city').value,
+                state: document.getElementById('state').value,
+                phone: document.getElementById('phone').value,
+                pixTipoChaveCobranca: document.getElementById('pixTipoChaveCobranca').value,
+                pixChaveCobranca: document.getElementById('pixChaveCobranca').value,
+                pixFavorecidoCobranca: document.getElementById('pixFavorecidoCobranca').value,
+                pixBancoCobranca: document.getElementById('pixBancoCobranca').value,
+                ...geoPayload
+            }, normalizeLogoPayloadFromCompany(window.companyInfo || {}));
+            const qrDataUrl = renderCompanyNavigationQr(geoPayload.navigationUrl);
+            const rows = [
+                ['Razão social', company.name || '-'],
+                ['CNPJ', formatCompanyCnpjDisplay(company.cnpj)],
+                ['Inscrição estadual', company.stateRegistration || '-'],
+                ['Endereço', company.address || '-'],
+                ['Cidade/UF', [company.city, company.state].filter(Boolean).join(' - ') || '-'],
+                ['Telefone', formatCompanyPhoneDisplay(company.phone)],
+                ['PIX cobrança', [company.pixTipoChaveCobranca, company.pixChaveCobranca].filter(Boolean).join(': ') || '-'],
+                ['Georeferenciamento', [company.geoLatitude, company.geoLongitude].filter(Boolean).join(', ') || '-']
+            ];
+            const html = `
+                <section class="sisweb-print-section">
+                    <h2>Dados da Empresa</h2>
+                    <table class="sisweb-print-table">
+                        <tbody>
+                            ${rows.map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                    ${geoPayload.navigationUrl ? `<p><strong>Mapa:</strong> ${escapeHtml(geoPayload.navigationUrl)}</p>` : ''}
+                    ${qrDataUrl ? `<img src="${escapeHtml(qrDataUrl)}" alt="QR Code de navegação" style="width:128px;height:128px;">` : ''}
+                </section>
+            `;
+            const helper = window.SiswebCommercePrint || window.SiswebPrintHelper || null;
+            if (helper && typeof helper.printHtmlDocument === 'function') {
+                const options = {
+                    title: 'Relatório da Empresa',
+                    subtitle: 'Cadastro e georeferenciamento',
+                    badgeText: 'Sisweb',
+                    company,
+                    bodyHtml: html,
+                    fileName: `empresa-${company.id || 'perfil'}`
+                };
+                const preparedOptions = helper.preparePrintOptions ? await helper.preparePrintOptions(options) : options;
+                helper.printHtmlDocument(preparedOptions);
+                return;
+            }
+            const win = window.open('', '_blank', 'noopener,noreferrer');
+            if (!win) return;
+            win.document.write(`<!doctype html><html><head><title>Relatório da Empresa</title></head><body>${html}</body></html>`);
+            win.document.close();
+            win.focus();
+            win.print();
+        };
 
         // ========================================
         // FUNÇÕES DE CRUD CORRIGIDAS
@@ -1468,16 +1857,30 @@
             const saveBtn = document.getElementById('saveBtn');
             saveBtn.disabled = true;
             saveBtn.textContent = 'Processando...';
+            const restoreCompanySaveButton = () => {
+                if (!saveBtn) return;
+                saveBtn.disabled = false;
+                saveBtn.textContent = editingId ? 'Atualizar Empresa' : 'Salvar Empresa';
+            };
             
             const logoInput = document.getElementById('logo');
             const logoFile = logoInput.files[0];
-            const draftCompanyId = String(editingId || Date.now());
+            const resolvedFormCompanyId = String(
+                editingId
+                || window.appTenantId
+                || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id))
+                || ''
+            ).trim();
+            const draftCompanyId = window.__companyOnboardingMode
+                ? String(editingId || Date.now())
+                : resolvedFormCompanyId;
             let logoPayload = {};
             
             const sanitizeCompanyForRemoteProfile = (obj) => {
                 const out = { ...(obj || {}) };
                 try { delete out.logoBase64; } catch (_) {}
                 try { delete out.logoData; } catch (_) {}
+                try { delete out._cleanupPreviousStoragePath; } catch (_) {}
                 try {
                     if (isDataLogo(out.logo)) out.logo = '';
                     if (isDataLogo(out.logoUrl)) out.logoUrl = '';
@@ -1513,9 +1916,12 @@
             // Se há uma nova logo para upload
             if (logoFile) {
                 try {
+                    if (!draftCompanyId) {
+                        throw new Error('ID da empresa indisponível para enviar logo');
+                    }
                     console.log('📤 Fazendo upload da nova logo...');
-                    logoPayload = await uploadLogoToFirebase(logoFile, draftCompanyId);
-                    console.log('✅ Logo processada com sucesso:', String(logoPayload.logo || logoPayload.logoStoragePath || '').substring(0, 80) + '...');
+                    logoPayload = await uploadLogoToFirebase(logoFile, draftCompanyId, existingLogoPayload);
+                    console.log('✅ Logo processada com sucesso');
                 } catch (error) {
                     console.error('❌ Erro ao processar logo:', error);
                     try {
@@ -1548,6 +1954,7 @@
                 pixChaveCobranca: document.getElementById('pixChaveCobranca').value,
                 pixFavorecidoCobranca: document.getElementById('pixFavorecidoCobranca').value,
                 pixBancoCobranca: document.getElementById('pixBancoCobranca').value,
+                ...readCompanyGeoFromForm({ silent: true }),
 
                 timestamp: new Date().toISOString()
             }, logoPayload);
@@ -1572,14 +1979,13 @@
                     effectiveCompany = { ...remoteCompany, id: cid, companyId: cid };
                     try {
                         if (window.firebaseAuthUser && typeof window.firebaseAuthUser.getIdTokenResult === 'function') {
+                            try { window.__SISWEB_AUTH_PERF__?.tokenRefresh('authenticated_retry', 'company_service', 'started', 0); } catch (_) {}
                             await window.firebaseAuthUser.getIdTokenResult(true);
                         }
                     } catch (_) {}
                 } else if (editingId) {
                     effectiveCompany = { ...company };
                     console.log("✏️ Empresa preparada para atualização por profile");
-                    editingId = null;
-                    document.getElementById('saveBtn').textContent = 'Salvar Empresa';
                 } else {
                     effectiveCompany = { ...company };
                     console.log("➕ Empresa preparada para criação/atualização por profile");
@@ -1612,6 +2018,7 @@
                             try {
                                 await window.firebaseService.setCompanyClaim(currentUid, profileCompanyId);
                                 if (window.firebaseAuthUser && typeof window.firebaseAuthUser.getIdTokenResult === 'function') {
+                                    try { window.__SISWEB_AUTH_PERF__?.tokenRefresh('claims_changed', 'company_service', 'started', 0); } catch (_) {}
                                     await window.firebaseAuthUser.getIdTokenResult(true);
                                 }
                             } catch (claimErr) {
@@ -1639,19 +2046,22 @@
                             companyId: profileCompanyId,
                             updatedAt: new Date().toISOString()
                         };
-                        let profileResult = null;
-                        if (window.firebaseService && typeof window.firebaseService.updateMyCompanyProfile === 'function') {
-                            profileResult = await window.firebaseService.updateMyCompanyProfile(profilePayload);
-                        } else {
-                            profileResult = await window.firebaseService.saveToFirebase(`companies/${profileCompanyId}/profile`, null, profilePayload);
+                        if (!window.firebaseService || typeof window.firebaseService.updateMyCompanyProfile !== 'function') {
+                            throw new Error('Serviço updateMyCompanyProfile indisponível para salvar perfil da empresa.');
                         }
+                        const profileResult = await window.firebaseService.updateMyCompanyProfile(profilePayload);
                         if (!profileResult || profileResult.success === false) {
                             throw new Error((profileResult && profileResult.error) || 'Falha ao atualizar perfil da empresa');
                         }
                         const savedProfile = profileResult && profileResult.data && profileResult.data.profile
                             ? profileResult.data.profile
                             : profilePayload;
+                        const logoCleanup = profileResult && profileResult.data ? profileResult.data.logoCleanup : null;
+                        if (logoCleanup && Number(logoCleanup.failedCount || 0) > 0) {
+                            console.warn('⚠️ Perfil salvo, mas a reconciliação de logos antigas ficou parcialmente pendente.');
+                        }
                         effectiveCompany = savedProfile;
+                        editingId = null;
                     }
                     try {
                         const msg = 'Empresa salva com sucesso!';
@@ -1679,55 +2089,15 @@
                         if (window.firebaseService && typeof window.firebaseService.setTenantId === 'function') {
                             window.firebaseService.setTenantId(window.appTenantId);
                         }
-                        
                         try {
                             const uid = window.firebaseAuthUser && window.firebaseAuthUser.uid ? window.firebaseAuthUser.uid : null;
-                            if (uid && !window.__companyOnboardingMode && window.firebaseService && typeof window.firebaseService.updateFirebase === 'function') {
-                                await window.firebaseService.updateFirebase(`users/${uid}`, { companyId: window.appTenantId });
-                                console.log('✅ companyId salvo no perfil do usuário:', window.appTenantId);
-                            }
                             if (uid && !window.__companyOnboardingMode && window.firebaseService && typeof window.firebaseService.setCompanyClaim === 'function') {
                                 const claimResult = await window.firebaseService.setCompanyClaim(uid, window.appTenantId);
                                 if (!claimResult || claimResult.success === false) {
                                     console.warn('⚠️ Falha ao sincronizar claim de empresa:', claimResult && claimResult.error ? claimResult.error : claimResult);
                                 }
                             }
-                            if (uid && window.firebaseService && typeof window.firebaseService.saveData === 'function') {
-                                let userDetails = null;
-                                try {
-                                    if (typeof window.getCurrentUserDetails === 'function') {
-                                        const details = await window.getCurrentUserDetails();
-                                        if (details) userDetails = details;
-                                    }
-                                } catch (_) {}
-                                const mirror = {
-                                    uid: uid,
-                                    email: (userDetails && userDetails.email) || (window.firebaseAuthUser && window.firebaseAuthUser.email) || '',
-                                    displayName: (userDetails && (userDetails.displayName || userDetails.username)) || (window.firebaseAuthUser && window.firebaseAuthUser.displayName) || '',
-                                    username: (userDetails && (userDetails.username || userDetails.displayName)) || (window.firebaseAuthUser && window.firebaseAuthUser.displayName) || '',
-                                    companyId: window.appTenantId
-                                };
-                                try {
-                                    await window.firebaseService.saveData(`companies/${window.appTenantId}/users/${uid}`, mirror);
-                                    console.log('✅ Usuário espelhado em companies/{companyId}/users:', mirror);
-                                } catch (mirrorErr) {
-                                    console.warn('⚠️ Falha ao espelhar usuário em companies/{companyId}/users:', mirrorErr);
-                                }
-                            }
-                        } catch (e) { console.warn('⚠️ Falha ao salvar companyId no perfil:', e); }
-
-                        // Se usuário autenticado, garantir papel de admin para o primeiro cadastro
-                        try {
-                            const uid = window.firebaseAuthUser && window.firebaseAuthUser.uid ? window.firebaseAuthUser.uid : null;
-                            if (uid && !window.__companyOnboardingMode && window.firebaseService && typeof window.firebaseService.loadData === 'function') {
-                                const roleRes = await window.firebaseService.loadData(`roles/${uid}`);
-                                const exists = roleRes && roleRes.success && roleRes.data;
-                                if (!exists) {
-                                    await window.firebaseService.saveData(`roles/${uid}`, { role: 'admin', grantedAt: new Date().toISOString() });
-                                    console.log('✅ Papel admin atribuído ao usuário atual');
-                                }
-                            }
-                        } catch (e) { console.warn('⚠️ Falha ao atribuir papel admin:', e); }
+                        } catch (e) { console.warn('⚠️ Falha ao sincronizar claim após salvar perfil:', e); }
                     } catch (e) { console.warn('Falha ao persistir company_info:', e); }
                     
                     // ✅ ATUALIZAR EXIBIÇÃO NA PÁGINA
@@ -1749,9 +2119,9 @@
                 const rawMsg = String(error && error.message ? error.message : error || 'Erro desconhecido');
                 let msg = 'Erro ao salvar empresa: ' + rawMsg;
                 if (rawMsg.toLowerCase().includes('token de acesso sem permissão válida')) {
-                    msg = 'Sua sessão não tem claim válida para atualizar a empresa. Faça login novamente; se persistir, peça ao admin para sincronizar claims.';
+                    msg = 'Somente um admin da empresa pode alterar o perfil. Faça login novamente; se persistir, peça ao admin para sincronizar claims.';
                 } else if (rawMsg.toLowerCase().includes('permission_denied')) {
-                    msg = 'Sem permissão para salvar o perfil da empresa. Verifique claim companyId/subscriptionStatus ou realize o ajuste pelo admin.';
+                    msg = 'Somente um admin da empresa pode alterar o perfil.';
                 }
                 
                 try {
@@ -1762,10 +2132,7 @@
                     alert(msg);
                 }
             } finally {
-                if (saveBtn) {
-                    saveBtn.disabled = false;
-                    saveBtn.textContent = editingId ? 'Atualizar Empresa' : 'Salvar Empresa';
-                }
+                restoreCompanySaveButton();
             }
         }
 
@@ -1832,15 +2199,26 @@
                         </div>
                     `;
                 } else {
+                    updateCompanyContextNotice(list[0]);
                     let companiesHtml = `
-                        <div style="margin: 20px 0;">
-                            <h3 style="color: #2c3e50; margin-bottom: 15px;">
+                        <div class="company-hero">
+                            <div class="company-context-grid">
+                                <div><strong>Empresas</strong><br>${list.length}</div>
+                                <div><strong>Escopo</strong><br>${isAdmin ? 'Admin global' : 'Tenant operacional'}</div>
+                                <div><strong>Acesso</strong><br>${isAdmin ? 'Gerencie pelo Admin' : 'Editar perfil'}</div>
+                            </div>
+                            <h3 style="color: #2c3e50; margin-bottom: 0;">
                                 <i class="fas fa-building"></i> Empresas Cadastradas (${list.length})
                             </h3>
-                            <div style="display: grid; gap: 15px;">
+                            <div class="company-cards-grid">
                     `;
                     
-                    for (const company of list) {
+                    for (const item of list) {
+                        const company = normalizeCompanyRecord(item, item && (item.id || item.companyId));
+                        const companyId = String(company.id || company.companyId || '').trim();
+                        const editCompanyArg = escapeHtml(JSON.stringify(companyId));
+                        const displayName = company.name || 'Nome não informado';
+                        const missingRequired = !company.name || !company.cnpj || !company.city || !company.state;
                         // Processar logo da empresa
                         let logoHtml = '';
                         const logoRef = company.logoUrl || company.logoURL || company.logo || company.logoStoragePath || company.logoPath;
@@ -1848,47 +2226,39 @@
                             try {
                                 const logoUrl = await loadCompanyLogo(logoRef);
                                 if (logoUrl) {
-                                    logoHtml = `<img src="${logoUrl}" alt="Logo ${company.name}" style="width: 60px; height: 60px; object-fit: contain; border-radius: 8px; border: 2px solid #e9ecef;">`;
+                                    logoHtml = `<img class="company-card-logo" src="${escapeHtml(logoUrl)}" alt="Logo ${escapeHtml(displayName)}">`;
                                 } else {
-                                    logoHtml = '<div style="width: 60px; height: 60px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6c757d;"><i class="fas fa-building"></i></div>';
+                                    logoHtml = '<div class="company-card-placeholder"><i class="fas fa-building"></i></div>';
                                 }
                             } catch (error) {
                                 console.warn('⚠️ Erro ao carregar logo:', error);
-                                logoHtml = '<div style="width: 60px; height: 60px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #e74c3c;"><i class="fas fa-exclamation-triangle"></i></div>';
+                                logoHtml = '<div class="company-card-placeholder"><i class="fas fa-exclamation-triangle"></i></div>';
                             }
                         } else {
-                            logoHtml = '<div style="width: 60px; height: 60px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6c757d;"><i class="fas fa-building"></i></div>';
+                            logoHtml = '<div class="company-card-placeholder"><i class="fas fa-building"></i></div>';
                         }
                         
                         companiesHtml += `
-                            <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                <div style="display: flex; align-items: center; gap: 15px;">
+                            <article class="company-card ${missingRequired ? 'is-incomplete' : ''}">
+                                <div class="company-card-header">
                                     ${logoHtml}
                                     <div style="flex: 1;">
-                                        <h4 style="margin: 0 0 5px 0; color: #2c3e50;">${company.name || 'Nome não informado'}</h4>
-                                        <p style="margin: 0; color: #666; font-size: 14px;">
-                                            <i class="fas fa-id-card"></i> ${company.cnpj || 'CNPJ não informado'}
-                                        </p>
-                                        <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">
-                                            <i class="fas fa-map-marker-alt"></i> ${company.city || 'Cidade não informada'}, ${company.state || 'Estado não informado'}
-                                        </p>
-                                        <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">
-                                            <i class="fas fa-phone"></i> ${company.phone || 'Telefone não informado'}
-                                        </p>
-                                    </div>
-                                    <div style="display: flex; flex-direction: column; gap: 5px;">
-                                        <button class="action-button" onclick="selectCompany('${company.id}')" style="padding: 8px 12px; font-size: 12px; white-space: nowrap;">
-                                            <i class="fas fa-check"></i> Selecionar
-                                        </button>
-                                        <button class="action-button" onclick="editCompany('${String(company.id || company.companyId || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')" style="padding: 8px 12px; font-size: 12px; white-space: nowrap;">
-                                            <i class="fas fa-edit"></i> Editar
-                                        </button>
-                                        <button class="action-button delete-button" onclick="deleteCompany('${String(company.id || company.companyId || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')" style="padding: 8px 12px; font-size: 12px; white-space: nowrap;">
-                                            <i class="fas fa-trash"></i> Excluir
-                                        </button>
+                                        <h4 style="margin: 0 0 5px 0; color: #2c3e50;">${escapeHtml(displayName)}</h4>
+                                        <span class="company-card-note">${isAdmin ? 'Gerencie pelo Admin' : 'Tenant operacional'}</span>
                                     </div>
                                 </div>
-                            </div>
+                                <div class="company-card-meta">
+                                    <div><strong>CNPJ</strong>: ${escapeHtml(formatCompanyCnpjDisplay(company.cnpj))}</div>
+                                    <div><strong>Localização</strong>: ${escapeHtml([company.city || 'Cidade não informada', company.state || 'UF não informada'].join(' - '))}</div>
+                                    <div><strong>Telefone</strong>: ${escapeHtml(formatCompanyPhoneDisplay(company.phone))}</div>
+                                    <div><strong>Georeferenciamento</strong>: ${escapeHtml([company.geoLatitude, company.geoLongitude].filter(Boolean).join(', ') || 'Não informado')}</div>
+                                </div>
+                                <div class="company-card-actions">
+                                    <button class="action-button" onclick="editCompany(${editCompanyArg})" style="padding: 8px 12px; font-size: 12px; white-space: nowrap;">
+                                        <i class="fas fa-edit"></i> Editar perfil
+                                    </button>
+                                </div>
+                            </article>
                         `;
                     }
                     
@@ -1957,6 +2327,7 @@
                             const callable = firebase.functions().httpsCallable('setCompanyClaim');
                             await callable({ targetUid: user.uid, companyId: tenant });
                             if (typeof user.getIdTokenResult === 'function') {
+                                try { window.__SISWEB_AUTH_PERF__?.tokenRefresh('claims_changed', 'company_service', 'started', 0); } catch (_) {}
                                 await user.getIdTokenResult(true);
                             }
                         }
@@ -1989,15 +2360,10 @@
                     const companies = await getCompaniesList();
                     company = companies.find(c => String(c.id) === String(id));
                     if (!company && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-                        const res = await window.firebaseService.loadFromFirebase(`companies/${id}`);
-                        const root = res && res.success ? res.data : res;
-                        if (root && typeof root === 'object') {
-                            const rootProfile = root.profile && typeof root.profile === 'object' ? root.profile : {};
-                            const nestedLegacyRaw = root.companies;
-                            const nestedLegacy = Array.isArray(nestedLegacyRaw)
-                                ? (nestedLegacyRaw.find(item => item && typeof item === 'object') || {})
-                                : (nestedLegacyRaw && typeof nestedLegacyRaw === 'object' ? nestedLegacyRaw : {});
-                            company = { ...root, ...nestedLegacy, ...rootProfile, id: id };
+                        const res = await window.firebaseService.loadFromFirebase(`companies/${id}/profile`);
+                        const profile = res && res.success ? res.data : res;
+                        if (profile && typeof profile === 'object') {
+                            company = { ...profile, id: id };
                         }
                     }
                 }
@@ -2085,6 +2451,13 @@
             document.getElementById('pixChaveCobranca').value = '';
             document.getElementById('pixFavorecidoCobranca').value = '';
             document.getElementById('pixBancoCobranca').value = '';
+            document.getElementById('geoLatitude').value = '';
+            document.getElementById('geoLongitude').value = '';
+            const geoQrHolder = document.getElementById('companyGeoQrHolder');
+            if (geoQrHolder) {
+                geoQrHolder.innerHTML = '';
+                geoQrHolder.style.display = 'none';
+            }
             
             const cnpjInput = document.getElementById('cnpj');
             if (cnpjInput) {
@@ -2157,6 +2530,7 @@
             let companyId = '';
             try {
                 if (typeof authUser.getIdTokenResult === 'function') {
+                    try { window.__SISWEB_AUTH_PERF__?.tokenRefresh('legacy_unspecified', 'company_service', 'started', 0); } catch (_) {}
                     const token = await authUser.getIdTokenResult(true);
                     companyId = String((token && token.claims && (token.claims.companyId || token.claims.companyID || token.claims.tenantId)) || '').trim();
                 }
@@ -2222,6 +2596,10 @@
             }
             if (access.mode === 'onboarding') applyOnboardingUiMode();
             if (access.mode === 'admin') applyAdminCompanyUiMode();
+            if (access.mode === 'has_company' && isSubscriptionOnboardingRequest()) {
+                window.location.href = getCompanyOnboardingReturnTarget();
+                return;
+            }
             if (access.mode === 'has_company') {
                 const cnpjInput = document.getElementById('cnpj');
                 if (cnpjInput) {
@@ -2329,7 +2707,6 @@
             await saveCompany();
         });
     </script>
-</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

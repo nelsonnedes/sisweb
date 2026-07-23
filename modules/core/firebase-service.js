@@ -13,6 +13,42 @@
  * @author Sistema Modular
  */
 
+function getAuthPerformanceDiagnosticsTL() {
+    try { return window.__SISWEB_AUTH_PERF__ || null; } catch (_) { return null; }
+}
+
+function authPerfTLPhase(name, outcome = 'observed', durationMs = 0) {
+    try { getAuthPerformanceDiagnosticsTL()?.phase(name, 'core_service', outcome, durationMs); } catch (_) {}
+}
+
+function authPerfTLAuth(state, durationMs = 0) {
+    try { getAuthPerformanceDiagnosticsTL()?.auth(state, 'core_service', durationMs); } catch (_) {}
+}
+
+function authPerfTLTenant(value) {
+    try { getAuthPerformanceDiagnosticsTL()?.tenant(value, 'core_service'); } catch (_) {}
+}
+
+function authPerfTLRead(path, kind = 'logical', outcome = 'started', durationMs = 0) {
+    try { getAuthPerformanceDiagnosticsTL()?.read(path, 'core_service', kind, outcome, durationMs); } catch (_) {}
+}
+
+function authPerfTLCache(path, layer, outcome) {
+    try { getAuthPerformanceDiagnosticsTL()?.cache(path, layer, outcome, 'core_service'); } catch (_) {}
+}
+
+function authPerfTLListener(kind, action, durationMs = 0) {
+    try { getAuthPerformanceDiagnosticsTL()?.listener(kind, action, 'core_service', durationMs); } catch (_) {}
+}
+
+function authPerfTLTokenRefresh(reason, outcome = 'started', durationMs = 0) {
+    try { getAuthPerformanceDiagnosticsTL()?.tokenRefresh(reason, 'core_service', outcome, durationMs); } catch (_) {}
+}
+
+function authPerfTLRtdb(connected) {
+    try { getAuthPerformanceDiagnosticsTL()?.rtdb(connected, 'core_service'); } catch (_) {}
+}
+
 class FirebaseServiceTL {
     constructor() {
         this.isOnline = navigator.onLine;
@@ -23,6 +59,27 @@ class FirebaseServiceTL {
         this.cacheTimeout = 5 * 60 * 1000; // 5 minutos
         this.pendingReads = new Map();
         this.tenantId = null;
+        this.internetAvailable = navigator.onLine !== false;
+        this.rtdbConnected = null;
+        this.authUser = null;
+        this.authObserverUnsubscribe = null;
+        this.authReadySettled = false;
+        this.authReadyResolve = null;
+        this.authReadyPromise = new Promise((resolve) => { this.authReadyResolve = resolve; });
+        this.authSubscribers = new Set();
+        this.sessionContextPromise = null;
+        this.sessionContextUid = '';
+        this.sessionContextSnapshot = null;
+        this.tokenResultPromise = null;
+        this.tokenResultUid = '';
+        this.tokenResultSnapshot = null;
+        this.forcedTokenResultPromise = null;
+        this.forcedTokenResultUid = '';
+        this.authGeneration = 0;
+        this.authObserverError = null;
+        this.profilePromise = null;
+        this.profileUid = '';
+        this.profileSnapshot = null;
         
         this.init();
     }
@@ -31,6 +88,7 @@ class FirebaseServiceTL {
      * 🔧 Inicializar serviço Firebase
      */
     async init() {
+        authPerfTLPhase('firebase_init_start', 'started');
         console.log('🔥 Inicializando Firebase Service TL...');
         
         try {
@@ -65,59 +123,14 @@ class FirebaseServiceTL {
                     // Garantir que o módulo de Auth esteja carregado
                     if (!firebase.auth) {
                         try {
-                            await import("https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js");
+                            await import("../../firebase-compat-bridge.js");
                         } catch (e) {
-                            console.warn('⚠️ Falha ao carregar Firebase Auth compat:', e && e.message || e);
+                            console.warn('⚠️ Falha ao carregar ponte Firebase compartilhada:', e && e.message || e);
                         }
                     }
                     if (firebase.auth) {
                         const auth = firebase.auth();
-                        auth.onAuthStateChanged((user) => {
-                            if (user) {
-                                this.currentUid = user.uid;
-                                console.log('🔐 Auth pronto (uid):', user.uid);
-                                (async () => {
-                                    let companyId = null;
-                                    try {
-                                        const snap = await firebase.database().ref(`users/${user.uid}`).once('value');
-                                        const profile = snap && typeof snap.val === 'function' ? snap.val() : null;
-                                        companyId = profile && (profile.companyId || profile.companyID || profile.tenantId) || null;
-                                    } catch (_) {}
-                                    if (!companyId) {
-                                        try {
-                                            if (typeof user.getIdTokenResult === 'function') {
-                                                const token = await user.getIdTokenResult(true);
-                                                companyId = token && token.claims && (token.claims.companyId || token.claims.companyID || token.claims.tenantId) || null;
-                                            }
-                                        } catch (_) {}
-                                    }
-                                    if (companyId) {
-                                        this.setTenantId(companyId);
-                                        try {
-                                            const raw = localStorage.getItem('company_info');
-                                            const prev = raw ? JSON.parse(raw) : {};
-                                            const next = { ...prev, companyId: String(companyId), id: prev.id || String(companyId) };
-                                            localStorage.setItem('company_info', JSON.stringify(next));
-                                            window.companyInfo = next;
-                                        } catch (_) {}
-                                    } else {
-                                        this.setTenantId(null);
-                                        try {
-                                            localStorage.removeItem('company_info');
-                                        } catch (_) {}
-                                        try {
-                                            window.companyInfo = null;
-                                        } catch (_) {}
-                                    }
-                                })();
-                                try {
-                                    window.dispatchEvent(new CustomEvent('firebaseReady', { detail: { firebaseService: this, isReady: true } }));
-                                } catch (_) {}
-                            } else {
-                                this.currentUid = null;
-                                this.setTenantId(null);
-                            }
-                        });
+                        this.ensureAuthObserver(auth);
                         if (window.ENABLE_ANON_AUTH === true && !auth.currentUser) {
                             try { await auth.signInAnonymously(); } catch (e) { console.warn('⚠️ Falha ao autenticar anonimamente:', e && e.message || e); }
                         }
@@ -133,11 +146,13 @@ class FirebaseServiceTL {
                 
                 // Processar fila de sincronização
                 this.processSyncQueue();
+                authPerfTLPhase('firebase_init_ready', 'ready');
             } else {
                 console.warn('⚠️ Firebase não disponível, usando localStorage');
             }
         } catch (error) {
-            console.error('❌ Erro ao inicializar Firebase:', error);
+            authPerfTLPhase('firebase_init_error', 'error');
+            console.error('❌ Erro ao inicializar Firebase:', error && error.code ? error.code : 'unknown');
             this.isFirebaseAvailable = false;
         }
 
@@ -146,19 +161,23 @@ class FirebaseServiceTL {
             const manager = window.getFirebaseManager ? window.getFirebaseManager() : null;
             if (manager) {
                 manager.on('connected', () => {
+                    this.rtdbConnected = true;
                     this.isOnline = true;
                     this.processSyncQueue();
                 });
                 manager.on('disconnected', () => {
+                    this.rtdbConnected = false;
                     this.isOnline = false;
                 });
             } else {
                 // Fallback para eventos nativos
                 window.addEventListener('online', () => {
+                    this.internetAvailable = true;
                     this.isOnline = true;
                     this.processSyncQueue();
                 });
                 window.addEventListener('offline', () => {
+                    this.internetAvailable = false;
                     this.isOnline = false;
                 });
             }
@@ -180,8 +199,11 @@ class FirebaseServiceTL {
                 manager.on('connected', () => this.processSyncQueue());
             } else {
                 const connectedRef = this.database.ref('.info/connected');
+                authPerfTLListener('rtdb', 'add');
                 connectedRef.on('value', (snapshot) => {
-                    if (snapshot.val() === true) {
+                    this.rtdbConnected = snapshot.val() === true;
+                    authPerfTLRtdb(this.rtdbConnected);
+                    if (this.rtdbConnected) {
                         console.log('🟢 Firebase conectado');
                         this.processSyncQueue();
                     } else {
@@ -194,11 +216,46 @@ class FirebaseServiceTL {
         }
     }
 
+    getConnectionState() {
+        return Object.freeze({
+            internetAvailable: this.internetAvailable,
+            rtdbConnected: this.rtdbConnected,
+            authReady: this.authReadySettled,
+            authenticated: !!this.authUser
+        });
+    }
+
     setTenantId(id) {
         this.tenantId = id ? String(id) : null;
+        authPerfTLTenant(this.tenantId);
         try {
             if (typeof window !== 'undefined') window.appTenantId = this.tenantId;
         } catch (_) {}
+    }
+
+    persistTenantContext(companyId, uid = '') {
+        const tenant = companyId ? String(companyId).trim() : '';
+        if (!tenant || tenant.includes('/')) return null;
+        this.setTenantId(tenant);
+        try {
+            const raw = localStorage.getItem('company_info');
+            const previous = raw ? JSON.parse(raw) : {};
+            const ownerUid = String(uid || (this.authUser && this.authUser.uid) || '').trim();
+            const previousTenant = String(previous.companyId || previous.companyID || previous.tenantId || previous.id || '').trim();
+            const previousOwnerUid = String(previous._authUid || '').trim();
+            const safePrevious = previousTenant === tenant && previousOwnerUid === ownerUid ? previous : {};
+            const next = { ...safePrevious, id: tenant, companyId: tenant, tenantId: tenant };
+            if (ownerUid) next._authUid = ownerUid;
+            localStorage.setItem('company_info', JSON.stringify(next));
+            window.companyInfo = next;
+        } catch (_) {}
+        return tenant;
+    }
+
+    clearTenantContext() {
+        this.setTenantId(null);
+        try { localStorage.removeItem('company_info'); } catch (_) {}
+        try { window.companyInfo = null; } catch (_) {}
     }
 
     // Normalizar tenant ID para evitar uso de users/ como root
@@ -221,6 +278,18 @@ class FirebaseServiceTL {
             }
         } catch (_) {}
         return null;
+    }
+
+    getPreservableTenant(uid) {
+        const expectedUid = String(uid || '').trim();
+        if (!expectedUid) return null;
+        try {
+            const companyInfo = JSON.parse(localStorage.getItem('company_info') || 'null') || {};
+            const ownerUid = String(companyInfo._authUid || '').trim();
+            return ownerUid === expectedUid ? this.getTenantId() : null;
+        } catch (_) {
+            return null;
+        }
     }
 
     normalizeCompanyProfileForReport(raw = {}, companyId = '') {
@@ -298,11 +367,6 @@ class FirebaseServiceTL {
                 const profile = await this.loadFromFirebase(`companies/${companyId}/profile`);
                 if (profile && profile.success && profile.data && typeof profile.data === 'object') data = { ...data, ...profile.data };
             } catch (_) {}
-            try {
-                const root = await this.loadFromFirebase(`companies/${companyId}`);
-                const rootData = root && root.success && root.data && typeof root.data === 'object' ? root.data : {};
-                data = { ...rootData, ...data };
-            } catch (_) {}
         }
         try {
             const raw = localStorage.getItem('company_info');
@@ -351,11 +415,7 @@ class FirebaseServiceTL {
         try {
             if (!this.isTenantAuditDebugEnabled()) return;
             if (!this.shouldAuditPath(rawPath) && !this.shouldAuditPath(finalPath)) return;
-            const tenant = this.getTenantId() || '__no_tenant__';
-            const path = String(rawPath || '');
-            const resolved = String(finalPath || '');
-            const screen = this.getAuditScreenPath();
-            console.log(`[AUDIT][${String(operation || '').toUpperCase()}] tenant=${tenant} path=${path} final=${resolved} screen=${screen} service=firebaseServiceTL`);
+            console.log(`[AUDIT][${String(operation || '').toUpperCase()}] tenant-scoped operation observed by firebaseServiceTL`);
         } catch (_) {}
     }
 
@@ -519,37 +579,316 @@ class FirebaseServiceTL {
         }
     }
 
+    resetAuthSingleFlights(nextUid = '') {
+        this.authGeneration += 1;
+        this.sessionContextPromise = null;
+        this.sessionContextUid = '';
+        this.sessionContextSnapshot = null;
+        this.tokenResultPromise = null;
+        this.tokenResultUid = '';
+        this.tokenResultSnapshot = null;
+        this.forcedTokenResultPromise = null;
+        this.forcedTokenResultUid = '';
+        this.profilePromise = null;
+        this.profileUid = '';
+        this.profileSnapshot = null;
+    }
+
+    isAuthGenerationCurrent(generation, uid) {
+        if (generation !== this.authGeneration) return false;
+        const auth = typeof firebase !== 'undefined' && firebase.auth ? firebase.auth() : null;
+        const activeUser = this.authUser || (auth && auth.currentUser) || null;
+        return String(activeUser && activeUser.uid || '') === String(uid || '');
+    }
+
+    ensureAuthObserver(authInstance = null) {
+        if (this.authObserverUnsubscribe) return this.authObserverUnsubscribe;
+        const auth = authInstance || (typeof firebase !== 'undefined' && firebase.auth ? firebase.auth() : null);
+        if (!auth) return null;
+        authPerfTLListener('auth', 'add');
+        this.authObserverUnsubscribe = auth.onAuthStateChanged(
+            (user) => {
+                this.authObserverError = null;
+                const previousUid = String(this.authUser && this.authUser.uid || '');
+                const nextUid = String(user && user.uid || '');
+                if (previousUid !== nextUid) {
+                    this.resetAuthSingleFlights(nextUid);
+                    if (previousUid) this.clearTenantContext();
+                }
+                this.authUser = user || null;
+                this.currentUid = nextUid || null;
+                authPerfTLAuth(user ? 'authenticated' : 'unauthenticated');
+                if (!this.authReadySettled) {
+                    this.authReadySettled = true;
+                    this.authReadyResolve(user || null);
+                }
+                for (const callback of Array.from(this.authSubscribers)) {
+                    try { callback(user || null); } catch (_) {}
+                }
+                if (!user) {
+                    this.clearTenantContext();
+                    return;
+                }
+                void this.resolveAuthenticatedTenant({ user }).finally(() => {
+                    try {
+                        window.dispatchEvent(new CustomEvent('firebaseReady', { detail: { firebaseService: this, isReady: true } }));
+                    } catch (_) {}
+                });
+            },
+            (error) => {
+                this.authObserverError = error || new Error('Falha ao observar o estado de autenticação.');
+                if (!this.authReadySettled) {
+                    this.authReadySettled = true;
+                    this.authReadyResolve(null);
+                }
+            }
+        );
+        return this.authObserverUnsubscribe;
+    }
+
+    subscribeAuthState(authOrCallback, maybeCallback) {
+        const callback = typeof authOrCallback === 'function' ? authOrCallback : maybeCallback;
+        if (typeof callback !== 'function') return () => {};
+        this.ensureAuthObserver();
+        this.authSubscribers.add(callback);
+        if (this.authReadySettled) queueMicrotask(() => {
+            if (this.authSubscribers.has(callback)) callback(this.authUser || null);
+        });
+        return () => this.authSubscribers.delete(callback);
+    }
+
+    async getIdTokenResultSingleFlight(user, options = {}) {
+        if (!user || typeof user.getIdTokenResult !== 'function') return null;
+        const uid = String(user.uid || '');
+        const forceRefresh = options.forceRefresh === true;
+        const reason = String(options.reason || 'legacy_unspecified');
+        const generation = this.authGeneration;
+        if (forceRefresh) {
+            if (this.forcedTokenResultPromise && this.forcedTokenResultUid === uid) return this.forcedTokenResultPromise;
+            this.forcedTokenResultUid = uid;
+            authPerfTLTokenRefresh(reason);
+            const request = user.getIdTokenResult(true)
+                .then((result) => {
+                    if (this.isAuthGenerationCurrent(generation, uid)) {
+                        this.tokenResultUid = uid;
+                        this.tokenResultSnapshot = { result, cachedAt: Date.now() };
+                        this.tokenResultPromise = null;
+                    }
+                    return result;
+                })
+                .finally(() => {
+                    if (this.forcedTokenResultPromise === request) {
+                        this.forcedTokenResultPromise = null;
+                        this.forcedTokenResultUid = '';
+                    }
+                });
+            this.forcedTokenResultPromise = request;
+            return request;
+        }
+        if (this.tokenResultSnapshot && this.tokenResultUid === uid && (Date.now() - this.tokenResultSnapshot.cachedAt) < 60000) {
+            return this.tokenResultSnapshot.result;
+        }
+        if (this.tokenResultPromise && this.tokenResultUid === uid) return this.tokenResultPromise;
+        this.tokenResultUid = uid;
+        const request = user.getIdTokenResult(false)
+            .then((result) => {
+                if (this.isAuthGenerationCurrent(generation, uid)) {
+                    this.tokenResultSnapshot = { result, cachedAt: Date.now() };
+                    if (this.tokenResultPromise === request) this.tokenResultPromise = null;
+                }
+                return result;
+            })
+            .catch((error) => {
+                if (this.tokenResultPromise === request) this.tokenResultPromise = null;
+                throw error;
+            });
+        this.tokenResultPromise = request;
+        return request;
+    }
+
+    async loadUserProfileSingleFlight(user) {
+        if (!user || !user.uid || !this.database) return { ok: false, profile: null, code: 'missing-user' };
+        const uid = String(user.uid);
+        if (this.profileSnapshot && this.profileUid === uid) {
+            const failureIsFresh = this.profileSnapshot.ok === false
+                && (Date.now() - Number(this.profileSnapshot.cachedAt || 0)) < 2000;
+            if (this.profileSnapshot.ok !== false || failureIsFresh) return this.profileSnapshot;
+            this.profileSnapshot = null;
+        }
+        if (this.profilePromise && this.profileUid === uid) return this.profilePromise;
+        this.profileUid = uid;
+        const generation = this.authGeneration;
+        authPerfTLRead(`users/${uid}`, 'physical');
+        const request = this.database.ref(`users/${uid}`).once('value')
+            .then((snapshot) => {
+                const profile = snapshot && typeof snapshot.val === 'function' ? snapshot.val() : null;
+                const result = { ok: true, profile, code: profile ? 'loaded' : 'not-found', cachedAt: Date.now() };
+                if (this.isAuthGenerationCurrent(generation, uid)) this.profileSnapshot = result;
+                return result;
+            })
+            .catch((error) => {
+                const result = {
+                    ok: false,
+                    profile: null,
+                    code: String(error && error.code || 'profile-read-error'),
+                    cachedAt: Date.now()
+                };
+                if (this.isAuthGenerationCurrent(generation, uid)) this.profileSnapshot = result;
+                return result;
+            })
+            .finally(() => {
+                if (this.profilePromise === request) this.profilePromise = null;
+            });
+        this.profilePromise = request;
+        return request;
+    }
+
+    async getUserProfile(uid) {
+        const user = this.authUser || (typeof firebase !== 'undefined' && firebase.auth ? firebase.auth().currentUser : null);
+        if (!user || (uid && String(uid) !== String(user.uid || ''))) return null;
+        const result = await this.loadUserProfileSingleFlight(user);
+        return result && result.ok ? result.profile : null;
+    }
+
+    async resolveAuthenticatedTenant(options = {}) {
+        const auth = typeof firebase !== 'undefined' && firebase.auth ? firebase.auth() : null;
+        if (!options.user) await this.waitForAuthReady(options.timeoutMs || 2500);
+        const user = options.user || this.authUser || (auth && auth.currentUser) || null;
+        if (!user || !user.uid) {
+            return {
+                success: false,
+                authenticated: false,
+                companyId: null,
+                user: null,
+                code: this.authObserverError
+                    ? 'auth-observer-error'
+                    : (this.authReadySettled ? 'firebase-auth-required' : 'auth-timeout'),
+                error: this.authObserverError && (this.authObserverError.message || String(this.authObserverError))
+            };
+        }
+        const uid = String(user.uid);
+        if (options.refreshContext === true || options.forceRefresh === true) {
+            this.sessionContextPromise = null;
+            this.sessionContextSnapshot = null;
+        }
+        if (this.sessionContextSnapshot && this.sessionContextUid === uid && options.forceRefresh !== true) return this.sessionContextSnapshot;
+        if (this.sessionContextPromise && this.sessionContextUid === uid) return this.sessionContextPromise;
+
+        this.sessionContextUid = uid;
+        const generation = this.authGeneration;
+        const previousTenant = this.getPreservableTenant(uid);
+        const staleResult = () => ({
+            success: false,
+            authenticated: false,
+            companyId: null,
+            user: null,
+            code: 'stale-auth-generation'
+        });
+        const request = (async () => {
+            let claims = {};
+            let tokenFailed = false;
+            try {
+                const tokenResult = await this.getIdTokenResultSingleFlight(user, options);
+                claims = tokenResult && tokenResult.claims ? tokenResult.claims : {};
+            } catch (_) {
+                tokenFailed = true;
+            }
+            if (!this.isAuthGenerationCurrent(generation, uid)) return staleResult();
+            const superAdmin = claims.superadmin === true
+                || (typeof window.isSuperAdminUid === 'function' && window.isSuperAdminUid(uid));
+            if (superAdmin) {
+                if (!this.isAuthGenerationCurrent(generation, uid)) return staleResult();
+                this.clearTenantContext();
+                const result = Object.freeze({ success: true, authenticated: true, superAdmin: true, companyId: null, user });
+                this.sessionContextSnapshot = result;
+                return result;
+            }
+
+            let companyId = String(claims.companyId || claims.companyID || claims.tenantId || '').trim();
+            let profileResult = null;
+            if (!companyId) {
+                profileResult = await this.loadUserProfileSingleFlight(user);
+                const profile = profileResult && profileResult.profile;
+                companyId = String(profile && (profile.companyId || profile.companyID || profile.tenantId) || '').trim();
+            }
+            if (!this.isAuthGenerationCurrent(generation, uid)) return staleResult();
+            if (companyId) {
+                this.persistTenantContext(companyId, uid);
+                const result = Object.freeze({ success: true, authenticated: true, superAdmin: false, companyId, user });
+                this.sessionContextSnapshot = result;
+                return result;
+            }
+
+            if (previousTenant && (tokenFailed || (profileResult && profileResult.ok === false))) {
+                this.persistTenantContext(previousTenant, uid);
+                const result = Object.freeze({
+                    success: true,
+                    authenticated: true,
+                    degraded: true,
+                    superAdmin: false,
+                    companyId: previousTenant,
+                    user,
+                    code: 'tenant-preserved-after-transient-error'
+                });
+                this.sessionContextSnapshot = null;
+                queueMicrotask(() => {
+                    if (this.sessionContextPromise === request) this.sessionContextPromise = null;
+                });
+                return result;
+            }
+
+            if (!this.isAuthGenerationCurrent(generation, uid)) return staleResult();
+            this.clearTenantContext();
+            const result = Object.freeze({
+                success: false,
+                authenticated: true,
+                superAdmin: false,
+                companyId: null,
+                user,
+                code: 'missing-companyId'
+            });
+            this.sessionContextSnapshot = result;
+            return result;
+        })().catch((error) => {
+            if (this.sessionContextPromise === request) this.sessionContextPromise = null;
+            if (!this.isAuthGenerationCurrent(generation, uid)) return staleResult();
+            return {
+                success: false,
+                authenticated: true,
+                companyId: previousTenant || null,
+                user,
+                code: 'session-context-error',
+                error: error && error.message ? error.message : String(error)
+            };
+        });
+        this.sessionContextPromise = request;
+        return request;
+    }
+
+    getSessionContext(options = {}) {
+        return this.resolveAuthenticatedTenant(options);
+    }
+
     async waitForAuthReady(timeoutMs = 1800) {
         try {
-            if (this.currentUid) return true;
             const startedAt = Date.now();
             while ((Date.now() - startedAt) < timeoutMs) {
                 if (typeof firebase !== 'undefined' && typeof firebase.auth === 'function') break;
                 await new Promise(resolve => setTimeout(resolve, 50));
             }
             if (typeof firebase === 'undefined' || typeof firebase.auth !== 'function') return false;
-
-            const auth = firebase.auth();
-            if (auth.currentUser) {
-                this.currentUid = auth.currentUser.uid;
-                return true;
-            }
-
+            this.ensureAuthObserver(firebase.auth());
+            if (this.authReadySettled) return Boolean(this.authUser || firebase.auth().currentUser);
             return await new Promise((resolve) => {
-                let finished = false;
-                const done = (user) => {
-                    if (finished) return;
-                    finished = true;
-                    try { unsubscribe(); } catch (_) {}
-                    if (user && user.uid) this.currentUid = user.uid;
-                    resolve(Boolean(user));
+                let settled = false;
+                const finish = () => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    resolve(Boolean(this.authUser || firebase.auth().currentUser));
                 };
-                const unsubscribe = auth.onAuthStateChanged(
-                    (user) => done(user || auth.currentUser || null),
-                    () => done(auth.currentUser || null)
-                );
-                const remaining = Math.max(0, timeoutMs - (Date.now() - startedAt));
-                setTimeout(() => done(auth.currentUser || null), remaining || 1);
+                const timer = setTimeout(finish, Math.max(1, timeoutMs - (Date.now() - startedAt)));
+                this.authReadyPromise.then(finish);
             });
         } catch (_) {
             return false;
@@ -574,31 +913,28 @@ class FirebaseServiceTL {
         
         return {
             getAuth: () => auth,
+            waitForAuthReady: (timeoutMs) => self.waitForAuthReady(timeoutMs),
+            getSessionContext: (options) => self.getSessionContext(options),
+            resolveAuthenticatedTenant: (options) => self.resolveAuthenticatedTenant(options),
+            getIdTokenResult: (user, options) => self.getIdTokenResultSingleFlight(user, options),
+            getUserProfile: (uid) => self.getUserProfile(uid),
             
-            getCurrentUser: () => {
-                return new Promise((resolve) => {
-                    const unsubscribe = auth.onAuthStateChanged(
-                        (user) => {
-                            unsubscribe();
-                            resolve(user);
-                        },
-                        () => {
-                            unsubscribe();
-                            resolve(null);
-                        }
-                    );
-                    // Timeout de segurança
-                    setTimeout(() => {
-                        unsubscribe();
-                        resolve(auth.currentUser);
-                    }, 2000);
-                });
+            getCurrentUser: async () => {
+                await self.waitForAuthReady(2000);
+                return self.authUser || auth.currentUser || null;
             },
             
             login: async (email, password) => {
                 try {
                     const cred = await auth.signInWithEmailAndPassword(email, password);
-                    return { success: true, user: cred.user };
+                    if (String(self.authUser && self.authUser.uid || '') !== String(cred.user && cred.user.uid || '')) {
+                        if (self.authUser && self.authUser.uid) self.clearTenantContext();
+                        self.resetAuthSingleFlights(cred.user && cred.user.uid);
+                        self.authUser = cred.user || null;
+                        self.currentUid = cred.user && cred.user.uid || null;
+                    }
+                    const sessionContext = await self.resolveAuthenticatedTenant({ user: cred.user });
+                    return { success: true, user: cred.user, sessionContext };
                 } catch (error) {
                     return { success: false, error: error.message };
                 }
@@ -607,6 +943,14 @@ class FirebaseServiceTL {
             logout: async () => {
                 try {
                     await auth.signOut();
+                    self.resetAuthSingleFlights('');
+                    self.authUser = null;
+                    self.currentUid = null;
+                    self.authObserverError = null;
+                    self.clearTenantContext();
+                    for (const callback of Array.from(self.authSubscribers)) {
+                        try { callback(null); } catch (_) {}
+                    }
                     return { success: true };
                 } catch (error) {
                     return { success: false, error: error.message };
@@ -629,9 +973,7 @@ class FirebaseServiceTL {
                 }
             },
             
-            onAuthStateChanged: (callback) => {
-                return auth.onAuthStateChanged(callback);
-            }
+            onAuthStateChanged: (authOrCallback, maybeCallback) => self.subscribeAuthState(authOrCallback, maybeCallback)
         };
     }
 
@@ -639,7 +981,7 @@ class FirebaseServiceTL {
      * 💾 Salvar dados com prioridade Firebase
      */
     async saveData(key, data) {
-        console.log(`💾 Salvando dados: ${key}`);
+        console.log('💾 Salvando dados');
 
         if (/^(species|especies|especiesPct|data\/species)(\/|$)/.test(String(key || '')) && data && typeof data === 'object') {
             const normalizeSpeciesItem = (item) => {
@@ -717,7 +1059,7 @@ class FirebaseServiceTL {
                 
                 const payload = { ...dataWithMeta };
                 await refKey.update(payload);
-                console.log(`✅ Dados atualizados no Firebase (update): ${writePath}`);
+                console.log('✅ Dados atualizados no Firebase');
                 
                 this.writeLocalStorage(key, dataWithMeta);
                 
@@ -731,11 +1073,11 @@ class FirebaseServiceTL {
                 const localData = { ...dataWithMeta, _metadata: { ...dataWithMeta._metadata, source: 'localStorage' } };
                 this.writeLocalStorage(key, localData);
                 this.syncQueue.set(key, localData);
-                console.log(`📦 Dados salvos no localStorage (fila): ${key}`);
+                console.log('📦 Dados salvos no localStorage para sincronização');
                 return { success: true, source: 'localStorage', queued: true };
             }
         } catch (error) {
-            console.error(`❌ Erro ao salvar ${key}:`, error);
+            console.error('❌ Erro ao salvar dados:', error && error.code ? error.code : 'unknown');
             const fallbackData = { ...dataWithMeta, _metadata: { ...dataWithMeta._metadata, source: 'localStorage' } };
             this.writeLocalStorage(key, fallbackData);
             this.syncQueue.set(key, fallbackData);
@@ -747,7 +1089,8 @@ class FirebaseServiceTL {
      * 📖 Carregar dados com prioridade Firebase - COMPATÍVEL COM ROMANEIOPCT
      */
     async loadFromFirebase(path, options = {}) {
-        console.log(`🔥 loadFromFirebase: Carregando "${path}" do Firebase`);
+        authPerfTLRead(path, 'logical');
+        console.log('🔥 loadFromFirebase: carregando dados do Firebase');
         
         try {
             const canonicalOnly = options && options.canonicalOnly === true;
@@ -756,14 +1099,18 @@ class FirebaseServiceTL {
             const cacheKeys = [path, ...candidates, ...scopedCandidates];
             const cached = this.readFreshCache(cacheKeys);
             if (cached !== null && cached !== undefined) {
+                authPerfTLCache(path, 'memory', 'hit');
                 return { success: true, data: cached, source: 'memory-cache' };
             }
+            authPerfTLCache(path, 'memory', 'miss');
 
             if (!this.isFirebaseAvailable || !this.isOnline) {
                 const localFallback = this.readLocalFallback(path);
                 if (localFallback !== null && localFallback !== undefined) {
+                    authPerfTLCache(path, 'local', 'hit');
                     return { success: true, data: localFallback, source: 'localStorage' };
                 }
+                authPerfTLCache(path, 'local', 'miss');
                 return {
                     success: false,
                     error: 'Firebase não disponível ou offline',
@@ -775,6 +1122,7 @@ class FirebaseServiceTL {
 
             const pendingKey = `${canonicalOnly ? 'canonical:' : 'compat:'}${scopedCandidates.join('|') || path}`;
             if (this.pendingReads.has(pendingKey)) {
+                authPerfTLRead(path, 'joined', 'joined');
                 return await this.pendingReads.get(pendingKey);
             }
 
@@ -790,12 +1138,13 @@ class FirebaseServiceTL {
                     let exists = false;
 
                     try {
+                        authPerfTLRead(nsCandidate, 'physical');
                         const snapshot = await this.database.ref(nsCandidate).once('value');
                         data = snapshot.val();
                         exists = (data !== null && data !== undefined);
                     } catch (getError) {
                         if (getError.message && getError.message.includes('Maximum call stack size exceeded')) {
-                            console.warn(`⚠️ Erro de recursão no SDK Modular para '${candidate}'. Tentando REST API como fallback...`);
+                            console.warn('⚠️ Erro de recursão no SDK Modular. Tentando REST API como fallback...');
                             
                             // Tentar REST API se o SDK falhar com stack overflow
                             try {
@@ -812,11 +1161,12 @@ class FirebaseServiceTL {
                                     } catch (_) {}
                                 }
                                 
+                                authPerfTLRead(nsCandidate, 'physical');
                                 const response = await fetch(url);
                                 if (response.ok) {
                                     data = await response.json();
                                     exists = (data !== null);
-                                    console.log(`✅ Dados recuperados via REST API para ${candidate}`);
+                                    console.log('✅ Dados recuperados via REST API');
                                 } else {
                                     throw new Error(`REST API retornou ${response.status}`);
                                 }
@@ -831,6 +1181,8 @@ class FirebaseServiceTL {
 
                     if (exists) {
                         // Cache e localStorage
+                        authPerfTLCache(path, 'memory', 'write');
+                        authPerfTLCache(path, 'local', 'write');
                         this.cache.set(path, { data, timestamp: Date.now() });
                         this.cache.set(candidate, { data, timestamp: Date.now() });
                         this.cache.set(nsCandidate, { data, timestamp: Date.now() });
@@ -843,19 +1195,21 @@ class FirebaseServiceTL {
                     const msg = String(e && e.message || e);
                     if (msg.toLowerCase().includes('permission_denied')) {
                         if (canonicalOnly || candidates.length <= 1) {
-                            console.warn(`⚠️ Permissão negada em '${candidate}'`);
+                            console.warn('⚠️ Permissão negada no caminho consultado');
                         } else {
-                            console.warn(`⚠️ Permissão negada em '${candidate}', tentando próximo alias`);
+                            console.warn('⚠️ Permissão negada no caminho consultado; tentando próximo alias');
                         }
                         continue;
                     }
-                    console.warn(`⚠️ Erro ao consultar '${candidate}':`, msg);
+                    console.warn('⚠️ Erro ao consultar caminho do Firebase');
                 }
             }
             const localFallback = this.readLocalFallback(path);
             if (localFallback !== null && localFallback !== undefined) {
+                authPerfTLCache(path, 'local', 'hit');
                 return { success: true, data: localFallback, source: 'localStorage' };
             }
+            authPerfTLCache(path, 'local', 'miss');
             return { success: false, error: 'Nenhum dado encontrado', data: null };
             })();
 
@@ -868,7 +1222,7 @@ class FirebaseServiceTL {
             }
 
         } catch (error) {
-            console.error(`❌ Erro ao carregar ${path}:`, error);
+            console.error('❌ Erro ao carregar dados do Firebase:', error && error.code ? error.code : 'unknown');
             return {
                 success: false,
                 error: error.message,
@@ -916,15 +1270,15 @@ class FirebaseServiceTL {
                 const remoteMeta = (remote && remote._metadata && remote._metadata.lastUpdated) ? Number(remote._metadata.lastUpdated) : 0;
                 const localMeta = (data && data._metadata && data._metadata.lastUpdated) ? Number(data._metadata.lastUpdated) : 0;
                 if (remoteMeta && remoteMeta >= localMeta) {
-                    console.log(`⏭️ Ignorando sync (remoto mais recente): ${key}`);
+                    console.log('⏭️ Ignorando sync porque o remoto é mais recente');
                 } else {
                     const payload = { ...data };
                     await refKey.update(payload);
-                    console.log(`✅ Sincronizado (update): ${key}`);
+                    console.log('✅ Registro sincronizado');
                 }
                 this.syncQueue.delete(key);
             } catch (error) {
-                console.error(`❌ Erro ao sincronizar ${key}:`, error);
+                console.error('❌ Erro ao sincronizar registro:', error && error.code ? error.code : 'unknown');
             }
         }
 
@@ -937,14 +1291,14 @@ class FirebaseServiceTL {
      * 🗑️ Excluir dados
      */
     async deleteData(key) {
-        console.log(`🗑️ Excluindo dados: ${key}`);
+        console.log('🗑️ Excluindo dados');
         const writePath = this.resolveWritePath(key);
         this.tenantAuditLog('DELETE', key, writePath);
 
         try {
             if (this.isFirebaseAvailable && this.isOnline) {
                 await this.database.ref(writePath).remove();
-                console.log(`✅ Dados excluídos do Firebase: ${writePath}`);
+                console.log('✅ Dados excluídos do Firebase');
             }
 
             // Remover do localStorage
@@ -960,7 +1314,7 @@ class FirebaseServiceTL {
 
             return { success: true };
         } catch (error) {
-            console.error(`❌ Erro ao excluir ${key}:`, error);
+            console.error('❌ Erro ao excluir dados:', error && error.code ? error.code : 'unknown');
             return { success: false, error: error.message };
         }
     }

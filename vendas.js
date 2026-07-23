@@ -199,22 +199,12 @@ async function obterDadosEmpresa() {
         }
         if (tenantId && svc && typeof svc.loadFromFirebase === 'function') {
             try {
-                const byPathRoot = await svc.loadFromFirebase(`companies/${tenantId}`);
-                const byPathRootData = byPathRoot && (byPathRoot.success ? byPathRoot.data : byPathRoot.data);
-                if (byPathRootData && typeof byPathRootData === 'object' && (byPathRootData.nome || byPathRootData.name)) {
-                    companyData = { ...byPathRootData, id: tenantId, companyId: tenantId, tenantId: tenantId };
+                const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
+                const byPathData = byPath && (byPath.success === true ? byPath.data : (byPath.success === false ? null : byPath));
+                if (byPathData && typeof byPathData === 'object') {
+                    companyData = { ...companyData, ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
                 }
             } catch (_) {}
-
-            if (!companyData || (!companyData.nome && !companyData.name)) {
-                try {
-                    const byPath = await svc.loadFromFirebase(`companies/${tenantId}/profile`);
-                    const byPathData = byPath && (byPath.success ? byPath.data : byPath.data);
-                    if (byPathData && typeof byPathData === 'object') {
-                        companyData = { ...companyData, ...byPathData, id: tenantId, companyId: tenantId, tenantId: tenantId };
-                    }
-                } catch (_) {}
-            }
         }
 
         if (!companyData || (!companyData.nome && !companyData.name)) {
@@ -568,9 +558,6 @@ async function garantirContextoEmpresaVendas() {
         const retried = await svc.resolveAuthenticatedTenant({ timeoutMs: 2500, allowCached: isOffline });
         if (retried && retried.success) return retried;
     }
-
-    const tenant = obterTenantServicoVendas();
-    if (tenant && isFirebaseOfflineModeVendas()) return { success: true, companyId: tenant, fallback: true, offline: true };
 
     limparContextoEmpresaVendasInseguro();
     return { success: false, code: 'missing-company-context', error: 'Empresa da sessão não identificada.' };
@@ -1562,7 +1549,6 @@ function montarUpdatesRemocaoContasReceberVenda(lista, options = {}) {
         const id = String(c.id);
         const mk = toMonthKey(c.dataVencimento || c.vencimento);
         updates[`financas/receber/${mk}/${id}`] = null;
-        updates[`financas/receber/${id}`] = null;
         if (includeLegacy) {
             updates[`contasReceber/${mk}/${id}`] = null;
             updates[`contasReceber/${id}`] = null;
@@ -2082,6 +2068,8 @@ async function salvarPedido(event) {
         }
         
         let multiUpdateDone = false;
+        let hasFinanceMutation = removiveis.length > 0
+            || (shouldGenerateFinance && Array.isArray(pedidoData.contasReceber) && pedidoData.contasReceber.length > 0);
         if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
             const contasFin = shouldGenerateFinance ? (pedidoData.contasReceber || []).map((conta, idx) => {
                 const crId = `CR_${pedidoData.id}_${String(idx + 1).padStart(3, '0')}`;
@@ -2130,6 +2118,8 @@ async function salvarPedido(event) {
                 updatesAdd[`financas/receber/${mk}/${String(c.id)}`] = c;
             });
             updatesAdd[`vendas/pedidos/${String(pedidoData.id)}`] = pedidoData;
+            hasFinanceMutation = hasFinanceMutation
+                || Object.keys(updatesAdd).some(path => String(path).startsWith('financas/receber/'));
             
             console.log('📦 Enviando updatePaths para Firebase:', Object.keys(updatesAdd).length, 'caminhos');
             const res = await window.firebaseService.updatePaths(updatesAdd);
@@ -2143,8 +2133,11 @@ async function salvarPedido(event) {
         }
         
         if (!multiUpdateDone) {
-            if (editandoPedidoId && !shouldGenerateFinance && removiveis.length > 0) {
+            if (hasFinanceMutation && editandoPedidoId && !shouldGenerateFinance && removiveis.length > 0) {
                 throw new Error('Não foi possível estornar o financeiro vinculado. Nenhuma alteração foi concluída.');
+            }
+            if (hasFinanceMutation) {
+                throw new Error('Não foi possível sincronizar o financeiro do pedido de venda. Nenhuma alteração foi concluída.');
             }
             // Fallback para salvamento individual
             await saveData('vendas/pedidos', window.pedidos);
@@ -2252,7 +2245,6 @@ async function removerContasReceberAnteriores(pedidoId) {
                 if (c && c.id) {
                     const mk = toMonthKey(c.dataVencimento || c.vencimento);
                     await window.firebaseService.saveToFirebase(`financas/receber/${mk}`, String(c.id), null);
-                    await window.firebaseService.saveToFirebase('financas/receber', String(c.id), null);
                 }
             }
             if (semRecebimento.length > 0) console.log(`🗑️ Removidas ${semRecebimento.length} contas anteriores do pedido ${pedidoId}`);
@@ -2284,7 +2276,6 @@ async function removerContasReceberPorLista(lista) {
                 if (c && c.id) {
                     const mk = toMonthKey(c.dataVencimento || c.vencimento);
                     await window.firebaseService.saveToFirebase(`financas/receber/${mk}`, String(c.id), null);
-                    await window.firebaseService.saveToFirebase('financas/receber', String(c.id), null);
                 }
             }
         } else {
@@ -2342,12 +2333,13 @@ async function gerarContasReceberFinanceiro(pedido) {
             valor: conta.valor,
             valorOriginal: conta.valor,
             valorRestante: conta.valor,
-            dataVencimento: conta.vencimento,
-            status: 'pendente',
-            tipoPagamento: conta.tipo,
-            tipo: conta.tipo,
-            observacoes: conta.observacao || '',
-            created: window.firebaseService && window.firebaseService.serverTimestamp ? window.firebaseService.serverTimestamp() : new Date().toISOString()
+    dataVencimento: conta.vencimento,
+    dataEmissao: conta.dataEmissao || '',
+    status: 'pendente',
+    tipoPagamento: conta.tipo,
+    tipo: conta.tipo,
+    observacoes: conta.observacao || '',
+    created: window.firebaseService && window.firebaseService.serverTimestamp ? window.firebaseService.serverTimestamp() : new Date().toISOString()
         }));
         // Helper: atualizar cache local mensal e agregado
         const upsertMonthlyLocal = (contasList) => {
@@ -5450,7 +5442,7 @@ function adicionarContaReceber() {
             dataVencimentoISO = baseVencimentoISO;
             diasOffset = 0;
         } else {
-            baseVencimentoISO = vencimento;
+            baseVencimentoISO = pedidoDataISO || vencimento;
             dataVencimentoISO = addDaysISO(baseVencimentoISO, diasOffset);
         }
 
@@ -5464,6 +5456,7 @@ function adicionarContaReceber() {
             id: Date.now() + i,
             valor: valorPorParcela,
             vencimento: dataVencimentoISO,
+            dataEmissao: pedidoData,
             baseVencimento: baseVencimentoISO,
             dias: diasOffset,
             tipo: tipo,

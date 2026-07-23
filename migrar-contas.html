@@ -160,10 +160,10 @@
         </div>
     </div>
     
-    <script src="auth.js"></script>
+    <script src="auth.js?v=cbbfbc7f784a"></script>
     <script type="module">
         // Importar firebaseService
-        import { loadFromFirebase, saveToFirebase, authService, isFirebaseOperational } from './firebaseService.js';
+        import { loadFromFirebase, saveToFirebase, authService, isFirebaseOperational } from './firebaseService.js?v=676ba9f2a922';
         
         // Disponibilizar firebaseService completo globalmente
         window.firebaseService = {
@@ -174,8 +174,7 @@
                 if (!window.firebaseService) return { success: false, error: 'Firebase não disponível' };
                 
                 try {
-                    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js');
-                    const { getDatabase } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js');
+                    const { ref, remove, getDatabase } = await import('./firebase-init.js');
                     
                     const db = getDatabase();
                     const path = itemKey ? `${key}/${itemKey}` : key;
@@ -194,7 +193,7 @@
         console.log("✅ firebaseService carregado");
     </script>
     
-    <script src="scripts/migrar-tabelas-contas.js"></script>
+    <script src="scripts/migrar-tabelas-contas.js?v=85e4418f39f4"></script>
     
     <script>
         const consoleEl = document.getElementById('console');

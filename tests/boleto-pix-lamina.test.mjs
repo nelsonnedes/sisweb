@@ -5,6 +5,14 @@ import vm from 'node:vm';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
+function blockBetween(source, startMarker, endMarker) {
+  const start = source.indexOf(startMarker);
+  assert.notEqual(start, -1, `bloco ${startMarker} precisa existir`);
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  assert.notEqual(end, -1, `fim ${endMarker} precisa existir`);
+  return source.slice(start, end);
+}
+
 function loadPixBrCode() {
   const code = read('js/pix-brcode.js');
   const windowMock = {};
@@ -18,6 +26,40 @@ function loadPixBrCode() {
   };
   vm.runInNewContext(code, context, { filename: 'pix-brcode.js' });
   return context.window.PixBrCode;
+}
+
+function loadFinanceBoletoHelpers() {
+    const source = read('financas.js');
+    const helpersBlock = blockBetween(
+      source,
+      'function normalizeTipoKey',
+      'function getCategoriaLabel'
+    );
+    const context = {
+      window: {},
+      console: {
+        log: () => {},
+        warn: () => {},
+        error: () => {},
+      }
+    };
+    vm.createContext(context);
+    vm.runInContext(`${helpersBlock}
+      this.helpers = {
+        resolveFinanceTipoOperacional,
+        shouldShowBoletoLamina,
+        getFinanceSacadoReferenceId
+      };`, context, { filename: 'financas-boleto-helpers.vm.js' });
+    return context.helpers;
+}
+
+function loadPdfImageFormat() {
+    const source = read('js/commerce-boleto-pix.js');
+    const helper = blockBetween(source, 'function getPdfImageFormat', 'const CommerceBoletoPixPdf');
+    const context = {};
+    vm.createContext(context);
+    vm.runInContext(`${helper}\nthis.getPdfImageFormat = getPdfImageFormat;`, context, { filename: 'commerce-pdf-format.vm.js' });
+    return context.getPdfImageFormat;
 }
 
 describe('Lâmina de Cobrança PIX e Engine PIX Compartilhada', () => {
@@ -70,5 +112,48 @@ describe('Lâmina de Cobrança PIX e Engine PIX Compartilhada', () => {
         assert.ok(payload);
         assert.ok(payload.includes('br.gov.bcb.pix'));
         assert.equal(payload.slice(-4), PixBrCode.crc16CcittFalse(payload.slice(0, -4)));
+    });
+
+    it('deve manter o tipo operacional visível e bloquear boleto em contas a pagar', () => {
+        const helpers = loadFinanceBoletoHelpers();
+        assert.equal(helpers.resolveFinanceTipoOperacional({ tipo: 'pagar', tipoPagamento: 'boleto' }), 'boleto');
+        assert.equal(helpers.resolveFinanceTipoOperacional({ tipo: 'receber', tipoPagamento: 'boleto' }), 'boleto');
+        assert.equal(helpers.resolveFinanceTipoOperacional({ tipo: 'boleto' }), 'boleto');
+        assert.equal(helpers.shouldShowBoletoLamina({ tipo: 'pagar', tipoPagamento: 'boleto' }, 'pagar'), false);
+        assert.equal(helpers.shouldShowBoletoLamina({ tipo: 'boleto' }, 'receber'), true);
+    });
+
+    it('deve montar caminho do sacado apenas com identificador Firebase válido', () => {
+        const helpers = loadFinanceBoletoHelpers();
+        assert.equal(helpers.getFinanceSacadoReferenceId({ clienteId: 'CLI-10' }), 'CLI-10');
+        assert.equal(helpers.getFinanceSacadoReferenceId({ cliente: { id: 'CLI-20', nome: 'Cliente' } }), 'CLI-20');
+        assert.equal(helpers.getFinanceSacadoReferenceId({ cliente: { clienteId: 'CLI-30' } }), 'CLI-30');
+        assert.equal(helpers.getFinanceSacadoReferenceId({ cliente: 'CLI-40' }), 'CLI-40');
+        assert.equal(helpers.getFinanceSacadoReferenceId({ cliente: { nome: 'Sem ID' } }), '');
+        assert.equal(helpers.getFinanceSacadoReferenceId({ cliente: 'cliente/invalido' }), '');
+    });
+
+    it('deve reutilizar o perfil tenant-safe preparado pelo Financeiro', () => {
+        const financeSource = read('financas.js');
+        const firebaseServiceSource = read('firebaseService.js');
+
+        assert.match(financeSource, /async function abrirBoletoPixLamina[\s\S]*const empresa = await prepareFinanceReportCompany\(\)/);
+        assert.doesNotMatch(financeSource, /loadFromFirebase\(`companies\/\$\{currentCompanyId\}\/profile`\)/);
+        assert.match(firebaseServiceSource, /const pixChaveCobranca = firstReportValue\(source\.pixChaveCobranca\)/);
+        assert.match(firebaseServiceSource, /normalized\.pixChaveCobranca = pixChaveCobranca/);
+        assert.match(firebaseServiceSource, /normalized\.pixTipoChaveCobranca = pixTipoChaveCobranca/);
+        assert.match(firebaseServiceSource, /normalized\.pixFavorecidoCobranca = pixFavorecidoCobranca/);
+        assert.match(firebaseServiceSource, /normalized\.pixBancoCobranca = pixBancoCobranca/);
+        const pdfSource = read('js/commerce-boleto-pix.js');
+        assert.match(pdfSource, /company\.logoDataUrl/);
+        assert.match(pdfSource, /getPdfImageFormat\(logoDataUrl\)/);
+    });
+
+    it('deve inferir o formato de logos HTTP para o jsPDF', () => {
+        const getPdfImageFormat = loadPdfImageFormat();
+        assert.equal(getPdfImageFormat('https://cdn.example/logo.jpg?token=1'), 'JPEG');
+        assert.equal(getPdfImageFormat('https://cdn.example/logo.webp#preview'), 'WEBP');
+        assert.equal(getPdfImageFormat('https://cdn.example/logo.png'), 'PNG');
+        assert.equal(getPdfImageFormat('data:image/jpeg;base64,AAAA'), 'JPEG');
     });
 });

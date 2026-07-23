@@ -42,6 +42,60 @@ async function waitForAuthInfrastructureReady() {
             await window.firebaseService.authPersistenceReady;
         }
     } catch (_) {}
+    try {
+        if (window.firebaseService && typeof window.firebaseService.waitForAuthReady === 'function') {
+            await window.firebaseService.waitForAuthReady(5000);
+        }
+    } catch (_) {}
+}
+
+async function getCanonicalSessionContext(options = {}) {
+    try {
+        const service = window.firebaseService || null;
+        if (service && typeof service.getSessionContext === 'function') {
+            return await service.getSessionContext(options);
+        }
+        const serviceAuth = getAuthService();
+        if (serviceAuth && typeof serviceAuth.getSessionContext === 'function') {
+            return await serviceAuth.getSessionContext(options);
+        }
+    } catch (_) {}
+    return null;
+}
+
+async function getCanonicalTokenResult(user, options = {}) {
+    if (!user || typeof user.getIdTokenResult !== 'function') return null;
+    try {
+        const service = window.firebaseService || null;
+        if (service && typeof service.getIdTokenResult === 'function') {
+            return await service.getIdTokenResult(user, options);
+        }
+        const serviceAuth = getAuthService();
+        if (serviceAuth && typeof serviceAuth.getIdTokenResult === 'function') {
+            return await serviceAuth.getIdTokenResult(user, options);
+        }
+    } catch (_) {}
+    return user.getIdTokenResult(options.forceRefresh === true);
+}
+
+function isActiveAuthUid(uid) {
+    const expectedUid = String(uid || '').trim();
+    if (!expectedUid) return false;
+    try {
+        const service = window.firebaseService || null;
+        const serviceAuth = service && service.authService ? service.authService : null;
+        const authInstance = serviceAuth && typeof serviceAuth.getAuth === 'function'
+            ? serviceAuth.getAuth()
+            : (service && service.auth ? service.auth : null);
+        const activeUser = (authInstance && authInstance.currentUser) || window.firebaseAuthUser || null;
+        return String(activeUser && activeUser.uid || '') === expectedUid;
+    } catch (_) {
+        return false;
+    }
+}
+
+function isSameActiveAuthUser(user) {
+    return isActiveAuthUid(user && user.uid);
 }
 
 // Função para obter o dbService de forma segura  
@@ -80,14 +134,14 @@ function waitForFirebaseService(maxAttempts = 50) {
     });
 }
 
-async function setCompanyContext(companyId) {
+async function setCompanyContext(companyId, options = {}) {
     try {
         const tenant = companyId ? String(companyId) : null;
+        const ownerUid = String(options.ownerUid || '').trim();
+        const authoritative = options.authoritative === true;
+        if (ownerUid && !isActiveAuthUid(ownerUid)) return null;
         if (tenant) {
-            window.appTenantId = tenant;
-            if (window.firebaseService && typeof window.firebaseService.setTenantId === 'function') {
-                window.firebaseService.setTenantId(tenant);
-            }
+            if (!authoritative || !ownerUid) return null;
         } else {
             window.appTenantId = null;
             if (window.firebaseService && typeof window.firebaseService.setTenantId === 'function') {
@@ -105,8 +159,13 @@ async function setCompanyContext(companyId) {
 
         if (storedCompany && tenant) {
             const storedId = storedCompany.companyId || storedCompany.companyID || storedCompany.tenantId || storedCompany.id;
-            if (storedId && String(storedId) === tenant) {
+            const storedOwnerUid = String(storedCompany._authUid || '').trim();
+            if (storedId && String(storedId) === tenant && ownerUid && storedOwnerUid === ownerUid) {
                 window.companyInfo = storedCompany;
+                window.appTenantId = tenant;
+                if (window.firebaseService && typeof window.firebaseService.setTenantId === 'function') {
+                    window.firebaseService.setTenantId(tenant);
+                }
                 return storedCompany;
             }
         }
@@ -119,11 +178,15 @@ async function setCompanyContext(companyId) {
             return null;
         }
 
+        // Cache legado sem proprietário nunca autoriza nem restaura um tenant.
+        if (!authoritative || !ownerUid) return null;
+
         let found = null;
         if (tenant) {
             try {
                 if (window.firebaseService && typeof window.firebaseService.getCompanyProfileForReport === 'function') {
                     const central = await window.firebaseService.getCompanyProfileForReport({ companyId: tenant });
+                    if (!isActiveAuthUid(ownerUid)) return null;
                     found = central && central.success !== false ? (central.data || central) : null;
                 }
             } catch (_) {}
@@ -131,6 +194,7 @@ async function setCompanyContext(companyId) {
             if (!found && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
                 try {
                     const profileResult = await window.firebaseService.loadFromFirebase('companies/' + tenant + '/profile');
+                    if (!isActiveAuthUid(ownerUid)) return null;
                     const profileData = profileResult && profileResult.success ? profileResult.data : profileResult;
                     if (profileData && typeof profileData === 'object') found = { ...profileData, companyId: tenant, tenantId: tenant, id: tenant };
                 } catch (_) {}
@@ -138,6 +202,7 @@ async function setCompanyContext(companyId) {
                 if (!found) {
                     try {
                         const rootResult = await window.firebaseService.loadFromFirebase('companies/' + tenant);
+                        if (!isActiveAuthUid(ownerUid)) return null;
                         const rootData = rootResult && rootResult.success ? rootResult.data : rootResult;
                         if (rootData && typeof rootData === 'object') found = { ...rootData, companyId: tenant, tenantId: tenant, id: tenant };
                     } catch (_) {}
@@ -164,19 +229,22 @@ async function setCompanyContext(companyId) {
         }
 
         if (found) {
-            localStorage.setItem('company_info', JSON.stringify(found));
-            window.companyInfo = found;
-            const newTenant = String(found.companyId || found.companyID || found.tenantId || found.id || tenant || '').trim();
+            if (!isActiveAuthUid(ownerUid)) return null;
+            const ownedCompany = { ...found, _authUid: ownerUid };
+            localStorage.setItem('company_info', JSON.stringify(ownedCompany));
+            window.companyInfo = ownedCompany;
+            const newTenant = String(ownedCompany.companyId || ownedCompany.companyID || ownedCompany.tenantId || ownedCompany.id || tenant || '').trim();
             if (newTenant) {
                 window.appTenantId = newTenant;
                 if (window.firebaseService && typeof window.firebaseService.setTenantId === 'function') {
                     window.firebaseService.setTenantId(newTenant);
                 }
             }
-            return found;
+            return ownedCompany;
         }
 
-        const fallback = { id: tenant, companyId: tenant };
+        if (!isActiveAuthUid(ownerUid)) return null;
+        const fallback = { id: tenant, companyId: tenant, tenantId: tenant, _authUid: ownerUid };
         localStorage.setItem('company_info', JSON.stringify(fallback));
         window.companyInfo = fallback;
         window.appTenantId = tenant;
@@ -188,49 +256,31 @@ async function setCompanyContext(companyId) {
     return null;
 }
 
-async function resolveCompanyIdFromStorage() {
-    try {
-        const raw = localStorage.getItem('company_info');
-        if (raw) {
-            const obj = JSON.parse(raw);
-            const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
-            if (id) return String(id);
-        }
-    } catch (_) {}
-    return null;
-}
-
 async function tryRestoreCompanyClaim(user, companyId) {
     if (companyId) return companyId;
-    
-    // 1. Tentar local storage
-    let resolvedCompanyId = await resolveCompanyIdFromStorage();
-    
-    // 2. Se não achou localmente, tentar buscar no perfil do usuário (Recuperação de Desastre/Limpeza de Cache)
-    if (!resolvedCompanyId && user && user.uid) {
+
+    // O vínculo só pode ser restaurado por uma fonte autenticada, nunca pelo cache local.
+    let resolvedCompanyId = null;
+    if (user && user.uid) {
         try {
             console.log("🔍 Buscando perfil do usuário no Firebase para restaurar sessão...");
-            
-            // Usar window.firebaseService diretamente se disponível
-            if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-                // Carregar perfil do usuário: users/{uid}
-                const result = await window.firebaseService.loadFromFirebase('users/' + user.uid);
-                
-                if (result && result.success && result.data && result.data.companyId) {
-                    resolvedCompanyId = result.data.companyId;
-                    console.log(`✅ Empresa encontrada no perfil do usuário: ${resolvedCompanyId}. Restaurando acesso.`);
-                    
-                    // Tentar carregar dados da empresa para o cache local
+            if (window.firebaseService) {
+                const centralProfile = typeof window.firebaseService.getUserProfile === 'function'
+                    ? await window.firebaseService.getUserProfile(user.uid)
+                    : null;
+                if (!isSameActiveAuthUser(user)) return null;
+                const profile = centralProfile;
+
+                const profileCompanyId = profile && (profile.companyId || profile.companyID || profile.tenantId);
+                if (profileCompanyId) {
+                    resolvedCompanyId = String(profileCompanyId);
+                    console.log('✅ Empresa encontrada no perfil do usuário. Restaurando acesso.');
+
                     try {
-                        const companyResult = await window.firebaseService.loadFromFirebase('companies/' + resolvedCompanyId);
-                        if (companyResult && companyResult.success && companyResult.data) {
-                            localStorage.setItem('company_info', JSON.stringify(companyResult.data));
-                            
-                            // Atualizar contexto global
-                            if (window.firebaseService.setTenantId) {
-                                window.firebaseService.setTenantId(resolvedCompanyId);
-                            }
-                        }
+                        await setCompanyContext(resolvedCompanyId, {
+                            ownerUid: user.uid,
+                            authoritative: true
+                        });
                     } catch (e) {
                         console.warn("⚠️ Falha ao carregar detalhes da empresa para cache:", e);
                     }
@@ -244,28 +294,34 @@ async function tryRestoreCompanyClaim(user, companyId) {
     }
 
     if (!resolvedCompanyId || !user || !user.uid) return null;
+    if (!isSameActiveAuthUser(user)) return null;
 
-    // 3. Tentar atualizar a claim se achamos um ID
+    // Atualizar a claim somente a partir do perfil autenticado.
     if (window.firebaseService && typeof window.firebaseService.setCompanyClaim === 'function') {
         try {
             const claimResult = await window.firebaseService.setCompanyClaim(user.uid, resolvedCompanyId);
+            if (!isSameActiveAuthUser(user)) return null;
             
-            // Mesmo se falhar a claim (ex: falta de permissão cloud function), retornamos o ID para permitir o login na sessão local
+            // O perfil autenticado continua sendo fonte válida mesmo quando a Function não altera a claim.
             if (!claimResult || claimResult.success === false) {
-                 console.warn("⚠️ Falha ao definir claim, mas seguindo com ID resolvido localmente:", resolvedCompanyId);
+                 console.warn("⚠️ Falha ao definir claim, mas seguindo com empresa resolvida localmente.");
                  return resolvedCompanyId;
             }
             
-            const idTokenResult = await user.getIdTokenResult(true);
+            const idTokenResult = await getCanonicalTokenResult(user, {
+                forceRefresh: true,
+                reason: 'claims_changed'
+            });
+            if (!isSameActiveAuthUser(user)) return null;
             const refreshed = idTokenResult && idTokenResult.claims ? idTokenResult.claims.companyId : null;
             return refreshed || resolvedCompanyId;
         } catch (err) {
             console.warn("⚠️ Erro ao tentar atualizar claim:", err);
-            return resolvedCompanyId;
+            return isSameActiveAuthUser(user) ? resolvedCompanyId : null;
         }
     }
     
-    return resolvedCompanyId;
+    return isSameActiveAuthUser(user) ? resolvedCompanyId : null;
 }
 
 // Variável para rastrear inicialização - proteger contra redeclaração
@@ -340,7 +396,10 @@ async function restoreCompanyContextFromCachedUser(user) {
     const normalized = normalizeAuthSessionUser(user);
     if (!normalized.companyId) return null;
     try {
-        return await setCompanyContext(normalized.companyId);
+        return await setCompanyContext(normalized.companyId, {
+            ownerUid: normalized.uid,
+            authoritative: false
+        });
     } catch (_) {
         return null;
     }
@@ -436,20 +495,8 @@ function getUsableCachedAuthSession() {
 }
 
 async function tryAllowCachedAuthSession(source) {
-    const cached = getUsableCachedAuthSession();
-    if (!cached || !cached.user) return { allowed: false };
-    await restoreCompanyContextFromCachedUser(cached.user);
-    authAuditLog('currentUser', { fallback: source, durable: true });
-    const guard = await enforceSubscriptionGuard(cached.user, window.location.pathname);
-    if (!guard.allowed && guard.redirect) {
-        if (guard.statusKey === 'expired' || guard.statusKey === 'blocked') {
-            clearRestrictedSessionCache();
-        }
-        window.location.href = guard.redirect;
-        return { allowed: false, redirected: true };
-    }
-    persistAuthenticatedSession(cached.user, { source });
-    return { allowed: true, user: cached.user };
+    void source;
+    return { allowed: false };
 }
 
 function parseUsersCacheSafe() {
@@ -463,6 +510,10 @@ async function loadUserProfileFromFirebase(uid) {
     try {
         const id = uid ? String(uid).trim() : '';
         if (!id) return null;
+        if (window.firebaseService && typeof window.firebaseService.getUserProfile === 'function') {
+            const profile = await window.firebaseService.getUserProfile(id);
+            return profile && typeof profile === 'object' ? profile : null;
+        }
         if (!window.firebaseService || typeof window.firebaseService.loadFromFirebase !== 'function') return null;
         const res = await window.firebaseService.loadFromFirebase(`users/${id}`);
         if (!res || res.success === false) return null;
@@ -570,12 +621,15 @@ async function isSuperAdminSession() {
             return true;
         }
         if (authUser && typeof authUser.getIdTokenResult === 'function') {
-            const tokenResult = await authUser.getIdTokenResult(true);
+            const tokenResult = await getCanonicalTokenResult(authUser, { forceRefresh: false });
             const claims = tokenResult && tokenResult.claims ? tokenResult.claims : {};
             const isAdmin = claims.superadmin === true;
             if (!isAdmin && window.firebaseService && typeof window.firebaseService.syncMyAdminClaims === 'function') {
                 await window.firebaseService.syncMyAdminClaims();
-                const refreshedToken = await authUser.getIdTokenResult(true);
+                const refreshedToken = await getCanonicalTokenResult(authUser, {
+                    forceRefresh: true,
+                    reason: 'admin_claim_sync'
+                });
                 const refreshedClaims = refreshedToken && refreshedToken.claims ? refreshedToken.claims : {};
                 const refreshedAdmin = refreshedClaims.superadmin === true;
                 persistSuperAdminFlag(refreshedAdmin);
@@ -832,6 +886,8 @@ function resolveSubscriptionStatus(userDetails) {
     };
     const user = userDetails || {};
     const normalized = String(user.subscriptionStatus || user.status || '').trim().toLowerCase();
+    const subscription = user.subscription && typeof user.subscription === 'object' ? user.subscription : {};
+    const subscriptionEndDate = parseAnyDateSafe(subscription.endDate);
     const hasStrongSignal = () => {
         if (normalized) return true;
         if (user.subscription && typeof user.subscription === 'object') return true;
@@ -842,12 +898,11 @@ function resolveSubscriptionStatus(userDetails) {
         return false;
     };
     if (user.accountStatus === 'blocked' || user.blocked === true || normalized === 'blocked' || normalized === 'bloqueado') return 'blocked';
-    if (normalized === 'active' || normalized === 'ativo') return 'active';
     if (normalized === 'trial' || normalized === 'trial_active' || normalized === 'teste_ativo') return resolveTrialStatus(user);
-    if (user.subscription && user.subscription.active) {
-        const endDate = parseAnyDateSafe(user.subscription.endDate);
-        if (!endDate) return 'active';
-        if (endDate.getTime() > Date.now()) return 'active';
+    const activeMarker = normalized === 'active' || normalized === 'ativo' || subscription.active === true;
+    if (activeMarker) {
+        if (!subscriptionEndDate) return 'active';
+        return subscriptionEndDate.getTime() > Date.now() ? 'active' : 'expired';
     }
     if (normalized === 'pending' || normalized === 'pendente' || normalized === 'pending_payment') {
         const graceUntil = parseAnyDateSafe(user && user.pendingPayment ? user.pendingPayment.graceUntil : null);
@@ -866,9 +921,6 @@ function resolveSubscriptionStatus(userDetails) {
         return age <= graceDays ? 'pending_grace' : 'blocked';
     }
     if (normalized === 'expired' || normalized === 'expirado') return 'expired';
-    if (user.subscription && user.subscription.active) {
-        return 'expired';
-    }
     if (user.trialStart) return resolveTrialStatus(user);
     if (!hasStrongSignal()) return 'unknown';
     return 'expired';
@@ -1098,7 +1150,23 @@ async function enforceSubscriptionGuard(userDetails, currentPathname) {
 // Variável para rastrear estado de loop
 window._AUTH_LOOP_DETECTED = false;
 
-function authAuditLog() {}
+function getAuthPerformanceDiagnostics() {
+    try { return window.__SISWEB_AUTH_PERF__ || null; } catch (_) { return null; }
+}
+
+function authPerfTokenRefresh(reason, outcome = 'started', durationMs = 0) {
+    try { getAuthPerformanceDiagnostics()?.tokenRefresh(reason, 'auth_guard', outcome, durationMs); } catch (_) {}
+}
+
+function authAuditLog(source) {
+    try {
+        const diagnostics = getAuthPerformanceDiagnostics();
+        if (!diagnostics) return;
+        const state = source === 'firebase' ? 'authenticated' : 'cached';
+        diagnostics.auth(state, 'auth_guard', 0);
+        diagnostics.phase('route_guard', 'auth_guard', 'observed', 0);
+    } catch (_) {}
+}
 
 function renderPendingGraceBanner(statusKey, userDetails) {
     try {
@@ -1274,30 +1342,34 @@ function checkAuth() {
             
             console.log("🔍 Verificando autenticação no Firebase...");
             await waitForAuthInfrastructureReady();
-            
-            let user = await getAuthService().getCurrentUser();
-            if (!user && window._FIREBASE_CONNECTED === true) {
-                for (let i = 0; i < 3; i++) {
-                    await new Promise(function(resolveRetry) { setTimeout(resolveRetry, 250); });
-                    user = await getAuthService().getCurrentUser();
-                    if (user) break;
-                }
-            }
+            const canonicalContext = await getCanonicalSessionContext({ timeoutMs: 5000 });
+            let user = canonicalContext && canonicalContext.user
+                ? canonicalContext.user
+                : await getAuthService().getCurrentUser();
             
             if (user) {
                 // Usuário está logado no Firebase
-                console.log("✅ Usuário autenticado no Firebase:", user.email);
+                console.log("✅ Usuário autenticado no Firebase");
                 authAuditLog('firebase', { uid: user.uid, email: user.email || '' });
                 // Atualizar estado na sessão
                 persistAuthenticatedSession({ uid: user.uid, email: user.email, displayName: user.displayName }, { source: 'firebase' });
                 // Limpar contador de redirecionamentos
                 sessionStorage.setItem('redirectCount', '0');
                 
-                // Forçar a atualização do token para obter os custom claims mais recentes
-                const idTokenResult = await user.getIdTokenResult(true);
-                const companyId = idTokenResult.claims.companyId;
+                const idTokenResult = await getCanonicalTokenResult(user, { forceRefresh: false });
+                if (!isSameActiveAuthUser(user)) {
+                    resolve(false);
+                    return;
+                }
+                const claims = idTokenResult && idTokenResult.claims ? idTokenResult.claims : {};
+                const companyId = (canonicalContext && canonicalContext.companyId)
+                    || claims.companyId
+                    || claims.companyID
+                    || claims.tenantId
+                    || null;
                 const isSuperAdmin = !!(
-                    (idTokenResult && idTokenResult.claims && idTokenResult.claims.superadmin === true)
+                    (canonicalContext && canonicalContext.superAdmin === true)
+                    || claims.superadmin === true
                     || isSuperAdminUid(user.uid)
                 );
                 persistSuperAdminFlag(isSuperAdmin);
@@ -1307,14 +1379,22 @@ function checkAuth() {
                     effectiveCompanyId = await tryRestoreCompanyClaim(user, companyId);
                 }
                 const remoteProfile = await loadUserProfileFromFirebase(user.uid);
+                if (!isSameActiveAuthUser(user)) {
+                    resolve(false);
+                    return;
+                }
                 if (!effectiveCompanyId && remoteProfile) {
                     effectiveCompanyId = String((remoteProfile.companyId || remoteProfile.companyID || remoteProfile.tenantId) || '').trim();
                 }
                 if (isSuperAdmin) {
-                    await setCompanyContext(null);
+                    await setCompanyContext(null, { ownerUid: user.uid, authoritative: true });
                 }
-                if (!isSuperAdmin && effectiveCompanyId) await setCompanyContext(effectiveCompanyId);
-                if (!isSuperAdmin && !effectiveCompanyId) await setCompanyContext(null);
+                if (!isSuperAdmin && effectiveCompanyId) {
+                    await setCompanyContext(effectiveCompanyId, { ownerUid: user.uid, authoritative: true });
+                }
+                if (!isSuperAdmin && !effectiveCompanyId) {
+                    await setCompanyContext(null, { ownerUid: user.uid, authoritative: true });
+                }
                 let guardUserDetails = { uid: user.uid, email: user.email, displayName: user.displayName };
                 try {
                     const users = parseUsersCacheSafe();
@@ -1358,40 +1438,6 @@ function checkAuth() {
                 return;
             }
             
-            // Verificar estado global da conexão
-            if (window._FIREBASE_CONNECTED === false) {
-                const reconnected = await waitForFirebaseReconnect(2800, 200);
-                if (reconnected) {
-                    const retriedUser = await getAuthService().getCurrentUser();
-                    if (retriedUser) {
-                        authAuditLog('firebase', { uid: retriedUser.uid, email: retriedUser.email || '', retry: true });
-                        resolve(true);
-                        return;
-                    }
-                }
-                console.log("⚠️ Firebase está offline, permitindo acesso temporário");
-                // Se Firebase estiver offline e a sessão atual ainda estiver ativa, permitir acesso temporário
-                const hasSessionFlag = sessionStorage.getItem('userAuthenticated') === 'true';
-                const cachedCurrentUser = parseCurrentUserSafe();
-                if (hasSessionFlag && cachedCurrentUser) {
-                    authAuditLog('currentUser');
-                    console.log("👤 Usando autenticação em cache");
-                    const guard = await enforceSubscriptionGuard(cachedCurrentUser, window.location.pathname);
-                    if (!guard.allowed && guard.redirect) {
-                        if (guard.statusKey === 'expired' || guard.statusKey === 'blocked') {
-                            clearRestrictedSessionCache();
-                        }
-                        window.location.href = guard.redirect;
-                        resolve(false);
-                        return;
-                    }
-                    // Atualizar estado na sessão
-                    persistAuthenticatedSession(cachedCurrentUser, { source: 'offline_session' });
-                    resolve(true);
-                    return;
-                }
-            }
-            
             // Verificar se estamos no fluxo de redirecionamento
             const currentPath = window.location.pathname.toLowerCase();
             const urlParams = new URLSearchParams(window.location.search);
@@ -1415,9 +1461,7 @@ function checkAuth() {
         } catch (error) {
             console.error("❌ Erro ao verificar autenticação:", error);
             
-            // Tenta fallback para o sistema antigo se o Firebase falhar
-            const currentUser = parseCurrentUserSafe();
-            const hasSessionFlag = sessionStorage.getItem('userAuthenticated') === 'true';
+            // O cache só oferece UX degradada offline quando pertence ao mesmo usuário.
             const cachedAuth = await tryAllowCachedAuthSession('catch_cached_session');
             if (cachedAuth.redirected) {
                 resolve(false);
@@ -1427,22 +1471,6 @@ function checkAuth() {
                 resolve(true);
                 return;
             }
-            if (hasSessionFlag && currentUser) {
-                authAuditLog('currentUser', { fallback: 'catch' });
-                console.log("👤 Fallback: usando autenticação em cache");
-                const guard = await enforceSubscriptionGuard(currentUser, window.location.pathname);
-                if (!guard.allowed && guard.redirect) {
-                    if (guard.statusKey === 'expired' || guard.statusKey === 'blocked') {
-                        clearRestrictedSessionCache();
-                    }
-                    window.location.href = guard.redirect;
-                    resolve(false);
-                    return;
-                }
-                resolve(true);
-                return;
-            }
-            
             // Se não tiver usuário no localStorage e não estiver na página de login
             if (!window.location.pathname.toLowerCase().includes('login.html')) {
                 console.log("👤 Nenhuma autenticação encontrada, redirecionando");
@@ -1475,7 +1503,7 @@ async function login(email, password) {
     try {
         const normalizedEmail = String(email || '').trim().toLowerCase();
         const rawPassword = typeof password === 'string' ? password : String(password || '');
-        console.log("🔐 Iniciando processo de login para:", normalizedEmail);
+        console.log("🔐 Iniciando processo de login");
         
         // Validar entrada
         if (!normalizedEmail || !rawPassword) {
@@ -1491,14 +1519,24 @@ async function login(email, password) {
         const result = await authService.login(normalizedEmail, rawPassword);
         
         if (result.success) {
-            console.log("✅ Login bem-sucedido para:", normalizedEmail);
+            console.log("✅ Login bem-sucedido");
             const user = result.user;
 
-            // Forçar a atualização do token para obter os custom claims mais recentes
-            const idTokenResult = await user.getIdTokenResult(true);
-            const companyId = idTokenResult.claims.companyId;
+            const sessionContext = result.sessionContext
+                || await getCanonicalSessionContext({ timeoutMs: 5000 });
+            const idTokenResult = await getCanonicalTokenResult(user, { forceRefresh: false });
+            if (!isSameActiveAuthUser(user)) {
+                return { success: false, error: 'A sessão mudou durante o login. Tente novamente.' };
+            }
+            const claims = idTokenResult && idTokenResult.claims ? idTokenResult.claims : {};
+            const companyId = (sessionContext && sessionContext.companyId)
+                || claims.companyId
+                || claims.companyID
+                || claims.tenantId
+                || null;
             const isSuperAdmin = !!(
-                (idTokenResult && idTokenResult.claims && idTokenResult.claims.superadmin === true)
+                (sessionContext && sessionContext.superAdmin === true)
+                || claims.superadmin === true
                 || isSuperAdminUid(user.uid)
             );
             persistSuperAdminFlag(isSuperAdmin);
@@ -1508,14 +1546,21 @@ async function login(email, password) {
                 effectiveCompanyId = await tryRestoreCompanyClaim(user, companyId);
             }
             const remoteProfile = await loadUserProfileFromFirebase(user.uid);
+            if (!isSameActiveAuthUser(user)) {
+                return { success: false, error: 'A sessão mudou durante o login. Tente novamente.' };
+            }
             if (!effectiveCompanyId && remoteProfile) {
                 effectiveCompanyId = String((remoteProfile.companyId || remoteProfile.companyID || remoteProfile.tenantId) || '').trim();
             }
             if (isSuperAdmin) {
-                await setCompanyContext(null);
+                await setCompanyContext(null, { ownerUid: user.uid, authoritative: true });
             }
-            if (!isSuperAdmin && effectiveCompanyId) await setCompanyContext(effectiveCompanyId);
-            if (!isSuperAdmin && !effectiveCompanyId) await setCompanyContext(null);
+            if (!isSuperAdmin && effectiveCompanyId) {
+                await setCompanyContext(effectiveCompanyId, { ownerUid: user.uid, authoritative: true });
+            }
+            if (!isSuperAdmin && !effectiveCompanyId) {
+                await setCompanyContext(null, { ownerUid: user.uid, authoritative: true });
+            }
 
             let subscriptionStatus = 'expired';
             try {
@@ -1554,28 +1599,28 @@ async function login(email, password) {
                 result.error.includes("API Key") ||
                 result.error.includes("API key")
             )) {
-                console.error("🔑 Erro de API Key detectado durante login:", result.error);
+                console.error("🔑 Falha de configuração detectada durante login");
                 return { 
                     success: false, 
                     error: "Erro de configuração do Firebase. Por favor, tente novamente mais tarde ou contate o suporte."
                 };
             }
             
-            console.log("❌ Falha no login:", result.error);
+            console.log("❌ Falha no login");
             return { 
                 success: false, 
                 error: result.error || "Usuário ou senha inválidos" 
             };
         }
     } catch (error) {
-        console.error("❌ Erro no processo de login:", error);
+        console.error("❌ Erro no processo de login:", error && error.code ? error.code : 'unknown');
         
         // Verificar se é um erro de API Key para tratamento especial
         if (error.code === 'auth/api-key-not-valid' || 
             error.message?.includes("api-key") || 
             error.message?.includes("API Key")) {
             
-            console.error("🔑 Erro crítico de API Key:", error);
+            console.error("🔑 Falha crítica de configuração do Firebase");
             return { 
                 success: false, 
                 error: "Erro de configuração do sistema. Por favor, contate o administrador."
@@ -1598,7 +1643,7 @@ async function login(email, password) {
  */
 async function register(email, password, companyId) {
     try {
-        console.log("📝 Iniciando processo de registro para:", email, "com empresa:", companyId);
+        console.log("📝 Iniciando processo de registro");
 
         // Validar entrada
         if (!email || !password || !companyId) {
@@ -1614,20 +1659,20 @@ async function register(email, password, companyId) {
         const result = await authService.registerUser(email, password, companyId);
 
         if (result.success) {
-            console.log("✅ Registro bem-sucedido para:", email);
+            console.log("✅ Registro bem-sucedido");
             return {
                 success: true,
                 user: result.user
             };
         } else {
-            console.log("❌ Falha no registro:", result.error);
+            console.log("❌ Falha no registro");
             return {
                 success: false,
                 error: result.error || "Erro desconhecido ao registrar usuário"
             };
         }
     } catch (error) {
-        console.error("❌ Erro no processo de registro:", error);
+        console.error("❌ Erro no processo de registro:", error && error.code ? error.code : 'unknown');
         return {
             success: false,
             error: error.message || "Erro desconhecido ao registrar usuário"
@@ -1639,7 +1684,10 @@ async function register(email, password, companyId) {
 async function logout() {
     try {
         console.log("🚪 auth.js: Realizando logout");
-        await getAuthService().logout();
+        const result = await getAuthService().logout();
+        if (!result || result.success !== true) {
+            throw new Error(result && result.error ? result.error : 'Logout remoto não confirmado.');
+        }
         try {
             localStorage.removeItem('currentUser');
             localStorage.removeItem('persistentUser');
@@ -1654,18 +1702,15 @@ async function logout() {
         // Redirecionar para página de login preservando alvo
         const target = encodeURIComponent('index.html');
         window.location.replace(`login.html?noRedirect=true&logout=1&redirect=${target}`);
+        return { success: true };
     } catch (error) {
-        console.error("❌ auth.js: Erro ao fazer logout:", error);
-        
-        // Fallback para o sistema antigo
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('persistentUser');
-        clearDurableAuthSession();
-        clearCompanyContextCache();
-        try { window.__SESSION_SUPERADMIN = false; } catch (_) {}
-        try { window.__SESSION_SUPERADMIN_UID = ''; } catch (_) {}
-        const target = encodeURIComponent('index.html');
-        window.location.replace(`login.html?noRedirect=true&logout=1&redirect=${target}`);
+        console.error("❌ auth.js: Erro ao fazer logout:", error && error.code ? error.code : 'unknown');
+        try {
+            if (typeof window.__toast === 'function') {
+                window.__toast('Não foi possível confirmar o logout. A sessão foi mantida; tente novamente.', 'error', { duration: 5000 });
+            }
+        } catch (_) {}
+        return { success: false, error: error && error.message ? error.message : String(error) };
     }
 }
 
@@ -1685,29 +1730,7 @@ function getLoggedUsername() {
 // Função para obter informações detalhadas do usuário atual
 async function getCurrentUserDetails() {
     try {
-        // Verificar estado global da conexão primeiro
-        if (window._FIREBASE_CONNECTED === false) {
-            console.log("⚠️ Firebase está offline, usando dados locais para getCurrentUserDetails");
-            const currentUser = parseCurrentUserSafe();
-            const persistentUser = parsePersistentUserSafe();
-            const baseUser = currentUser || persistentUser;
-            if (!baseUser) return null;
-            authAuditLog(currentUser ? 'currentUser' : 'persistentUser', { method: 'getCurrentUserDetails_offline' });
-            
-            const users = parseUsersCacheSafe();
-            const baseUid = baseUser.uid || baseUser.id || baseUser.userId;
-            const userDetails = users.find((u) => {
-                const userUid = u && (u.uid || u.id || u.userId);
-                if (baseUid && userUid && String(userUid) === String(baseUid)) return true;
-                return !!(u && baseUser.email && u.email === baseUser.email);
-            }) || {};
-            return {
-                ...userDetails,
-                ...baseUser
-            };
-        }
-        
-        // Se Firebase estiver online, tentar obter do Firebase Auth
+        // Firebase Auth permanece a fonte de identidade, independentemente do estado do RTDB.
         const user = await getAuthService().getCurrentUser();
         
         if (user) {
@@ -1873,7 +1896,10 @@ async function legacyActivateSubscription(username, months) {
 function setupAuthListener() {
     try {
         // Usar a função onAuthStateChanged do authService
-        return getAuthService().onAuthStateChanged((user) => {
+        const diagnostics = getAuthPerformanceDiagnostics();
+        try { diagnostics?.listener('auth', 'add', 'auth_guard', 0); } catch (_) {}
+        const unsubscribe = getAuthService().onAuthStateChanged((user) => {
+            try { diagnostics?.auth(user ? 'authenticated' : 'unauthenticated', 'auth_guard', 0); } catch (_) {}
             if (!user) {
                 // Verificar se há autenticação legada
                 const legacyAuth = getData('auth');
@@ -1890,8 +1916,12 @@ function setupAuthListener() {
                 }
             }
         });
+        return () => {
+            try { diagnostics?.listener('auth', 'remove', 'auth_guard', 0); } catch (_) {}
+            return typeof unsubscribe === 'function' ? unsubscribe() : undefined;
+        };
     } catch (error) {
-        console.error("Erro ao configurar listener de autenticação:", error);
+        console.error("Erro ao configurar listener de autenticação:", error && error.code ? error.code : 'unknown');
         // Fallback: não faz nada
         return null;
     }

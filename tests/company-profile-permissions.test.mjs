@@ -16,7 +16,8 @@ test('company.html usa Function para salvar perfil de empresa sem writes diretos
   const page = read('company.html');
   const srcService = read('src/services/firebaseService.js');
 
-  assert.match(page, /2026-06-11-company-profile-permissions-v3/);
+  assert.match(page, /src\/services\/firebaseService\.js\?v=[^"'\s]+/);
+  assert.match(page, /auth\.js\?v=[^"'\s]+/);
   assert.match(page, /id="companyContextName"/);
   assert.match(page, /id="companyContextId"/);
   assert.match(page, /id="companySecurityNotice"/);
@@ -61,6 +62,11 @@ test('sincronizacao global nao tenta ler systemConfig legado sem necessidade', (
 
   assert.match(syncAllBlock, /'companies'/);
   assert.doesNotMatch(syncAllBlock, /'systemConfig'/);
+  assert.doesNotMatch(syncAllBlock, /'financas\/pagar'/);
+  assert.doesNotMatch(syncAllBlock, /'financas\/receber'/);
+  assert.match(databaseUtils, /const SERVER_AUTHORITATIVE_SYNC_KEYS = new Set\(\[[\s\S]*'financas\/pagar',[\s\S]*'financas\/receber'/);
+  assert.match(databaseUtils, /if \(firebaseLoadFailed\) return false;/);
+  assert.match(databaseUtils, /if \(!saveResult \|\| saveResult\.success !== true\) return false;/);
 });
 
 test('company.html normaliza empresas legadas e renderiza cards responsivos sem acoes perigosas', () => {
@@ -92,7 +98,7 @@ test('company.html imprime perfil da empresa com georeferenciamento e QR de nave
   const page = read('company.html');
   const firebaseJson = read('firebase.json');
 
-  assert.match(page, /commerce-pdf-share\.js\?v=2026-06-23-logo-print-dataurl-v1/);
+  assert.match(page, /commerce-pdf-share\.js\?v=[^"'\s]+/);
   assert.match(page, /qrcodejs\/1\.0\.0\/qrcode\.min\.js/);
   assert.match(page, /id="geoLatitude"/);
   assert.match(page, /id="geoLongitude"/);
@@ -146,7 +152,7 @@ test('company.html preserva edicao apos falha e nao envia logo para tenant Date.
   assert.match(saveBlock, /effectiveCompany = savedProfile;[\s\S]*editingId = null;/);
 });
 
-test('updateMyCompanyProfile permite conta primaria legada por email sem depender da assinatura', () => {
+test('updateMyCompanyProfile permite somente conta primaria marcada por ownerUid', () => {
   const source = read('functions/index.js');
   const accessBlock = blockBetween(
     source,
@@ -154,9 +160,29 @@ test('updateMyCompanyProfile permite conta primaria legada por email sem depende
     'function buildMirrorUserPatch'
   );
 
-  assert.match(source, /function isPrimaryCompanyAccountForProfile\(uid, tenant, userData, token, companyData\)/);
-  assert.match(source, /authEmail === companyEmail/);
-  assert.match(accessBlock, /const primaryCompanyAccount = isPrimaryCompanyAccountForProfile\(uid, tenant, userData, token, companyData\)/);
+  assert.match(source, /function isPrimaryCompanyAccountForProfile\(uid, tenant, userData, companyData\)/);
+  assert.match(source, /return !!ownerUid && ownerUid === uid/);
+  assert.doesNotMatch(source, /authEmail === companyEmail/);
+  assert.doesNotMatch(source, /profile\.ownerUid/);
+  assert.doesNotMatch(accessBlock, /profileData\.createdBy/);
+  assert.match(accessBlock, /const primaryCompanyAccount = isPrimaryCompanyAccountForProfile\(uid, tenant, userData, companyData\)/);
   assert.match(accessBlock, /\|\| primaryCompanyAccount/);
   assert.doesNotMatch(accessBlock, /subscriptionStatus\s*={0,3}\s*'active'/);
+});
+
+test('updateMyCompanyProfile repara membership legado somente depois de autorizar o tenant', () => {
+  const source = read('functions/index.js');
+  const updateBlock = blockBetween(
+    source,
+    'exports.updateMyCompanyProfile',
+    'function normalizeSelfProfilePayload'
+  );
+  const accessIndex = updateBlock.indexOf('await assertCompanyProfileWriteAccess(context, companyId, userData, token)');
+  const repairIndex = updateBlock.indexOf('await applyUserPatchAcrossScopes(uid, {');
+  const profileWriteIndex = updateBlock.indexOf('await profileRef.set(nextProfile)');
+
+  assert.ok(accessIndex >= 0, 'autorizacao do tenant deve existir');
+  assert.ok(repairIndex > accessIndex, 'reparo deve ocorrer somente depois da autorizacao');
+  assert.ok(profileWriteIndex > repairIndex, 'perfil deve ser salvo depois do reparo de membership');
+  assert.match(updateBlock, /companyId,\s*email: sanitizeText\(token\.email \|\| userData\.email \|\| '', ''\)/);
 });

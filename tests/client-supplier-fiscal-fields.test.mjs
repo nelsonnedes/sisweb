@@ -47,7 +47,7 @@ function assertHasIds(source, ids, label) {
 function assertOptionalLocation(source, label) {
   assert.doesNotMatch(
     source,
-    /id="(?:clientState|clientCity|fornecedorState|fornecedorCity|state|city|vendasClienteState|vendasClienteCity|comprasFornecedorState|comprasFornecedorCity)"\s+required/,
+    /id="(?:clientState|clientCity|newClientState|newClientCity|fornecedorState|fornecedorCity|fornEstado|fornCidade|state|city|vendasClienteState|vendasClienteCity|comprasFornecedorState|comprasFornecedorCity)"\s+required/,
     `${label} não deve exigir UF/Cidade para cadastro inicial`
   );
 }
@@ -118,6 +118,7 @@ test('cadastros principais de clientes e fornecedores expõem campos fiscais opc
 
 test('modais operacionais de cliente e fornecedor incluem campos fiscais opcionais', () => {
   const comprasHtml = read('compras.html');
+  const openNewClientModalJs = read('openNewClientModal.js');
   const preromaneioHtml = read('preromaneio.html');
   const romaneioPctHtml = read('romaneiopct.html');
   const romaneioPesHtml = read('romaneiopes.html');
@@ -125,7 +126,46 @@ test('modais operacionais de cliente e fornecedor incluem campos fiscais opciona
   const romaneioToraModais = read('romaneiotora_modais.js');
   const gerenciarClientes = read('modules/crud/gerenciar-clientes.js');
 
-  assertHasIds(comprasHtml, sharedClientFields, 'compras.html clientModal');
+  assertHasIds(openNewClientModalJs, [
+    'newClientCnpj',
+    'newClientTipoPessoa',
+    'newClientIndIEDest',
+    'newClientInscricaoEstadual',
+    'newClientInscricaoMunicipal',
+    'newClientSuframa',
+    'newClientCep',
+    'newClientNumber',
+    'newClientNeighborhood',
+    'newClientComplement',
+    'newClientMunicipalityCode',
+    'newClientCountryCode',
+    'newClientCountryName',
+    'newClientObs'
+  ], 'openNewClientModal.js');
+  assert.match(openNewClientModalJs, /function openClientFormModal\(options = \{\}\)/);
+  assert.match(openNewClientModalJs, /function openEditClientModal\(client, options = \{\}\)/);
+  assert.match(openNewClientModalJs, /window\.openEditClientModal = openEditClientModal/);
+  assert.match(openNewClientModalJs, /typeof window\.popularCidades === 'function'/);
+  assert.ok(openNewClientModalJs.includes("const documentClean = documento.replace(/[^0-9A-Za-z]/g, '').toUpperCase();"));
+  assert.ok(openNewClientModalJs.includes("const isCpf = documentClean.length === 11 && /^\\d{11}$/.test(documentClean);"));
+  assert.ok(openNewClientModalJs.includes("const isCnpj = documentClean.length === 14 && /^[A-Z0-9]{12}\\d{2}$/.test(documentClean);"));
+  assert.doesNotMatch(openNewClientModalJs, /const documentDigits = documento\.replace\(\/\\D\/g, ''\);/);
+  assertHasIds(comprasHtml, [
+    'fornDocumento',
+    'fornTipoPessoa',
+    'fornIndIEDest',
+    'fornInscricaoEstadual',
+    'fornInscricaoMunicipal',
+    'fornSuframa',
+    'fornCep',
+    'fornNumero',
+    'fornBairro',
+    'fornComplemento',
+    'fornCodigoMunicipio',
+    'fornPaisCodigo',
+    'fornPais',
+    'fornObs'
+  ], 'compras.html modalFornecedor');
   assertHasIds(preromaneioHtml, sharedClientFields, 'preromaneio.html clientModal');
   assertHasIds(romaneioPctHtml, sharedClientFields, 'romaneiopct.html clientModal');
   assertHasIds(romaneioPesHtml, sharedClientFields, 'romaneiopes.html clientModal');
@@ -135,9 +175,53 @@ test('modais operacionais de cliente e fornecedor incluem campos fiscais opciona
   assertHasIds(preromaneioHtml, sharedSupplierFields, 'preromaneio.html fornecedorModal');
   assertHasIds(romaneioToraHtml, sharedSupplierFields, 'romaneiotora.html fornecedorModal');
 
-  [comprasHtml, preromaneioHtml, romaneioPctHtml, romaneioPesHtml, romaneioToraHtml, romaneioToraModais].forEach((html, index) => {
-    assertOptionalLocation(html, ['compras.html', 'preromaneio.html', 'romaneiopct.html', 'romaneiopes.html', 'romaneiotora.html', 'romaneiotora_modais.js'][index]);
+  assert.doesNotMatch(comprasHtml, /id="clientModal"/, 'compras.html não deve manter modal legado de cliente para fornecedor');
+
+  [comprasHtml, openNewClientModalJs, preromaneioHtml, romaneioPctHtml, romaneioPesHtml, romaneioToraHtml, romaneioToraModais].forEach((html, index) => {
+    assertOptionalLocation(html, ['compras.html', 'openNewClientModal.js', 'preromaneio.html', 'romaneiopct.html', 'romaneiopes.html', 'romaneiotora.html', 'romaneiotora_modais.js'][index]);
   });
+});
+
+test('modais longos de cliente e fornecedor mantem rodape visivel com corpo rolavel', () => {
+  const clientHtml = read('client.html');
+  const fornecedorHtml = read('fornecedor.html');
+  const comprasHtml = read('compras.html');
+  const openNewClientModalJs = read('openNewClientModal.js');
+
+  assert.match(clientHtml, /#modalForm \.modal-content \{[\s\S]*max-height: calc\(100dvh - 48px\);[\s\S]*overflow: hidden;/);
+  assert.match(clientHtml, /#modalForm #mainForm \{[\s\S]*display: flex;[\s\S]*min-height: 0;/);
+  assert.match(clientHtml, /#modalForm \.modal-body \{[\s\S]*flex: 1 1 auto;[\s\S]*overflow-y: auto;/);
+
+  assert.match(fornecedorHtml, /\.modal-content \{[\s\S]*max-height: calc\(100dvh - 48px\);[\s\S]*overflow: hidden;/);
+  assert.match(fornecedorHtml, /<form id="mainForm">\s*<div class="modal-body">/);
+  assert.match(fornecedorHtml, /\.modal-footer \{[\s\S]*flex: 0 0 auto;[\s\S]*justify-content: flex-end;/);
+
+  assert.match(comprasHtml, /#modalFornecedor \.modal-content \{[\s\S]*max-height: calc\(100dvh - 48px\);[\s\S]*overflow: hidden;/);
+  assert.match(comprasHtml, /<form onsubmit="salvarFornecedorInline\(event\)">\s*<div class="modal-body">/);
+  assert.match(comprasHtml, /<div class="modal-footer action-buttons">/);
+
+  assert.match(openNewClientModalJs, /max-height:calc\(100dvh - 48px\); overflow:hidden;/);
+  assert.match(openNewClientModalJs, /class="modal-body" style="[\s\S]*overflow-y:auto;/);
+  assert.match(openNewClientModalJs, /class="modal-footer" style="[\s\S]*flex:0 0 auto;/);
+});
+
+test('cadastros rápidos de pedido usam caminhos canônicos de clientes e fornecedores', () => {
+  const openNewClientModalJs = read('openNewClientModal.js');
+  const comprasHtml = read('compras.html');
+  const comprasJs = read('compras.js');
+  const fornecedorJs = read('js/fornecedor.js');
+  const comprasFornecedoresCarregarDados = comprasJs.match(/async function comprasFornecedoresCarregarDados\(\) \{[\s\S]*?\n\}/)?.[0] || '';
+  const fornecedorLoadData = fornecedorJs.match(/async function loadData\(\) \{[\s\S]*?finally \{/)?.[0] || '';
+
+  assert.match(openNewClientModalJs, /window\.clientService && typeof window\.clientService\.saveClient === 'function'/);
+  assert.match(openNewClientModalJs, /clientFormModalContext\.mode === 'edit'/);
+  assert.match(openNewClientModalJs, /clientFormModalContext\.onSaved/);
+  assert.doesNotMatch(openNewClientModalJs, /saveFornecedor|saveData\(['"`]fornecedores|saveToFirebase\(['"`]fornecedores/);
+  assert.match(comprasJs, /saveData\('fornecedores', ordered\)/);
+  assert.match(comprasJs, /const saved = await service\.saveFornecedor\(novoFornecedor\)/);
+  assert.doesNotMatch(comprasFornecedoresCarregarDados, /clients/);
+  assert.doesNotMatch(fornecedorLoadData, /clients/);
+  assert.doesNotMatch(comprasHtml, /id="clientModal"[\s\S]*saveClient/);
 });
 
 test('normalizadores preservam aliases fiscais usados pela emissão NF-e', () => {
@@ -159,9 +243,11 @@ test('normalizadores preservam aliases fiscais usados pela emissão NF-e', () =>
 });
 
 test('PWA e abas comerciais usam cachebuster fiscal atual', () => {
-  assert.match(read('vendas.html'), /vendas\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
-  assert.match(read('compras.html'), /compras\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
-  assert.match(read('client.html'), /js\/client\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
-  assert.match(read('fornecedor.html'), /js\/fornecedor\.js\?v=2026-06-23-cadastro-fiscal-nfe-v1/);
-  assert.match(read('sw.js'), /const APP_VERSION = '2026-06-25-storage-replace-v1'/);
+  assert.match(read('vendas.html'), /vendas\.js\?v=[^"'\s]+/);
+  assert.match(read('vendas.html'), /openNewClientModal\.js\?v=[^"'\s]+/);
+  assert.match(read('notas-fiscais.html'), /openNewClientModal\.js\?v=[^"'\s]+/);
+  assert.match(read('compras.html'), /compras\.js\?v=[^"'\s]+/);
+  assert.match(read('client.html'), /js\/client\.js\?v=[^"'\s]+/);
+  assert.match(read('fornecedor.html'), /js\/fornecedor\.js\?v=[^"'\s]+/);
+  assert.match(read('sw.js'), /const APP_VERSION = '2026-07-23-firebase-bootstrap-rollout-v1'/);
 });

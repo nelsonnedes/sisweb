@@ -6,12 +6,14 @@
     <title>Romaneio de Toras</title>
     
     <!-- Scripts do Firebase CDN (PRIMEIRO) -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Firebase via módulo compartilhado (singleton) -->
+
+    <script type="module">
+
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js';
+import './firebase-compat-bridge.js';  // compat shim
+
+    </script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="layout-comum.css">
     <link rel="stylesheet" href="romaneio-comum.css?v=20260607pwaqa">
@@ -1220,12 +1222,12 @@
         }
     </script>
     
-    <script src="estados-cidades.js"></script>
-    <script src="client-modal-handler.js"></script>
-    <script src="menu-component.js?v=2026-06-07-commerce-pwa-menu-v1"></script>
-    <script src="species-utils.js"></script>
-    <script src="species-store.js"></script>
-    <script src="species-modal-standard.js"></script>
+    <script src="estados-cidades.js?v=e634a7c28536"></script>
+    <script src="client-modal-handler.js?v=c18ad593b1f7"></script>
+    <script src="menu-component.js?v=f97c4a2dae9f"></script>
+    <script src="species-utils.js?v=4c5147a6f4fe"></script>
+    <script src="species-store.js?v=67f7145c0a96"></script>
+    <script src="species-modal-standard.js?v=fa1c091a5294"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.enhance === 'function') {
@@ -1235,22 +1237,22 @@
     </script>
     
     <!-- Scripts de Correção -->
-    <script src="correcao-interface-database.js"></script>
-    <script src="correcao-funcoes-ausentes.js"></script>
+    <script src="correcao-interface-database.js?v=018036722c9c"></script>
+    <script src="correcao-funcoes-ausentes.js?v=a69c9b3c404a"></script>
     
     <!-- Firebase e Database Adapter -->
-    <script src="firebaseService.unified.js"></script>
-    <script src="src/services/databaseAdapter.js"></script>
+    <script src="firebaseService.unified.js?v=07d2b773a0fd"></script>
+    <script src="src/services/databaseAdapter.js?v=04db815c6547"></script>
     
     <!-- Scripts principais -->
-    <script src="romaneio-utils.js"></script>
-    <script src="coordenador-inicializacao.js"></script>
-    <script src="romaneiotora.js"></script>
-    <script src="correcao-lista-romaneios.js"></script>
-    <script src="correcao-arrays-validacao.js"></script>
+    <script src="romaneio-utils.js?v=e2c32c9889fa"></script>
+    <script src="coordenador-inicializacao.js?v=0e0ca03c0c0b"></script>
+    <script src="romaneiotora.js?v=adb467117f0a"></script>
+    <script src="correcao-lista-romaneios.js?v=f7b3cd8ad0ca"></script>
+    <script src="correcao-arrays-validacao.js?v=e11d7b791ed7"></script>
     
     <!-- Script de garantias como backup -->
-    <script src="garantia-fluxo-fornecedor.js"></script>
+    <script src="garantia-fluxo-fornecedor.js?v=520c1ca7b927"></script>
     
     <!-- Script de Inicialização Otimizada -->
     <script>

@@ -1,12 +1,12 @@
 // Verificar se a classe já foi definida para evitar redefinição
 // Menu Component v2.3 - Correção navegação submenus - 2025-01-08 15:45
-// Force cache break: 20250108154500
+// Force cache break: 20260701001
 // CORREÇÃO: Força navegação manual dos links dos submenus para evitar preventDefault fantasma
 (function setupSiswebPWA() {
     if (typeof window === 'undefined' || window.__siswebPWAInitialized) return;
     window.__siswebPWAInitialized = true;
 
-    const PWA_VERSION = '2026-06-11-profile-admin-v1';
+    const PWA_VERSION = '2026-07-23-firebase-bootstrap-rollout-v1';
     const state = {
         deferredPrompt: null,
         floatingButton: null,
@@ -303,16 +303,22 @@ if (window.customElements && !window.customElements.get('main-menu')) {
             const authService = window.firebaseService && window.firebaseService.authService ? window.firebaseService.authService : null;
             const signOutFn = authService && typeof authService.signOut === 'function' ? authService.signOut : null;
             const logoutFn = authService && typeof authService.logout === 'function' ? authService.logout : null;
-            if (signOutFn) {
-                await signOutFn();
-            } else if (logoutFn && logoutFn !== window.logout) {
-                await logoutFn();
+            if (logoutFn && logoutFn !== window.logout) {
+                const result = await logoutFn();
+                if (!result || result.success !== true) {
+                    throw new Error(result && result.error ? result.error : 'Logout remoto não confirmado.');
+                }
+            } else if (signOutFn) {
+                const authInstance = authService && typeof authService.getAuth === 'function' ? authService.getAuth() : null;
+                if (!authInstance) throw new Error('Serviço de autenticação indisponível para logout.');
+                await signOutFn(authInstance);
             } else if (typeof window.firebaseSignOut === 'function' && window.firebaseSignOut !== window.logout) {
-                await window.firebaseSignOut();
+                const result = await window.firebaseSignOut();
+                if (result && result.success === false) throw new Error(result.error || 'Logout remoto não confirmado.');
+            } else {
+                throw new Error('Serviço de logout indisponível.');
             }
-        } catch (err) {
-            console.error('Erro no logout:', err);
-        } finally {
+
             try {
                 localStorage.removeItem('currentUser');
                 localStorage.removeItem('persistentUser');
@@ -335,6 +341,15 @@ if (window.customElements && !window.customElements.get('main-menu')) {
             if (!isLoginPage) {
                 window.location.replace(`${loginUrl}?logout=1&reason=${encodeURIComponent(reason || 'logout_menu')}&redirect=${encodeURIComponent(currentPath)}`);
             }
+        } catch (err) {
+            console.error('Erro no logout:', err && err.code ? err.code : 'logout-not-confirmed');
+            try {
+                if (window.__toast) window.__toast('Não foi possível confirmar o logout. A sessão foi mantida.', 'warning');
+                else if (window.FolhaUtils && window.FolhaUtils.showToast) {
+                    window.FolhaUtils.showToast('Não foi possível confirmar o logout. A sessão foi mantida.', 'warning', 5000);
+                }
+            } catch (_) {}
+        } finally {
             window.__logoutInProgress = false;
         }
     }
@@ -655,6 +670,31 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                         margin-bottom: 0;
                         padding: 0;
                     }
+                    .sisweb-menu-shell .menu-item {
+                        color: #ffffff;
+                        text-decoration: none;
+                        font-weight: 700;
+                        padding: 10px 15px;
+                        white-space: nowrap;
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 6px;
+                        min-height: 40px;
+                        border-radius: 6px;
+                        box-sizing: border-box;
+                        line-height: 1.2;
+                    }
+                    .sisweb-menu-shell .menu-item:hover,
+                    .sisweb-menu-shell .menu-item:focus-visible {
+                        background: rgba(255,255,255,0.08);
+                        color: #ffffff;
+                        text-decoration: none;
+                        outline: none;
+                    }
+                    .sisweb-menu-shell .menu-item i {
+                        margin-right: 5px;
+                        flex: 0 0 auto;
+                    }
                     .menu-quick-actions {
                         display: flex;
                         align-items: center;
@@ -682,17 +722,22 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                         display: inline-block;
                     }
                     
-                    .dropdown-content {
+                    .sisweb-menu-shell .dropdown-content {
                         display: none;
                         position: absolute;
                         top: 100%;
                         left: 0;
                         background-color: #f9f9f9;
-                        min-width: 180px;
+                        min-width: 200px;
+                        width: max-content;
+                        max-width: 300px;
                         box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-                        z-index: 999;
+                        z-index: 5000;
                         border-radius: 4px;
                         margin-top: 5px;
+                    }
+                    .sisweb-menu-shell .dropdown-content.show-dropdown {
+                        display: block !important;
                     }
 
                     .alerts-dropdown { position: relative; }
@@ -707,15 +752,13 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                         background: rgba(255,255,255,0.08);
                         outline: none;
                     }
-                    .mobile-menu-link,
-                    .mobile-logout-link {
-                        display: none;
-                    }
-                    .alerts-panel {
+                    .sisweb-menu-shell .alerts-panel {
                         right: 0;
                         left: auto;
                         width: min(420px, calc(100vw - 24px));
                         max-width: 420px;
+                        max-height: min(480px, calc(100vh - 80px));
+                        overflow: hidden;
                     }
                     .alerts-list {
                         max-height: 280px;
@@ -777,16 +820,22 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                         font-size: 12px;
                     }
                     
-                    .dropdown-content a {
+                    .sisweb-menu-shell .dropdown-content a {
                         color: #2c3e50;
                         padding: 12px 16px;
                         text-decoration: none;
                         display: block;
                         font-weight: normal;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
                     }
                     
-                    .dropdown-content a:hover {
+                    .sisweb-menu-shell .dropdown-content a:hover,
+                    .sisweb-menu-shell .dropdown-content a:focus-visible {
                         background-color: #f1f1f1;
+                        text-decoration: none;
+                        outline: none;
                     }
                     
                     .show-dropdown {
@@ -1030,6 +1079,10 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             box-shadow: 0 16px 32px rgba(15, 23, 42, 0.22);
                             border: 1px solid #e5e7eb;
                         }
+                        .menu-quick-actions .alerts-dropdown .alerts-panel {
+                            max-height: min(400px, calc(100vh - 100px));
+                            overflow: hidden;
+                        }
                         .menu-quick-actions .dropdown-content a {
                             color: #2c3e50;
                         }
@@ -1041,20 +1094,6 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             border-radius: 10px;
                             background: #2c3e50;
                             box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
-                        }
-                        .mobile-menu-link,
-                        .mobile-logout-link {
-                            display: flex;
-                            align-items: center;
-                            gap: 8px;
-                            color: #fff !important;
-                        }
-                        .mobile-menu-link.mobile-support-link {
-                            background: rgba(255,255,255,0.08);
-                            border-left: 3px solid rgba(255,255,255,0.35);
-                        }
-                        .mobile-logout-link {
-                            margin-top: 10px;
                         }
                     }
                 </style>
@@ -1116,10 +1155,6 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                         </div>
                     </div>
                     ` : ''}
-                    <a href="${this.resolveUrl('ajuda.html')}" class="menu-item mobile-menu-link"><i class="fas fa-book-open"></i> Ajuda</a>
-                    ${!adminContext.isSuperAdmin ? `<a href="#" class="menu-item mobile-menu-link mobile-support-link support-link"><i class="fas fa-headset"></i> Suporte</a>` : ''}
-                    ${showBusinessModules ? `<a href="${this.resolveUrl('subscription-status.html')}" class="menu-item mobile-menu-link"><i class="fas fa-star"></i> Assinatura</a>` : ''}
-                    <a href="#" class="menu-item mobile-logout-link logout-link"><i class="fas fa-sign-out-alt"></i> Sair</a>
                     </div>
                     <div class="menu-quick-actions" aria-label="Ações rápidas">
                         <div class="alerts-dropdown">
@@ -2119,8 +2154,7 @@ if (window.customElements && !window.customElements.get('main-menu')) {
             const remotePaths = [
                 'system/operationalAlerts/firebaseBilling',
                 'system/deployHealth/firebase',
-                'system/googleCloudBilling/summary',
-                'system/googleCloudBilling/budgetNotifications'
+                'system/googleCloudBilling/summary'
             ];
             for (const path of remotePaths) {
                 try {
@@ -2929,18 +2963,19 @@ async function __siswebResolveFirebaseService(requiredFunction) {
 
     try {
         const version = window.SiswebPWA && window.SiswebPWA.version ? String(window.SiswebPWA.version) : String(Date.now());
-        const moduleUrl = `${__siswebResolveRootScriptPath('firebaseService.js')}?v=${encodeURIComponent(version)}`;
+        const moduleUrl = `${__siswebResolveRootScriptPath('support-callable-service.js')}?v=${encodeURIComponent(version)}`;
         const imported = await import(moduleUrl);
-        const merged = { ...(window.firebaseService || {}), ...imported };
-        if (imported && imported.authService) {
-            merged.authService = imported.authService;
-        }
-        window.firebaseService = merged;
-        if (!required || typeof merged[required] === 'function') {
-            return merged;
+        const adapter = imported && typeof imported.getSupportCallableService === 'function'
+            ? imported.getSupportCallableService()
+            : (imported && imported.default ? imported.default : {});
+        const target = window.firebaseService || {};
+        Object.assign(target, adapter);
+        window.firebaseService = target;
+        if (!required || typeof target[required] === 'function') {
+            return target;
         }
     } catch (error) {
-        console.warn('[Suporte Sisweb] Falha ao carregar firebaseService atualizado:', error);
+        console.warn('[Suporte Sisweb] Falha ao carregar adaptador de Functions:', error);
     }
 
     return null;
