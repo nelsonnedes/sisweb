@@ -95,7 +95,7 @@ test('vendas estorna financeiro ao voltar pedido para pendente ou cancelado', as
 
 test('vendas versiona script para derrubar cache da correcao financeira', () => {
   const html = read('vendas.html');
-  assert.match(html, /vendas\.js\?v=2026-07-17-finance-canonical-v2/);
+  assert.match(html, /vendas\.js\?v=[^"'\s]+/);
 });
 
 test('vendas evita falso sucesso se estorno financeiro nao for atomico', () => {

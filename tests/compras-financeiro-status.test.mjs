@@ -90,7 +90,7 @@ test('compras versiona script e evita falso sucesso quando financeiro nao sincro
   const html = read('compras.html');
   const js = read('compras.js');
 
-  assert.match(html, /compras\.js\?v=2026-07-17-finance-canonical-v2/);
+  assert.match(html, /compras\.js\?v=[^"'\s]+/);
   assert.match(js, /montarUpdatesRemocaoContasPagarCompra\(vinculadas\)/);
   assert.match(js, /Não foi possível sincronizar o financeiro do pedido de compra\. Nenhuma alteração foi concluída\./);
   assert.match(js, /Não foi possível remover o financeiro vinculado ao pedido de compra\. Nenhuma alteração foi concluída\./);

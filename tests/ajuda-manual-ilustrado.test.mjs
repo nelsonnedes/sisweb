@@ -107,7 +107,7 @@ test('ajuda publica sem sessao esconde menu e oferece registro', () => {
   assert.match(ajudaHtml, /subscription\.html\?cupom=BLACKFRIDAI20&utm_source=copy&utm_medium=share&utm_campaign=madeireiro/);
   assert.match(ajudaHtml, /body\.manual-public main-menu/);
   assert.match(ajudaHtml, /manual-private/);
-  assert.match(ajudaHtml, /import \{ authService \} from '\.\/firebaseService\.js\?v=2026-06-10-subscription-status-ux-v1'/);
+  assert.match(ajudaHtml, /import \{ authService \} from '\.\/firebaseService\.js\?v=[^"'\s]+'/);
   assert.match(ajudaHtml, /function applyManualAccessMode\(\)/);
   assert.match(ajudaHtml, /authService\.getCurrentUser\(\)/);
   assert.doesNotMatch(ajudaHtml, /auth\.js\?v=/);

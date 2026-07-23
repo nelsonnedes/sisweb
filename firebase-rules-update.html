@@ -67,24 +67,14 @@
     
     <script type="module">
         // Importar o Firebase
-        import { 
-            initializeApp,
-            getApps
-        } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { 
-            getDatabase 
-        } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-        import { 
-            getAuth, 
-            signInWithEmailAndPassword 
-        } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { app, getAuth, getDatabase, getApps, signInWithEmailAndPassword } from './firebase-init.js?v=21eb04e409d8';
         
         // Import shared Firebase service
         import { 
             saveToFirebase, 
             getFromFirebase,
             isFirebaseOperational 
-        } from './firebaseService.js';
+        } from './firebaseService.js?v=676ba9f2a922';
 
         // Variáveis globais
         let app;

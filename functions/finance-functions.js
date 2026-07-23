@@ -62,6 +62,7 @@ const EDITABLE_ACCOUNT_FIELDS = new Set([
     'descricao',
     'valor',
     'valorOriginal',
+    'dataEmissao',
     'dataVencimento',
     'vencimento',
     'categoria',
@@ -75,6 +76,7 @@ const EDITABLE_ACCOUNT_FIELDS = new Set([
     'totalParcelas',
     'valorTotal',
     'anexos',
+    'pedidoNumero',
 ]);
 const CREATABLE_MANUAL_ACCOUNT_FIELDS = new Set([
     'id',
@@ -86,6 +88,7 @@ const CREATABLE_MANUAL_ACCOUNT_FIELDS = new Set([
     'valor',
     'valorOriginal',
     'valorRestante',
+    'dataEmissao',
     'dataVencimento',
     'vencimento',
     'status',
@@ -105,6 +108,7 @@ const CREATABLE_MANUAL_ACCOUNT_FIELDS = new Set([
     'anexoUrl',
     'origem',
     'numero',
+    'pedidoNumero',
     'created',
 ]);
 
@@ -305,7 +309,11 @@ function computeInterestForPeriod(account, principalCents, startDay, endDay) {
 
 function computeCanonicalInterest(account, current, paymentDate) {
     const dueDay = dateToDayNumber(account && (account.dataVencimento ?? account.vencimento));
-    const baseDay = dateToDayNumber(account && account.jurosBaseDate);
+    // ✅ Considerar dataEmissao no calculo de juros. O startDay e' o MAIS
+    // recente entre vencimento, jurosBaseDate (ultimo pagamento) e emissao,
+    // garantindo que juros nunca sejam calculados antes da conta existir.
+    const emissaoDay = dateToDayNumber(account && account.dataEmissao);
+    const baseDay = Math.max(dateToDayNumber(account && account.jurosBaseDate) ?? 0, emissaoDay ?? 0) || null;
     const paymentDay = dateToDayNumber(paymentDate);
     const startDay = Math.max(dueDay === null ? 0 : dueDay, baseDay === null ? 0 : baseDay);
     if (current.status === 'pago') return { interestCents: 0, daysLate: 0 };
@@ -622,7 +630,7 @@ function normalizeReceiptUpdateRequest(data) {
     };
 }
 
-function currentFinancialState(account) {
+function currentFinancialState(account, nowIso = new Date().toISOString()) {
     const history = Array.isArray(account.historicosPagamento) ? account.historicosPagamento : [];
     const historyPaidCents = history.reduce((sum, entry, index) => {
         try {
@@ -631,7 +639,20 @@ function currentFinancialState(account) {
             return sum;
         }
     }, 0);
-    const status = normalizeStatus(account.status || 'pendente', 'status remoto');
+    // ✅ Recalcular status a partir da data de vencimento, ignorando o status
+    // armazenado que pode estar inconsistente (ex: 'pendente' quando vencido).
+    // O cliente-side pode modificar o status para exibicao ('vencido'), mas o
+    // banco tem 'pendente' para contas antigas. O expected state do cliente
+    // deve bater com o que o servidor computa, ou ocorre stale-state 409.
+    const storedStatus = normalizeStatus(account.status || 'pendente', 'status remoto');
+    let status = storedStatus;
+    if (storedStatus === 'pendente' || storedStatus === 'vencido') {
+        const dueDay = dateToDayNumber(account.dataVencimento ?? account.vencimento);
+        if (dueDay !== null) {
+            const todayDay = dateToDayNumber(nowIso);
+            status = todayDay !== null && dueDay < todayDay ? 'vencido' : 'pendente';
+        }
+    }
     const originalValue = hasOwn(account, 'valorOriginal') ? account.valorOriginal : account.valor;
     const originalCents = moneyToCents(originalValue, 'valor original remoto');
     const paidCents = hasOwn(account, 'valorPago')
@@ -844,6 +865,8 @@ function buildCanonicalCreatedAccount(item, request, companyId, nowIso) {
         valorOriginal: originalCents / 100,
         valorRestante: originalCents / 100,
         valorPago: 0,
+        // dataEmissao: omitido se vazio para evitar null vs undefined no RTDB; atribuído condicionalmente abaixo no final do bloco
+        // dataEmissao: source.dataEmissao ? String(source.dataEmissao).trim() : undefined,
         dataVencimento: dueDate,
         status,
         categoria: normalizeNullableText(String(source.categoria || ''), 'categoria', 160),
@@ -856,9 +879,14 @@ function buildCanonicalCreatedAccount(item, request, companyId, nowIso) {
         valorTotal: totalCents / 100,
         origem: 'manual',
         numero: normalizeNullableText(String(source.numero || ''), 'numero', 160),
+        pedidoNumero: normalizeNullableText(String(source.pedidoNumero || ''), 'pedidoNumero', 160),
         created: nowIso,
         revision: 0,
     };
+    // ✅ Atribuir dataEmissao condicionalmente para evitar null vs campo ausente no RTDB
+    if (source.dataEmissao) {
+        account.dataEmissao = String(source.dataEmissao).trim();
+    }
     const partyField = request.type === 'receber' ? 'cliente' : 'fornecedor';
     const partyIdField = request.type === 'receber' ? 'clienteId' : 'fornecedorId';
     account[partyField] = normalizeNullableText(
@@ -1149,7 +1177,7 @@ function buildAccountMutation(currentValue, request, kind, nowIso) {
 
     let current;
     try {
-        current = currentFinancialState(currentValue);
+        current = currentFinancialState(currentValue, nowIso);
     } catch (_) {
         return { outcome: 'conflict', reason: 'invalid-remote-state' };
     }
@@ -1273,10 +1301,35 @@ function buildAccountEditTreeMutation(currentTree, request, nowIso) {
     const tree = isPlainObject(currentTree) ? currentTree : {};
     const fromBucket = isPlainObject(tree[request.fromMonth]) ? tree[request.fromMonth] : {};
     const toBucket = isPlainObject(tree[request.toMonth]) ? tree[request.toMonth] : {};
-    const currentValue = fromBucket[request.accountId];
+    let currentValue = fromBucket[request.accountId];
     const targetValue = toBucket[request.accountId];
+    let resolvedAccountKey = request.accountId;
+    let resolvedFromMonth = request.fromMonth;
     const fingerprint = accountEditFingerprint(request);
 
+    if (!isPlainObject(currentValue)) {
+        // Fallback: search across all months by account.id field
+        for (const [month, bucket] of Object.entries(tree)) {
+            if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || !isPlainObject(bucket)) continue;
+            for (const [entryKey, entryValue] of Object.entries(bucket)) {
+                if (!isPlainObject(entryValue)) continue;
+                if (String(entryValue.id || '').trim() === String(request.accountId).trim()) {
+                    console.warn('Finance account resolved by id fallback (edit)', {
+                        type: request.type,
+                        requestedMonth: request.fromMonth,
+                        resolvedMonth: month,
+                        requestedId: request.accountId,
+                        resolvedKey: entryKey,
+                    });
+                    currentValue = entryValue;
+                    resolvedAccountKey = entryKey;
+                    resolvedFromMonth = month;
+                    break;
+                }
+            }
+            if (isPlainObject(currentValue)) break;
+        }
+    }
     if (!isPlainObject(currentValue)) {
         const prior = isPlainObject(targetValue)
             && isPlainObject(targetValue[INTERNAL_OPERATIONS_FIELD])
@@ -1285,14 +1338,30 @@ function buildAccountEditTreeMutation(currentTree, request, nowIso) {
         if (prior && prior.kind === 'edit' && prior.fingerprint === fingerprint) {
             return { outcome: 'idempotent', tree, account: targetValue };
         }
+        console.error('[buildAccountEditTreeMutation] NOT-FOUND TREE DUMP', {
+            type: request.type,
+            requestedMonth: request.fromMonth,
+            requestedId: request.accountId,
+            treeTopKeys: Object.keys(tree).slice(0,30),
+            hasFromBucket: isPlainObject(tree[request.fromMonth]),
+            hasToBucket: isPlainObject(tree[request.toMonth]),
+            fromBucketDirectHit: isPlainObject(tree[request.fromMonth]) ? hasOwn(tree[request.fromMonth], request.accountId) : false,
+            toBucketDirectHit: isPlainObject(tree[request.toMonth]) ? hasOwn(tree[request.toMonth], request.accountId) : false,
+            monthKeys: Object.keys(tree).filter(function(k) { return /^\d{4}-(0[1-9]|1[0-2])$/.test(k); }).slice(0,20),
+            nonMonthKeys: Object.keys(tree).filter(function(k) { return !/^\d{4}-(0[1-9]|1[0-2])$/.test(k); }).slice(0,10),
+            targetValueType: typeof targetValue,
+            targetValueIsPlainObject: isPlainObject(targetValue),
+        });
         return { outcome: 'not-found' };
     }
-    if (
-        request.fromMonth !== request.toMonth
-        && isPlainObject(targetValue)
-        && targetValue !== currentValue
-    ) {
-        return { outcome: 'conflict', reason: 'target-exists' };
+    if (request.fromMonth !== request.toMonth) {
+        if (isPlainObject(targetValue) && targetValue !== currentValue) {
+            return { outcome: 'conflict', reason: 'target-exists' };
+        }
+        const effectiveToBucket = isPlainObject(tree[request.toMonth]) ? tree[request.toMonth] : {};
+        if (isPlainObject(effectiveToBucket[resolvedAccountKey]) && effectiveToBucket[resolvedAccountKey] !== currentValue) {
+            return { outcome: 'conflict', reason: 'target-exists' };
+        }
     }
 
     const operationsValue = currentValue[INTERNAL_OPERATIONS_FIELD];
@@ -1309,11 +1378,19 @@ function buildAccountEditTreeMutation(currentTree, request, nowIso) {
     }
     let current;
     try {
-        current = currentFinancialState(currentValue);
+        current = currentFinancialState(currentValue, nowIso);
     } catch (_) {
         return { outcome: 'conflict', reason: 'invalid-remote-state' };
     }
     if (!expectedStateMatches(current, request.expected)) {
+        console.error('[buildAccountEditTreeMutation] STALE-STATE', {
+            type: request.type,
+            accountId: request.accountId,
+            resolvedAccountKey,
+            resolvedFromMonth,
+            current,
+            expected: request.expected,
+        });
         return { outcome: 'conflict', reason: 'stale-state' };
     }
     if (hasOwn(request.account, 'id') && String(request.account.id) !== request.accountId) {
@@ -1371,6 +1448,10 @@ function buildAccountEditTreeMutation(currentTree, request, nowIso) {
     const account = { ...currentValue };
     for (const key of EDITABLE_ACCOUNT_FIELDS) {
         if (hasOwn(request.account, key)) account[key] = request.account[key];
+    }
+    // ✅ Remover dataEmissao vazia/null para evitar loop de retry (null != campo ausente no RTDB)
+    if (hasOwn(account, 'dataEmissao') && !account.dataEmissao) {
+        delete account.dataEmissao;
     }
     if (hasOwn(request.account, 'anexos')) {
         try {
@@ -1485,13 +1566,15 @@ function buildAccountEditTreeMutation(currentTree, request, nowIso) {
     }, MAX_ACCOUNT_OPERATION_RECORDS, 'revision');
 
     const nextTree = { ...tree };
-    if (request.fromMonth === request.toMonth) {
-        nextTree[request.fromMonth] = { ...fromBucket, [request.accountId]: account };
+    const effectiveFromBucket = isPlainObject(tree[resolvedFromMonth]) ? tree[resolvedFromMonth] : {};
+    const effectiveToBucket = isPlainObject(tree[request.toMonth]) ? tree[request.toMonth] : {};
+    if (resolvedFromMonth === request.toMonth) {
+        nextTree[request.toMonth] = { ...effectiveToBucket, [resolvedAccountKey]: account };
     } else {
-        const nextFromBucket = { ...fromBucket };
-        delete nextFromBucket[request.accountId];
-        nextTree[request.fromMonth] = nextFromBucket;
-        nextTree[request.toMonth] = { ...toBucket, [request.accountId]: account };
+        const nextFromBucket = { ...effectiveFromBucket };
+        delete nextFromBucket[resolvedAccountKey];
+        nextTree[resolvedFromMonth] = nextFromBucket;
+        nextTree[request.toMonth] = { ...effectiveToBucket, [resolvedAccountKey]: account };
     }
     return { outcome: 'commit', tree: nextTree, account };
 }
@@ -1505,13 +1588,33 @@ function accountDeleteFingerprint(request) {
     })).digest('hex');
 }
 
-function buildAccountDeleteTreeMutation(currentTree, request) {
+function buildAccountDeleteTreeMutation(
+    currentTree,
+    request,
+    nowIso = new Date().toISOString(),
+) {
     const tree = isPlainObject(currentTree) ? currentTree : {};
     const matches = [];
     for (const [month, bucket] of Object.entries(tree)) {
         if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || !isPlainObject(bucket)) continue;
+        // Direct key lookup
         if (isPlainObject(bucket[request.accountId])) {
             matches.push({ month, bucket, account: bucket[request.accountId] });
+            continue;
+        }
+        // Fallback: search by account.id field
+        for (const [entryKey, entryValue] of Object.entries(bucket)) {
+            if (!isPlainObject(entryValue)) continue;
+            if (String(entryValue.id || '').trim() === String(request.accountId).trim()) {
+                console.warn('Finance account resolved by id fallback (delete)', {
+                    type: request.type,
+                    month,
+                    requestedId: request.accountId,
+                    resolvedKey: entryKey,
+                });
+                matches.push({ month, bucket, account: entryValue, resolvedKey: entryKey });
+                break;
+            }
         }
     }
     if (matches.length === 0) return { outcome: 'not-found' };
@@ -1520,15 +1623,16 @@ function buildAccountDeleteTreeMutation(currentTree, request) {
     const match = matches[0];
     let current;
     try {
-        current = currentFinancialState(match.account);
+        current = currentFinancialState(match.account, nowIso);
     } catch (_) {
         return { outcome: 'conflict', reason: 'invalid-remote-state' };
     }
     if (!expectedStateMatches(current, request.expected)) {
         return { outcome: 'conflict', reason: 'stale-state' };
     }
+    const deleteKey = match.resolvedKey || request.accountId;
     const nextBucket = { ...match.bucket };
-    delete nextBucket[request.accountId];
+    delete nextBucket[deleteKey];
     return {
         outcome: 'commit',
         tree: { ...tree, [match.month]: nextBucket },
@@ -1559,7 +1663,7 @@ function buildReceiptMutation(currentValue, request, nowIso) {
     }
     let current;
     try {
-        current = currentFinancialState(currentValue);
+        current = currentFinancialState(currentValue, nowIso);
     } catch (_) {
         return { outcome: 'conflict', reason: 'invalid-remote-state' };
     }
@@ -1617,12 +1721,32 @@ function resolveFinanceAccountLocation(currentTree, request) {
     const matches = [];
     for (const [month, bucket] of Object.entries(tree)) {
         if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || !isPlainObject(bucket)) continue;
+        // Direct key lookup (Firebase key matches request.accountId)
         if (isFinanceAccountRecord(bucket[request.accountId], request.accountId)) {
             matches.push({
                 month,
                 path: `${month}/${request.accountId}`,
                 legacy: false,
             });
+            continue;
+        }
+        // Fallback: search bucket entries by account.id field (in case Firebase key differs from id)
+        for (const [entryKey, entryValue] of Object.entries(bucket)) {
+            if (!isPlainObject(entryValue)) continue;
+            if (String(entryValue.id || '').trim() === String(request.accountId).trim()) {
+                console.warn('Finance account resolved by id fallback', {
+                    type: request.type,
+                    month,
+                    requestedId: request.accountId,
+                    resolvedKey: entryKey,
+                });
+                matches.push({
+                    month,
+                    path: `${month}/${entryKey}`,
+                    legacy: false,
+                });
+                break;
+            }
         }
     }
     if (isFinanceAccountRecord(tree[request.accountId], request.accountId)) {
@@ -1635,6 +1759,21 @@ function resolveFinanceAccountLocation(currentTree, request) {
             path: request.accountId,
             legacy: true,
         });
+    } else {
+        // Fallback: search legacy top-level entries by account.id
+        for (const [entryKey, entryValue] of Object.entries(tree)) {
+            if (/^\d{4}-(0[1-9]|1[0-2])$/.test(entryKey) || !isPlainObject(entryValue)) continue;
+            if (String(entryValue.id || '').trim() === String(request.accountId).trim()) {
+                const dueDate = String(
+                    entryValue.dataVencimento || entryValue.vencimento || '',
+                ).trim();
+                matches.push({
+                    month: /^\d{4}-\d{2}-\d{2}$/.test(dueDate) ? dueDate.slice(0, 7) : request.month,
+                    path: entryKey,
+                    legacy: true,
+                });
+            }
+        }
     }
     if (matches.length === 0) return { outcome: 'not-found' };
     if (matches.length > 1) return { outcome: 'conflict', reason: 'duplicate-remote-id' };
@@ -1868,37 +2007,53 @@ function createHandlers(options = {}) {
             path: `${request.month}/${request.accountId}`,
             legacy: false,
         };
-        const executeAt = async (location) => {
-            let decision;
-            const transaction = await db.ref(`${rootPath}/${location.path}`).transaction((current) => {
-                decision = buildDecision(current);
-                return decision.outcome === 'commit' ? decision.account
-                    : (decision.outcome === 'idempotent' ? current : undefined);
-            }, undefined, false);
-            return { decision, transaction, location };
-        };
-
-        let attempt = await executeAt(requestedLocation);
-        if (attempt.decision && attempt.decision.outcome !== 'not-found') return attempt;
-
-        const treeSnapshot = await db.ref(rootPath).get();
-        const located = resolveFinanceAccountLocation(
-            treeSnapshot && treeSnapshot.exists() ? treeSnapshot.val() : null,
-            request,
-        );
-        if (located.outcome !== 'found') {
-            return { decision: located, transaction: null, location: requestedLocation };
-        }
-        if (located.path !== requestedLocation.path) {
-            console.warn('Finance account location recovered', {
+        const requestedSnapshot = await db.ref(`${rootPath}/${requestedLocation.path}`).get();
+        const requestedExists = !!(requestedSnapshot && requestedSnapshot.exists());
+        const requestedValid = requestedExists
+            && isFinanceAccountRecord(requestedSnapshot.val(), request.accountId);
+        let location = requestedLocation;
+        if (!requestedValid) {
+            const treeSnapshot = await db.ref(rootPath).get();
+            const located = resolveFinanceAccountLocation(
+                treeSnapshot && treeSnapshot.exists() ? treeSnapshot.val() : null,
+                request,
+            );
+            console.warn('Finance account lookup missed requested path', {
+                tenantSuffix: String(access.companyId || '').slice(-6),
+                accountSuffix: String(request.accountId || '').slice(-6),
                 type: request.type,
                 requestedMonth: request.month,
-                resolvedMonth: located.month,
-                legacy: located.legacy,
+                requestedExists,
+                requestedValid,
+                treeExists: !!(treeSnapshot && treeSnapshot.exists()),
+                locatedOutcome: located.outcome,
+                locatedReason: located.reason || null,
             });
+            if (located.outcome !== 'found') {
+                return { decision: located, transaction: null, location: requestedLocation };
+            }
+            location = located;
+            if (location.path !== requestedLocation.path) {
+                console.warn('Finance account location recovered', {
+                    type: request.type,
+                    requestedMonth: request.month,
+                    resolvedMonth: location.month,
+                    legacy: location.legacy,
+                });
+            }
         }
-        attempt = await executeAt(located);
-        return attempt;
+
+        let decision;
+        const transaction = await db.ref(`${rootPath}/${location.path}`).transaction((current) => {
+            if (current === null) {
+                decision = { outcome: 'not-found' };
+                return current;
+            }
+            decision = buildDecision(current);
+            return decision.outcome === 'commit' ? decision.account
+                : (decision.outcome === 'idempotent' ? current : undefined);
+        }, undefined, false);
+        return { decision, transaction, location };
     }
 
     async function financeNextSequence(data, context) {
@@ -1918,7 +2073,8 @@ function createHandlers(options = {}) {
                 return decision.outcome === 'commit' ? decision.value
                     : (decision.outcome === 'idempotent' ? current : undefined);
             }, undefined, false);
-            if (!decision || decision.outcome === 'conflict' || !transaction.committed) {
+            if (!decision) decision = { outcome: 'not-found' };
+            if (decision.outcome === 'conflict' || !transaction.committed) {
                 throw new HttpsError('aborted', 'Conflito na sequência financeira.');
             }
             const authoritative = transaction.snapshot.val();
@@ -1960,6 +2116,7 @@ function createHandlers(options = {}) {
             const reference = db.ref(`companies/${access.companyId}/financas/${request.type}`);
             let decision;
             const transaction = await reference.transaction((current) => {
+                if (current === null) return current;
                 decision = buildAccountsCreateTreeMutation(
                     current,
                     request,
@@ -1969,7 +2126,8 @@ function createHandlers(options = {}) {
                 return decision.outcome === 'commit' ? decision.tree
                     : (decision.outcome === 'idempotent' ? current : undefined);
             }, undefined, false);
-            if (!decision || decision.outcome === 'conflict' || !transaction.committed) {
+            if (!decision) decision = { outcome: 'not-found' };
+            if (decision.outcome === 'conflict' || !transaction.committed) {
                 throw new HttpsError('aborted', 'Conflito ao criar contas financeiras.');
             }
             const tree = transaction.snapshot.val() || {};
@@ -1999,17 +2157,42 @@ function createHandlers(options = {}) {
             const reference = db.ref(`companies/${access.companyId}/financas/${request.type}`);
             let decision;
             const transaction = await reference.transaction((current) => {
+                if (current === null) return current;
                 decision = buildAccountEditTreeMutation(current, request, now());
                 return decision.outcome === 'commit' ? decision.tree
                     : (decision.outcome === 'idempotent' ? current : undefined);
             }, undefined, false);
             if (!decision || decision.outcome === 'not-found') {
+                console.error('[financeUpdateAccount] NOT-FOUND', {
+                    type: request.type,
+                    accountId: request.accountId,
+                    fromMonth: request.fromMonth,
+                    toMonth: request.toMonth,
+                    decision,
+                    transactionCommitted: transaction.committed,
+                });
                 throw new HttpsError('not-found', 'Conta financeira não encontrada para edição.');
             }
             if (decision.outcome === 'invalid') {
+                console.error('[financeUpdateAccount] INVALID', {
+                    type: request.type,
+                    accountId: request.accountId,
+                    reason: decision.reason,
+                    transactionCommitted: transaction.committed,
+                });
                 throw new HttpsError('invalid-argument', decision.reason);
             }
             if (decision.outcome === 'conflict' || !transaction.committed) {
+                console.error('[financeUpdateAccount] CONFLICT', {
+                    type: request.type,
+                    accountId: request.accountId,
+                    fromMonth: request.fromMonth,
+                    toMonth: request.toMonth,
+                    decisionOutcome: decision.outcome,
+                    decisionReason: decision.reason,
+                    expected: request.expected,
+                    transactionCommitted: transaction.committed,
+                });
                 throw new HttpsError('aborted', 'Conflito ao editar a conta financeira.');
             }
             const tree = transaction.snapshot.val() || {};
@@ -2064,7 +2247,8 @@ function createHandlers(options = {}) {
             );
             let decision;
             const transaction = await reference.transaction((current) => {
-                decision = buildAccountDeleteTreeMutation(current, request);
+                if (current === null) return current;
+                decision = buildAccountDeleteTreeMutation(current, request, now());
                 return decision.outcome === 'commit' ? decision.tree : undefined;
             }, undefined, false);
             if (!decision || decision.outcome === 'not-found') {

@@ -2326,12 +2326,13 @@ async function gerarContasReceberFinanceiro(pedido) {
             valor: conta.valor,
             valorOriginal: conta.valor,
             valorRestante: conta.valor,
-            dataVencimento: conta.vencimento,
-            status: 'pendente',
-            tipoPagamento: conta.tipo,
-            tipo: conta.tipo,
-            observacoes: conta.observacao || '',
-            created: window.firebaseService && window.firebaseService.serverTimestamp ? window.firebaseService.serverTimestamp() : new Date().toISOString()
+    dataVencimento: conta.vencimento,
+    dataEmissao: conta.dataEmissao || '',
+    status: 'pendente',
+    tipoPagamento: conta.tipo,
+    tipo: conta.tipo,
+    observacoes: conta.observacao || '',
+    created: window.firebaseService && window.firebaseService.serverTimestamp ? window.firebaseService.serverTimestamp() : new Date().toISOString()
         }));
         // Helper: atualizar cache local mensal e agregado
         const upsertMonthlyLocal = (contasList) => {
@@ -5434,7 +5435,7 @@ function adicionarContaReceber() {
             dataVencimentoISO = baseVencimentoISO;
             diasOffset = 0;
         } else {
-            baseVencimentoISO = vencimento;
+            baseVencimentoISO = pedidoDataISO || vencimento;
             dataVencimentoISO = addDaysISO(baseVencimentoISO, diasOffset);
         }
 
@@ -5448,6 +5449,7 @@ function adicionarContaReceber() {
             id: Date.now() + i,
             valor: valorPorParcela,
             vencimento: dataVencimentoISO,
+            dataEmissao: pedidoData,
             baseVencimento: baseVencimentoISO,
             dias: diasOffset,
             tipo: tipo,

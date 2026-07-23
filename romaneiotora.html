@@ -6,13 +6,14 @@
     <title>Romaneio de Toras</title>
     
     <!-- Scripts do Firebase CDN (PRIMEIRO) -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
-    <!-- Auth compat é necessário para signInAnonymously e regras com auth -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Firebase via módulo compartilhado (singleton) -->
+
+    <script type="module">
+
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=21eb04e409d8';
+import './firebase-compat-bridge.js';  // compat shim
+
+    </script><!-- Auth compat é necessário para signInAnonymously e regras com auth --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="layout-comum.css">
     <link rel="stylesheet" href="romaneio-comum.css?v=20260607pwaqa">
@@ -1907,31 +1908,31 @@
         }
     </script>
     
-    <script src="estados-cidades.js"></script>
+    <script src="estados-cidades.js?v=e634a7c28536"></script>
     <!-- removido: handler de modais de clientes (não utilizado em fornecedores) -->
-    <script src="menu-component.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
+    <script src="menu-component.js?v=f97c4a2dae9f"></script>
     
     <!-- Scripts de Correção - ORDEM REORGANIZADA -->
-    <script src="correcao-interface-database.js"></script>
+    <script src="correcao-interface-database.js?v=018036722c9c"></script>
     
     <!-- Script de gerenciamento unificado de espécies - PRIORIDADE MÁXIMA -->
-    <script src="species-utils.js"></script>
-    <script src="species-store.js"></script>
-    <script src="species-modal-standard.js"></script>
-    <script src="species-manager.js?v=20260520a"></script>
+    <script src="species-utils.js?v=4c5147a6f4fe"></script>
+    <script src="species-store.js?v=67f7145c0a96"></script>
+    <script src="species-modal-standard.js?v=fa1c091a5294"></script>
+    <script src="species-manager.js?v=cb24148c8ab6"></script>
     
     <!-- Script de fornecedor modals -->
-    <script src="fornecedor-modals.js"></script>
-    <script src="schema-migration-contatos.js"></script>
+    <script src="fornecedor-modals.js?v=9308ca4e254c"></script>
+    <script src="schema-migration-contatos.js?v=f086747ad6d7"></script>
     <!-- removido: romaneiotora_modais.js (substituído por fornecedor-modals.js para lista nativa) -->
     
-    <script src="romaneios-client-save-fix.js"></script>
+    <script src="romaneios-client-save-fix.js?v=a5d20ef9cd6d"></script>
     
     <!-- Scripts de correção -->
-    <script src="correcao-funcoes-ausentes.js"></script>
+    <script src="correcao-funcoes-ausentes.js?v=a69c9b3c404a"></script>
     
     <!-- Firebase e Database Adapter -->
-    <script src="firebaseService.unified.js"></script>
+    <script src="firebaseService.unified.js?v=07d2b773a0fd"></script>
     <!-- Adapter para compatibilidade: expõe firebaseService também como FirebaseService -->
     <script>
       (function() {
@@ -1945,33 +1946,33 @@
         }
       })();
     </script>
-    <script src="src/services/databaseAdapter.js"></script>
+    <script src="src/services/databaseAdapter.js?v=04db815c6547"></script>
     <!-- ✅ NOVO: Script principal de serviço unificado para garantir compatibilidade com romaneios -->
-    <script src="modules/core/firebase-service.js"></script>
+    <script src="modules/core/firebase-service.js?v=d500073b4127"></script>
     
     <!-- Scripts principais -->
-    <script src="romaneio-utils.js"></script>
-    <script src="tora-geometry-utils.js?v=20260528a"></script>
-    <script src="romaneio-table-enhancements.js?v=20260601a"></script>
-    <script src="romaneio-print-config.js?v=20260603a"></script>
-    <script src="pre-romaneio-selector.js"></script>
-    <script src="coordenador-inicializacao.js"></script>
-    <script src="romaneiotora.js"></script>
-    <script src="romaneiotora_tabela.js"></script>
-    <script src="romaneio-manager.js"></script>
-    <script src="romaneiotora-import-v4.js"></script>
+    <script src="romaneio-utils.js?v=e2c32c9889fa"></script>
+    <script src="tora-geometry-utils.js?v=f92ce76d2728"></script>
+    <script src="romaneio-table-enhancements.js?v=cbd0da360107"></script>
+    <script src="romaneio-print-config.js?v=ef3c6d7f8c2e"></script>
+    <script src="pre-romaneio-selector.js?v=8bfd1a2c847e"></script>
+    <script src="coordenador-inicializacao.js?v=0e0ca03c0c0b"></script>
+    <script src="romaneiotora.js?v=adb467117f0a"></script>
+    <script src="romaneiotora_tabela.js?v=e5c1e372e9bc"></script>
+    <script src="romaneio-manager.js?v=8df3f01f50ff"></script>
+    <script src="romaneiotora-import-v4.js?v=dfd11ba598ce"></script>
     
     <!-- Scripts de correções -->
     <!-- SCRIPTS PROBLEMÁTICOS DESABILITADOS -->
-    <!-- <script src="correcao-lista-romaneios.js"></script> -->
+    <!-- <script src="correcao-lista-romaneios.js?v=f7b3cd8ad0ca"></script> -->
     <!-- <script src="romaneiotora_modal_debug.js"></script> -->
-    <!-- <script src="romaneiotora_modal_fix.js"></script> -->
-    <!-- <script src="romaneiotora_modal_fix_final.js"></script> -->
+    <!-- <script src="romaneiotora_modal_fix.js?v=0897cff1628d"></script> -->
+    <!-- <script src="romaneiotora_modal_fix_final.js?v=49c4e7d7fd3e"></script> -->
     
     <!-- removido: romaneiotora_modal_fix_final_cleaned.js (sobreposição de modais) -->
 
     <!-- ✅ Expor parsers globalmente (usa módulos) -->
-    <script type="module" src="src/scripts/exposeParsersGlobal.js"></script>
+    <script type="module" src="src/scripts/exposeParsersGlobal.js?v=682458dab247"></script>
 
     <script type="module">
         (function() {
@@ -2363,7 +2364,7 @@
 
     <!-- removido: standardized-client-modal.js (interferia nos modais de fornecedores) -->
     <!-- ✅ Modal de espécies padronizado (igual TL) -->
-    <script src="modules/modals/modal-especies.js"></script>
+    <script src="modules/modals/modal-especies.js?v=3a3b2aa8230f"></script>
     
     <!-- removido: romaneiotora_modal_fix_final.js e romaneiotora-client-modal-fix.js (evitar duplicidade) -->
     
@@ -2783,6 +2784,6 @@
     });
     </script>
     <!-- Módulo de impressão TL/Tora padronizado -->
-    <script src="modules/reports/imprimir-romaneio.js"></script>
+    <script src="modules/reports/imprimir-romaneio.js?v=8dfe53c1fc8f"></script>
 </body>
 </html>

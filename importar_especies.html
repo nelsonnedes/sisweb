@@ -11,13 +11,16 @@
     <link rel="stylesheet" href="layout-comum.css">
 
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    
-    <!-- Menu Component -->
-    <script src="menu-component.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
-    <script src="species-utils.js"></script>
+    <!-- Firebase via módulo compartilhado (singleton) -->
+
+    <script type="module">
+
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=21eb04e409d8';
+import './firebase-compat-bridge.js';  // compat shim
+
+    </script><!-- Menu Component -->
+    <script src="menu-component.js?v=f97c4a2dae9f"></script>
+    <script src="species-utils.js?v=4c5147a6f4fe"></script>
     
     <style>
         /* Page Specific Styles */

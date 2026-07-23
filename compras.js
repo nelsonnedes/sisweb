@@ -1151,7 +1151,7 @@ function adicionarContaPagar() {
             dataVencimentoISO = baseVencimentoISO;
             diasOffset = 0;
         } else {
-            baseVencimentoISO = vencimento;
+            baseVencimentoISO = pedidoDataISO || vencimento;
             dataVencimentoISO = addDaysISO(baseVencimentoISO, diasOffset);
         }
 
@@ -1165,6 +1165,7 @@ function adicionarContaPagar() {
             id: Date.now() + i,
             valor: valorPorParcela,
             vencimento: dataVencimentoISO,
+            dataEmissao: pedidoDataISO,
             baseVencimento: baseVencimentoISO, // ✅ Salvar base para cálculo de dias (Igual Vendas)
             dias: diasOffset,                   // ✅ Salvar offset para edição inline
             tipo,

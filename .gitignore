@@ -66,6 +66,7 @@ Thumbs.db
 .aiox-core/local/
 .claude/settings.local.json
 .aiox/install-log.txt
+/.freebuff/
 
 # Local workspace artifacts / scratch files
 /audits/
@@ -73,5 +74,9 @@ Thumbs.db
 /src.txt
 /test_output.txt
 /tmp-cart-card-v2-vendas.png
+/login-after-click.png
+/login-state.png
+/imported_files.txt
+/tools/fix-finance-rules.py
 /Ajustes nesces*
 *.pix_backup

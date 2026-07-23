@@ -169,29 +169,14 @@
     </div>
 
     <script type="module">
-        import { 
-            initializeApp,
-            getApps
-        } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { 
-            getDatabase, 
-            ref, 
-            set, 
-            get, 
-            push 
-        } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-        import { 
-            getAuth, 
-            signInAnonymously, 
-            onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { app, getAuth, getDatabase, getApps, ref, set, get, push, signInAnonymously, onAuthStateChanged } from './firebase-init.js?v=21eb04e409d8';
         
         // Import shared Firebase service
         import { 
             saveToFirebase, 
             getFromFirebase,
             isFirebaseOperational 
-        } from './firebaseService.js';
+        } from './firebaseService.js?v=676ba9f2a922';
         
         // Variáveis globais
         let app;

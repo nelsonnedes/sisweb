@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="romaneio-comum.css?v=20260607pwaqa">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
-    <script src="menu-component.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
+    <script src="menu-component.js?v=f97c4a2dae9f"></script>
     <link rel="stylesheet" href="print-styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
@@ -1236,10 +1236,10 @@
     </div>
 
     <!-- Scripts -->
-    <script src="species-utils.js"></script>
-    <script src="species-store.js"></script>
-    <script src="species-modal-standard.js"></script>
-    <script src="auth.js"></script>
+    <script src="species-utils.js?v=4c5147a6f4fe"></script>
+    <script src="species-store.js?v=67f7145c0a96"></script>
+    <script src="species-modal-standard.js?v=fa1c091a5294"></script>
+    <script src="auth.js?v=cbbfbc7f784a"></script>
     <script type="module">
         import {
             authService,
@@ -1255,7 +1255,7 @@
             db,
             auth,
             app
-        } from './firebaseService.js';
+        } from './firebaseService.js?v=676ba9f2a922';
         const tenantFromContext = (() => {
             try {
                 if (window.appTenantId) return String(window.appTenantId);
@@ -1288,14 +1288,14 @@
             app
         };
     </script>
-    <script src="client-utils.js"></script>
-    <script src="client-modal-handler.js"></script>
-    <script src="client-service.js"></script>
-    <script src="schema-migration-contatos.js"></script>
-    <script src="romaneios-client-save-fix.js"></script>
-    <script src="pre-romaneio-selector.js"></script>
-    <script src="romaneio-table-enhancements.js?v=20260601a"></script>
-    <script src="romaneio-print-config.js?v=20260603a"></script>
+    <script src="client-utils.js?v=9ad9d6ce3f72"></script>
+    <script src="client-modal-handler.js?v=c18ad593b1f7"></script>
+    <script src="client-service.js?v=fbb1e80d1713"></script>
+    <script src="schema-migration-contatos.js?v=f086747ad6d7"></script>
+    <script src="romaneios-client-save-fix.js?v=a5d20ef9cd6d"></script>
+    <script src="pre-romaneio-selector.js?v=8bfd1a2c847e"></script>
+    <script src="romaneio-table-enhancements.js?v=cbd0da360107"></script>
+    <script src="romaneio-print-config.js?v=ef3c6d7f8c2e"></script>
     <script>
         let itens = [];
         let preco = 0;

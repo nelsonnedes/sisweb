@@ -256,7 +256,12 @@ test('folha nao publica painel ou script legado de diagnostico', () => {
 test('servicos da baseline usam a API tipada sem interceptar o Firebase', () => {
   for (const file of instrumentedFiles) {
     const content = read(file);
-    assert.ok(content.includes('__SISWEB_AUTH_PERF__'), `${file} precisa integrar o diagnostico opt-in`);
+    if (file.endsWith('.html')) {
+      assert.match(content, /auth-performance-diagnostics\.js\?v=/, `${file} precisa carregar o diagnostico opt-in`);
+      assert.match(content, /get\('diag'\) === 'auth-perf'/, `${file} precisa exigir opt-in exato`);
+    } else {
+      assert.ok(content.includes('__SISWEB_AUTH_PERF__'), `${file} precisa integrar o diagnostico opt-in`);
+    }
   }
 
   assert.match(read('firebaseService.js'), /authPerfRead\(path, 'logical'/);

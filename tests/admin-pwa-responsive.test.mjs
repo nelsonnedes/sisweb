@@ -9,9 +9,9 @@ test('admin aplica camada PWA responsiva em abas, tabelas e modais', () => {
   const adminMain = read('scripts/admin/admin-main.js');
   const adminCss = read('styles/admin-premium.css');
 
-  assert.match(adminHtml, /styles\/admin-premium\.css\?v=2026-06-11-profile-admin-v1/);
-  assert.match(adminHtml, /scripts\/admin\/admin-ui\.js\?v=2026-06-11-profile-admin-v1/);
-  assert.match(adminHtml, /scripts\/admin\/admin-main\.js\?v=2026-06-11-profile-admin-v1/);
+  assert.match(adminHtml, /styles\/admin-premium\.css\?v=[^"'\s]+/);
+  assert.match(adminHtml, /scripts\/admin\/admin-ui\.js\?v=[^"'\s]+/);
+  assert.match(adminHtml, /scripts\/admin\/admin-main\.js\?v=[^"'\s]+/);
 
   assert.match(adminMain, /function syncAdminPwaViewportState\(\)/);
   assert.match(adminMain, /function bindAdminPwaViewportListeners\(\)/);

@@ -14,8 +14,8 @@ test('admin possui aba de suporte restrita e integrada as callables', () => {
   assert.match(adminHtml, /id="supportStatusFilter"/);
   assert.match(adminHtml, /id="supportPriorityFilter"/);
   assert.match(adminHtml, /id="supportTicketsBody"/);
-  assert.match(adminHtml, /firebaseService\.js\?v=2026-06-11-profile-admin-v1/);
-  assert.match(adminHtml, /scripts\/admin\/admin-main\.js\?v=2026-06-11-profile-admin-v1/);
+  assert.match(adminHtml, /firebaseService\.js\?v=[^"'\s]+/);
+  assert.match(adminHtml, /scripts\/admin\/admin-main\.js\?v=[^"'\s]+/);
 
   assert.match(adminMain, /supportTickets/);
   assert.match(adminMain, /resolveAdminFirebaseService/);

@@ -19,9 +19,9 @@ test('perfil do usuario usa patch seguro e exibe campos compativeis com cadastro
   const profileFunctionBlock = blockBetween(functionsSource, 'exports.updateMyUserProfile', 'exports.getCompanyLogoDataUrl');
 
   assert.match(profile, /USER_PROFILE_ASSET_VERSION = '2026-06-11-profile-admin-v1'/);
-  assert.match(profile, /auth\.js\?v=2026-06-11-profile-admin-v1/);
-  assert.match(profile, /menu-component\.js\?v=2026-07-01-alerts-overflow-fix-v1/);
-  assert.match(profile, /firebaseService\.js\?v=2026-06-11-profile-admin-v1/);
+  assert.match(profile, /auth\.js\?v=[^"'\s]+/);
+  assert.match(profile, /menu-component\.js\?v=[^"'\s]+/);
+  assert.match(profile, /firebaseService\.js\?v=[^"'\s]+/);
   assert.match(profile, /window\.firebaseService = \{ \.\.\.window\.firebaseService, \.\.\.svc \}/);
   assert.match(profile, /id="profileUid"/);
   assert.match(profile, /id="userRole"/);
@@ -35,7 +35,8 @@ test('perfil do usuario usa patch seguro e exibe campos compativeis com cadastro
   assert.match(profile, /updateMyUserProfile\(patch\)/);
   assert.doesNotMatch(profile, /updateFirebase\(`users\/\$\{uid\}`,\s*\{[\s\S]*displayName:[\s\S]*username:[\s\S]*phone:/);
 
-  assert.match(firebaseService, /updateProfile as firebaseUpdateProfile/);
+  assert.match(firebaseService, /\bfirebaseUpdateProfile\b/);
+  assert.match(firebaseService, /await firebaseUpdateProfile\(currentUser, authPatch\)/);
   assert.match(firebaseService, /function normalizeMyUserProfilePatch\(payload\)/);
   assert.match(firebaseService, /async function updateMyUserProfile\(payload\)/);
   assert.match(firebaseService, /await callFunction\('updateMyUserProfile', patch\)/);

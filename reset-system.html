@@ -16,10 +16,14 @@
         .hidden { display: none; }
     </style>
     <!-- Firebase SDK Compat -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-</head>
+    <!-- Firebase via módulo compartilhado (singleton) -->
+
+    <script type="module">
+
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=21eb04e409d8';
+import './firebase-compat-bridge.js';  // compat shim
+
+    </script></head>
 <body>
     <div class="card">
         <h1>⚠️ Reset Total do Sistema</h1>
@@ -113,6 +117,6 @@
                 });
         }
     </script>
-    <script src="global-footer.js"></script>
+    <script src="global-footer.js?v=7ab6d2f87bf7"></script>
 </body>
 </html>

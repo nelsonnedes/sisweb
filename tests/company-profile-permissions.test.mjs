@@ -16,7 +16,8 @@ test('company.html usa Function para salvar perfil de empresa sem writes diretos
   const page = read('company.html');
   const srcService = read('src/services/firebaseService.js');
 
-  assert.match(page, /2026-06-11-company-profile-permissions-v3/);
+  assert.match(page, /src\/services\/firebaseService\.js\?v=[^"'\s]+/);
+  assert.match(page, /auth\.js\?v=[^"'\s]+/);
   assert.match(page, /id="companyContextName"/);
   assert.match(page, /id="companyContextId"/);
   assert.match(page, /id="companySecurityNotice"/);
@@ -97,7 +98,7 @@ test('company.html imprime perfil da empresa com georeferenciamento e QR de nave
   const page = read('company.html');
   const firebaseJson = read('firebase.json');
 
-  assert.match(page, /commerce-pdf-share\.js\?v=2026-06-23-logo-print-dataurl-v1/);
+  assert.match(page, /commerce-pdf-share\.js\?v=[^"'\s]+/);
   assert.match(page, /qrcodejs\/1\.0\.0\/qrcode\.min\.js/);
   assert.match(page, /id="geoLatitude"/);
   assert.match(page, /id="geoLongitude"/);

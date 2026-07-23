@@ -7,7 +7,7 @@
     <title>Dashboard - Sistema Sisweb</title>
     <script>
         if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
-            document.write('<script src="auth-performance-diagnostics.js?v=2026-07-14-auth-perf-baseline-v1"><\/script>');
+            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
         }
     </script>
     <link rel="manifest" href="manifest.json">
@@ -52,17 +52,20 @@
         })();
     </script>
     
-    <script defer src="menu-component.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
+    <script defer src="menu-component.js?v=f97c4a2dae9f"></script>
     <!-- Firebase SDK -->
-    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    
-    <!-- Módulos do Dashboard -->
-    <script defer src="modules/core/firebase-service.js"></script>
-    <script defer src="modules/core/responsive-manager.js"></script>
-    <script defer src="modules/dashboard/dashboard-core.js"></script>
-    <script defer src="modules/dashboard/dashboard-widgets.js"></script>
+    <!-- Firebase via módulo compartilhado (singleton) -->
+
+    <script type="module">
+
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=21eb04e409d8';
+import './firebase-compat-bridge.js';  // compat shim
+
+    </script><!-- Módulos do Dashboard -->
+    <script defer src="modules/core/firebase-service.js?v=d500073b4127"></script>
+    <script defer src="modules/core/responsive-manager.js?v=dee4c97c8f56"></script>
+    <script defer src="modules/dashboard/dashboard-core.js?v=e417c7a5ccc8"></script>
+    <script defer src="modules/dashboard/dashboard-widgets.js?v=4b0c758f6662"></script>
     <!-- Adicionar fontes do Google para melhorar a tipografia -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

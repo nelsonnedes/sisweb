@@ -14,7 +14,7 @@
     <title>Portal de Acesso - SisWeb</title>
     <script>
         if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
-            document.write('<script src="auth-performance-diagnostics.js?v=2026-07-14-auth-perf-baseline-v1"><\/script>');
+            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -782,8 +782,8 @@
     </div>
 
     <!-- Carregar auth.js tradicional primeiro -->
-    <script src="js/deep-clean.js"></script>
-    <script src="auth.js?v=2026-06-10-subscription-status-ux-v1"></script>
+    <script src="js/deep-clean.js?v=e7ff245a98e5"></script>
+    <script src="auth.js?v=cbbfbc7f784a"></script>
     <script>
         window.__siswebLoginInitialSearch = window.location.search || '';
 
@@ -1291,16 +1291,8 @@
     <!-- Importar módulos do Firebase -->
     <script type="module">
         // Importar os serviços necessários do Firebase
-        import { 
-            getAuth, 
-            createUserWithEmailAndPassword,
-            signInWithEmailAndPassword,
-            signOut,
-            onAuthStateChanged
-        } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getApps } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getDatabase, ref, set, get, remove, child, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=2026-06-10-subscription-status-ux-v1';
+                import { app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-init.js?v=21eb04e409d8';
+        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=676ba9f2a922';
         
         // Disponibilizar firebaseService globalmente para auth.js
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim };
@@ -1311,31 +1303,9 @@
         // Carregar auth.js como script tradicional
         // As funções login, getData, saveData estarão disponíveis globalmente
 
-        // Verificar se já existe uma instância do Firebase
-        let app, auth;
-        
-        // Verificar se o Firebase já foi inicializado pelo firebaseService.js
-        if (window._FIREBASE_APP) {
-            console.log("📦 Reaproveitando instância Firebase do firebaseService.js");
-            app = window._FIREBASE_APP;
-            auth = getAuth(app);
-        } else {
-            // Verificar apps existentes
-            const existingApps = getApps();
-            if (existingApps.length > 0) {
-                console.log("♻️ Reutilizando app Firebase existente");
-                app = existingApps[0];
-                auth = getAuth(app);
-            } else {
-                console.error("❌ Nenhuma instância do Firebase encontrada. O firebaseService.js deve ser carregado primeiro.");
-            }
-        }
-        
-        // Salvar referências para diagnóstico
-        if (app && auth) {
-            window._FIREBASE_APP = app;
-            window.auth = auth;
-        }
+                // Firebase já inicializado via firebase-init.js (app, auth, db disponíveis)
+        window._FIREBASE_APP = app;
+        window.auth = auth;
         
         // Verificar se a API do Firebase pode ser carregada
         let firebaseIsOperational = true;

@@ -94,7 +94,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <!-- 🔧 CORREÇÃO CRÍTICA: Menu carregado no HEAD igual ao romaneiotl -->
-    <script src="menu-component.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
+    <script src="menu-component.js?v=f97c4a2dae9f"></script>
     
     <style>
         :root {
@@ -2660,15 +2660,15 @@
     </div>
 
     <!-- Scripts -->
-    <script src="utils.js"></script>
-    <script src="species-utils.js"></script>
-    <script src="species-store.js"></script>
-    <script src="species-modal-standard.js"></script>
-    <script src="data-functions.js"></script>
-    <script src="auth.js"></script>
-    <script src="validation-system.js"></script>
-    <script src="cache-system.js"></script>
-    <script src="pre-romaneio-selector.js"></script>
+    <script src="utils.js?v=9a9161bf5b36"></script>
+    <script src="species-utils.js?v=4c5147a6f4fe"></script>
+    <script src="species-store.js?v=67f7145c0a96"></script>
+    <script src="species-modal-standard.js?v=fa1c091a5294"></script>
+    <script src="data-functions.js?v=8dd76c97712b"></script>
+    <script src="auth.js?v=cbbfbc7f784a"></script>
+    <script src="validation-system.js?v=f70152f1f65e"></script>
+    <script src="cache-system.js?v=a307288b87e9"></script>
+    <script src="pre-romaneio-selector.js?v=8bfd1a2c847e"></script>
     <script type="module">
         // Importar firebaseService COMPLETO e disponibilizar globalmente
         import { 
@@ -2686,7 +2686,7 @@
             db,
             auth,
             app
-        } from './firebaseService.js';
+        } from './firebaseService.js?v=676ba9f2a922';
         
         // Disponibilizar firebaseService COMPLETO globalmente para auth.js e romaneiopct_funcoes.js
         window.firebaseService = { 
@@ -2770,18 +2770,18 @@
         console.log("✅ firebaseService COMPLETO carregado e disponibilizado globalmente no romaneiopct.html");
         console.log("✅ Funções disponíveis:", Object.keys(window.firebaseService));
     </script>
-    <script src="client-utils.js"></script>
-    <script src="client-modal-handler.js"></script>
-    <script src="client-service.js"></script>
-    <script src="schema-migration-contatos.js"></script>
+    <script src="client-utils.js?v=9ad9d6ce3f72"></script>
+    <script src="client-modal-handler.js?v=c18ad593b1f7"></script>
+    <script src="client-service.js?v=fbb1e80d1713"></script>
+    <script src="schema-migration-contatos.js?v=f086747ad6d7"></script>
     
     <!-- ✅ CORREÇÕES PARA SALVAMENTO DE CLIENTES -->
-    <script src="romaneios-client-save-fix.js"></script>
+    <script src="romaneios-client-save-fix.js?v=a5d20ef9cd6d"></script>
     
     <!-- ❌ DESABILITADO: species-manager.js - CONFLITA COM MODAIS PADRONIZADOS PCT -->
-    <!-- <script src="species-manager.js"></script> -->
-    <script src="dimensoes.js"></script>
-    <script src="fix-import-errors.js"></script>
+    <!-- <script src="species-manager.js?v=cb24148c8ab6"></script> -->
+    <script src="dimensoes.js?v=c93c3dabc7a7"></script>
+    <script src="fix-import-errors.js?v=e936e63322d6"></script>
     
     <!-- Inicializar variáveis globais -->
     <script>
@@ -2833,57 +2833,57 @@
     <!-- ✅ Sistema modular limpo e eficiente -->
     
     <!-- 0. Sistema de formatação PCT (deve ser carregado primeiro) -->
-    <script src="modules/romaneiopct/formatacao-campos-pct.js"></script>
+    <script src="modules/romaneiopct/formatacao-campos-pct.js?v=ebb63291053d"></script>
     
-    <script src="romaneio-table-enhancements.js?v=20260601a"></script>
+    <script src="romaneio-table-enhancements.js?v=cbd0da360107"></script>
 
     <!-- ✅ CORREÇÃO CRÍTICA: Tabela com função adicionarItem -->
-    <script src="romaneiopct-tabela.js"></script>
+    <script src="romaneiopct-tabela.js?v=fef15e42b35c"></script>
     
     <!-- ✅ SISTEMA DE FORMATAÇÃO PCT UNIFICADO -->
-    <script src="romaneiopct-formatacao.js"></script>
+    <script src="romaneiopct-formatacao.js?v=56c8fa2e012f"></script>
     
     <!-- ✅ SISTEMA PRINCIPAL ROMANEIOPCT - NAVEGAÇÃO ENTER E INICIALIZAÇÃO -->
-    <script src="romaneiopct-main.js"></script>
+    <script src="romaneiopct-main.js?v=6935f718b192"></script>
     
-    <script src="romaneio-print-config.js?v=20260603a"></script>
+    <script src="romaneio-print-config.js?v=ef3c6d7f8c2e"></script>
 
     <!-- 1. Sistema de impressão específico PCT -->
-    <script src="modules/romaneiopct/imprimir-romaneio-pct.js"></script>
+    <script src="modules/romaneiopct/imprimir-romaneio-pct.js?v=3bbb3eb4f2b3"></script>
     
     <!-- 2. Sistema de preservação de propriedades financeiras PCT -->
-    <script src="modules/romaneiopct/preservar-propriedades-financeiras.js"></script>
+    <script src="modules/romaneiopct/preservar-propriedades-financeiras.js?v=557f1791c0db"></script>
     
     <!-- 3. Sistema de carregamento de dados PCT -->
-    <script src="modules/romaneiopct/carregar-romaneio-pct.js"></script>
-    <script src="modules/core/romaneio-messages.js"></script>
+    <script src="modules/romaneiopct/carregar-romaneio-pct.js?v=5c04c5a3bdcf"></script>
+    <script src="modules/core/romaneio-messages.js?v=5d58f6afc99b"></script>
     
     <!-- 4. Modal de Lista de Romaneios PCT -->
-    <script src="modules/romaneiopct/modal-lista-romaneios-pct.js?v=20260324_2"></script>
+    <script src="modules/romaneiopct/modal-lista-romaneios-pct.js?v=6a2b18ebd9cf"></script>
     
     <!-- 5. Modal de Clientes PCT -->
-    <script src="modules/romaneiopct/modal-clientes-pct.js?v=20260324_3"></script>
+    <script src="modules/romaneiopct/modal-clientes-pct.js?v=29e2e8074eaf"></script>
     
     <!-- 6. Modal de Espécies PCT -->
-    <script src="modules/romaneiopct/modal-especies-pct.js?v=20260324_3"></script>
+    <script src="modules/romaneiopct/modal-especies-pct.js?v=6318907c44e9"></script>
     
     <!-- 7. Navegação Enter PCT -->
-    <script src="modules/romaneiopct/navegacao-pct.js"></script>
+    <script src="modules/romaneiopct/navegacao-pct.js?v=8c3b9650a94a"></script>
     
     <!-- 8. Validações PCT -->
-    <script src="modules/romaneiopct/validacoes-pct.js"></script>
+    <script src="modules/romaneiopct/validacoes-pct.js?v=f68efcdf4ab1"></script>
     
     <!-- 9. Cálculos PCT -->
-    <script src="modules/romaneiopct/calculos-pct.js"></script>
+    <script src="modules/romaneiopct/calculos-pct.js?v=958feec9d0f7"></script>
     
     <!-- 10. Inicializador de Modais PCT -->
-    <script src="modules/romaneiopct/inicializar-modais-pct.js?v=20260324_2"></script>
+    <script src="modules/romaneiopct/inicializar-modais-pct.js?v=21faa9d89ce6"></script>
     
     <!-- ❌ DESABILITADO: Conflito com funções globais -->
-    <!-- <script src="modules/romaneiopct/inicializar-sistema-pct.js"></script> -->
+    <!-- <script src="modules/romaneiopct/inicializar-sistema-pct.js?v=4a37d849ed1d"></script> -->
     
     <!-- 12. Diagnóstico de Conflitos PCT -->
-    <script src="modules/romaneiopct/diagnostico-conflitos-pct.js?v=20260324_2"></script>
+    <script src="modules/romaneiopct/diagnostico-conflitos-pct.js?v=4b97bb93245b"></script>
     
     <!-- ✅ SISTEMA ROMANEIOPCT UNIFICADO V2.0 - CARREGAMENTO COMPLETO -->
     <!-- ✅ Todos os módulos carregados na ordem correta acima -->

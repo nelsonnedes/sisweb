@@ -10,8 +10,8 @@ test('vendas e compras mostram estado claro quando rota operacional nao tem tena
   const vendasJs = read('vendas.js');
   const comprasJs = read('compras.js');
 
-  assert.match(vendasHtml, /vendas\.js\?v=2026-07-17-finance-canonical-v2/);
-  assert.match(comprasHtml, /compras\.js\?v=2026-07-17-finance-canonical-v2/);
+  assert.match(vendasHtml, /vendas\.js\?v=[^"'\s]+/);
+  assert.match(comprasHtml, /compras\.js\?v=[^"'\s]+/);
 
   assert.match(vendasJs, /function renderOperationalAccessStateVendas\(contexto = \{\}\)/);
   assert.match(comprasJs, /function renderOperationalAccessStateCompras\(contexto = \{\}\)/);

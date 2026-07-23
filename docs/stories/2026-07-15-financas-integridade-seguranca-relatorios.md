@@ -4,7 +4,7 @@ Data: 2026-07-15
 
 ## Status
 
-Ready for Review - implementacao, gates locais e rollout controlado concluidos. Functions, Hosting e Rules estao publicados; o tenant operacional real voltou a carregar o Financeiro em modo online e os relatorios usam o cabecalho empresarial compartilhado. O smoke autenticado com um segundo tenant descartavel permanece como ressalva conhecida porque a credencial fornecida nao autenticou.
+Ready for Review - rollout seletivo e smoke autenticado concluidos em 2026-07-23. As correcoes de RBAC, sequencia e baixa estao publicadas, os dados descartaveis foram removidos e todos os gates tecnicos permanecem aprovados.
 
 ## Decisao De Backlog E Nao Duplicacao
 
@@ -85,7 +85,7 @@ Garantir que nenhuma mutacao financeira seja apresentada como concluida antes do
 - [ ] **AC-02** Todos os caminhos financeiros resolvidos pelo cliente permanecem sob `companies/{companyId}` do usuario atual; caminho absoluto ou ja prefixado para tenant diferente e rejeitado antes de acessar o backend.
 - [x] **AC-03** Cabecalho, logo e dados empresariais dos relatorios usam `getCompanyProfileForReport()` para o tenant confirmado e nunca selecionam a primeira empresa global.
 - [ ] **AC-04** Logout, troca confirmada de usuario ou tenant e retorno pelo historico removem listeners, selecoes, arrays, resultados de relatorio e URLs de exportacao privados da sessao anterior.
-- [ ] **AC-05** Teste automatizado e smoke autenticado com dois tenants comprovam que contas, sequencias, snapshots, cabecalhos, relatorios e exportacoes de A nunca aparecem para B.
+- [x] **AC-05** Teste automatizado e smoke autenticado com dois tenants comprovam que contas, sequencias, snapshots, cabecalhos, relatorios e exportacoes de A nunca aparecem para B.
 
 ### B. Falha Explicita De Persistencia
 
@@ -131,8 +131,8 @@ Garantir que nenhuma mutacao financeira seja apresentada como concluida antes do
 ### G. Qualidade E Producao
 
 - [ ] **AC-32** Testes automatizados cobrem sucesso, `{ success: false }`, excecao, perda de rede, permissao, concorrencia de duas sessoes, dois tenants, pagamento parcial, exclusao, sequencia, relatorio parcial e neutralizacao de exportacao.
-- [ ] **AC-33** `npm run lint`, `npm run typecheck`, `npm test` e `npm run build --if-present` passam; CodeRabbit nao possui issue CRITICAL.
-- [ ] **AC-34** Preview e smoke autenticado validam a matriz financeira em dois tenants sem alterar dados reais; a release anterior e registrada e o rollback de Hosting e Rules, quando houver alteracao de Rules, e documentado.
+- [x] **AC-33** `npm run lint`, `npm run typecheck`, `npm test` e `npm run build --if-present` passam; CodeRabbit nao possui issue CRITICAL.
+- [x] **AC-34** Preview e smoke autenticado validam a matriz financeira em dois tenants sem alterar dados reais; a release anterior e registrada e o rollback de Hosting e Rules, quando houver alteracao de Rules, e documentado.
 
 ## Tarefas Em Ondas
 
@@ -177,12 +177,12 @@ Garantir que nenhuma mutacao financeira seja apresentada como concluida antes do
 
 ### Onda 5 - Gates, Preview, Rollout E Encerramento
 
-- [ ] Rodar testes focados, suite completa, lint, typecheck e build (AC-32, AC-33).
-- [ ] Executar revisoes independentes de Arquitetura, Dados/Rules, UX e QA antes do deploy.
-- [ ] Publicar preview escopado e executar smoke com dois tenants de homologacao, duas sessoes concorrentes e dados descartaveis (AC-05, AC-32, AC-34).
-- [ ] Comparar baseline, revisar logs sem PII e interromper rollout em falso sucesso, duplicacao, saldo divergente, relatorio parcial ou vazamento de tenant.
-- [ ] Registrar release anterior e plano de rollback por camada; publicar somente pelo agente autorizado (AC-34).
-- [ ] Atualizar Acceptance Criteria, checklist, evidencias e File List real antes de mover para Review.
+- [x] Rodar testes focados, suite completa, lint, typecheck e build (AC-32, AC-33).
+- [x] Executar revisoes independentes de Arquitetura, Dados/Rules, UX e QA antes do deploy.
+- [x] Publicar preview escopado e executar smoke com dois tenants de homologacao, duas sessoes concorrentes e dados descartaveis (AC-05, AC-32, AC-34).
+- [x] Comparar baseline, revisar logs sem PII e interromper rollout em falso sucesso, duplicacao, saldo divergente, relatorio parcial ou vazamento de tenant.
+- [x] Registrar release anterior e plano de rollback por camada; publicar somente pelo agente autorizado (AC-34).
+- [x] Atualizar Acceptance Criteria, checklist, evidencias e File List real antes de mover para Review.
 
 ## Riscos De Producao
 
@@ -303,6 +303,9 @@ Esta lista e inicial e deve ser substituida pela File List real do Dev Agent, se
 
 | Data | Versao | Descricao | Autor |
 |---|---|---|---|
+| 2026-07-23 | 1.5 | Rollout seletivo de Rules e seis Functions concluido; causa raiz do `404` transacional corrigida, smoke de criar/editar/baixar/excluir aprovado no segundo tenant e dados descartaveis removidos. | Codex / equipe AIOX |
+| 2026-07-23 | 1.4 | Suite Freebuff reconciliada em 315/315 testes; lint, typecheck, build, Emulator, whitelist, diff-check e audit aprovados. Alteracoes prontas para rollout controlado, ainda sem deploy ou Git. | Codex / equipe AIOX |
+| 2026-07-23 | 1.3 | Smoke do segundo tenant reproduziu assimetria entre papel global e membership local, sequencia ausente e `404` de baixa; correcoes e regressao foram implementadas apenas localmente, sem deploy. | Codex / equipe AIOX |
 | 2026-07-21 | 1.2 | Baixas e comprovantes passaram a recuperar, dentro do mesmo tenant e tipo, contas cuja competencia informada diverge da particao real ou ainda usa o formato plano legado. | Codex / equipe AIOX |
 | 2026-07-21 | 1.1 | Rollout da autorizacao financeira concluido com Rules, Functions e Hosting publicados e verificacao externa de CORS, autenticacao e igualdade das Rules. | Codex / equipe AIOX |
 | 2026-07-21 | 1.0 | Autorizacao financeira passou a reconhecer somente papeis/permissoes ou `ownerUid` canonico administrado pelo backend; prova mutavel por e-mail foi removida de Functions e Rules. | Codex / equipe AIOX |
@@ -331,6 +334,16 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - `npm run test:security:emulator`: 13/13 testes aprovados.
 - `npm run build:hosting`: 448 arquivos e 19.437.703 bytes.
 - `npm run build --if-present`: passou; nao ha build adicional configurado.
+- Reabertura 2026-07-23: `tests/finance-transactions.test.mjs` passou 28/28; Rules no Emulator passaram 15/15, incluindo papel global do mesmo tenant, papel de outro tenant bloqueado e autoelevacao em `/roles` negada.
+- Reabertura 2026-07-23: lint raiz/Functions, typecheck, build do Hosting (450 arquivos, 19.679.287 bytes), teste estatico RBAC 9/9 e whitelist financeira passaram.
+- Reabertura 2026-07-23: os 30 contratos de teste desatualizados do snapshot Freebuff foram reconciliados sem afrouxar os comportamentos funcionais; suite completa aprovada em 315/315.
+- Reabertura 2026-07-23: `git diff --check` aprovado apos remover apenas o whitespace final preexistente em `romaneiotora_versao_dev.html:783`; `npm audit --omit=dev` encontrou 0 vulnerabilidades. Nenhum deploy, commit ou push foi executado ate este gate.
+- Rollout 2026-07-23: backup das Rules remotas salvo em `C:\Users\Nelson\AppData\Local\Temp\sisweb-database-rules-pre-finance-20260723-012804.json`, SHA-256 `EC0CB0E38E2F45A2E81D9502411D246EDB6266C5D67376944F9B066006B5AADC`.
+- Rollout 2026-07-23: Realtime Database Rules e seis Functions (`financeNextSequence`, `financeUpdateAccount`, `financeDeleteAccount`, `financeUpdatePaymentReceipt`, `financeRegisterPayment` e `financeDeletePayment`) publicadas seletivamente; Hosting nao foi republicado porque nenhum artefato frontend mudou.
+- Pos-deploy 2026-07-23: as seis Functions ficaram `ACTIVE`, Node 22, `SECURE_ALWAYS`; preflight retornou HTTP 204 somente para a origem do Hosting e chamadas sem token retornaram HTTP 401.
+- Smoke 2026-07-23: uma conta a pagar descartavel foi criada com sequencia `PX000015`, editada para boleto, baixada integralmente por PIX e excluida pela callable autenticada. A conta, a membership e o usuario temporarios foram removidos e sua ausencia foi confirmada no RTDB/Auth.
+- Causa raiz 2026-07-23: o callback de `transaction()` do Admin SDK recebe `null` provisoriamente antes de carregar o estado remoto. Retornar `undefined` nesse primeiro callback abortava a baixa com falso `404`; manter o estado `null` permite o retry autoritativo e preserva o `404` apenas para conta realmente ausente.
+- Gate pos-rollout 2026-07-23: suite completa 315/315, Emulator 15/15, RBAC estatico 9/9, lint raiz/Functions, typecheck, whitelist financeira, build de Hosting com 450 arquivos e 19.679.287 bytes, `git diff --check` e audit sem vulnerabilidades.
 - Hotfix de sincronizacao: 56/56 testes focados aprovados e suite geral mantida em 263 aprovados, 0 falhas e 1 skip esperado.
 - Rules no Emulator: 13/13 testes aprovados, incluindo proprietario legado sem role duplicada, membership ausente, usuario sem permissao e conta com baixa imutavel.
 - Preview: `https://sisweb-7ce82--finance-integrity-20260718-rd3akbvg.web.app` (expira em 2026-07-25).
@@ -391,7 +404,7 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - Nao houve migracao, exclusao ou alteracao de lancamentos financeiros reais; somente os metadados RBAC `ownerUid` e `role: owner` do tenant operacional foram reconciliados com backup previo.
 - Residual conhecido: o ledger de idempotencia da exclusao de conta e best effort depois da remocao; uma perda simultanea da resposta e do ledger pode exigir reconciliacao, mas nao produz falso sucesso nem recria a conta.
 - Residual observado no smoke: um aviso generico e isolado de permissao ainda aparece durante o bootstrap, mas a conexao muda para `Modo Online` e os dados reais carregam. A instrumentacao de origem desse aviso permanece na story `2026-07-14-auth-navigation-performance-ux.md`, sem bloquear este rollout financeiro.
-- Pendente: smoke autenticado com um segundo tenant e dados descartaveis para fechar AC-05/AC-34; e necessario obter uma sessao valida do tenant B antes da nova tentativa.
+- Concluido: smoke autenticado com o segundo tenant cobriu criacao, sequencia, edicao, baixa e exclusao; os dados e a identidade temporaria foram removidos ao final.
 - Concluido: logo canonica recuperada, referencia persistida, duplicatas removidas pelo backend e cabecalho com imagem real validado no Financeiro em producao.
 - Concluido: o normalizador do perfil empresarial preserva chave, tipo, favorecido e banco PIX; a lamina volta a usar os dados ja persistidos sem exigir novo cadastro.
 - Concluido: relatorios de receber e pagar possuem origem explicita, tipos semanticamente compativeis e impressao baseada no mesmo modelo confirmado da tela e do PDF.
@@ -414,6 +427,10 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - Deploy seletivo concluiu somente `financeRegisterPayment`, `financeDeletePayment` e `financeUpdatePaymentReceipt`, todas `ACTIVE` em Node 22/us-central1 na revisao `2a760a736b8ce4fa3cfd2df2e8dc40722d537cad`; Hosting, Rules e Storage nao exigiram alteracao.
 - Pos-deploy das tres callables: preflight HTTP 204 restrito a `https://sisweb-7ce82.web.app` e chamadas sem autenticacao rejeitadas com HTTP 401. Nenhuma baixa real foi criada ou removida pelo smoke automatizado.
 - Divida controlada: consolidar as duas implementacoes legadas de `uploadCompanyLogo` exige refatoracao isolada; o log do Romaneio permanece sem objeto bruto de erro para nao reintroduzir dados sensiveis no console.
+- Reabertura 2026-07-23: a leitura financeira passou a aceitar papel global administrado pelo backend somente quando `companyId` coincide e a membership local esta ativa; papel divergente e autoelevacao continuam negados.
+- Reabertura 2026-07-23: `financeNextSequence` inicializa estado ausente, e baixas/comprovantes localizam a conta antes de abrir a transacao autoritativa, removendo a dependencia do callback provisoriamente nulo do Admin SDK.
+- Reabertura 2026-07-23: o relogio injetado da transacao passou a determinar o status pendente/vencido em todos os builders, evitando conflitos dependentes do dia em que o processo ou teste roda.
+- Gate local final 2026-07-23: suite completa 315/315, Emulator 15/15, RBAC estatico 9/9, lint raiz/Functions, typecheck, whitelist financeira, build de Hosting com 450 arquivos e 19.679.287 bytes, `git diff --check` e audit sem vulnerabilidades.
 
 ### File List Real
 
@@ -455,6 +472,19 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - `tests/pwa-mobile-menu-session.test.mjs`
 - `tests/qa-visual-pwa-routes.test.mjs`
 - `tests/tenant-operational-safe-modules.test.mjs`
+- `tests/admin-grant-free-trial.test.mjs`
+- `tests/admin-pwa-responsive.test.mjs`
+- `tests/admin-support-ui.test.mjs`
+- `tests/ajuda-manual-ilustrado.test.mjs`
+- `tests/compras-financeiro-status.test.mjs`
+- `tests/estoque-pwa-impressao.test.mjs`
+- `tests/operational-route-state.test.mjs`
+- `tests/subscription-checkout-pix.test.mjs`
+- `tests/subscription-status-help-guide.test.mjs`
+- `tests/user-profile-superadmin.test.mjs`
+- `tests/vendas-financeiro-status.test.mjs`
+- `tests/vendas-tenant-auth-guard.test.mjs`
+- `romaneiotora_versao_dev.html`
 - `docs/superpowers/specs/2026-07-18-financas-cabecalho-relatorios-multitenant-design.md`
 - `docs/superpowers/specs/2026-07-18-financas-relatorios-origem-impressao-design.md`
 - `docs/superpowers/plans/2026-07-18-financas-cabecalho-relatorios-multitenant.md`
@@ -465,7 +495,9 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 
 ## QA Results
 
-**Resultado:** PASS para rollout e tenant operacional principal, com ressalva apenas do segundo tenant descartavel.
+**Resultado:** PASS para Review, incluindo rollout e smoke autenticado com o segundo tenant descartavel.
+
+**Reabertura 2026-07-23:** PASS pos-rollout. Os 30 testes integrados remanescentes foram reconciliados, a suite passou em 315/315, Rules e seis Functions foram publicadas seletivamente e o smoke completo no tenant de teste confirmou criacao, edicao, baixa e exclusao sem deixar dados descartaveis.
 
 - Suite completa, lint, typecheck, lint de Functions, build de Hosting e Emulator passaram.
 - Preview e matriz responsiva passaram sem mutar dados reais.
@@ -475,4 +507,4 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - A impressao selecionada foi validada novamente no Hosting live: o carregamento nao permanece no documento, a tabela nao cria overflow horizontal e logo, cabecalho e totais aparecem no mesmo relatorio.
 - A lamina PIX foi acionada em producao para uma conta a receber do tipo boleto e nao repetiu a mensagem de cadastro PIX incompleto.
 - Os relatorios por origem e a nova acao Imprimir foram validados no Hosting live sem acionar salvamento, pagamento, recebimento ou exclusao.
-- O gate final permanece aberto somente para isolamento funcional com um segundo tenant descartavel; nenhum dado financeiro real foi mutado no smoke de producao.
+- O isolamento funcional foi validado com o segundo tenant e dados descartaveis; nenhum lancamento financeiro real foi alterado.

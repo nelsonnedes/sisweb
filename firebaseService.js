@@ -4,40 +4,21 @@
  * Versão Simplificada - SEM localStorage fallback
  */
 
-// Importar configuração do Firebase
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getDatabase, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-import { 
-    getAuth, 
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
+// ─── Módulo compartilhado de inicialização Firebase (singleton) ───────────────
+import {
+    app, auth, db, storage, functions,
+    ref, set, get, remove, child, onValue, off, push, update,
+    serverTimestamp, query, orderByChild, limitToLast,
+    signOut, onAuthStateChanged, setPersistence,
+    browserSessionPersistence, browserLocalPersistence,
+    signInWithEmailAndPassword, createUserWithEmailAndPassword,
     signInAnonymously,
-    signOut,
-    onAuthStateChanged,
-    setPersistence,
-    browserSessionPersistence,
-    browserLocalPersistence,
-    sendPasswordResetEmail,
-    EmailAuthProvider,
+    sendPasswordResetEmail, EmailAuthProvider,
     reauthenticateWithCredential,
-    updatePassword as firebaseUpdatePassword,
-    updateProfile as firebaseUpdateProfile,
-    updateCurrentUser
-} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-functions.js";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
-
-// Configuração do Firebase
-const firebaseConfig = {
-    apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
-    authDomain: "sisweb-7ce82.firebaseapp.com",
-    databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "sisweb-7ce82",
-    storageBucket: "sisweb-7ce82.firebasestorage.app",
-    messagingSenderId: "240003261222",
-    appId: "1:240003261222:web:1aeaf919ddc7e5c691d7e7",
-    measurementId: "G-FTC6JZ5ZGX"
-};
+    firebaseUpdatePassword, firebaseUpdateProfile, updateCurrentUser,
+    httpsCallable, getFunctions,
+    storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject
+} from './firebase-init.js';
 
 function getAuthPerformanceDiagnostics() {
     try {
@@ -73,8 +54,7 @@ function authPerfTokenRefresh(reason, outcome = 'started', durationMs = 0) {
 
 console.log('🔧 FirebaseService usando configuração: PADRÃO');
 
-// Inicialização do Firebase
-let app, auth, db, storage;
+// ─── Estado interno (não relacionado à inicialização do Firebase) ────────────
 let firebaseInitError = null;
 let _connectionMonitoringConfigured = false;
 let _internetMonitoringConfigured = false;
@@ -121,55 +101,29 @@ const SUPERADMIN_UID_LOCAL_ALLOWLIST = new Set([
     'HfrQ6ObQq2aSEoeEE4Ng9jpAolB3'
 ]);
 
+// Firebase já foi inicializado pelo firebase-init.js, que é importado acima.
+// Aqui apenas configuramos listeners e monitoramentos adicionais.
 try {
-    authPerfPhase('firebase_init_start', 'started');
-    console.log("🔥 Inicializando Firebase");
-    
-    // Verificar apps existentes
-    const existingApps = getApps();
-    if (existingApps.length > 0) {
-        console.log("♻️ Reutilizando app Firebase existente");
-        app = existingApps[0];
-    } else {
-        app = initializeApp(firebaseConfig);
-        console.log("✅ Firebase inicializado com sucesso");
+    const isPwaStandalone = typeof window !== 'undefined' && (
+        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        || window.navigator.standalone === true
+    );
+    const persistence = isPwaStandalone ? browserLocalPersistence : browserSessionPersistence;
+    authPersistenceReady = setPersistence(auth, persistence)
+        .then(() => console.log(`🔒 Persistência de autenticação definida para ${isPwaStandalone ? 'LOCAL_PWA' : 'SESSION'}`))
+        .catch(e => console.warn("⚠️ Falha ao definir persistência de autenticação:", e && e.message || e));
+} catch (_) {}
+try {
+    if (typeof window.ENABLE_ANON_AUTH === 'undefined') {
+        window.ENABLE_ANON_AUTH = false;
     }
-
-    // Inicializar serviços
-    auth = getAuth(app);
-    try {
-        const useDurableAuth = typeof window !== 'undefined' && (
-            (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
-            || window.navigator.standalone === true
-        );
-        const selectedPersistence = useDurableAuth ? browserLocalPersistence : browserSessionPersistence;
-        authPersistenceReady = setPersistence(auth, selectedPersistence)
-            .then(() => console.log(`🔒 Persistência de autenticação definida para ${useDurableAuth ? 'LOCAL_PWA' : 'SESSION'}`))
-            .catch(e => console.warn("⚠️ Falha ao definir persistência de autenticação:", e && e.message || e));
-    } catch (_) {}
-    db = getDatabase(app);
-    storage = getStorage(app);
-    
-    // Configurar o observador canônico de Auth. Login anônimo segue opcional e desabilitado.
-    try {
-        if (typeof window.ENABLE_ANON_AUTH === 'undefined') {
-            window.ENABLE_ANON_AUTH = false;
-        }
-        ensureCanonicalAuthObserver();
-    } catch (e) {
-        console.warn("⚠️ Falha ao configurar observador central de autenticação:", e?.message || e);
-    }
-
-    // Internet, Auth e RTDB possuem estados independentes.
-    setupInternetMonitoring();
-    setupConnectionMonitoring();
-    authPerfPhase('firebase_init_ready', 'ready');
-    
-} catch (error) {
-    authPerfPhase('firebase_init_error', 'error');
-    console.error("❌ Erro ao inicializar Firebase:", error && error.code ? error.code : 'unknown');
-    firebaseInitError = error;
+    ensureCanonicalAuthObserver();
+} catch (e) {
+    console.warn("⚠️ Falha ao configurar observador central de autenticação:", e?.message || e);
 }
+try { setupInternetMonitoring(); } catch (_) {}
+try { setupConnectionMonitoring(); } catch (_) {}
+console.log('✅ FirebaseService: serviços Firebase prontos (via firebase-init.js)');
 
 function publishInternetState(available, source = 'navigator') {
     internetAvailable = available !== false;

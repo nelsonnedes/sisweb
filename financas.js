@@ -2429,7 +2429,7 @@ async function imprimirTabela(tipo) {
             const statusFinal = info.statusNorm;
             const valDisplay = statusFinal === 'pago' ? 0 : (statusFinal === 'parcial' ? info.valorRestante : info.valorOriginal);
             const totalComJuros = statusFinal === 'pago' ? 0 : info.totalAtualizado;
-            const jurosLinha = Math.max(0, totalComJuros - valDisplay);
+            const jurosLinha = Math.max(0, info.jurosAberto || 0);
 
             if (statusFinal !== 'pago') {
                 totalsByStatus[statusFinal] = (totalsByStatus[statusFinal] || 0) + totalComJuros;
@@ -2453,35 +2453,47 @@ async function imprimirTabela(tipo) {
             ? (safeClientes.find(c => String(c.id) === String(filtro.clienteId))?.nome || 'Todos')
             : (safeFornecedores.find(f => String(f.id) === String(filtro.fornecedorId))?.nome || safeFuncionarios.find(f => String(f.id) === String(filtro.fornecedorId))?.nome || 'Todos');
 
-        const labelMap = { pedidoNumero:'Doc', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valorOriginal:'Original', valorPago:'Pago', valor:'Saldo', juros:'Juros', totalGeral:'Total', vencimento:'Venc.', dataEmissao:'Emissão', status:'Status' };
+        const labelMap = { pedidoNumero:'Doc', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valorOriginal:'Original', valorPago:'Pago', valor:'Saldo', juros:'Juros', totalGeral:'Total', vencimento:'Venc.', dataEmissao:'Emissão', status:'Status', categoria:'Categoria', tipo:'Tipo' };
         const columnClassMap = {
             pedidoNumero: 'finance-print-nowrap finance-print-doc',
+            cliente:'', fornecedor:'', descricao:'finance-print-description',
             valorOriginal: 'right finance-print-nowrap finance-print-money',
             valorPago: 'right finance-print-nowrap finance-print-money',
-            valor: 'right finance-print-nowrap finance-print-money',
-            juros: 'right finance-print-nowrap finance-print-money',
-            totalGeral: 'right finance-print-nowrap finance-print-money',
+            valor: 'right finance-print-nowrap finance-print-money bold',
+            juros: 'right finance-print-nowrap finance-print-money juros-val',
+            totalGeral: 'right finance-print-nowrap finance-print-money bold',
             vencimento: 'finance-print-nowrap finance-print-date',
             dataEmissao: 'finance-print-nowrap finance-print-date',
-            status: 'finance-print-nowrap finance-print-status'
+            status: 'finance-print-nowrap finance-print-status',
+            categoria: '', tipo: ''
         };
-        const order = tipo === 'receber' ? ['pedidoNumero','cliente','descricao','valorOriginal','valorPago','valor','juros','totalGeral','vencimento','dataEmissao','status'] : ['pedidoNumero','fornecedor','descricao','valorOriginal','valorPago','valor','juros','totalGeral','vencimento','dataEmissao','status'];
+        const printPrefs = sanitizePrintPreferencesFor(tipo);
+        const baseOrder = printPrefs && Array.isArray(printPrefs.order) ? printPrefs.order : defaultPrintColumns[tipo] || ['pedidoNumero','cliente','descricao','valor','vencimento','dataEmissao','juros','status'];
+        const visible = printPrefs && printPrefs.visible ? printPrefs.visible : {};
+        const order = baseOrder.filter(k => visible[k] !== false);
         
+        const _cellVal = (conta, info, statusFinal, valDisplay, totalComJuros, jurosLinha, k) => {
+            const map = {
+                pedidoNumero: conta.pedidoNumero || conta.numero || '-',
+                cliente: tipo === 'receber' ? (conta.cliente?.nome || conta.cliente || 'N/I') : '',
+                fornecedor: tipo === 'pagar' ? (conta.fornecedor || conta.funcionarioNome || 'N/I') : '',
+                descricao: conta.descricao || '-',
+                valorOriginal: formatCurrency(info.valorOriginal),
+                valorPago: formatCurrency(info.valorPago),
+                valor: formatCurrency(valDisplay),
+                juros: formatCurrency(jurosLinha),
+                totalGeral: formatCurrency(totalComJuros),
+                vencimento: formatDate(conta.dataVencimento || conta.vencimento),
+                dataEmissao: conta.dataEmissao ? formatDate(conta.dataEmissao) : '-',
+                status: statusFinal.toUpperCase(),
+                categoria: conta.categoria || '',
+                tipo: conta.tipo || ''
+            };
+            return map[k] !== undefined ? map[k] : '-';
+        };
         const thead = `<thead><tr>${order.map(k => `<th class="${columnClassMap[k] || ''}">${labelMap[k]}</th>`).join('')}</tr></thead>`;
         const tbody = itemsWithInfo.map(({ conta, info, statusFinal, valDisplay, totalComJuros, jurosLinha }) => `
-            <tr>
-                <td class="finance-print-nowrap finance-print-doc">${escapeFinanceHtml(conta.pedidoNumero || conta.numero || '-')}</td>
-                <td>${escapeFinanceHtml(tipo === 'receber' ? (conta.cliente?.nome || conta.cliente || 'N/I') : (conta.fornecedor || conta.funcionarioNome || 'N/I'))}</td>
-                <td class="finance-print-description">${escapeFinanceHtml(conta.descricao || '-')}</td>
-                <td class="right finance-print-nowrap finance-print-money">${escapeFinanceHtml(formatCurrency(info.valorOriginal))}</td>
-                <td class="right finance-print-nowrap finance-print-money">${escapeFinanceHtml(formatCurrency(info.valorPago))}</td>
-                <td class="right bold finance-print-nowrap finance-print-money">${escapeFinanceHtml(formatCurrency(valDisplay))}</td>
-                <td class="right juros-val finance-print-nowrap finance-print-money">${escapeFinanceHtml(formatCurrency(jurosLinha))}</td>
-                <td class="right bold finance-print-nowrap finance-print-money">${escapeFinanceHtml(formatCurrency(totalComJuros))}</td>
-                <td class="finance-print-nowrap finance-print-date">${escapeFinanceHtml(formatDate(conta.dataVencimento || conta.vencimento))}</td>
-                <td class="finance-print-nowrap finance-print-date">${conta.dataEmissao ? escapeFinanceHtml(formatDate(conta.dataEmissao)) : '-'}</td>
-                <td class="finance-print-nowrap finance-print-status">${escapeFinanceHtml(statusFinal.toUpperCase())}</td>
-            </tr>
+            <tr>${order.map(k => `<td class="${columnClassMap[k] || 'finance-print-nowrap'}">${escapeFinanceHtml(_cellVal(conta, info, statusFinal, valDisplay, totalComJuros, jurosLinha, k))}</td>`).join('')}</tr>
         `).join('');
 
         const summaryItems = Object.entries(totalsByStatus).map(([st, sum]) => `<tr><td>Subtotal ${escapeFinanceHtml(st.toUpperCase())}</td><td class="right">${escapeFinanceHtml(formatCurrency(sum))}</td></tr>`).join('');
@@ -2494,11 +2506,9 @@ async function imprimirTabela(tipo) {
                 </div>
                 <table class="sisweb-print-table finance-print-table">
                     <colgroup>
-                        <col style="width:13%"><col style="width:11%"><col style="width:17%">
-                        <col style="width:7.5%"><col style="width:7.5%"><col style="width:7.5%">
-                        <col style="width:7.5%"><col style="width:7.5%"><col style="width:10%"><col style="width:11.5%">
+                        ${order.map(() => '<col>').join('\n                        ')}
                     </colgroup>
-                    ${thead}<tbody>${tbody || '<tr><td colspan="10">Nenhum dado</td></tr>'}</tbody>
+                    ${thead}<tbody>${tbody || `<tr><td colspan="${order.length || 1}">Nenhum dado</td></tr>`}</tbody>
                 </table>
                 <table class="finance-print-totals">
                     <tbody>
@@ -7746,18 +7756,37 @@ function exportarTabela(tipo, formato) {
 
 function exportarTabelaExcel(data, filename, tipo) {
     try {
-        const columns = [
-            { key: 'numero', label: 'Número' }, { key: 'parte', label: tipo === 'receber' ? 'Cliente' : 'Fornecedor' },
-            { key: 'descricao', label: 'Descrição' }, { key: 'vencimento', label: 'Vencimento', format: 'date' },
-            { key: 'status', label: 'Status' }, { key: 'categoria', label: 'Categoria' },
-            { key: 'valor', label: 'Valor', format: 'currency' }
-        ];
-        const rows = (data || []).map((conta) => ({
-            numero: conta.pedidoNumero || conta.numero || '', parte: getFinancePartyName(conta, tipo),
-            descricao: conta.descricao || '', vencimento: conta.dataVencimento || conta.vencimento || '',
-            status: getContaFinanceInfo(conta).statusNorm, categoria: getCategoriaLabel(conta.categoria),
-            valor: getContaFinanceInfo(conta).totalAtualizado
+        const printPrefs = sanitizePrintPreferencesFor(tipo);
+        const baseOrder = printPrefs && Array.isArray(printPrefs.order) ? printPrefs.order : defaultPrintColumns[tipo] || ['pedidoNumero','cliente','fornecedor','descricao','valor','vencimento','dataEmissao','juros','status','categoria','tipo'];
+        const visible = printPrefs && printPrefs.visible ? printPrefs.visible : {};
+        const order = baseOrder.filter(k => visible[k] !== false);
+        const formatMap = { vencimento: 'date', dataEmissao: 'date', valor: 'currency', juros: 'currency' };
+        const columns = order.map((k) => ({
+            key: k,
+            label: labelMap[k] || k,
+            ...(formatMap[k] ? { format: formatMap[k] } : {})
         }));
+        const rows = (data || []).map((conta) => {
+            const info = getContaFinanceInfo(conta);
+            const row = {};
+            order.forEach((k) => {
+                switch (k) {
+                    case 'pedidoNumero': row.pedidoNumero = conta.pedidoNumero || conta.numero || ''; break;
+                    case 'cliente': row.cliente = tipo === 'receber' ? getFinancePartyName(conta, tipo) : ''; break;
+                    case 'fornecedor': row.fornecedor = tipo === 'pagar' ? getFinancePartyName(conta, tipo) : ''; break;
+                    case 'descricao': row.descricao = conta.descricao || ''; break;
+                    case 'valor': row.valor = info.totalAtualizado; break;
+                    case 'juros': row.juros = Math.max(0, info.jurosAberto || 0); break;
+                    case 'vencimento': row.vencimento = conta.dataVencimento || conta.vencimento || ''; break;
+                    case 'dataEmissao': row.dataEmissao = conta.dataEmissao || ''; break;
+                    case 'status': row.status = info.statusNorm; break;
+                    case 'categoria': row.categoria = getCategoriaLabel(conta.categoria); break;
+                    case 'tipo': row.tipo = conta.tipo || ''; break;
+                    default: row[k] = (conta[k] !== undefined && conta[k] !== null) ? String(conta[k]) : '';
+                }
+            });
+            return row;
+        });
         downloadFinanceCsv(columns, rows, filename);
         mostrarNotificacao('Dados filtrados exportados em CSV.', 'success');
     } catch (error) {

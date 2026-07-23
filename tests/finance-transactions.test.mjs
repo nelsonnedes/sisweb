@@ -124,6 +124,74 @@ test('sequencias RX e PX sao unicas e idempotentes por operationId', () => {
   }
 });
 
+test('callable inicializa sequencia ausente e confirma o numero autoritativo', async () => {
+  const snapshot = (value) => ({
+    exists: () => value !== undefined && value !== null,
+    val: () => value,
+  });
+  let persistedSequence = null;
+  const database = {
+    ref(path) {
+      return {
+        async get() {
+          if (path === 'companies/tenant-0001/users/member-0001') {
+            return snapshot({ role: 'finance', active: true });
+          }
+          if (path === 'roles/member-0001') return snapshot(undefined);
+          if (path === 'companies/tenant-0001/ownerUid') return snapshot(undefined);
+          return snapshot(undefined);
+        },
+        async transaction(update) {
+          assert.equal(
+            path,
+            'companies/tenant-0001/sequences/contasPagarManual',
+          );
+          const next = update(persistedSequence);
+          if (next === undefined) {
+            return { committed: false, snapshot: snapshot(persistedSequence) };
+          }
+          persistedSequence = next;
+          return { committed: true, snapshot: snapshot(persistedSequence) };
+        },
+      };
+    },
+  };
+  class TestHttpsError extends Error {
+    constructor(code, message) {
+      super(message);
+      this.code = code;
+    }
+  }
+  const handlers = createHandlers({
+    database: () => database,
+    HttpsError: TestHttpsError,
+    isSuperAdmin: async () => false,
+    now: () => FIXED_NOW,
+  });
+
+  const response = await handlers.financeNextSequence({
+    tipo: 'pagar',
+    operationId: 'sequence-callable-px-0001',
+  }, {
+    auth: {
+      uid: 'member-0001',
+      token: { companyId: 'tenant-0001', subscriptionStatus: 'active' },
+    },
+  });
+
+  assert.deepEqual(response, {
+    success: true,
+    tipo: 'pagar',
+    numero: 'PX000001',
+    current: 1,
+    idempotent: false,
+  });
+  assert.equal(
+    persistedSequence.operations['sequence-callable-px-0001'].numero,
+    'PX000001',
+  );
+});
+
 test('criacao manual em lote e atomica e idempotente', () => {
   const request = normalizeAccountCreateRequest({
     tipo: 'receber',
@@ -308,6 +376,7 @@ test('callable de baixa transaciona a conta recuperada em outra particao', async
             throw new Error(`Unexpected transaction path: ${path}`);
           }
           const current = path === recoveredPath ? tree['2026-06'][accountId] : null;
+          assert.equal(update(null), null, 'null provisório deve aguardar o estado remoto');
           const next = update(current);
           if (next === undefined) {
             return { committed: false, snapshot: snapshot(current) };
@@ -340,7 +409,7 @@ test('callable de baixa transaciona a conta recuperada em outra particao', async
       historyLength: 0,
       valorPago: 0,
       valorRestante: 10.01,
-      status: 'pendente',
+      status: 'vencido',
       revision: 4,
     },
     patch: {
@@ -604,7 +673,7 @@ test('backend recalcula juros e rejeita valor forjado pelo cliente', () => {
       historyLength: 0,
       valorPago: 0,
       valorRestante: 100,
-      status: 'pendente',
+      status: 'vencido',
       revision: 1,
     },
     patch: {

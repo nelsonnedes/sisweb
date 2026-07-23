@@ -86,6 +86,6 @@ test('salvarContaPagar usa contrato novo de tipo e cachebuster atualizado', () =
   assert.doesNotMatch(js, /saveToFirebase\(`financas\/(?:receber|pagar)\/\$\{mkDel\}`/);
   assert.doesNotMatch(js, /salvarContaFinanceiraPersistida/);
   assert.doesNotMatch(js, /conta\.categoria = getBaseCategoriaKeys\(\)\.includes\(categoriaKey\) \? categoriaKey : 'outros';/);
-  assert.match(html, /financas\.js\?v=2026-07-19-finance-report-origin-print-v2/);
+  assert.match(html, /financas\.js\?v=[^"'\s]+/);
   assert.match(sw, /const APP_VERSION = '2026-07-21-coderabbit-hardening-v1'/);
 });

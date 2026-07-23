@@ -12,8 +12,8 @@ test('vendas nao pre-carrega tenant por company_info antes do auth', () => {
 
   assert.doesNotMatch(beforeFirebaseModule, /localStorage\.getItem\('company_info'\)/);
   assert.doesNotMatch(beforeFirebaseModule, /window\.appTenantId\s*=\s*String\(tenant\)/);
-  assert.match(html, /firebaseService\.js\?v=2026-06-12-tenant-auth-guard-v1/);
-  assert.match(html, /vendas\.js\?v=2026-07-17-finance-canonical-v2/);
+  assert.match(html, /firebaseService\.js\?v=[^"'\s]+/);
+  assert.match(html, /vendas\.js\?v=[^"'\s]+/);
 });
 
 test('vendas aguarda tenant autenticado antes de ler dados operacionais', () => {

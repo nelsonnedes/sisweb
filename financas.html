@@ -953,6 +953,7 @@
         </div>
 
         <!-- Tabs Navigation -->
+        <script>window.showTab = window.showTab || function(){};</script>
         <div class="tabs">
             <button type="button" class="tab active" data-tab="dashboard" onclick="showTab('dashboard')">
                 <i class="fas fa-tachometer-alt"></i> Dashboard
@@ -1722,7 +1723,7 @@
     
     <!-- ✅ Firebase via módulo compartilhado (firebase-init.js) -->
     <script type="module">
-        import { app, auth, db, storage, ref, set, get, remove, child, onValue, off, update, serverTimestamp, push, onAuthStateChanged, signOut, storageRef, uploadBytes, getDownloadURL, deleteObject } from './firebase-init.js?v=21eb04e409d8';
+        import { app, auth, db, storage, ref, set, get, remove, child, onValue, off, update, serverTimestamp, push, onAuthStateChanged, signOut, storageRef, uploadBytes, getDownloadURL, deleteObject, getStorage, getBlob } from './firebase-init.js?v=21eb04e409d8';
         
         window.database = db;
         window.firebaseRef = ref;
@@ -1997,6 +1998,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="js/pix-brcode.js?v=a8925daa3ade"></script>
     <script src="js/commerce-boleto-pix.js?v=1eb6dcd71285"></script>
-    <script src="financas.js?v=6c61f599f40e"></script>
+    <script src="financas.js?v=e3d873dc67fc"></script>
 </body>
 </html>

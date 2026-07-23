@@ -223,15 +223,15 @@ test('Login nao espera RTDB e Home delega tenant ao contexto canonico', () => {
   assert.doesNotMatch(homeGuard, /loadData\(`users\/|getIdTokenResult|localStorage\.setItem\('company_info'/);
 });
 
-test('Home carrega Auth compat antes do servico canonico para confirmar logout', () => {
+test('Home carrega Firebase singleton antes do servico canonico para confirmar logout', () => {
   const home = read('index.html');
-  const authCompat = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js';
+  const firebaseInit = './firebase-init.js';
   const coreService = 'modules/core/firebase-service.js';
 
-  assert.match(home, new RegExp(`<script defer src="${authCompat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"></script>`));
+  assert.match(home, /import \{[\s\S]*\bauth\b[\s\S]*\} from '\.\/firebase-init\.js\?v=[^"'\s]+'/);
   assert.ok(
-    home.indexOf(authCompat) < home.indexOf(coreService),
-    'Firebase Auth deve estar disponivel antes do servico usado pelo menu para logout'
+    home.indexOf(firebaseInit) < home.indexOf(coreService),
+    'Firebase Auth singleton deve estar disponivel antes do servico usado pelo menu para logout'
   );
 });
 

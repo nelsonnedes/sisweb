@@ -14,6 +14,8 @@ const MEMBER_UID = "member-a";
 const VIEWER_UID = "viewer-a";
 const NO_FINANCE_UID = "sales-a";
 const LEGACY_OWNER_UID = "legacy-owner-a";
+const GLOBAL_FINANCE_UID = "global-finance-a";
+const OTHER_TENANT_ROLE_UID = "global-finance-b";
 const TENANT_A = "tenant-a";
 const TENANT_B = "tenant-b";
 const MONTH = "2026-07";
@@ -96,6 +98,22 @@ if (!EMULATOR_HOST) {
       .authenticatedContext(LEGACY_OWNER_UID)
       .database();
 
+  const globalFinanceMemberDatabase = () =>
+    testEnv
+      .authenticatedContext(GLOBAL_FINANCE_UID, {
+        companyId: TENANT_A,
+        subscriptionStatus: "active",
+      })
+      .database();
+
+  const otherTenantRoleDatabase = () =>
+    testEnv
+      .authenticatedContext(OTHER_TENANT_ROLE_UID, {
+        companyId: TENANT_A,
+        subscriptionStatus: "active",
+      })
+      .database();
+
   const superadminDatabase = () =>
     testEnv
       .authenticatedContext("superadmin-user", { superadmin: true })
@@ -106,6 +124,14 @@ if (!EMULATOR_HOST) {
       await set(ref(context.database()), {
         users: {
           [MEMBER_UID]: MEMBER_PROFILE,
+          [GLOBAL_FINANCE_UID]: {
+            companyId: TENANT_A,
+            subscriptionStatus: "active",
+          },
+          [OTHER_TENANT_ROLE_UID]: {
+            companyId: TENANT_A,
+            subscriptionStatus: "active",
+          },
           [LEGACY_OWNER_UID]: {
             companyId: TENANT_A,
             email: "owner@tenant-a.test",
@@ -120,6 +146,8 @@ if (!EMULATOR_HOST) {
               [MEMBER_UID]: { role: "finance" },
               [VIEWER_UID]: { role: "viewer", permissions: { finance: { read: true } } },
               [NO_FINANCE_UID]: { role: "sales", permissions: { sales: { read: true } } },
+              [GLOBAL_FINANCE_UID]: { role: "viewer", active: true },
+              [OTHER_TENANT_ROLE_UID]: { role: "viewer", active: true },
               [LEGACY_OWNER_UID]: { companyId: TENANT_A },
             },
             financas: {
@@ -152,6 +180,18 @@ if (!EMULATOR_HOST) {
           },
           [TENANT_B]: {
             profile: { displayName: "Tenant B" },
+          },
+        },
+        roles: {
+          [GLOBAL_FINANCE_UID]: {
+            companyId: TENANT_A,
+            role: "admin",
+            active: true,
+          },
+          [OTHER_TENANT_ROLE_UID]: {
+            companyId: TENANT_B,
+            role: "admin",
+            active: true,
           },
         },
       });
@@ -280,6 +320,22 @@ if (!EMULATOR_HOST) {
       await assertFails(get(ref(nonFinanceMemberDatabase(), `companies/${TENANT_A}/${child}`)));
       await assertSucceeds(get(ref(legacyOwnerDatabase(), `companies/${TENANT_A}/${child}`)));
     }
+  });
+
+  test("papel global financeiro so complementa membership ativa do mesmo tenant", async () => {
+    const financePath = `companies/${TENANT_A}/financas/receber/${MONTH}`;
+
+    const financeData = await assertSucceeds(
+      get(ref(globalFinanceMemberDatabase(), financePath)),
+    );
+    assert.equal(financeData.child("existingAccount/status").val(), "pendente");
+
+    await assertFails(get(ref(otherTenantRoleDatabase(), financePath)));
+    await assertFails(
+      update(ref(globalFinanceMemberDatabase(), `roles/${GLOBAL_FINANCE_UID}`), {
+        role: "owner",
+      }),
+    );
   });
 
   test("preferencias e snapshots financeiros exigem permissao de escrita", async () => {

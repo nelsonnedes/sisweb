@@ -37,7 +37,7 @@ echo 📂 Diretório: %cd%
 echo.
 
 :: Fazer deploy
-firebase deploy --only hosting
+node tools/inject-cachebusters.mjs && firebase deploy --only hosting
 
 if errorlevel 1 (
     echo.

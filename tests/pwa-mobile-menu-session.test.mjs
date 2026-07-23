@@ -123,8 +123,8 @@ test('auth PWA mantem cache duravel para UX sem usa-lo como autorizacao', () => 
   assert.match(login, /window\.markSiswebSessionAuthenticated\(result\.user \|\| result\.currentUser \|\| \{ email \}, \{ source: 'login_page' \}\)/);
   assert.match(login, /const email = String\(\(emailInput && emailInput\.value\) \|\| ''\)\.trim\(\)\.toLowerCase\(\)/);
   assert.match(login, /id="email" name="email" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false"/);
-  assert.match(login, /auth\.js\?v=2026-06-10-subscription-status-ux-v1/);
-  assert.match(login, /\.\/firebaseService\.js\?v=2026-06-10-subscription-status-ux-v1/);
+  assert.match(login, /auth\.js\?v=[^"'\s]+/);
+  assert.match(login, /\.\/firebaseService\.js\?v=[^"'\s]+/);
   assert.match(login, /window\.firebaseService = \{ \.\.\.\(window\.firebaseService \|\| \{\}\), authService, isFirebaseOperational, setCompanyClaim \}/);
   assert.match(login, /localStorage\.removeItem\('siswebAuthSession'\)/);
   assert.match(login, /localStorage\.removeItem\('company_info'\)/);
@@ -149,8 +149,8 @@ test('auth PWA mantem cache duravel para UX sem usa-lo como autorizacao', () => 
   assert.match(subscriptionHtml, /Oferta pública carregada sem sessão autenticada/);
   assert.match(subscriptionHtml, /async function requireSubscriptionLogin\(reason, options = \{\}\)/);
   assert.match(subscriptionHtml, /redirect', getSubscriptionReturnTarget\(\)/);
-  assert.match(subscriptionHtml, /auth\.js\?v=2026-06-10-subscription-status-ux-v1/);
-  assert.match(subscriptionStatusHtml, /auth\.js\?v=2026-06-10-subscription-status-ux-v1/);
+  assert.match(subscriptionHtml, /auth\.js\?v=[^"'\s]+/);
+  assert.match(subscriptionStatusHtml, /auth\.js\?v=[^"'\s]+/);
   assert.doesNotMatch(subscriptionHtml, /login\.html\?redirect=subscription\.html/);
   assert.doesNotMatch(subscriptionHtml, /statusKey === 'active'[\s\S]{0,180}window\.location\.href = 'index\.html'/);
 });

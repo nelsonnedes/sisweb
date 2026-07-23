@@ -11,7 +11,13 @@ const read = (path) => readFileSync(join(root, path), 'utf8');
 function walkHtml(dir, out = []) {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
-    if (full.includes(`${join('node_modules')}`) || full.includes(`${join('tmp')}`)) continue;
+    if (
+      full.includes(`${join('node_modules')}`)
+      || full.includes(`${join('tmp')}`)
+      || full.includes(`${join('hosting-dist')}`)
+      || full.includes(`${join('.git')}`)
+      || full.includes(`${join('.freebuff')}`)
+    ) continue;
     const st = statSync(full);
     if (st.isDirectory()) walkHtml(full, out);
     else if (entry.endsWith('.html')) out.push(relative(root, full).replace(/\\/g, '/'));
@@ -26,14 +32,14 @@ test('vendas e compras carregam camada responsiva compartilhada para PWA', () =>
   const js = read('commerce-responsive.js');
 
   [vendasHtml, comprasHtml].forEach((html) => {
-    assert.match(html, /commerce-responsive\.css\?v=2026-06-07-print-context-v13/);
-    assert.match(html, /commerce-responsive\.js\?v=2026-06-07-print-context-v13/);
-    assert.match(html, /commerce-pdf-share\.js\?v=2026-06-23-logo-print-dataurl-v1/);
+    assert.match(html, /commerce-responsive\.css\?v=[^"'\s]+/);
+    assert.match(html, /commerce-responsive\.js\?v=[^"'\s]+/);
+    assert.match(html, /commerce-pdf-share\.js\?v=[^"'\s]+/);
   });
-  assert.match(vendasHtml, /vendas\.js\?v=2026-07-17-finance-canonical-v2/);
-  assert.match(comprasHtml, /compras\.js\?v=2026-07-17-finance-canonical-v2/);
-  assert.match(vendasHtml, /firebaseService\.js\?v=2026-06-12-tenant-auth-guard-v1/);
-  assert.match(comprasHtml, /firebaseService\.js\?v=2026-06-12-tenant-auth-guard-v1/);
+  assert.match(vendasHtml, /vendas\.js\?v=[^"'\s]+/);
+  assert.match(comprasHtml, /compras\.js\?v=[^"'\s]+/);
+  assert.match(vendasHtml, /firebaseService\.js\?v=[^"'\s]+/);
+  assert.match(comprasHtml, /firebaseService\.js\?v=[^"'\s]+/);
 
   assert.match(css, /@media \(max-width: 768px\)/);
   assert.match(css, /\.table-responsive\.mobile-cards td\[data-label="Ações"\]/);
@@ -64,8 +70,8 @@ test('compras aguarda tenant autenticado antes de ler dados operacionais', () =>
 
   assert.doesNotMatch(beforeFirebaseModule, /localStorage\.getItem\('company_info'\)/);
   assert.doesNotMatch(beforeFirebaseModule, /window\.appTenantId\s*=\s*String\(tenant\)/);
-  assert.match(html, /firebaseService\.js\?v=2026-06-12-tenant-auth-guard-v1/);
-  assert.match(html, /compras\.js\?v=2026-07-17-finance-canonical-v2/);
+  assert.match(html, /firebaseService\.js\?v=[^"'\s]+/);
+  assert.match(html, /compras\.js\?v=[^"'\s]+/);
 
   const initStart = js.indexOf("document.addEventListener('DOMContentLoaded', async () =>");
   const guardCall = js.indexOf('await garantirContextoEmpresaCompras();', initStart);
@@ -387,11 +393,8 @@ test('lista de pedidos usa impressao HTML no PC e PDF apenas em PWA', () => {
   assert.match(comprasJs, /function montarHTMLImpressaoLotePedidos\(documentos, title = 'Pedidos'\)/);
   assert.match(comprasJs, /async function gerarHTMLImpressaoPedidoCompra\(pedido\)/);
 
-  [
-    { html: vendasHtml, version: '2026-06-12-tenant-auth-guard-v1' },
-    { html: comprasHtml, version: '2026-06-12-tenant-auth-guard-v1' },
-  ].forEach(({ html, version }) => {
-    assert.match(html, new RegExp(`firebaseService\\.js\\?v=${version}`));
+  [vendasHtml, comprasHtml].forEach((html) => {
+    assert.match(html, /firebaseService\.js\?v=[^"'\s]+/);
     assert.match(html, /const existingFirebaseService = window\.firebaseService \|\| \{\}/);
     assert.match(html, /\.\.\.existingFirebaseService,[\s\S]*\.\.\.firebaseSvc/);
     assert.match(html, /serverTimestamp: firebaseSvc\.getServerTimestamp \|\| existingFirebaseService\.serverTimestamp/);
@@ -412,7 +415,7 @@ test('compras possui relatórios e busca de fornecedor carregados no script ativ
   assert.match(comprasHtml, /onclick="exportarRelatorioComprasPDF\(\)"/);
   assert.match(comprasHtml, /onclick="abrirCustomizarColunasCompras\(\)"/);
   assert.match(comprasHtml, /<th class="actions-col">Ações<\/th>/);
-  assert.match(comprasHtml, /commerce-responsive\.js\?v=2026-06-07-print-context-v13/);
+  assert.match(comprasHtml, /commerce-responsive\.js\?v=[^"'\s]+/);
 
   assert.match(comprasJs, /async function gerarRelatorioCompras\(\)/);
   assert.match(comprasJs, /function exportarRelatorioComprasCSV\(\)/);
@@ -429,7 +432,7 @@ test('compras possui relatórios e busca de fornecedor carregados no script ativ
   assert.match(comprasJs, /class="acoes-cell"/);
 });
 
-test('paginas html nao mantem cachebuster antigo do menu PWA', () => {
+test('paginas html usam cachebuster de conteudo no menu PWA', () => {
   const legacyOrNonRuntimePages = new Set([
     'compras_legacy.html',
     'folha_pagamento/teste-modal-integrado.html',
@@ -442,7 +445,8 @@ test('paginas html nao mantem cachebuster antigo do menu PWA', () => {
   const offenders = walkHtml(root).filter((path) => {
     if (legacyOrNonRuntimePages.has(path)) return false;
     const html = read(path);
-    return /menu-component\.js\?v=(?!2026-07-01-alerts-overflow-fix-v1)/.test(html);
+    const match = html.match(/menu-component\.js\?v=([^"'\s]+)/);
+    return match && !/^[a-f0-9]{12}$/.test(match[1]);
   });
   assert.deepEqual(offenders, []);
 });

@@ -8,10 +8,10 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 test('estoque carrega helper compartilhado e scripts cache-bustados para impressao PWA', () => {
   const html = read('estoque.html');
 
-  assert.match(html, /commerce-pdf-share\.js\?v=2026-06-23-logo-print-dataurl-v1/);
-  assert.match(html, /estoque_produtos\.js\?v=2026-06-08-estoque-print-pwa-v1/);
-  assert.match(html, /estoque\.js\?v=2026-06-16-tenant-safe-v1/);
-  assert.match(html, /import \* as fbService from '\.\/firebaseService\.js\?v=2026-06-08-estoque-print-pwa-v1'/);
+  assert.match(html, /commerce-pdf-share\.js\?v=[^"'\s]+/);
+  assert.match(html, /estoque_produtos\.js\?v=[^"'\s]+/);
+  assert.match(html, /estoque\.js\?v=[^"'\s]+/);
+  assert.match(html, /import \* as fbService from '\.\/firebaseService\.js\?v=[^"'\s]+'/);
 });
 
 test('estoque e financas evitam cards/filtros quebrados no PWA mobile', () => {
