@@ -371,8 +371,10 @@ A melhora quente inicial foi de aproximadamente 7,5%, abaixo da meta de 30%. Iss
 - Pedido de compra de teste passou de pendente para aprovado em atualizacao atomica; a conta vinculada apareceu em Contas a Pagar com origem Compras.
 - IDs legados numericos de contas a pagar geradas por Compras agora sao normalizados para texto antes de compor chave e payload no Realtime Database.
 - Vendas e Compras passaram a compartilhar a mesma garantia: uma falha na mutacao financeira atomica nao pode salvar somente o pedido nem exibir falso sucesso.
-- Suite completa: 319 testes aprovados, 1 skip esperado no comando geral; smoke RBAC explicito com 17/17 testes no Emulator.
-- Build do Hosting: 450 arquivos allowlisted e 19.672.967 bytes; auditoria encontrou zero SDK Firebase direto, zero cachebuster ausente e zero conflito.
+- Smoke live de Vendas preservou a sessao/tenant e carregou clientes, produtos e tipos financeiros sem novo `error` ou `warn` no ciclo do modulo.
+- Suite completa: 320 testes aprovados, 1 skip esperado no comando geral; smoke RBAC explicito com 17/17 testes no Emulator.
+- Build do Hosting: 449 arquivos allowlisted e 19.664.662 bytes; auditoria encontrou zero SDK Firebase direto, zero cachebuster ausente e zero conflito.
+- O utilitario administrativo `apply-firebase-rules.js` permanece disponivel apenas no repositorio e foi removido da allowlist publica do Hosting, com teste de regressao no manifesto.
 - Hosting live publicado somente depois dos gates e do smoke no Preview.
 - Permanece um aviso generico e nao bloqueante de verificacao Auth durante o bootstrap da pagina de Empresa; a sessao, a leitura e a escrita permaneceram funcionais.
 
@@ -414,10 +416,10 @@ Observacao: os scripts atuais de lint/typecheck cobrem principalmente `folha_pag
 - [x] `git diff --check` sem erro de whitespace.
 - [x] `npm run lint` concluido sem erro.
 - [x] `npm run typecheck` concluido sem erro.
-- [x] `npm test` concluido com 319 testes aprovados e 1 skip esperado para o Emulator no comando geral.
+- [x] `npm test` concluido com 320 testes aprovados e 1 skip esperado para o Emulator no comando geral.
 - [x] Smoke RBAC explicito concluido com 17/17 testes no Emulator ativo.
 - [x] `npm audit --audit-level=high` concluido sem vulnerabilidades.
-- [x] `npm run build:hosting` concluido com 450 arquivos allowlisted e 19.672.967 bytes no diretorio de build.
+- [x] `npm run build:hosting` concluido com 449 arquivos allowlisted e 19.664.662 bytes no diretorio de build.
 - [x] Rules, Functions, Preview e Hosting live publicados na ordem controlada documentada.
 
 ## File List Atual
@@ -466,6 +468,7 @@ Observacao: os scripts atuais de lint/typecheck cobrem principalmente `folha_pag
 - `tests/security-rbac-emulator.test.mjs`
 - `database.rules.json`
 - `functions/index.js`
+- `hosting-files.json`
 - `package.json`
 - `docs/stories/2026-07-14-auth-navigation-performance-ux.md`
 

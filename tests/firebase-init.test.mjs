@@ -256,6 +256,19 @@ test('auditoria de cache e SDK considera somente artefatos publicados por padrã
   assert.equal(report.firebaseSdk.directOutsideBootstrap, 0);
 });
 
+test('manifesto do Hosting nao publica utilitarios administrativos', () => {
+  const hostedFiles = JSON.parse(read('hosting-files.json'));
+  const administrativeFiles = hostedFiles.filter(file =>
+    /(^|\/)(?:apply|deploy|migrate|seed)[^/]*\.(?:js|mjs|cjs)$/i.test(file)
+  );
+
+  assert.deepEqual(
+    administrativeFiles,
+    [],
+    `utilitarios administrativos expostos no Hosting: ${administrativeFiles.join(', ')}`
+  );
+});
+
 test('módulos Firebase compartilhados usam URL canônica sem query string', () => {
   const hostedFiles = JSON.parse(read('hosting-files.json'));
   const invalidReferences = [];
