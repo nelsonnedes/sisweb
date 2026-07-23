@@ -63,7 +63,7 @@
         }
     </style>
     <link rel="stylesheet" href="print-styles.css">
-    <script src="menu-component.js?v=f97c4a2dae9f"></script>
+    <script src="menu-component.js?v=a26e67eb025d"></script>
     <style>
         /* Note: Container styles are now in layout-comum.css */
 
@@ -1671,6 +1671,27 @@
         .table th, .table td { padding:5px; }
     }
     @media (max-width: 768px){
+        .tab-content .btn-group{
+            display:flex;
+            flex-wrap:wrap;
+            width:100%;
+            min-width:0;
+        }
+        .tab-content .btn-group .btn:not(.action-btn){
+            flex:1 1 130px;
+            min-width:0;
+        }
+        .tab-content .btn-group .action-btn{
+            flex:0 0 42px;
+            width:42px;
+            min-width:42px;
+            padding-inline:8px;
+        }
+        .tab-content .btn-group .sel-count-badge{
+            flex:1 0 100%;
+            min-width:0;
+            overflow-wrap:anywhere;
+        }
         .filters-row{ display:grid; grid-template-columns:1fr; gap:12px; }
         .filters-row .form-group,
         .filters-row #filtroReceberNumeroPedido,
@@ -1723,7 +1744,7 @@
     
     <!-- ✅ Firebase via módulo compartilhado (firebase-init.js) -->
     <script type="module">
-        import { app, auth, db, storage, ref, set, get, remove, child, onValue, off, update, serverTimestamp, push, onAuthStateChanged, signOut, storageRef, uploadBytes, getDownloadURL, deleteObject, getStorage, getBlob } from './firebase-init.js?v=21eb04e409d8';
+        import { app, auth, db, storage, ref, set, get, remove, child, onValue, off, update, serverTimestamp, push, onAuthStateChanged, signOut, storageRef, uploadBytes, getDownloadURL, deleteObject, getStorage, getBlob } from './firebase-init.js';
         
         window.database = db;
         window.firebaseRef = ref;
@@ -1781,6 +1802,12 @@
             if (typeof val === 'function') return null;
             return val;
         }
+        function normalizeFinanceLegacyPath(path) {
+            return String(path || '')
+                .replace(/^\/+/, '')
+                .replace(/^contas_?pagar(\/|$)/i, 'financas/pagar$1')
+                .replace(/^contas_?receber(\/|$)/i, 'financas/receber$1');
+        }
         function handleAuthError(e, context = {}) {
             try {
                 const msg = String((e && e.message) || e || '').toLowerCase();
@@ -1794,7 +1821,11 @@
                             /(^|\/)finance_snapshots\//.test(path) ||
                             path === 'multiple_paths_write';
                         if (isLowPriorityPath) {
-                            console.warn('⚠️ [Finanças] Permissão limitada em recurso opcional');
+                            const optionalWarnAt = Number(window.__finOptionalPermWarnAt || 0);
+                            if (!optionalWarnAt || (Date.now() - optionalWarnAt) > 15000) {
+                                window.__finOptionalPermWarnAt = Date.now();
+                                console.warn('⚠️ [Finanças] Permissão limitada em recurso opcional');
+                            }
                             return true;
                         }
                         const now = Date.now();
@@ -1802,8 +1833,8 @@
                         if (!lastWarnAt || (now - lastWarnAt) > 15000) {
                             window.__finPermWarnAt = now;
                             try { mostrarNotificacao('Aviso de permissão. Verifique sua assinatura e dados da empresa.', 'warning'); } catch(_) {}
+                            console.warn('⚠️ [Finanças] Permissão negada em recurso operacional; sessão preservada para evitar loop de autenticação.');
                         }
-                        console.warn('⚠️ [Finanças] Erro de permissão detectado (não forçando logout automático para evitar loops). Verifique o tenant ID.');
                         return true;
                     }
                 } catch(_) {}
@@ -1811,19 +1842,8 @@
             }
             const financeFirebaseLocalService = {
                 loadFromFirebase: async (path) => {
-                    const base = String(path || '');
-
-                    const alts = new Set([base]);
-                    if (base.startsWith('contasPagar/')) {
-                        alts.add(base.replace('contasPagar/', 'contaspagar/'));
-                        alts.add(base.replace('contasPagar/', 'contas_pagar/'));
-                    }
-                    if (base.startsWith('contasReceber/')) {
-                        alts.add(base.replace('contasReceber/', 'contas_receber/'));
-                        alts.add(base.replace('contasReceber/', 'contasreceber/'));
-                    }
-                    const candidates = [];
-                    alts.forEach(a => { candidates.push(getNamespacedPath(a)); });
+                    const base = normalizeFinanceLegacyPath(path);
+                    const candidates = [getNamespacedPath(base)];
                     const dbRef = ref(window.database);
                     let successfulRead = false;
                     let lastReadError = null;
@@ -1844,8 +1864,7 @@
                     return { success: true, data: null, source: 'firebase' };
                 },
                 saveToFirebase: async (path, key, data) => {
-                    let base = String(path || '');
-                    base = base.replace(/^contaspagar(\/|$)/, 'financas/pagar$1').replace(/^contas_pagar(\/|$)/, 'financas/pagar$1').replace(/^contasreceber(\/|$)/, 'financas/receber$1').replace(/^contas_receber(\/|$)/, 'financas/receber$1');
+                    const base = normalizeFinanceLegacyPath(path);
                     const writePath = getNamespacedPath(base);
                     const payload = sanitizeFirebasePayload(data);
                     try {
@@ -1878,12 +1897,9 @@
                     const out = {};
                     Object.entries(updatesObj || {}).forEach(([k,v]) => {
                         const ck = String(k)
-                            .replace(/^\/+/, '')
-                            .replace(/^contaspagar(\/|$)/, 'financas/pagar$1')
-                            .replace(/^contas_pagar(\/|$)/, 'financas/pagar$1')
-                            .replace(/^contasreceber(\/|$)/, 'financas/receber$1')
-                            .replace(/^contas_receber(\/|$)/, 'financas/receber$1');
-                        const np = String(getNamespacedPath(ck) || '').replace(/^\/+/, '');
+                            .replace(/^\/+/, '');
+                        const canonicalPath = normalizeFinanceLegacyPath(ck);
+                        const np = String(getNamespacedPath(canonicalPath) || '').replace(/^\/+/, '');
                         if (!np) return;
                         out[np] = sanitizeFirebasePayload(v);
                     });
@@ -1897,7 +1913,7 @@
                     }
                 },
                 removeFromFirebase: async (path) => {
-                    const base = String(path || '').replace(/^contaspagar(\/|$)/, 'financas/pagar$1').replace(/^contas_pagar(\/|$)/, 'financas/pagar$1').replace(/^contasreceber(\/|$)/, 'financas/receber$1').replace(/^contas_receber(\/|$)/, 'financas/receber$1');
+                    const base = normalizeFinanceLegacyPath(path);
                     try {
                         await remove(ref(window.database, getNamespacedPath(base)));
                         return { success: true };
@@ -1998,6 +2014,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="js/pix-brcode.js?v=a8925daa3ade"></script>
     <script src="js/commerce-boleto-pix.js?v=1eb6dcd71285"></script>
-    <script src="financas.js?v=e3d873dc67fc"></script>
+    <script src="financas.js?v=8ddee8f8f0c1"></script>
 </body>
 </html>

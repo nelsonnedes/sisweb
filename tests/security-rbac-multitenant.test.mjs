@@ -78,6 +78,9 @@ test('rules liberam apenas caminhos operacionais seguros apos bloquear escrita h
     assert.match(accountWrite, /!data\.hasChild\('historicosPagamento'\)/);
     assert.match(accountWrite, /data\.child\('valorPago'\)\.val\(\) == 0/);
     assert.match(accountWrite, /permissions\/finance\/write/);
+    assert.match(accountWrite, /roles\/' \+ auth\.uid \+ '\/companyId/);
+    assert.match(accountWrite, /roles\/' \+ auth\.uid \+ '\/role/);
+    assert.match(accountWrite, /root\.child\('companies\/' \+ \$companyId \+ '\/users\/' \+ auth\.uid\)\.exists\(\)/);
     assert.match(accountValidate, /newData\.child\('id'\)\.val\(\) == \$accountId/);
     assert.match(accountValidate, /newData\.child\('valorOriginal'\)\.val\(\) == newData\.child\('valor'\)\.val\(\)/);
     assert.match(accountValidate, /!newData\.hasChild\('anexos'\)/);
@@ -138,6 +141,17 @@ test('updateMyUserProfile salva perfil proprio por Admin SDK sem aceitar targetU
   assert.match(block, /applyUserPatchAcrossScopes\(uid, patch/);
   assert.doesNotMatch(block, /targetUid/);
   assert.doesNotMatch(block, /companyId\s*=/);
+});
+
+test('sincronizacao de usuario repara membership legado apenas com papel global do mesmo tenant', () => {
+  const source = read('functions/index.js');
+  const mirrorBlock = blockBetween(source, 'function buildMirrorUserPatch', 'async function syncRequestInScopes');
+
+  assert.match(mirrorBlock, /admin\.database\(\)\.ref\(`roles\/\$\{userUid\}`\)\.get\(\)/);
+  assert.match(mirrorBlock, /const roleCompanyId = String\(roleData\.companyId \|\| roleData\.companyID \|\| roleData\.tenantId \|\| ''\)\.trim\(\)/);
+  assert.match(mirrorBlock, /const matchingRoleData = roleCompanyId === companyId \? roleData : \{\}/);
+  assert.match(mirrorBlock, /\{ \.\.\.matchingRoleData, \.\.\.before, \.\.\.patchPayload \}/);
+  assert.match(mirrorBlock, /'role', 'permissions', 'adminPermissions', 'active', 'adminActive'/);
 });
 
 test('NF Functions validam tenant antes de certificado, escrita ou remocao', () => {

@@ -10,7 +10,7 @@
 
     <script type="module">
 
-        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=21eb04e409d8';
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js';
 import './firebase-compat-bridge.js';  // compat shim
 
     </script><!-- Auth compat é necessário para signInAnonymously e regras com auth --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -1910,7 +1910,7 @@ import './firebase-compat-bridge.js';  // compat shim
     
     <script src="estados-cidades.js?v=e634a7c28536"></script>
     <!-- removido: handler de modais de clientes (não utilizado em fornecedores) -->
-    <script src="menu-component.js?v=f97c4a2dae9f"></script>
+    <script src="menu-component.js?v=a26e67eb025d"></script>
     
     <!-- Scripts de Correção - ORDEM REORGANIZADA -->
     <script src="correcao-interface-database.js?v=018036722c9c"></script>
@@ -1948,7 +1948,7 @@ import './firebase-compat-bridge.js';  // compat shim
     </script>
     <script src="src/services/databaseAdapter.js?v=04db815c6547"></script>
     <!-- ✅ NOVO: Script principal de serviço unificado para garantir compatibilidade com romaneios -->
-    <script src="modules/core/firebase-service.js?v=d500073b4127"></script>
+    <script src="modules/core/firebase-service.js?v=f1a56093d8d4"></script>
     
     <!-- Scripts principais -->
     <script src="romaneio-utils.js?v=e2c32c9889fa"></script>
@@ -1974,17 +1974,6 @@ import './firebase-compat-bridge.js';  // compat shim
     <!-- ✅ Expor parsers globalmente (usa módulos) -->
     <script type="module" src="src/scripts/exposeParsersGlobal.js?v=682458dab247"></script>
 
-    <script type="module">
-        (function() {
-            try {
-                const params = new URLSearchParams(window.location.search);
-                if (params.has('autotest')) {
-                    import('./arquivos-teste/js/auto-test-romaneiotora.js').catch(() => {});
-                }
-            } catch (_) {}
-        })();
-    </script>
-    
     <!-- Inicialização final -->
     <script>
     /**

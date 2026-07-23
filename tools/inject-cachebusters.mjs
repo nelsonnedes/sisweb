@@ -1,125 +1,138 @@
 #!/usr/bin/env node
 /**
- * inject-cachebusters.mjs
+ * Atualiza cachebusters de scripts locais usados pelos HTMLs publicados.
  *
- * Lê todos os arquivos HTML do diretório raiz, encontra tags <script src="...">
- * que referenciam arquivos .js locais com cachebuster `?v=...`, computa o
- * hash SHA-256 dos primeiros 8 bytes do arquivo .js real e substitui o
- * cachebuster pelo hash (primeiros 12 caracteres hex).
- *
- * Uso:
- *   node tools/inject-cachebusters.mjs
- *
- * Isso substitui IN-PLACE os arquivos HTML. Execute ANTES de firebase deploy.
+ * Por padrão processa apenas os HTMLs de hosting-files.json. Use --all para
+ * incluir páginas legadas fora do Hosting.
  */
 
-import { readFileSync, writeFileSync, existsSync, statSync, readdirSync } from 'node:fs';
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync
+} from 'node:fs';
 import { createHash } from 'node:crypto';
-import { join, dirname, extname } from 'node:path';
+import {
+  dirname,
+  extname,
+  join,
+  relative,
+  resolve,
+  sep
+} from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, '..');
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const MANIFEST = join(ROOT, 'hosting-files.json');
+const AUDIT_ALL = process.argv.includes('--all');
+
+function toPosix(value) {
+  return value.split(sep).join('/');
+}
+
+function normalizeProjectPath(value) {
+  const rel = relative(ROOT, resolve(ROOT, value));
+  if (!rel || rel === '..' || rel.startsWith(`..${sep}`)) return '';
+  return toPosix(rel);
+}
+
+function walkHtml(directory, output = []) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    if (['.git', '.freebuff', 'hosting-dist', 'node_modules'].includes(entry.name)) continue;
+    const absolute = join(directory, entry.name);
+    if (entry.isDirectory()) walkHtml(absolute, output);
+    else if (extname(entry.name).toLowerCase() === '.html') {
+      output.push(normalizeProjectPath(absolute));
+    }
+  }
+  return output;
+}
+
+function getHtmlFiles() {
+  if (AUDIT_ALL) return walkHtml(ROOT);
+  const entries = JSON.parse(readFileSync(MANIFEST, 'utf8'));
+  if (!Array.isArray(entries)) throw new Error('hosting-files.json inválido.');
+  return entries.filter(entry => extname(entry).toLowerCase() === '.html');
+}
 
 function hashFile(filePath) {
-    if (!existsSync(filePath)) return null;
-    const stat = statSync(filePath);
-    if (!stat.isFile()) return null;
-    // Lê os primeiros 64KB para hash rápido (suficiente para uniqueness)
-    const fd = readFileSync(filePath);
-    const hash = createHash('sha256').update(fd).digest('hex');
-    return hash.slice(0, 12); // primeiros 12 hex chars = 48 bits
+  if (!existsSync(filePath) || !statSync(filePath).isFile()) return null;
+  return createHash('sha256').update(readFileSync(filePath)).digest('hex').slice(0, 12);
 }
 
-function processHtml(filePath) {
-    let html = readFileSync(filePath, 'utf-8');
-    const original = html;
-
-    // Regex: <script src="CAMINHO?v=QUALQUER_COISA">
-    // Também captura document.write('<script src="...") e import('./...')
-    const scriptTagRegex = /(<script[^>]*src\s*=\s*["'])([^"']+?)(\?v=[^"'\s]*)?(["'][^>]*>)/gi;
-    const docWriteRegex = /(document\.write\s*\(\s*['"]<script[^>]*src\s*=\s*["'])([^"']+?)(\?v=[^"'\s]*)?(["'][^>]*><\\\/script>['"]\s*\))/gi;
-    const importRegex = /(import\s*\(\s*['"]\.\/)([^"']+?)(\?v=[^"'\s]*)?(["'][\s)]*\))/gi;
-    // Regex: import { ... } from './file.js?v=...'
-    // Captura imports estáticos de ES Module (suporta multi-linha)
-    const staticImportRegex = /(import\s+\{[\s\S]*?\}\s+from\s+['"]\.\/)([^"']+?\.js)(\?v=[^"'\s]*)?(['"])/gsi;
-
-    let changed = false;
-
-    // 1) Tags <script src="...">
-    html = html.replace(scriptTagRegex, (match, prefix, srcPath, existingV, suffix) => {
-        if (!srcPath.endsWith('.js')) return match;
-        // Pular URLs absolutas (http, https, //)
-        if (srcPath.startsWith('http') || srcPath.startsWith('//')) return match;
-
-        const absPath = join(ROOT, srcPath);
-        const h = hashFile(absPath);
-        if (!h) return match; // arquivo não encontrado, deixa como está
-
-        const newV = `?v=${h}`;
-        changed = changed || (existingV !== newV);
-        return `${prefix}${srcPath}${newV}${suffix}`;
-    });
-
-    // 2) document.write('<script src="...">')
-    html = html.replace(docWriteRegex, (match, prefix, srcPath, existingV, suffix) => {
-        if (!srcPath.endsWith('.js')) return match;
-        if (srcPath.startsWith('http') || srcPath.startsWith('//')) return match;
-
-        const absPath = join(ROOT, srcPath);
-        const h = hashFile(absPath);
-        if (!h) return match;
-
-        const newV = `?v=${h}`;
-        changed = changed || (existingV !== newV);
-        return `${prefix}${srcPath}${newV}${suffix}`;
-    });
-
-    // 3) import('./file.js?v=...')
-    html = html.replace(importRegex, (match, prefix, srcPath, existingV, suffix) => {
-        if (!srcPath.endsWith('.js')) return match;
-        const absPath = join(ROOT, srcPath);
-        const h = hashFile(absPath);
-        if (!h) return match;
-
-        const newV = `?v=${h}`;
-        changed = changed || (existingV !== newV);
-        return `${prefix}${srcPath}${newV}${suffix}`;
-    });
-
-    // 4) import { ... } from './file.js?v=...' (ES Module static import)
-    html = html.replace(staticImportRegex, (match, prefix, srcPath, existingV, suffix) => {
-        if (!srcPath.endsWith('.js')) return match;
-        if (srcPath.startsWith('http') || srcPath.startsWith('//')) return match;
-
-        const absPath = join(ROOT, srcPath);
-        const h = hashFile(absPath);
-        if (!h) return match;
-
-        const newV = `?v=${h}`;
-        changed = changed || (existingV !== newV);
-        return `${prefix}${srcPath}${newV}${suffix}`;
-    });
-
-    if (changed) {
-        writeFileSync(filePath, html, 'utf-8');
-        console.log(`  ✓ ${filePath.replace(ROOT, '').replace(/\\/g, '/')} — cachebusters atualizados`);
-        return true;
-    }
-    return false;
+function isExternal(src) {
+  return /^(?:[a-z]+:)?\/\//i.test(src)
+    || /^(?:data|blob|chrome-extension):/i.test(src);
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────
-console.log('\n🔧 Injetando cachebusters dinâmicos...\n');
-
-const htmlFiles = readdirSync(ROOT).filter(f => f.endsWith('.html'));
-let updated = 0;
-let total = 0;
-
-for (const file of htmlFiles) {
-    const filePath = join(ROOT, file);
-    if (processHtml(filePath)) updated++;
-    total++;
+function resolveScriptPath(htmlPath, src) {
+  const clean = String(src || '').split(/[?#]/, 1)[0];
+  if (!clean || isExternal(clean)) return '';
+  if (clean.startsWith('/')) return resolve(ROOT, clean.slice(1));
+  return resolve(dirname(htmlPath), clean);
 }
 
-console.log(`\n✅ ${updated} arquivos atualizados de ${total} HTMLs processados.\n`);
+function isCanonicalFirebaseModule(src) {
+  return /(?:^|\/)firebase-(?:init|compat-bridge)\.js$/i.test(String(src || '').replace(/\\/g, '/'));
+}
+
+function updateExecutableSegment(segment, htmlPath) {
+  const patterns = [
+    { type: 'script', regex: /(<script\b[^>]*\bsrc\s*=\s*["'])([^"'?#]+\.js)(?:\?v=[^"'#\s]*)?(["'])/gi },
+    { type: 'dynamic-import', regex: /(import\s*\(\s*["'])([^"'?#]+\.js)(?:\?v=[^"'#\s]*)?(["']\s*\))/gi },
+    { type: 'static-import', regex: /((?:from\s*|import\s*)["'])([^"'?#]+\.js)(?:\?v=[^"'#\s]*)?(["'])/gi }
+  ];
+
+  let updated = segment;
+  let replacements = 0;
+  for (const { type, regex } of patterns) {
+    updated = updated.replace(regex, (match, prefix, src, suffix) => {
+      if (type !== 'script' && isCanonicalFirebaseModule(src)) {
+        const replacement = `${prefix}${src}${suffix}`;
+        if (replacement !== match) replacements += 1;
+        return replacement;
+      }
+      const absolute = resolveScriptPath(htmlPath, src);
+      const hash = absolute ? hashFile(absolute) : null;
+      if (!hash) return match;
+      const replacement = `${prefix}${src}?v=${hash}${suffix}`;
+      if (replacement !== match) replacements += 1;
+      return replacement;
+    });
+  }
+  return { updated, replacements };
+}
+
+function processHtml(relativePath) {
+  const absolute = resolve(ROOT, relativePath);
+  const source = readFileSync(absolute, 'utf8');
+  const segments = source.split(/(<!--[\s\S]*?-->)/g);
+  let replacements = 0;
+
+  const updated = segments.map(segment => {
+    if (segment.startsWith('<!--')) return segment;
+    const result = updateExecutableSegment(segment, absolute);
+    replacements += result.replacements;
+    return result.updated;
+  }).join('');
+
+  if (updated !== source) writeFileSync(absolute, updated, 'utf8');
+  return replacements;
+}
+
+let filesUpdated = 0;
+let referencesUpdated = 0;
+for (const file of getHtmlFiles()) {
+  const count = processHtml(file);
+  if (count > 0) {
+    filesUpdated += 1;
+    referencesUpdated += count;
+    console.log(`Atualizado ${file}: ${count} referência(s)`);
+  }
+}
+
+console.log(
+  `Cachebusters concluídos: ${referencesUpdated} referência(s) em ${filesUpdated} HTML(s).`
+);

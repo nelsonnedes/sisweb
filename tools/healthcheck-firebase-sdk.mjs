@@ -1,400 +1,328 @@
+#!/usr/bin/env node
 /**
- * tools/healthcheck-firebase-sdk.mjs
+ * Valida o bootstrap Firebase dos artefatos que realmente entram no Hosting.
  *
- * Healthcheck do Firebase SDK + compliance com firebase-init.js.
- * Verifica se todas as páginas HTML usam o módulo compartilhado
- * firebase-init.js como ÚNICO ponto de import do Firebase SDK,
- * detectando imports diretos do CDN que bypassam o singleton.
- *
- * Uso:
- *   node tools/healthcheck-firebase-sdk.mjs               # verificação local
- *   node tools/healthcheck-firebase-sdk.mjs --production   # + HEAD requests CDN
- *   node tools/healthcheck-firebase-sdk.mjs --json         # saída JSON estruturada
- *   node tools/healthcheck-firebase-sdk.mjs --ci           # exit code 1 se erro
- *   node tools/healthcheck-firebase-sdk.mjs --help         # ajuda
+ * Por padrão o escopo vem de hosting-files.json. Use --all para auditar também
+ * páginas e scripts legados que não são publicados.
  */
 
-import { readFileSync, readdirSync, existsSync } from 'fs';
-import { join } from 'path';
-import https from 'https';
-import http from 'http';
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  statSync
+} from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
+import {
+  dirname,
+  extname,
+  join,
+  normalize,
+  relative,
+  resolve,
+  sep
+} from 'node:path';
 
-// ─── Config ───────────────────────────────────────────────────────────────────
 const TARGET_VERSION = '10.7.1';
-const OBSOLETE_VERSIONS = ['9.6.1', '9.22.0', '9.23.0'];
-const ALLOWED_VERSIONS = [TARGET_VERSION];
 const PROJECT_ROOT = process.cwd();
+const MANIFEST_PATH = join(PROJECT_ROOT, 'hosting-files.json');
 const FIREBASE_INIT_MODULE = 'firebase-init.js';
-
-// Padrões para detecção de imports diretos do CDN (bypass do singleton)
-const CDN_IMPORT_RE = /(?:from\s+|import\s*\()\s*['"][^'"]*firebasejs\/([^'"]*?)\/([^'"]*?)(?:\.js|\.mjs)(?:\?[^'"]*)?['"]/gi;
-const CDN_SCRIPT_RE = /(?:src|href)="[^"]*firebasejs\/([^"]*?)\/([^"]*?)(?:\.js|\.mjs)(?:\?[^"']*)?"/gi;
-const FIREBASE_INIT_IMPORT_RE = /from\s*['"]\.\/firebase-init\.js['"]|import\(['"]\.\/firebase-init\.js/gi;
-
+const FIREBASE_BRIDGE_MODULE = 'firebase-compat-bridge.js';
 const args = process.argv.slice(2);
 const CHECK_PRODUCTION = args.includes('--production');
 const OUTPUT_JSON = args.includes('--json');
 const CI_MODE = args.includes('--ci');
+const AUDIT_ALL = args.includes('--all');
+
+const FIREBASE_CDN_RE = /https?:\/\/www\.gstatic\.com\/firebasejs\/([^/'"\s)]+)\/([^'"\s)?]+)(?:\?[^'"\s)]*)?/gi;
+const FIREBASE_INIT_IMPORT_RE = /(?:from\s*|import\s*\(\s*)['"][^'"]*firebase-init\.js(?:\?[^'"]*)?['"]/gi;
+const FIREBASE_BRIDGE_IMPORT_RE = /(?:from\s*|import\s*\(\s*|import\s*)['"][^'"]*firebase-compat-bridge\.js(?:\?[^'"]*)?['"]/gi;
 
 if (args.includes('--help')) {
   console.log(`
-  Firebase SDK Healthcheck v1.1 — compliance com firebase-init.js
-  ===============================================================
-  Verifica versão do Firebase SDK e compliance com módulo compartilhado.
+Firebase SDK Healthcheck
 
-  Flags:
-    --production   Testa URLs CDN com HEAD request (valida se servem)
-    --json         Saída JSON estruturada (para pipelines)
-    --ci           Exit code 1 se houver qualquer erro ou warning
-    --help         Mostra esta ajuda
+Uso:
+  node tools/healthcheck-firebase-sdk.mjs [--ci] [--json]
 
-  Novas verificações (v1.1):
-    • firebase-init.js existe     — módulo singleton obrigatório
-    • Pages com Firebase          — devem importar via firebase-init.js
-    • Pages sem import do init    — se têm Firebase direto do CDN, é ERRO
-
-  Exemplos:
-    node tools/healthcheck-firebase-sdk.mjs
-    node tools/healthcheck-firebase-sdk.mjs --production --json
-    node tools/healthcheck-firebase-sdk.mjs --ci
-  `);
+Flags:
+  --all          inclui fontes legadas fora de hosting-files.json
+  --production   valida as URLs do SDK com HEAD
+  --json         emite relatório estruturado
+  --ci           retorna exit code 1 para erro ou warning
+`);
   process.exit(0);
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+function toPosix(value) {
+  return value.split(sep).join('/');
+}
 
-function extractFirebaseRefs(html) {
-  const refs = [];
-  const urlPattern = /(?:src|href)="([^"]*firebasejs\/([^"]*?)\/([^"]*?)(?:\.js|\.mjs)(?:\?[^"']*)?)"/gi;
-  const importPattern = /(?:from\s+|import\s*\()\s*['"]([^'"]*firebasejs\/([^'"]*?)\/([^'"]*?)(?:\.js|\.mjs)(?:\?[^'"]*)?)['"]/gi;
+function normalizeProjectPath(value) {
+  const absolute = resolve(PROJECT_ROOT, value);
+  const rel = relative(PROJECT_ROOT, absolute);
+  if (!rel || rel === '..' || rel.startsWith(`..${sep}`)) return '';
+  return toPosix(normalize(rel));
+}
 
-  let match;
-  while ((match = urlPattern.exec(html)) !== null) {
-    refs.push({ url: match[1], version: match[2], module: match[3], type: 'script' });
+function readManifest() {
+  const entries = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
+  if (!Array.isArray(entries)) throw new Error('hosting-files.json inválido.');
+  return entries.map(normalizeProjectPath).filter(Boolean);
+}
+
+function walkFiles(directory, output = []) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    if (['.git', '.freebuff', 'hosting-dist', 'node_modules'].includes(entry.name)) continue;
+    const absolute = join(directory, entry.name);
+    if (entry.isDirectory()) walkFiles(absolute, output);
+    else output.push(normalizeProjectPath(absolute));
   }
-  while ((match = importPattern.exec(html)) !== null) {
-    refs.push({ url: match[1], version: match[2], module: match[3], type: 'import' });
+  return output;
+}
+
+function getScopeFiles() {
+  return AUDIT_ALL ? walkFiles(PROJECT_ROOT) : readManifest();
+}
+
+function stripQueryAndHash(specifier) {
+  return String(specifier || '').split(/[?#]/, 1)[0];
+}
+
+function isExternalSpecifier(specifier) {
+  return /^(?:[a-z]+:)?\/\//i.test(specifier)
+    || /^(?:data|blob|chrome-extension):/i.test(specifier);
+}
+
+function extractLocalDependencies(source, sourceFile) {
+  const analyzableSource = extname(sourceFile).toLowerCase() === '.html'
+    ? source.replace(/<!--[\s\S]*?-->/g, '')
+    : source;
+  const specs = [];
+  const patterns = [
+    /<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi,
+    /(?:from\s*|import\s*\(\s*|import\s*)["']([^"']+)["']/gi
+  ];
+
+  for (const pattern of patterns) {
+    let match;
+    while ((match = pattern.exec(analyzableSource)) !== null) specs.push(match[1]);
+  }
+
+  const sourceDir = dirname(join(PROJECT_ROOT, sourceFile));
+  return [...new Set(specs)]
+    .filter(spec => !isExternalSpecifier(spec))
+    .map(stripQueryAndHash)
+    .filter(spec => /\.(?:js|mjs|html)$/i.test(spec))
+    .map(spec => {
+      if (spec.startsWith('/')) return normalizeProjectPath(spec.slice(1));
+      return normalizeProjectPath(resolve(sourceDir, spec));
+    })
+    .filter(Boolean);
+}
+
+function extractFirebaseRefs(source, file) {
+  const refs = [];
+  FIREBASE_CDN_RE.lastIndex = 0;
+  let match;
+  while ((match = FIREBASE_CDN_RE.exec(source)) !== null) {
+    refs.push({
+      file,
+      url: match[0],
+      version: match[1],
+      module: match[2]
+    });
   }
   return refs;
 }
 
-function detectDuplication(refs) {
-  const count = {};
-  for (const ref of refs) {
-    const key = ref.module.replace('-compat', '');
-    count[key] = (count[key] || 0) + 1;
+function collectDependencyClosure(entryFile, allowedFiles) {
+  const visited = new Set();
+  const missing = new Set();
+  const queue = [entryFile];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || visited.has(current)) continue;
+    visited.add(current);
+
+    const absolute = join(PROJECT_ROOT, current);
+    if (!existsSync(absolute) || !statSync(absolute).isFile()) {
+      missing.add(current);
+      continue;
+    }
+
+    const source = readFileSync(absolute, 'utf8');
+    for (const dependency of extractLocalDependencies(source, current)) {
+      if (!AUDIT_ALL && !allowedFiles.has(dependency)) {
+        missing.add(dependency);
+        continue;
+      }
+      if (!visited.has(dependency)) queue.push(dependency);
+    }
   }
-  return Object.entries(count).filter(([, c]) => c > 1).map(([mod]) => mod);
+
+  return { visited, missing };
 }
 
-function httpHead(url) {
-  return new Promise((resolve) => {
-    const client = url.startsWith('https') ? https : http;
-    const req = client.request(url, { method: 'HEAD', timeout: 10000 }, (res) => {
-      resolve({ status: res.statusCode, ok: res.statusCode >= 200 && res.statusCode < 400 });
-    });
-    req.on('error', () => resolve({ status: 0, ok: false, error: 'REQUEST_FAILED' }));
-    req.on('timeout', () => { req.destroy(); resolve({ status: 0, ok: false, error: 'TIMEOUT' }); });
-    req.end();
-  });
-}
+function checkFirebaseInitCompliance(entryFile, allowedFiles) {
+  const { visited, missing } = collectDependencyClosure(entryFile, allowedFiles);
+  const refs = [];
+  let hasExplicitInitImport = false;
+  let hasExplicitBridgeImport = false;
 
-/**
- * Verifica compliance com firebase-init.js:
- * - firebase-init.js existe no projeto
- * - Páginas com Firebase devem importar de firebase-init.js
- * - Páginas NÃO devem importar Firebase diretamente do CDN
- */
-function checkFirebaseInitCompliance(html, filePath) {
+  for (const file of visited) {
+    const absolute = join(PROJECT_ROOT, file);
+    if (!existsSync(absolute)) continue;
+    const rawSource = readFileSync(absolute, 'utf8');
+    const source = extname(file).toLowerCase() === '.html'
+      ? rawSource.replace(/<!--[\s\S]*?-->/g, '')
+      : rawSource;
+    refs.push(...extractFirebaseRefs(source, file));
+    FIREBASE_INIT_IMPORT_RE.lastIndex = 0;
+    FIREBASE_BRIDGE_IMPORT_RE.lastIndex = 0;
+    hasExplicitInitImport ||= FIREBASE_INIT_IMPORT_RE.test(source);
+    hasExplicitBridgeImport ||= FIREBASE_BRIDGE_IMPORT_RE.test(source);
+  }
+
+  const hasFirebaseBootstrap = visited.has(FIREBASE_INIT_MODULE)
+    || visited.has(FIREBASE_BRIDGE_MODULE)
+    || hasExplicitInitImport
+    || hasExplicitBridgeImport;
+  const directOutsideBootstrap = refs.filter(ref => ref.file !== FIREBASE_INIT_MODULE);
+  const versions = [...new Set(refs.map(ref => ref.version))].sort();
   const issues = [];
 
-  // 1. Detecta imports diretos do CDN (from "https://...gstatic.com/firebasejs/...")
-  const cdnImports = [];
-  let m;
-  CDN_IMPORT_RE.lastIndex = 0;
-  while ((m = CDN_IMPORT_RE.exec(html)) !== null) {
-    cdnImports.push({ version: m[1], module: m[2], raw: m[0].trim() });
+  for (const file of missing) issues.push(`DEPENDENCIA_FORA_DO_HOSTING: ${file}`);
+  for (const ref of directOutsideBootstrap) {
+    issues.push(`CDN_DIRETO_FORA_DO_BOOTSTRAP: ${ref.file} -> v${ref.version}/${ref.module}`);
   }
-
-  // 2. Detecta script tags diretos do CDN
-  const cdnScripts = [];
-  CDN_SCRIPT_RE.lastIndex = 0;
-  while ((m = CDN_SCRIPT_RE.exec(html)) !== null) {
-    cdnScripts.push({ version: m[1], module: m[2], raw: m[0].trim() });
+  if (refs.length > 0 && !hasFirebaseBootstrap) {
+    issues.push('BOOTSTRAP_FIREBASE_AUSENTE');
   }
-
-  // 3. Detecta se importa firebase-init.js
-  FIREBASE_INIT_IMPORT_RE.lastIndex = 0;
-  const hasFirebaseInitImport = FIREBASE_INIT_IMPORT_RE.test(html);
-
-  const totalDirectCdn = cdnImports.length + cdnScripts.length;
-
-  // Se tem referências diretas ao CDN mas NÃO importa firebase-init.js → ERRO
-  if (totalDirectCdn > 0 && !hasFirebaseInitImport) {
-    for (const imp of cdnImports) {
-      issues.push(`IMPORT_DIRETO_CDN: ${imp.raw}`);
-    }
-    for (const scr of cdnScripts) {
-      issues.push(`SCRIPT_DIRETO_CDN: ${scr.raw}`);
-    }
-  }
-
-  // Se importa firebase-init.js MAS também tem referências diretas ao CDN → AVISO
-  if (totalDirectCdn > 0 && hasFirebaseInitImport) {
-    for (const imp of cdnImports) {
-      issues.push(`CDN_DIRETO_MESMO_COM_INIT: ${imp.raw}`);
-    }
-    for (const scr of cdnScripts) {
-      issues.push(`CDN_DIRETO_MESMO_COM_INIT: ${scr.raw}`);
-    }
+  for (const version of versions) {
+    if (version !== TARGET_VERSION) issues.push(`VERSAO_FIREBASE_NAO_PERMITIDA: ${version}`);
   }
 
   return {
-    hasFirebaseInitImport,
-    directCdnImports: cdnImports.length,
-    directCdnScripts: cdnScripts.length,
-    totalDirectCdn,
+    hasFirebaseBootstrap,
+    hasFirebaseInitImport: hasFirebaseBootstrap,
+    hasExplicitInitImport,
+    hasExplicitBridgeImport,
+    directCdnImports: directOutsideBootstrap.length,
+    directCdnScripts: 0,
+    directOutsideBootstrap,
+    refs,
+    versions,
+    dependencies: [...visited].sort(),
+    missingDependencies: [...missing].sort(),
     issues
   };
 }
 
-// ─── Core ─────────────────────────────────────────────────────────────────────
+function httpHead(url) {
+  return new Promise(resolveResult => {
+    const client = url.startsWith('https:') ? https : http;
+    const request = client.request(url, { method: 'HEAD', timeout: 10000 }, response => {
+      resolveResult({
+        url,
+        status: response.statusCode,
+        ok: response.statusCode >= 200 && response.statusCode < 400
+      });
+    });
+    request.on('error', () => resolveResult({ url, status: 0, ok: false }));
+    request.on('timeout', () => {
+      request.destroy();
+      resolveResult({ url, status: 0, ok: false });
+    });
+    request.end();
+  });
+}
 
-async function checkFile(filePath, firebaseInitExists) {
-  const html = readFileSync(filePath, 'utf-8');
-  const refs = extractFirebaseRefs(html);
-  const compliance = checkFirebaseInitCompliance(html, filePath);
+async function checkFile(file, allowedFiles) {
+  const compliance = checkFirebaseInitCompliance(file, allowedFiles);
+  const usesFirebase = compliance.refs.length > 0 || compliance.hasFirebaseBootstrap;
+  const errors = [...compliance.issues];
+  const urlResults = [];
 
-  const result = {
-    file: filePath,
-    totalRefs: refs.length,
-    versions: {},
-    obsoleteVersions: [],
-    unknownVersions: [],
-    compatCount: 0,
-    modularCount: 0,
-    dupes: [],
-    urlsOk: 0,
-    urlsFail: 0,
-    urlResults: [],
-    status: 'ok',
-    errors: [],
+  if (CHECK_PRODUCTION && usesFirebase) {
+    const urls = [...new Set(compliance.refs.map(ref => ref.url))];
+    urlResults.push(...await Promise.all(urls.map(httpHead)));
+    for (const result of urlResults) {
+      if (!result.ok) errors.push(`FALHA_CDN_HTTP: ${result.url}`);
+    }
+  }
+
+  return {
+    file,
+    status: !usesFirebase ? 'no_firebase' : errors.length > 0 ? 'error' : 'ok',
+    totalRefs: compliance.refs.length,
+    versions: compliance.versions,
+    errors,
+    urlResults,
     compliance
   };
-
-  if (refs.length === 0) {
-    result.status = 'no_firebase';
-    return result;
-  }
-
-  // Parallel HTTP checks when in production mode
-  const httpChecks = [];
-
-  for (const ref of refs) {
-    result.versions[ref.version] = (result.versions[ref.version] || 0) + 1;
-    if (ref.module.includes('-compat')) result.compatCount++;
-    else result.modularCount++;
-
-    if (OBSOLETE_VERSIONS.includes(ref.version)) {
-      result.obsoleteVersions.push(ref);
-      result.errors.push(`OBSOLETO v${ref.version} -> ${ref.url}`);
-    } else if (!ALLOWED_VERSIONS.includes(ref.version)) {
-      result.unknownVersions.push(ref);
-      result.errors.push(`DESCONHECIDO v${ref.version} -> ${ref.url}`);
-    }
-
-    if (CHECK_PRODUCTION) {
-      httpChecks.push(
-        httpHead(ref.url).then(httpResult => {
-          if (httpResult.ok) {
-            result.urlsOk++;
-            result.urlResults.push({ url: ref.url, status: httpResult.status, ok: true });
-          } else {
-            result.urlsFail++;
-            const errMsg = httpResult.error || `HTTP ${httpResult.status}`;
-            result.urlResults.push({ url: ref.url, status: httpResult.status, ok: false, error: errMsg });
-            result.errors.push(`HTTP ${errMsg} -> ${ref.url}`);
-          }
-        })
-      );
-    }
-  }
-
-  if (httpChecks.length > 0) {
-    await Promise.all(httpChecks);
-  }
-
-  // Detect duplicates
-  result.dupes = detectDuplication(refs);
-  if (result.dupes.length > 0) {
-    result.errors.push(`DUPLICADO: modulos carregados 2+ vezes: ${result.dupes.join(', ')}`);
-  }
-
-  // Compliance: versões obsoletas ou imports diretos do CDN sem firebase-init
-  if (!compliance.hasFirebaseInitImport && compliance.totalDirectCdn > 0) {
-    for (const issue of compliance.issues) {
-      result.errors.push(`COMPLIANCE: ${issue}`);
-    }
-  } else if (compliance.hasFirebaseInitImport && compliance.totalDirectCdn > 0) {
-    for (const issue of compliance.issues) {
-      result.errors.push(`COMPLIANCE_WARN: ${issue}`);
-    }
-  }
-
-  // Verifica se firebase-init.js existe (relatado apenas na primeira página com Firebase)
-  // O report já mostra o status no resumo, não poluir cada página com o mesmo erro.
-
-  // Final status
-  const hasComplianceError = compliance.totalDirectCdn > 0 && !compliance.hasFirebaseInitImport;
-  const hasComplianceWarning = compliance.totalDirectCdn > 0 && compliance.hasFirebaseInitImport;
-  const hasSystemError = !firebaseInitExists && result.totalRefs > 0;
-
-  if (result.obsoleteVersions.length > 0 || result.unknownVersions.length > 0 || hasComplianceError || hasSystemError) {
-    result.status = 'error';
-  } else if (result.dupes.length > 0 || result.urlsFail > 0 || hasComplianceWarning) {
-    result.status = 'warning';
-  }
-
-  return result;
 }
 
-// ─── Report ───────────────────────────────────────────────────────────────────
-
-function buildReport(results, firebaseInitExists) {
-  const total = results.length;
-  const withFirebase = results.filter(r => r.status !== 'no_firebase');
-  const ok = results.filter(r => r.status === 'ok' && r.totalRefs > 0);
-  const warnings = results.filter(r => r.status === 'warning');
-  const errors = results.filter(r => r.status === 'error');
-  const noFb = results.filter(r => r.status === 'no_firebase');
-
-  const pagesWithInit = results.filter(r => r.compliance && r.compliance.hasFirebaseInitImport).length;
-  const pagesWithDirectCdn = results.filter(r => r.compliance && r.compliance.totalDirectCdn > 0).length;
-
-  let report = '';
-  const t = (s) => { report += s + '\n'; };
-
-  t('╔══════════════════════════════════════════════════════════╗');
-  t('║      Firebase SDK Healthcheck Report                    ║');
-  t('╚══════════════════════════════════════════════════════════╝');
-  t('');
-  t(`  Versão alvo:        v${TARGET_VERSION}`);
-  t(`  Verificação:        ${CHECK_PRODUCTION ? 'CDN URLs (HTTP)' : 'Padrões locais'}`);
-  t(`  Modo CI:            ${CI_MODE ? 'SIM' : 'não'}`);
-  t(`  firebase-init.js:   ${firebaseInitExists ? '✅ presente' : '❌ AUSENTE'}`);
-  t('');
-  t(`  ─── Resumo ───`);
-  t(`  Total HTMLs:              ${total}`);
-  t(`  Com Firebase SDK:         ${withFirebase.length}`);
-  t(`  Sem Firebase:             ${noFb.length}`);
-  t(`  OK:                       ${ok.length}`);
-  t(`  Warnings:                 ${warnings.length}`);
-  t(`  Erros:                    ${errors.length}`);
-  t('');
-  t(`  ─── Compliance firebase-init.js ───`);
-  t(`  Pages importando init:    ${pagesWithInit}`);
-  t(`  Pages com CDN direto:     ${pagesWithDirectCdn}`);
-  t('');
-
-  if (errors.length > 0) {
-    t('  ─── PÁGINAS COM ERRO ───');
-    for (const r of errors) {
-      t(`  ❌ ${pathRelative(r.file)}`);
-      for (const e of r.errors) t(`     ${e}`);
-      t('');
-    }
-  }
-
-  if (warnings.length > 0) {
-    t('  ─── PÁGINAS COM WARNING ───');
-    for (const r of warnings) {
-      t(`  ⚠️  ${pathRelative(r.file)}`);
-      for (const e of r.errors) t(`     ${e}`);
-      t('');
-    }
-  }
-
-  if (ok.length > 0) {
-    t('  ─── PÁGINAS OK ───');
-    for (const r of ok) {
-      const stats = [];
-      if (r.compatCount > 0) stats.push(`${r.compatCount} compat`);
-      if (r.modularCount > 0) stats.push(`${r.modularCount} modular`);
-      let line = `  ✅ ${pathRelative(r.file)}  [${stats.join(', ')}]`;
-      if (r.dupes.length > 0) line += ` ⚠️ duplicado: ${r.dupes.join(',')}`;
-      if (r.compliance && r.compliance.hasFirebaseInitImport) line += ' 📦 init';
-      t(line);
-    }
-    t('');
-  }
-
-  if (noFb.length > 0) {
-    t(`  ─── SEM FIREBASE (${noFb.length}) ───`);
-    for (const r of noFb) t(`  ➖ ${pathRelative(r.file)}`);
-    t('');
-  }
-
-  const hasErrors = errors.length > 0;
-  const hasWarnings = warnings.length > 0;
-  const summaryStatus = !hasErrors && !hasWarnings ? '✅ SAUDÁVEL' :
-    hasErrors ? `❌ ${errors.length} página(s) com erro` :
-    `⚠️  ${warnings.length} página(s) com warning`;
-
-  t(`  Status: ${summaryStatus}`);
-  t('');
-
-  return { report, hasErrors, hasWarnings };
+function buildSummary(results, firebaseInitExists) {
+  return {
+    totalPages: results.length,
+    pagesWithFirebase: results.filter(item => item.status !== 'no_firebase').length,
+    pagesWithoutFirebase: results.filter(item => item.status === 'no_firebase').length,
+    ok: results.filter(item => item.status === 'ok').length,
+    warnings: results.filter(item => item.status === 'warning').length,
+    errors: results.filter(item => item.status === 'error').length,
+    pagesWithBootstrap: results.filter(item => item.compliance.hasFirebaseBootstrap).length,
+    directOutsideBootstrap: results.reduce(
+      (total, item) => total + item.compliance.directOutsideBootstrap.length,
+      0
+    ),
+    firebaseInitExists
+  };
 }
 
-function pathRelative(fullPath) {
-  const normPath = fullPath.replace(/\\/g, '/');
-  const normRoot = PROJECT_ROOT.replace(/\\/g, '/');
-  return normPath.replace(normRoot, '').replace(/^\/+/, '') || fullPath;
-}
+function renderText(report) {
+  const lines = [
+    'Firebase SDK Healthcheck',
+    `Escopo: ${report.scope}`,
+    `Páginas: ${report.summary.totalPages}`,
+    `Com Firebase: ${report.summary.pagesWithFirebase}`,
+    `Com bootstrap: ${report.summary.pagesWithBootstrap}`,
+    `CDN direto fora do bootstrap: ${report.summary.directOutsideBootstrap}`,
+    `Erros: ${report.summary.errors}`
+  ];
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+  for (const result of report.results.filter(item => item.status === 'error')) {
+    lines.push(`ERRO ${result.file}`);
+    for (const issue of result.errors) lines.push(`  ${issue}`);
+  }
+  return `${lines.join('\n')}\n`;
+}
 
 async function main() {
-  const htmlFiles = readdirSync(PROJECT_ROOT).filter(f => f.endsWith('.html'));
+  const scopeFiles = getScopeFiles();
+  const allowedFiles = new Set(scopeFiles);
+  const htmlFiles = scopeFiles.filter(file => extname(file).toLowerCase() === '.html');
   const firebaseInitExists = existsSync(join(PROJECT_ROOT, FIREBASE_INIT_MODULE));
   const results = [];
 
-  for (const file of htmlFiles) {
-    const filePath = join(PROJECT_ROOT, file);
-    const result = await checkFile(filePath, firebaseInitExists);
-    results.push(result);
-  }
+  for (const file of htmlFiles) results.push(await checkFile(file, allowedFiles));
 
-  if (OUTPUT_JSON) {
-    const output = results.map(r => ({
-      file: pathRelative(r.file),
-      status: r.status,
-      totalRefs: r.totalRefs,
-      versions: r.versions,
-      obsoleteVersions: r.obsoleteVersions.length,
-      unknownVersions: r.unknownVersions.length,
-      compatCount: r.compatCount,
-      modularCount: r.modularCount,
-      dupes: r.dupes,
-      errors: r.errors,
-      urlResults: r.urlResults.length > 0 ? r.urlResults : undefined,
-      compliance: r.compliance ? {
-        hasFirebaseInitImport: r.compliance.hasFirebaseInitImport,
-        directCdnImports: r.compliance.directCdnImports,
-        directCdnScripts: r.compliance.directCdnScripts
-      } : undefined
-    }));
-    process.stdout.write(JSON.stringify(output, null, 2) + '\n');
-  } else {
-    const { report, hasErrors, hasWarnings } = buildReport(results, firebaseInitExists);
-    process.stdout.write(report);
-    if (CI_MODE && (hasErrors || hasWarnings)) {
-      process.exit(1);
-    }
+  const report = {
+    scope: AUDIT_ALL ? 'all' : 'hosting',
+    targetVersion: TARGET_VERSION,
+    summary: buildSummary(results, firebaseInitExists),
+    results
+  };
+
+  process.stdout.write(OUTPUT_JSON ? `${JSON.stringify(report, null, 2)}\n` : renderText(report));
+  if (CI_MODE && (report.summary.errors > 0 || report.summary.warnings > 0)) {
+    process.exitCode = 1;
   }
 }
 
-main().catch(err => {
-  console.error('FATAL:', err.message);
-  process.exit(1);
+main().catch(error => {
+  console.error(`FATAL: ${error.message}`);
+  process.exitCode = 1;
 });

@@ -15,11 +15,11 @@
 
     <script type="module">
 
-        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=21eb04e409d8';
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js';
 import './firebase-compat-bridge.js';  // compat shim
 
     </script><!-- Menu Component -->
-    <script src="menu-component.js?v=f97c4a2dae9f"></script>
+    <script src="menu-component.js?v=a26e67eb025d"></script>
     <script src="species-utils.js?v=4c5147a6f4fe"></script>
     
     <style>
@@ -200,7 +200,7 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
 
     <!-- Scripts -->
     <script type="module">
-        import './modules/core/firebase-service.js';
+        import './modules/core/firebase-service.js?v=f1a56093d8d4';
 
         const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
         if (!svc) throw new Error('FirebaseService não disponível');

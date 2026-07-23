@@ -249,5 +249,5 @@ test('PWA e abas comerciais usam cachebuster fiscal atual', () => {
   assert.match(read('compras.html'), /compras\.js\?v=[^"'\s]+/);
   assert.match(read('client.html'), /js\/client\.js\?v=[^"'\s]+/);
   assert.match(read('fornecedor.html'), /js\/fornecedor\.js\?v=[^"'\s]+/);
-  assert.match(read('sw.js'), /const APP_VERSION = '2026-07-21-coderabbit-hardening-v1'/);
+  assert.match(read('sw.js'), /const APP_VERSION = '2026-07-23-firebase-bootstrap-rollout-v1'/);
 });

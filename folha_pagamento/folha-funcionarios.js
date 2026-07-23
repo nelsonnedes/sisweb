@@ -1192,7 +1192,7 @@ class FolhaFuncionarios {
             const collection = window.FUNCIONARIOS_CONFIG ? window.FUNCIONARIOS_CONFIG.COLLECTION : 'funcionarios';
             console.log(`🗑️ Removendo da coleção: ${collection}`);
             if (window.database) {
-                const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                const { ref, remove } = await import('../firebase-init.js');
                 const resolvePath = (p) => {
                     try {
                         if (window.FolhaUtils && typeof window.FolhaUtils.resolveFirebasePath === 'function') {

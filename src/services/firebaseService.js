@@ -1,16 +1,9 @@
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
-  authDomain: "sisweb-7ce82.firebaseapp.com",
-  databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "sisweb-7ce82",
-  storageBucket: "sisweb-7ce82.firebasestorage.app",
-  messagingSenderId: "240003261222",
-  appId: "1:240003261222:web:1aeaf919ddc7e5c691d7e7",
-  measurementId: "G-FTC6JZ5ZGX"
-};
+import '../../firebase-compat-bridge.js';
 
-const app = !firebase.apps.length ? firebase.initializeApp(firebaseConfig) : firebase.getApp();
+const firebase = window.firebase;
+if (!firebase) throw new Error('Ponte Firebase compartilhada indisponível.');
+
+const app = firebase.app;
 const authService = firebase.auth();
 const rtdbService = typeof firebase.database === 'function' ? firebase.database() : null;
 let tenantId = null;

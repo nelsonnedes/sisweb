@@ -21,6 +21,8 @@ test('estoque e financas exigem tenant autenticado online antes do carregamento 
   assert.match(estoqueHtml, /estoque\.js\?v=[^"'\s]+/);
   assert.match(financasHtml, /financas\.js\?v=[^"'\s]+/);
   assert.match(financasHtml, /window\.__siswebFirebaseServiceReady = \(async function/);
+  assert.match(financasHtml, /function normalizeFinanceLegacyPath\(path\)[\s\S]*\^contas_\?pagar[\s\S]*'financas\/pagar\$1'/);
+  assert.doesNotMatch(financasHtml, /const alts = new Set\(\[base\]\)/);
   assert.match(financasHtml, /resolveAuthenticatedTenant: firebaseSvc\.resolveAuthenticatedTenant \|\| existingFirebaseService\.resolveAuthenticatedTenant/);
 
   assert.match(estoqueJs, /function isFirebaseOfflineModeEstoque\(\)/);

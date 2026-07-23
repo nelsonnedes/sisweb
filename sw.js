@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-07-21-coderabbit-hardening-v1';
+const APP_VERSION = '2026-07-23-firebase-bootstrap-rollout-v1';
 const CACHE_NAME = `sisweb-runtime-${APP_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',

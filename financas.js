@@ -9053,7 +9053,7 @@ async function getData(key) {
         // ✅ CORREÇÃO: Usar Firebase diretamente se disponível
         if (window.database) {
             try {
-                const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                const { ref, get } = await import('./firebase-init.js');
                 const dataRef = ref(window.database, key);
                 const snapshot = await get(dataRef);
                 

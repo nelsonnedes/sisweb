@@ -169,3 +169,20 @@ test('updateMyCompanyProfile permite somente conta primaria marcada por ownerUid
   assert.match(accessBlock, /\|\| primaryCompanyAccount/);
   assert.doesNotMatch(accessBlock, /subscriptionStatus\s*={0,3}\s*'active'/);
 });
+
+test('updateMyCompanyProfile repara membership legado somente depois de autorizar o tenant', () => {
+  const source = read('functions/index.js');
+  const updateBlock = blockBetween(
+    source,
+    'exports.updateMyCompanyProfile',
+    'function normalizeSelfProfilePayload'
+  );
+  const accessIndex = updateBlock.indexOf('await assertCompanyProfileWriteAccess(context, companyId, userData, token)');
+  const repairIndex = updateBlock.indexOf('await applyUserPatchAcrossScopes(uid, {');
+  const profileWriteIndex = updateBlock.indexOf('await profileRef.set(nextProfile)');
+
+  assert.ok(accessIndex >= 0, 'autorizacao do tenant deve existir');
+  assert.ok(repairIndex > accessIndex, 'reparo deve ocorrer somente depois da autorizacao');
+  assert.ok(profileWriteIndex > repairIndex, 'perfil deve ser salvo depois do reparo de membership');
+  assert.match(updateBlock, /companyId,\s*email: sanitizeText\(token\.email \|\| userData\.email \|\| '', ''\)/);
+});

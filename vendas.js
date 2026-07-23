@@ -2068,6 +2068,8 @@ async function salvarPedido(event) {
         }
         
         let multiUpdateDone = false;
+        let hasFinanceMutation = removiveis.length > 0
+            || (shouldGenerateFinance && Array.isArray(pedidoData.contasReceber) && pedidoData.contasReceber.length > 0);
         if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
             const contasFin = shouldGenerateFinance ? (pedidoData.contasReceber || []).map((conta, idx) => {
                 const crId = `CR_${pedidoData.id}_${String(idx + 1).padStart(3, '0')}`;
@@ -2116,6 +2118,8 @@ async function salvarPedido(event) {
                 updatesAdd[`financas/receber/${mk}/${String(c.id)}`] = c;
             });
             updatesAdd[`vendas/pedidos/${String(pedidoData.id)}`] = pedidoData;
+            hasFinanceMutation = hasFinanceMutation
+                || Object.keys(updatesAdd).some(path => String(path).startsWith('financas/receber/'));
             
             console.log('📦 Enviando updatePaths para Firebase:', Object.keys(updatesAdd).length, 'caminhos');
             const res = await window.firebaseService.updatePaths(updatesAdd);
@@ -2129,8 +2133,11 @@ async function salvarPedido(event) {
         }
         
         if (!multiUpdateDone) {
-            if (editandoPedidoId && !shouldGenerateFinance && removiveis.length > 0) {
+            if (hasFinanceMutation && editandoPedidoId && !shouldGenerateFinance && removiveis.length > 0) {
                 throw new Error('Não foi possível estornar o financeiro vinculado. Nenhuma alteração foi concluída.');
+            }
+            if (hasFinanceMutation) {
+                throw new Error('Não foi possível sincronizar o financeiro do pedido de venda. Nenhuma alteração foi concluída.');
             }
             // Fallback para salvamento individual
             await saveData('vendas/pedidos', window.pedidos);

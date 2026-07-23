@@ -7,6 +7,7 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -179,6 +180,19 @@ test('firebase-compat-bridge.js importa de firebase-init.js corretamente', () =>
   assert.match(source, /currentUser/, 'bridge deve emular currentUser');
 });
 
+test('serviço da empresa aguarda a ponte modular antes de acessar Firebase', () => {
+  const company = read('company.html');
+  const service = read('src/services/firebaseService.js');
+
+  assert.match(
+    company,
+    /<script type="module" src="src\/services\/firebaseService\.js\?v=[0-9a-f]{12}"><\/script>/
+  );
+  assert.match(service, /import '\.\.\/\.\.\/firebase-compat-bridge\.js'/);
+  assert.match(service, /const firebase = window\.firebase/);
+  assert.doesNotMatch(service, /const firebaseConfig =/);
+});
+
 test('firebase-init.js — arquivo principal não regrediu em tamanho', () => {
   const source = read('firebase-init.js');
   const lines = source.split('\n').length;
@@ -194,10 +208,68 @@ test('healthcheck-firebase-sdk.mjs inclui verificação de compliance', () => {
   // Deve ter as verificações de compliance
   assert.match(source, /checkFirebaseInitCompliance/,
     'healthcheck deve ter função checkFirebaseInitCompliance');
-  assert.match(source, /COMPLIANCE/,
-    'healthcheck deve reportar COMPLIANCE');
+  assert.match(source, /hasFirebaseBootstrap/,
+    'healthcheck deve verificar o bootstrap completo');
   assert.match(source, /hasFirebaseInitImport/,
-    'healthcheck deve verificar hasFirebaseInitImport');
-  assert.match(source, /CDN_DIRETO_MESMO_COM_INIT|FIREBASE_INIT_MODULE/,
+    'healthcheck deve manter compatibilidade do relatório');
+  assert.match(source, /CDN_DIRETO_FORA_DO_BOOTSTRAP|FIREBASE_INIT_MODULE/,
     'healthcheck deve detectar CDN direto');
+});
+
+test('healthcheck reconhece o bootstrap compartilhado nas páginas publicadas', () => {
+  const run = spawnSync(
+    process.execPath,
+    ['tools/healthcheck-firebase-sdk.mjs', '--json', '--ci'],
+    {
+      cwd: new URL('..', import.meta.url),
+      encoding: 'utf8'
+    }
+  );
+
+  assert.equal(run.status, 0, run.stderr || run.stdout);
+  const report = JSON.parse(run.stdout);
+  assert.equal(report.scope, 'hosting');
+  assert.ok(report.summary.pagesWithFirebase > 0, 'deve reconhecer páginas Firebase no Hosting');
+  assert.equal(report.summary.errors, 0, 'não deve haver páginas publicadas fora do bootstrap');
+
+  const folha = report.results.find(item => item.file === 'folha_pagamento/folha.html');
+  assert.ok(folha, 'folha.html deve fazer parte do escopo publicado');
+  assert.equal(folha.status, 'ok');
+  assert.equal(folha.compliance.hasFirebaseBootstrap, true);
+});
+
+test('auditoria de cache e SDK considera somente artefatos publicados por padrão', () => {
+  const run = spawnSync(
+    process.execPath,
+    ['tools/audit-cachebusters.mjs', '--json', '--ci'],
+    {
+      cwd: new URL('..', import.meta.url),
+      encoding: 'utf8'
+    }
+  );
+
+  assert.equal(run.status, 0, run.stderr || run.stdout);
+  const report = JSON.parse(run.stdout);
+  assert.equal(report.scope, 'hosting');
+  assert.equal(report.summary.localWithoutVersion, 0);
+  assert.deepEqual(report.firebaseSdk.versions, ['10.7.1']);
+  assert.equal(report.firebaseSdk.directOutsideBootstrap, 0);
+});
+
+test('módulos Firebase compartilhados usam URL canônica sem query string', () => {
+  const hostedFiles = JSON.parse(read('hosting-files.json'));
+  const invalidReferences = [];
+
+  for (const file of hostedFiles.filter(item => item.endsWith('.html') || item.endsWith('.js'))) {
+    const source = read(file).replace(/<!--[\s\S]*?-->/g, '');
+    if (/firebase-(?:init|compat-bridge)\.js\?v=/i.test(source)) {
+      invalidReferences.push(file);
+    }
+  }
+
+  assert.deepEqual(
+    invalidReferences,
+    [],
+    `imports Firebase com query criam identidades duplicadas: ${invalidReferences.join(', ')}`
+  );
 });

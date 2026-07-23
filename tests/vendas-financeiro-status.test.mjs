@@ -103,5 +103,8 @@ test('vendas evita falso sucesso se estorno financeiro nao for atomico', () => {
 
   assert.match(js, /montarUpdatesRemocaoContasReceberVenda\(removiveis, \{ includeLegacy: false \}\)/);
   assert.match(js, /Não foi possível estornar o financeiro vinculado\. Nenhuma alteração foi concluída\./);
+  assert.match(js, /let hasFinanceMutation = removiveis\.length > 0/);
+  assert.match(js, /Object\.keys\(updatesAdd\)\.some\(path => String\(path\)\.startsWith\('financas\/receber\/'\)\)/);
+  assert.match(js, /Não foi possível sincronizar o financeiro do pedido de venda\. Nenhuma alteração foi concluída\./);
   assert.doesNotMatch(js, /residualUpdates\[`contasReceber\/\$\{mk\}/);
 });

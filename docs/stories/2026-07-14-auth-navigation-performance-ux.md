@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress - Fases 0, 1 e 2 implementadas e publicadas; harness E2E isolado e Fase 3 pendentes.
+Ready for Review - Fases 0, 1 e 2 e rollout controlado implementados, validados e publicados; harness E2E isolado e Fase 3 permanecem fora desta entrega.
 
 ## Ajuste Operacional - 2026-07-15
 
@@ -361,6 +361,21 @@ A melhora quente inicial foi de aproximadamente 7,5%, abaixo da meta de 30%. Iss
 8. Em regressao, restaurar a release anterior do Hosting; nao alterar dados para realizar rollback de frontend.
 9. Atualizar o Service Worker apenas por versao controlada, sem apagar caches privados fora do logout/troca de tenant.
 
+## Rollout Controlado - 2026-07-23
+
+- Firebase CLI reautenticado antes da publicacao; o primeiro deploy recusado por sessao expirada nao alterou o Hosting.
+- Database Rules e Functions de perfil/membership publicadas com reparo restrito ao usuario autenticado e ao tenant resolvido no servidor.
+- Preview publicado em <https://sisweb-7ce82--bootstrap-firebase-20260723-7qbossgf.web.app>, com expiracao em 2026-07-30.
+- Smoke autenticado no tenant secundario aprovado sem registrar credenciais ou identificadores na story.
+- Edicao do perfil empresarial foi aberta e salva no Preview e no Hosting live sem `403`, `PERMISSION_DENIED` ou perda de tenant.
+- Pedido de compra de teste passou de pendente para aprovado em atualizacao atomica; a conta vinculada apareceu em Contas a Pagar com origem Compras.
+- IDs legados numericos de contas a pagar geradas por Compras agora sao normalizados para texto antes de compor chave e payload no Realtime Database.
+- Vendas e Compras passaram a compartilhar a mesma garantia: uma falha na mutacao financeira atomica nao pode salvar somente o pedido nem exibir falso sucesso.
+- Suite completa: 319 testes aprovados, 1 skip esperado no comando geral; smoke RBAC explicito com 17/17 testes no Emulator.
+- Build do Hosting: 450 arquivos allowlisted e 19.672.967 bytes; auditoria encontrou zero SDK Firebase direto, zero cachebuster ausente e zero conflito.
+- Hosting live publicado somente depois dos gates e do smoke no Preview.
+- Permanece um aviso generico e nao bloqueante de verificacao Auth durante o bootstrap da pagina de Empresa; a sessao, a leitura e a escrita permaneceram funcionais.
+
 ## Riscos
 
 - Dependencias ocultas das globais compat em paginas legadas.
@@ -399,11 +414,11 @@ Observacao: os scripts atuais de lint/typecheck cobrem principalmente `folha_pag
 - [x] `git diff --check` sem erro de whitespace.
 - [x] `npm run lint` concluido sem erro.
 - [x] `npm run typecheck` concluido sem erro.
-- [x] `npm test` concluido com 281 testes aprovados e 1 skip esperado para o Emulator no comando geral.
-- [x] `npm run test:security:emulator` equivalente concluido com 13/13 testes RBAC aprovados no Emulator ativo.
+- [x] `npm test` concluido com 319 testes aprovados e 1 skip esperado para o Emulator no comando geral.
+- [x] Smoke RBAC explicito concluido com 17/17 testes no Emulator ativo.
 - [x] `npm audit --audit-level=high` concluido sem vulnerabilidades.
-- [x] `npm run build:hosting` concluido com 448 arquivos allowlisted e 19.446.823 bytes no diretorio de build.
-- [x] Nenhum dado, Rule ou Function foi alterado; somente o Hosting reconciliado foi publicado.
+- [x] `npm run build:hosting` concluido com 450 arquivos allowlisted e 19.672.967 bytes no diretorio de build.
+- [x] Rules, Functions, Preview e Hosting live publicados na ordem controlada documentada.
 
 ## File List Atual
 
@@ -444,7 +459,95 @@ Observacao: os scripts atuais de lint/typecheck cobrem principalmente `folha_pag
 - `tests/pwa-mobile-menu-session.test.mjs`
 - `tests/tenant-operational-safe-modules.test.mjs`
 - `tests/vendas-tenant-auth-guard.test.mjs`
+- `tests/vendas-financeiro-status.test.mjs`
+- `tests/compras-financeiro-status.test.mjs`
+- `tests/company-profile-permissions.test.mjs`
+- `tests/security-rbac-multitenant.test.mjs`
+- `tests/security-rbac-emulator.test.mjs`
+- `database.rules.json`
+- `functions/index.js`
+- `package.json`
 - `docs/stories/2026-07-14-auth-navigation-performance-ux.md`
+
+### Arquivos Alterados No Rollout 2026-07-23
+
+- `admin-access-governance.html`
+- `admin-settings.html`
+- `admin-subscriptions.html`
+- `admin.html`
+- `ajuda.html`
+- `ajudabitolas.html`
+- `client.html`
+- `company.html`
+- `compras.html`
+- `compras.js`
+- `database.rules.json`
+- `docs/stories/2026-07-14-auth-navigation-performance-ux.md`
+- `estoque.html`
+- `financas.html`
+- `financas.js`
+- `firebase-rules-update.html`
+- `fix-firebase-rules.html`
+- `folha_pagamento/banco-horas-firebase.js`
+- `folha_pagamento/folha-cargos.js`
+- `folha_pagamento/folha-filtros.js`
+- `folha_pagamento/folha-firebase-manager.js`
+- `folha_pagamento/folha-firebase-optimized.js`
+- `folha_pagamento/folha-funcionarios.js`
+- `folha_pagamento/folha-lancamentos.js`
+- `folha_pagamento/folha-main.js`
+- `folha_pagamento/folha-relatorios.js`
+- `folha_pagamento/folha-utils.js`
+- `folha_pagamento/folha.html`
+- `fornecedor.html`
+- `functions/index.js`
+- `importar_especies.html`
+- `importar_especies_direto.js`
+- `index.html`
+- `login.html`
+- `mdf-e.html`
+- `menu-component.js`
+- `migrar-contas.html`
+- `migrate-to-firebase.html`
+- `modules/core/firebase-service.js`
+- `modules/romaneiopct/modal-lista-romaneios-pct.js`
+- `notas-fiscais.html`
+- `package.json`
+- `preromaneio.html`
+- `reset-system.html`
+- `romaneiopct.html`
+- `romaneiopes.html`
+- `romaneiotl.html`
+- `romaneiotora.html`
+- `romaneiotora_otimizado.html`
+- `romaneiotora_versao_dev.html`
+- `species.html`
+- `src/services/firebaseService.js`
+- `subscription-status.html`
+- `subscription.html`
+- `support-callable-service.js`
+- `sw.js`
+- `tests/auth-session-phase2.test.mjs`
+- `tests/client-supplier-fiscal-fields.test.mjs`
+- `tests/company-profile-permissions.test.mjs`
+- `tests/compras-financeiro-status.test.mjs`
+- `tests/estoque-pwa-impressao.test.mjs`
+- `tests/financas-contas-pagar-edit.test.mjs`
+- `tests/firebase-init.test.mjs`
+- `tests/pwa-install-icon.test.mjs`
+- `tests/pwa-mobile-menu-session.test.mjs`
+- `tests/qa-visual-pwa-routes.test.mjs`
+- `tests/security-rbac-emulator.test.mjs`
+- `tests/security-rbac-multitenant.test.mjs`
+- `tests/tenant-operational-safe-modules.test.mjs`
+- `tests/vendas-financeiro-status.test.mjs`
+- `tools/audit-cachebusters.mjs`
+- `tools/healthcheck-firebase-sdk.mjs`
+- `tools/inject-cachebusters.mjs`
+- `tools/run-multitenant-smoke.mjs`
+- `user-profile.html`
+- `vendas.html`
+- `vendas.js`
 
 ## File List Previsto
 

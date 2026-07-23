@@ -228,7 +228,7 @@ test('Home carrega Firebase singleton antes do servico canonico para confirmar l
   const firebaseInit = './firebase-init.js';
   const coreService = 'modules/core/firebase-service.js';
 
-  assert.match(home, /import \{[\s\S]*\bauth\b[\s\S]*\} from '\.\/firebase-init\.js\?v=[^"'\s]+'/);
+  assert.match(home, /import \{[\s\S]*\bauth\b[\s\S]*\} from '\.\/firebase-init\.js'/);
   assert.ok(
     home.indexOf(firebaseInit) < home.indexOf(coreService),
     'Firebase Auth singleton deve estar disponivel antes do servico usado pelo menu para logout'
@@ -392,7 +392,9 @@ test('suporte da Home usa adaptador callable sem importar outro servico Auth', (
   const adapter = read('support-callable-service.js');
   assert.match(menu, /support-callable-service\.js/);
   assert.doesNotMatch(menu, /__siswebResolveRootScriptPath\('firebaseService\.js'\)/);
-  assert.match(adapter, /firebase\.functions\('us-central1'\)\.httpsCallable/);
+  assert.match(adapter, /import \{ functions, httpsCallable \} from '\.\/firebase-init\.js'/);
+  assert.match(adapter, /httpsCallable\(functions, functionName\)/);
+  assert.doesNotMatch(adapter, /firebase-functions-compat|firebase\.functions/);
   assert.doesNotMatch(adapter, /onAuthStateChanged/);
   assert.match(menu, /const target = window\.firebaseService \|\| \{\};\s*Object\.assign\(target, adapter\);/s);
   assert.doesNotMatch(menu, /const merged = \{ \.\.\.\(window\.firebaseService/);

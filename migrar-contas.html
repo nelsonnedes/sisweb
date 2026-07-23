@@ -174,7 +174,7 @@
                 if (!window.firebaseService) return { success: false, error: 'Firebase não disponível' };
                 
                 try {
-                    const { ref, remove, getDatabase } = await import('./firebase-init.js?v=21eb04e409d8');
+                    const { ref, remove, getDatabase } = await import('./firebase-init.js');
                     
                     const db = getDatabase();
                     const path = itemKey ? `${key}/${itemKey}` : key;

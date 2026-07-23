@@ -56,13 +56,13 @@ test('PWA bootstrap and service worker publish the product icon assets', () => {
   const loginHtml = readText('login.html');
   const preromaneioHtml = readText('preromaneio.html');
 
-  assert.match(menuComponent, /const PWA_VERSION = '2026-07-01-alerts-overflow-fix-v1'/);
+  assert.match(menuComponent, /const PWA_VERSION = '2026-07-23-firebase-bootstrap-rollout-v1'/);
   assert.match(menuComponent, /link\[rel="icon"\]\[sizes="192x192"\]/);
   assert.match(menuComponent, /assets\/icons\/icon-192x192\.png/);
   assert.match(menuComponent, /link\[rel="apple-touch-icon"\]/);
   assert.match(menuComponent, /assets\/icons\/apple-touch-icon\.png/);
 
-  assert.match(sw, /const APP_VERSION = '2026-07-21-coderabbit-hardening-v1'/);
+  assert.match(sw, /const APP_VERSION = '2026-07-23-firebase-bootstrap-rollout-v1'/);
   assert.match(sw, /'\/assets\/icons\/icon-144x144\.png'/);
   assert.match(sw, /'\/assets\/icons\/icon-192x192\.png'/);
   assert.match(sw, /'\/assets\/icons\/icon-512x512\.png'/);

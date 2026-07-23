@@ -204,7 +204,7 @@ class FirebaseConnectionManager {
         if (!this.database) return;
         
         try {
-            const { ref, onValue, off } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, onValue, off } = await import('../firebase-init.js');
             
             const connectedRef = ref(this.database, '.info/connected');
             
@@ -400,7 +400,7 @@ class FirebaseConnectionManager {
         
         try {
             // Não bloquear por this.isConnected: tentar buscar sempre que possível
-            const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, get } = await import('../firebase-init.js');
             const dataRef = ref(this.database, pathKey);
             
             console.log('📡 Carregando dados do Firebase');
@@ -490,7 +490,7 @@ class FirebaseConnectionManager {
         }
         
         try {
-            const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, set } = await import('../firebase-init.js');
             const dataRef = ref(this.database, pathKey);
             
             await set(dataRef, data);
@@ -547,7 +547,7 @@ class FirebaseConnectionManager {
         }
         
         try {
-            const { ref, onValue, off } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, onValue, off } = await import('../firebase-init.js');
             const dataRef = ref(this.database, pathKey);
             let firstSnapshot = true;
             try { getAuthPerformanceDiagnosticsPayrollManager()?.listener('data', 'add', 'payroll_page', 0); } catch (_) {}

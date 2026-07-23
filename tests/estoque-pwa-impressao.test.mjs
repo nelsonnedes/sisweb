@@ -31,6 +31,8 @@ test('estoque e financas evitam cards/filtros quebrados no PWA mobile', () => {
 
   assert.match(financasHtml, /\.filters-row\{ display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; width:100%; \}/);
   assert.match(financasHtml, /@media \(max-width: 768px\)\{[\s\S]*\.filters-row\{ display:grid; grid-template-columns:1fr; gap:12px; \}/);
+  assert.match(financasHtml, /\.tab-content \.btn-group\{[\s\S]*flex-wrap:wrap;[\s\S]*width:100%;/);
+  assert.match(financasHtml, /\.tab-content \.btn-group \.sel-count-badge\{[\s\S]*flex:1 0 100%;[\s\S]*overflow-wrap:anywhere;/);
   assert.doesNotMatch(financasHtml, /\.filters-row\{ display:flex; flex-wrap:nowrap;/);
 });
 

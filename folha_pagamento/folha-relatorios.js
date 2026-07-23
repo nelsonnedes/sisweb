@@ -3082,7 +3082,7 @@ class FolhaRelatorios {
         // Fallback: buscar diretamente do Firebase se não encontrado
         if (!lancamento && window.database) {
             try {
-                const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                const { ref, get } = await import('../firebase-init.js');
                 const resolvePath = (p) => {
                     try {
                         if (window.FolhaUtils && typeof window.FolhaUtils.resolveFirebasePath === 'function') {

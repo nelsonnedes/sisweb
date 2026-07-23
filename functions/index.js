@@ -448,7 +448,7 @@ function buildMirrorUserPatch(baseUser, patch, companyId) {
         companyId: String(companyId || ''),
         updatedAt: incoming.updatedAt || new Date().toISOString()
     };
-    const keys = ['subscriptionStatus', 'accountStatus', 'statusReason', 'pendingPayment', 'subscription', 'subscriptionStart', 'subscriptionEnd', 'subscriptionEndDate', 'trialStart', 'trialEnd', 'trialUsed', 'trialConsumed', 'freeTrialUsed', 'adminTrialGrant', 'payments', 'campaignLedger', 'updatedBy', 'role', 'adminPermissions', 'adminActive', 'superadmin', 'readOnlyUntil', 'readOnlyGrantedAt', 'readOnlyGrantedBy', 'readOnlyGraceConsumed', 'readOnlyReason'];
+    const keys = ['subscriptionStatus', 'accountStatus', 'statusReason', 'pendingPayment', 'subscription', 'subscriptionStart', 'subscriptionEnd', 'subscriptionEndDate', 'trialStart', 'trialEnd', 'trialUsed', 'trialConsumed', 'freeTrialUsed', 'adminTrialGrant', 'payments', 'campaignLedger', 'updatedBy', 'role', 'permissions', 'adminPermissions', 'active', 'adminActive', 'superadmin', 'readOnlyUntil', 'readOnlyGrantedAt', 'readOnlyGrantedBy', 'readOnlyGraceConsumed', 'readOnlyReason'];
     keys.forEach((k) => {
         if (Object.prototype.hasOwnProperty.call(incoming, k)) out[k] = incoming[k];
         else if (Object.prototype.hasOwnProperty.call(base, k)) out[k] = base[k];
@@ -480,7 +480,17 @@ async function applyUserPatchAcrossScopes(uid, patch, options = {}) {
     if (companyId) patchPayload.companyId = companyId;
     await userRef.update(patchPayload);
     if (companyId && !isSuperAdminUser) {
-        const mirrorPayload = buildMirrorUserPatch({ ...before, ...patchPayload }, patchPayload, companyId);
+        const roleSnap = await admin.database().ref(`roles/${userUid}`).get().catch(() => null);
+        const roleData = roleSnap && roleSnap.exists() && roleSnap.val() && typeof roleSnap.val() === 'object'
+            ? roleSnap.val()
+            : {};
+        const roleCompanyId = String(roleData.companyId || roleData.companyID || roleData.tenantId || '').trim();
+        const matchingRoleData = roleCompanyId === companyId ? roleData : {};
+        const mirrorPayload = buildMirrorUserPatch(
+            { ...matchingRoleData, ...before, ...patchPayload },
+            patchPayload,
+            companyId
+        );
         await admin.database().ref(`companies/${companyId}/users/${userUid}`).update(mirrorPayload);
     } else if (isSuperAdminUser) {
         try {
@@ -2045,6 +2055,13 @@ exports.updateMyCompanyProfile = https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('permission-denied', 'companyId informado não pertence ao usuário autenticado.');
     }
     await assertCompanyProfileWriteAccess(context, companyId, userData, token);
+    await applyUserPatchAcrossScopes(uid, {
+        companyId,
+        updatedAt: new Date().toISOString()
+    }, {
+        companyId,
+        email: sanitizeText(token.email || userData.email || '', '')
+    });
     const profileRef = admin.database().ref(`companies/${companyId}/profile`);
     const currentSnap = await profileRef.get();
     const current = currentSnap.exists() && currentSnap.val() && typeof currentSnap.val() === 'object'

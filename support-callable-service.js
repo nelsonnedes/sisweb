@@ -1,40 +1,9 @@
-const SUPPORT_FUNCTIONS_COMPAT_SRC = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js';
-let functionsCompatPromise = null;
-
-function ensureFunctionsCompat() {
-    if (typeof window !== 'undefined' && window.firebase && typeof window.firebase.functions === 'function') {
-        return Promise.resolve(window.firebase);
-    }
-    if (functionsCompatPromise) return functionsCompatPromise;
-    functionsCompatPromise = new Promise((resolve, reject) => {
-        const existing = document.querySelector(`script[src="${SUPPORT_FUNCTIONS_COMPAT_SRC}"]`);
-        const finish = () => {
-            if (window.firebase && typeof window.firebase.functions === 'function') resolve(window.firebase);
-            else reject(new Error('Firebase Functions não configurado.'));
-        };
-        if (existing) {
-            existing.addEventListener('load', finish, { once: true });
-            existing.addEventListener('error', () => reject(new Error('Falha ao carregar Firebase Functions.')), { once: true });
-            if (window.firebase && typeof window.firebase.functions === 'function') finish();
-            return;
-        }
-        const script = document.createElement('script');
-        script.src = SUPPORT_FUNCTIONS_COMPAT_SRC;
-        script.defer = true;
-        script.addEventListener('load', finish, { once: true });
-        script.addEventListener('error', () => reject(new Error('Falha ao carregar Firebase Functions.')), { once: true });
-        document.head.appendChild(script);
-    }).catch((error) => {
-        functionsCompatPromise = null;
-        throw error;
-    });
-    return functionsCompatPromise;
-}
+import { functions, httpsCallable } from './firebase-init.js';
 
 async function callSupportFunction(functionName, payload = {}) {
     try {
-        const firebase = await ensureFunctionsCompat();
-        const callable = firebase.functions('us-central1').httpsCallable(functionName);
+        if (!functions) throw new Error('Firebase Functions não configurado.');
+        const callable = httpsCallable(functions, functionName);
         const result = await callable(payload && typeof payload === 'object' ? payload : {});
         return { success: true, data: result && Object.prototype.hasOwnProperty.call(result, 'data') ? result.data : null };
     } catch (error) {

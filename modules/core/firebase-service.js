@@ -123,9 +123,9 @@ class FirebaseServiceTL {
                     // Garantir que o módulo de Auth esteja carregado
                     if (!firebase.auth) {
                         try {
-                            await import("https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js");
+                            await import("../../firebase-compat-bridge.js");
                         } catch (e) {
-                            console.warn('⚠️ Falha ao carregar Firebase Auth compat:', e && e.message || e);
+                            console.warn('⚠️ Falha ao carregar ponte Firebase compartilhada:', e && e.message || e);
                         }
                     }
                     if (firebase.auth) {

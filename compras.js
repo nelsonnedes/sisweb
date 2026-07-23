@@ -1954,7 +1954,7 @@ async function salvarPedido(event) {
                 const mk = toMonthKey(c.vencimento); // Nova chave de mês baseada na NOVA data
                 // Garantir ID único e persistente
                 // Se já tinha ID, mantém. Se não, gera.
-                const contaId = c.id || `CP-${pedido.id}-${idx}`;
+                const contaId = String(c.id || `CP-${pedido.id}-${idx}`).trim();
                 c.id = contaId; 
                 
                 const conta = {

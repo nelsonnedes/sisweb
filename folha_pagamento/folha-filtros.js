@@ -369,7 +369,7 @@ class FolhaFiltros {
                     if (window.folhaLancamentos && typeof window.folhaLancamentos.buscarTodasFolhas === 'function') {
                         arr = await window.folhaLancamentos.buscarTodasFolhas();
                     } else if (window.database) {
-                        const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                        const { ref, get } = await import('../firebase-init.js');
                         const resolvePath = (p) => {
                             try {
                                 if (window.FolhaUtils && typeof window.FolhaUtils.resolveFirebasePath === 'function') {

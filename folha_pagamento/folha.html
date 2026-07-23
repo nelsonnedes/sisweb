@@ -6,7 +6,7 @@
     <title>Folha de Pagamento - Sistema SisWeb</title>
     <script>
         if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
-            document.write('<script src="../auth-performance-diagnostics.js?v=2026-07-14-auth-perf-baseline-v1"><\/script>');
+            document.write('<script src="../auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
         }
     </script>
     
@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="../ui-components.css">
     <link rel="stylesheet" href="folha.css">
     <link rel="stylesheet" href="folha-menu-original-completo.css">
-    <script src="../menu-component.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
+    <script src="../menu-component.js?v=a26e67eb025d"></script>
     <!-- 🎨 LOADING E CONEXÃO OTIMIZADOS -->
     <link rel="stylesheet" href="folha-loading-styles.css">
     <style>
@@ -32,51 +32,23 @@
       .info-toggle.active { color:#0d47a1; }
     </style>
     
-    <!-- ✅ FIREBASE - CÓPIA EXATA DO ROMANEIOPCT -->
+    <!-- Firebase compartilhado: uma única instância para todos os módulos -->
     <script type="module">
-        import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-        import { getAuth, onAuthStateChanged, signInAnonymously, setPersistence, browserLocalPersistence, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import {
+            app,
+            auth,
+            db,
+            onAuthStateChanged,
+            setPersistence,
+            browserLocalPersistence,
+            signOut
+        } from '../firebase-init.js';
         const authPerfPayroll = (() => {
             try { return window.__SISWEB_AUTH_PERF__ || null; } catch (_) { return null; }
         })();
         try { authPerfPayroll?.phase('firebase_init_start', 'payroll_page', 'started', 0); } catch (_) {}
-        
-        const firebaseConfig = {
-            // ✅ MESMAS CREDENCIAIS DO ROMANEIO TL (compatível com PCT)
-            apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
-            authDomain: "sisweb-7ce82.firebaseapp.com",
-            databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "sisweb-7ce82",
-            storageBucket: "sisweb-7ce82.firebasestorage.app",
-            messagingSenderId: "240003261222",
-            appId: "1:240003261222:web:1aeaf919ddc7e5c691d7e7",
-            measurementId: "G-FTC6JZ5ZGX"
-        };
-        
-        // Reutilizar instância global do Firebase se existir para evitar perda de sessão
-        let app;
-        try {
-            if (window._FIREBASE_APP) {
-                console.log('♻️ Reutilizando app Firebase global');
-                app = window._FIREBASE_APP;
-            } else {
-                const apps = getApps();
-                if (apps && apps.length > 0) {
-                    console.log('♻️ Reutilizando app Firebase existente');
-                    app = apps[0];
-                } else {
-                    app = initializeApp(firebaseConfig);
-                    console.log('✅ Firebase inicializado (Folha)');
-                }
-            }
-        } catch (e) {
-            console.warn('⚠️ Falha ao reutilizar app, inicializando novo', e && e.message);
-            app = initializeApp(firebaseConfig);
-        }
 
-        window.database = getDatabase(app);
-        const auth = getAuth(app);
+        window.database = db;
         try { authPerfPayroll?.phase('firebase_init_ready', 'payroll_page', 'ready', 0); } catch (_) {}
         // Expor objetos/funções necessárias para integração com guardas
         window.firebaseAuth = auth;
@@ -1339,23 +1311,23 @@
     </script>
 
     <!-- Scripts na ordem otimizada -->
-    <script src="folha-utils.js"></script>
-    <script src="folha-config.js"></script>
-    <script src="folha-calculos.js"></script>
-    <script src="folha-firebase-manager.js"></script>
-    <script src="folha-firebase-optimized.js"></script>
-    <script src="folha-funcionarios.js"></script>
-    <script src="folha-cargos.js"></script>
-    <script src="folha-lancamentos.js"></script>
-    <script src="folha-relatorios.js"></script>
-    <script src="folha-filtros.js"></script>
-    <script src="folha-paginacao.js"></script>
-    <script src="folha-main.js"></script>
+    <script src="folha-utils.js?v=db832fff3b43"></script>
+    <script src="folha-config.js?v=a297d6781c11"></script>
+    <script src="folha-calculos.js?v=161cd7684c53"></script>
+    <script src="folha-firebase-manager.js?v=2a815845be2f"></script>
+    <script src="folha-firebase-optimized.js?v=2885432d9e74"></script>
+    <script src="folha-funcionarios.js?v=c94e38c7bc8c"></script>
+    <script src="folha-cargos.js?v=745473b7d1ca"></script>
+    <script src="folha-lancamentos.js?v=588ae92a6063"></script>
+    <script src="folha-relatorios.js?v=e82b40734ba0"></script>
+    <script src="folha-filtros.js?v=0825a6a940a5"></script>
+    <script src="folha-paginacao.js?v=1a22ad8f2cda"></script>
+    <script src="folha-main.js?v=e475be181a3b"></script>
     <!-- [BH] Banco de Horas (mantendo ordem base intacta; novos scripts após a base) -->
-    <script src="banco-horas-config.js"></script>
-    <script src="banco-horas-service.js"></script>
-    <script src="banco-horas-firebase.js"></script>
-    <script src="banco-horas-relatorios.js"></script>
-    <script src="banco-horas-ui.js"></script>
+    <script src="banco-horas-config.js?v=314f89ef67d0"></script>
+    <script src="banco-horas-service.js?v=4195bfb8ab27"></script>
+    <script src="banco-horas-firebase.js?v=eefcff3edaa4"></script>
+    <script src="banco-horas-relatorios.js?v=ad7e9126aadc"></script>
+    <script src="banco-horas-ui.js?v=37063b891afe"></script>
 </body>
 </html>

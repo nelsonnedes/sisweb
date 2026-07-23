@@ -338,6 +338,60 @@ if (!EMULATOR_HOST) {
     );
   });
 
+  test("papel global admin do mesmo tenant repara acesso financeiro legado sem abrir outro tenant", async () => {
+    const validAccountPath = `companies/${TENANT_A}/financas/pagar/${MONTH}/legacyGlobalRole`;
+    const invalidAccountPath = `companies/${TENANT_A}/financas/pagar/${MONTH}/crossTenantRole`;
+    const account = {
+      id: "legacyGlobalRole",
+      status: "pendente",
+      valor: 7500,
+      valorOriginal: 7500,
+      valorRestante: 7500,
+      dataVencimento: "2026-07-28",
+    };
+
+    await assertSucceeds(set(ref(globalFinanceMemberDatabase(), validAccountPath), account));
+    await assertFails(
+      set(ref(otherTenantRoleDatabase(), invalidAccountPath), {
+        ...account,
+        id: "crossTenantRole",
+      }),
+    );
+  });
+
+  test("tenant legado salva pedido de compra e conta a pagar no mesmo update atomico", async () => {
+    const database = globalFinanceMemberDatabase();
+    const purchaseId = "PC-legacy-role";
+    const accountId = `CP-${purchaseId}-0`;
+
+    await assertSucceeds(
+      update(ref(database), {
+        [`companies/${TENANT_A}/pedidosCompra/${purchaseId}`]: {
+          id: purchaseId,
+          numero: "000003",
+          data: "2026-07-23",
+          status: "aprovado",
+          total: 12500,
+        },
+        [`companies/${TENANT_A}/financas/pagar/${MONTH}/${accountId}`]: {
+          id: accountId,
+          status: "pendente",
+          valor: 12500,
+          valorOriginal: 12500,
+          valorRestante: 12500,
+          dataVencimento: "2026-07-30",
+          origem: "compras",
+          origemId: purchaseId,
+        },
+      }),
+    );
+
+    const saved = await assertSucceeds(
+      get(ref(database, `companies/${TENANT_A}/pedidosCompra/${purchaseId}/status`)),
+    );
+    assert.equal(saved.val(), "aprovado");
+  });
+
   test("preferencias e snapshots financeiros exigem permissao de escrita", async () => {
     const preferencesPath = `companies/${TENANT_A}/printPreferences/receber`;
     const snapshotPath = `companies/${TENANT_A}/finance_snapshots/2026-07`;

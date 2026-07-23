@@ -6,7 +6,7 @@
     if (typeof window === 'undefined' || window.__siswebPWAInitialized) return;
     window.__siswebPWAInitialized = true;
 
-    const PWA_VERSION = '2026-07-01-alerts-overflow-fix-v1';
+    const PWA_VERSION = '2026-07-23-firebase-bootstrap-rollout-v1';
     const state = {
         deferredPrompt: null,
         floatingButton: null,

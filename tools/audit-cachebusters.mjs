@@ -1,177 +1,254 @@
 #!/usr/bin/env node
 /**
- * audit-cachebusters.mjs
+ * Audita cachebusters e versões do Firebase no pacote publicado.
  *
- * Audita todos os arquivos HTML do projeto para identificar:
- * - Cachebusters estáticos vs dinâmicos (hash)
- * - Conflitos de versão entre scripts (mesmo .js com diferentes ?v=)
- * - Scripts sem cachebuster
- * - Múltiplas versões do Firebase SDK
- * - URLs externas vs locais
+ * O escopo padrão é hosting-files.json. Use --all para incluir fontes legadas
+ * que não fazem parte do deploy.
  */
 
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import {
+  existsSync,
+  readFileSync,
+  readdirSync
+} from 'node:fs';
+import {
+  dirname,
+  extname,
+  join,
+  normalize,
+  relative,
+  resolve,
+  sep
+} from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, '..');
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const MANIFEST = join(ROOT, 'hosting-files.json');
+const FIREBASE_INIT_MODULE = 'firebase-init.js';
+const args = process.argv.slice(2);
+const OUTPUT_JSON = args.includes('--json');
+const CI_MODE = args.includes('--ci');
+const AUDIT_ALL = args.includes('--all');
 
-const htmlFiles = readdirSync(ROOT).filter(f => f.endsWith('.html')).sort();
-
-// Coletores
-const scriptEntries = []; // { html, src, v, isHash, isExternal }
-const firebaseSDKs = [];
-
-function isHashVersion(v) {
-    if (!v) return false;
-    return /^[0-9a-f]{12}$/.test(v);
+function toPosix(value) {
+  return value.split(sep).join('/');
 }
 
-function analyzeHtml(filePath) {
-    const html = readFileSync(filePath, 'utf-8');
-    const fileName = filePath.replace(ROOT, '').replace(/\\/g, '/');
+function normalizeProjectPath(value) {
+  const rel = relative(ROOT, resolve(ROOT, value));
+  if (!rel || rel === '..' || rel.startsWith(`..${sep}`)) return '';
+  return toPosix(normalize(rel));
+}
 
-    // Encontra todos <script src="...">
-    const scriptRegex = /<script[^>]*src\s*=\s*["']([^"']+?)(?:\?v=([^"'\s]*))?["']/gi;
+function walk(directory, output = []) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    if (['.git', '.freebuff', 'hosting-dist', 'node_modules'].includes(entry.name)) continue;
+    const absolute = join(directory, entry.name);
+    if (entry.isDirectory()) walk(absolute, output);
+    else output.push(normalizeProjectPath(absolute));
+  }
+  return output;
+}
+
+function getScopeFiles() {
+  if (AUDIT_ALL) return walk(ROOT);
+  const entries = JSON.parse(readFileSync(MANIFEST, 'utf8'));
+  if (!Array.isArray(entries)) throw new Error('hosting-files.json inválido.');
+  return entries.map(normalizeProjectPath).filter(Boolean);
+}
+
+function isHashVersion(version) {
+  return /^[0-9a-f]{12}$/i.test(String(version || ''));
+}
+
+function isExternal(specifier) {
+  return /^(?:[a-z]+:)?\/\//i.test(specifier)
+    || /^(?:data|blob|chrome-extension):/i.test(specifier);
+}
+
+function splitSpecifier(specifier) {
+  const match = String(specifier || '').match(/^([^?#]+)(?:\?([^#]*))?(?:#.*)?$/);
+  const query = new URLSearchParams(match?.[2] || '');
+  return {
+    path: match?.[1] || '',
+    version: query.get('v')
+  };
+}
+
+function resolveLocalTarget(htmlFile, specifier) {
+  const { path } = splitSpecifier(specifier);
+  if (path.startsWith('/')) return normalizeProjectPath(path.slice(1));
+  return normalizeProjectPath(resolve(ROOT, dirname(htmlFile), path));
+}
+
+function isCanonicalFirebaseModule(entry) {
+  return entry.type !== 'script'
+    && /(?:^|\/)firebase-(?:init|compat-bridge)\.js$/i.test(entry.target);
+}
+
+function extractScriptSpecifiers(source) {
+  const entries = [];
+  const patterns = [
+    { type: 'script', regex: /<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi },
+    { type: 'dynamic-import', regex: /import\s*\(\s*["']([^"']+\.js(?:\?[^"']*)?)["']\s*\)/gi },
+    { type: 'static-import', regex: /(?:from\s*|import\s*)["']([^"']+\.js(?:\?[^"']*)?)["']/gi }
+  ];
+
+  for (const { type, regex } of patterns) {
     let match;
-    while ((match = scriptRegex.exec(html)) !== null) {
-        const src = match[1];
-        const v = match[2] || null;
-        const isExternal = src.startsWith('http') || src.startsWith('//') || src.startsWith('https');
-        const isHash = isHashVersion(v);
-
-        scriptEntries.push({ html: fileName, src, v, isHash, isExternal });
-
-        // Detectar Firebase SDK
-        if (src.includes('firebase')) {
-            const versionMatch = src.match(/firebase[-.](\d+\.\d+\.\d+)/);
-            if (versionMatch) {
-                firebaseSDKs.push({ html: fileName, src, version: versionMatch[1] });
-            } else if (v && /^\d/.test(v)) {
-                firebaseSDKs.push({ html: fileName, src, version: v });
-            }
-        }
+    while ((match = regex.exec(source)) !== null) {
+      entries.push({ type, specifier: match[1] });
     }
+  }
 
-    // Encontra document.write('<script src="...">')
-    const docWriteRegex = /document\.write\s*\(\s*['"]<script[^>]*src\s*=\s*["']([^"']+?)(?:\?v=([^"'\s]*))?["']/gi;
-    while ((match = docWriteRegex.exec(html)) !== null) {
-        const src = match[1];
-        const v = match[2] || null;
-        scriptEntries.push({ html: fileName, src, v, isHash: isHashVersion(v), isExternal: src.startsWith('http') || src.startsWith('//') });
+  return entries.filter((entry, index, all) => (
+    all.findIndex(candidate => (
+      candidate.type === entry.type && candidate.specifier === entry.specifier
+    )) === index
+  ));
+}
+
+function collectHtmlEntries(htmlFiles, allowedFiles) {
+  const entries = [];
+  for (const html of htmlFiles) {
+    const source = readFileSync(join(ROOT, html), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+    for (const item of extractScriptSpecifiers(source)) {
+      const { path, version } = splitSpecifier(item.specifier);
+      const external = isExternal(path);
+      const target = external ? '' : resolveLocalTarget(html, item.specifier);
+      entries.push({
+        html,
+        type: item.type,
+        src: path,
+        target,
+        version,
+        isHash: isHashVersion(version),
+        external,
+        exists: external || existsSync(join(ROOT, target)),
+        published: external || allowedFiles.has(target)
+      });
     }
+  }
+  return entries;
+}
 
-    // Encontra import('./...')
-    const importRegex = /import\s*\(\s*['"]\.\/([^"']+?)(?:\?v=([^"'\s]*))?["']/gi;
-    while ((match = importRegex.exec(html)) !== null) {
-        const src = match[1];
-        const v = match[2] || null;
-        scriptEntries.push({ html: fileName, src, v, isHash: isHashVersion(v), isExternal: false });
+function collectFirebaseSdk(files) {
+  const refs = [];
+  const regex = /https?:\/\/www\.gstatic\.com\/firebasejs\/([^/'"\s)]+)\/([^'"\s)?]+)(?:\?[^'"\s)]*)?/gi;
+
+  for (const file of files.filter(item => ['.html', '.js', '.mjs'].includes(extname(item).toLowerCase()))) {
+    const absolute = join(ROOT, file);
+    if (!existsSync(absolute)) continue;
+    const source = readFileSync(absolute, 'utf8');
+    let match;
+    while ((match = regex.exec(source)) !== null) {
+      refs.push({
+        file,
+        version: match[1],
+        module: match[2],
+        url: match[0],
+        outsideBootstrap: file !== FIREBASE_INIT_MODULE
+      });
     }
+  }
+  return refs;
 }
 
-// ─── Processar todos HTMLs ────────────────────────────────────────────────
-for (const file of htmlFiles) {
-    analyzeHtml(join(ROOT, file));
-}
+function findConflicts(localEntries) {
+  const byTarget = new Map();
+  for (const entry of localEntries) {
+    if (!byTarget.has(entry.target)) byTarget.set(entry.target, []);
+    byTarget.get(entry.target).push(entry);
+  }
 
-// ─── Relatório ────────────────────────────────────────────────────────────
-console.log('\n' + '='.repeat(80));
-console.log('📋 AUDITORIA DE CACHEBUSTERS — SISWEB');
-console.log('='.repeat(80));
-
-// 1. Estatísticas gerais
-const totalScripts = scriptEntries.length;
-const localScripts = scriptEntries.filter(e => !e.isExternal);
-const externalScripts = scriptEntries.filter(e => e.isExternal);
-const withHash = scriptEntries.filter(e => e.isHash && !e.isExternal);
-const withStatic = localScripts.filter(e => e.v && !e.isHash);
-const withoutVersion = localScripts.filter(e => !e.v);
-
-console.log(`\n📊 Estatísticas:\n`);
-console.log(`   Total de referências a scripts: ${totalScripts}`);
-console.log(`   Scripts locais: ${localScripts.length}`);
-console.log(`   Scripts externos: ${externalScripts.length}`);
-console.log(`   Locais com hash dinâmico: ${withHash.length}`);
-console.log(`   Locais com versionamento estático: ${withStatic.length}`);
-console.log(`   Locais SEM cachebuster: ${withoutVersion.length}`);
-
-// 2. Scripts locais SEM cachebuster
-if (withoutVersion.length > 0) {
-    console.log(`\n⚠️  SCRIPTS LOCAIS SEM CACHEBUSTER:\n`);
-    for (const e of withoutVersion) {
-        const exists = existsSync(join(ROOT, e.src)) ? '✅' : '❌';
-        console.log(`   ${exists} ${e.html.padEnd(35)} ${e.src}`);
+  const conflicts = [];
+  for (const [target, refs] of byTarget) {
+    const versions = [...new Set(refs.map(ref => ref.version || 'none'))];
+    if (versions.length > 1) {
+      conflicts.push({
+        target,
+        versions,
+        refs: refs.map(ref => ({ html: ref.html, version: ref.version }))
+      });
     }
+  }
+  return conflicts;
 }
 
-// 3. Scripts com versionamento ESTÁTICO (não atualizados pelo inject-cachebusters)
-if (withStatic.length > 0) {
-    console.log(`\n⚠️  SCRIPTS COM VERSIONAMENTO ESTÁTICO (não-hash):\n`);
-    for (const e of withStatic) {
-        console.log(`   ${e.html.padEnd(35)} ${e.src} ?v=${e.v}`);
+function renderText(report) {
+  const lines = [
+    'Auditoria de Cachebusters - Sisweb',
+    `Escopo: ${report.scope}`,
+    `Referências locais: ${report.summary.localScripts}`,
+    `Sem cachebuster: ${report.summary.localWithoutVersion}`,
+    `Conflitos: ${report.summary.conflicts}`,
+    `Firebase SDK: ${report.firebaseSdk.versions.join(', ') || 'nenhum'}`,
+    `SDK direto fora do bootstrap: ${report.firebaseSdk.directOutsideBootstrap}`
+  ];
+
+  for (const entry of report.localWithoutVersion) {
+    lines.push(`SEM CACHE ${entry.html} -> ${entry.src}`);
+  }
+  for (const entry of report.missingFromHosting) {
+    lines.push(`FORA DO HOSTING ${entry.html} -> ${entry.target}`);
+  }
+  return `${lines.join('\n')}\n`;
+}
+
+function main() {
+  const scopeFiles = getScopeFiles();
+  const allowedFiles = new Set(scopeFiles);
+  const htmlFiles = scopeFiles.filter(file => extname(file).toLowerCase() === '.html');
+  const scriptEntries = collectHtmlEntries(htmlFiles, allowedFiles);
+  const localEntries = scriptEntries.filter(entry => !entry.external);
+  const localWithoutVersion = localEntries.filter(entry => (
+    !entry.version && !isCanonicalFirebaseModule(entry)
+  ));
+  const staticVersions = localEntries.filter(entry => entry.version && !entry.isHash);
+  const missingFromHosting = localEntries.filter(entry => !entry.exists || !entry.published);
+  const conflicts = findConflicts(localEntries);
+  const firebaseRefs = collectFirebaseSdk(scopeFiles);
+  const firebaseVersions = [...new Set(firebaseRefs.map(ref => ref.version))].sort();
+  const directOutsideBootstrap = firebaseRefs.filter(ref => ref.outsideBootstrap);
+
+  const report = {
+    scope: AUDIT_ALL ? 'all' : 'hosting',
+    summary: {
+      htmlFiles: htmlFiles.length,
+      totalScriptReferences: scriptEntries.length,
+      localScripts: localEntries.length,
+      externalScripts: scriptEntries.length - localEntries.length,
+      localWithHash: localEntries.filter(entry => entry.isHash).length,
+      localWithStaticVersion: staticVersions.length,
+      localWithoutVersion: localWithoutVersion.length,
+      missingFromHosting: missingFromHosting.length,
+      conflicts: conflicts.length
+    },
+    localWithoutVersion,
+    staticVersions,
+    missingFromHosting,
+    conflicts,
+    firebaseSdk: {
+      versions: firebaseVersions,
+      refs: firebaseRefs,
+      directOutsideBootstrap: directOutsideBootstrap.length,
+      directRefs: directOutsideBootstrap
     }
+  };
+
+  process.stdout.write(OUTPUT_JSON ? `${JSON.stringify(report, null, 2)}\n` : renderText(report));
+
+  const failed = localWithoutVersion.length > 0
+    || missingFromHosting.length > 0
+    || conflicts.length > 0
+    || firebaseVersions.some(version => version !== '10.7.1')
+    || directOutsideBootstrap.length > 0;
+  if (CI_MODE && failed) process.exitCode = 1;
 }
 
-// 4. Conflitos: mesmo .js com versões diferentes
-const srcMap = {};
-for (const e of localScripts) {
-    if (!srcMap[e.src]) srcMap[e.src] = [];
-    srcMap[e.src].push({ html: e.html, v: e.v, isHash: e.isHash });
+try {
+  main();
+} catch (error) {
+  console.error(`FATAL: ${error.message}`);
+  process.exitCode = 1;
 }
-console.log(`\n🔍 CONFLITOS DE VERSÃO (mesmo .js com versões diferentes):\n`);
-let hasConflict = false;
-for (const [src, refs] of Object.entries(srcMap)) {
-    const versions = [...new Set(refs.map(r => r.v))].filter(Boolean);
-    const hashVersions = refs.filter(r => r.isHash).length;
-    const staticVersions = refs.filter(r => r.v && !r.isHash).length;
-    if (versions.length > 1 || (hashVersions > 0 && staticVersions > 0)) {
-        console.log(`   ⚠️  ${src}:`);
-        for (const r of refs) {
-            const tipo = r.isHash ? 'hash' : (r.v ? `static(${r.v})` : 'none');
-            console.log(`        ${r.html.padEnd(35)} ${tipo}`);
-        }
-        console.log();
-        hasConflict = true;
-    }
-}
-if (!hasConflict) console.log(`   ✅ Nenhum conflito de versão encontrado.\n`);
-
-// 5. Firebase SDK - versões múltiplas
-console.log(`🔌 FIREBASE SDK:\n`);
-const fbVersions = {};
-for (const fb of firebaseSDKs) {
-    if (!fbVersions[fb.version]) fbVersions[fb.version] = [];
-    fbVersions[fb.version].push({ html: fb.html, src: fb.src });
-}
-if (Object.keys(fbVersions).length > 0) {
-    for (const [ver, refs] of Object.entries(fbVersions)) {
-        console.log(`   📦 v${ver}: ${refs.length} referência(s)`);
-        for (const r of refs) {
-            console.log(`        ${r.html.padEnd(35)} ${r.src}`);
-        }
-    }
-    if (Object.keys(fbVersions).length > 1) {
-        console.log(`\n   ⚠️  MÚLTIPLAS VERSÕES DO FIREBASE SDK DETECTADAS!\n`);
-        console.log(`   Isso pode causar problemas de compatibilidade entre módulos.`);
-        console.log(`   Recomendado: unificar para uma única versão.\n`);
-    }
-} else {
-    console.log(`   Nenhum Firebase SDK detectado.\n`);
-}
-
-// 6. Top 10 HTMLs com mais scripts
-console.log(`📄 HTMLs COM MAIS SCRIPTS:\n`);
-const htmlCount = {};
-for (const e of scriptEntries) {
-    htmlCount[e.html] = (htmlCount[e.html] || 0) + 1;
-}
-const sorted = Object.entries(htmlCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
-for (const [html, count] of sorted) {
-    console.log(`   ${count.toString().padStart(3)} scripts  ${html}`);
-}
-
-console.log('\n' + '='.repeat(80));
-console.log('📋 FIM DA AUDITORIA');
-console.log('='.repeat(80) + '\n');
