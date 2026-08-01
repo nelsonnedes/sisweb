@@ -774,6 +774,11 @@ function corrigirSaveClientGlobal() {
             
             // 🔥 DISPARAR EVENTO DE ATUALIZAÇÃO CRÍTICO
             console.log("📡 Disparando evento clients:updated...");
+            try {
+                if (window.firebaseService && typeof window.firebaseService.invalidateCache === 'function') {
+                    window.firebaseService.invalidateCache('clients');
+                }
+            } catch (_) {}
             window.dispatchEvent(new CustomEvent('clients:updated', { detail: { client: normalizedClient, allClients: clients } }));
             
             return normalizedClient;
@@ -855,6 +860,11 @@ function corrigirDeleteClientGlobal() {
 
             // 3. Limpar LocalStorage (Purge agressivo)
             await removeClientFromCaches(clientId);
+            try {
+                if (window.firebaseService && typeof window.firebaseService.invalidateCache === 'function') {
+                    window.firebaseService.invalidateCache('clients');
+                }
+            } catch (_) {}
 
             // 4. Atualizar variáveis globais
             if (Array.isArray(window.clients)) {

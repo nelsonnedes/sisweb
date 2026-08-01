@@ -257,6 +257,7 @@ const elements = {
     searchInput: document.getElementById('searchInput'),
     modal: document.getElementById('modalForm'),
     form: document.getElementById('mainForm'),
+    fornecedorIdInput: document.getElementById('fornecedorId'),
     modalTitle: document.getElementById('modalTitle'),
     
     // Form Inputs
@@ -315,7 +316,8 @@ function setupListeners() {
 
     window.openNewModal = () => {
         editingId = null;
-        elements.form.reset();
+        if (elements.fornecedorIdInput) elements.fornecedorIdInput.value = '';
+        if (elements.form) elements.form.reset();
         restoreFiscalDefaults();
         elements.modalTitle.textContent = 'Novo Fornecedor';
         elements.saveBtn.textContent = 'Salvar';
@@ -387,11 +389,32 @@ async function loadData() {
         await ensureTenantContext();
         const fornecedoresResult = await window.firebaseService.loadFromFirebase('fornecedores');
         const fornecedoresList = extractListFromResult(fornecedoresResult);
-        currentList = fornecedoresList.map(item => normalizeFornecedor(item, item.id));
-        currentList = currentList.filter(item => String(item.name || item.nome || '').trim());
-        currentList.sort((a, b) => String(a.name || a.nome || '').localeCompare(String(b.name || b.nome || ''), 'pt-BR'));
         
-        renderTable();
+        if (fornecedoresList && fornecedoresList.length > 0) {
+            const remoteItems = fornecedoresList.map(item => normalizeFornecedor(item, item.id));
+            const itemMap = new Map();
+            
+            // Inserir remotos primeiro
+            remoteItems.forEach(item => {
+                if (item && item.id) itemMap.set(String(item.id), item);
+            });
+
+            // Preservar alterações/adições locais do currentList se mais recentes
+            currentList.forEach(localItem => {
+                if (localItem && localItem.id) {
+                    const existing = itemMap.get(String(localItem.id));
+                    if (!existing || new Date(localItem.updatedAt || 0) >= new Date(existing.updatedAt || 0)) {
+                        itemMap.set(String(localItem.id), localItem);
+                    }
+                }
+            });
+
+            currentList = Array.from(itemMap.values());
+            currentList = currentList.filter(item => String(item.name || item.nome || '').trim());
+            currentList.sort((a, b) => String(a.name || a.nome || '').localeCompare(String(b.name || b.nome || ''), 'pt-BR'));
+        }
+
+        renderTable(filterList(currentList, elements.searchInput.value));
     } catch (error) {
         console.error('Erro ao carregar dados:', error);
         showToast('Erro ao carregar dados', 'error');
@@ -418,11 +441,29 @@ async function handleSave(e) {
         showToast(error.message || 'Empresa/tenant não definido para salvar fornecedor', 'error');
         return;
     }
-    const existingItem = editingId ? currentList.find((item) => String(item.id) === String(editingId)) : null;
 
+    const targetIdFromForm = elements.fornecedorIdInput && elements.fornecedorIdInput.value ? elements.fornecedorIdInput.value.trim() : null;
+    const effectiveEditingId = (editingId || targetIdFromForm || '').trim() || null;
+    const isEditMode = Boolean(effectiveEditingId);
+
+    let finalId;
+    if (isEditMode) {
+        finalId = String(effectiveEditingId);
+    } else {
+        const existingIds = new Set(currentList.map(item => String(item.id)));
+        const makeId = () => `FORN_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        finalId = makeId();
+        while (existingIds.has(finalId)) {
+            finalId = makeId();
+        }
+    }
+
+    const existingIndex = currentList.findIndex(item => String(item.id) === String(finalId));
+    const existingItem = existingIndex !== -1 ? currentList[existingIndex] : null;
     const nowIso = new Date().toISOString();
+
     const data = normalizeFornecedor({
-        id: editingId || undefined,
+        id: finalId,
         name,
         nome: name,
         cnpj: elements.cnpjInput.value.trim(),
@@ -469,56 +510,58 @@ async function handleSave(e) {
         obs: elements.obsInput?.value.trim() || '',
         observacoes: elements.obsInput?.value.trim() || '',
         observations: elements.obsInput?.value.trim() || '',
-        createdAt: editingId ? (existingItem?.createdAt || existingItem?.created || nowIso) : nowIso,
+        createdAt: isEditMode ? (existingItem?.createdAt || existingItem?.created || nowIso) : nowIso,
         updatedAt: nowIso
-    }, editingId || undefined);
+    }, finalId);
 
     try {
-        const id = editingId || 'auto';
-        const saveMethod = window.firebaseService.saveToFirebase || window.firebaseService.saveData;
-        let savedId = editingId || null;
-        let savedFornecedor = data;
+        const dataToSave = normalizeFornecedor({ ...data, id: finalId }, finalId);
         
-        if (typeof saveMethod !== 'function') {
+        let result;
+        if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
+            result = await window.firebaseService.saveData(`fornecedores/${finalId}`, dataToSave);
+        } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+            result = await window.firebaseService.saveToFirebase(`fornecedores/${finalId}`, null, dataToSave);
+        } else {
             throw new Error('Serviço de salvamento não disponível');
         }
-
-        // Se o método for saveData, precisamos construir o caminho com ID
-        // Se o ID for 'auto', precisamos gerar um novo ID primeiro
-        let result;
-        if (saveMethod.name === 'saveData' || saveMethod === window.firebaseService.saveData) {
-            let finalId = id;
-            if (finalId === 'auto') {
-                // Gerar ID usando push().key se possível, ou timestamp
-                if (window.firebaseService.database) {
-                    // Criar referência para gerar ID sem criar registro vazio
-                    finalId = window.firebaseService.database.ref('fornecedores').push().key;
-                } else {
-                    finalId = Date.now().toString();
-                }
-            }
-            // Chamar saveData com o caminho completo
-            // Adicionar o ID ao objeto de dados para garantir consistência
-            const dataToSave = normalizeFornecedor({ ...data, id: finalId }, finalId);
-            savedId = finalId;
-            savedFornecedor = dataToSave;
-            result = await saveMethod.call(window.firebaseService, `fornecedores/${finalId}`, dataToSave);
-        } else {
-            // Fallback para saveToFirebase (legado)
-            const finalId = id === 'auto' ? String(Date.now()) : String(id);
-            const dataToSave = normalizeFornecedor({ ...data, id: finalId }, finalId);
-            savedId = finalId;
-            savedFornecedor = dataToSave;
-            result = await saveMethod.call(window.firebaseService, 'fornecedores', finalId, dataToSave);
-        }
         
-        if (result.success) {
-            showToast(editingId ? 'Fornecedor atualizado!' : 'Fornecedor criado!', 'success');
-            notifyParentSuppliersUpdated({ id: savedId, supplier: savedFornecedor });
+        if (result && result.success !== false) {
+            // Atualizar estado em memória imediatamente
+            const targetIdx = currentList.findIndex(item => String(item.id) === String(finalId));
+            if (targetIdx !== -1) {
+                currentList[targetIdx] = dataToSave;
+            } else {
+                currentList.push(dataToSave);
+            }
+            currentList.sort((a, b) => String(a.name || a.nome || '').localeCompare(String(b.name || b.nome || ''), 'pt-BR'));
+
+            // Sincronizar com cache local
+            try {
+                if (window.firebaseService) {
+                    if (typeof window.firebaseService.writeLocalStorage === 'function') {
+                        window.firebaseService.writeLocalStorage('fornecedores', currentList);
+                    }
+                    if (window.firebaseService.cache) {
+                        window.firebaseService.cache.set('fornecedores', { data: currentList, timestamp: Date.now() });
+                    }
+                }
+            } catch (_) {}
+
+            // Renderizar tabela imediatamente na tela
+            renderTable(filterList(currentList, elements.searchInput.value));
+
+            showToast(isEditMode ? 'Fornecedor atualizado!' : 'Fornecedor criado!', 'success');
+            notifyParentSuppliersUpdated({ id: finalId, supplier: dataToSave });
             closeModal();
-            await loadData();
+
+            try {
+                if (window.firebaseService && typeof window.firebaseService.invalidateCache === 'function') {
+                    window.firebaseService.invalidateCache('fornecedores');
+                }
+            } catch (_) {}
         } else {
-            throw new Error(result.error);
+            throw new Error((result && result.error) || 'Falha ao salvar fornecedor');
         }
     } catch (error) {
         console.error('Erro ao salvar:', error);
@@ -529,10 +572,11 @@ async function handleSave(e) {
 }
 
 window.editItem = async (id) => {
-    const item = currentList.find(s => s.id === id);
+    const item = currentList.find(s => String(s.id) === String(id));
     if (!item) return;
 
-    editingId = id;
+    editingId = String(id);
+    if (elements.fornecedorIdInput) elements.fornecedorIdInput.value = String(id);
     elements.nameInput.value = item.name || item.nome || '';
     elements.cnpjInput.value = item.documento || item.document || item.cnpj || item.cpf || '';
     if (elements.personTypeInput) elements.personTypeInput.value = item.tipoPessoa || item.personType || item.fiscalPersonType || '';
@@ -566,18 +610,40 @@ window.editItem = async (id) => {
 };
 
 window.deleteItem = async (id) => {
+    const cleanId = String(id || '').trim();
+    if (!cleanId || cleanId === 'undefined' || cleanId === 'null') {
+        showToast('ID do fornecedor inválido para exclusão', 'error');
+        return;
+    }
     if (!confirm('Tem certeza que deseja excluir este fornecedor?')) return;
 
     showLoading(true);
     try {
         const tenantId = await ensureTenantContext();
         if (!tenantId) throw new Error('Empresa/tenant não definido para excluir fornecedor');
-        const result = await window.firebaseService.deleteData(`fornecedores/${id}`);
+        const result = await window.firebaseService.deleteData(`fornecedores/${cleanId}`);
         
         if (result.success) {
+            currentList = currentList.filter(s => String(s.id) !== cleanId);
+            try {
+                if (window.firebaseService) {
+                    if (typeof window.firebaseService.writeLocalStorage === 'function') {
+                        window.firebaseService.writeLocalStorage('fornecedores', currentList);
+                    }
+                    if (window.firebaseService.cache) {
+                        window.firebaseService.cache.set('fornecedores', { data: currentList, timestamp: Date.now() });
+                    }
+                }
+            } catch (_) {}
+            renderTable(filterList(currentList, elements.searchInput.value));
+
             showToast('Fornecedor excluído!', 'success');
-            notifyParentSuppliersUpdated({ id, deletedId: id });
-            await loadData();
+            notifyParentSuppliersUpdated({ id: cleanId, deletedId: cleanId });
+            try {
+                if (window.firebaseService && typeof window.firebaseService.invalidateCache === 'function') {
+                    window.firebaseService.invalidateCache('fornecedores');
+                }
+            } catch (_) {}
         } else {
             throw new Error(result.error);
         }
@@ -658,11 +724,11 @@ function renderPagination(totalItems) {
     const endPage = Math.min(totalPages, currentPage + 2);
 
     if (startPage > 1) {
-        addBtn('1', 1, false, currentPage === 1);
+        addBtn('1', 1);
         if (startPage > 2) {
-            const span = document.createElement('span');
-            span.textContent = '...';
-            elements.pagination.appendChild(span);
+            const dots = document.createElement('span');
+            dots.textContent = '...';
+            elements.pagination.appendChild(dots);
         }
     }
 
@@ -672,11 +738,11 @@ function renderPagination(totalItems) {
 
     if (endPage < totalPages) {
         if (endPage < totalPages - 1) {
-            const span = document.createElement('span');
-            span.textContent = '...';
-            elements.pagination.appendChild(span);
+            const dots = document.createElement('span');
+            dots.textContent = '...';
+            elements.pagination.appendChild(dots);
         }
-        addBtn(String(totalPages), totalPages, false, currentPage === totalPages);
+        addBtn(String(totalPages), totalPages);
     }
 
     addBtn('>', currentPage + 1, currentPage === totalPages);
@@ -713,6 +779,9 @@ function openModal() {
 }
 
 function closeModal() {
+    editingId = null;
+    if (elements.fornecedorIdInput) elements.fornecedorIdInput.value = '';
+    if (elements.form) elements.form.reset();
     elements.modal.style.display = 'none';
 }
 

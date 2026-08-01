@@ -1222,10 +1222,11 @@ class FirebaseServiceTL {
             }
 
         } catch (error) {
-            console.error('❌ Erro ao carregar dados do Firebase:', error && error.code ? error.code : 'unknown');
+            const errDetails = error ? (error.message || error.code || String(error)) : 'desconhecido';
+            console.warn(`⚠️ Aviso ao carregar dados do Firebase: ${errDetails}`);
             return {
                 success: false,
-                error: error.message,
+                error: errDetails,
                 data: null
             };
         }
@@ -1291,7 +1292,21 @@ class FirebaseServiceTL {
      * 🗑️ Excluir dados
      */
     async deleteData(key) {
-        console.log('🗑️ Excluindo dados');
+        console.log('🗑️ Excluindo dados:', key);
+        if (!key || typeof key !== 'string') {
+            console.error('❌ deleteData rejeitado: caminho inválido', key);
+            return { success: false, error: 'Caminho inválido para exclusão' };
+        }
+
+        const cleanPath = String(key).replace(/^\/+|\/+$/g, '');
+        if (!cleanPath || 
+            cleanPath === 'clients' || cleanPath === 'fornecedores' || cleanPath === 'especies' ||
+            cleanPath.endsWith('/undefined') || cleanPath.endsWith('/null') || cleanPath.endsWith('/') ||
+            /^companies\/[^\/]+\/(clients|fornecedores|especies)$/.test(cleanPath)) {
+            console.error('❌ deleteData bloqueado por segurança: tentativa de excluir nó raiz ou ID inválido:', key);
+            return { success: false, error: 'Exclusão de nó raiz ou ID inválido bloqueada por segurança' };
+        }
+
         const writePath = this.resolveWritePath(key);
         this.tenantAuditLog('DELETE', key, writePath);
 
@@ -1312,6 +1327,9 @@ class FirebaseServiceTL {
             // Remover da fila de sincronização
             this.syncQueue.delete(writePath);
 
+            this.invalidateCollectionCache(key);
+            if (key !== writePath) this.invalidateCollectionCache(writePath);
+
             return { success: true };
         } catch (error) {
             console.error('❌ Erro ao excluir dados:', error && error.code ? error.code : 'unknown');
@@ -1329,6 +1347,62 @@ class FirebaseServiceTL {
             queueSize: this.syncQueue.size,
             cacheSize: this.cache.size
         };
+    }
+
+    /**
+     * 🧹 Invalida cache de memória e localStorage para a chave e sua coleção pai
+     */
+    invalidateCollectionCache(path) {
+        if (!path) return;
+        const cleanPath = String(path).replace(/^\/+|\/+$/g, '');
+
+        this.cache.delete(cleanPath);
+        this.removeLocalStorage(cleanPath);
+
+        try {
+            const ns = this.getNamespacedPath(cleanPath);
+            if (ns && ns !== cleanPath) {
+                this.cache.delete(ns);
+                this.removeLocalStorage(ns);
+            }
+        } catch (_) {}
+
+        const parts = cleanPath.split('/');
+        if (parts.length > 1) {
+            const parentCollection = parts.slice(0, parts.length - 1).join('/');
+            this.cache.delete(parentCollection);
+            this.removeLocalStorage(parentCollection);
+
+            const candidates = this.resolveReadCandidates(parentCollection);
+            for (const cand of candidates) {
+                this.cache.delete(cand);
+                this.removeLocalStorage(cand);
+                try {
+                    const nsCand = this.getNamespacedPath(cand);
+                    if (nsCand) {
+                        this.cache.delete(nsCand);
+                        this.removeLocalStorage(nsCand);
+                    }
+                } catch (_) {}
+            }
+        } else {
+            const candidates = this.resolveReadCandidates(cleanPath);
+            for (const cand of candidates) {
+                this.cache.delete(cand);
+                this.removeLocalStorage(cand);
+                try {
+                    const nsCand = this.getNamespacedPath(cand);
+                    if (nsCand) {
+                        this.cache.delete(nsCand);
+                        this.removeLocalStorage(nsCand);
+                    }
+                } catch (_) {}
+            }
+        }
+    }
+
+    invalidateCache(path) {
+        this.invalidateCollectionCache(path);
     }
 
     /**
@@ -1364,5 +1438,6 @@ window.firebaseServiceTL.getData = window.firebaseServiceTL.loadData;
 window.firebaseServiceTL.saveData = window.firebaseServiceTL.saveData;
 window.firebaseServiceTL.deleteData = window.firebaseServiceTL.deleteData;
 window.firebaseServiceTL.loadFromFirebase = window.firebaseServiceTL.loadFromFirebase;
+window.firebaseServiceTL.invalidateCache = (path) => window.firebaseServiceTL.invalidateCache(path);
 
 console.log('🔥 Firebase Service TL carregado com sucesso (v2.1.0)');

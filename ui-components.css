@@ -444,3 +444,98 @@
         content: attr(data-label);
     }
 }
+
+/* ==========================================
+ * Botões de Ação nos Modais (Fornecedores / Clientes / Espécies)
+ * ========================================== */
+.client-action-button,
+.action-buttons-container .client-action-button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease-in-out !important;
+    font-size: 13px !important;
+}
+
+/* Botão Selecionar (Verde / Sucesso) */
+.client-action-button.btn-selecionar,
+.client-action-button[title*="Selecionar"],
+.action-buttons-container .client-action-button:first-child {
+    background-color: #27ae60 !important;
+    color: #ffffff !important;
+}
+
+.client-action-button.btn-selecionar:hover,
+.client-action-button[title*="Selecionar"]:hover,
+.action-buttons-container .client-action-button:first-child:hover {
+    background-color: #219653 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(39, 174, 96, 0.35) !important;
+}
+
+/* Botão Editar (Laranja / Alerta) */
+.client-action-button.btn-editar,
+.client-action-button[title*="Editar"],
+.action-buttons-container .client-action-button:nth-child(2) {
+    background-color: #f39c12 !important;
+    color: #ffffff !important;
+}
+
+.client-action-button.btn-editar:hover,
+.client-action-button[title*="Editar"]:hover,
+.action-buttons-container .client-action-button:nth-child(2):hover {
+    background-color: #e67e22 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(243, 156, 18, 0.35) !important;
+}
+
+.action-buttons-container {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    white-space: nowrap !important;
+}
+
+.modal-footer button,
+.modal-footer .btn,
+.modal-footer .btn-save,
+.modal-footer .back-button,
+.modal-footer .close-modal-btn,
+.modal-header .close,
+.modal-header .close-modal,
+.close-modal-btn,
+.close-modal {
+    cursor: pointer !important;
+}
+
+#clientListModal .modal-content,
+#fornecedorListModal .modal-content {
+    max-width: 920px !important;
+    width: 92% !important;
+    margin: 30px auto !important;
+    box-sizing: border-box !important;
+}
+
+#clientListModal .modal-body,
+#fornecedorListModal .modal-body {
+    overflow-x: auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 15px !important;
+}
+
+#clientListModal .table,
+#fornecedorListModal .table {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-collapse: collapse !important;
+}

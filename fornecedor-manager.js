@@ -497,6 +497,7 @@ class FornecedorManager {
             tr.appendChild(tdEstado);
             
             // Telefone (quinta coluna)
+            // Telefone (quinta coluna)
             const tdTelefone = document.createElement('td');
             tdTelefone.style.padding = '12px';
             tdTelefone.style.verticalAlign = 'middle';
@@ -504,15 +505,7 @@ class FornecedorManager {
             tdTelefone.textContent = fornecedor.telefone || '';
             tr.appendChild(tdTelefone);
             
-            // Email (sexta coluna)
-            const tdEmail = document.createElement('td');
-            tdEmail.style.padding = '12px';
-            tdEmail.style.verticalAlign = 'middle';
-            tdEmail.style.fontSize = '13px';
-            tdEmail.textContent = fornecedor.email || '';
-            tr.appendChild(tdEmail);
-            
-            // Ações (sétima coluna)
+            // Ações (sexta coluna)
             const tdAcoes = document.createElement('td');
             tdAcoes.style.padding = '12px';
             tdAcoes.style.verticalAlign = 'middle';
@@ -524,16 +517,22 @@ class FornecedorManager {
             
             // ✅ PADRONIZAÇÃO: Usar os mesmos estilos da Lista de Espécies
             const btnSelecionar = document.createElement('button');
-            btnSelecionar.className = 'client-action-button';
+            btnSelecionar.className = 'client-action-button btn-selecionar btn-success';
             btnSelecionar.title = 'Selecionar fornecedor';
             btnSelecionar.innerHTML = '<i class="fas fa-check"></i>';
-            btnSelecionar.onclick = () => this.selectFromList(fornecedorId);
+            btnSelecionar.onclick = (e) => {
+                if (e && e.stopPropagation) e.stopPropagation();
+                this.selectFromList(fornecedorId);
+            };
             
             const btnEditar = document.createElement('button');
-            btnEditar.className = 'client-action-button';
+            btnEditar.className = 'client-action-button btn-editar btn-warning';
             btnEditar.title = 'Editar fornecedor';
             btnEditar.innerHTML = '<i class="fas fa-edit"></i>';
-            btnEditar.onclick = () => this.editFromList(fornecedorId);
+            btnEditar.onclick = (e) => {
+                if (e && e.stopPropagation) e.stopPropagation();
+                this.editFromList(fornecedorId);
+            };
             
             actionContainer.appendChild(btnSelecionar);
             actionContainer.appendChild(btnEditar);
@@ -656,21 +655,28 @@ class FornecedorManager {
                 }
                 
                 // ✅ CARREGAR FORNECEDOR NO CAMPO
-                const clientInput = document.getElementById('clienteInput');
-                if (clientInput) {
-                    clientInput.value = fornecedor.nome || fornecedor.name || '';
+                const targetInput = document.getElementById('fornecedorInput') || document.getElementById('clienteInput');
+                if (targetInput) {
+                    targetInput.value = fornecedor.nome || fornecedor.name || '';
+                    try {
+                        targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    } catch (_) {}
                     console.log("✅ Fornecedor carregado no campo de entrada");
                 }
                 
                 // Definir fornecedor selecionado globalmente
                 window.selectedFornecedor = fornecedor;
+                window.selectedClient = fornecedor;
                 
-                // ✅ USAR A MESMA LÓGICA DO ÍCONE DO CAMPO - openEditClientModal
-                console.log("✅ Chamando openEditClientModal (mesma função do ícone do campo)");
-                if (typeof window.openEditClientModal === 'function') {
+                // ✅ USAR A MESMA LÓGICA DO ÍCONE DO CAMPO
+                console.log("✅ Chamando modal de edição de fornecedor...");
+                if (typeof window.openEditFornecedorModal === 'function') {
+                    await window.openEditFornecedorModal(fornecedor);
+                } else if (typeof window.openEditClientModal === 'function') {
                     await window.openEditClientModal();
                 } else {
-                    console.warn("⚠️ openEditClientModal não disponível, usando fallback");
+                    console.warn("⚠️ Fallback para openEditModal");
                     this.openEditModal(fornecedor);
                 }
                 
@@ -906,12 +912,15 @@ style.textContent = `
     transition: background-color 0.2s ease !important;
 }
 
-/* Coluna de ações com largura fixa */
-#clientListTable th:nth-child(7),
-#clientListTable td:nth-child(7) {
-    width: 10% !important;
-    max-width: 80px !important;
+/* Coluna de ações com largura adequada */
+#clientListTable th:nth-child(6),
+#clientListTable td:nth-child(6),
+#clientListTable th:last-child,
+#clientListTable td:last-child {
+    width: 130px !important;
+    min-width: 130px !important;
     text-align: center !important;
+    white-space: nowrap !important;
 }
 
 /* Modal responsivo */

@@ -283,48 +283,35 @@ async function handleSave(e) {
     }
 
     try {
-        const id = editingId || 'auto';
-        const saveMethod = window.firebaseService.saveToFirebase || window.firebaseService.saveData;
-        
-        if (typeof saveMethod !== 'function') {
+        const isEditMode = !!editingId;
+        const finalId = isEditMode
+            ? String(editingId)
+            : (window.firebaseService && window.firebaseService.database
+                ? window.firebaseService.database.ref('especies').push().key
+                : `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+
+        const dataToSave = { ...speciesData, id: finalId };
+
+        let result;
+        if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
+            result = await window.firebaseService.saveData(`especies/${finalId}`, dataToSave);
+        } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+            result = await window.firebaseService.saveToFirebase(`especies/${finalId}`, null, dataToSave);
+        } else {
             throw new Error('Serviço de salvamento não disponível');
         }
-
-        // Se o método for saveData, precisamos construir o caminho com ID
-        // Se o ID for 'auto', precisamos gerar um novo ID primeiro
-        let result;
-        if (saveMethod.name === 'saveData' || saveMethod === window.firebaseService.saveData) {
-            let finalId = id;
-            if (finalId === 'auto') {
-                if (window.firebaseService.database) {
-                    // Criar referência para gerar ID sem criar registro vazio
-                    finalId = window.firebaseService.database.ref('especies').push().key;
-                } else {
-                    finalId = Date.now().toString();
-                }
-            }
-            // Adicionar o ID ao objeto de dados para garantir consistência
-            const dataToSave = { ...speciesData, id: finalId };
-            result = await saveMethod.call(window.firebaseService, `especies/${finalId}`, dataToSave);
-        } else {
-            let finalId = id;
-            if (finalId === 'auto') {
-                if (window.firebaseService.database) {
-                    finalId = window.firebaseService.database.ref('especies').push().key;
-                } else {
-                    finalId = Date.now().toString();
-                }
-            }
-            const dataToSave = { ...speciesData, id: finalId };
-            result = await saveMethod.call(window.firebaseService, 'especies', finalId, dataToSave);
-        }
         
-        if (result.success) {
-            showToast(editingId ? 'Espécie atualizada!' : 'Espécie criada!', 'success');
+        if (result && result.success) {
+            showToast(isEditMode ? 'Espécie atualizada!' : 'Espécie criada!', 'success');
             closeModal();
+            try {
+                if (window.firebaseService && typeof window.firebaseService.invalidateCache === 'function') {
+                    window.firebaseService.invalidateCache('especies');
+                }
+            } catch (_) {}
             await loadSpecies();
         } else {
-            throw new Error(result.error);
+            throw new Error((result && result.error) || 'Falha ao salvar espécie');
         }
     } catch (error) {
         console.error('Erro ao salvar:', error);
@@ -355,26 +342,34 @@ window.editSpecies = (id) => {
 };
 
 window.deleteSpecies = async (id) => {
+    const cleanId = String(id || '').trim();
+    if (!cleanId || cleanId === 'undefined' || cleanId === 'null') {
+        showToast('ID da espécie inválido para exclusão', 'error');
+        return;
+    }
     if (!confirm('Tem certeza que deseja excluir esta espécie?')) return;
 
     showLoading(true);
     try {
         const tenant = await ensureAuthAndTenant();
         // Excluir no caminho canônico.
-        const result = await window.firebaseService.deleteData(`especies/${id}`);
+        const result = await window.firebaseService.deleteData(`especies/${cleanId}`);
         
         if (result.success) {
-            currentSpecies = currentSpecies.filter(s => s.id !== id);
+            currentSpecies = currentSpecies.filter(s => s.id !== cleanId);
             try {
                 if (window.firebaseService && typeof window.firebaseService.removeLocalStorage === 'function') {
                     window.firebaseService.removeLocalStorage('especies');
                     window.firebaseService.removeLocalStorage(`companies/${tenant}/especies`);
-                    window.firebaseService.removeLocalStorage(`especies/${id}`);
-                    window.firebaseService.removeLocalStorage(`companies/${tenant}/especies/${id}`);
+                    window.firebaseService.removeLocalStorage(`especies/${cleanId}`);
+                    window.firebaseService.removeLocalStorage(`companies/${tenant}/especies/${cleanId}`);
                     window.firebaseService.removeLocalStorage('species');
                     window.firebaseService.removeLocalStorage(`companies/${tenant}/species`);
-                    window.firebaseService.removeLocalStorage(`species/${id}`);
-                    window.firebaseService.removeLocalStorage(`companies/${tenant}/species/${id}`);
+                    window.firebaseService.removeLocalStorage(`species/${cleanId}`);
+                    window.firebaseService.removeLocalStorage(`companies/${tenant}/species/${cleanId}`);
+                }
+                if (window.firebaseService && typeof window.firebaseService.invalidateCache === 'function') {
+                    window.firebaseService.invalidateCache('especies');
                 }
             } catch (_) {}
             showToast('Espécie excluída!', 'success');
@@ -477,6 +472,8 @@ function openModal() {
 }
 
 function closeModal() {
+    editingId = null;
+    if (elements.form) elements.form.reset();
     elements.modal.style.display = 'none';
     elements.modal.setAttribute('aria-hidden', 'true');
 }

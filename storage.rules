@@ -148,7 +148,21 @@ service firebase.storage {
       allow write: if request.auth != null &&
         (request.auth.token.superadmin == true || 
         (request.auth.token.companyId == companyId)) &&
-        request.resource.size < 10 * 1024 * 1024;
+        request.resource.size < 10 * 1024 * 1024 &&
+        (
+          request.resource == null ||
+          request.resource.contentType.matches('text/csv') ||
+          request.resource.contentType.matches('text/plain') ||
+          request.resource.contentType.matches('text/tab-separated-values') ||
+          request.resource.contentType.matches('application/json') ||
+          request.resource.contentType.matches('application/octet-stream') ||
+          request.resource.contentType.matches('application/csv') ||
+          request.resource.contentType.matches('application/x-csv') ||
+          request.resource.contentType.matches('application/vnd.ms-excel') ||
+          request.resource.contentType.matches('application/zip') ||
+          request.resource.contentType.matches('application/gzip') ||
+          request.resource.contentType.matches('application/x-gzip')
+        );
     }
 
     // REGRA DE BLOQUEIO GLOBAL

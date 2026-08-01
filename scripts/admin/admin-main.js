@@ -261,6 +261,106 @@
             function showActionMessage(message, type) {
                 notifyAdmin(message, type);
             }
+            // Helpers: usam AdminUI quando disponível, com fallback para nativos
+            function adminAlert(message, title) {
+                if (window.AdminUI && typeof window.AdminUI.alert === "function") {
+                    return window.AdminUI.alert(message, title || "Aviso");
+                }
+                return Promise.resolve(alert(message));
+            }
+            function adminConfirm(message, title) {
+                if (window.AdminUI && typeof window.AdminUI.confirm === "function") {
+                    return window.AdminUI.confirm(message, title || "Confirmação");
+                }
+                return Promise.resolve(confirm(message));
+            }
+            function adminPrompt(message, defaultValue, title) {
+                if (window.AdminUI && typeof window.AdminUI.prompt === "function") {
+                    return window.AdminUI.prompt(message, defaultValue, title || "Entrada necessária");
+                }
+                return Promise.resolve(prompt(message, defaultValue));
+            }
+            // =========================================================================
+            // PAGINAÇÃO CLIENT-SIDE DAS TABELAS DO ADMIN
+            // =========================================================================
+            var adminPaginationState = {
+                subscriptions: { page: 0, size: 25 },
+                financial: { page: 0, size: 25 },
+                security: { page: 0, size: 25 },
+                support: { page: 0, size: 25 }
+            };
+            function paginateAdminList(list, state) {
+                var arr = Array.isArray(list) ? list : [];
+                var size = Math.max(1, parseInt(state && state.size, 10) || 25);
+                var total = arr.length;
+                var pages = Math.max(1, Math.ceil(total / size));
+                if (!state) state = { page: 0, size: size };
+                if (state.page < 0) state.page = 0;
+                if (state.page >= pages) state.page = pages - 1;
+                var start = state.page * size;
+                return {
+                    rows: arr.slice(start, start + size),
+                    total: total,
+                    page: state.page,
+                    pages: pages,
+                    size: size
+                };
+            }
+            function renderAdminPaginationControls(hostId, state, total, onChange) {
+                var host = document.getElementById(hostId);
+                if (!host) return;
+                var size = Math.max(1, parseInt(state && state.size, 10) || 25);
+                var pages = Math.max(1, Math.ceil((total || 0) / size));
+                host.innerHTML = "";
+                if (pages <= 1) return;
+                var wrap = document.createElement("div");
+                wrap.className = "admin-pagination";
+                wrap.style.cssText = "display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;padding:8px 2px;font-size:0.78rem;color:#64748b;";
+                var info = document.createElement("span");
+                info.textContent = "Página " + (state.page + 1) + " de " + pages + " · " + (total || 0) + " registro(s)";
+                wrap.appendChild(info);
+                var mkBtn = function(label, html, disabled, handler) {
+                    var b = document.createElement("button");
+                    b.type = "button";
+                    b.className = "btn small";
+                    b.innerHTML = html;
+                    if (label) b.title = label;
+                    b.disabled = !!disabled;
+                    b.addEventListener("click", handler);
+                    return b;
+                };
+                var prev = mkBtn("Página anterior", '<i class="fas fa-chevron-left"></i>', state.page <= 0, function() {
+                    if (state.page > 0) { state.page--; onChange(); }
+                });
+                wrap.appendChild(prev);
+                var startPage = Math.max(0, state.page - 3);
+                var endPage = Math.min(pages - 1, startPage + 6);
+                for (var p = startPage; p <= endPage; p++) {
+                    (function(pg) {
+                        var b = mkBtn("Página " + (pg + 1), String(pg + 1), pg === state.page, function() {
+                            state.page = pg;
+                            onChange();
+                        });
+                        if (pg === state.page) b.classList.add("primary");
+                        wrap.appendChild(b);
+                    })(p);
+                }
+                var next = mkBtn("Próxima página", '<i class="fas fa-chevron-right"></i>', state.page >= pages - 1, function() {
+                    if (state.page < pages - 1) { state.page++; onChange(); }
+                });
+                wrap.appendChild(next);
+                host.appendChild(wrap);
+            }
+            function fillAdminRoundedBar(ctx, x, y, w, h) {
+                if (!ctx) return;
+                ctx.beginPath();
+                if (typeof ctx.roundRect === "function") {
+                    ctx.roundRect(x, y, w, h, [3, 3, 0, 0]);
+                } else {
+                    ctx.rect(x, y, w, h);
+                }
+                ctx.fill();
+            }
             async function waitForAuthReady(maxWaitMs, intervalMs) {
                 var maxMs = Number(maxWaitMs || 3000);
                 var interval = Number(intervalMs || 250);
@@ -281,7 +381,9 @@
                 return false;
             }
             function formatCurrencyBRL(value) {
-                return Number(value || 0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+                var n = Number(value || 0);
+                if (!Number.isFinite(n)) n = 0;
+                return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
             }
             function escapeHtml(value) {
                 return String(value == null ? "" : value)
@@ -738,6 +840,9 @@
                 var monthly = parseFloat(planMonthlyEl && planMonthlyEl.value ? planMonthlyEl.value : "0") || 0;
                 var quarterly = parseFloat(planAnnualEl && planAnnualEl.value ? planAnnualEl.value : "0") || 0;
                 var premium = parseFloat(planPremiumEl && planPremiumEl.value ? planPremiumEl.value : "0") || 0;
+                if (!Number.isFinite(monthly) || monthly < 0) monthly = 0;
+                if (!Number.isFinite(quarterly) || quarterly < 0) quarterly = 0;
+                if (!Number.isFinite(premium) || premium < 0) premium = 0;
                 var chosenLabel = settingsPreviewPlanKey === "premium" ? "Plano Premium" : (settingsPreviewPlanKey === "quarterly" ? "Plano Trimestral" : "Plano Mensal");
                 var chosenAmount = settingsPreviewPlanKey === "premium" ? premium : (settingsPreviewPlanKey === "quarterly" ? quarterly : monthly);
                 titleEl.textContent = "Pagamento - " + chosenLabel;
@@ -1532,15 +1637,28 @@
                     return haystack.indexOf(term) >= 0;
                 });
             }
+            var lastSupportFilterSig = "";
             function renderSupportTicketsTable(items) {
                 var tbody = document.getElementById("supportTicketsBody");
                 var meta = document.getElementById("supportTicketsMeta");
                 if (!tbody) return;
-                var list = filterSupportTicketsLocally(items);
+                var sigSearch = String((document.getElementById("supportSearch") || {}).value || "").trim().toLowerCase();
+                var sigModule = String((document.getElementById("supportModuleFilter") || {}).value || "").trim().toLowerCase();
+                var sigStatus = String((document.getElementById("supportStatusFilter") || {}).value || "").trim();
+                var sigPriority = String((document.getElementById("supportPriorityFilter") || {}).value || "").trim();
+                var sig = sigSearch + "|" + sigModule + "|" + sigStatus + "|" + sigPriority;
+                if (sig !== lastSupportFilterSig) {
+                    lastSupportFilterSig = sig;
+                    adminPaginationState.support.page = 0;
+                }
+                var fullList = filterSupportTicketsLocally(items);
+                var paged = paginateAdminList(fullList, adminPaginationState.support);
                 tbody.innerHTML = "";
-                if (meta) meta.textContent = String(list.length) + " ticket" + (list.length === 1 ? "" : "s");
-                updateSupportStats(list);
+                if (meta) meta.textContent = String(fullList.length) + " ticket" + (fullList.length === 1 ? "" : "s");
+                updateSupportStats(fullList);
+                var list = paged.rows;
                 if (!list.length) {
+                    renderAdminPaginationControls("supportPagination", adminPaginationState.support, 0, function() { applySupportFilter(); });
                     var emptyTr = document.createElement("tr");
                     var emptyTd = document.createElement("td");
                     emptyTd.colSpan = 8;
@@ -1623,6 +1741,7 @@
                     tr.appendChild(actionsTd);
                     tbody.appendChild(tr);
                 });
+                renderAdminPaginationControls("supportPagination", adminPaginationState.support, paged.total, function() { applySupportFilter(); });
                 scheduleResponsiveTablesHydration();
             }
             async function loadSupportTicketsPanel() {
@@ -2079,8 +2198,11 @@
                 var meta = document.getElementById("subscriptionsMeta");
                 if (!tbody) return;
                 tbody.innerHTML = "";
-                if (meta) meta.textContent = String(users.length) + " registros";
+                var paged = paginateAdminList(users, adminPaginationState.subscriptions);
+                if (meta) meta.textContent = String(paged.total) + " registros";
+                users = paged.rows;
                 if (!users.length) {
+                    renderAdminPaginationControls("subscriptionsPagination", adminPaginationState.subscriptions, 0, function() { applySubscriptionsFilter(); });
                     var trEmpty = document.createElement("tr");
                     var tdEmpty = document.createElement("td");
                     tdEmpty.colSpan = 10;
@@ -2287,16 +2409,27 @@
                             tdActions.appendChild(btnTrial);
                         }
                         if (!isOperationalAdmin) {
-                            var btnDelete = document.createElement("button");
-                            btnDelete.type = "button";
-                            btnDelete.className = "btn small danger";
-                            btnDelete.textContent = "Excluir";
-                            btnDelete.style.marginLeft = "4px";
-                            btnDelete.title = "Remove dados de assinatura, requests, auditorias e financeiro do usuário.";
-                            btnDelete.addEventListener("click",function() {
+                            var btnCleanSub = document.createElement("button");
+                            btnCleanSub.type = "button";
+                            btnCleanSub.className = "btn small secondary";
+                            btnCleanSub.textContent = "Limpar Assinatura";
+                            btnCleanSub.style.marginLeft = "4px";
+                            btnCleanSub.title = "Reseta dados, requisições e histórico financeiro de assinatura (mantém a conta do usuário).";
+                            btnCleanSub.addEventListener("click", function() {
                                 deleteSubscriptionDataFlow(user);
                             });
-                            tdActions.appendChild(btnDelete);
+                            tdActions.appendChild(btnCleanSub);
+
+                            var btnFullDelete = document.createElement("button");
+                            btnFullDelete.type = "button";
+                            btnFullDelete.className = "btn small danger";
+                            btnFullDelete.textContent = "Excluir Usuário";
+                            btnFullDelete.style.marginLeft = "4px";
+                            btnFullDelete.title = "Apaga o usuário permanentemente do Firebase Auth, perfil, empresa e comprovantes.";
+                            btnFullDelete.addEventListener("click", function() {
+                                fullUserCleanupFlow(user);
+                            });
+                            tdActions.appendChild(btnFullDelete);
                         }
                     } else {
                         var ro = document.createElement("span");
@@ -2318,6 +2451,7 @@
                     tr.appendChild(tdActions);
                     tbody.appendChild(tr);
                 });
+                renderAdminPaginationControls("subscriptionsPagination", adminPaginationState.subscriptions, paged.total, function() { applySubscriptionsFilter(); });
                 scheduleResponsiveTablesHydration();
             }
             function buildFinancialRows() {
@@ -2595,15 +2729,11 @@
 
                         // Approved bar (green)
                         ctx.fillStyle = "#22c55e";
-                        ctx.beginPath();
-                        ctx.roundRect(x, padT + chartH - hApproved, barW, hApproved, [3, 3, 0, 0]);
-                        ctx.fill();
+                        fillAdminRoundedBar(ctx, x, padT + chartH - hApproved, barW, hApproved);
 
                         // Pending bar (amber)
                         ctx.fillStyle = "#f59e0b";
-                        ctx.beginPath();
-                        ctx.roundRect(x + barW + 3, padT + chartH - hPending, barW, hPending, [3, 3, 0, 0]);
-                        ctx.fill();
+                        fillAdminRoundedBar(ctx, x + barW + 3, padT + chartH - hPending, barW, hPending);
 
                         // Month label
                         ctx.fillStyle = "#64748b";
@@ -2668,7 +2798,7 @@
                         showActionMessage("Serviço financeiro transacional indisponível.", "error");
                         return;
                     }
-                    var details = typeof detailsBuilder === "function" ? detailsBuilder() : {};
+                    var details = typeof detailsBuilder === "function" ? await detailsBuilder() : {};
                     if (details === null) return;
                     var result = await window.firebaseService.updateSubscriptionFinancialEvent({
                         uid: row.uid,
@@ -2725,8 +2855,11 @@
                 var meta = document.getElementById("financialMeta");
                 if (!tbody) return;
                 tbody.innerHTML = "";
-                if (meta) meta.textContent = String(rows.length) + " lançamentos";
+                var paged = paginateAdminList(rows, adminPaginationState.financial);
+                if (meta) meta.textContent = String(paged.total) + " lançamentos";
+                rows = paged.rows;
                 if (!rows.length) {
+                    renderAdminPaginationControls("financialPagination", adminPaginationState.financial, 0, function() { applyFinancialFilter(); });
                     tbody.innerHTML = '<tr><td colspan="11" class="empty-state">Nenhum lançamento financeiro para os filtros aplicados.</td></tr>';
                     return;
                 }
@@ -2790,17 +2923,17 @@
                     };
                     if (canMutateSensitiveData() && canUseRequestTimeline && row.method === "Boleto" && row.status === "pending") {
                         tdActions.appendChild(mkButton("Emitir boleto", "", "Registra emissão do boleto e dados de cobrança.", function() {
-                            runFinancialEventAction(row, "BOLETO_ISSUED", function() {
-                                var dueDate = prompt("Vencimento do boleto (YYYY-MM-DD):", "");
+                            runFinancialEventAction(row, "BOLETO_ISSUED", async function() {
+                                var dueDate = await adminPrompt("Vencimento do boleto (YYYY-MM-DD):", "");
                                 if (dueDate === null) return null;
-                                var line = prompt("Linha digitável:", "") || "";
-                                var ourNumber = prompt("Nosso número:", "") || "";
+                                var line = await adminPrompt("Linha digitável:", "") || "";
+                                var ourNumber = await adminPrompt("Nosso número:", "") || "";
                                 return { dueDate: dueDate || "", boletoLine: line, ourNumber: ourNumber };
                             });
                         }));
                         tdActions.appendChild(mkButton("Marcar pago", "primary", "Marca boleto como pago aguardando conciliação.", function() {
-                            runFinancialEventAction(row, "BOLETO_PAID_MARKED", function() {
-                                var txid = prompt("TXID/NSU da baixa:", "") || "";
+                            runFinancialEventAction(row, "BOLETO_PAID_MARKED", async function() {
+                                var txid = await adminPrompt("TXID/NSU da baixa:", "") || "";
                                 return { txid: txid };
                             });
                         }));
@@ -2815,16 +2948,16 @@
                     }
                     if (canMutateSensitiveData() && canUseRequestTimeline && (row.status === "pending" || row.status === "approved")) {
                         tdActions.appendChild(mkButton("Conciliar", "", "Registra conciliação financeira com referência contábil.", function() {
-                            runFinancialEventAction(row, "PAYMENT_RECONCILED", function() {
-                                var ref = prompt("Referência de conciliação:", "") || "";
+                            runFinancialEventAction(row, "PAYMENT_RECONCILED", async function() {
+                                var ref = await adminPrompt("Referência de conciliação:", "") || "";
                                 return { reconciliationRef: ref, amount: row.amount || 0 };
                             });
                         }));
                     }
                     if (canMutateSensitiveData() && canUseRequestTimeline && row.status !== "rejected") {
                         tdActions.appendChild(mkButton("Observação", "", "Adiciona observação financeira auditável para o pagamento.", function() {
-                            runFinancialEventAction(row, "PAYMENT_NOTE", function() {
-                                var note = prompt("Observação financeira:", "");
+                            runFinancialEventAction(row, "PAYMENT_NOTE", async function() {
+                                var note = await adminPrompt("Observação financeira:", "");
                                 if (note === null) return null;
                                 return { note: note };
                             });
@@ -2832,15 +2965,15 @@
                     }
                     if (canMutateSensitiveData() && canUseRequestTimeline && row.status === "approved") {
                         tdActions.appendChild(mkButton("Chargeback", "danger", "Registra chargeback/estorno para auditoria financeira.", function() {
-                            runFinancialEventAction(row, "PAYMENT_CHARGEBACK", function() {
-                                var note = prompt("Motivo do chargeback:", "");
+                            runFinancialEventAction(row, "PAYMENT_CHARGEBACK", async function() {
+                                var note = await adminPrompt("Motivo do chargeback:", "");
                                 if (note === null) return null;
                                 return { note: note };
                             });
                         }));
                     }
                     if (canMutateSensitiveData() && canUseRequestTimeline) {
-                        tdActions.appendChild(mkButton("Excluir", "danger", "Exclui dados de assinatura do usuário, incluindo financeiro e auditorias.", function() {
+                        tdActions.appendChild(mkButton("Limpar Assinatura", "secondary", "Limpa dados de assinatura do usuário, mantendo a conta ativa.", function() {
                             deleteSubscriptionDataFlow(currentUser);
                         }));
                     }
@@ -2865,10 +2998,21 @@
                     tr.appendChild(tdActions);
                     tbody.appendChild(tr);
                 });
+                renderAdminPaginationControls("financialPagination", adminPaginationState.financial, paged.total, function() { applyFinancialFilter(); });
                 scheduleResponsiveTablesHydration();
             }
+            var lastFinancialFilterSig = "";
             function applyFinancialFilter() {
                 buildFinancialRows();
+                var sigParts = [
+                    String((document.getElementById("financialMethodFilter") || {}).value || "all"),
+                    String((document.getElementById("financialStatusFilter") || {}).value || "all"),
+                    String((document.getElementById("financialSearch") || {}).value || "")
+                ].join("|");
+                if (sigParts !== lastFinancialFilterSig) {
+                    lastFinancialFilterSig = sigParts;
+                    adminPaginationState.financial.page = 0;
+                }
                 var methodEl = document.getElementById("financialMethodFilter");
                 var statusEl = document.getElementById("financialStatusFilter");
                 var searchEl = document.getElementById("financialSearch");
@@ -2954,8 +3098,18 @@
                     return atB - atA;
                 });
             }
+            var lastSecurityAuditSig = "";
             function applyAdminAccessAuditFilter() {
                 buildAdminDeniedAuditRows();
+                var sigParts = [
+                    String((document.getElementById("adminAccessPeriodFilter") || {}).value || "30d"),
+                    String((document.getElementById("adminAccessUserFilter") || {}).value || ""),
+                    String((document.getElementById("secRiskFilter") || {}).value || "all")
+                ].join("|");
+                if (sigParts !== lastSecurityAuditSig) {
+                    lastSecurityAuditSig = sigParts;
+                    adminPaginationState.security.page = 0;
+                }
                 var periodEl = document.getElementById("adminAccessPeriodFilter");
                 var userEl = document.getElementById("adminAccessUserFilter");
                 var riskEl = document.getElementById("secRiskFilter");
@@ -2974,6 +3128,7 @@
                 // ── Contar ocorrências por UID/email para Risk Score ──
                 var attackCountByKey = {};
                 adminDeniedAuditRows.forEach(function(row) {
+                    if (row.source === "local") return; // localStorage pode ser forjado; não conta para o ranking de risco
                     var k = row.uid || row.email || row.user || "unknown";
                     attackCountByKey[k] = (attackCountByKey[k] || 0) + 1;
                 });
@@ -3049,8 +3204,8 @@
                             var chip = document.createElement("div");
                             chip.className = "sec-user-chip";
                             chip.innerHTML = '<i class="fas fa-exclamation-triangle" style="font-size:0.8rem;"></i>' +
-                                '<span>' + displayName + '</span>' +
-                                '<span class="chip-count">' + count + 'x</span>';
+                                '<span>' + escapeHtml(displayName) + '</span>' +
+                                '<span class="chip-count">' + escapeHtml(count) + 'x</span>';
                             chip.title = "UID/Email: " + k + " | " + count + " tentativas negadas";
                             hrListEl.appendChild(chip);
                         });
@@ -3058,11 +3213,17 @@
                 }
 
                 // ── Metadados ─────────────────────────────────────────
-                if (metaEl) metaEl.textContent = String(filtered.length) + " eventos";
+                if (metaEl) {
+                    var localAuditCount = filtered.filter(function(r){ return r.source === "local"; }).length;
+                    metaEl.textContent = String(filtered.length) + " eventos" + (localAuditCount ? " (" + localAuditCount + " local)" : "");
+                    metaEl.title = "Eventos vindos do Firestore são confiáveis; os marcados como 'local' vêm do localStorage do navegador e podem ser forjados.";
+                }
 
                 // ── Tabela enriquecida ────────────────────────────────
                 body.innerHTML = "";
-                if (!filtered.length) {
+                var pagedAudit = paginateAdminList(filtered, adminPaginationState.security);
+                if (!pagedAudit.total) {
+                    renderAdminPaginationControls("securityPagination", adminPaginationState.security, 0, function() { applyAdminAccessAuditFilter(); });
                     body.innerHTML = '<tr><td colspan="9" class="empty-state">Sem eventos para os filtros selecionados.</td></tr>';
                     return;
                 }
@@ -3085,7 +3246,7 @@
                     return browser + (os ? " / " + os : "");
                 }
 
-                filtered.slice(0, 300).forEach(function(row) {
+                pagedAudit.rows.forEach(function(row) {
                     var score = getRiskScore(row);
                     var level = getRiskLevel(score);
                     var tr = document.createElement("tr");
@@ -3117,7 +3278,13 @@
                     tdDevice.textContent = parseDevice(row.userAgent);
                     tdDevice.title = row.userAgent || "";
                     var tdSource = document.createElement("td");
-                    tdSource.textContent = row.source === "firebase" ? "🔥 Firebase" : "💻 Local";
+                    var srcBadge = document.createElement("span");
+                    srcBadge.className = "status-pill " + (row.source === "firebase" ? "status-active" : "status-blocked");
+                    srcBadge.textContent = row.source === "firebase" ? "🔥 Firebase" : "💻 Local (navegador)";
+                    srcBadge.title = row.source === "firebase"
+                        ? "Registro no Firestore (users/{uid}/securityAudit) — confiável."
+                        : "Registro apenas no localStorage deste navegador — pode ser forjado; não conta para o ranking de risco.";
+                    tdSource.appendChild(srcBadge);
 
                     tr.appendChild(tdRisk);
                     tr.appendChild(tdAt);
@@ -3130,6 +3297,7 @@
                     tr.appendChild(tdSource);
                     body.appendChild(tr);
                 });
+                renderAdminPaginationControls("securityPagination", adminPaginationState.security, pagedAudit.total, function() { applyAdminAccessAuditFilter(); });
                 scheduleResponsiveTablesHydration();
 
                 // ── Exportar CSV ──────────────────────────────────────
@@ -3260,23 +3428,26 @@
                     }
                     var display = getUserDisplayName(user, uid);
                     var warning =
-                        "ATENÇÃO: Exclusão administrativa de assinatura\n\n" +
-                        "Esta ação vai remover requests, auditorias e dados financeiros de assinatura do usuário: " + display + ".\n\n" +
-                        "Consequências:\n" +
-                        "- O usuário pode perder acesso imediato\n" +
-                        "- Pagamentos/situações pendentes podem ser descartados\n" +
-                        "- Será necessário reenviar solicitação/pagamento para voltar ao ativo\n\n" +
+                        "ATENÇÃO: Limpeza de dados de assinatura\n\n" +
+                        "Esta ação vai remover as solicitações, histórico financeiro e auditorias de assinatura do usuário: " + display + ".\n\n" +
+                        "A conta do usuário NÃO será excluída. O usuário poderá enviar nova solicitação/comprovante se necessário.\n\n" +
                         "Deseja continuar?";
-                    var ok = confirm(warning);
+                    var ok = window.AdminUI && typeof window.AdminUI.confirm === "function"
+                        ? await window.AdminUI.confirm(warning, "Limpar Dados de Assinatura")
+                        : confirm(warning);
                     if (!ok) return;
-                    var phrase = prompt("Confirmação sensível: digite EXCLUIR para confirmar.");
+                    var phrase = window.AdminUI && typeof window.AdminUI.prompt === "function"
+                        ? await window.AdminUI.prompt("Confirmação sensível: digite EXCLUIR para confirmar.", "", "Confirmação de Exclusão")
+                        : prompt("Confirmação sensível: digite EXCLUIR para confirmar.");
                     if (String(phrase || "").trim().toUpperCase() !== "EXCLUIR") {
-                        showActionMessage("Exclusão cancelada: confirmação inválida.", "error");
+                        showActionMessage("Operação cancelada: confirmação inválida.", "error");
                         return;
                     }
-                    var note = prompt("Motivo da exclusão (obrigatório para auditoria):", "") || "";
-                    if (!String(note).trim()) {
-                        showActionMessage("Informe o motivo da exclusão para trilha de auditoria.", "error");
+                    var note = window.AdminUI && typeof window.AdminUI.prompt === "function"
+                        ? await window.AdminUI.prompt("Motivo da limpeza (obrigatório para auditoria):", "", "Trilha de Auditoria")
+                        : prompt("Motivo da limpeza (obrigatório para auditoria):", "");
+                    if (!String(note || "").trim()) {
+                        showActionMessage("Informe o motivo para a trilha de auditoria.", "error");
                         return;
                     }
                     var result = await window.firebaseService.deleteSubscriptionManagedData({
@@ -3284,16 +3455,99 @@
                         reviewNote: note
                     });
                     if (!result || result.success === false) {
-                        showActionMessage((result && result.error) || "Falha ao excluir dados de assinatura.", "error");
+                        showActionMessage((result && result.error) || "Falha ao limpar dados de assinatura.", "error");
                         return;
                     }
                     showActionMessage("Dados de assinatura removidos com sucesso.", "success");
+                    lastLoadedAt = 0;
                     await loadUsersAndDashboard();
                     try { applySubscriptionsFilter(); } catch (_) {}
                     if (activeTab === "finance") applyFinancialFilter();
                     try { await loadOpenExtensionRequests(); } catch (_) {}
                 } catch (err) {
-                    showActionMessage((err && err.message) || "Erro ao excluir dados de assinatura.", "error");
+                    showActionMessage((err && err.message) || "Erro ao limpar dados de assinatura.", "error");
+                }
+            }
+
+            // =========================================================================
+            // FULL USER CLEANUP — Remove COMPLETAMENTE todos os dados do usuário
+            // (Auth, perfil, empresa, tenant, assinaturas, financeiro, suporte, storage)
+            // para que possa se registrar novamente sem impedimentos.
+            // =========================================================================
+            async function fullUserCleanupFlow(user) {
+                try {
+                    if (!canMutateSensitiveData()) {
+                        showActionMessage("Permissão insuficiente: somente super-admin pode excluir completamente um usuário.", "error");
+                        return;
+                    }
+                    if (!window.firebaseService || typeof window.firebaseService.fullUserCleanup !== "function") {
+                        showActionMessage("Serviço de limpeza total de usuário indisponível.", "error");
+                        return;
+                    }
+                    var uid = String((user && (user.uid || user.id || user.userId)) || "");
+                    if (!uid) {
+                        showActionMessage("Usuário sem UID válido.", "error");
+                        return;
+                    }
+                    // Proteção: não permitir auto-exclusão do próprio admin
+                    try {
+                        var callerDetails = null;
+                        if (typeof window.getCurrentUserDetails === "function") {
+                            callerDetails = await window.getCurrentUserDetails();
+                        }
+                        var callerUid = String((callerDetails && callerDetails.uid) || "");
+                        if (callerUid && callerUid === uid) {
+                            showActionMessage("Você não pode excluir seu próprio usuário administrativo. Peça a outro super-admin.", "error");
+                            return;
+                        }
+                    } catch (_) {}
+                    var display = getUserDisplayName(user, uid);
+                    var warning =
+                        "PERIGO EXTREMO: EXCLUSÃO COMPLETA DE CONTA E DADOS\n\n" +
+                        "Esta ação irá apagar PERMANENTEMENTE o usuário (" + display + ") do Firebase Auth, seu perfil, empresa associada, tenant, tickets de suporte, registros financeiros e comprovantes do Storage.\n\n" +
+                        "ESTA AÇÃO É IRREVERSÍVEL E NÃO PODE SER DESFEITA.\n\n" +
+                        "Tem certeza absoluta que deseja continuar?";
+                    var ok = window.AdminUI && typeof window.AdminUI.confirm === "function"
+                        ? await window.AdminUI.confirm(warning, "EXCLUIR USUÁRIO PERMANENTEMENTE")
+                        : confirm(warning);
+                    if (!ok) return;
+                    var phrase = window.AdminUI && typeof window.AdminUI.prompt === "function"
+                        ? await window.AdminUI.prompt("Para confirmar a exclusão PERMANENTE da conta, digite EXCLUIR PERMANENTEMENTE abaixo:", "", "Confirmação Crítica")
+                        : prompt("Para confirmar a exclusão PERMANENTE da conta, digite EXCLUIR PERMANENTEMENTE abaixo:");
+                    if (String(phrase || "").trim().toUpperCase() !== "EXCLUIR PERMANENTEMENTE") {
+                        showActionMessage("Exclusão cancelada: frase de confirmação incorreta.", "error");
+                        return;
+                    }
+                    var note = window.AdminUI && typeof window.AdminUI.prompt === "function"
+                        ? await window.AdminUI.prompt("Motivo da exclusão permanente (obrigatório para auditoria):", "", "Trilha de Auditoria")
+                        : prompt("Motivo da exclusão permanente (obrigatório para auditoria):", "");
+                    if (!String(note || "").trim()) {
+                        showActionMessage("Informe o motivo da exclusão para a trilha de auditoria.", "error");
+                        return;
+                    }
+                    var result = await window.firebaseService.fullUserCleanup({
+                        targetUid: uid,
+                        reviewNote: note
+                    });
+                    if (!result || result.success === false) {
+                        showActionMessage((result && result.error) || "Falha ao executar limpeza completa do usuário.", "error");
+                        return;
+                    }
+                    var summary = "Usuário e todos os seus dados foram excluídos permanentemente.";
+                    if (result.removedPathsCount !== undefined) {
+                        summary += " Caminhos limpos: " + result.removedPathsCount;
+                        if (result.failedPathsCount > 0) {
+                            summary += " (" + result.failedPathsCount + " falhas).";
+                        }
+                    }
+                    showActionMessage(summary, "success");
+                    lastLoadedAt = 0;
+                    await loadUsersAndDashboard();
+                    try { applySubscriptionsFilter(); } catch (_) {}
+                    if (activeTab === "finance") applyFinancialFilter();
+                    try { await loadOpenExtensionRequests(); } catch (_) {}
+                } catch (err) {
+                    showActionMessage((err && err.message) || "Erro ao excluir usuário completamente.", "error");
                 }
             }
             function buildAccessLabel(access) {
@@ -3890,10 +4144,10 @@
                     }
                     var uid = String(user.uid || "");
                     if (!uid) {
-                        alert("Usuário sem UID válido.");
+                        await adminAlert("Usuário sem UID válido.");
                         return;
                     }
-                    var ok = confirm("Confirmar aprovação do pagamento deste usuário?");
+                    var ok = await adminConfirm("Confirmar aprovação do pagamento deste usuário?");
                     if (!ok) return;
                     var requestId = await resolvePendingRequestId(user);
                     if (!requestId) {
@@ -3940,8 +4194,9 @@
                         await window.AdminUI.alert("Usuário sem UID válido.");
                         return;
                     }
-                    var reason = await window.AdminUI.prompt("Motivo da rejeição:", "") || "";
-                    if (reason === null) return; // User cancelled prompt
+                    var reasonResult = await adminPrompt("Motivo da rejeição:", "");
+                    if (reasonResult === null) return; // User cancelled prompt
+                    var reason = String(reasonResult || "").trim();
                     var ok = await window.AdminUI.confirm("Confirmar rejeição do pagamento deste usuário?");
                     if (!ok) return;
                     var requestId = await resolvePendingRequestId(user);
@@ -4100,6 +4355,16 @@
                 document.getElementById('reviewExtensionModal').classList.remove('active');
             };
 
+            function bindReviewExtensionModalActions() {
+                var closeBtn = document.getElementById("reviewExtCloseBtn");
+                var cancelBtn = document.getElementById("reviewExtCancelBtn");
+                var rejectBtn = document.getElementById("reviewExtRejectBtn");
+                var approveBtn = document.getElementById("reviewExtApproveBtn");
+                if (closeBtn) closeBtn.addEventListener("click", function() { window.closeReviewExtensionModal(); });
+                if (cancelBtn) cancelBtn.addEventListener("click", function() { window.closeReviewExtensionModal(); });
+                if (rejectBtn) rejectBtn.addEventListener("click", function() { window.submitReviewExtension(false); });
+                if (approveBtn) approveBtn.addEventListener("click", function() { window.submitReviewExtension(true); });
+            }
             window.submitReviewExtension = async function(approve) {
                 try {
                     if (!window.firebaseService || typeof window.firebaseService.reviewSubscriptionExtensionRequest !== 'function') {
@@ -4109,6 +4374,7 @@
                     var uid = document.getElementById('reviewExtUid').value;
                     var requestId = document.getElementById('reviewExtRequestId').value;
                     var grantedDays = document.getElementById('reviewExtGrantedDays').value;
+                    bindReviewExtensionModalActions();
                     var reviewNote = document.getElementById('reviewExtNote').value;
                     
                     if (!uid || !requestId) return;
@@ -4137,11 +4403,11 @@
                 }
             };
 
-            async function loadUsersAndDashboard() {
+            async function loadUsersAndDashboard(force) {
                 if (!window.firebaseService || typeof window.firebaseService.getAll !== "function") return;
                 setDebugStatus("getAll(users)", "loading", "Buscando usuários");
                 var now = Date.now();
-                if (lastLoadedAt && now - lastLoadedAt < 3000 && allUsers.length) {
+                if (!force && lastLoadedAt && now - lastLoadedAt < 3000 && allUsers.length) {
                     applyDataToUi();
                     applyAdminAccessAuditFilter();
                     setDebugStatus("getAll(users)", "ok", "Cache local recente");
@@ -4435,9 +4701,14 @@
                 var monthly = parseFloat(mEl && mEl.value ? mEl.value : "0");
                 var annual = parseFloat(aEl && aEl.value ? aEl.value : "0");
                 var premium = parseFloat(pEl && pEl.value ? pEl.value : "0");
-                if (Number.isFinite(free)) payload.freeTrialDays = free;
-                if (Number.isFinite(late)) payload.lateGraceDays = late;
-                payload.plans = {monthly:{amount:monthly},annual:{amount:annual},premium:{amount:premium}};
+                // Valores inválidos (NaN) ou negativos: NÃO sobrescrevem a config atual (omitir = preservar no backend)
+                if (Number.isFinite(free) && free >= 0) payload.freeTrialDays = free;
+                if (Number.isFinite(late) && late >= 0) payload.lateGraceDays = late;
+                var plans = {};
+                if (Number.isFinite(monthly) && monthly >= 0) plans.monthly = { amount: monthly };
+                if (Number.isFinite(annual) && annual >= 0) plans.annual = { amount: annual };
+                if (Number.isFinite(premium) && premium >= 0) plans.premium = { amount: premium };
+                payload.plans = plans;
                 payload.paymentMeta = {
                     pixKey: String((pixKeyEl && pixKeyEl.value) || "").trim(),
                     beneficiary: String((beneficiaryEl && beneficiaryEl.value) || "").trim(),
@@ -4450,26 +4721,26 @@
                     transfer: !!(methodTransferEl && methodTransferEl.checked)
                 };
                 if (!payload.paymentMethods.pix && !payload.paymentMethods.boleto && !payload.paymentMethods.card && !payload.paymentMethods.transfer) {
-                    alert("Habilite pelo menos um método de pagamento.");
+                    await adminAlert("Habilite pelo menos um método de pagamento.");
                     if (meta) meta.textContent = "Métodos de pagamento inválidos";
                     return;
                 }
                 if (!window.firebaseService || typeof window.firebaseService.upsertSubscriptionSettings !== "function") {
-                    alert("Serviço de configuração indisponível.");
+                    await adminAlert("Serviço de configuração indisponível.");
                     return;
                 }
                 try {
                     if (meta) meta.textContent = "Salvando...";
                     var result = await window.firebaseService.upsertSubscriptionSettings(payload);
                     if (!result || result.success === false) {
-                        alert((result && result.error) || "Falha ao salvar configuração.");
+                        await adminAlert((result && result.error) || "Falha ao salvar configuração.");
                         if (meta) meta.textContent = "Erro ao salvar";
                         return;
                     }
-                    alert("Configuração salva com sucesso.");
+                    await adminAlert("Configuração salva com sucesso.");
                     if (meta) meta.textContent = "Configuração salva";
                 } catch (err) {
-                    alert((err && err.message) || "Erro ao salvar configuração.");
+                    await adminAlert((err && err.message) || "Erro ao salvar configuração.");
                     if (meta) meta.textContent = "Erro ao salvar";
                     notifyAdmin("Falha ao salvar configuração comercial.", "error");
                 }
@@ -4557,7 +4828,7 @@
                             await window.AdminUI.alert('Solicitação sem UID válido.');
                             return;
                         }
-                        await deleteSubscriptionDataFlow({ uid: uid, email: email, username: req && req.username, displayName: req && req.displayName });
+                        await fullUserCleanupFlow({ uid: uid, email: email, username: req && req.username, displayName: req && req.displayName });
                         try { applySubscriptionsFilter(); } catch (_) {}
                         try { await loadOpenExtensionRequests(); } catch (_) {}
                     }
@@ -4573,11 +4844,11 @@
                         var remainingDaysValue = getRemainingDays(req);
                         var tdUser = document.createElement("td");
                         var userLabel = getUserDisplayName({ username: req.username, displayName: realName || req.displayName, email: emailValue || req.email, uid: req.uid });
-                        tdUser.innerHTML = '<strong>' + userLabel + '</strong>' + (phoneValue ? '<br><span style="font-size:11px;color:#64748b;">Telefone: ' + phoneValue + '</span>' : '');
+                        tdUser.innerHTML = '<strong>' + escapeHtml(userLabel) + '</strong>' + (phoneValue ? '<br><span style="font-size:11px;color:#64748b;">Telefone: ' + escapeHtml(phoneValue) + '</span>' : '');
                         var tdEmail = document.createElement("td");
                         tdEmail.textContent = emailValue || req.email || "";
                         var tdStatus = document.createElement("td");
-                        tdStatus.innerHTML = '<span class="status-pill ' + statusClass(req) + '">' + statusPt(req) + '</span>';
+                        tdStatus.innerHTML = '<span class="status-pill ' + statusClass(req) + '">' + escapeHtml(statusPt(req)) + '</span>';
                         var tdPlan = document.createElement("td");
                         tdPlan.textContent = planValue || "-";
                         var tdDays = document.createElement("td");
@@ -4623,7 +4894,7 @@
                     setDebugStatus("getOpenExtensionRequests", "ok", "Total: " + String(items.length));
                 } catch (err) {
                     console.error("[loadOpenExtensionRequests] CRITICAL ERROR:", err);
-                    tbody.innerHTML = '<tr><td colspan="8" class="empty-state" style="color:red; text-align:left;">Erro: ' + (err && err.stack ? err.stack : String(err)) + '</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="empty-state" style="color:red; text-align:left;">Erro: ' + escapeHtml(err && err.stack ? err.stack : String(err)) + '</td></tr>';
                     if (meta) meta.textContent = "Erro ao carregar";
                     notifyAdmin("Falha ao carregar solicitações de prorrogação.", "error");
                     setDebugStatus("getOpenExtensionRequests", "error", err && err.message ? err.message : "Falha");
@@ -4634,6 +4905,7 @@
                 setRecentSubscriptions(allUsers);
                 scheduleResponsiveTablesHydration();
             }
+            var lastSubscriptionsFilterSig = "";
             function applySubscriptionsFilter() {
                 var filterEl = document.getElementById("subscriptionsFilter");
                 var requestFilterEl = document.getElementById("requestStateFilter");
@@ -4641,6 +4913,11 @@
                 var filter = filterEl ? filterEl.value : "all";
                 var requestFilter = requestFilterEl ? requestFilterEl.value : "all";
                 var search = searchEl ? searchEl.value : "";
+                var sig = String(filter) + "|" + String(requestFilter) + "|" + String(search);
+                if (sig !== lastSubscriptionsFilterSig) {
+                    lastSubscriptionsFilterSig = sig;
+                    adminPaginationState.subscriptions.page = 0;
+                }
                 var filtered = filterUsersForSubscriptions(allUsers,filter,requestFilter,search);
                 renderSubscriptionsTable(filtered);
             }
@@ -4706,7 +4983,7 @@
                     var tdCnpj = document.createElement("td");
                     var duplicateCount = Number(cnpjCountMap[row.cnpjDigits] || 0);
                     var duplicateTag = duplicateCount > 1 ? '<span class="cnpj-duplicate-badge">Duplicado</span>' : '';
-                    tdCnpj.innerHTML = (row.cnpj || "-") + duplicateTag;
+                    tdCnpj.innerHTML = escapeHtml(row.cnpj || "-") + duplicateTag;
                     var tdCity = document.createElement("td");
                     tdCity.textContent = (row.city || "-") + "/" + (row.state || "-");
                     var tdPhone = document.createElement("td");
@@ -4912,6 +5189,8 @@
                     companyNameById[companyId] = String(profile.name || profile.nome || companyNameById[companyId] || companyId).trim() || companyId;
                     companyCnpjById[companyId] = String(profile.cnpj || profile.cnpjCpf || profile.cpfCnpj || profile.documento || companyCnpjById[companyId] || "-").trim() || "-";
                     notifyAdmin("Perfil da empresa salvo com sucesso.", "success");
+                    lastLoadedAt = 0;
+                    await loadUsersAndDashboard();
                     renderCompanyManagementTable();
                     selectCompanyProfileForEdit(companyId);
                 } catch (err) {
@@ -5027,14 +5306,14 @@
                     if (filterEl) filterEl.addEventListener("change",applySubscriptionsFilter);
                     if (requestFilterEl) requestFilterEl.addEventListener("change",applySubscriptionsFilter);
                     if (searchEl) searchEl.addEventListener("input",function() {applySubscriptionsFilter();});
-                    if (reloadBtn) reloadBtn.addEventListener("click",function() {loadUsersAndDashboard();});
+                    if (reloadBtn) reloadBtn.addEventListener("click",function() {loadUsersAndDashboard(true);});
                     if (financialMethodEl) financialMethodEl.addEventListener("change",applyFinancialFilter);
                     if (financialStatusEl) financialStatusEl.addEventListener("change",applyFinancialFilter);
                     if (financialSearchEl) financialSearchEl.addEventListener("input",applyFinancialFilter);
-                    if (financialReloadBtn) financialReloadBtn.addEventListener("click",function() {loadUsersAndDashboard();});
+                    if (financialReloadBtn) financialReloadBtn.addEventListener("click",function() {loadUsersAndDashboard(true);});
                     if (adminAccessPeriodEl) adminAccessPeriodEl.addEventListener("change", applyAdminAccessAuditFilter);
                     if (adminAccessUserEl) adminAccessUserEl.addEventListener("input", applyAdminAccessAuditFilter);
-                    if (adminAccessReloadEl) adminAccessReloadEl.addEventListener("click", function() { loadUsersAndDashboard(); });
+                    if (adminAccessReloadEl) adminAccessReloadEl.addEventListener("click", function() { loadUsersAndDashboard(true); });
                     var secRiskFilterEl = document.getElementById("secRiskFilter");
                     if (secRiskFilterEl) secRiskFilterEl.addEventListener("change", applyAdminAccessAuditFilter);
                     if (companiesSearchEl) companiesSearchEl.addEventListener("input",renderCompanyManagementTable);

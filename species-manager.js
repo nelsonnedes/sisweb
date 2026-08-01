@@ -1523,8 +1523,9 @@ const isPctContext = window.location.pathname.includes('romaneiopct.html') ||
 
 console.log("🔍 Contexto detectado:", isPctContext ? "PCT" : "Outros sistemas");
 
-// ✅ SEMPRE DEFINIR GLOBAIS - REMOVIDO BLOQUEIO DO PCT
-console.log("🚫 PCT detectado - MAS EXPONDO FUNÇÕES GLOBAIS para evitar erros");
+if (isPctContext) {
+    console.log("🚫 PCT detectado - EXPONDO FUNÇÕES GLOBAIS para evitar erros");
+}
 {
     // ✅ DEFINIR GLOBAIS PARA TODOS OS CONTEXTOS
     window.openSpeciesListModal = async function() {

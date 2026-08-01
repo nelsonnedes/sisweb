@@ -259,7 +259,6 @@ function getStorageKey(baseKey) {
     } catch (_) {}
     return null;
 }
-
 function persistLocalValue(storageKey, data) {
     if (!storageKey || !/^companies\//.test(String(storageKey))) return false;
     try {
@@ -285,93 +284,41 @@ async function getData(key) {
     console.log(`📦 Carregando dados de ${key}...`);
     
     try {
-        // ✅ VALIDAÇÃO DA CHAVE
         if (!key || typeof key !== 'string') {
             console.error("❌ Chave inválida para carregamento");
             return [];
         }
         
-        // ✅ Normalizar chaves: mapear 'clientesTora' para 'fornecedores'; manter demais
-        let finalKey = key;
-        if (key === 'clientesTora') {
-            finalKey = 'fornecedores';
-            console.log(`🔧 Normalizando chave '${key}' → 'fornecedores'`);
-        }
-        
+        let finalKey = key === 'clientesTora' ? 'fornecedores' : key;
         let data = null;
         const storageKey = getStorageKey(finalKey);
         
-        // ✅ CARREGAR APENAS DO FIREBASE (100% FIREBASE)
         if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
             try {
                 console.log(`🔥 Carregando ${finalKey} do Firebase...`);
                 const result = await window.firebaseService.loadFromFirebase(finalKey);
-                
                 if (result && result.success && result.data !== null && result.data !== undefined) {
                     data = result.data;
-                    console.log(`✅ ${finalKey} carregado do Firebase:`, Array.isArray(data) ? `${data.length} itens` : 'dados válidos');
-                    
-                    // âœ… ATUALIZAR CACHE LOCAL
-                    try {
-                        persistLocalValue(storageKey, data);
-                        console.log(`✅ Cache local de ${storageKey} atualizado`);
-                    } catch (cacheError) {
-                        console.warn(`⚠️ Erro ao atualizar cache local:`, cacheError);
-                    }
-                    
-                } else if (result && result.data === null) {
-                    console.log(`⚠️ ${finalKey} está vazio no Firebase`);
-                    data = [];
+                    try { persistLocalValue(storageKey, data); } catch (_) {}
                 } else {
-                    console.warn(`⚠️ ${finalKey} não encontrado no Firebase ou dados inválidos`);
                     data = [];
                 }
             } catch (firebaseError) {
-                console.error(`❌ Erro ao carregar ${finalKey} do Firebase: ${firebaseError.message}`);
-                
-                // âœ… FALLBACK PARA CACHE LOCAL APENAS EM CASO DE ERRO
+                const errorMsg = firebaseError ? (firebaseError.message || firebaseError.code || String(firebaseError)) : 'sem mensagem';
+                console.warn(`⚠️ Erro ao carregar ${finalKey} do Firebase (${errorMsg}), tentando cache local...`);
                 try {
-                    console.log(`🔧 Tentando cache local para ${finalKey}...`);
                     const localData = readCompanyCache(storageKey);
-                    
-                    if (localData) {
-                        try {
-                            data = JSON.parse(localData);
-                            console.log(`âœ… ${finalKey} carregado do cache local:`, Array.isArray(data) ? `${data.length} itens` : 'dados vÃ¡lidos');
-                        } catch (parseError) {
-                            console.error(`âŒ Erro ao parsear ${finalKey} do cache local:`, parseError);
-                            removeCompanyCache(storageKey);
-                            data = [];
-                        }
-                    } else {
-                        console.log(`🔹 ${finalKey} não encontrado no cache local`);
-                        data = [];
-                    }
-                } catch (localError) {
-                    console.error(`âŒ Erro ao acessar cache local para ${finalKey}:`, localError);
+                    if (localData) data = JSON.parse(localData);
+                    else data = [];
+                } catch (_) {
                     data = [];
                 }
             }
         } else {
-            console.error(`❌ Firebase Service não disponível para ${finalKey}`);
-            
-            // âœ… ÃšLTIMO RECURSO: CACHE LOCAL
             try {
-                console.log(`🔧 Usando cache local como último recurso para ${finalKey}...`);
                 const localData = readCompanyCache(storageKey);
-                
-                if (localData) {
-                    try {
-                        data = JSON.parse(localData);
-                        console.log(`âœ… ${finalKey} carregado do cache local (Ãºltimo recurso):`, Array.isArray(data) ? `${data.length} itens` : 'dados vÃ¡lidos');
-                    } catch (parseError) {
-                        console.error(`âŒ Erro ao parsear ${finalKey} do cache local:`, parseError);
-                        data = [];
-                    }
-                } else {
-                    console.log(`ðŸ"± ${finalKey} nÃ£o encontrado no cache local`);
-                    data = [];
-                }
+                if (localData) data = JSON.parse(localData);
+                else data = [];
             } catch (localError) {
                 console.error(`âŒ Erro ao acessar cache local para ${finalKey}:`, localError);
                 data = [];
@@ -409,6 +356,12 @@ async function openFornecedorListModal() {
     
     let modal = document.getElementById('clientListModal');
     
+    // ✅ Remover modal antigo para garantir estrutura atualizada
+    if (modal) {
+        modal.remove();
+        modal = null;
+    }
+    
     if (!modal) {
         console.log('Modal não encontrado, criando novo modal...');
         modal = document.createElement('div');
@@ -416,24 +369,23 @@ async function openFornecedorListModal() {
         modal.className = 'modal';
         
         modal.innerHTML = `
-            <div class="modal-content">
+            <div class="modal-content" style="width: 95%; max-width: 960px; box-sizing: border-box;">
                 <div class="modal-header">
-                    <h3 class="modal-title">Lista de Fornecedores</h3>
-                    <span class="close-modal" onclick="document.getElementById('clientListModal').style.display='none'">&times;</span>
+                    <h3 class="modal-title"><i class="fas fa-list" style="margin-right: 8px;"></i>Lista de Fornecedores</h3>
+                    <span class="close-modal" style="cursor: pointer;" onclick="document.getElementById('clientListModal').style.display='none'">&times;</span>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" style="overflow-x: auto; padding: 15px;">
                 <input type="text" id="clientListFilter" placeholder="Filtrar fornecedores por nome, CNPJ, cidade..." 
                        style="margin: 10px 0; width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; outline: none;">
-                    <table class="table">
+                    <table class="table suppliers-table" style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th>Nome</th>
-                                <th>CNPJ</th>
-                                <th>Cidade</th>
-                                <th>Estado</th>
-                                <th>Telefone</th>
-                                <th>Email</th>
-                                <th style="text-align: center; width: 160px;">Ações</th>
+                                <th style="width: 28%;">Nome</th>
+                                <th style="width: 18%;">CNPJ</th>
+                                <th style="width: 16%;">Cidade</th>
+                                <th style="width: 8%; text-align: center;">Estado</th>
+                                <th style="width: 15%;">Telefone</th>
+                                <th style="text-align: center; width: 15%; min-width: 100px;">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="clientListTable">
@@ -442,8 +394,8 @@ async function openFornecedorListModal() {
                     </table>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('clientListModal').style.display='none'">Fechar</button>
-                    <button type="button" class="btn-save" onclick="openNewClientModal()">Novo Fornecedor</button>
+                    <button type="button" class="back-button close-modal-btn" style="cursor: pointer;" onclick="document.getElementById('clientListModal').style.display='none'">Fechar</button>
+                    <button type="button" class="btn-save" style="cursor: pointer;" onclick="if(typeof openNewFornecedorModal === 'function'){ openNewFornecedorModal(); } else if(typeof openNewClientModal === 'function'){ openNewClientModal(); }">Novo Fornecedor</button>
                 </div>
             </div>
         `;
@@ -668,32 +620,26 @@ async function renderFornecedorList(filter = '') {
         tdTelefone.textContent = fornecedor?.telefone || fornecedor?.phone || '';
         tr.appendChild(tdTelefone);
         
-        // Email
-        const tdEmail = document.createElement('td');
-        tdEmail.style.padding = '12px';
-        tdEmail.style.verticalAlign = 'middle';
-        tdEmail.style.fontSize = '13px';
-        tdEmail.textContent = fornecedor?.email || '';
-        tr.appendChild(tdEmail);
+       
         
-        // AÃ§Ãµes
+        // Ações
         const tdAcoes = document.createElement('td');
-        tdAcoes.style.padding = '12px';
-        tdAcoes.style.verticalAlign = 'middle';
-        tdAcoes.style.textAlign = 'center';
+        tdAcoes.style.cssText = 'padding: 8px 4px; vertical-align: middle; text-align: center; overflow: visible !important; white-space: nowrap !important;';
         
         const actionContainer = document.createElement('div');
-        actionContainer.className = 'action-buttons-container';
+        actionContainer.style.cssText = 'display: inline-flex !important; align-items: center; justify-content: center; gap: 6px; white-space: nowrap;';
         
         const btnSelecionar = document.createElement('button');
-        btnSelecionar.className = 'client-action-button';
+        btnSelecionar.className = 'client-action-button btn-selecionar btn-success';
         btnSelecionar.title = 'Selecionar fornecedor';
+        btnSelecionar.style.cssText = 'display: inline-flex !important; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: none; border-radius: 6px; cursor: pointer; background-color: #27ae60; color: #fff; font-size: 12px;';
         btnSelecionar.innerHTML = '<i class="fas fa-check"></i>';
         btnSelecionar.onclick = () => selectFornecedorFromList(fornecedorId);
         
         const btnEditar = document.createElement('button');
-        btnEditar.className = 'client-action-button';
+        btnEditar.className = 'client-action-button btn-editar btn-warning';
         btnEditar.title = 'Editar fornecedor';
+        btnEditar.style.cssText = 'display: inline-flex !important; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: none; border-radius: 6px; cursor: pointer; background-color: #f39c12; color: #fff; font-size: 12px;';
         btnEditar.innerHTML = '<i class="fas fa-edit"></i>';
         btnEditar.onclick = () => editFornecedorFromList(fornecedorId);
         
@@ -842,9 +788,13 @@ async function editFornecedorFromList(id) {
             }
             
             // âœ… CARREGAR FORNECEDOR NO CAMPO (igual ao Ã­cone do campo)
-            const clientInput = document.getElementById('clienteInput');
-            if (clientInput) {
-                clientInput.value = fornecedor.nome || fornecedor.name || '';
+            const targetInput = document.getElementById('fornecedorInput') || document.getElementById('clienteInput');
+            if (targetInput) {
+                targetInput.value = fornecedor.nome || fornecedor.name || '';
+                try {
+                    targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+                } catch (_) {}
             }
             
             // âœ… DEFINIR FORNECEDOR GLOBAL PARA openEditClientModal FUNCIONAR
@@ -871,12 +821,16 @@ function selectFornecedor(fornecedor) {
     window.selectedFornecedor = fornecedor;
     window.selectedClient = fornecedor; // Manter compatibilidade
     
-    const clientInput = document.getElementById('clienteInput');
-    if (clientInput) {
-        clientInput.value = fornecedor.nome || fornecedor.name || '';
+    const targetInput = document.getElementById('fornecedorInput') || document.getElementById('clienteInput');
+    if (targetInput) {
+        targetInput.value = fornecedor.nome || fornecedor.name || '';
+        try {
+            targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+            targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (_) {}
     }
     
-    // âœ… FECHAR MODAL APÃ"S SELEÃ‡ÃƒO
+    // ✅ FECHAR MODAL APÓS SELEÇÃO
     const modal = document.getElementById('clientListModal');
     if (modal) {
         modal.style.display = 'none';
@@ -1166,12 +1120,9 @@ async function renderSpeciesList(filter = '') {
         tdAcoes.style.padding = '12px';
         tdAcoes.style.verticalAlign = 'middle';
         tdAcoes.style.textAlign = 'center';
+        
         const actionContainer = document.createElement('div');
         actionContainer.className = 'action-buttons-container';
-        
-        // âœ… PADRONIZAÃ‡ÃƒO: Usar os mesmos estilos dos fornecedores
-        const btnSelecionar = document.createElement('button');
-        btnSelecionar.className = 'client-action-button';
         btnSelecionar.title = 'Selecionar espÃ©cie';
         btnSelecionar.innerHTML = '<i class="fas fa-check"></i>';
         btnSelecionar.onclick = () => selectSpeciesFromList(specieId);
@@ -1322,7 +1273,7 @@ async function selectSpeciesFromList(id) {
             // âœ… NOTIFICAR SUCESSO
             
         } else {
-            console.error("âŒ EspÃ©cie nÃ£o encontrada com ID:", id);
+            console.error("â Œ EspÃ©cie nÃ£o encontrada com ID:", id);
             alert('EspÃ©cie nÃ£o encontrada. A lista foi atualizada do Firebase.');
         }
         
@@ -1337,13 +1288,7 @@ async function editSpeciesFromList(speciesId) {
     
     try {
         // âœ… VERIFICAR SE FORNECEDOR ESTÃ SELECIONADO PRIMEIRO
-        const clienteInput = document.getElementById('clienteInput');
-        
-        if (!window.selectedClient || !window.selectedClient.nome) {
-            const mensagemErro = 'Por favor, selecione um fornecedor antes de editar a espÃ©cie.';
-            alert(mensagemErro);
-            return;
-        }
+        // Restricao de fornecedor removida para edicao de especie
         
         // âœ… CARREGAR ESPÃ‰CIES DO FIREBASE
         let especiesList = [];
@@ -1724,13 +1669,13 @@ async function saveSpecies() {
 }
 
 // âœ… EXPORTAÃ‡Ã•ES GLOBAIS PARA ESPÃ‰CIES
-    window.openSpeciesListModal = openSpeciesListModal;
-    window.openNewSpeciesModal = openNewSpeciesModal;
-    window.selectSpeciesFromList = selectSpeciesFromList;
-    window.editSpeciesFromList = editSpeciesFromList;
-window.renderSpeciesList = renderSpeciesList;
-window.saveSpecies = saveSpecies;
-window.closeSpeciesModal = closeSpeciesModal;
+try { if (typeof openSpeciesListModal !== 'undefined') window.openSpeciesListModal = openSpeciesListModal; } catch (_) {}
+try { if (typeof openNewSpeciesModal !== 'undefined') window.openNewSpeciesModal = openNewSpeciesModal; } catch (_) {}
+try { if (typeof selectSpeciesFromList !== 'undefined') window.selectSpeciesFromList = selectSpeciesFromList; } catch (_) {}
+try { if (typeof editSpeciesFromList !== 'undefined') window.editSpeciesFromList = editSpeciesFromList; } catch (_) {}
+try { if (typeof renderSpeciesList !== 'undefined') window.renderSpeciesList = renderSpeciesList; } catch (_) {}
+try { if (typeof saveSpecies !== 'undefined') window.saveSpecies = saveSpecies; } catch (_) {}
+try { if (typeof closeSpeciesModal !== 'undefined') window.closeSpeciesModal = closeSpeciesModal; } catch (_) {}
 
 
 // âœ… FUNÃ‡ÃƒO PARA ABRIR MODAL DE NOVO FORNECEDOR (CLIENTE)
@@ -2123,7 +2068,7 @@ async function saveClient() {
                     }
                     
                     persistLocalValue(storageKey, fornecedores);
-                    window.fornecedores = fornecedores;
+try { if (typeof fornecedores !== 'undefined') window.fornecedores = fornecedores; } catch (_) {}
                 } catch (cacheError) {
                     console.warn("âš ï¸ Erro ao atualizar cache local de fornecedores:", cacheError);
                 }
@@ -2173,15 +2118,15 @@ async function saveClient() {
 }
 
 // âœ… EXPORTAÃ‡Ã•ES GLOBAIS PARA FORNECEDORES
-window.openNewClientModal = openNewClientModal;
-window.openEditClientModal = openEditClientModal;
-window.saveClient = saveClient;
-window.closeClientModal = closeClientModal;
+try { if (typeof openNewClientModal !== 'undefined') window.openNewClientModal = openNewClientModal; } catch (_) {}
+try { if (typeof openEditClientModal !== 'undefined') window.openEditClientModal = openEditClientModal; } catch (_) {}
+try { if (typeof saveClient !== 'undefined') window.saveClient = saveClient; } catch (_) {}
+try { if (typeof closeClientModal !== 'undefined') window.closeClientModal = closeClientModal; } catch (_) {}
 
 
 // Exportar funções de lista de fornecedores
-window.openFornecedorListModal = openFornecedorListModal;
-window.renderFornecedorList = renderFornecedorList;
+try { if (typeof openFornecedorListModal !== 'undefined') window.openFornecedorListModal = openFornecedorListModal; } catch (_) {}
+try { if (typeof renderFornecedorList !== 'undefined') window.renderFornecedorList = renderFornecedorList; } catch (_) {}
 
 window.addEventListener('clients:updated', async function() {
     try {
@@ -2406,9 +2351,9 @@ initializeWhenReady();
 // ======================================
 
 // Exportar funÃ§Ãµes para uso global
-window.configureEnterKeyNavigation = configureEnterKeyNavigation;
-window.setupPriceFieldFormatting = setupPriceFieldFormatting;
-window.initializeEnterNavigation = initializeEnterNavigation;
+try { if (typeof configureEnterKeyNavigation !== 'undefined') window.configureEnterKeyNavigation = configureEnterKeyNavigation; } catch (_) {}
+try { if (typeof setupPriceFieldFormatting !== 'undefined') window.setupPriceFieldFormatting = setupPriceFieldFormatting; } catch (_) {}
+try { if (typeof initializeEnterNavigation !== 'undefined') window.initializeEnterNavigation = initializeEnterNavigation; } catch (_) {}
 
 
 // ===== SISTEMA DE LISTAGEM DE ROMANEIOS =====
@@ -3222,23 +3167,23 @@ async function editarRomaneio(romaneioId) {
 }
 
 // âœ… EXPORTAÃ‡Ã•ES GLOBAIS - FUNÃ‡Ã•ES QUE ESTAVAM FALTANDO
-window.detectarECorrigirIdsDuplicados = detectarECorrigirIdsDuplicados;
-window.limparRomaneiosInvalidos = limparRomaneiosInvalidos;
-window.gerarLinhaTotalGeral = gerarLinhaTotalGeral;
-window.gerarResumoPorEspecie = gerarResumoPorEspecie;
-window.gerarResumoGeralEstatisticas = gerarResumoGeralEstatisticas;
-window.getCompanyDataFirebase = getCompanyDataFirebase;
-window.gerarCabecalhoEmpresa = gerarCabecalhoEmpresa;
-window.gerarCabecalhoTabela = gerarCabecalhoTabela;
-window.gerarLinhaItem = gerarLinhaItem;
-window.formatInt = formatInt;
-window.formatDecimal = formatDecimal;
-window.formatVolume = formatVolume;
-window.formatCurrencyValue = formatCurrencyValue;
-window.renderizarMenuImpressaoAvancado = renderizarMenuImpressaoAvancado;
-window.toggleImprimirDropdownAvancado = toggleImprimirDropdownAvancado;
-window.exportarRomaneioExcelFirebase = exportarRomaneioExcelFirebase;
-window.gerarRelatorioCompleto = gerarRelatorioCompleto;
+try { if (typeof detectarECorrigirIdsDuplicados !== 'undefined') window.detectarECorrigirIdsDuplicados = detectarECorrigirIdsDuplicados; } catch(_) {}
+try { if (typeof limparRomaneiosInvalidos !== 'undefined') window.limparRomaneiosInvalidos = limparRomaneiosInvalidos; } catch(_) {}
+try { if (typeof gerarLinhaTotalGeral !== 'undefined') window.gerarLinhaTotalGeral = gerarLinhaTotalGeral; } catch(_) {}
+try { if (typeof gerarResumoPorEspecie !== 'undefined') window.gerarResumoPorEspecie = gerarResumoPorEspecie; } catch(_) {}
+try { if (typeof gerarResumoGeralEstatisticas !== 'undefined') window.gerarResumoGeralEstatisticas = gerarResumoGeralEstatisticas; } catch(_) {}
+try { if (typeof getCompanyDataFirebase !== 'undefined') window.getCompanyDataFirebase = getCompanyDataFirebase; } catch(_) {}
+try { if (typeof gerarCabecalhoEmpresa !== 'undefined') window.gerarCabecalhoEmpresa = gerarCabecalhoEmpresa; } catch(_) {}
+try { if (typeof gerarCabecalhoTabela !== 'undefined') window.gerarCabecalhoTabela = gerarCabecalhoTabela; } catch(_) {}
+try { if (typeof gerarLinhaItem !== 'undefined') window.gerarLinhaItem = gerarLinhaItem; } catch(_) {}
+try { if (typeof formatInt !== 'undefined') window.formatInt = formatInt; } catch(_) {}
+try { if (typeof formatDecimal !== 'undefined') window.formatDecimal = formatDecimal; } catch(_) {}
+try { if (typeof formatVolume !== 'undefined') window.formatVolume = formatVolume; } catch(_) {}
+try { if (typeof formatCurrencyValue !== 'undefined') window.formatCurrencyValue = formatCurrencyValue; } catch(_) {}
+try { if (typeof renderizarMenuImpressaoAvancado !== 'undefined') window.renderizarMenuImpressaoAvancado = renderizarMenuImpressaoAvancado; } catch(_) {}
+try { if (typeof toggleImprimirDropdownAvancado !== 'undefined') window.toggleImprimirDropdownAvancado = toggleImprimirDropdownAvancado; } catch(_) {}
+try { if (typeof exportarRomaneioExcelFirebase !== 'undefined') window.exportarRomaneioExcelFirebase = exportarRomaneioExcelFirebase; } catch(_) {}
+try { if (typeof gerarRelatorioCompleto !== 'undefined') window.gerarRelatorioCompleto = gerarRelatorioCompleto; } catch(_) {}
 
 
 // FunÃ§Ã£o para excluir um romaneio
@@ -3791,7 +3736,7 @@ async function imprimirRomaneio(romaneioId, modoImpressao = 'completo') {
 }
 
 // âœ… EXPORTAR FUNÃ‡ÃƒO DE DETECÃ‡ÃƒO
-window.detectarECorrigirIdsDuplicados = detectarECorrigirIdsDuplicados;
+try { if (typeof detectarECorrigirIdsDuplicados !== 'undefined') window.detectarECorrigirIdsDuplicados = detectarECorrigirIdsDuplicados; } catch (_) {}
 
 // FunÃ§Ã£o para calcular estatÃ­sticas por espÃ©cie
 function calcularEstatisticasPorEspecie(itens) {
@@ -3886,13 +3831,13 @@ function excluirItem(index) {
 }
 
 // ===== EXPORTAR FUNÃ‡Ã•ES PARA O ESCOPO GLOBAL =====
-window.abrirListaRomaneios = abrirListaRomaneios;
-window.renderRomaneioList = renderRomaneioList;
-window.editarRomaneio = editarRomaneio;
-window.excluirRomaneio = excluirRomaneio;
-window.imprimirRomaneio = imprimirRomaneio;
-window.excluirItem = excluirItem;
-window.calcularEstatisticasPorEspecie = calcularEstatisticasPorEspecie;
+try { if (typeof abrirListaRomaneios !== 'undefined') window.abrirListaRomaneios = abrirListaRomaneios; } catch (_) {}
+try { if (typeof renderRomaneioList !== 'undefined') window.renderRomaneioList = renderRomaneioList; } catch (_) {}
+try { if (typeof editarRomaneio !== 'undefined') window.editarRomaneio = editarRomaneio; } catch (_) {}
+try { if (typeof excluirRomaneio !== 'undefined') window.excluirRomaneio = excluirRomaneio; } catch (_) {}
+try { if (typeof imprimirRomaneio !== 'undefined') window.imprimirRomaneio = imprimirRomaneio; } catch (_) {}
+try { if (typeof excluirItem !== 'undefined') window.excluirItem = excluirItem; } catch (_) {}
+try { if (typeof calcularEstatisticasPorEspecie !== 'undefined') window.calcularEstatisticasPorEspecie = calcularEstatisticasPorEspecie; } catch (_) {}
 
 
 function resolveCompanyIdForReportLegacy() {
@@ -5136,5 +5081,7 @@ async function exportarRomaneioExcelFirebase(romaneioId) {
     }
 }
 
-window.exportarRomaneioExcelFirebase = exportarRomaneioExcelFirebase;
+try { if (typeof exportarRomaneioExcelFirebase !== 'undefined') window.exportarRomaneioExcelFirebase = exportarRomaneioExcelFirebase; } catch(_) {}
+window.showClientSuggestions = window.showClientSuggestions || function(input) {};
+window.showFornecedorSuggestions = window.showFornecedorSuggestions || function(input) {};
         

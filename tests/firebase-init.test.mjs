@@ -163,7 +163,7 @@ test('firebase-compat-bridge.js importa de firebase-init.js corretamente', () =>
   const source = read('firebase-compat-bridge.js');
 
   // Deve importar de firebase-init.js
-  assert.match(source, /from\s+['"]\.\/firebase-init\.js['"]/,
+  assert.match(source, /from\s+['"]\.\/firebase-init\.js(?:\?v=[^'"]+)?['"]/,
     'bridge deve importar de firebase-init.js');
 
   // Não deve ter imports diretos do CDN

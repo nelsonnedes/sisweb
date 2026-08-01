@@ -4330,7 +4330,14 @@ function __siswebInitGlobalModals() {
                         __siswebSetSupportFeedback('E-mail enviado ao Admin com sucesso. Você também pode registrar-se para acompanhar tickets com histórico.', 'success');
                     } catch (error) {
                         __siswebSaveSupportDraft(message, ctx);
-                        __siswebSetSupportFeedback((error && error.message) || 'Não foi possível enviar o e-mail agora.', 'error');
+                        const errCode = String((error && (error.code || (error.details && error.details.code))) || '').toLowerCase();
+                        const errMsg = String((error && error.message) || '').toLowerCase();
+                        const needsLogin = errCode.indexOf('unauthenticated') >= 0 || errMsg.indexOf('faça login') >= 0 || errMsg.indexOf('login') >= 0;
+                        if (needsLogin) {
+                            __siswebSetSupportFeedback('Para enviar e-mail é preciso estar logado. Faça login ou use WhatsApp / o formulário de ticket.', 'error');
+                        } else {
+                            __siswebSetSupportFeedback((error && error.message) || 'Não foi possível enviar o e-mail agora.', 'error');
+                        }
                     } finally {
                         if (button) {
                             button.disabled = false;

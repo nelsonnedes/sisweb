@@ -724,28 +724,28 @@ function injectClientModalStyles() {
             text-align: center !important;
         }
         
-        /* ✅ LARGURAS ESPECÍFICAS PARA TABELAS NATIVAS DE FORNECEDORES (7 colunas) */
+        /* ✅ LARGURAS ESPECÍFICAS PARA TABELAS NATIVAS DE FORNECEDORES (6 colunas: Nome, CNPJ, Cidade, Estado, Telefone, Ações) */
         #clientListModal .table.suppliers-table th:nth-child(1),
         #clientListModal .table.suppliers-table td:nth-child(1) {
-            width: 18% !important;
-            min-width: 140px !important;
+            width: 25% !important;
+            min-width: 150px !important;
         }
         
         #clientListModal .table.suppliers-table th:nth-child(2),
         #clientListModal .table.suppliers-table td:nth-child(2) {
-            width: 15% !important;
-            min-width: 120px !important;
+            width: 18% !important;
+            min-width: 130px !important;
         }
         
         #clientListModal .table.suppliers-table th:nth-child(3),
         #clientListModal .table.suppliers-table td:nth-child(3) {
-            width: 14% !important;
-            min-width: 110px !important;
+            width: 18% !important;
+            min-width: 120px !important;
         }
         
         #clientListModal .table.suppliers-table th:nth-child(4),
         #clientListModal .table.suppliers-table td:nth-child(4) {
-            width: 7% !important;
+            width: 8% !important;
             min-width: 50px !important;
             text-align: center !important;
             font-weight: bold !important;
@@ -754,21 +754,18 @@ function injectClientModalStyles() {
         
         #clientListModal .table.suppliers-table th:nth-child(5),
         #clientListModal .table.suppliers-table td:nth-child(5) {
-            width: 16% !important;
+            width: 17% !important;
             min-width: 120px !important;
         }
         
         #clientListModal .table.suppliers-table th:nth-child(6),
-        #clientListModal .table.suppliers-table td:nth-child(6) {
-            width: 18% !important;
-            min-width: 140px !important;
-        }
-        
-        #clientListModal .table.suppliers-table th:nth-child(7),
-        #clientListModal .table.suppliers-table td:nth-child(7) {
-            width: 12% !important;
-            min-width: 120px !important;
+        #clientListModal .table.suppliers-table td:nth-child(6),
+        #clientListModal .table.suppliers-table th:last-child,
+        #clientListModal .table.suppliers-table td:last-child {
+            width: 14% !important;
+            min-width: 130px !important;
             text-align: center !important;
+            white-space: nowrap !important;
         }
         
         /* ✅ LARGURAS ESPECÍFICAS PARA TABELAS NATIVAS DE CLIENTES (6 colunas) */

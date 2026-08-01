@@ -1476,6 +1476,7 @@ if (typeof renderTableRows !== 'function') {
                 });
 
                 const actionsTd = document.createElement('td');
+                actionsTd.className = 'actions-col';
                 actionsTd.style.textAlign = 'center';
                 const btnGroup = document.createElement('div');
                 btnGroup.className = 'btn-group';

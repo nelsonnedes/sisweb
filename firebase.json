@@ -159,6 +159,12 @@
         ]
       },
       {
+        "source": "/admin.html",
+        "headers": [
+          { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://firebasestorage.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebaseio.com wss://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebasestorage.googleapis.com https://*.cloudfunctions.net; frame-src 'self'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; manifest-src 'self'" }
+        ]
+      },
+      {
         "source": "**/*.html",
         "headers": [
           { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },

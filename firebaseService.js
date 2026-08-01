@@ -2815,6 +2815,15 @@ async function deleteSubscriptionManagedData(payload) {
     }
 }
 
+async function fullUserCleanup(payload) {
+    try {
+        const data = payload && typeof payload === 'object' ? payload : {};
+        return await callAdminCallableWithRetry('fullUserCleanup', data);
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
 async function getCampaignExecutiveSummary() {
     try {
         return await callAdminCallableWithRetry('getCampaignExecutiveSummary', {});
@@ -3417,6 +3426,8 @@ window.firebaseService = {
     confirmSubscriptionApproval: confirmSubscriptionApproval,
     updateSubscriptionFinancialEvent: updateSubscriptionFinancialEvent,
     deleteSubscriptionManagedData: deleteSubscriptionManagedData,
+    fullUserCleanup: fullUserCleanup,
+    saveData: saveToFirebase,
     createSupportTicket: createSupportTicket,
     addSupportTicketMessage: addSupportTicketMessage,
     listMySupportTickets: listMySupportTickets,
@@ -4145,6 +4156,7 @@ export {
     confirmSubscriptionApproval,
     updateSubscriptionFinancialEvent,
     deleteSubscriptionManagedData,
+    fullUserCleanup,
     createSupportTicket,
     sendPublicSupportEmail,
     addSupportTicketMessage,
@@ -4289,6 +4301,8 @@ const initializeGlobalFirebaseService = () => {
         confirmSubscriptionApproval,
         updateSubscriptionFinancialEvent,
         deleteSubscriptionManagedData,
+        fullUserCleanup,
+        saveData: saveToFirebase,
         createSupportTicket,
         sendPublicSupportEmail,
         addSupportTicketMessage,

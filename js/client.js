@@ -449,50 +449,38 @@ async function handleSave(e) {
     }, isEditMode ? String(editingId) : undefined);
 
     try {
-        console.log('💾 Salvando cliente via window.saveClient:', data);
+        const isEditMode = !!editingId;
+        const finalId = isEditMode
+            ? String(editingId)
+            : (window.firebaseService && window.firebaseService.database
+                ? window.firebaseService.database.ref('clients').push().key
+                : `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
 
-        // Usar a função global corrigida que lida com multi-tenancy e validação
+        const dataToSave = normalizeClient({ ...data, id: finalId }, finalId);
+
+        let result;
         if (typeof window.saveClient === 'function') {
-            await window.saveClient({ ...data, __editMode: isEditMode });
+            await window.saveClient({ ...dataToSave, __editMode: isEditMode });
+            result = { success: true };
         } else if (window.clientService && typeof window.clientService.saveClient === 'function') {
-            await window.clientService.saveClient({ ...data, __editMode: isEditMode });
+            await window.clientService.saveClient({ ...dataToSave, __editMode: isEditMode });
+            result = { success: true };
+        } else if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
+            result = await window.firebaseService.saveData(`clients/${finalId}`, dataToSave);
+        } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+            result = await window.firebaseService.saveToFirebase(`clients/${finalId}`, null, dataToSave);
         } else {
-            // Fallback para o método antigo
-            const id = editingId || 'auto';
-            const saveMethod = window.firebaseService.saveToFirebase || window.firebaseService.saveData;
-            
-            if (typeof saveMethod !== 'function') {
-                throw new Error('Serviço de salvamento não disponível');
-            }
-
-            let result;
-            if (saveMethod.name === 'saveData' || saveMethod === window.firebaseService.saveData) {
-                let finalId = id;
-                if (finalId === 'auto') {
-                    if (window.firebaseService.database) {
-                        // Criar referência para gerar ID sem criar registro vazio
-                        finalId = window.firebaseService.database.ref('clients').push().key;
-                    } else {
-                        finalId = Date.now().toString();
-                    }
-                }
-                // Adicionar o ID ao objeto de dados para garantir consistência
-                const dataToSave = normalizeClient({ ...data, id: finalId }, finalId);
-                result = await saveMethod.call(window.firebaseService, `clients/${finalId}`, dataToSave);
-            } else {
-                const finalId = id === 'auto' ? String(Date.now()) : String(id);
-                const dataToSave = normalizeClient({ ...data, id: finalId }, finalId);
-                result = await saveMethod.call(window.firebaseService, 'clients', finalId, dataToSave);
-            }
-            
-            if (!result.success) {
-                throw new Error(result.error);
-            }
+            throw new Error('Serviço de salvamento não disponível');
         }
         
-        showToast(editingId ? 'Cliente atualizado!' : 'Cliente criado!', 'success');
-        notifyParentClientsUpdated({ id: data.id || editingId || null, client: data });
+        showToast(isEditMode ? 'Cliente atualizado!' : 'Cliente criado!', 'success');
+        notifyParentClientsUpdated({ id: finalId, client: dataToSave });
         closeModal();
+        try {
+            if (window.firebaseService && typeof window.firebaseService.invalidateCache === 'function') {
+                window.firebaseService.invalidateCache('clients');
+            }
+        } catch (_) {}
         await loadData();
     } catch (error) {
         console.error('Erro ao salvar:', error);
@@ -540,26 +528,36 @@ window.editItem = async (id) => {
 };
 
 window.deleteItem = async (id) => {
+    const cleanId = String(id || '').trim();
+    if (!cleanId || cleanId === 'undefined' || cleanId === 'null') {
+        showToast('ID do cliente inválido para exclusão', 'error');
+        return;
+    }
     if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
 
     showLoading(true);
     try {
         await ensureAuthAndTenant();
-        console.log('🗑️ Excluindo cliente via window.deleteClient:', id);
+        console.log('🗑️ Excluindo cliente via window.deleteClient:', cleanId);
         
         // Usar a função global corrigida que lida com multi-tenancy e limpeza de cache
         if (typeof window.deleteClient === 'function') {
-            await window.deleteClient(id);
+            await window.deleteClient(cleanId);
         } else if (window.clientService && typeof window.clientService.deleteClient === 'function') {
-            await window.clientService.deleteClient(id);
+            await window.clientService.deleteClient(cleanId);
         } else {
             // Fallback
-            const result = await window.firebaseService.deleteData(`clients/${id}`);
+            const result = await window.firebaseService.deleteData(`clients/${cleanId}`);
             if (!result.success) throw new Error(result.error);
         }
         
         showToast('Cliente excluído!', 'success');
-        notifyParentClientsUpdated({ id, deletedId: id });
+        notifyParentClientsUpdated({ id: cleanId, deletedId: cleanId });
+        try {
+            if (window.firebaseService && typeof window.firebaseService.invalidateCache === 'function') {
+                window.firebaseService.invalidateCache('clients');
+            }
+        } catch (_) {}
         await loadData();
     } catch (error) {
         console.error('Erro ao excluir:', error);
@@ -656,6 +654,8 @@ function openModal() {
 }
 
 function closeModal() {
+    editingId = null;
+    if (elements.form) elements.form.reset();
     elements.modal.style.display = 'none';
 }
 

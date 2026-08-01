@@ -642,8 +642,12 @@ window.ModalEspecies = (function() {
         closeModal();
         
         // Abrir modal de edição via módulo CRUD
-        if (window.GerenciarEspecies && window.GerenciarEspecies.openEditSpeciesModal) {
+        if (window.GerenciarEspecies && typeof window.GerenciarEspecies.openEditSpeciesModal === 'function') {
             window.GerenciarEspecies.openEditSpeciesModal(specieId);
+        } else if (window.speciesManagerInstance && typeof window.speciesManagerInstance.editSpecies === 'function') {
+            window.speciesManagerInstance.editSpecies(specieId);
+        } else if (typeof window.editSpeciesFromList === 'function') {
+            window.editSpeciesFromList(specieId);
         } else {
             console.error('❌ Módulo GerenciarEspecies não disponível');
             showError('Funcionalidade de edição não disponível');

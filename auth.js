@@ -527,25 +527,16 @@ async function loadUserProfileFromFirebase(uid) {
 
 function readCachedSuperAdminFlag() {
     const expectedUid = arguments.length > 0 ? String(arguments[0] || '').trim() : '';
-    const current = parseCurrentUserSafe() || {};
-    const persistent = parsePersistentUserSafe() || {};
-    const currentUid = String(current.uid || current.id || current.userId || '').trim();
-    const persistentUid = String(persistent.uid || persistent.id || persistent.userId || '').trim();
-    const knownUid = currentUid || persistentUid;
-    if (expectedUid && knownUid && expectedUid !== knownUid) return false;
-    if (expectedUid && !knownUid) return false;
+    // SEGURANÇA: a flag de superadmin só é aceita quando derivada dos custom claims do token ID
+    // (persistSuperAdminFlag é chamada somente após validação do token). Dados gravados em
+    // localStorage (currentUser/persistentUser) NUNCA são fonte de autorização.
     try {
         const flag = typeof window !== 'undefined' && window.__SESSION_SUPERADMIN === true;
         const flagUid = typeof window !== 'undefined' ? String(window.__SESSION_SUPERADMIN_UID || '').trim() : '';
-        if (flag) {
-            if (expectedUid && flagUid && expectedUid !== flagUid) return false;
-            if (flagUid && SUPER_ADMIN_UIDS.has(flagUid)) return true;
-        }
+        if (!flag) return false;
+        if (expectedUid && flagUid && expectedUid !== flagUid) return false;
+        return true;
     } catch (_) {}
-    if (current.superadmin === true) return true;
-    if (current.claims && current.claims.superadmin === true) return true;
-    if (persistent.superadmin === true) return true;
-    if (persistent.claims && persistent.claims.superadmin === true) return true;
     return false;
 }
 
@@ -561,27 +552,16 @@ function persistSuperAdminFlag(enabled) {
         window.__SESSION_SUPERADMIN = value;
         window.__SESSION_SUPERADMIN_UID = uid || '';
     } catch (_) {}
-    try {
-        const current = parseCurrentUserSafe() || {};
-        localStorage.setItem('currentUser', JSON.stringify({ ...current, superadmin: value }));
-    } catch (_) {}
-    try {
-        const persistent = parsePersistentUserSafe() || {};
-        if (Object.keys(persistent).length) {
-            localStorage.setItem('persistentUser', JSON.stringify({ ...persistent, superadmin: value }));
-        }
-    } catch (_) {}
+    // SEGURANÇA: a flag de superadmin NÃO é persistida em localStorage (currentUser/persistentUser).
+    // A autorização é derivada exclusivamente dos custom claims do token ID em cada sessão.
 }
 
 function isSuperAdminUid(uid) {
     const normalizedUid = String(uid || '').trim();
     if (!normalizedUid) return false;
-    if (readCachedSuperAdminFlag(normalizedUid)) return true;
     if (SUPER_ADMIN_UIDS.has(normalizedUid)) return true;
-    const current = parseCurrentUserSafe() || {};
-    const persistent = parsePersistentUserSafe() || {};
-    const knownUid = String(current.uid || current.id || current.userId || persistent.uid || persistent.id || persistent.userId || '');
-    if (knownUid && normalizedUid === knownUid && (current.superadmin === true || persistent.superadmin === true)) return true;
+    // Flag em memória é aceita somente quando derivada dos claims do token (persistSuperAdminFlag).
+    if (readCachedSuperAdminFlag(normalizedUid)) return true;
     return false;
 }
 

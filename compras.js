@@ -4276,21 +4276,52 @@ function configurarAbaFornecedoresCompras() {
 
 // Modal Rápido de Fornecedor
 function abrirModalFornecedor() {
-    document.getElementById('modalFornecedor').style.display = 'block';
+    const fornIdEl = document.getElementById('fornId');
+    if (fornIdEl) fornIdEl.value = '';
+    const modalTitle = document.getElementById('modalFornecedorTitulo');
+    if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-truck"></i> Novo Fornecedor';
+    const modal = document.getElementById('modalFornecedor');
+    if (modal) modal.style.display = 'block';
 }
 
 function fecharModalFornecedor() {
-    document.getElementById('modalFornecedor').style.display = 'none';
+    const modal = document.getElementById('modalFornecedor');
+    if (modal) modal.style.display = 'none';
+    const fornIdEl = document.getElementById('fornId');
+    if (fornIdEl) fornIdEl.value = '';
+    const formEl = document.querySelector('#modalFornecedor form');
+    if (formEl) formEl.reset();
 }
 
 async function salvarFornecedorInline(event) {
-    event.preventDefault();
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
     LoadingManager.show('Salvando fornecedor...');
     try {
         const nowIso = new Date().toISOString();
         const obs = comprasFornecedoresCampo('fornObs');
+        const targetId = document.getElementById('fornId')?.value?.trim() || null;
+        const editingId = comprasFornecedoresEditingId || targetId;
+        const isEditMode = Boolean(editingId);
+        
+        let finalId;
+        if (isEditMode) {
+            finalId = String(editingId);
+        } else {
+            const existingIds = new Set((Array.isArray(window.fornecedores) ? window.fornecedores : []).map(f => String(f.id)));
+            const makeId = () => `FORN_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            finalId = makeId();
+            while (existingIds.has(finalId)) {
+                finalId = makeId();
+            }
+        }
+
+        const existing = isEditMode
+            ? (Array.isArray(window.fornecedores) ? window.fornecedores : []).find(f => String(f.id) === String(finalId))
+            : null;
+
         const novoFornecedor = {
-            id: `FOR-${Date.now()}`,
+            ...(existing || {}),
+            id: finalId,
             nome: comprasFornecedoresCampo('fornNome'),
             name: comprasFornecedoresCampo('fornNome'),
             documento: comprasFornecedoresCampo('fornDocumento'),
@@ -4340,7 +4371,7 @@ async function salvarFornecedorInline(event) {
             obs,
             observacoes: obs,
             observations: obs,
-            createdAt: nowIso,
+            createdAt: isEditMode ? (existing?.createdAt || existing?.created || nowIso) : nowIso,
             updatedAt: nowIso,
             updated: nowIso
         };
@@ -4349,13 +4380,24 @@ async function salvarFornecedorInline(event) {
         const saved = await service.saveFornecedor(novoFornecedor);
         const savedId = String(saved.id || novoFornecedor.id || '').trim();
 
+        // Atualizar lista em memória e cache local
+        try {
+            if (window.firebaseService) {
+                if (typeof window.firebaseService.writeLocalStorage === 'function') {
+                    window.firebaseService.writeLocalStorage('fornecedores', window.fornecedores);
+                }
+                if (window.firebaseService.cache) {
+                    window.firebaseService.cache.set('fornecedores', { data: window.fornecedores, timestamp: Date.now() });
+                }
+            }
+        } catch (_) {}
+
         atualizarSelectFornecedores(savedId || null);
         prepararFiltrosPedidosCompras();
         prepararRelatoriosCompras();
         renderizarFornecedoresCompra();
         fecharModalFornecedor();
-        ToastManager.success('Fornecedor cadastrado!');
-        document.querySelector('#modalFornecedor form')?.reset();
+        ToastManager.success(isEditMode ? 'Fornecedor atualizado!' : 'Fornecedor cadastrado!');
     } catch (error) {
         console.error('Erro ao salvar fornecedor pelo modal rápido:', error);
         ToastManager.error('Erro ao salvar fornecedor: ' + (error && error.message ? error.message : error));

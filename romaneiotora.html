@@ -11,15 +11,15 @@
     <script type="module">
 
         import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=21eb04e409d8';
-import './firebase-compat-bridge.js';  // compat shim
+import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
 
     </script><!-- Auth compat é necessário para signInAnonymously e regras com auth --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="layout-comum.css">
-    <link rel="stylesheet" href="romaneio-comum.css?v=20260607pwaqa">
+    <link rel="stylesheet" href="romaneio-comum.css?v=20260724modalv2">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <link rel="stylesheet" href="print-styles.css">
-    <link rel="stylesheet" href="ui-components.css">
+    <link rel="stylesheet" href="ui-components.css?v=20260724modalv2">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
@@ -1168,7 +1168,7 @@ import './firebase-compat-bridge.js';  // compat shim
             <div class="form-group" style="flex: 0.4;">
                 <label for="fornecedorInput">Fornecedor:</label>
                 <div class="autocomplete-container">
-                    <input type="text" id="fornecedorInput" class="autocomplete-input" placeholder="Selecionar fornecedor" oninput="showClientSuggestions(this)">
+                    <input type="text" id="fornecedorInput" class="autocomplete-input" placeholder="Selecionar fornecedor" oninput="if(typeof showClientSuggestions === 'function') showClientSuggestions(this)">
                     <div class="autocomplete-icons-container">
                         <span class="autocomplete-icon" title="Listar Fornecedores" onclick="openFornecedorListModal()">
                             <i class="fas fa-list"></i>
@@ -1450,110 +1450,68 @@ import './firebase-compat-bridge.js';  // compat shim
     </div>
 
     <!-- Modal de Lista de Fornecedores -->
-    <div id="fornecedorListModal" class="modal">
-        <div class="modal-content" style="width: 64%; max-width: 936px;">
-            <div class="modal-header" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color:#fff; padding: 15px 20px;">
-                <h3 class="modal-title" style="color:#fff; margin-left:8px;"><i class="fas fa-file-alt" style="margin-right:8px;"></i> Lista de Fornecedores</h3>
-                <span class="close-modal" onclick="document.getElementById('fornecedorListModal').style.display='none'">&times;</span>
+    <div id="fornecedorListModal" class="modal" style="padding: 24px 12px;">
+        <div class="modal-content" style="width: min(100%, 960px); max-width: 960px; max-height: calc(100dvh - 48px); margin: 0 auto; animation: slideIn 0.3s ease; overflow: hidden;">
+            <div class="modal-header" style="flex: 0 0 auto;">
+                <h3 class="modal-title" style="color:#fff; font-size: 20px; text-shadow: 1px 1px 2px rgba(0,0,0,0.35);"><i class="fas fa-truck" style="margin-right:8px;"></i> Lista de Fornecedores</h3>
+                <span class="close-modal" onclick="document.getElementById('fornecedorListModal').style.display='none'" style="cursor:pointer;">&times;</span>
             </div>
-            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+            <div class="modal-body" style="flex:1 1 auto; min-height:0; overflow-y:auto; padding:20px 24px;">
                 <style>
-                    #fornecedorListModal .table { table-layout: fixed; width: 100%; }
+                    /* ✅ CSS LIMPO PARA TABELA DE FORNECEDORES - SEM CONFLITOS */
+                    #fornecedorListModal .table {
+                        table-layout: auto;
+                        width: 100%;
+                        border-collapse: collapse;
+                    }
                     #fornecedorListModal .table th {
-                        padding: 6px 8px;
-                        height: 30px;
-                        font-size: 12px;
-                        line-height: 1.1;
+                        padding: 10px 8px;
+                        font-size: 13px;
+                        font-weight: 600;
+                        white-space: nowrap;
                     }
                     #fornecedorListModal .table td {
-                        padding: 6px 8px;
-                        height: 28px;
-                        font-size: 12.5px;
-                        line-height: 1.1;
+                        padding: 8px;
+                        font-size: 13px;
+                        line-height: 1.3;
                         vertical-align: middle;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
                     }
-                    #fornecedorListModal .table th,
-                    #fornecedorListModal .table td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-                    #fornecedorListModal .table th:nth-child(1),
-                    #fornecedorListModal .table td:nth-child(1) { width: 34%; }
-                    #fornecedorListModal .table th:nth-child(2),
-                    #fornecedorListModal .table td:nth-child(2) { width: 16%; }
-                    #fornecedorListModal .table th:nth-child(3),
-                    #fornecedorListModal .table td:nth-child(3) { width: 18%; }
-                    #fornecedorListModal .table th:nth-child(4),
-                    #fornecedorListModal .table td:nth-child(4) { width: 8%; }
-                    #fornecedorListModal .table th:nth-child(5),
-                    #fornecedorListModal .table td:nth-child(5) { width: calc(24% - 220px); }
-                    #fornecedorListModal th.actions-col,
-                    #fornecedorListModal td.actions-col { white-space: nowrap; width: 220px; min-width: 220px; max-width: 220px; }
-                    #fornecedorListModal td.actions-col .btn-group {
+                    #fornecedorListModal .table td:first-child {
+                        white-space: normal;
+                        word-break: break-word;
+                        overflow: visible;
+                        text-overflow: clip;
+                        max-width: 260px;
+                    }
+                    #fornecedorListModal .table td.actions-col,
+                    #fornecedorListModal .table th.actions-col {
+                        width: 150px;
+                        min-width: 150px;
+                        text-align: center;
+                        white-space: nowrap;
+                    }
+                    #fornecedorListModal .table td.actions-col .btn-group {
                         display: inline-flex;
                         gap: 6px;
                         align-items: center;
                         justify-content: center;
                     }
-                    @media (max-width: 1200px) {
-                        #fornecedorListModal .table th:nth-child(1),
-                        #fornecedorListModal .table td:nth-child(1) { width: 36%; }
-                        #fornecedorListModal .table th:nth-child(2),
-                        #fornecedorListModal .table td:nth-child(2) { width: 16%; }
-                        #fornecedorListModal .table th:nth-child(3),
-                        #fornecedorListModal .table td:nth-child(3) { width: 17%; }
-                        #fornecedorListModal .table th:nth-child(4),
-                        #fornecedorListModal .table td:nth-child(4) { width: 7%; }
-                        #fornecedorListModal .table th:nth-child(5),
-                        #fornecedorListModal .table td:nth-child(5) { width: calc(24% - 210px); }
-                        #fornecedorListModal th.actions-col,
-                        #fornecedorListModal td.actions-col { width: 210px; min-width: 210px; max-width: 210px; }
-                    }
-                    @media (max-width: 900px) {
-                        #fornecedorListModal .table th:nth-child(1),
-                        #fornecedorListModal .table td:nth-child(1) { width: 38%; }
-                        #fornecedorListModal .table th:nth-child(2),
-                        #fornecedorListModal .table td:nth-child(2) { width: 16%; }
-                        #fornecedorListModal .table th:nth-child(3),
-                        #fornecedorListModal .table td:nth-child(3) { width: 16%; }
-                        #fornecedorListModal .table th:nth-child(4),
-                        #fornecedorListModal .table td:nth-child(4) { width: 7%; }
-                        #fornecedorListModal .table th:nth-child(5),
-                        #fornecedorListModal .table td:nth-child(5) { width: calc(23% - 180px); }
-                        #fornecedorListModal th.actions-col,
-                        #fornecedorListModal td.actions-col { width: 180px; min-width: 180px; max-width: 180px; }
-                        #fornecedorListModal td.actions-col .btn-group { gap: 4px; }
-                    }
-                    @media (max-width: 768px) {
-                        #fornecedorListModal .table { min-width: 760px; }
-                        #fornecedorListModal .table th:nth-child(5),
-                        #fornecedorListModal .table td:nth-child(5) {
-                            white-space: normal;
-                            overflow-wrap: anywhere;
-                            word-break: break-word;
-                            text-overflow: clip;
-                        }
-                        #fornecedorListModal th.actions-col,
-                        #fornecedorListModal td.actions-col { width: 150px; min-width: 150px; max-width: 150px; }
-                    }
                 </style>
-                <input type="text" id="fornecedorListFilter" placeholder="Filtrar fornecedores..." 
-                       style="margin: 10px 0; width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <input type="text" id="fornecedorListFilter" placeholder="Filtrar fornecedores..."
+                       style="margin: 0 0 12px 0; width: 100%; padding: 10px 15px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
                 <div class="table-responsive" style="overflow-x:auto;">
-                    <table class="table" style="table-layout: fixed; width:100%;">
-                        <colgroup>
-                            <col style="width:25%">
-                            <col style="width:auto">
-                            <col style="width:auto">
-                            <col style="width:auto">
-                            <col style="width:auto">
-                            <col style="width:15%">
-                        </colgroup>
+                    <table class="table">
                         <thead>
                             <tr>
-                                <th style="white-space: nowrap; width: auto;">Nome</th>
-                                <th style="min-width: 160px;">CNPJ</th>
-                                <th style="min-width: 160px;">Cidade</th>
-                                <th style="min-width: 100px;">Estado</th>
-                                <th style="min-width: 160px;">Telefone</th>
-                                <th class="actions-col" style="text-align: center; width: 280px;">Ações</th>
+                                <th>Nome</th>
+                                <th>CNPJ</th>
+                                <th>Cidade</th>
+                                <th>Estado</th>
+                                <th>Telefone</th>
+                                <th class="actions-col" style="text-align: center;">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="fornecedorListTable"></tbody>
@@ -1561,9 +1519,9 @@ import './firebase-compat-bridge.js';  // compat shim
                 </div>
                 <div id="fornecedorPagination" class="pagination-controls" style="margin-top: 10px;"></div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('fornecedorListModal').style.display='none'">Fechar</button>
-                <button type="button" class="btn-save" onclick="openNewFornecedorModal()">Novo Fornecedor</button>
+            <div class="modal-footer" style="align-items:center; background:#fafafa; border-top:1px solid #e5e7eb; display:flex; flex:0 0 auto; gap:10px; justify-content:space-between; margin:0; padding:14px 24px;">
+                <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('fornecedorListModal').style.display='none'" style="cursor:pointer;">Fechar</button>
+                <button type="button" class="btn-save" onclick="openNewFornecedorModal()" style="cursor:pointer;">Novo Fornecedor</button>
             </div>
         </div>
     </div>
@@ -1696,142 +1654,203 @@ import './firebase-compat-bridge.js';  // compat shim
         })();
     </script>
     <!-- Modal de Cadastro/Edição de Fornecedor -->
-    <div id="fornecedorModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="fornecedorModalTitle">Novo Fornecedor</h3>
-                <span class="close-modal" onclick="document.getElementById('fornecedorModal').style.display='none'">&times;</span>
+    <div id="fornecedorModal" class="modal" style="padding: 24px 12px;">
+        <div class="modal-content" style="width: min(100%, 960px); max-width: 960px; max-height: calc(100dvh - 48px); margin: 0 auto; animation: slideIn 0.3s ease; overflow: hidden;">
+            <div class="modal-header" style="flex: 0 0 auto;">
+                <h3 class="modal-title" id="fornecedorModalTitle" style="font-size: 20px; line-height: 1.2; text-shadow: 1px 1px 2px rgba(0,0,0,0.35);">Novo Fornecedor</h3>
+                <span class="close-modal" onclick="document.getElementById('fornecedorModal').style.display='none'" style="cursor:pointer;">&times;</span>
             </div>
-            <div class="modal-body">
-                <form id="fornecedorForm" onsubmit="saveFornecedor(event); return false;">
+            <form id="fornecedorForm" onsubmit="saveFornecedor(event); return false;" style="display:flex; flex:1 1 auto; flex-direction:column; min-height:0;">
+            <div class="modal-body" style="flex:1 1 auto; min-height:0; overflow-y:auto; padding:24px;">
                     <input type="hidden" id="fornecedorId">
                     <div class="form-group">
-                        <label for="fornecedorName">Nome:</label>
-                        <input type="text" id="fornecedorName" required>
+                        <label for="fornecedorName">Nome / Razão Social *</label>
+                        <input type="text" id="fornecedorName" required placeholder="Ex: Madeireira Silva Ltda">
                     </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorCnpj">CNPJ / CPF</label>
+                                <input type="text" id="fornecedorCnpj" placeholder="00.000.000/0000-00">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorPhone">Telefone / Celular</label>
+                                <input type="text" id="fornecedorPhone" oninput="formatarTelefone(this)" placeholder="(00) 00000-0000">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorEmail">Email</label>
+                                <input type="email" id="fornecedorEmail" placeholder="contato@empresa.com">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorPersonType">Tipo de pessoa</label>
+                                <select id="fornecedorPersonType">
+                                    <option value="">Não informado</option>
+                                    <option value="juridica">Pessoa jurídica</option>
+                                    <option value="fisica">Pessoa física</option>
+                                    <option value="estrangeiro">Estrangeiro</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorIndIEDest">Indicador IE</label>
+                                <select id="fornecedorIndIEDest">
+                                    <option value="">Não informado</option>
+                                    <option value="1">Contribuinte ICMS</option>
+                                    <option value="2">Contribuinte isento</option>
+                                    <option value="9">Não contribuinte</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorStateRegistration">Inscrição Estadual</label>
+                                <input type="text" id="fornecedorStateRegistration" placeholder="IE / ISENTO">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorMunicipalRegistration">Inscrição Municipal</label>
+                                <input type="text" id="fornecedorMunicipalRegistration" placeholder="Opcional">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorSuframa">SUFRAMA</label>
+                                <input type="text" id="fornecedorSuframa" placeholder="Opcional">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorCep">CEP</label>
+                                <input type="text" id="fornecedorCep" placeholder="00000-000">
+                            </div>
+                        </div>
+                        <div class="form-col" style="flex: 2;">
+                            <div class="form-group">
+                                <label for="fornecedorAddress">Endereço</label>
+                                <input type="text" id="fornecedorAddress" placeholder="Rua, Avenida">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorNumber">Número</label>
+                                <input type="text" id="fornecedorNumber" placeholder="Nº">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorNeighborhood">Bairro</label>
+                                <input type="text" id="fornecedorNeighborhood" placeholder="Bairro">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorComplement">Complemento</label>
+                                <input type="text" id="fornecedorComplement" placeholder="Sala, lote, referência">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorState">Estado</label>
+                                <select id="fornecedorState" onchange="carregarCidadesPorEstado(this.value)">
+                                    <option value="">Selecione</option>
+                                    <option value="AC">Acre</option>
+                                    <option value="AL">Alagoas</option>
+                                    <option value="AP">Amapá</option>
+                                    <option value="AM">Amazonas</option>
+                                    <option value="BA">Bahia</option>
+                                    <option value="CE">Ceará</option>
+                                    <option value="DF">Distrito Federal</option>
+                                    <option value="ES">Espírito Santo</option>
+                                    <option value="GO">Goiás</option>
+                                    <option value="MA">Maranhão</option>
+                                    <option value="MT">Mato Grosso</option>
+                                    <option value="MS">Mato Grosso do Sul</option>
+                                    <option value="MG">Minas Gerais</option>
+                                    <option value="PA">Pará</option>
+                                    <option value="PB">Paraíba</option>
+                                    <option value="PR">Paraná</option>
+                                    <option value="PE">Pernambuco</option>
+                                    <option value="PI">Piauí</option>
+                                    <option value="RJ">Rio de Janeiro</option>
+                                    <option value="RN">Rio Grande do Norte</option>
+                                    <option value="RS">Rio Grande do Sul</option>
+                                    <option value="RO">Rondônia</option>
+                                    <option value="RR">Roraima</option>
+                                    <option value="SC">Santa Catarina</option>
+                                    <option value="SP">São Paulo</option>
+                                    <option value="SE">Sergipe</option>
+                                    <option value="TO">Tocantins</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorCity">Cidade</label>
+                                <select id="fornecedorCity">
+                                    <option value="">Selecione primeiro o estado</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorMunicipalityCode">Código IBGE do município</label>
+                                <input type="text" id="fornecedorMunicipalityCode" placeholder="Ex: 1501402">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorCountryCode">Código do país</label>
+                                <input type="text" id="fornecedorCountryCode" value="1058" placeholder="1058">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="fornecedorCountryName">País</label>
+                                <input type="text" id="fornecedorCountryName" value="Brasil" placeholder="Brasil">
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-group">
-                        <label for="fornecedorCnpj">CNPJ:</label>
-                        <input type="text" id="fornecedorCnpj" placeholder="00.000.000/0000-00">
+                        <label for="fornecedorObs">Observações</label>
+                        <textarea id="fornecedorObs" rows="2" placeholder="Informações adicionais..."></textarea>
                     </div>
-                    <div class="form-group">
-                        <label for="fornecedorPersonType">Tipo de pessoa:</label>
-                        <select id="fornecedorPersonType">
-                            <option value="">Não informado</option>
-                            <option value="juridica">Pessoa jurídica</option>
-                            <option value="fisica">Pessoa física</option>
-                            <option value="estrangeiro">Estrangeiro</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorIndIEDest">Indicador IE:</label>
-                        <select id="fornecedorIndIEDest">
-                            <option value="">Não informado</option>
-                            <option value="1">Contribuinte ICMS</option>
-                            <option value="2">Contribuinte isento</option>
-                            <option value="9">Não contribuinte</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorStateRegistration">Inscrição Estadual:</label>
-                        <input type="text" id="fornecedorStateRegistration" placeholder="000.000.000.000">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorMunicipalRegistration">Inscrição Municipal:</label>
-                        <input type="text" id="fornecedorMunicipalRegistration" placeholder="Opcional">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorSuframa">SUFRAMA:</label>
-                        <input type="text" id="fornecedorSuframa" placeholder="Opcional">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorCep">CEP:</label>
-                        <input type="text" id="fornecedorCep" placeholder="00000-000">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorAddress">Endereço:</label>
-                        <input type="text" id="fornecedorAddress" placeholder="Rua, Avenida, etc.">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorNumber">Número:</label>
-                        <input type="text" id="fornecedorNumber" placeholder="Número da residência/empresa">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorNeighborhood">Bairro:</label>
-                        <input type="text" id="fornecedorNeighborhood" placeholder="Nome do bairro">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorComplement">Complemento:</label>
-                        <input type="text" id="fornecedorComplement" placeholder="Sala, lote, referência">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorState">Estado:</label>
-                        <select id="fornecedorState" onchange="carregarCidadesPorEstado(this.value)">
-                            <option value="">Selecione o estado</option>
-                            <option value="AC">Acre</option>
-                            <option value="AL">Alagoas</option>
-                            <option value="AP">Amapá</option>
-                            <option value="AM">Amazonas</option>
-                            <option value="BA">Bahia</option>
-                            <option value="CE">Ceará</option>
-                            <option value="DF">Distrito Federal</option>
-                            <option value="ES">Espírito Santo</option>
-                            <option value="GO">Goiás</option>
-                            <option value="MA">Maranhão</option>
-                            <option value="MT">Mato Grosso</option>
-                            <option value="MS">Mato Grosso do Sul</option>
-                            <option value="MG">Minas Gerais</option>
-                            <option value="PA">Pará</option>
-                            <option value="PB">Paraíba</option>
-                            <option value="PR">Paraná</option>
-                            <option value="PE">Pernambuco</option>
-                            <option value="PI">Piauí</option>
-                            <option value="RJ">Rio de Janeiro</option>
-                            <option value="RN">Rio Grande do Norte</option>
-                            <option value="RS">Rio Grande do Sul</option>
-                            <option value="RO">Rondônia</option>
-                            <option value="RR">Roraima</option>
-                            <option value="SC">Santa Catarina</option>
-                            <option value="SP">São Paulo</option>
-                            <option value="SE">Sergipe</option>
-                            <option value="TO">Tocantins</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorCity">Cidade:</label>
-                        <select id="fornecedorCity">
-                            <option value="">Selecione primeiro o estado</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorMunicipalityCode">Código IBGE do município:</label>
-                        <input type="text" id="fornecedorMunicipalityCode" placeholder="Ex: 1501402">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorCountryCode">Código do país:</label>
-                        <input type="text" id="fornecedorCountryCode" value="1058" placeholder="1058">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorCountryName">País:</label>
-                        <input type="text" id="fornecedorCountryName" value="Brasil" placeholder="Brasil">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorPhone">Telefone:</label>
-                        <input type="text" id="fornecedorPhone" oninput="formatarTelefone(this)">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorEmail">Email:</label>
-                        <input type="email" id="fornecedorEmail">
-                    </div>
-                    <div class="form-group">
-                        <label for="fornecedorObs">Observações:</label>
-                        <textarea id="fornecedorObs" rows="3"></textarea>
-                    </div>
-                </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('fornecedorModal').style.display='none';">Cancelar</button>
-                <button type="button" class="btn-save" id="saveFornecedorBtn" onclick="saveFornecedor()">Salvar</button>
+            <div class="modal-footer" style="align-items:center; background:#fafafa; border-top:1px solid #e5e7eb; display:flex; flex:0 0 auto; gap:10px; justify-content:flex-end; margin:0; padding:14px 24px;">
+                <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('fornecedorModal').style.display='none';" style="cursor:pointer;">Cancelar</button>
+                <button type="button" class="btn-save" id="saveFornecedorBtn" onclick="saveFornecedor()" style="cursor:pointer;">Salvar</button>
             </div>
+            </form>
         </div>
     </div>
 
@@ -1922,9 +1941,9 @@ import './firebase-compat-bridge.js';  // compat shim
     <script src="species-manager.js?v=cb24148c8ab6"></script>
     
     <!-- Script de fornecedor modals -->
-    <script src="fornecedor-modals.js?v=9308ca4e254c"></script>
+    <script src="fornecedor-modals.js?v=20260724modalv2"></script>
     <script src="schema-migration-contatos.js?v=f086747ad6d7"></script>
-    <!-- removido: romaneiotora_modais.js (substituído por fornecedor-modals.js para lista nativa) -->
+    <script src="romaneiotora_modais.js?v=20260725modalv3"></script>
     
     <script src="romaneios-client-save-fix.js?v=a5d20ef9cd6d"></script>
     

@@ -188,7 +188,7 @@
 
         const companyId = resolveCompanyId();
         const svc = getFirebaseService();
-        if (!companyId || !svc || typeof svc.loadFromFirebase !== 'function') {
+        if (!companyId || !svc || typeof svc.loadFromFirebase !== 'function' || (svc.isOperational && !svc.isOperational().operational)) {
             state.loaded[normalized] = true;
             state.configs[normalized] = state.configs[normalized] || getAllIds(normalized);
             return state.configs[normalized];

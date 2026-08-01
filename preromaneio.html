@@ -520,6 +520,7 @@
             height: 100%; 
             overflow: auto; 
             background-color: rgba(0,0,0,0.5); 
+            -webkit-backdrop-filter: blur(2px);
             backdrop-filter: blur(2px);
         }
 
@@ -1344,7 +1345,7 @@
     <script type="module">
 
         import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=21eb04e409d8';
-import './firebase-compat-bridge.js';  // compat shim
+import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
 
     </script><!-- Configuração Firebase e Serviços (Unificados) -->
     <script src="firebaseService.unified.js?v=07d2b773a0fd"></script>
@@ -1849,7 +1850,7 @@ import './firebase-compat-bridge.js';  // compat shim
     </div>
 
     <!-- Scripts de Modais e Lógica -->
-    <script src="fornecedor-modals.js?v=9308ca4e254c"></script>
+    <script src="fornecedor-modals.js?v=20260724modalv2"></script>
     <script src="preromaneio-modals.js?v=8547c05572d0"></script>
     <script src="tora-geometry-utils.js?v=f92ce76d2728"></script>
     <script src="romaneio-table-enhancements.js?v=cbd0da360107"></script>

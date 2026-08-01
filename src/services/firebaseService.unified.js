@@ -386,7 +386,8 @@ class UnifiedFirebaseService {
             }
             
         } catch (error) {
-            console.error('❌ Erro ao carregar dados:', error && error.code ? error.code : 'unknown');
+            const errDetails = error ? (error.message || error.code || String(error)) : 'desconhecido';
+            console.warn(`⚠️ Aviso ao carregar dados de "${key}": ${errDetails}`);
             
             // Fallback para cache em caso de erro
             const cached = this.getFromCache(key);
@@ -401,7 +402,7 @@ class UnifiedFirebaseService {
             
             return {
                 success: false,
-                error: error.message,
+                error: errDetails,
                 data: null
             };
         }

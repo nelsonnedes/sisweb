@@ -36,9 +36,10 @@ import {
   onValue, off, serverTimestamp,
   onAuthStateChanged, signOut,
   signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signInAnonymously,
   httpsCallable,
   storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject
-} from './firebase-init.js';
+} from './firebase-init.js?v=21eb04e409d8';
 
 // ─── Database Reference Wrapper ──────────────────────────────────────────────
 
@@ -119,6 +120,9 @@ function createCompatDatabase() {
     }
   };
 }
+createCompatDatabase.ServerValue = {
+  TIMESTAMP: serverTimestamp()
+};
 
 // ─── Auth Wrapper ────────────────────────────────────────────────────────────
 
@@ -146,10 +150,17 @@ function createCompatAuth() {
         .then(userCredential => ({
           user: userCredential.user
         }));
+    },
+
+    signInAnonymously() {
+      return signInAnonymously(auth);
     }
   };
   return compatAuth;
 }
+createCompatAuth.EmailAuthProvider = {
+  PROVIDER_ID: 'password'
+};
 
 // ─── Functions Wrapper ───────────────────────────────────────────────────────
 

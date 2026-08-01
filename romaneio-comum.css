@@ -1693,18 +1693,15 @@ textarea:focus {
 }
 
 #clientListModal .table th:last-child,
-#clientListModal .table td:last-child {
-    width: 40px !important;
-    min-width: 40px !important;
-    max-width: 40px !important;
-    padding-left: 4px !important;
-    padding-right: 4px !important;
-}
-
+#clientListModal .table td:last-child,
 #fornecedorListModal .table th:last-child,
 #fornecedorListModal .table td:last-child {
-    min-width: 96px !important;
-    max-width: 120px !important;
+    width: 130px !important;
+    min-width: 130px !important;
+    max-width: 160px !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    text-align: center !important;
     white-space: nowrap !important;
 }
 
@@ -2025,4 +2022,140 @@ textarea:focus {
 #speciesModal .modal-footer {
     padding: 10px 16px !important;
     border-top: 1px solid #e4eaf1 !important;
+}
+
+/* Estilos dos botões de ação nos modais de romaneio */
+.client-action-button,
+.action-buttons-container .client-action-button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease-in-out !important;
+    font-size: 13px !important;
+}
+
+.client-action-button.btn-selecionar,
+.client-action-button[title*="Selecionar"],
+.action-buttons-container .client-action-button:first-child {
+    background-color: #27ae60 !important;
+    color: #ffffff !important;
+}
+
+.client-action-button.btn-selecionar:hover,
+.client-action-button[title*="Selecionar"]:hover,
+.action-buttons-container .client-action-button:first-child:hover {
+    background-color: #219653 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(39, 174, 96, 0.35) !important;
+}
+
+.client-action-button.btn-editar,
+.client-action-button.btn-warning,
+.client-action-button[title*="Editar"],
+.action-buttons-container .client-action-button:nth-child(2),
+#fornecedorListModal .btn-warning,
+#fornecedorListModal .action-button.edit-button,
+#fornecedorListModal .btn-editar {
+    background-color: #f39c12 !important;
+    color: #ffffff !important;
+}
+
+.client-action-button.btn-editar:hover,
+.client-action-button.btn-warning:hover,
+.client-action-button[title*="Editar"]:hover,
+.action-buttons-container .client-action-button:nth-child(2):hover,
+#fornecedorListModal .btn-warning:hover,
+#fornecedorListModal .action-button.edit-button:hover,
+#fornecedorListModal .btn-editar:hover {
+    background-color: #e67e22 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(243, 156, 18, 0.35) !important;
+}
+
+#fornecedorListModal .action-button,
+#fornecedorListModal .client-action-button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
+    border: none !important;
+    cursor: pointer !important;
+    font-size: 13px !important;
+    color: #ffffff !important;
+}
+
+#fornecedorListModal .action-button.select-button,
+#fornecedorListModal .btn-success {
+    background-color: #27ae60 !important;
+}
+
+#fornecedorListModal .action-button.delete-button,
+#fornecedorListModal .btn-danger {
+    background-color: #e74c3c !important;
+}
+
+.action-buttons-container {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    white-space: nowrap !important;
+}
+
+/* Cursor pointer obrigatório em botões e controles de fechar modais */
+.modal-footer button,
+.modal-footer .btn,
+.modal-footer .btn-save,
+.modal-footer .back-button,
+.modal-footer .close-modal-btn,
+.modal-header .close,
+.modal-header .close-modal,
+.close-modal-btn,
+.close-modal {
+    cursor: pointer !important;
+}
+
+/* ✅ PADRONIZAÇÃO DE CONTAINER DE MODAL E TABELA RESPONSIVA SEM OVERFLOW OCULTO */
+#clientListModal .modal-content,
+#fornecedorListModal .modal-content {
+    max-width: 920px !important;
+    width: 92% !important;
+    margin: 30px auto !important;
+    box-sizing: border-box !important;
+}
+
+#clientListModal .modal-body,
+#fornecedorListModal .modal-body {
+    overflow-x: auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 15px !important;
+}
+
+#clientListModal .table,
+#fornecedorListModal .table {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-collapse: collapse !important;
+}
+
+#clientListModal .table th:last-child,
+#clientListModal .table td:last-child,
+#fornecedorListModal .table th:last-child,
+#fornecedorListModal .table td:last-child {
+    width: 130px !important;
+    min-width: 130px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
 }

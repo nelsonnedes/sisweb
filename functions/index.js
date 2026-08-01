@@ -1184,6 +1184,25 @@ function publicSubscriptionSettingsShape(input) {
     };
 }
 
+function subscriberSubscriptionSettingsShape(input) {
+    const settings = normalizeSubscriptionSettings(input || {});
+    return {
+        plans: settings.plans,
+        paymentMethods: settings.paymentMethods,
+        paymentMeta: {
+            pixKey: settings.paymentMeta && settings.paymentMeta.pixKey ? settings.paymentMeta.pixKey : '',
+            beneficiary: settings.paymentMeta && settings.paymentMeta.beneficiary ? settings.paymentMeta.beneficiary : '',
+            supportEmail: settings.paymentMeta && settings.paymentMeta.supportEmail ? settings.paymentMeta.supportEmail : ''
+        },
+        promotion: settings.promotion,
+        campaign: settings.campaign,
+        freeTrialDays: settings.freeTrialDays,
+        lateGraceDays: settings.lateGraceDays,
+        updatedAt: settings.updatedAt,
+        __subscriber: true
+    };
+}
+
 function mergeSubscriptionSettingsInput(currentInput, nextInput) {
     const current = currentInput && typeof currentInput === 'object' ? currentInput : {};
     const next = nextInput && typeof nextInput === 'object' ? nextInput : {};
@@ -1758,6 +1777,314 @@ exports.setUserAccessStatus = https.onCall(async (data, context) => {
     return { success: true, targetUid, status, companyId: syncResult.companyId || '' };
 });
 
+// =========================================================================
+// FULL USER CLEANUP — Remove COMPLETAMENTE todos os dados de um usuário
+// incluindo Auth, Firestore/RTDB (users, companies, tenants), subscription,
+// supportTickets, Storage, etc. para permitir novo registro sem impedimentos.
+// =========================================================================
+exports.fullUserCleanup = https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem chamar esta função.');
+    }
+    const callerUid = context.auth.uid;
+    await assertSuperAdmin(context, 'Apenas superadmin pode executar limpeza total de usuário.');
+
+    const payload = data || {};
+    const targetUid = payload.targetUid ? String(payload.targetUid) : '';
+    const reviewNote = sanitizeText(payload.reviewNote || 'Limpeza total administrativa', '');
+
+    if (!targetUid) {
+        throw new functions.https.HttpsError('invalid-argument', 'targetUid é obrigatório.');
+    }
+
+    // Proteção: não permitir auto-exclusão
+    if (targetUid === callerUid) {
+        throw new functions.https.HttpsError('permission-denied', 'Você não pode excluir seu próprio usuário administrativo.');
+    }
+
+    const nowIso = new Date().toISOString();
+    const removedPaths = [];
+    const failedPaths = [];
+
+        async function removePath(ref, label) {
+        try {
+            await ref.remove();
+            removedPaths.push(label);
+        } catch (err) {
+            console.error('[fullUserCleanup] Falha ao remover ' + label + ':', err);
+            failedPaths.push(label);
+        }
+    }
+
+    try {
+        // 1. Obter dados do usuário para descobrir companyId e email
+        const userSnap = await admin.database().ref(`users/${targetUid}`).get();
+        const userData = userSnap.exists() ? userSnap.val() : {};
+        const companyId = String(userData && (userData.companyId || userData.tenantId || userData.companyID) || '').trim();
+        const userEmail = String(userData && userData.email || '').trim();
+
+        // 2. Buscar companyId em subscriptionRequests caso não tenha
+        let resolvedCompanyId = companyId;
+        if (!resolvedCompanyId) {
+            try {
+                const reqSnap = await admin.database().ref(`subscriptionRequests/${targetUid}`).get();
+                if (reqSnap.exists()) {
+                    const reqs = reqSnap.val() || {};
+                    for (const reqId of Object.keys(reqs || {})) {
+                        const req = reqs[reqId] || {};
+                        if (req.companyId) {
+                            resolvedCompanyId = String(req.companyId);
+                            break;
+                        }
+                    }
+                }
+            } catch (resolveErr) {
+                console.warn('[fullUserCleanup] Falha ao resolver companyId:', resolveErr && resolveErr.message ? resolveErr.message : resolveErr);
+            }
+        }
+
+        // 3. Remover usuário do Firebase Auth (se não for o caller)
+        try {
+            await admin.auth().deleteUser(targetUid);
+            removedPaths.push('auth/users/' + targetUid);
+        } catch (authErr) {
+            // Se o erro for 'auth/user-not-found', ignora — já foi removido
+            if (authErr && authErr.code && authErr.code === 'auth/user-not-found') {
+                removedPaths.push('auth/users/' + targetUid + ' (inexistente)');
+            } else {
+                console.error('[fullUserCleanup] Falha ao deletar Auth user:', authErr);
+                failedPaths.push('auth/users/' + targetUid);
+            }
+        }
+
+        // 4. Remover nó principal do usuário no RTDB
+        await removePath(admin.database().ref(`users/${targetUid}`), 'users/' + targetUid);
+
+        // 5. Remover roles do usuário
+        await removePath(admin.database().ref(`roles/${targetUid}`), 'roles/' + targetUid);
+
+        // 6. Remover dados de assinatura
+        await removePath(admin.database().ref(`subscriptionRequests/${targetUid}`), 'subscriptionRequests/' + targetUid);
+        await removePath(admin.database().ref(`subscriptionAudit/${targetUid}`), 'subscriptionAudit/' + targetUid);
+        await removePath(admin.database().ref(`subscriptionFinancialAudit/${targetUid}`), 'subscriptionFinancialAudit/' + targetUid);
+        await removePath(admin.database().ref(`subscriptionExtensionRequests/${targetUid}`), 'subscriptionExtensionRequests/' + targetUid);
+        await removePath(admin.database().ref(`pixPayments/${targetUid}`), 'pixPayments/' + targetUid);
+
+        // 7. Remover prova de hashes
+        try {
+            const proofHashesRef = admin.database().ref('subscriptionProofHashes');
+            const proofHashesSnap = await proofHashesRef.get();
+            const proofHashesMap = proofHashesSnap.exists() ? (proofHashesSnap.val() || {}) : {};
+            const hashUpdates = {};
+            Object.keys(proofHashesMap || {}).forEach((fingerprint) => {
+                const item = proofHashesMap[fingerprint] || {};
+                if (String(item.uid || '') === targetUid) {
+                    hashUpdates[fingerprint] = null;
+                }
+            });
+            if (Object.keys(hashUpdates).length) {
+                await proofHashesRef.update(hashUpdates);
+                removedPaths.push('subscriptionProofHashes (entries for ' + targetUid + ')');
+            }
+        } catch (_) {}
+
+        // 8. Remover dados financeiros associados (financialEvents)
+        try {
+            const finSnap = await admin.database().ref('financialEvents').get();
+            if (finSnap.exists()) {
+                const finEvents = finSnap.val() || {};
+                const finUpdates = {};
+                Object.keys(finEvents || {}).forEach((eventId) => {
+                    const evt = finEvents[eventId] || {};
+                    if (String(evt.uid || evt.targetUid || '') === targetUid) {
+                        finUpdates[eventId] = null;
+                    }
+                });
+                if (Object.keys(finUpdates).length) {
+                    await admin.database().ref('financialEvents').update(finUpdates);
+                    removedPaths.push('financialEvents (entries for ' + targetUid + ')');
+                }
+            }
+        } catch (_) {}
+
+        // 9. Remover supportTickets do usuário
+        try {
+            const ticketsSnap = await admin.database().ref('supportTickets').get();
+            if (ticketsSnap.exists()) {
+                const tickets = ticketsSnap.val() || {};
+                const ticketUpdates = {};
+                Object.keys(tickets || {}).forEach((ticketId) => {
+                    const ticket = tickets[ticketId] || {};
+                    if (String(ticket.uid || ticket.createdBy || ticket.userId || '') === targetUid) {
+                        ticketUpdates[ticketId] = null;
+                    }
+                });
+                // Também verificar subcoleção company-based
+                if (resolvedCompanyId) {
+                    try {
+                        const companyTicketsSnap = await admin.database().ref(`companies/${resolvedCompanyId}/supportTickets`).get();
+                        if (companyTicketsSnap.exists()) {
+                            const companyTickets = companyTicketsSnap.val() || {};
+                            Object.keys(companyTickets || {}).forEach((ticketId) => {
+                                const ticket = companyTickets[ticketId] || {};
+                                if (String(ticket.uid || ticket.createdBy || ticket.userId || '') === targetUid) {
+                                    ticketUpdates[ticketId] = null;
+                                }
+                            });
+                        }
+                    } catch (_) {}
+                }
+                if (Object.keys(ticketUpdates).length) {
+                    await admin.database().ref('supportTickets').update(ticketUpdates);
+                    removedPaths.push('supportTickets (entries for ' + targetUid + ')');
+                }
+            }
+        } catch (_) {}
+
+        // 10. Remover notificações do usuário
+        await removePath(admin.database().ref(`users/${targetUid}/notifications`), 'users/' + targetUid + '/notifications');
+        await removePath(admin.database().ref(`users/${targetUid}/securityAudit`), 'users/' + targetUid + '/securityAudit');
+
+        // 11. Remover do companies/{companyId} se tiver
+        if (resolvedCompanyId) {
+            // Remover referência do usuário na empresa
+            await removePath(
+                admin.database().ref(`companies/${resolvedCompanyId}/users/${targetUid}`),
+                'companies/' + resolvedCompanyId + '/users/' + targetUid
+            );
+
+            // Remover subscriptionRequests dentro da empresa
+            await removePath(
+                admin.database().ref(`companies/${resolvedCompanyId}/subscriptionRequests/${targetUid}`),
+                'companies/' + resolvedCompanyId + '/subscriptionRequests/' + targetUid
+            );
+
+            // Remover tenant se existir
+            await removePath(
+                admin.database().ref(`tenants/${resolvedCompanyId}/users/${targetUid}`),
+                'tenants/' + resolvedCompanyId + '/users/' + targetUid
+            );
+
+            // Verificar se é o owner da empresa — se sim, remover company profile
+            try {
+                const companySnap = await admin.database().ref(`companies/${resolvedCompanyId}`).get();
+                if (companySnap.exists()) {
+                    const companyData = companySnap.val() || {};
+                    const ownerUid = String(
+                        companyData.ownerUid
+                        || companyData.adminOwnerUid
+                        || companyData.primaryUserUid
+                        || companyData.createdBy
+                        || companyData.createdByUid
+                        || ''
+                    ).trim();
+
+                    const companyUsersSnap = await admin.database().ref(`companies/${resolvedCompanyId}/users`).get();
+                    const companyUsers = companyUsersSnap.exists() ? (companyUsersSnap.val() || {}) : {};
+                    const remainingUsers = Object.keys(companyUsers || {}).filter((uid) => uid !== targetUid);
+
+                    // Se o owner está sendo removido e não há mais usuários, remove o profile da empresa
+                    if (ownerUid === targetUid && remainingUsers.length === 0) {
+                        await removePath(
+                            admin.database().ref(`companies/${resolvedCompanyId}/profile`),
+                            'companies/' + resolvedCompanyId + '/profile'
+                        );
+
+                        // Remover tenant raiz se existir
+                        await removePath(
+                            admin.database().ref(`tenants/${resolvedCompanyId}`),
+                            'tenants/' + resolvedCompanyId
+                        );
+
+                        removedPaths.push('companies/' + resolvedCompanyId + ' (profile removido por ser owner sem usuários restantes)');
+                    }
+                }
+            } catch (_) {}
+        }
+
+        // 12. Remover de todas as outras empresas (caso o usuário esteja vinculado a mais de uma)
+        try {
+            const allCompaniesSnap = await admin.database().ref('companies').get();
+            if (allCompaniesSnap.exists()) {
+                const allCompanies = allCompaniesSnap.val() || {};
+                const crossRemovals = [];
+                Object.keys(allCompanies || {}).forEach((cId) => {
+                    if (cId !== resolvedCompanyId) {
+                        crossRemovals.push(
+                            admin.database().ref(`companies/${cId}/users/${targetUid}`).remove().catch(() => {}).then(() => {
+                                removedPaths.push('companies/' + cId + '/users/' + targetUid + ' (cross-company)');
+                            })
+                        );
+                        crossRemovals.push(
+                            admin.database().ref(`companies/${cId}/subscriptionRequests/${targetUid}`).remove().catch(() => {}).then(() => {
+                                removedPaths.push('companies/' + cId + '/subscriptionRequests/' + targetUid + ' (cross-company)');
+                            })
+                        );
+                    }
+                });
+                if (crossRemovals.length) await Promise.all(crossRemovals);
+            }
+        } catch (_) {}
+
+                // 13. Remover arquivos de Storage (todos os prefixes do usuario)
+        try {
+            const bucket = admin.storage().bucket();
+            const storagePrefixes = [
+                'users/' + targetUid + '/',
+                'subscriptionProofs/' + targetUid + '/',
+            ];
+            if (resolvedCompanyId) {
+                storagePrefixes.push('companies/' + resolvedCompanyId + '/proofs/' + targetUid + '/');
+                storagePrefixes.push('companies/' + resolvedCompanyId + '/logos/' + targetUid + '/');
+            }
+            let totalDeleted = 0;
+            for (const sp of storagePrefixes) {
+                try {
+                    const [files] = await bucket.getFiles({ prefix: sp });
+                    if (files && files.length > 0) {
+                        const deleteResults = await Promise.allSettled(
+                            files.map((file) => file.delete().catch(function() {}))
+                        );
+                        totalDeleted += deleteResults.filter(function(r) { return r.status === 'fulfilled'; }).length;
+                    }
+                } catch (_) {}
+            }
+            if (totalDeleted > 0) {
+                removedPaths.push('Storage/* (' + totalDeleted + ' files)');
+            }
+        } catch (storageErr) {
+            console.error('[fullUserCleanup] Falha ao remover arquivos Storage:', storageErr);
+            failedPaths.push('Storage/*');
+        }
+// 14. Registrar auditoria da operação
+        await admin.database().ref('subscriptionAdminPurgeAudit/' + targetUid).push({
+            at: nowIso,
+            by: callerUid,
+            type: 'fullUserCleanup',
+            reviewNote,
+            removedPaths,
+            failedPaths,
+            companyId: resolvedCompanyId || null,
+            userEmail: userEmail || null
+        });
+
+        return {
+            success: true,
+            targetUid,
+            removedPathsCount: removedPaths.length,
+            failedPathsCount: failedPaths.length,
+            removedPaths,
+            failedPaths,
+            companyId: resolvedCompanyId || null
+        };
+
+    } catch (err) {
+        console.error('[fullUserCleanup] Erro geral:', err);
+        // NÃO expor detalhes internos (err.message pode conter stack traces/caminhos) ao cliente
+        throw new functions.https.HttpsError('internal', 'Erro durante limpeza total de usuário. Tente novamente ou contate o suporte.');
+    }
+});
+
 exports.deleteSubscriptionManagedData = https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem chamar esta função.');
@@ -1792,7 +2119,9 @@ exports.deleteSubscriptionManagedData = https.onCall(async (data, context) => {
         if (Object.keys(hashUpdates).length) {
             await proofHashesRef.update(hashUpdates);
         }
-    } catch (_) {}
+    } catch (proofErr) {
+        console.warn('[fullUserCleanup] Falha ao limpar proof hashes:', proofErr && proofErr.message ? proofErr.message : proofErr);
+    }
 
     const companyRootsSnap = await admin.database().ref('companies').get();
     const companiesMap = companyRootsSnap.exists() ? companyRootsSnap.val() : {};
@@ -1944,7 +2273,13 @@ exports.getSubscriptionSettings = https.onCall(async (_data, context) => {
     if (!context.auth) {
         return { success: true, settings: publicSubscriptionSettingsShape(normalized), public: true };
     }
-    return { success: true, settings: normalized };
+    const isAdmin = await isCallerSuperAdmin(context);
+    if (isAdmin) {
+        return { success: true, settings: normalized, full: true };
+    }
+    // Assinantes autenticados recebem o shape comercial (preços, métodos, PIX key e
+    // configuração de campanha) sem as partes internas de auditoria/admin.
+    return { success: true, settings: subscriberSubscriptionSettingsShape(normalized), subscriber: true };
 });
 
 exports.upsertSubscriptionSettings = https.onCall(async (data, context) => {
@@ -2283,6 +2618,7 @@ const SUPPORT_ATTACHMENT_ALLOWED_TYPES = new Set([
     'application/pdf'
 ]);
 const PUBLIC_SUPPORT_EMAIL_LIMIT_PER_DAY = 8;
+const PUBLIC_SUPPORT_EMAIL_GLOBAL_LIMIT_PER_DAY = 80;
 const SUPPORT_ADMIN_URL = process.env.SUPPORT_ADMIN_URL || 'https://sisweb-7ce82.web.app/admin.html?tab=support';
 
 function parseSupportEmailList(value) {
@@ -3076,6 +3412,9 @@ async function notifySupportAdminByEmail(ticket, messagePayload, actor, event) {
 
 exports.sendPublicSupportEmail = SMTP_SECRET_RUNTIME_OPTIONS.https.onCall(async (data, context) => {
     const payload = data && typeof data === 'object' ? data : {};
+    if (!context || !context.auth || !context.auth.uid) {
+        throw new functions.https.HttpsError('unauthenticated', 'Faça login para enviar mensagem de suporte.');
+    }
     const honeypot = sanitizeSupportText(payload.website || payload.companyWebsite || '', '', 200);
     if (honeypot) {
         return { success: true, skipped: true };
@@ -3314,16 +3653,18 @@ function supportAttachmentEmailLines(attachments) {
 }
 
 function publicSupportRateLimitKey(context, payload) {
+    // Identidade server-side: UID do token autenticado + IP. O fingerprint enviado pelo
+    // cliente (clientFingerprint) é ignorado porque pode ser rotacionado para contornar o limite.
+    const uid = String(context && context.auth && context.auth.uid ? context.auth.uid : '').trim();
     const ip = normalizeRequestIp(context);
-    const userAgent = normalizeRequestUserAgent(context);
-    const fingerprint = sanitizeSupportText(payload && payload.clientFingerprint, '', 160);
-    const raw = [ip || 'no-ip', userAgent || 'no-ua', fingerprint || 'no-fp'].join('|');
+    const raw = [uid || 'anon', ip || 'no-ip'].join('|');
     return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 40);
 }
 
 async function assertPublicSupportEmailRateLimit(context, payload) {
+    const day = supportDayKey();
     const key = publicSupportRateLimitKey(context, payload);
-    const ref = admin.database().ref(`publicSupportEmailRateLimits/${supportDayKey()}/${key}`);
+    const ref = admin.database().ref(`publicSupportEmailRateLimits/${day}/${key}`);
     const result = await ref.transaction((current) => {
         const next = current && typeof current === 'object' ? { ...current } : {};
         const currentValue = Number(next.count || 0);
@@ -3334,6 +3675,19 @@ async function assertPublicSupportEmailRateLimit(context, payload) {
     });
     if (!result.committed) {
         throw new functions.https.HttpsError('resource-exhausted', 'Limite diário de contatos públicos atingido. Use WhatsApp ou tente novamente amanhã.');
+    }
+    // Teto global diário: impede flood mesmo com rotação de IP/contas.
+    const globalRef = admin.database().ref(`publicSupportEmailGlobalLimits/${day}`);
+    const globalResult = await globalRef.transaction((current) => {
+        const next = current && typeof current === 'object' ? { ...current } : {};
+        const currentValue = Number(next.count || 0);
+        if (currentValue >= PUBLIC_SUPPORT_EMAIL_GLOBAL_LIMIT_PER_DAY) return;
+        next.count = currentValue + 1;
+        next.updatedAt = new Date().toISOString();
+        return next;
+    });
+    if (!globalResult.committed) {
+        throw new functions.https.HttpsError('resource-exhausted', 'Limite diário de mensagens atingido. Use WhatsApp ou tente novamente amanhã.');
     }
     return key;
 }

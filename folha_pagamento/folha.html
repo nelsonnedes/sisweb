@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="../ui-components.css">
     <link rel="stylesheet" href="folha.css">
     <link rel="stylesheet" href="folha-menu-original-completo.css">
-    <script src="../menu-component.js?v=2026-07-01-alerts-overflow-fix-v1"></script>
+    <script src="../menu-component.js?v=f97c4a2dae9f"></script>
     <!-- 🎨 LOADING E CONEXÃO OTIMIZADOS -->
     <link rel="stylesheet" href="folha-loading-styles.css">
     <style>
@@ -279,7 +279,7 @@
                     <label for="mesAno">
                         <i class="fas fa-calendar"></i> Mês/Ano:
                     </label>
-                    <input type="month" id="mesAno">
+                    <input type="month" id="mesAno" placeholder="yyyy-mm" title="Mês e Ano">
                 </div>
                 <div class="form-group">
                     <label for="tipoFolha">
@@ -823,7 +823,7 @@
                         <label for="folhaMesAno">
                             <i class="fas fa-calendar"></i> Mês/Ano:
                         </label>
-                        <input type="month" id="folhaMesAno" required>
+                        <input type="month" id="folhaMesAno" required placeholder="yyyy-mm" title="Mês e Ano">
                     </div>
                     <div class="form-group">
                         <label for="folhaTipoPagamento">
@@ -913,8 +913,8 @@
                         </div>
                         <div class="toggle-switch-container">
                             <span class="toggle-label">Base</span>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="usarSalarioBrutoParaQuinzena">
+                            <label class="toggle-switch" for="usarSalarioBrutoParaQuinzena">
+                                <input type="checkbox" id="usarSalarioBrutoParaQuinzena" title="Usar Salário Bruto na Quinzena" aria-label="Usar Salário Bruto na Quinzena">
                                 <span class="toggle-slider"></span>
                             </label>
                             <span class="toggle-label">Bruto</span>
@@ -953,8 +953,8 @@
                         </div>
                         <div class="toggle-switch-container">
                             <span class="toggle-label">Substituir</span>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="modoCumulativo">
+                            <label class="toggle-switch" for="modoCumulativo">
+                                <input type="checkbox" id="modoCumulativo" title="Modo de Salvamento" aria-label="Modo de Salvamento">
                                 <span class="toggle-slider"></span>
                             </label>
                             <span class="toggle-label">Somar</span>
@@ -974,8 +974,8 @@
                             <i class="fas fa-calculator"></i>
                             <span>Remover Cálculos Automáticos</span>
                         </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="folhaRemoverCalculosAutomaticos">
+                        <label class="toggle-switch" for="folhaRemoverCalculosAutomaticos">
+                            <input type="checkbox" id="folhaRemoverCalculosAutomaticos" title="Remover Cálculos Automáticos" aria-label="Remover Cálculos Automáticos">
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
@@ -1193,7 +1193,7 @@
                             <label for="filtroFechadasMesAno">
                                 <i class="fas fa-calendar"></i> Mês/Ano:
                             </label>
-                            <input type="month" id="filtroFechadasMesAno">
+                            <input type="month" id="filtroFechadasMesAno" placeholder="yyyy-mm" title="Mês e Ano">
                         </div>
                         <div class="form-group">
                         <label for="filtroFechadasFuncionario">

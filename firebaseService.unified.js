@@ -461,7 +461,8 @@ class FirebaseService {
                 return { success: false, data: null, message: 'Nenhum dado encontrado', isMock: this.isMock };
             }
         } catch (error) {
-            console.error('❌ Erro ao carregar dados:', error && error.code ? error.code : 'unknown');
+            const errDetails = error ? (error.message || error.code || String(error)) : 'desconhecido';
+            console.warn('⚠️ Aviso ao carregar dados:', errDetails);
             // 🔐 Fallback inteligente em permission_denied
             if (this._isPermissionDenied(error)) {
                 try {
@@ -629,7 +630,8 @@ class FirebaseService {
                 }
             }
             // Outros erros: logar erro e tentar salvar no localStorage como cache
-            console.error('❌ Erro ao salvar dados:', error && error.code ? error.code : 'unknown');
+            const errDetails = error ? (error.message || error.code || String(error)) : 'desconhecido';
+            console.warn('⚠️ Aviso ao salvar dados:', errDetails);
             if (this._isBusinessDataPath(path)) {
                 return { success: false, error: error.message, isMock: this.isMock };
             }
@@ -676,7 +678,8 @@ class FirebaseService {
             console.log('✅ Dados excluídos');
             return { success: true, isMock: this.isMock };
         } catch (error) {
-            console.error('❌ Erro ao excluir dados:', error && error.code ? error.code : 'unknown');
+            const errDetails = error ? (error.message || error.code || String(error)) : 'desconhecido';
+            console.warn('⚠️ Aviso ao excluir dados:', errDetails);
             // 🔐 Fallback inteligente para permission_denied
             if (this._isPermissionDenied(error)) {
                 try {
