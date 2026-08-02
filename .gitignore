@@ -80,3 +80,8 @@ Thumbs.db
 /tools/fix-finance-rules.py
 /Ajustes nesces*
 *.pix_backup
+
+# Logs de smoke test / nested worktrees / editor config (hygiene)
+logs-*.md
+.codex-worktrees/
+.vscode/
