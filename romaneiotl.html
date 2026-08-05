@@ -1849,79 +1849,107 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
             console.warn('⚠️ Firebase SDK (compat) indisponível no ambiente atual. Operando em modo offline.');
         }
 
-        // 🔐 AUTENTICAÇÃO ANÔNIMA PARA ESCRITA (regras com login)
-        try {
-            const auth = firebase.auth();
-            try { authPerfShipping?.listener('auth', 'add', 'shipping_page', 0); } catch (_) {}
-            auth.onAuthStateChanged(function(user) {
-                try { authPerfShipping?.auth(user ? 'authenticated' : 'unauthenticated', 'shipping_page', 0); } catch (_) {}
-                if (user) {
-                    console.log('🔐 [TL] Usuário autenticado');
-                    window.firebaseAuthUser = user;
-                } else {
-                    console.log('🔐 [TL] Nenhum usuário autenticado. Efetuando login anônimo...');
-                    auth.signInAnonymously()
-                        .then(function(cred){
-                            console.log('🔐 [TL] Login anônimo realizado');
-                            window.firebaseAuthUser = cred.user;
-                        })
-                        .catch(function(err){
-                            console.error('❌ [TL] Falha no login anônimo:', err && err.code ? err.code : 'unknown');
-                        });
+        // Aguardar o compat bridge (module deferred) antes de usar o SDK global.
+        // Módulos ES executam após o parse do documento; o script clássico abaixo roda antes.
+        const aguardarFirebaseTLCompat = (timeoutMs = 15000) => new Promise((resolve) => {
+            const startTime = Date.now();
+            const verificar = () => {
+                if (typeof window.firebase !== 'undefined' && window.firebase.apps) {
+                    resolve(true);
+                    return;
                 }
-            });
-        } catch(e){ console.error('❌ [TL] Erro ao configurar autenticação anônima:', e && e.code ? e.code : 'unknown'); }
-
-        // 📡 LISTENER REALTIME PARA ROMANEIOS TL
-        try {
-            const db = firebase.database();
-            const resolvePath = (p) => {
-                try {
-                    const base = String(p || '');
-                    if (!base) return base;
-                    if (/^companies\//.test(base) || /^users\//.test(base)) return base;
-                    const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
-                    const serviceTenant = svc && (typeof svc.getTenantId === 'function' ? svc.getTenantId() : (typeof svc.getCurrentTenantId === 'function' ? svc.getCurrentTenantId() : null));
-                    const rawTenant = serviceTenant || window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
-                    if (rawTenant) {
-                        try { authPerfShipping?.tenant(rawTenant, 'shipping_page'); } catch (_) {}
-                        return `companies/${String(rawTenant)}/${base}`;
-                    }
-                    const stored = localStorage.getItem('company_info');
-                    if (stored) {
-                        const obj = JSON.parse(stored);
-                        const t = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
-                        if (t) {
-                            try { authPerfShipping?.tenant(t, 'shipping_page'); } catch (_) {}
-                            return `companies/${String(t)}/${base}`;
-                        }
-                    }
-                    return null;
-                } catch (_) { return null; }
+                if (Date.now() - startTime > timeoutMs) {
+                    resolve(false);
+                    return;
+                }
+                setTimeout(verificar, 200);
             };
-            const usePath = resolvePath('romaneios/tl');
-            if (!usePath) {
-                console.warn('⚠️ [TL] Listener realtime não iniciado: empresa ativa não resolvida.');
-            } else {
-                try { authPerfShipping?.listener('data', 'add', 'shipping_page', 0); } catch (_) {}
-                db.ref(usePath).on('value', function(snapshot){
-                    try { authPerfShipping?.read(usePath, 'shipping_page', 'listener_first_value', 'success', 0); } catch (_) {}
-                    const val = snapshot.val() || {};
-                    const arr = (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function')
-                        ? window.RomaneioDataUtils.normalizeRomaneioCollection(val, { type: 'TL' })
-                        : Object.keys(val)
-                            .filter(function(id){ return id && id !== '_metadata'; })
-                            .map(function(id){ return Object.assign({ id: id, firebaseKey: id }, val[id] || {}); })
-                            .filter(function(item){ return item && (item.id || item.numero || item.cliente || item.itens); });
-                    window.romaneiosTLRealtime = arr;
-                    console.log('📡 [TL] Realtime recebidos:', arr.length);
-                    // Disparar evento para módulos que quiserem reagir
-                    try { window.dispatchEvent(new CustomEvent('romaneiosTL:updated', { detail: { total: arr.length } })); } catch(_){}
-                }, function(error){
-                    console.error('❌ [TL] Erro no listener realtime:', error);
-                });
+            verificar();
+        });
+
+        async function configurarAuthEListenerTL() {
+            const disponivel = await aguardarFirebaseTLCompat();
+            if (!disponivel) {
+                console.warn('⚠️ [TL] Firebase compat indisponível; auth anônima e listener realtime não configurados.');
+                return;
             }
-        } catch(e){ console.error('❌ [TL] Erro ao configurar listener realtime:', e); }
+
+            // 🔐 AUTENTICAÇÃO ANÔNIMA PARA ESCRITA (regras com login)
+            try {
+                const auth = firebase.auth();
+                try { authPerfShipping?.listener('auth', 'add', 'shipping_page', 0); } catch (_) {}
+                auth.onAuthStateChanged(function(user) {
+                    try { authPerfShipping?.auth(user ? 'authenticated' : 'unauthenticated', 'shipping_page', 0); } catch (_) {}
+                    if (user) {
+                        console.log('🔐 [TL] Usuário autenticado');
+                        window.firebaseAuthUser = user;
+                    } else {
+                        console.log('🔐 [TL] Nenhum usuário autenticado. Efetuando login anônimo...');
+                        auth.signInAnonymously()
+                            .then(function(cred){
+                                console.log('🔐 [TL] Login anônimo realizado');
+                                window.firebaseAuthUser = cred.user;
+                            })
+                            .catch(function(err){
+                                console.error('❌ [TL] Falha no login anônimo:', err && err.code ? err.code : 'unknown');
+                            });
+                    }
+                });
+            } catch(e){ console.error('❌ [TL] Erro ao configurar autenticação anônima:', e && e.code ? e.code : 'unknown'); }
+
+            // 📡 LISTENER REALTIME PARA ROMANEIOS TL
+            try {
+                const db = firebase.database();
+                const resolvePath = (p) => {
+                    try {
+                        const base = String(p || '');
+                        if (!base) return base;
+                        if (/^companies\//.test(base) || /^users\//.test(base)) return base;
+                        const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                        const serviceTenant = svc && (typeof svc.getTenantId === 'function' ? svc.getTenantId() : (typeof svc.getCurrentTenantId === 'function' ? svc.getCurrentTenantId() : null));
+                        const rawTenant = serviceTenant || window.appTenantId || (window.companyInfo && (window.companyInfo.companyId || window.companyInfo.companyID || window.companyInfo.tenantId || window.companyInfo.id));
+                        if (rawTenant) {
+                            try { authPerfShipping?.tenant(rawTenant, 'shipping_page'); } catch (_) {}
+                            return `companies/${String(rawTenant)}/${base}`;
+                        }
+                        const stored = localStorage.getItem('company_info');
+                        if (stored) {
+                            const obj = JSON.parse(stored);
+                            const t = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
+                            if (t) {
+                                try { authPerfShipping?.tenant(t, 'shipping_page'); } catch (_) {}
+                                return `companies/${String(t)}/${base}`;
+                            }
+                        }
+                        return null;
+                    } catch (_) { return null; }
+                };
+                const usePath = resolvePath('romaneios/tl');
+                if (!usePath) {
+                    console.warn('⚠️ [TL] Listener realtime não iniciado: empresa ativa não resolvida.');
+                } else {
+                    try { authPerfShipping?.listener('data', 'add', 'shipping_page', 0); } catch (_) {}
+                    db.ref(usePath).on('value', function(snapshot){
+                        try { authPerfShipping?.read(usePath, 'shipping_page', 'listener_first_value', 'success', 0); } catch (_) {}
+                        const val = snapshot.val() || {};
+                        const arr = (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function')
+                            ? window.RomaneioDataUtils.normalizeRomaneioCollection(val, { type: 'TL' })
+                            : Object.keys(val)
+                                .filter(function(id){ return id && id !== '_metadata'; })
+                                .map(function(id){ return Object.assign({ id: id, firebaseKey: id }, val[id] || {}); })
+                                .filter(function(item){ return item && (item.id || item.numero || item.cliente || item.itens); });
+                        window.romaneiosTLRealtime = arr;
+                        console.log('📡 [TL] Realtime recebidos:', arr.length);
+                        // Disparar evento para módulos que quiserem reagir
+                        try { window.dispatchEvent(new CustomEvent('romaneiosTL:updated', { detail: { total: arr.length } })); } catch(_){}
+                    }, function(error){
+                        console.error('❌ [TL] Erro no listener realtime:', error);
+                    });
+                }
+            } catch(e){ console.error('❌ [TL] Erro ao configurar listener realtime:', e); }
+        }
+
+        configurarAuthEListenerTL();
     </script>
 
     <!-- Gerenciador compatível de conexão (Singleton) -->

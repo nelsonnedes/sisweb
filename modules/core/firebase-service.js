@@ -104,6 +104,32 @@ class FirebaseServiceTL {
                 measurementId: "G-FTC6JZ5ZGX"
             };
             
+            // Se o compat bridge (module deferred) ainda não carregou,
+            // aguardar até o global firebase existir antes de declarar indisponível.
+            if (typeof firebase === 'undefined') {
+                const aguardarFirebaseCompat = (timeoutMs = 15000) => new Promise((resolve) => {
+                    const startTime = Date.now();
+                    const verificar = () => {
+                        if (typeof firebase !== 'undefined' && firebase.apps) {
+                            resolve(true);
+                            return;
+                        }
+                        if (Date.now() - startTime > timeoutMs) {
+                            resolve(false);
+                            return;
+                        }
+                        setTimeout(verificar, 200);
+                    };
+                    verificar();
+                });
+                const disponivel = await aguardarFirebaseCompat();
+                if (!disponivel) {
+                    console.warn('⚠️ Firebase não disponível, usando localStorage');
+                    this.isFirebaseAvailable = false;
+                    return;
+                }
+            }
+
             // Verificar se Firebase está disponível
             if (typeof firebase !== 'undefined') {
                 // Inicializar apenas se não foi inicializado
@@ -1421,12 +1447,10 @@ window.firebaseServiceTL = new FirebaseServiceTL();
 if (!window.FirebaseService) window.FirebaseService = window.firebaseServiceTL;
 if (!window.firebaseService) window.firebaseService = window.firebaseServiceTL;
 
-// ✅ INJEÇÃO DE DEPENDÊNCIA: Garantir que authService esteja disponível no objeto global
-if (window.firebaseService && !window.firebaseService.authService) {
-    Object.defineProperty(window.firebaseService, 'authService', {
-        get: () => window.firebaseServiceTL.authService
-    });
-}
+// Nota: authService já é exposto pelo getter do prototype (FirebaseServiceTL#authService),
+// e window.firebaseService === window.firebaseServiceTL (mesma instância).
+// Não definir novamente na instância: um getter que acessa window.firebaseServiceTL.authService
+// por cima da própria instância causa recursão infinita.
 
 window.saveDataTL = (key, data) => window.firebaseServiceTL.saveData(key, data);
 window.getDataTL = (key) => window.firebaseServiceTL.loadData(key);
