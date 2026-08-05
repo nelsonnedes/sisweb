@@ -10,7 +10,7 @@ const firebaseConfig = {
   measurementId: "G-FTC6JZ5ZGX"
 };
 
-const app = !firebase.apps.length ? firebase.initializeApp(firebaseConfig) : firebase.getApp();
+const app = firebase.apps.length ? firebase.apps[0] : firebase.initializeApp(firebaseConfig);
 const authService = firebase.auth();
 const rtdbService = typeof firebase.database === 'function' ? firebase.database() : null;
 let tenantId = null;

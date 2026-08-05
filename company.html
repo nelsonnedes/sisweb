@@ -19,7 +19,7 @@
         import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=21eb04e409d8';
 import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
 
-    </script><script src="src/services/firebaseService.js?v=4179fa979425"></script>
+    </script><script type="module" src="src/services/firebaseService.js?v=4179fa979425"></script>
     <style>
         * {
             margin: 0;
@@ -2490,11 +2490,6 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
         }
 
 
-
-        function logout() {
-            // Aqui você pode adicionar a lógica de logout
-            window.location.href = 'login.html';
-        }
 
         // Fechar modais ao clicar fora deles
         window.onclick = function(event) {

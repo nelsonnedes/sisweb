@@ -431,6 +431,36 @@ test('logout do menu preserva caches quando o backend nao confirma sign-out', ()
   assert.doesNotMatch(catchBlock, /removeItem\('currentUser'\)|clearSiswebCompanyContextCache/);
 });
 
+test('logout do menu aceita Auth modular e ponte compat sem exigir getAuth', () => {
+  const menu = read('menu-component.js');
+  const logoutBlock = extractBetween(menu, 'async function performSafeLogout(reason)', 'class MenuComponent extends HTMLElement');
+
+  assert.match(logoutBlock, /typeof authService\.getAuth === 'function'/);
+  assert.match(logoutBlock, /await signOutFn\(authInstance\)/);
+  assert.match(logoutBlock, /await signOutFn\.call\(authService\)/);
+  assert.ok(
+    logoutBlock.indexOf('await signOutFn.call(authService)') < logoutBlock.indexOf("localStorage.removeItem('currentUser')"),
+  );
+});
+
+test('empresa aguarda o bridge Firebase e nao substitui o logout canonico', () => {
+  const company = read('company.html');
+  const companyService = read('src/services/firebaseService.js');
+  const bridgeIndex = company.indexOf("import './firebase-compat-bridge.js");
+  const companyServiceIndex = company.indexOf(
+    '<script type="module" src="src/services/firebaseService.js',
+  );
+
+  assert.ok(bridgeIndex >= 0, 'bridge Firebase precisa ser importado pela Empresa');
+  assert.ok(
+    companyServiceIndex > bridgeIndex,
+    'servico legado da Empresa deve executar como modulo depois do bridge',
+  );
+  assert.doesNotMatch(company, /function logout\s*\(\s*\)\s*\{/);
+  assert.match(companyService, /firebase\.apps\.length\s*\?\s*firebase\.apps\[0\]/);
+  assert.doesNotMatch(companyService, /firebase\.getApp\s*\(/);
+});
+
 test('logout limpa caches somente depois de sign-out confirmado', () => {
   const auth = read('auth.js');
   const login = read('login.html');

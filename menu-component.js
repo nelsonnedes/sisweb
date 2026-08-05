@@ -310,8 +310,11 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                 }
             } else if (signOutFn) {
                 const authInstance = authService && typeof authService.getAuth === 'function' ? authService.getAuth() : null;
-                if (!authInstance) throw new Error('Serviço de autenticação indisponível para logout.');
-                await signOutFn(authInstance);
+                if (authInstance) {
+                    await signOutFn(authInstance);
+                } else {
+                    await signOutFn.call(authService);
+                }
             } else if (typeof window.firebaseSignOut === 'function' && window.firebaseSignOut !== window.logout) {
                 const result = await window.firebaseSignOut();
                 if (result && result.success === false) throw new Error(result.error || 'Logout remoto não confirmado.');
