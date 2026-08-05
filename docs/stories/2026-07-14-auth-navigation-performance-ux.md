@@ -36,6 +36,31 @@ O smoke autenticado do tenant operacional permaneceu estavel. A validacao real d
 
 Gate desta publicacao: `lint`, `typecheck`, `git diff --check`, `npm audit`, 281 testes automatizados, 13 testes RBAC no Emulator e build allowlisted com 448 arquivos e 19.446.823 bytes. O deploy foi restrito ao Hosting; nenhuma Rule, Function ou dado real foi alterado nesta etapa.
 
+## Recuperacao P0 Apos Drift Freebuff - 2026-08-02
+
+- [x] Regressao reproduzida no Hosting: `company.html` executava o servico legado antes do bridge Firebase e registrava `firebase is not defined`.
+- [x] Servico da Empresa passou a executar como modulo depois de `firebase-compat-bridge.js`.
+- [x] Dependencia incompatível de `firebase.getApp()` foi substituida pelo app ja exposto em `firebase.apps[0]`.
+- [x] Logout local concorrente de `company.html` foi removido; o menu voltou a ser o unico proprietario do fluxo seguro de saida.
+- [x] `performSafeLogout` passou a aceitar tanto `signOut(auth)` modular quanto `auth.signOut()` da ponte compat, sem limpar caches antes da confirmacao remota.
+- [x] Teste regressivo cobre ordem do bootstrap, ambos os contratos Auth e ausencia de sobrescrita do logout.
+- [x] Smoke no build local deixou de registrar erros do Firebase e redirecionou corretamente uma sessao sem tenant para o Login.
+- [x] Preview Channel `recovery-p0-20260802` publicado e validado com o adaptador compat presente no artefato allowlisted.
+- [x] Hosting live publicado e validado com sessao autenticada: Empresa carregou tenant e logo, logout redirecionou com `reason=logout_menu` e a reabertura foi bloqueada pelo guard.
+
+Gates finais desta recuperacao: 22/22 testes focados de Auth, suite completa com 322 aprovados e 1 skip esperado do Emulator, lint, typecheck, sintaxe da Function, `git diff --check` e build allowlisted com 450 arquivos e 19.592.191 bytes. Preview: <https://sisweb-7ce82--recovery-p0-20260802-ogrmpb84.web.app>. O healthcheck legado ainda classifica incorretamente paginas modulares como sem Firebase; a correcao estrutural permanece na Fase 4 e nao foi misturada ao P0.
+
+## Reconciliacao Do Perfil Efetivo De Assinatura - 2026-08-02
+
+- [x] Causa raiz confirmada: o Login consultava apenas `users/{uid}`, enquanto `subscription-status.html` priorizava `companies/{companyId}/users/{uid}`.
+- [x] Reconciliador puro passou a tratar bloqueio explicito como prioritario e vigencia futura como autoridade sobre marcadores `expired` legados.
+- [x] Loader compartilhado valida o UID do Firebase Auth, resolve o tenant canonico e le as duas replicas sem misturar identidade ou permissoes entre empresas.
+- [x] Login e tela de assinatura consomem o mesmo perfil efetivo; falha total resulta em `unknown`, nunca em liberacao implicita.
+- [x] Preview `subscription-profile-20260802` publicado com o artefato allowlisted; o smoke autenticado foi bloqueado pela restricao de referenciador da API key e a chave nao foi ampliada.
+- [x] Hosting live publicado somente com frontend e validado no tenant de teste: Login abriu o Dashboard, status exibiu Trial ativo ate 21/08/2026, Empresa carregou o tenant correto e o Logout impediu reabertura da Home.
+
+Gates deste lote: 42/42 testes focados, suite completa com 331 aprovados e 1 skip esperado do Emulator, lint, typecheck, `git diff --check` e build allowlisted com 450 arquivos e 19.602.495 bytes. Nenhuma Function, Rule, credencial ou dado foi publicado.
+
 ## Contexto
 
 Em 2026-07-14 foi executada uma auditoria autenticada no Hosting de producao, com navegacao entre Login, Home, Vendas, Compras, Financeiro, Clientes, Fornecedores, Estoque, NF-e, Empresa, Romaneio e Folha.
@@ -411,6 +436,7 @@ Observacao: os scripts atuais de lint/typecheck cobrem principalmente `folha_pag
 - `tests/auth-performance-diagnostics.test.mjs`
 - `hosting-files.json`
 - `auth.js`
+- `menu-component.js`
 - `firebaseService.js`
 - `support-callable-service.js`
 - `firebaseService.unified.js`
@@ -438,6 +464,10 @@ Observacao: os scripts atuais de lint/typecheck cobrem principalmente `folha_pag
 - `folha_pagamento/folha.html`
 - `tests/auth-session-phase2.test.mjs`
 - `tests/subscription-readonly-expiry.test.mjs`
+- `tests/subscription-effective-profile.test.mjs`
+- `subscription-status.html`
+- `docs/superpowers/specs/2026-08-02-subscription-effective-profile-reconciliation-design.md`
+- `docs/superpowers/plans/2026-08-02-subscription-effective-profile-reconciliation.md`
 - `tests/commerce-responsive-pwa.test.mjs`
 - `tests/company-logo-storage-policy.test.mjs`
 - `tests/dashboard-auth-callable-guard.test.mjs`
