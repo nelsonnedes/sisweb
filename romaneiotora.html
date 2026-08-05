@@ -1933,6 +1933,16 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
     
     <!-- Scripts de Correção - ORDEM REORGANIZADA -->
     <script src="correcao-interface-database.js?v=018036722c9c"></script>
+
+    <!-- Serviço Firebase canônico: uma única instância compartilhada por toda a página. -->
+    <script>
+        window.__siswebFirebaseServiceReady = (async function () {
+            const firebaseSvc = await import('./firebaseService.js?v=676ba9f2a922');
+            window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
+            window.FirebaseService = window.firebaseService;
+            return window.firebaseService;
+        })();
+    </script>
     
     <!-- Script de gerenciamento unificado de espécies - PRIORIDADE MÁXIMA -->
     <script src="species-utils.js?v=4c5147a6f4fe"></script>
@@ -1941,33 +1951,17 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
     <script src="species-manager.js?v=cb24148c8ab6"></script>
     
     <!-- Script de fornecedor modals -->
-    <script src="fornecedor-modals.js?v=20260724modalv2"></script>
+    <script src="fornecedor-modals.js?v=20260802autocompletev1"></script>
     <script src="schema-migration-contatos.js?v=f086747ad6d7"></script>
-    <script src="romaneiotora_modais.js?v=20260725modalv3"></script>
+    <!-- O monolito romaneiotora_modais.js foi substituido pelos modulos canonicos abaixo. -->
     
     <script src="romaneios-client-save-fix.js?v=a5d20ef9cd6d"></script>
     
     <!-- Scripts de correção -->
     <script src="correcao-funcoes-ausentes.js?v=a69c9b3c404a"></script>
     
-    <!-- Firebase e Database Adapter -->
-    <script src="firebaseService.unified.js?v=07d2b773a0fd"></script>
-    <!-- Adapter para compatibilidade: expõe firebaseService também como FirebaseService -->
-    <script>
-      (function() {
-        try {
-          if (!window.FirebaseService && window.firebaseService) {
-            window.FirebaseService = window.firebaseService;
-            console.log('✅ Adaptador FirebaseService aplicado (alias para firebaseService)');
-          }
-        } catch (e) {
-          console.warn('⚠️ Falha ao aplicar adaptador FirebaseService:', e);
-        }
-      })();
-    </script>
+    <!-- Database Adapter usa o serviço canônico carregado acima. -->
     <script src="src/services/databaseAdapter.js?v=04db815c6547"></script>
-    <!-- ✅ NOVO: Script principal de serviço unificado para garantir compatibilidade com romaneios -->
-    <script src="modules/core/firebase-service.js?v=d500073b4127"></script>
     
     <!-- Scripts principais -->
     <script src="romaneio-utils.js?v=e2c32c9889fa"></script>

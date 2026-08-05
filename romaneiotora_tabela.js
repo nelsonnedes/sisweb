@@ -159,6 +159,7 @@ function limparCamposItem() {
         const camposParaLimpar = [
             'plaqueta',
             'custodia',
+            'rodo',
             'comprimento',
             'oco1',
             'oco2',
@@ -493,16 +494,17 @@ function aplicarEstilosTabela() {
 // Função para remover um item
 async function removerItem(index) {
     try {
+        const items = Array.isArray(window.romaneioItems) ? window.romaneioItems : [];
         // Verificar se o índice é válido
-        if (index < 0 || index >= romaneioItems.length) {
-            console.error(`Índice inválido para remoção: ${index}. Total de itens: ${romaneioItems.length}`);
+        if (index < 0 || index >= items.length) {
+            console.error(`Índice inválido para remoção: ${index}. Total de itens: ${items.length}`);
             return;
         }
         
         console.log(`Removendo item: ${index}`);
         
         // Remover o item do array
-        romaneioItems.splice(index, 1);
+        items.splice(index, 1);
         
         // Atualizar a tabela usando updateTableBody para evitar loops
         const tbody = document.querySelector('#romaneioTable tbody');
@@ -633,18 +635,26 @@ function adicionarItem() {
         console.log(`Valores calculados para tora: Bruto=${volumeBruto.toFixed(3)}, Desconto=${desconto.toFixed(3)}, Líquido=${volumeSerraria.toFixed(3)}`);
         
         // Criar objeto do item
+        const valorTotal = volumeSerraria * preco;
         const novoItem = {
+            id: Date.now() + Math.random(),
             especie: especie,
             plaqueta: plaqueta,
             ...geo,
             rodo: rodo,
+            diametro: rodo,
             comprimento: comprimento,
             oco1: oco1,
             oco2: oco2,
             preco: preco,
+            precoUnitario: preco,
             volumeBruto: volumeBruto,
+            volumeEstimado: volumeBruto,
             desconto: desconto,
-            volumeSerraria: volumeSerraria
+            volumeSerraria: volumeSerraria,
+            volumeLiquido: volumeSerraria,
+            valorTotal: valorTotal,
+            valor: valorTotal
         };
         
         // Verificar se window.romaneioItems existe e é um array, caso contrário criar
@@ -678,8 +688,16 @@ function adicionarItem() {
             window.romaneioItems.splice(indexExistente, 1);
         }
         
-        // Adicionar o novo item no início do array (topo da lista)
-        window.romaneioItems.unshift(novoItem);
+        const editIndex = Number.isInteger(window.itemEditandoIndex)
+            ? window.itemEditandoIndex
+            : null;
+        if (editIndex !== null) {
+            const targetIndex = Math.min(Math.max(editIndex, 0), window.romaneioItems.length);
+            window.romaneioItems.splice(targetIndex, 0, novoItem);
+        } else {
+            window.romaneioItems.unshift(novoItem);
+        }
+        window.itemEditandoIndex = null;
         
         // Atualizar tabela
         if (typeof window.atualizarTabelaToras === 'function') {
@@ -689,21 +707,7 @@ function adicionarItem() {
             if (tbody) window.updateTableBody(tbody);
         }
         
-        // Limpar campos para adicionar próximo item
-        document.getElementById('plaqueta').value = '';
-        const custodiaEl = document.getElementById('custodia');
-        if (custodiaEl) custodiaEl.value = '';
-        document.getElementById('rodo').value = '';
-        document.getElementById('comprimento').value = '';
-        document.getElementById('oco1').value = '';
-        document.getElementById('oco2').value = '';
-        ['compGeo', 'x1', 'x2', 'x3', 'x4'].forEach((id) => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-        });
-        const volumeGeoEl = document.getElementById('volumeGeo');
-        if (volumeGeoEl) volumeGeoEl.value = '0.000';
-        document.getElementById('plaqueta').focus();
+        limparCamposItem();
         
         // Resetar o botão se estava em modo de edição
         const btnAdicionar = document.getElementById('btnAdicionar');
@@ -725,12 +729,13 @@ function adicionarItem() {
 // Salvar o estado do romaneio em edição
 async function salvarEstadoRomaneioEmEdicao() {
     try {
-        await saveData('romaneioToraEmEdicao', {
+        const draftKey = getStorageKey('romaneioToraEmEdicao');
+        persistLocalValue(draftKey, {
             items: romaneioItems,
             cliente: selectedClient,
             timestamp: Date.now()
         });
-        console.log("Estado do romaneio em edição salvo com sucesso.");
+        console.log("Estado local do romaneio em edição salvo com sucesso.");
     } catch (error) {
         console.error("Erro ao salvar estado do romaneio em edição:", error);
     }
@@ -752,6 +757,7 @@ function limparEstadoRomaneioEmEdicao() {
         }
         
         // Limpar localStorage
+        localStorage.removeItem(getStorageKey('romaneioToraEmEdicao'));
         localStorage.removeItem('romaneioToraEmEdicao');
         localStorage.removeItem('romaneioEditandoId');
         localStorage.removeItem('romaneioEditandoFirebaseKey');
@@ -1250,6 +1256,7 @@ window.atualizarPaginacao = function() {
 window.reconstruirTabela = reconstruirTabela;
 window.atualizarTotais = atualizarTotais;
 window.aplicarEstilosTabela = aplicarEstilosTabela;
+window.limparCamposItem = limparCamposItem;
 window.removerItem = removerItem;
 window.adicionarItem = adicionarItem;
 window.salvarEstadoRomaneioEmEdicao = salvarEstadoRomaneioEmEdicao;

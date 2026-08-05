@@ -124,12 +124,12 @@ function normalizeFornecedores(data) {
 
 /**
  * Leitura flexível dos fornecedores no RTDB.
- * 
+ *
  * Estratégia:
  *   1. Firebase RTDB direto (sem aliases — caminho resolvido pelo tenant)
  *   2. Fallback: firebaseService.loadData / loadFromFirebase
  *   3. Fallback final: localStorage
- * 
+ *
  * IMPORTANTE: fornecedores NÃO são clientes. Não misturar caminhos.
  */
 async function fetchFornecedores() {
@@ -187,6 +187,82 @@ async function fetchFornecedores() {
 
     console.warn('⚠️ [fetchFornecedores] Nenhum fornecedor encontrado em nenhuma fonte');
     return [];
+}
+
+let fornecedorSuggestionRequest = 0;
+
+function hideClientSuggestions(input) {
+    const host = input && input.parentElement;
+    const suggestions = host && host.querySelector('.autocomplete-suggestions');
+    if (suggestions) suggestions.style.display = 'none';
+    if (input) input.setAttribute('aria-expanded', 'false');
+}
+
+async function showClientSuggestions(input) {
+    if (!input) return;
+
+    const term = String(input.value || '').trim().toLocaleLowerCase('pt-BR');
+    const selected = window.selectedFornecedor || window.selectedClient || window.clienteSelecionado;
+    const selectedName = String(selected && (selected.nome || selected.name) || '').trim();
+    if (selectedName && selectedName.toLocaleLowerCase('pt-BR') !== term) {
+        window.selectedFornecedor = null;
+        window.selectedClient = null;
+        window.clienteSelecionado = null;
+    }
+
+    const host = input.parentElement;
+    if (!host) return;
+    host.style.position = 'relative';
+
+    let suggestions = host.querySelector('.autocomplete-suggestions');
+    if (!suggestions) {
+        suggestions = document.createElement('div');
+        suggestions.className = 'autocomplete-suggestions';
+        suggestions.setAttribute('role', 'listbox');
+        host.appendChild(suggestions);
+    }
+    suggestions.replaceChildren();
+
+    if (!term) {
+        hideClientSuggestions(input);
+        return;
+    }
+
+    const requestId = ++fornecedorSuggestionRequest;
+    const fornecedores = await fetchFornecedores();
+    if (requestId !== fornecedorSuggestionRequest || String(input.value || '').trim().toLocaleLowerCase('pt-BR') !== term) return;
+
+    const matches = fornecedores.filter((fornecedor) => {
+        const searchable = [
+            fornecedor.nome || fornecedor.name,
+            fornecedor.cnpj || fornecedor.cpf || fornecedor.documento,
+            fornecedor.cidade || fornecedor.city
+        ].filter(Boolean).join(' ').toLocaleLowerCase('pt-BR');
+        return searchable.includes(term);
+    }).slice(0, 20);
+
+    matches.forEach((fornecedor) => {
+        const option = document.createElement('div');
+        option.className = 'autocomplete-suggestion';
+        option.setAttribute('role', 'option');
+        option.tabIndex = 0;
+        option.textContent = fornecedor.nome || fornecedor.name || 'Fornecedor sem nome';
+        const select = () => {
+            selectClient(fornecedor);
+            hideClientSuggestions(input);
+        };
+        option.addEventListener('click', select);
+        option.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                select();
+            }
+        });
+        suggestions.appendChild(option);
+    });
+
+    suggestions.style.display = matches.length ? 'block' : 'none';
+    input.setAttribute('aria-expanded', matches.length ? 'true' : 'false');
 }
 
 // Deduplicação de fornecedores no RTDB (commit=false faz apenas preview)
@@ -258,28 +334,28 @@ async function deduplicarFornecedores(commit = false) {
 // Função para selecionar fornecedor da lista
 async function selectClientFromList(id) {
     console.log("🔄 Selecionando fornecedor:", id);
-    
+
     try {
         const fornecedorList = await fetchFornecedores();
-        
+
         // Encontrar o fornecedor
         const fornecedor = fornecedorList.find(f => String(f.id) === String(id));
-        
+
         if (!fornecedor) {
             console.error("❌ Fornecedor não encontrado:", id);
             window.__toast('Fornecedor não encontrado!', 'error');
             return;
         }
-        
+
         console.log("✅ Fornecedor encontrado:", fornecedor.nome || fornecedor.name);
-        
+
         // Selecionar o fornecedor
         selectClient(fornecedor);
-        
+
         // Fechar o modal
         const modal = document.getElementById('fornecedorListModal');
         if (modal) modal.style.display = 'none';
-        
+
     } catch (error) {
         console.error("❌ Erro ao selecionar fornecedor:", error);
         window.__toast('Erro ao selecionar fornecedor!', 'error');
@@ -289,22 +365,22 @@ async function selectClientFromList(id) {
 // Função para editar fornecedor da lista
 async function editClientFromList(id) {
     console.log("🔄 Editando fornecedor:", id);
-    
+
     try {
         const fornecedorList = await fetchFornecedores();
-        
+
         console.log("📊 Total de fornecedores carregados:", fornecedorList.length);
-        
+
         // Encontrar o fornecedor
         const fornecedor = fornecedorList.find(f => String(f.id) === String(id));
-        
+
         if (!fornecedor) {
             console.error("❌ Fornecedor não encontrado:", id);
             console.log("📋 IDs disponíveis:", fornecedorList.map(f => f.id));
             window.__toast('Fornecedor não encontrado!', 'error');
             return;
         }
-        
+
         console.log("✅ Fornecedor encontrado para edição:", fornecedor);
         console.log("📝 Dados do fornecedor:", {
             id: fornecedor.id,
@@ -316,19 +392,19 @@ async function editClientFromList(id) {
             email: fornecedor.email,
             endereco: fornecedor.endereco || fornecedor.address
         });
-        
+
         // Fechar modal de lista
         const listModal = document.getElementById('fornecedorListModal');
         if (listModal) {
             listModal.style.display = 'none';
             console.log("✅ Modal de lista fechado");
         }
-        
+
         // Carregar dados no modal de edição
         console.log("🔄 Carregando dados no modal de edição...");
         await loadClientForEdit(fornecedor);
         console.log("✅ Dados carregados no modal de edição");
-        
+
     } catch (error) {
         console.error("❌ Erro ao editar fornecedor:", error);
         window.__toast('Erro ao editar fornecedor: ' + error.message, 'error');
@@ -339,7 +415,7 @@ async function editClientFromList(id) {
 function selectClient(fornecedor) {
     console.log("🔄 Selecionando fornecedor na interface:", fornecedor);
     console.log("📝 Nome do fornecedor:", fornecedor.nome || fornecedor.name);
-    
+
     const nomeParaExibir = fornecedor.nome || fornecedor.name || '';
     const fornecedorInput = document.getElementById('fornecedorInput');
     if (fornecedorInput) {
@@ -360,7 +436,7 @@ function selectClient(fornecedor) {
             }
         }
     }
-    
+
     window.selectedClient = fornecedor;
     window.selectedFornecedor = fornecedor;
     window.clienteSelecionado = fornecedor;
@@ -373,21 +449,21 @@ function selectClient(fornecedor) {
 // Função para abrir modal de novo fornecedor (implementação direta)
 function openNewFornecedorModal() {
     console.log("🔄 Abrindo modal para cadastrar novo fornecedor");
-    
+
     // ✅ IMPLEMENTAÇÃO DIRETA PARA EVITAR RECURSÃO INFINITA
     try {
         // Resetar o formulário
         const form = document.getElementById('fornecedorForm');
         if (form) form.reset();
-        
+
         // Limpar ID (novo registro)
         const idInput = document.getElementById('fornecedorId');
         if (idInput) idInput.value = '';
-        
+
         // Atualizar título
         const title = document.getElementById('fornecedorModalTitle');
         if (title) title.textContent = 'Novo Fornecedor';
-        
+
         // Exibir o modal
         const modal = document.getElementById('fornecedorModal');
         if (modal) {
@@ -397,13 +473,13 @@ function openNewFornecedorModal() {
             window.__toast('Modal de cadastro não está disponível. Recarregue a página.', 'error');
             return;
         }
-        
+
         // Focar no campo de nome
         setTimeout(() => {
             const nameInput = document.getElementById('fornecedorName');
             if (nameInput) nameInput.focus();
         }, 100);
-        
+
         // Configurar evento de seleção de estado para atualizar cidades
         const stateSelect = document.getElementById('fornecedorState');
         if (stateSelect) {
@@ -411,9 +487,9 @@ function openNewFornecedorModal() {
             stateSelect.removeEventListener('change', updateCities);
             stateSelect.addEventListener('change', updateCities);
         }
-        
+
         console.log("✅ Modal de novo fornecedor aberto com sucesso");
-        
+
     } catch (error) {
         console.error("❌ Erro ao abrir modal de novo fornecedor:", error);
         window.__toast('Erro ao abrir modal: ' + error.message, 'error');
@@ -435,34 +511,34 @@ function closeNewFornecedorModal() {
 async function updateCities() {
     const stateSelect = document.getElementById('fornecedorState');
     const citySelect = document.getElementById('fornecedorCity');
-    
+
     if (!stateSelect || !citySelect) {
         console.warn('⚠️ Elementos de estado ou cidade não encontrados - função chamada fora do contexto correto');
         return;
     }
-    
+
     const selectedState = stateSelect.value;
-    
+
     if (!selectedState) {
         citySelect.innerHTML = '<option value="">Selecione primeiro o estado</option>';
         return;
     }
-    
+
     console.log('🔄 Atualizando cidades para o estado:', selectedState);
-    
+
     citySelect.innerHTML = '<option value="">Carregando cidades...</option>';
-    
+
     try {
         // Tentar carregar do IBGE
         const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedState}/municipios`);
-        
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const cities = await response.json();
         const cityNames = cities.map(city => city.nome).sort((a, b) => a.localeCompare(b, 'pt-BR'));
-        
+
         citySelect.innerHTML = '<option value="">Selecione a cidade</option>';
         cityNames.forEach(city => {
             const option = document.createElement('option');
@@ -470,12 +546,12 @@ async function updateCities() {
             option.textContent = city;
             citySelect.appendChild(option);
         });
-        
+
         console.log(`✅ ${cityNames.length} cidades carregadas do IBGE para ${selectedState}`);
-        
+
     } catch (error) {
         console.error('❌ Erro ao carregar cidades:', error);
-        
+
         // Lista básica de cidades por estado como fallback
         const citiesByState = {
             'PA': ['Belém', 'Ananindeua', 'Santarém', 'Marabá', 'Parauapebas', 'Castanhal', 'Abaetetuba', 'Cametá', 'Bragança', 'Altamira', 'São Miguel do Guamá'],
@@ -483,9 +559,9 @@ async function updateCities() {
             'RJ': ['Rio de Janeiro', 'São Gonçalo', 'Duque de Caxias', 'Nova Iguaçu', 'Niterói', 'Belford Roxo', 'São João de Meriti'],
             'MG': ['Belo Horizonte', 'Uberlândia', 'Contagem', 'Juiz de Fora', 'Betim', 'Montes Claros', 'Ribeirão das Neves']
         };
-        
+
         const cities = citiesByState[selectedState] || [];
-        
+
         citySelect.innerHTML = '<option value="">Selecione a cidade</option>';
         cities.forEach(city => {
             const option = document.createElement('option');
@@ -493,7 +569,7 @@ async function updateCities() {
             option.textContent = city;
             citySelect.appendChild(option);
         });
-        
+
         console.log(`🔄 ${cities.length} cidades carregadas do fallback básico para ${selectedState}`);
     }
 }
@@ -501,11 +577,11 @@ async function updateCities() {
 // Função para abrir modal de edição de fornecedor
 async function openEditFornecedorModal(fornecedor) {
     console.log("🔄 Abrindo modal para editar fornecedor:", fornecedor);
-    
+
     try {
         // Garantir que a estrutura do modal existe
         await ensureModalStructure();
-        
+
         const modal = document.getElementById('fornecedorModal');
         if (!modal) {
             console.error("❌ Modal de cliente não encontrado");
@@ -523,7 +599,7 @@ async function openEditFornecedorModal(fornecedor) {
             const basePath = getFornecedorBasePath();
             const fornecedores = await getData(basePath) || [];
             fornecedorData = fornecedores.find(f => String(f.id) === String(fornecedor));
-            
+
             if (!fornecedorData) {
                 console.error("❌ Fornecedor não encontrado:", fornecedor);
                 window.__toast('Fornecedor não encontrado!', 'error');
@@ -556,7 +632,7 @@ async function openEditFornecedorModal(fornecedor) {
         }
 
         // Atualizar título do modal
-        const modalTitle = document.querySelector('#fornecedorModal .modal-title') || 
+        const modalTitle = document.querySelector('#fornecedorModal .modal-title') ||
                           document.querySelector('#fornecedorModal h2') ||
                           document.querySelector('#fornecedorModal h3');
         if (modalTitle) {
@@ -589,20 +665,20 @@ async function openEditClientModal(client) {
 // ✅ FUNÇÃO PARA VERIFICAR E CORRIGIR CONFLITOS DE MODAL
 function verificarECorrigirModal() {
     console.log("🔍 Verificando estrutura do modal de edição...");
-    
+
     const modal = document.getElementById('fornecedorModal');
     if (!modal) {
         console.error("❌ Modal fornecedorModal não encontrado");
         return false;
     }
-    
+
     // Verificar se todos os campos necessários existem
     const camposNecessarios = [
         'fornecedorId', 'fornecedorName', 'fornecedorCnpj', 'fornecedorStateRegistration',
-        'fornecedorState', 'fornecedorCity', 'fornecedorPhone', 'fornecedorEmail', 
+        'fornecedorState', 'fornecedorCity', 'fornecedorPhone', 'fornecedorEmail',
         'fornecedorAddress', 'fornecedorNumber', 'fornecedorNeighborhood', 'fornecedorObs'
     ];
-    
+
     const camposFaltando = [];
     camposNecessarios.forEach(campoId => {
         const campo = document.getElementById(campoId);
@@ -610,52 +686,52 @@ function verificarECorrigirModal() {
             camposFaltando.push(campoId);
         }
     });
-    
+
     if (camposFaltando.length > 0) {
         console.warn("⚠️ Campos faltando no modal:", camposFaltando);
     } else {
         console.log("✅ Todos os campos necessários encontrados");
     }
-    
+
     // Verificar se há conflitos com outros sistemas
     const conflitos = [];
-    
+
     // Verificar se o standardized-client-modal está interferindo
     if (window.clientModalState && window.clientModalState.isActive) {
         conflitos.push("standardized-client-modal");
     }
-    
+
     // Verificar se há outros modais abertos
     const outrosModais = document.querySelectorAll('.modal[style*="display: block"]');
     if (outrosModais.length > 1) {
         conflitos.push("múltiplos modais abertos");
     }
-    
+
     if (conflitos.length > 0) {
         console.warn("⚠️ Possíveis conflitos detectados:", conflitos);
     }
-    
+
     return camposFaltando.length === 0;
 }
 
 // Função auxiliar para carregar dados do fornecedor no modal de edição
 async function loadClientForEdit(fornecedor) {
     console.log("🔄 Iniciando carregamento de dados para edição:", fornecedor.nome || fornecedor.name);
-    
+
     // ✅ VERIFICAR E CORRIGIR CONFLITOS ANTES DE PROSSEGUIR
     if (!verificarECorrigirModal()) {
         console.error("❌ Problemas detectados na estrutura do modal");
         window.__toast('Erro na estrutura do modal. Recarregue a página e tente novamente.', 'error');
         return;
     }
-    
+
     // Resetar o formulário
     const form = document.getElementById('fornecedorForm');
     if (form) {
         form.reset();
         console.log("✅ Formulário resetado");
     }
-    
+
     // Preencher os campos do formulário com os dados do fornecedor
     const idInput = document.getElementById('fornecedorId');
     const nameInput = document.getElementById('fornecedorName');
@@ -678,7 +754,7 @@ async function loadClientForEdit(fornecedor) {
     const countryCodeInput = document.getElementById('fornecedorCountryCode');
     const countryNameInput = document.getElementById('fornecedorCountryName');
     const obsInput = document.getElementById('fornecedorObs');
-    
+
     console.log("🔍 Verificando campos encontrados:", {
         idInput: !!idInput,
         nameInput: !!nameInput,
@@ -702,18 +778,18 @@ async function loadClientForEdit(fornecedor) {
         countryNameInput: !!countryNameInput,
         obsInput: !!obsInput
     });
-    
+
     // Preencher os dados
     if (idInput) {
         idInput.value = fornecedor.id || '';
         console.log("✅ ID preenchido:", idInput.value);
     }
-    
+
     if (nameInput) {
         nameInput.value = fornecedor.nome || fornecedor.name || '';
         console.log("✅ Nome preenchido:", nameInput.value);
     }
-    
+
     if (cnpjInput) {
         cnpjInput.value = fornecedor.documento || fornecedor.document || fornecedor.cnpj || fornecedor.cpf || '';
         console.log("✅ CNPJ preenchido:", cnpjInput.value);
@@ -723,7 +799,7 @@ async function loadClientForEdit(fornecedor) {
         tipoPessoaInput.value = fornecedor.tipoPessoa || fornecedor.personType || fornecedor.fiscalPersonType || '';
         console.log("✅ Tipo de pessoa preenchido:", tipoPessoaInput.value);
     }
-    
+
     if (inscricaoInput) {
         inscricaoInput.value = fornecedor.inscricaoEstadual || fornecedor.stateRegistration || '';
         console.log("✅ Inscrição Estadual preenchida:", inscricaoInput.value);
@@ -748,27 +824,27 @@ async function loadClientForEdit(fornecedor) {
         cepInput.value = fornecedor.cep || fornecedor.postalCode || '';
         console.log("✅ CEP preenchido:", cepInput.value);
     }
-    
+
     if (phoneInput) {
         phoneInput.value = fornecedor.telefone || fornecedor.phone || '';
         console.log("✅ Telefone preenchido:", phoneInput.value);
     }
-    
+
     if (emailInput) {
         emailInput.value = fornecedor.email || '';
         console.log("✅ Email preenchido:", emailInput.value);
     }
-    
+
     if (addressInput) {
         addressInput.value = fornecedor.endereco || fornecedor.address || '';
         console.log("✅ Endereço preenchido:", addressInput.value);
     }
-    
+
     if (numeroInput) {
         numeroInput.value = fornecedor.numero || fornecedor.number || '';
         console.log("✅ Número preenchido:", numeroInput.value);
     }
-    
+
     if (bairroInput) {
         bairroInput.value = fornecedor.bairro || fornecedor.neighborhood || '';
         console.log("✅ Bairro preenchido:", bairroInput.value);
@@ -793,29 +869,29 @@ async function loadClientForEdit(fornecedor) {
         countryNameInput.value = fornecedor.pais || fornecedor.country || fornecedor.countryName || fornecedor.xPais || 'Brasil';
         console.log("✅ País preenchido:", countryNameInput.value);
     }
-    
+
     if (obsInput) {
         obsInput.value = fornecedor.observacoes || fornecedor.obs || '';
         console.log("✅ Observações preenchidas:", obsInput.value);
     }
-    
+
     // ✅ DEFINIR VARIÁVEL GLOBAL DE EDIÇÃO
     window.editingClientId = fornecedor.id;
     console.log(`✅ Variável editingClientId definida: ${window.editingClientId}`);
-    
+
     // Preencher estado
     if (stateSelect) {
         const estadoValue = fornecedor.estado || fornecedor.state || '';
         stateSelect.value = estadoValue;
         console.log("✅ Estado preenchido:", estadoValue);
-        
+
         // Disparar evento para carregar cidades
         if (stateSelect.value) {
             console.log("🏙️ Carregando cidades para o estado:", stateSelect.value);
             try {
                 await updateCities();
                 console.log("✅ Cidades carregadas com sucesso");
-                
+
                 // Aguardar um pouco para as cidades carregarem, então selecionar a cidade
                 setTimeout(() => {
                     if (citySelect) {
@@ -824,7 +900,7 @@ async function loadClientForEdit(fornecedor) {
                         console.log(`✅ Cidade selecionada: ${cidadeValue}`);
                     }
                 }, 200);
-                
+
             } catch (error) {
                 console.error('❌ Erro ao carregar cidades:', error);
                 // Em caso de erro, tentar selecionar a cidade diretamente
@@ -836,14 +912,14 @@ async function loadClientForEdit(fornecedor) {
             }
         }
     }
-    
+
     // Atualizar título
     const title = document.getElementById('fornecedorModalTitle');
     if (title) {
         title.textContent = 'Editar Fornecedor';
         console.log("✅ Título do modal atualizado");
     }
-    
+
     // ✅ GARANTIR QUE O MODAL SEJA EXIBIDO CORRETAMENTE
     const modal = document.getElementById('fornecedorModal');
     if (modal) {
@@ -853,18 +929,18 @@ async function loadClientForEdit(fornecedor) {
                 m.style.display = 'none';
             }
         });
-        
+
         // Exibir o modal de edição
         modal.style.display = 'block';
         modal.style.visibility = 'visible';
         modal.style.opacity = '1';
         modal.style.zIndex = '9999';
-        
+
         console.log("✅ Modal exibido com configurações forçadas");
     } else {
         console.error("❌ Modal fornecedorModal não encontrado");
     }
-    
+
     // Focar no campo de nome
     setTimeout(() => {
         if (nameInput) {
@@ -872,18 +948,18 @@ async function loadClientForEdit(fornecedor) {
             console.log("✅ Foco definido no campo de nome");
         }
     }, 100);
-    
+
     console.log("🎉 Carregamento de dados para edição concluído com sucesso");
 }
 
 // Função para salvar fornecedor
 async function saveClient(event) {
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
-    
+
     console.log("🔄 Salvando fornecedor...");
-    
+
     // Aceitar chamada sem evento (botão), prosseguir normalmente
-    
+
     // Verificar se todos os inputs necessários existem
     const requiredInputs = ['fornecedorName'];
     for (const inputId of requiredInputs) {
@@ -894,7 +970,7 @@ async function saveClient(event) {
             return false;
         }
     }
-    
+
     try {
         // Obter valores do formulário
         const id = document.getElementById('fornecedorId')?.value || '';
@@ -918,7 +994,7 @@ async function saveClient(event) {
         const paisCodigo = document.getElementById('fornecedorCountryCode')?.value || '1058';
         const pais = document.getElementById('fornecedorCountryName')?.value || 'Brasil';
         const observacoes = document.getElementById('fornecedorObs')?.value || '';
-        
+
         // ✅ VALIDAÇÕES RIGOROSAS DE DADOS
         if (!nome || nome.trim() === '') {
             console.error("❌ Nome do fornecedor é obrigatório");
@@ -926,14 +1002,14 @@ async function saveClient(event) {
             document.getElementById('fornecedorName').focus();
             return false;
         }
-        
+
         if (nome.trim().length < 2) {
             console.error("❌ Nome do fornecedor muito curto");
             window.__toast('O nome do fornecedor deve ter pelo menos 2 caracteres.', 'warning');
             document.getElementById('fornecedorName').focus();
             return false;
         }
-        
+
         // ✅ VALIDAÇÃO DE EMAIL SE FORNECIDO
         if (email && email.trim() !== '') {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -944,7 +1020,7 @@ async function saveClient(event) {
                 return false;
             }
         }
-        
+
         // ✅ VALIDAÇÃO DE CNPJ SE FORNECIDO
         if (cnpj && cnpj.trim() !== '') {
             const cnpjLimpo = cnpj.replace(/\D/g, '');
@@ -955,7 +1031,7 @@ async function saveClient(event) {
                 return false;
             }
         }
-        
+
         // Criar objeto fornecedor com dados normalizados
         const fornecedorData = {
             id: id || undefined, // Se vazio, deixar undefined para gerar novo ID
@@ -1009,10 +1085,10 @@ async function saveClient(event) {
             obs: observacoes || '', // Para compatibilidade
             updated: new Date().toISOString()
         };
-        
+
         if (window.firebaseService && window.firebaseService.saveToFirebase) {
             console.log("🔥 Salvando via Firebase (tabela fornecedores)...");
-            
+
             let savedOk = false;
             let savedId = id;
             if (id) {
@@ -1033,44 +1109,44 @@ async function saveClient(event) {
                     savedId = newId;
                 }
             }
-            
+
             if (savedOk) {
                 const finalFornecedor = { ...fornecedorData, id: savedId };
                 console.log("✅ Fornecedor salvo com sucesso:", finalFornecedor.nome || finalFornecedor.name);
-                
+
                 // Fechar o modal
                 const modal = document.getElementById('fornecedorModal');
                 if (modal) modal.style.display = 'none';
-                
+
                 // Atualizar a lista de fornecedores se o modal estiver aberto
                 const listModal = document.getElementById('fornecedorListModal');
                 if (listModal && listModal.style.display === 'block') {
                     const fi = document.getElementById('fornecedorListFilter');
                     await renderFornecedorListBasic(fi ? fi.value : '');
                 }
-                
+
                 // Se estivemos editando um fornecedor já selecionado, atualizar os dados selecionados
                 const fornecedorInput = document.getElementById('fornecedorInput') || document.getElementById('clienteInput');
                 if (fornecedorInput && fornecedorInput.value && fornecedorInput.value.toLowerCase() === nome.toLowerCase()) {
                     window.selectedClient = finalFornecedor;
                     window.selectedFornecedor = finalFornecedor;
                 }
-                
+
                 // Notificar o usuário
                 const mensagem = id ? 'Fornecedor atualizado com sucesso!' : 'Fornecedor cadastrado com sucesso!';
                 window.__toast(mensagem, 'success');
-                
+
             } else {
                 throw new Error("Falha ao salvar - Firebase retornou null");
             }
-            
+
         } else {
             // Fallback se o Firebase service não estiver disponível
             console.warn("⚠️ Firebase service não disponível, usando fallback");
-            
+
             const basePath = getFornecedorBasePath();
             const fornecedorList = await getData(basePath) || [];
-            
+
             if (id) {
                 // Atualizar fornecedor existente
                 const index = fornecedorList.findIndex(f => String(f.id) === String(id));
@@ -1085,27 +1161,27 @@ async function saveClient(event) {
                 fornecedorData.created = new Date().toISOString();
                 fornecedorList.push(fornecedorData);
             }
-            
+
             await saveData(basePath, fornecedorList);
-            
+
             console.log("✅ Fornecedor salvo via fallback");
-            
+
             // Fechar modal e atualizar interface
             const modal = document.getElementById('fornecedorModal');
             if (modal) modal.style.display = 'none';
-            
+
             const listModal = document.getElementById('fornecedorListModal');
             if (listModal && listModal.style.display === 'block') {
                 const fi = document.getElementById('fornecedorListFilter');
                 await renderFornecedorListBasic(fi ? fi.value : '');
             }
-            
+
             window.__toast(id ? 'Fornecedor atualizado com sucesso!' : 'Fornecedor cadastrado com sucesso!', 'success');
         }
-        
+
     } catch (error) {
         console.error("❌ Erro ao salvar fornecedor:", error);
-        
+
         // Tratar erros específicos
         if (error.message === "Operação cancelada pelo usuário") {
             console.log("ℹ️ Usuário cancelou a operação");
@@ -1122,15 +1198,15 @@ function formatarTelefone(input) {
         if (!input || !input.value) {
             return;
         }
-        
+
         // Remover todos os caracteres não numéricos
         let value = input.value.replace(/\D/g, '');
-        
+
         // Limitar a 11 dígitos (celular com DDD)
         if (value.length > 11) {
             value = value.substring(0, 11);
         }
-        
+
         // Aplicar formatação baseada no comprimento
         if (value.length === 0) {
             input.value = '';
@@ -1152,52 +1228,52 @@ function formatarTelefone(input) {
 // ✅ CORREÇÃO DEFINITIVA DA API DO IBGE - FUNÇÃO MELHORADA
 async function carregarCidadesPorEstado(estado) {
     console.log("🌍 Carregando cidades para o estado:", estado);
-    
+
     const cidadeSelect = document.getElementById('fornecedorCity');
     if (!cidadeSelect) {
         console.error("❌ Campo de cidade não encontrado");
         return;
     }
-    
+
     if (!estado) {
         console.warn("⚠️ Estado não informado");
         cidadeSelect.innerHTML = '<option value="">Selecione uma cidade</option>';
         return;
     }
-    
+
     // Mostrar loading
     cidadeSelect.innerHTML = '<option value="">Carregando cidades...</option>';
     cidadeSelect.disabled = true;
-    
+
     try {
         console.log(`🔄 Carregando cidades para: ${estado}`);
-        
+
         let cidadesCarregadas = false;
-        
+
         // ✅ ESTRATÉGIA 1: Tentar BrasilAPI (mais confiável e sem CORS)
         try {
             console.log("🇧🇷 Tentando BrasilAPI...");
             const brasilApiUrl = `https://brasilapi.com.br/api/ibge/municipios/v1/${estado}`;
-            
+
             const brasilResponse = await Promise.race([
-                fetch(brasilApiUrl, { 
+                fetch(brasilApiUrl, {
                     method: 'GET',
                     mode: 'cors',
-                    cache: 'default' 
+                    cache: 'default'
                 }),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout BrasilAPI')), 3000))
             ]);
-            
+
             if (brasilResponse.ok) {
                 const brasilData = await brasilResponse.json();
-                
+
                 if (Array.isArray(brasilData) && brasilData.length > 0) {
                     console.log(`✅ BrasilAPI: ${brasilData.length} cidades carregadas`);
-                    
+
                     const cidadesOrdenadas = brasilData
                         .map(cidade => cidade.nome)
                         .sort((a, b) => a.localeCompare(b, 'pt-BR'));
-                    
+
                     cidadeSelect.innerHTML = '<option value="">Selecione uma cidade</option>';
                     cidadesOrdenadas.forEach(cidade => {
                         const option = document.createElement('option');
@@ -1205,7 +1281,7 @@ async function carregarCidadesPorEstado(estado) {
                         option.textContent = cidade;
                         cidadeSelect.appendChild(option);
                     });
-                    
+
                     cidadesCarregadas = true;
                     console.log("🎉 BrasilAPI funcionou perfeitamente!");
                 }
@@ -1213,11 +1289,11 @@ async function carregarCidadesPorEstado(estado) {
         } catch (brasilError) {
             console.warn("⚠️ BrasilAPI falhou:", brasilError.message);
         }
-        
+
         // ✅ ESTRATÉGIA 2: Se BrasilAPI falhou, usar fallback local COMPLETO
         if (!cidadesCarregadas) {
             console.log("🔄 Usando fallback local completo...");
-            
+
             // Lista completa e atualizada de cidades por estado
             const cidadesCompletas = {
                 'AC': ['Rio Branco', 'Cruzeiro do Sul', 'Sena Madureira', 'Tarauacá', 'Feijó', 'Brasiléia', 'Xapuri', 'Epitaciolândia', 'Plácido de Castro', 'Acrelândia', 'Bujari', 'Capixaba', 'Jordão', 'Manoel Urbano', 'Marechal Thaumaturgo', 'Porto Walter', 'Rodrigues Alves', 'Santa Rosa do Purus', 'Senador Guiomard', 'Porto Acre', 'Assis Brasil', 'Mâncio Lima'],
@@ -1248,18 +1324,18 @@ async function carregarCidadesPorEstado(estado) {
                 'SE': ['Aracaju', 'Nossa Senhora do Socorro', 'Lagarto', 'Itabaiana', 'São Cristóvão', 'Estância', 'Tobias Barreto', 'Simão Dias', 'Propriá', 'Barra dos Coqueiros', 'Glória', 'Laranjeiras', 'Itabaianinha', 'Ribeirópolis', 'Neópolis', 'Campo do Brito', 'Umbaúba', 'Porto da Folha', 'Poço Redondo', 'Canindé de São Francisco'],
                 'TO': ['Palmas', 'Araguaína', 'Gurupi', 'Porto Nacional', 'Paraíso do Tocantins', 'Colinas do Tocantins', 'Guaraí', 'Tocantinópolis', 'Miracema do Tocantins', 'Dianópolis', 'Araguatins', 'Taguatinga', 'Augustinópolis', 'Xambioá', 'Ananás', 'Arraias', 'Pedro Afonso', 'Combinado', 'Goiatins', 'Miranorte']
             };
-            
+
             const cidades = cidadesCompletas[estado] || [];
-            
+
             if (cidades.length === 0) {
                 console.warn(`⚠️ Estado ${estado} não encontrado na lista local`);
                 cidadeSelect.innerHTML = '<option value="">Estado não encontrado</option>';
             } else {
                 console.log(`✅ Fallback local: ${cidades.length} cidades para ${estado}`);
-                
+
                 // Ordenar cidades alfabeticamente
                 const cidadesOrdenadas = cidades.sort((a, b) => a.localeCompare(b, 'pt-BR'));
-                
+
                 cidadeSelect.innerHTML = '<option value="">Selecione uma cidade</option>';
                 cidadesOrdenadas.forEach(cidade => {
                     const option = document.createElement('option');
@@ -1267,28 +1343,28 @@ async function carregarCidadesPorEstado(estado) {
                     option.textContent = cidade;
                     cidadeSelect.appendChild(option);
                 });
-                
+
                 // Log especial para PA com Curionópolis
                 if (estado === 'PA') {
                     const curionopolisIncluida = cidades.includes('Curionópolis');
                     console.log(`✅ Curionópolis ${curionopolisIncluida ? 'INCLUÍDA' : 'NÃO incluída'} na lista do PA`);
-                    
+
                     if (curionopolisIncluida) {
                         console.log("🎉 Curionópolis confirmada para o estado do Pará!");
                     }
                 }
-                
+
                 cidadesCarregadas = true;
             }
         }
-        
+
         if (cidadesCarregadas) {
             console.log("✅ Cidades carregadas com sucesso");
         } else {
             console.error("❌ Falha ao carregar cidades");
             cidadeSelect.innerHTML = '<option value="">Erro ao carregar cidades</option>';
         }
-        
+
     } catch (error) {
         console.error("❌ Erro crítico ao carregar cidades:", error);
         cidadeSelect.innerHTML = '<option value="">Erro ao carregar cidades</option>';
@@ -1301,10 +1377,10 @@ async function carregarCidadesPorEstado(estado) {
 // ✅ FUNÇÃO PARA EDITAR FORNECEDOR
 async function editarFornecedor(fornecedorId) {
     console.log("🔄 Editando fornecedor ID:", fornecedorId);
-    
+
     try {
         let fornecedorList = [];
-        
+
         const basePath = getFornecedorBasePath();
         if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
             try {
@@ -1314,26 +1390,26 @@ async function editarFornecedor(fornecedorId) {
                 console.warn("⚠️ Erro ao carregar fornecedores do Firebase, usando localStorage");
             }
         }
-        
+
         if (!Array.isArray(fornecedorList) || fornecedorList.length === 0) {
             const fornecedoresLS = await getData(basePath) || [];
             fornecedorList = fornecedoresLS;
         }
-        
+
         // Encontrar o fornecedor
         const fornecedor = fornecedorList.find(f => String(f.id) === String(fornecedorId));
-        
+
         if (!fornecedor) {
             console.error("❌ Fornecedor não encontrado:", fornecedorId);
             window.__toast('Fornecedor não encontrado!', 'error');
             return;
         }
-        
+
         console.log("✅ Abrindo edição para:", fornecedor.nome || fornecedor.name);
-        
+
         // Abrir modal de edição
         await openEditFornecedorModal(fornecedor);
-        
+
     } catch (error) {
         console.error("❌ Erro ao editar fornecedor:", error);
         window.__toast('Erro ao editar fornecedor: ' + error.message, 'error');
@@ -1343,15 +1419,15 @@ async function editarFornecedor(fornecedorId) {
 // ✅ FUNÇÃO PARA EXCLUIR FORNECEDOR
 async function excluirFornecedor(fornecedorId) {
     console.log("🗑️ Excluindo fornecedor ID:", fornecedorId);
-    
+
     if (!confirm('Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita.')) {
         return;
     }
-    
+
     try {
         let fornecedorList = [];
         const basePath = getFornecedorBasePath();
-        
+
         if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
             try {
                 const res = await window.firebaseService.loadFromFirebase(basePath);
@@ -1360,26 +1436,26 @@ async function excluirFornecedor(fornecedorId) {
                 console.warn("⚠️ Erro ao carregar fornecedores do Firebase, usando localStorage");
             }
         }
-        
+
         if (!Array.isArray(fornecedorList) || fornecedorList.length === 0) {
             const fornecedoresLS = await getData(basePath) || [];
             fornecedorList = fornecedoresLS;
         }
-        
+
         // Encontrar e remover o fornecedor
         const fornecedorIndex = fornecedorList.findIndex(f => String(f.id) === String(fornecedorId));
-        
+
         if (fornecedorIndex === -1) {
             window.__toast('Fornecedor não encontrado!', 'error');
             return;
         }
-        
+
         const fornecedorNome = fornecedorList[fornecedorIndex].nome || fornecedorList[fornecedorIndex].name;
         fornecedorList.splice(fornecedorIndex, 1);
-        
+
         // Persistir em 'fornecedores'
         let saved = false;
-        
+
         if (window.firebaseService && window.firebaseService.saveData) {
             try {
                 saved = await window.firebaseService.saveData(basePath, fornecedorList);
@@ -1387,26 +1463,26 @@ async function excluirFornecedor(fornecedorId) {
                 console.warn("⚠️ Erro ao salvar no Firebase, usando localStorage");
             }
         }
-        
+
         if (!saved) {
             saved = await saveData(basePath, fornecedorList);
         }
-        
+
         if (saved) {
             console.log(`✅ Fornecedor ${fornecedorNome} excluído com sucesso`);
-            
+
             // Atualizar a lista se modal estiver aberto
             const listModal = document.getElementById('fornecedorListModal');
             if (listModal && listModal.style.display === 'block') {
                 const fi = document.getElementById('fornecedorListFilter');
                 await renderFornecedorListBasic(fi ? fi.value : '');
             }
-            
+
             window.__toast(`Fornecedor ${fornecedorNome} excluído com sucesso!`, 'success');
         } else {
             throw new Error('Falha ao salvar a lista atualizada');
         }
-        
+
     } catch (error) {
         console.error(`❌ Erro ao excluir fornecedor ${fornecedorId}:`, error);
         window.__toast(`Erro ao excluir fornecedor: ${error.message}`, 'error');
@@ -1522,6 +1598,8 @@ if (typeof window !== 'undefined') {
     window.selectClientFromList = selectClientFromList;
     window.editClientFromList = editClientFromList;
     window.selectClient = selectClient;
+    window.showClientSuggestions = showClientSuggestions;
+    window.hideClientSuggestions = hideClientSuggestions;
     window.saveClient = saveClient;
     window.saveFornecedor = saveClient;
     window.updateCities = updateCities;
@@ -1560,7 +1638,7 @@ if (typeof window !== 'undefined') {
             } catch (_) { }
         };
     }
-    
+
     // ✅ NAMESPACE PARA EVITAR CONFLITOS - CORRIGIDO
     window.fornecedorModals = {
         openNewClientModal,
@@ -1585,43 +1663,43 @@ if (typeof window !== 'undefined') {
         verificarECorrigirModal,
         loadClientForEdit
     };
-    
+
     console.log('✅ TODAS as funções corrigidas carregadas com sucesso - incluindo verificarECorrigirModal!');
     console.log('📋 Funções expostas no namespace fornecedorModals:', Object.keys(window.fornecedorModals));
-    
+
     // ✅ FUNÇÃO DE TESTE PARA DEBUG
     window.testarEdicaoFornecedor = function(fornecedorId) {
         console.log("🧪 === TESTE DE EDIÇÃO DE FORNECEDOR ===");
         console.log("🔍 ID do fornecedor:", fornecedorId);
-        
+
         if (!fornecedorId) {
             console.error("❌ ID do fornecedor não fornecido");
             return;
         }
-        
+
         console.log("🔄 Executando editClientFromList...");
         editClientFromList(fornecedorId);
     };
-    
+
     console.log("🧪 Função de teste disponível: window.testarEdicaoFornecedor(id)");
 }
 
 // ✅ FUNÇÃO PARA GARANTIR QUE O MODAL TENHA A ESTRUTURA CORRETA
 function ensureModalStructure() {
     console.log("🔧 Verificando estrutura do modal de fornecedores...");
-    
+
     // Verificar se existe modal de lista de fornecedores
     let modal = document.getElementById('fornecedorListModal');
-    
+
     if (!modal) {
         console.log("📋 Modal não encontrado no DOM. Verifique se preromaneio.html contém #fornecedorListModal.");
         // Não vamos criar dinamicamente com estilos inline. O HTML deve prover a estrutura.
         // Se realmente não existir, criamos uma estrutura básica compatível com o CSS global.
-        
+
         modal = document.createElement('div');
         modal.id = 'fornecedorListModal';
         modal.className = 'modal';
-        
+
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
@@ -1657,7 +1735,7 @@ function ensureModalStructure() {
         `;
         document.body.appendChild(modal);
     }
-    
+
     return modal;
 }
 
@@ -1671,154 +1749,188 @@ function closeFornecedorListModal() {
 
 // ✅ RENDERIZAÇÃO BÁSICA DA LISTA DE FORNECEDORES
 async function renderFornecedorListBasic(filter = '') {
-    try {
-        let fornecedorList = await fetchFornecedores();
-        if (filter && String(filter).trim() !== '') {
-            const term = String(filter).toLowerCase().trim();
-            fornecedorList = fornecedorList.filter(f => {
-                const nome = (f.nome || f.name || '').toLowerCase();
-                const cnpj = (f.cnpj || '').toLowerCase();
-                const cidade = (f.cidade || f.city || '').toLowerCase();
-                const estado = (f.estado || f.state || '').toLowerCase();
-                const telefone = (f.telefone || f.phone || '').toLowerCase();
-                const email = (f.email || '').toLowerCase();
-                return nome.includes(term) || cnpj.includes(term) || cidade.includes(term) || estado.includes(term) || telefone.includes(term) || email.includes(term);
-            });
-        }
-        const pageSize = window._fornPageSize || 10;
-        window._fornPageSize = pageSize;
-        const pageIndex = typeof window._fornPageIndex === 'number' ? window._fornPageIndex : 0;
-        window._fornPageIndex = pageIndex;
-        const total = fornecedorList.length;
-        const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
-        if (window._fornPageIndex > maxPage) window._fornPageIndex = maxPage;
-        const start = window._fornPageIndex * pageSize;
-        const pageSlice = fornecedorList.slice(start, start + pageSize);
-        const tbody = document.getElementById('fornecedorListTable');
-        
-        if (tbody) {
-            tbody.innerHTML = '';
-            
-            if (pageSlice.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhum fornecedor encontrado.</td></tr>';
-            } else {
-                pageSlice.forEach((f, idx) => {
-                    const tr = document.createElement('tr');
-                    
-                    // Colunas de dados
-                    tr.innerHTML = `
-                        <td>${f.nome || f.name || '-'}</td>
-                        <td>${f.cnpj || f.cpf || '-'}</td>
-                        <td>${f.cidade || '-'}</td>
-                        <td>${f.estado || f.uf || '-'}</td>
-                        <td>${f.telefone || f.phone || '-'}</td>
-                    `;
-                    
-                    // Coluna de Ações
-                    const actionsTd = document.createElement('td');
-                    actionsTd.className = 'text-center';
-                    
-                    const btnGroup = document.createElement('div');
-                    btnGroup.className = 'actions-container'; // Usa classe do CSS global
-                    
-                    // Botão Selecionar
-                    const selectBtn = document.createElement('button');
-                    selectBtn.className = 'btn-selecionar';
-                    selectBtn.title = 'Selecionar';
-                    selectBtn.innerHTML = '<i class="fas fa-check"></i>';
-                    selectBtn.onclick = () => { try { selectClientFromList(String(f.id)); } catch(_) {} };
-                    
-                    btnGroup.appendChild(selectBtn);
-                    actionsTd.appendChild(btnGroup);
-                    tr.appendChild(actionsTd);
-                    
-                    tbody.appendChild(tr);
+    const term = String(filter || '').trim();
+    const renderNow = async () => {
+        try {
+            let fornecedorList = await fetchFornecedores();
+            if (term !== '') {
+                const termo = term.toLowerCase();
+                fornecedorList = fornecedorList.filter(f => {
+                    const nome = (f.nome || f.name || '').toLowerCase();
+                    const cnpj = (f.cnpj || '').toLowerCase();
+                    const cidade = (f.cidade || f.city || '').toLowerCase();
+                    const estado = (f.estado || f.state || '').toLowerCase();
+                    const telefone = (f.telefone || f.phone || '').toLowerCase();
+                    const email = (f.email || '').toLowerCase();
+                    return nome.includes(termo) || cnpj.includes(termo) || cidade.includes(termo) || estado.includes(termo) || telefone.includes(termo) || email.includes(termo);
                 });
             }
-        }
-        
-        const pag = document.getElementById('fornecedorPagination');
-        if (pag) {
-            const totalPages = Math.max(1, Math.ceil(total / pageSize));
-            pag.innerHTML = '';
-            if (totalPages <= 1) {
-                pag.style.display = 'none';
-            } else {
-                pag.style.display = 'flex';
-                const addBtn = (label, page, disabled = false, active = false) => {
-                    const btn = document.createElement('button');
-                    btn.textContent = label;
-                    if (active) btn.classList.add('active');
-                    btn.disabled = disabled;
-                    btn.onclick = () => {
-                        window._fornPageIndex = page;
-                        const fi = document.getElementById('fornecedorListFilter');
-                        renderFornecedorListBasic(fi ? fi.value : '');
-                    };
-                    pag.appendChild(btn);
-                };
+            const pageSize = window._fornPageSize || 10;
+            window._fornPageSize = pageSize;
+            const pageIndex = typeof window._fornPageIndex === 'number' ? window._fornPageIndex : 0;
+            window._fornPageIndex = pageIndex;
+            const total = fornecedorList.length;
+            const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
+            if (window._fornPageIndex > maxPage) window._fornPageIndex = maxPage;
+            const start = window._fornPageIndex * pageSize;
+            const pageSlice = fornecedorList.slice(start, start + pageSize);
+            const tbody = document.getElementById('fornecedorListTable');
 
-                const currentPage = window._fornPageIndex + 1;
-                const goToPage = (p) => Math.min(Math.max(p, 1), totalPages);
+            if (tbody) {
+                tbody.replaceChildren();
 
-                addBtn('<<<', 0, currentPage === 1);
-                addBtn('<', goToPage(currentPage - 1) - 1, currentPage === 1);
+                if (pageSlice.length === 0) {
+                    const tr = document.createElement('tr');
+                    const td = document.createElement('td');
+                    td.colSpan = 6;
+                    td.className = 'text-center';
+                    td.textContent = 'Nenhum fornecedor encontrado.';
+                    tr.appendChild(td);
+                    tbody.appendChild(tr);
+                } else {
+                    pageSlice.forEach((f) => {
+                        const tr = document.createElement('tr');
 
-                const startPage = Math.max(1, currentPage - 2);
-                const endPage = Math.min(totalPages, currentPage + 2);
+                        // Colunas de dados (textContent, sem HTML de dados)
+                        const cols = [
+                            f.nome || f.name || '-',
+                            f.cnpj || f.cpf || '-',
+                            f.cidade || '-',
+                            f.estado || f.uf || '-',
+                            f.telefone || f.phone || '-'
+                        ];
+                        cols.forEach((text) => {
+                            const td = document.createElement('td');
+                            td.textContent = (text == null ? '' : String(text));
+                            tr.appendChild(td);
+                        });
 
-                if (startPage > 1) {
-                    addBtn('1', 0, false, currentPage === 1);
-                    if (startPage > 2) {
-                        const span = document.createElement('span');
-                        span.textContent = '...';
-                        pag.appendChild(span);
-                    }
+                        // Coluna de Ações
+                        const actionsTd = document.createElement('td');
+                        actionsTd.className = 'text-center';
+
+                        const btnGroup = document.createElement('div');
+                        btnGroup.className = 'actions-container'; // Usa classe do CSS global
+
+                        // Botão Selecionar
+                        const selectBtn = document.createElement('button');
+                        selectBtn.className = 'btn-selecionar';
+                        selectBtn.title = 'Selecionar';
+                        selectBtn.innerHTML = '<i class="fas fa-check"></i>';
+                        selectBtn.onclick = () => { try { selectClientFromList(String(f.id)); } catch(_) {} };
+
+                        // Botão Editar
+                        const editBtn = document.createElement('button');
+                        editBtn.className = 'action-button edit-button';
+                        editBtn.title = 'Editar Fornecedor';
+                        editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+                        editBtn.onclick = () => { try { editClientFromList(String(f.id)); } catch(_) {} };
+
+                        // Botão Excluir
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'action-button delete-button';
+                        deleteBtn.title = 'Excluir Fornecedor';
+                        deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                        deleteBtn.onclick = () => { try { excluirFornecedor(String(f.id)); } catch(_) {} };
+
+                        btnGroup.appendChild(selectBtn);
+                        btnGroup.appendChild(editBtn);
+                        btnGroup.appendChild(deleteBtn);
+                        actionsTd.appendChild(btnGroup);
+                        tr.appendChild(actionsTd);
+
+                        tbody.appendChild(tr);
+                    });
                 }
-
-                for (let i = startPage; i <= endPage; i++) {
-                    addBtn(String(i), i - 1, false, i === currentPage);
-                }
-
-                if (endPage < totalPages) {
-                    if (endPage < totalPages - 1) {
-                        const span = document.createElement('span');
-                        span.textContent = '...';
-                        pag.appendChild(span);
-                    }
-                    addBtn(String(totalPages), totalPages - 1, false, currentPage === totalPages);
-                }
-
-                addBtn('>', goToPage(currentPage + 1) - 1, currentPage === totalPages);
-                addBtn('>>>', totalPages - 1, currentPage === totalPages);
             }
+
+            const pag = document.getElementById('fornecedorPagination');
+            if (pag) {
+                const totalPages = Math.max(1, Math.ceil(total / pageSize));
+                pag.replaceChildren();
+                if (totalPages <= 1) {
+                    pag.style.display = 'none';
+                } else {
+                    pag.style.display = 'flex';
+                    const addBtn = (label, page, disabled = false, active = false) => {
+                        const btn = document.createElement('button');
+                        btn.textContent = label;
+                        if (active) btn.classList.add('active');
+                        btn.disabled = disabled;
+                        btn.onclick = () => {
+                            window._fornPageIndex = page;
+                            const fi = document.getElementById('fornecedorListFilter');
+                            renderFornecedorListBasic(fi ? fi.value : '');
+                        };
+                        pag.appendChild(btn);
+                    };
+
+                    const currentPage = window._fornPageIndex + 1;
+                    const goToPage = (p) => Math.min(Math.max(p, 1), totalPages);
+
+                    addBtn('<<<', 0, currentPage === 1);
+                    addBtn('<', goToPage(currentPage - 1) - 1, currentPage === 1);
+
+                    const startPage = Math.max(1, currentPage - 2);
+                    const endPage = Math.min(totalPages, currentPage + 2);
+
+                    if (startPage > 1) {
+                        addBtn('1', 0, false, currentPage === 1);
+                        if (startPage > 2) {
+                            const span = document.createElement('span');
+                            span.textContent = '...';
+                            pag.appendChild(span);
+                        }
+                    }
+
+                    for (let i = startPage; i <= endPage; i++) {
+                        addBtn(String(i), i - 1, false, i === currentPage);
+                    }
+
+                    if (endPage < totalPages) {
+                        if (endPage < totalPages - 1) {
+                            const span = document.createElement('span');
+                            span.textContent = '...';
+                            pag.appendChild(span);
+                        }
+                        addBtn(String(totalPages), totalPages - 1, false, currentPage === totalPages);
+                    }
+
+                    addBtn('>', goToPage(currentPage + 1) - 1, currentPage === totalPages);
+                    addBtn('>>>', totalPages - 1, currentPage === totalPages);
+                }
+            }
+        } catch (err) {
+            console.error('❌ Erro ao renderizar fornecedores:', err);
         }
-    } catch (err) {
-        console.error('❌ Erro ao renderizar fornecedores:', err);
+    };
+    let _fornecedorFilterTimer = null;
+    if (term === '') {
+        await renderNow();
+        return _fornecedorFilterTimer;
     }
+    if (window.__fornecedorRenderDebounce) clearTimeout(window.__fornecedorRenderDebounce);
+    window.__fornecedorRenderDebounce = setTimeout(renderNow, 120);
+    _fornecedorFilterTimer = window.__fornecedorRenderDebounce;
+    return _fornecedorFilterTimer;
 }
 
-let _fornecedorFilterTimer = null;
 function filterFornecedorList() {
     const input = document.getElementById('fornecedorListFilter');
     if (!input) return;
-    const value = input.value;
-    if (_fornecedorFilterTimer) clearTimeout(_fornecedorFilterTimer);
-    _fornecedorFilterTimer = setTimeout(() => {
-        renderFornecedorListBasic(value);
-    }, 120);
+    renderFornecedorListBasic(input.value);
 }
 
 // ✅ ABRIR MODAL LISTA DE FORNECEDORES (NATIVO)
 async function openFornecedorListModal() {
     const modal = ensureModalStructure();
     modal.style.display = 'block';
-    
+
     const tbody = document.getElementById('fornecedorListTable');
     if (tbody) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Carregando fornecedores...</td></tr>';
     }
-    
+
     await renderFornecedorListBasic('');
     try {
         const filterInput = document.getElementById('fornecedorListFilter');

@@ -447,12 +447,24 @@ async function syncDataWithFirebase(dataType, forceSync = false, downloadOnly = 
         
         // Obter dados do Firebase
         let firebaseData = [];
+        let firebaseReadSucceeded = false;
         try {
             // ✅ CORREÇÃO: Usar caminho compatível com tenância (companies/{id}/...)
             // O firebaseService unificado trata 'especies' ou 'romaneiosTora' adicionando o prefixo correto.
-            const firebaseResult = await window.firebaseService.getFromFirebase(dataType);
-            if (firebaseResult.success && firebaseResult.data) {
-                firebaseData = Array.isArray(firebaseResult.data) ? firebaseResult.data : [];
+            const firebaseResult = await window.firebaseService.getFromFirebase(canonicalSyncKey);
+            if (firebaseResult && firebaseResult.success) {
+                firebaseReadSucceeded = true;
+                const rawFirebaseData = firebaseResult.data;
+                const romaneioType = getRomaneioTypeFromKey(canonicalSyncKey);
+                if (romaneioType && window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function') {
+                    firebaseData = window.RomaneioDataUtils.normalizeRomaneioCollection(rawFirebaseData, { type: romaneioType });
+                } else if (Array.isArray(rawFirebaseData)) {
+                    firebaseData = rawFirebaseData;
+                } else if (rawFirebaseData && typeof rawFirebaseData === 'object') {
+                    firebaseData = Object.entries(rawFirebaseData)
+                        .map(([id, item]) => item && typeof item === 'object' ? ({ id: item.id || id, firebaseKey: id, ...item }) : null)
+                        .filter(Boolean);
+                }
                 
                 // ✅ CORREÇÃO: Filtrar itens corrompidos antes do merge
                 if (firebaseData.length > 0) {
@@ -483,20 +495,15 @@ async function syncDataWithFirebase(dataType, forceSync = false, downloadOnly = 
         if (downloadOnly) {
             // ✅ MODO DOWNLOAD ONLY: Priorizar Firebase sem regravar coleção em produção.
             console.log("⬇️ Modo Download Only ativado");
-            
-            if (firebaseData.length > 0) {
-                mergedData = firebaseData;
-                console.log(`⬇️ Usando ${firebaseData.length} itens do Firebase (sobrescrevendo local)`);
-            } else {
-                if (localData.length > 0) {
-                    console.warn(`⚠️ Modo DownloadOnly: Firebase vazio mas Local tem ${localData.length} itens. Não será feito upload automático.`);
-                    mergedData = localData;
-                } else {
-                    mergedData = [];
-                }
+
+            if (!firebaseReadSucceeded) {
+                console.warn(`⚠️ ${canonicalSyncKey}: leitura Firebase indisponível; cache local não será promovido nem exibido como dado remoto.`);
+                return { success: false, source: 'server-unavailable', synced: false, count: 0 };
             }
 
-            return { success: true, source: firebaseData.length > 0 ? 'server' : 'local-readonly', synced: false, count: mergedData.length };
+            mergedData = firebaseData;
+            console.log(`⬇️ Usando ${firebaseData.length} itens do Firebase (fonte autoritativa)`);
+            return { success: true, source: 'server', synced: false, count: mergedData.length };
         }
         
         // Lógica Padrão (Bidirecional) - Mantida para chamadas manuais ou saves explícitos
@@ -1520,7 +1527,7 @@ async function getData(key) {
         }
         
         // ✅ USAR FIREBASE SERVICE UNIFICADO C/ PAGINAÇÃO (PLANO OTIMIZAÇÃO BLAZE)
-        if (window.firebaseService && typeof window.firebaseService.loadData === 'function') {
+        if (window.firebaseService && (typeof window.firebaseService.loadFromFirebase === 'function' || typeof window.firebaseService.loadData === 'function')) {
             try {
                 console.log(`🔄 Carregando ${key} via FirebaseService...`);
                 let options = {};
@@ -1530,7 +1537,10 @@ async function getData(key) {
                     console.log(`⚡ Aplicação de Paginação (BLAZE LIMIT B): ${canonicalKey}`);
                 }
 
-                const resultData = await window.firebaseService.loadData(canonicalKey, options);
+                const loadFn = typeof window.firebaseService.loadFromFirebase === 'function'
+                    ? window.firebaseService.loadFromFirebase.bind(window.firebaseService)
+                    : window.firebaseService.loadData.bind(window.firebaseService);
+                const resultData = await loadFn(canonicalKey, options);
                 
                 if (resultData !== null && resultData !== undefined && resultData.success) {
                     let data = resultData.data;
@@ -1646,7 +1656,7 @@ function generateUniqueId(prefix = '') {
 /**
  * Adicionar ou atualizar um item no romaneio
  */
-function adicionarItem() {
+function adicionarItemFallback() {
     console.log("📝 Adicionando/Atualizando item...");
     
     try {
@@ -1739,7 +1749,7 @@ function adicionarItem() {
         }
         
         // ✅ LIMPAR FORMULÁRIO
-        limparCamposItem();
+        limparCamposItemFallback();
         
         // ✅ ATUALIZAR INTERFACE
         if (typeof updateTableBody === 'function') {
@@ -1773,7 +1783,7 @@ function adicionarItem() {
 /**
  * Limpar campos do formulário de item
  */
-function limparCamposItem() {
+function limparCamposItemFallback() {
     const campos = ['especieInput', 'plaqueta', 'custodia', 'comprimento', 'rodo', 'oco1', 'oco2', 'preco', 'compGeo', 'x1', 'x2', 'x3', 'x4', 'volumeGeo'];
     campos.forEach(campoId => {
         const campo = document.getElementById(campoId);
@@ -1861,8 +1871,8 @@ async function carregarRomaneioParaEdicao(romaneioId) {
 
 // ✅ EXPOR FUNÇÕES GLOBALMENTE PARA COMPATIBILIDADE
 window.editarItem = editarItem;
-window.adicionarItem = adicionarItem;
-window.limparCamposItem = limparCamposItem;
+window.adicionarItem = window.adicionarItem || adicionarItemFallback;
+window.limparCamposItem = window.limparCamposItem || limparCamposItemFallback;
 window.formatarMoedaBrasil = formatarMoedaBrasil;
 window.parseCurrencyValue = parseCurrencyValue;
 window.carregarRomaneioParaEdicao = carregarRomaneioParaEdicao;
@@ -1877,11 +1887,11 @@ window.editarItem = editarItem;
 window.getData = getData;
 window.saveData = saveData;
 window.generateUniqueId = generateUniqueId;
-window.adicionarItem = adicionarItem;
+window.adicionarItem = window.adicionarItem || adicionarItemFallback;
 window.parseCurrencyValue = parseCurrencyValue;
 window.updateTableBody = updateTableBody;
 window.changePage = changePage;
-window.removerItem = removerItem;
+window.removerItem = window.removerItem || removerItemFallback;
 window.updatePagination = updatePagination;
 window.atualizarTotaisRomaneio = atualizarTotaisRomaneio;
 window.atualizarElementosTotal = atualizarElementosTotal;
@@ -2457,7 +2467,7 @@ function changePage(page) {
 }
 
 // Função para remover item
-function removerItem(index) {
+function removerItemFallback(index) {
     try {
         if (Array.isArray(window.romaneioItems) && window.romaneioItems[index]) {
             window.romaneioItems.splice(index, 1);
