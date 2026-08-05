@@ -208,6 +208,23 @@ node --test tests/financas-juros-callers.test.mjs
 
 **Gate:** cada onda passa testes e smoke antes da seguinte; nao aceitar o diff inteiro de 62 arquivos de uma vez.
 
+### Execucao controlada em 02/08/2026 - Romaneio de Tora
+
+- `romaneiotora_modais.js` deixou de ser carregado pela pagina depois de comprovada a substituicao por modulos canonicos de fornecedor, especies, lista e impressao.
+- O arquivo legado foi preservado para rollback e continua coberto pelas stories historicas.
+- As funcoes de item passaram a ter um unico proprietario ativo em `romaneiotora_tabela.js`.
+- O lote permanece local ate concluir smoke visual desktop/mobile descrito em `docs/stories/2026-08-02-romaneiotora-consolidacao-stack-ui.md`.
+
+### Execucao controlada em 02/08/2026 - Estoque
+
+- A exclusao permanente selecionada foi adicionada a Baixa Individual e ao modal de Baixa por Lote.
+- Exclusao e auditoria usam a mesma atualizacao multipath tenant-scoped; o estado local so muda depois do sucesso remoto.
+- Itens manuais e toras ja carregadas na baixa ficam fora da selecao destrutiva do modal.
+- A exclusao individual agora reutiliza o mesmo fluxo em lote.
+- Os smokes de exclusao, auditoria, busca e fallback legado foram concluidos no tenant de teste.
+- A busca de toras foi unificada em Consulta, Baixa Individual, Baixa por Lote, Movimentacoes e Rastreabilidade.
+- O Hosting foi publicado em 02/08/2026 depois de 349 testes aprovados, lint, typecheck, build e `git diff --check`.
+
 ---
 
 ## Fase 5 - Tornar os gates de qualidade confiaveis
