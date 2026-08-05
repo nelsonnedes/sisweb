@@ -1664,21 +1664,14 @@
             const uid = String(details && (details.uid || details.id || details.userId) || '').trim();
             const isAdmin = window.isSuperAdminSession ? await window.isSuperAdminSession() : false;
             try {
+                if (uid && window.firebaseService && typeof window.firebaseService.getEffectiveUserProfile === 'function') {
+                    const result = await window.firebaseService.getEffectiveUserProfile(uid);
+                    return result && result.success && result.data ? result.data : (details || null);
+                }
                 if (uid && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-                    let tenantId = '';
-                    try {
-                        tenantId = window.firebaseService.getTenantId ? String(window.firebaseService.getTenantId() || '').trim() : '';
-                    } catch (_) {}
-                    const candidates = [];
-                    if (tenantId) candidates.push(`companies/${tenantId}/users/${uid}`);
-                    candidates.push(`users/${uid}`);
-                    for (const p of candidates) {
-                        try {
-                            const res = await window.firebaseService.loadFromFirebase(p);
-                            if (res && res.success && res.data && typeof res.data === 'object') {
-                                return { ...res.data, uid: uid, email: res.data.email || details.email };
-                            }
-                        } catch (_) {}
+                    const res = await window.firebaseService.loadFromFirebase(`users/${uid}`);
+                    if (res && res.success && res.data && typeof res.data === 'object') {
+                        return { ...res.data, uid: uid, email: res.data.email || details.email };
                     }
                 }
             } catch (_) {}

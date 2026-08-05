@@ -510,6 +510,10 @@ async function loadUserProfileFromFirebase(uid) {
     try {
         const id = uid ? String(uid).trim() : '';
         if (!id) return null;
+        if (window.firebaseService && typeof window.firebaseService.getEffectiveUserProfile === 'function') {
+            const result = await window.firebaseService.getEffectiveUserProfile(id);
+            return result && result.success && result.data ? result.data : null;
+        }
         if (window.firebaseService && typeof window.firebaseService.getUserProfile === 'function') {
             const profile = await window.firebaseService.getUserProfile(id);
             return profile && typeof profile === 'object' ? profile : null;
@@ -1542,7 +1546,7 @@ async function login(email, password) {
                 await setCompanyContext(null, { ownerUid: user.uid, authoritative: true });
             }
 
-            let subscriptionStatus = 'expired';
+            let subscriptionStatus = 'unknown';
             try {
                 const users = parseUsersCacheSafe();
                 const userDetails = remoteProfile || users.find((u) => u.email === user.email) || {};
