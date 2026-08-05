@@ -1680,7 +1680,7 @@ function adicionarItem() {
 
 function removerItem(itemId, options = {}) {
     const { reason = 'delete' } = options;
-    const item = itensCarrinho.find(i => i.id === itemId);
+    const item = itensCarrinho.find(i => String(i.id) === String(itemId));
 
     // Remover sem popup de confirmação
     itensCarrinho = itensCarrinho.filter(i => i.id !== itemId);
@@ -1698,7 +1698,7 @@ function removerItem(itemId, options = {}) {
 }
 
 function editarItem(itemId) {
-    const item = itensCarrinho.find(i => i.id === itemId);
+    const item = itensCarrinho.find(i => String(i.id) === String(itemId));
     if (!item) return;
     
     console.log('📝 Editando item:', item); // Debug para verificar os dados do item
@@ -1786,10 +1786,10 @@ function atualizarTabelaItens() {
                 <td data-label="Preço Unit." style="text-align: right;">${formatCurrency(item.precoUnitario)}</td>
                 <td data-label="Total" style="text-align: right;">${formatCurrency(item.total)}</td>
                 <td data-label="Ações" class="commerce-actions-cell" style="text-align: center;">
-                    <button type="button" onclick="editarItem(${item.id})" class="btn-primary btn-small">
+                    <button type="button" onclick="editarItem('${escapeJsString(item.id)}')" class="btn-primary btn-small">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button type="button" onclick="removerItem(${item.id})" class="btn-danger btn-small">
+                    <button type="button" onclick="removerItem('${escapeJsString(item.id)}')" class="btn-danger btn-small">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -4368,6 +4368,13 @@ function toValidDate(value) {
 function toTimestamp(value) {
     const d = toValidDate(value);
     return d ? d.getTime() : 0;
+}
+
+function escapeJsString(value) {
+    return String(value ?? '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\r?\n/g, ' ');
 }
 
 function refreshCommerceResponsiveTables() {

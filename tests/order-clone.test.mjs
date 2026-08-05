@@ -51,3 +51,16 @@ test('quarta acao cabe no desktop e no card responsivo', () => {
   assert.match(comprasHtml, /td\.acoes-cell\s*\{[\s\S]*?min-width:\s*164px/);
   assert.match(responsiveCss, /grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\)/);
 });
+
+test('acoes de item de clone escapam o id em string literal', () => {
+  const block = between(vendas, 'function removerItem(itemId', 'function atualizarTotais()');
+  assert.match(block, /onclick="editarItem\('\$\{escapeJsString\(item\.id\)\}'\)"/);
+  assert.match(block, /onclick="removerItem\('\$\{escapeJsString\(item\.id\)\}'\)"/);
+  assert.doesNotMatch(block, /onclick="editarItem\(\$\{item\.id\}\)"/);
+  assert.doesNotMatch(block, /onclick="removerItem\(\$\{item\.id\}\)"/);
+});
+
+test('removerItem e editarItem comparam id sem tipo rigido', () => {
+  assert.match(vendas, /itensCarrinho\.find\(i => String\(i\.id\) === String\(itemId\)\)/);
+  assert.match(compras, /itensPedido\.find\(i => String\(i\.id\) === String\(itemId\)\)|function removerItem\(index\)/);
+});
