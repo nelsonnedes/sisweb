@@ -17,6 +17,7 @@ function walkHtml(dir, out = []) {
       || full.includes(`${join('hosting-dist')}`)
       || full.includes(`${join('.git')}`)
       || full.includes(`${join('.freebuff')}`)
+      || full.includes(`${join('.codex-worktrees')}`)
     ) continue;
     const st = statSync(full);
     if (st.isDirectory()) walkHtml(full, out);

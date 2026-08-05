@@ -756,7 +756,7 @@ html.sisweb-embedded .page-header {
     .commerce-orders-table-wrap.mobile-cards .commerce-actions-wrap,
     .commerce-orders-table-wrap.mobile-cards .acoes-buttons {
         display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 8px;
         width: 100%;
     }

@@ -2607,6 +2607,9 @@ async function carregarTabelaPedidos(filtro = '') {
                     <button type="button" onclick="visualizarPedido('${safeId}')" class="btn-primary btn-small" title="Visualizar" aria-label="Visualizar pedido">
                         <i class="fas fa-eye"></i>
                     </button>
+                    <button type="button" onclick="clonarPedido('${safeId}')" class="btn-primary btn-small" title="Clonar" aria-label="Clonar pedido">
+                        <i class="fas fa-copy"></i>
+                    </button>
                     <button type="button" onclick="excluirPedido('${safeId}')" class="btn-danger btn-small" title="Excluir" aria-label="Excluir pedido">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -3033,6 +3036,73 @@ async function editarPedido(pedidoId) {
     // Atualizar tabela e totais
     atualizarTabelaItens();
     atualizarTotais();
+}
+
+async function clonarPedido(pedidoId) {
+    if (!guardOperationalAccessVendas()) return;
+    const pedido = (window.pedidos || []).find(p => getPedidoVendaId(p) === String(pedidoId));
+    if (!pedido) {
+        ToastManager.warning('Pedido não encontrado.', 'Clonar pedido');
+        return;
+    }
+
+    await novoPedido();
+    editandoPedidoId = null;
+    pedidoAtual = null;
+    const hoje = new Date().toISOString().split('T')[0];
+    const dataOrigem = pedido.data || hoje;
+    const deslocarData = (value) => addDaysISO(hoje, Math.max(0, diffDaysISO(dataOrigem, value || dataOrigem)));
+
+    itensCarrinho = (pedido.itens || []).map((item, index) => {
+        const clone = JSON.parse(JSON.stringify(item || {}));
+        delete clone.id;
+        delete clone.firebaseKey;
+        delete clone.estoqueMovimentoId;
+        clone.id = `ITEM-${Date.now()}-${index + 1}`;
+        return clone;
+    });
+    contasReceber = normalizarContasReceberLista(pedido.contasReceber || []).map((conta) => {
+        const clone = { ...(conta || {}) };
+        delete clone.id;
+        delete clone.firebaseKey;
+        delete clone.historicosPagamento;
+        delete clone.recebimentos;
+        delete clone.dataPagamento;
+        delete clone.valorPago;
+        delete clone.valorRestante;
+        delete clone.operationId;
+        clone.baseVencimento = deslocarData(conta.baseVencimento || conta.vencimento || conta.dataVencimento);
+        clone.vencimento = deslocarData(conta.vencimento || conta.dataVencimento);
+        clone.dias = diffDaysISO(clone.baseVencimento, clone.vencimento);
+        clone.status = 'pendente';
+        clone.locked = false;
+        return clone;
+    });
+
+    document.getElementById('pedidoData').value = hoje;
+    document.getElementById('pedidoStatus').value = 'pendente';
+    document.getElementById('desconto').value = formatCurrency(pedido.desconto || 0);
+    if (pedido.clienteId) {
+        atualizarSelectClientes(pedido.clienteId);
+        const select = document.getElementById('clienteSelect');
+        if (select && !Array.from(select.options).some(option => String(option.value) === String(pedido.clienteId)) && pedido.cliente) {
+            const option = document.createElement('option');
+            option.value = pedido.clienteId;
+            option.textContent = pedido.cliente.nome || pedido.cliente.name || 'Cliente do pedido';
+            select.appendChild(option);
+        }
+        if (select) select.value = pedido.clienteId;
+    }
+
+    autoRedistribuirEnabled = false;
+    contasReceberEdicaoBloqueada = false;
+    fecharModal('listaPedidosModal');
+    atualizarTabelaItens();
+    atualizarTabelaContasReceber();
+    atualizarTotais();
+    atualizarTotalContasReceber();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    ToastManager.info(`Cópia do pedido ${pedido.numero || ''} pronta para revisão.`, 'Clonar pedido');
 }
 
 async function excluirPedido(pedidoId) {
@@ -4631,6 +4701,7 @@ window.editarItem = editarItem;
 window.listarPedidos = listarPedidos;
 window.filtrarPedidos = filtrarPedidos;
 window.editarPedido = editarPedido;
+window.clonarPedido = clonarPedido;
 window.excluirPedido = excluirPedido;
 window.novoProduto = novoProduto;
 window.listarProdutos = listarProdutos;

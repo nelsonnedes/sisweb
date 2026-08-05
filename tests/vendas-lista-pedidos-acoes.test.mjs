@@ -29,9 +29,11 @@ test('lista de pedidos reserva e centraliza coluna acoes sem invadir atualizado'
   assert.match(acoesCell, /white-space\s*:\s*nowrap/);
 
   const actionsColumns = cssRule(vendasHtml, '#listaPedidosModal th.actions-col,');
-  assert.match(actionsColumns, /min-width\s*:\s*132px/);
+  const minWidth = Number(actionsColumns.match(/min-width\s*:\s*(\d+)px/)?.[1] || 0);
+  const width = Number(actionsColumns.match(/(?:^|\n)\s*width\s*:\s*(\d+)px/)?.[1] || 0);
+  assert.ok(minWidth >= 152, 'a coluna deve comportar quatro botoes de 32px e seus espacamentos');
   assert.match(actionsColumns, /text-align\s*:\s*center/);
-  assert.match(actionsColumns, /width\s*:\s*132px/);
+  assert.equal(width, minWidth);
 
   const atualizadoColumns = cssRule(vendasHtml, '#listaPedidosModal th.atualizado-col,');
   assert.match(atualizadoColumns, /min-width\s*:\s*104px/);
