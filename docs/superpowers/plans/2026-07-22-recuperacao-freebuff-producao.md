@@ -131,6 +131,15 @@ gcloud functions list --v2 --project=sisweb-7ce82 --regions=us-central1
 
 **Prioridade:** P0.
 
+**Status (2026-08-05):** concluida e validada.
+
+- Itens 1-5: callable tenant-scoped `financeSyncCompra` implementada em `functions/finance-functions.js` (reutiliza `runAuthorized`, `assertFinanceAccess`, `normalizeDate`, `dateToMonthKey`, `moneyToCents`, `normalizeMonth`, `normalizePathSegment`, `normalizeNullableText`, `normalizeStatus`, `MAX_CREATE_ACCOUNTS`); `compras.js` migrou para a callable (monta `contasRemover` + `contasCriar` canonicos, chamada via `callFunction`, rollback preservado quando o financeiro falha); escrita direta de `financas/pagar` removida do fluxo de salvar.
+- Item 6: em `vendas.js` — `dataEmissao` agora e string ISO (`pedidoDataISO`, linha ~5665; nunca elemento DOM); vencimento informado nao e substituido silenciosamente (`vencimento || pedidoDataISO`); fallback de salvamento lança erro quando o financeiro obrigatorio nao sincronizou (pedido nao e confirmado).
+- Item 7: cenarios restaurados e cobertos por testes (baixa fora do mes rejeitada, recalculo de juros no servidor, edicao idempotente, juros invalidos rejeitados, anexo invalido rejeitado) — 33/33 em `tests/finance-transactions.test.mjs`; suíte completa 359 pass / 0 fail / 1 skip.
+- Item 9: validado no browser (emulador local) — edicao de item agrupado com desagrupar, update in-place em Compras, criacao de conta a receber respeitando vencimento informado, sem erros JS.
+
+**Nota de deploy:** `financeSyncCompra` (Functions) precisa ser publicada junto com as Functions em producao. Enquanto a callable nao estiver publicada, o cliente detecta o erro de endpoint indisponivel (`code: internal/not-found/unavailable`), cai no **modo legado de escrita direta** (`updatePaths` com `pedidosCompra` + `financas/pagar/{mes}/{id}`) e segue funcional — validado no browser. Para qualquer outro erro (regra/validacao, ex.: `permission-denied`), o rollback e mantido e nada e gravado.
+
 1. Escrever teste de pedido de compra aprovado que reproduza a negacao atual.
 2. Definir callable tenant-scoped para orquestrar pedido e conta a pagar no servidor.
 3. Reutilizar validadores, permissoes e localizadores existentes nas Functions financeiras.

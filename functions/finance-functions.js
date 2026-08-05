@@ -923,6 +923,139 @@ function buildCanonicalCreatedAccount(item, request, companyId, nowIso) {
     return account;
 }
 
+function normalizePurchaseSyncRequest(data) {
+    const payload = isPlainObject(data) ? data : {};
+    const pedido = payload.pedido;
+    if (!isPlainObject(pedido)) {
+        throw new FinanceValidationError('Pedido de compra é obrigatório.');
+    }
+    const serialized = stableStringify(payload);
+    if (serialized.length > 1000000) {
+        throw new FinanceValidationError('Requisição excede o tamanho permitido.');
+    }
+    const pedidoId = normalizePathSegment(pedido.id, 'pedido.id');
+    const numero = normalizeNullableText(String(pedido.numero || ''), 'pedido.numero', 160);
+    if (!numero) {
+        throw new FinanceValidationError('pedido.numero é obrigatório.');
+    }
+    const fornecedor = isPlainObject(pedido.fornecedor) ? pedido.fornecedor : {};
+    const fornecedorId = normalizePathSegment(fornecedor.id, 'pedido.fornecedor.id');
+    const contasCriar = (Array.isArray(payload.contasCriar) ? payload.contasCriar : [])
+        .map((source, index) => {
+            if (!isPlainObject(source)) {
+                throw new FinanceValidationError(`contasCriar[${index}] é inválida.`);
+            }
+            return {
+                index,
+                accountId: normalizePathSegment(source.id, `contasCriar[${index}].id`),
+                source,
+            };
+        });
+    if (contasCriar.length > MAX_CREATE_ACCOUNTS) {
+        throw new FinanceValidationError(`O lote não pode exceder ${MAX_CREATE_ACCOUNTS} contas.`);
+    }
+    const contasRemover = (Array.isArray(payload.contasRemover) ? payload.contasRemover : [])
+        .map((item, index) => {
+            if (!isPlainObject(item)) {
+                throw new FinanceValidationError(`contasRemover[${index}] é inválida.`);
+            }
+            return {
+                month: normalizeMonth(item.mes || item.month),
+                accountId: normalizePathSegment(
+                    item.contaId || item.accountId || item.id,
+                    `contasRemover[${index}].contaId`,
+                ),
+            };
+        });
+    const ids = new Set();
+    for (const item of [...contasCriar, ...contasRemover]) {
+        const key = `${item.month || ''}/${item.accountId}`;
+        if (ids.has(key)) {
+            throw new FinanceValidationError('IDs de conta duplicados na sincronização de compra.');
+        }
+        ids.add(key);
+    }
+    return {
+        operationId: normalizeOperationId(payload.operationId),
+        pedido,
+        pedidoId,
+        numero,
+        fornecedorId,
+        contasCriar,
+        contasRemover,
+    };
+}
+
+function buildCanonicalPurchaseAccount(source, request, nowIso) {
+    const valorCents = moneyToCents(source.valor, 'valor');
+    if (valorCents <= 0) {
+        throw new FinanceValidationError('valor da conta de compra deve ser positivo.');
+    }
+    if (moneyToCents(source.valorOriginal, 'valorOriginal') !== valorCents) {
+        throw new FinanceValidationError('valor e valorOriginal devem ser iguais na criação de compra.');
+    }
+    if (
+        hasOwn(source, 'valorRestante')
+        && moneyToCents(source.valorRestante, 'valorRestante') !== valorCents
+    ) {
+        throw new FinanceValidationError('valorRestante deve corresponder ao valor original.');
+    }
+    const dueDate = normalizeDate(
+        source.dataVencimento ?? source.vencimento,
+        'dataVencimento',
+        false,
+    );
+    const month = dateToMonthKey(dueDate);
+    if (month === null) {
+        throw new FinanceValidationError('dataVencimento não corresponde a um mês válido.');
+    }
+    const status = normalizeStatus(source.status || 'pendente', 'status');
+    if (status === 'pago' || status === 'parcial') {
+        throw new FinanceValidationError('Conta de compra nova não pode iniciar paga ou parcial.');
+    }
+    const valor = valorCents / 100;
+    const account = {
+        id: request.accountId,
+        tipo: 'pagar',
+        categoria: 'compras',
+        origem: 'compras',
+        origemId: request.pedidoId,
+        pedidoNumero: request.numero,
+        fornecedorId: request.fornecedorId,
+        fornecedor: normalizeNullableText(
+            String(source.fornecedor || ''),
+            'fornecedor',
+            500,
+        ),
+        descricao: normalizeNullableText(
+            String(source.descricao || `Compra ${request.numero}`),
+            'descricao',
+            2000,
+        ),
+        valor,
+        valorOriginal: valor,
+        valorRestante: valor,
+        valorPago: 0,
+        dataVencimento: dueDate,
+        vencimento: dueDate,
+        status,
+        tipoPagamento: normalizeNullableText(
+            String(source.tipoPagamento || ''),
+            'tipoPagamento',
+            160,
+        ),
+        observacoes: normalizeNullableText(
+            String(source.observacoes || ''),
+            'observacoes',
+            5000,
+        ),
+        created: nowIso,
+        updatedAt: nowIso,
+        revision: 0,
+    };
+    return { month, account };
+}
+
 function createAccountsFingerprint(request, canonicalEntries) {
     return crypto.createHash('sha256').update(stableStringify({
         kind: 'create',
@@ -2144,6 +2277,45 @@ function createHandlers(options = {}) {
         });
     }
 
+    async function financeSyncCompra(data, context) {
+        return runAuthorized(context, async (db, access) => {
+            let request;
+            try {
+                request = normalizePurchaseSyncRequest(data);
+            } catch (error) {
+                throwInputAsHttps(error);
+            }
+            const nowIso = now();
+            const canonicalEntries = request.contasCriar.map((item) => {
+                const built = buildCanonicalPurchaseAccount(
+                    item.source,
+                    { ...request, accountId: item.accountId },
+                    nowIso,
+                );
+                return { month: built.month, account: built.account };
+            });
+            const updates = {};
+            updates[`pedidosCompra/${request.pedidoId}`] = request.pedido;
+            for (const removal of request.contasRemover) {
+                updates[`financas/pagar/${removal.month}/${removal.accountId}`] = null;
+            }
+            for (const entry of canonicalEntries) {
+                updates[`financas/pagar/${entry.month}/${entry.account.id}`] = entry.account;
+            }
+            const reference = db.ref(`companies/${access.companyId}`);
+            await reference.update(updates);
+            return {
+                success: true,
+                idempotent: false,
+                pedidoId: request.pedidoId,
+                accounts: canonicalEntries.map((entry) => ({
+                    month: entry.month,
+                    account: entry.account,
+                })),
+            };
+        });
+    }
+
     async function financeUpdateAccount(data, context) {
         return runAuthorized(context, async (db, access) => {
             let request;
@@ -2381,6 +2553,7 @@ function createHandlers(options = {}) {
     return {
         financeNextSequence,
         financeCreateAccounts,
+        financeSyncCompra,
         financeUpdateAccount,
         financeDeleteAccount,
         financeUpdatePaymentReceipt,
@@ -2394,6 +2567,7 @@ const handlers = createHandlers();
 exports.configure = configure;
 exports.financeNextSequence = functionsV1.https.onCall(handlers.financeNextSequence);
 exports.financeCreateAccounts = functionsV1.https.onCall(handlers.financeCreateAccounts);
+exports.financeSyncCompra = functionsV1.https.onCall(handlers.financeSyncCompra);
 exports.financeUpdateAccount = functionsV1.https.onCall(handlers.financeUpdateAccount);
 exports.financeDeleteAccount = functionsV1.https.onCall(handlers.financeDeleteAccount);
 exports.financeUpdatePaymentReceipt = functionsV1.https.onCall(handlers.financeUpdatePaymentReceipt);
@@ -2409,6 +2583,7 @@ exports.__test = {
     assertRegisterMutation,
     buildAccountsCreateTreeMutation,
     buildCanonicalCreatedAccount,
+    buildCanonicalPurchaseAccount,
     buildAccountMutation,
     buildAccountDeleteTreeMutation,
     buildAccountEditTreeMutation,
@@ -2426,6 +2601,7 @@ exports.__test = {
     normalizeAccountCreateRequest,
     normalizeAccountEditRequest,
     normalizeAccountDeleteRequest,
+    normalizePurchaseSyncRequest,
     normalizeReceiptUpdateRequest,
     normalizeSequenceRequest,
     pruneOperationRecords,

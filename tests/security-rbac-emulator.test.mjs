@@ -495,6 +495,77 @@ if (!EMULATOR_HOST) {
     );
   });
 
+  test("membro de compras sem papel financeiro nao grava conta a pagar direta (regressao Fase 2)", async () => {
+    const database = testEnv
+      .authenticatedContext(NO_FINANCE_UID)
+      .database();
+    const contaCompra = {
+      id: "CP-PC-1776259657669-0",
+      tipo: "pagar",
+      categoria: "compras",
+      origem: "compras",
+      origemId: "PC-1776259657669",
+      pedidoNumero: "000052",
+      descricao: "Compra 000052 - Cheque-pré",
+      valor: 1200,
+      valorOriginal: 1200,
+      valorRestante: 1200,
+      vencimento: "2026-05-15",
+      dataVencimento: "2026-05-15",
+      status: "pendente",
+      tipoPagamento: "cheque",
+      observacoes: "",
+      created: "2026-05-10T12:00:00.000Z",
+      updatedAt: "2026-05-10T12:00:00.000Z",
+    };
+
+    await assertFails(
+      set(
+        ref(database, `companies/${TENANT_A}/financas/pagar/2026-05/CP-PC-1776259657669-0`),
+        contaCompra,
+      ),
+    );
+
+    await assertFails(
+      update(ref(database, `companies/${TENANT_A}`), {
+        "pedidosCompra/PC-1776259657669": {
+          id: "PC-1776259657669",
+          numero: "000052",
+          status: "aprovado",
+        },
+        "financas/pagar/2026-05/CP-PC-1776259657669-0": contaCompra,
+      }),
+    );
+  });
+
+  test("membro financeiro grava conta a pagar canonica de compra", async () => {
+    const database = memberDatabase();
+    await assertSucceeds(
+      set(
+        ref(database, `companies/${TENANT_A}/financas/pagar/2026-05/CP-PC-1776259657669-0`),
+        {
+          id: "CP-PC-1776259657669-0",
+          tipo: "pagar",
+          categoria: "compras",
+          origem: "compras",
+          origemId: "PC-1776259657669",
+          pedidoNumero: "000052",
+          descricao: "Compra 000052 - Cheque-pré",
+          valor: 1200,
+          valorOriginal: 1200,
+          valorRestante: 1200,
+          vencimento: "2026-05-15",
+          dataVencimento: "2026-05-15",
+          status: "pendente",
+          tipoPagamento: "cheque",
+          observacoes: "",
+          created: "2026-05-10T12:00:00.000Z",
+          updatedAt: "2026-05-10T12:00:00.000Z",
+        },
+      ),
+    );
+  });
+
   test("sequencia financeira nao pode ser redefinida pelo cliente", async () => {
     const database = memberDatabase();
     await assertFails(

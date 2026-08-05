@@ -1390,3 +1390,198 @@ test('ledger de idempotencia permanece limitado aos registros mais recentes', ()
   assert.ok(pruned['operation-0299']);
   assert.equal(pruned['operation-0000'], undefined);
 });
+
+function createPurchaseSyncHarness() {
+  const snapshot = (value) => ({
+    exists: () => value !== undefined && value !== null,
+    val: () => value,
+  });
+  const persisted = {};
+  const database = {
+    ref(path) {
+      return {
+        async get() {
+          if (path === 'companies/tenant-0001/users/member-0001') {
+            return snapshot({ role: 'finance', active: true });
+          }
+          if (path === 'roles/member-0001') return snapshot(undefined);
+          if (path === 'companies/tenant-0001/ownerUid') return snapshot(undefined);
+          return snapshot(persisted[path]);
+        },
+        async update(updates) {
+          for (const [key, value] of Object.entries(updates)) {
+            if (value === null) {
+              delete persisted[key];
+            } else {
+              persisted[key] = value;
+            }
+          }
+          return null;
+        },
+      };
+    },
+  };
+  class TestHttpsError extends Error {
+    constructor(code, message) {
+      super(message);
+      this.code = code;
+    }
+  }
+  const handlers = createHandlers({
+    database: () => database,
+    HttpsError: TestHttpsError,
+    isSuperAdmin: async () => false,
+    now: () => FIXED_NOW,
+  });
+  const context = {
+    auth: {
+      uid: 'member-0001',
+      token: { companyId: 'tenant-0001', subscriptionStatus: 'active' },
+    },
+  };
+  return { handlers, persisted, context };
+}
+
+test('callable financeSyncCompra salva pedido e conta a pagar atomicamente', async () => {
+  const { handlers, persisted, context } = createPurchaseSyncHarness();
+  const payload = {
+    operationId: 'purchase-sync-atomic-0001',
+    pedido: {
+      id: 'PC-1776259657669',
+      numero: 'PC-1001',
+      data: '2026-05-20',
+      status: 'aprovado',
+      fornecedor: { id: 'supplier-a', nome: 'Fornecedor A' },
+      itens: [{ id: 1, tipo: 'manual', produtoNome: 'MADEIRA', quantidade: 10, precoUnitario: 50, total: 500 }],
+      total: 500,
+      contasPagar: [{ id: 'CP-PC-1776259657669-0', valor: 500, vencimento: '2026-05-25', tipo: 'pagar', observacao: 'Parcela única' }],
+    },
+    contasCriar: [{
+      id: 'CP-PC-1776259657669-0',
+      fornecedor: 'Fornecedor A',
+      descricao: 'Compra PC-1001 - Parcela única',
+      valor: 500,
+      valorOriginal: 500,
+      valorRestante: 500,
+      dataVencimento: '2026-05-25',
+      status: 'pendente',
+      tipoPagamento: 'pagar',
+    }],
+    contasRemover: [],
+  };
+
+  const response = await handlers.financeSyncCompra(payload, context);
+
+  assert.equal(response.success, true);
+  assert.equal(response.idempotent, false);
+  assert.equal(response.pedidoId, 'PC-1776259657669');
+  assert.equal(persisted['pedidosCompra/PC-1776259657669'].id, 'PC-1776259657669');
+  const account = persisted['financas/pagar/2026-05/CP-PC-1776259657669-0'];
+  assert.equal(account.id, 'CP-PC-1776259657669-0');
+  assert.equal(account.tipo, 'pagar');
+  assert.equal(account.categoria, 'compras');
+  assert.equal(account.origem, 'compras');
+  assert.equal(account.origemId, 'PC-1776259657669');
+  assert.equal(account.valor, 500);
+  assert.equal(account.valorOriginal, 500);
+  assert.equal(account.valorRestante, 500);
+  assert.equal(account.valorPago, 0);
+  assert.equal(account.dataVencimento, '2026-05-25');
+  assert.equal(account.status, 'pendente');
+  assert.equal(account.fornecedorId, 'supplier-a');
+  assert.equal(account.pedidoNumero, 'PC-1001');
+  assert.equal(account.revision, 0);
+  assert.equal(account.created, FIXED_NOW);
+});
+
+test('callable financeSyncCompra remove contas vinculadas e substitui em edicao', async () => {
+  const { handlers, persisted, context } = createPurchaseSyncHarness();
+  persisted['financas/pagar/2026-05/CP-PC-OLD-0000'] = { id: 'CP-PC-OLD-0000', status: 'pendente' };
+
+  const payload = {
+    operationId: 'purchase-sync-replace-0001',
+    pedido: {
+      id: 'PC-1776259657669',
+      numero: 'PC-1001',
+      data: '2026-05-20',
+      status: 'aprovado',
+      fornecedor: { id: 'supplier-a', nome: 'Fornecedor A' },
+      itens: [{ id: 1, tipo: 'manual', produtoNome: 'MADEIRA', quantidade: 10, precoUnitario: 50, total: 500 }],
+      total: 500,
+      contasPagar: [],
+    },
+    contasCriar: [],
+    contasRemover: [{ mes: '2026-05', contaId: 'CP-PC-OLD-0000' }],
+  };
+
+  const response = await handlers.financeSyncCompra(payload, context);
+
+  assert.equal(response.success, true);
+  assert.equal(persisted['financas/pagar/2026-05/CP-PC-OLD-0000'], undefined);
+  assert.equal(persisted['pedidosCompra/PC-1776259657669'].numero, 'PC-1001');
+});
+
+test('callable financeSyncCompra rejeita valores invalidos antes de gravar', async () => {
+  const { handlers, persisted, context } = createPurchaseSyncHarness();
+  const base = {
+    operationId: 'purchase-sync-invalid-0001',
+    pedido: {
+      id: 'PC-1776259657669',
+      numero: 'PC-1001',
+      data: '2026-05-20',
+      status: 'aprovado',
+      fornecedor: { id: 'supplier-a', nome: 'Fornecedor A' },
+      itens: [{ id: 1, tipo: 'manual', produtoNome: 'MADEIRA', quantidade: 10, precoUnitario: 50, total: 500 }],
+      total: 500,
+    },
+    contasCriar: [{
+      id: 'CP-PC-1776259657669-0',
+      fornecedor: 'Fornecedor A',
+      descricao: 'Compra',
+      valor: 0,
+      valorOriginal: 0,
+      valorRestante: 0,
+      dataVencimento: '2026-05-25',
+      status: 'pendente',
+    }],
+    contasRemover: [],
+  };
+
+  await assert.rejects(
+    handlers.financeSyncCompra(base, context),
+    (error) => error.code === 'invalid-argument' && /positivo/.test(error.message),
+  );
+  assert.equal(persisted['pedidosCompra/PC-1776259657669'], undefined);
+  assert.equal(persisted['financas/pagar/2026-05/CP-PC-1776259657669-0'], undefined);
+});
+
+test('callable financeSyncCompra rejeita dataVencimento fora do formato esperado', async () => {
+  const { handlers, context } = createPurchaseSyncHarness();
+  const payload = {
+    operationId: 'purchase-sync-date-0001',
+    pedido: {
+      id: 'PC-1776259657669',
+      numero: 'PC-1001',
+      data: '2026-05-20',
+      status: 'aprovado',
+      fornecedor: { id: 'supplier-a', nome: 'Fornecedor A' },
+      total: 100,
+    },
+    contasCriar: [{
+      id: 'CP-PC-1776259657669-0',
+      fornecedor: 'Fornecedor A',
+      descricao: 'Compra',
+      valor: 100,
+      valorOriginal: 100,
+      valorRestante: 100,
+      dataVencimento: '25/05/2026',
+      status: 'pendente',
+    }],
+    contasRemover: [],
+  };
+
+  await assert.rejects(
+    handlers.financeSyncCompra(payload, context),
+    (error) => error.code === 'invalid-argument' && /YYYY-MM-DD/.test(error.message),
+  );
+});

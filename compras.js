@@ -573,6 +573,7 @@ window.fornecedores = [];
 window.produtos = [];
 let pedidoEmEdicao = null;
 let itensPedido = [];
+let itemEmEdicaoIndex = null;
 let contasPagar = [];
 let autoRedistribuirEnabled = true; // ✅ Igual Vendas: controla redistribuição automática ao alterar totais
 let comprasFornecedoresEditingId = null;
@@ -626,6 +627,7 @@ function novoPedido(gerarNumero = true) {
     if (!guardOperationalAccessCompras()) return;
     pedidoEmEdicao = null;
     itensPedido = [];
+    itemEmEdicaoIndex = null;
     contasPagar = [];
     autoRedistribuirEnabled = true; // ✅ Novo pedido: redistribuição automática ativada
 
@@ -859,6 +861,7 @@ function cancelarPedido() {
     if (confirm('Tem certeza que deseja cancelar? Dados não salvos serão perdidos.')) {
         document.getElementById('pedidoForm').style.display = 'none';
         itensPedido = [];
+        itemEmEdicaoIndex = null;
         contasPagar = [];
     }
 }
@@ -917,15 +920,30 @@ function adicionarItemManual() {
         return;
     }
     
-    itensPedido.push({
-        id: Date.now(),
-        tipo: 'manual',
-        produtoNome: nome,
-        quantidade: qtd,
-        unidade: unidade,
-        precoUnitario: preco,
-        total: qtd * preco
-    });
+    if (itemEmEdicaoIndex !== null && itensPedido[itemEmEdicaoIndex]) {
+        const alvo = itensPedido[itemEmEdicaoIndex];
+        alvo.tipo = 'manual';
+        alvo.produtoNome = nome;
+        alvo.produtoId = null;
+        alvo.quantidade = qtd;
+        alvo.unidade = unidade;
+        alvo.precoUnitario = preco;
+        alvo.total = qtd * preco;
+        delete alvo.especie;
+        delete alvo.espessura;
+        delete alvo.itensOriginais;
+        itemEmEdicaoIndex = null;
+    } else {
+        itensPedido.push({
+            id: Date.now(),
+            tipo: 'manual',
+            produtoNome: nome,
+            quantidade: qtd,
+            unidade: unidade,
+            precoUnitario: preco,
+            total: qtd * preco
+        });
+    }
     
     // Limpar campos
     document.getElementById('produtoManual').value = '';
@@ -949,15 +967,29 @@ function adicionarItem() { // Produto Cadastrado
         return;
     }
     
-    itensPedido.push({
-        id: Date.now(),
-        tipo: 'cadastrado',
-        produtoId: produtoId,
-        produtoNome: nome,
-        quantidade: qtd,
-        precoUnitario: preco,
-        total: qtd * preco
-    });
+    if (itemEmEdicaoIndex !== null && itensPedido[itemEmEdicaoIndex]) {
+        const alvo = itensPedido[itemEmEdicaoIndex];
+        alvo.tipo = 'cadastrado';
+        alvo.produtoId = produtoId;
+        alvo.produtoNome = nome;
+        alvo.quantidade = qtd;
+        alvo.precoUnitario = preco;
+        alvo.total = qtd * preco;
+        delete alvo.especie;
+        delete alvo.espessura;
+        delete alvo.itensOriginais;
+        itemEmEdicaoIndex = null;
+    } else {
+        itensPedido.push({
+            id: Date.now(),
+            tipo: 'cadastrado',
+            produtoId: produtoId,
+            produtoNome: nome,
+            quantidade: qtd,
+            precoUnitario: preco,
+            total: qtd * preco
+        });
+    }
     
     renderizarItensPedido();
     atualizarTotais();
@@ -983,6 +1015,7 @@ function renderizarItensPedido() {
             <td data-label="Preço Unit."><span class="commerce-card-value commerce-card-money">${escapeHtml(formatCurrency(item.precoUnitario))}</span></td>
             <td data-label="Total"><span class="commerce-card-value commerce-card-money commerce-card-strong">${escapeHtml(formatCurrency(item.total))}</span></td>
             <td data-label="Ações" class="commerce-actions-cell">
+                <button type="button" onclick="editarItemCompra(${index})" class="btn-primary btn-small" title="Editar item" aria-label="Editar item"><i class="fas fa-edit"></i></button>
                 <button type="button" onclick="removerItem(${index})" class="btn-danger btn-small" title="Remover" aria-label="Remover item"><i class="fas fa-trash"></i></button>
             </td>
         `;
@@ -993,8 +1026,68 @@ function renderizarItensPedido() {
 
 function removerItem(index) {
     itensPedido.splice(index, 1);
+    if (itemEmEdicaoIndex === index) itemEmEdicaoIndex = null;
     renderizarItensPedido();
     atualizarTotais();
+}
+
+function editarItemCompra(index) {
+    const item = itensPedido[index];
+    if (!item) return;
+
+    const tipo = String(item.tipo || 'manual').toLowerCase();
+
+    if (tipo === 'romaneio_agrupado') {
+        const originais = Array.isArray(item.itensOriginais) ? item.itensOriginais : [];
+        if (originais.length > 0) {
+            if (!window.confirm('Deseja Desagrupar para Edição?')) return;
+            const desagrupados = originais.map(o => ({
+                ...o,
+                id: Date.now() + Math.random(),
+                itensOriginais: undefined
+            }));
+            itensPedido.splice(index, 1, ...desagrupados);
+            itemEmEdicaoIndex = null;
+            renderizarItensPedido();
+            atualizarTotais();
+            ToastManager.success(`Item desagrupado em ${desagrupados.length} itens para edição.`, 'Item desagrupado', 3000);
+            return;
+        }
+        alterarTipoProduto('manual');
+        document.getElementById('produtoManual').value = (item.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
+        document.getElementById('quantidadeManual').value = item.quantidade;
+        document.getElementById('unidadeManual').value = item.unidade || 'm³';
+        document.getElementById('precoManual').value = formatCurrency(item.precoUnitario);
+        ToastManager.info('Item agrupado convertido para edição manual (dados originais não preservados).', 'Edição de Item', 4000);
+        itemEmEdicaoIndex = index;
+        return;
+    }
+
+    if (tipo === 'cadastrado') {
+        alterarTipoProduto('cadastrado');
+        const select = document.getElementById('produtoSelect');
+        if (select && item.produtoId) {
+            select.value = item.produtoId;
+            document.getElementById('quantidade').value = item.quantidade;
+            document.getElementById('precoUnitario').value = formatCurrency(item.precoUnitario);
+        }
+    } else if (tipo === 'romaneio') {
+        alterarTipoProduto('manual');
+        document.getElementById('produtoManual').value = (item.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
+        document.getElementById('quantidadeManual').value = item.quantidade;
+        document.getElementById('unidadeManual').value = item.unidade || 'm³';
+        document.getElementById('precoManual').value = formatCurrency(item.precoUnitario);
+        ToastManager.info('Item de romaneio convertido para edição manual.', 'Edição de Item', 3000);
+    } else {
+        alterarTipoProduto('manual');
+        document.getElementById('produtoManual').value = (item.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
+        document.getElementById('quantidadeManual').value = item.quantidade;
+        document.getElementById('unidadeManual').value = item.unidade || '';
+        document.getElementById('precoManual').value = formatCurrency(item.precoUnitario);
+    }
+
+    itemEmEdicaoIndex = index;
+    ToastManager.info('Ajuste os valores e clique em "Adicionar" para atualizar o item.', 'Editando item', 3500);
 }
 
 function agruparItensRomaneioNoCarrinho() {
@@ -1010,10 +1103,11 @@ function agruparItensRomaneioNoCarrinho() {
         const totalItem = Number(item && item.total || 0) || (qtd * (Number(item && item.precoUnitario || 0) || 0));
         const unidade = String(item && item.unidade || 'm³');
         if (!agrupadosMap[key]) {
-            agrupadosMap[key] = { origemId, nome, quantidade: 0, total: 0, unidade };
+            agrupadosMap[key] = { origemId, nome, quantidade: 0, total: 0, unidade, originais: [] };
         }
         agrupadosMap[key].quantidade += qtd;
         agrupadosMap[key].total += totalItem;
+        agrupadosMap[key].originais.push(item);
     });
     const itensAgrupados = Object.values(agrupadosMap).map(grp => {
         const precoMedio = grp.quantidade > 0 ? (grp.total / grp.quantidade) : 0;
@@ -1025,7 +1119,8 @@ function agruparItensRomaneioNoCarrinho() {
             quantidade: parseFloat(grp.quantidade.toFixed(3)),
             unidade: grp.unidade,
             precoUnitario: parseFloat(precoMedio.toFixed(2)),
-            total: parseFloat(grp.total.toFixed(2))
+            total: parseFloat(grp.total.toFixed(2)),
+            itensOriginais: grp.originais
         };
     });
     itensPedido = [...outrosItens, ...itensAgrupados];
@@ -1910,13 +2005,7 @@ async function salvarPedido(event) {
         pedido.bloquearGeracaoEstoque = isResumoAgrupado;
         pedido.modoResumoAgrupado = isResumoAgrupado;
         
-        // Preparar objeto de atualizações atômicas (Batch Update)
-        const updates = {};
-        
-        // 1. Adicionar atualização do pedido
-        updates[`pedidosCompra/${pedido.id}`] = pedido;
-        
-        // 2. Gerenciar Contas a Pagar (Financeiro)
+        // 1. Gerenciar Contas a Pagar (Financeiro)
         const vinculadas = pedidoEmEdicao
             ? await carregarContasPagarVinculadasPedidoCompra({
                 id: pedido.id,
@@ -1928,12 +2017,10 @@ async function salvarPedido(event) {
             throw new Error('Este pedido possui pagamentos realizados. Cancele os pagamentos antes de salvar.');
         }
 
-        Object.assign(updates, montarUpdatesRemocaoContasPagarCompra(vinculadas));
-        
         // Adicionar novas contas
         // Usar o array global `contasPagar` que reflete o estado atual da UI (editado)
         // NÃO usar `pedido.contasPagar` se ele vier de `pedidoEmEdicao` sem atualização.
-        // O objeto `pedido` criado acima (linha 846) usa `contasPagar` global: `contasPagar: contasPagar`.
+        // O objeto `pedido` criado acima usa `contasPagar` global: `contasPagar: contasPagar`.
         // Então `pedido.contasPagar` tem as NOVAS datas e valores.
         
         const contasParaGerar = Array.isArray(pedido.contasPagar) ? pedido.contasPagar.slice() : [];
@@ -1949,64 +2036,125 @@ async function salvarPedido(event) {
         }
         pedido.contasPagar = contasParaGerar;
 
-        if (shouldGenerateFinance && contasParaGerar.length > 0) {
-            contasParaGerar.forEach((c, idx) => {
-                const mk = toMonthKey(c.vencimento); // Nova chave de mês baseada na NOVA data
-                // Garantir ID único e persistente
-                // Se já tinha ID, mantém. Se não, gera.
-                const contaId = c.id || `CP-${pedido.id}-${idx}`;
-                c.id = contaId; 
-                
-                const conta = {
-                    id: contaId,
-                    tipo: 'pagar',
-                    categoria: 'compras',
-                    origem: 'compras',
-                    origemId: pedido.id,
-                    pedidoNumero: pedido.numero,
-                    fornecedorId: pedido.fornecedor.id,
-                    fornecedor: pedido.fornecedor.nome, 
-                    fornecedorObj: pedido.fornecedor,   
-                    descricao: `Compra ${pedido.numero} - ${c.observacao || getTipoContaLabel(c.tipo)}`,
-                    valor: typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor),
-                    valorOriginal: typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor),
-                    valorRestante: typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor), // Resetar restante ou manter se parcial?
-                    // Se for edição, deveríamos manter o histórico de pagamentos?
-                    // O sistema bloqueia edição se tiver pagamento (linha 1259).
-                    // Então podemos resetar valorRestante = valor total, pois assume-se não pago.
-                    vencimento: c.vencimento,
-                    dataVencimento: c.vencimento,
-                    status: c.status || 'pendente',
-                    tipoPagamento: c.tipo,
-                    observacoes: c.observacao || '',
-                    created: new Date().toISOString(),
-                    updatedAt: new Date().toISOString() // Marcar atualização
-                };
-                
-                // Salvar no caminho particionado por mês (padrão do sistema financeiro)
-                updates[`financas/pagar/${mk}/${contaId}`] = conta;
-                
-            });
-        }
-        
-        // 3. Executar atualização no Firebase
+        // Garantir ID único e persistente (mantém id se já existia)
+        contasParaGerar.forEach((c, idx) => {
+            if (!c.id) c.id = `CP-${pedido.id}-${idx}`;
+        });
+
+        // Contas a remover (edição): caminhos mês/ID das contas vinculadas antigas
+        const contasRemover = vinculadas.map(c => ({
+            mes: toMonthKey(c.dataVencimento || c.vencimento),
+            contaId: String(c.id)
+        }));
+
+        // Contas a criar: payload canônico validado pela callable no servidor
+        const contasCriar = contasParaGerar.map(c => ({
+            id: String(c.id),
+            fornecedor: pedido.fornecedor.nome,
+            descricao: `Compra ${pedido.numero} - ${c.observacao || getTipoContaLabel(c.tipo)}`,
+            valor: typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor),
+            valorOriginal: typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor),
+            valorRestante: typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor),
+            dataVencimento: c.vencimento,
+            status: c.status || 'pendente',
+            tipoPagamento: c.tipo,
+            observacoes: c.observacao || ''
+        }));
+
+        // 2. Executar persistência atômica (pedido + financeiro no servidor)
         let savedToFirebase = false;
-        const hasFinanceMutation = Object.keys(updates).some(k => String(k).startsWith('financas/pagar/'));
-        if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
-            console.log('📦 Enviando updatePaths para Firebase:', Object.keys(updates).length, 'caminhos');
-            const res = await window.firebaseService.updatePaths(updates);
-            if (res && res.success) {
-                savedToFirebase = true;
-                console.log('✅ Pedido e financeiro salvos com sucesso via updatePaths');
+        const hasFinanceMutation = contasCriar.length > 0 || contasRemover.length > 0;
+
+        if (hasFinanceMutation) {
+            if (window.firebaseService && typeof window.firebaseService.callFunction === 'function') {
+                console.log('📦 Chamando financeSyncCompra (pedido + financeiro atômico):', {
+                    pedido: pedido.id,
+                    criar: contasCriar.length,
+                    remover: contasRemover.length
+                });
+                try {
+                    const res = await window.firebaseService.callFunction('financeSyncCompra', {
+                        operationId: `compra-sync-${pedido.id}-${Date.now()}`,
+                        pedido,
+                        contasCriar,
+                        contasRemover
+                    });
+                    if (res && res.success) {
+                        savedToFirebase = true;
+                        console.log('✅ Pedido e financeiro salvos com sucesso via financeSyncCompra');
+                    } else {
+                        console.warn('⚠️ financeSyncCompra falhou:', res && res.error);
+                    }
+                } catch (callableError) {
+                    console.error('❌ financeSyncCompra lançou erro:', callableError);
+                    const errorCode = String((callableError && (callableError.code || callableError.details)) || '');
+                    if (errorCode === 'internal' || errorCode === 'not-found' || errorCode === 'unavailable') {
+                        // Modo compatibilidade: callable ainda não publicada (404/preflight) — escrita direta legada
+                        console.warn('⚠️ financeSyncCompra indisponível (função provavelmente não publicada). Usando modo legado de escrita direta.');
+                        try {
+                            const updates = { [`pedidosCompra/${pedido.id}`]: pedido };
+                            if (typeof montarUpdatesRemocaoContasPagarCompra === 'function') {
+                                Object.assign(updates, montarUpdatesRemocaoContasPagarCompra(vinculadas));
+                            }
+                            contasParaGerar.forEach((c, idx) => {
+                                const mk = toMonthKey(c.vencimento);
+                                const contaId = c.id || `CP-${pedido.id}-${idx}`;
+                                c.id = contaId;
+                                const conta = {
+                                    id: contaId,
+                                    tipo: 'pagar',
+                                    categoria: 'compras',
+                                    origem: 'compras',
+                                    origemId: pedido.id,
+                                    pedidoNumero: pedido.numero,
+                                    fornecedor: pedido.fornecedor.nome,
+                                    descricao: `Compra ${pedido.numero} - ${c.observacao || getTipoContaLabel(c.tipo)}`,
+                                    valor: typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor),
+                                    valorOriginal: typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor),
+                                    valorRestante: typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor),
+                                    vencimento: c.vencimento,
+                                    dataVencimento: c.vencimento,
+                                    status: c.status || 'pendente',
+                                    tipoPagamento: c.tipo,
+                                    observacoes: c.observacao || '',
+                                    created: new Date().toISOString()
+                                };
+                                updates[`financas/pagar/${mk}/${contaId}`] = conta;
+                            });
+                            const res = await window.firebaseService.updatePaths(updates);
+                            if (res && res.success) {
+                                savedToFirebase = true;
+                                console.log('✅ Pedido e financeiro salvos via modo legado (compatibilidade).');
+                            } else {
+                                console.warn('⚠️ updatePaths legado falhou:', res && res.error);
+                            }
+                        } catch (legacyError) {
+                            console.error('❌ Modo legado também falhou:', legacyError);
+                        }
+                    }
+                }
             } else {
-                console.warn('⚠️ updatePaths falhou no salvamento de compras:', res.error);
+                console.warn('Firebase Service sem callFunction para sincronizar o financeiro.');
+            }
+
+            // Rollback preservado: se o financeiro não confirmar, nada é salvo
+            if (!savedToFirebase) {
+                throw new Error('Não foi possível sincronizar o financeiro do pedido de compra. Nenhuma alteração foi concluída.');
             }
         } else {
-            console.warn('Firebase Service não disponível.');
-        }
-
-        if (!savedToFirebase && hasFinanceMutation) {
-            throw new Error('Não foi possível sincronizar o financeiro do pedido de compra. Nenhuma alteração foi concluída.');
+            // Sem mutação financeira: salvar apenas o pedido
+            if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
+                console.log('📦 Enviando updatePaths para Firebase (somente pedido):', pedido.id);
+                const res = await window.firebaseService.updatePaths({ [`pedidosCompra/${pedido.id}`]: pedido });
+                if (res && res.success) {
+                    savedToFirebase = true;
+                    console.log('✅ Pedido salvo com sucesso via updatePaths');
+                } else {
+                    console.warn('⚠️ updatePaths falhou no salvamento do pedido:', res && res.error);
+                }
+            } else {
+                console.warn('Firebase Service não disponível.');
+            }
         }
         
         // 4. Atualizar cache local e fallback sem financeiro
@@ -4868,12 +5016,23 @@ window.adicionarItensRomaneio = async function() {
                         nome: especie,
                         quantidade: 0,
                         total: 0,
-                        unidade: item.unidade || 'm³'
+                        unidade: item.unidade || 'm³',
+                        originais: []
                     };
                 }
                 
                 agrupados[key].quantidade += qtd;
                 agrupados[key].total += totalItem;
+                agrupados[key].originais.push({
+                    id: Date.now() + Math.random(),
+                    tipo: 'romaneio',
+                    origemId: origemRomaneioId,
+                    produtoNome: especie,
+                    quantidade: qtd,
+                    unidade: item.unidade || 'm³',
+                    precoUnitario: preco,
+                    total: totalItem
+                });
             });
             
             // Converter agrupados para lista de itens do pedido
@@ -4889,7 +5048,8 @@ window.adicionarItensRomaneio = async function() {
                     quantidade: parseFloat(grp.quantidade.toFixed(3)),
                     unidade: grp.unidade,
                     precoUnitario: parseFloat(precoMedio.toFixed(2)),
-                    total: parseFloat(grp.total.toFixed(2))
+                    total: parseFloat(grp.total.toFixed(2)),
+                    itensOriginais: grp.originais
                 });
             });
             

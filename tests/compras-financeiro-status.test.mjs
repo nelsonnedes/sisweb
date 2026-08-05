@@ -86,12 +86,23 @@ test('compras estorna financeiro ao voltar pedido para pendente ou cancelado', a
   );
 });
 
+test('compras cai em modo legado quando callable ainda nao publicada e preserva rollback', () => {
+  const js = read('compras.js');
+
+  assert.match(js, /financeSyncCompra indisponível/);
+  assert.match(js, /Usando modo legado de escrita direta/);
+  assert.match(js, /errorCode === 'internal'/);
+  assert.match(js, /updates\[`financas\/pagar\/\$\{mk\}\/\$\{contaId\}`\] = conta/);
+  assert.match(js, /Não foi possível sincronizar o financeiro do pedido de compra\. Nenhuma alteração foi concluída\./);
+});
+
 test('compras versiona script e evita falso sucesso quando financeiro nao sincroniza', () => {
   const html = read('compras.html');
   const js = read('compras.js');
 
   assert.match(html, /compras\.js\?v=[^"'\s]+/);
-  assert.match(js, /montarUpdatesRemocaoContasPagarCompra\(vinculadas\)/);
+  assert.match(js, /financeSyncCompra/);
+  assert.match(js, /contasRemover = vinculadas\.map/);
   assert.match(js, /Não foi possível sincronizar o financeiro do pedido de compra\. Nenhuma alteração foi concluída\./);
   assert.match(js, /Não foi possível remover o financeiro vinculado ao pedido de compra\. Nenhuma alteração foi concluída\./);
   assert.doesNotMatch(js, /await saveData\('compras', window\.compras\)/);

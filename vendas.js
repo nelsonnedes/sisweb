@@ -1781,6 +1781,45 @@ function editarItem(itemId) {
     document.getElementById('quantidade').value = item.quantidade;
     document.getElementById('precoUnitario').value = formatCurrency(item.precoUnitario);
             break;
+        case 'romaneio_agrupado': {
+            // ✅ DESAGRUPAR PARA EDIÇÃO: item agrupado só pode ser editado após desagrupar
+            const originais = Array.isArray(item.itensOriginais) ? item.itensOriginais : [];
+            if (originais.length === 0) {
+                // Dados legados sem originais preservados: fallback para edição manual
+                alterarTipoProduto('manual');
+                document.getElementById('produtoManual').value = (item.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
+                document.getElementById('quantidadeManual').value = item.quantidade;
+                document.getElementById('unidadeManual').value = item.unidade || 'm³';
+                document.getElementById('precoManual').value = formatCurrency(item.precoUnitario);
+                ToastManager.info(
+                    'Item agrupado convertido para edição manual (dados originais não preservados).',
+                    'Edição de Item',
+                    4000
+                );
+                itemEmEdicaoId = String(itemId);
+                break;
+            }
+            if (!window.confirm('Deseja Desagrupar para Edição?')) {
+                return;
+            }
+            const idx = itensCarrinho.findIndex(i => String(i.id) === String(itemId));
+            if (idx === -1) return;
+            const desagrupados = originais.map(o => ({
+                ...o,
+                id: Date.now() + Math.random(),
+                itensOriginais: undefined
+            }));
+            itensCarrinho.splice(idx, 1, ...desagrupados);
+            itemEmEdicaoId = null;
+            atualizarTabelaItens();
+            atualizarTotais();
+            ToastManager.success(
+                `Item desagrupado em ${desagrupados.length} itens para edição.`,
+                'Item desagrupado',
+                3000
+            );
+            break;
+        }
     }
     
     // Marcar item em edição: o próximo "Adicionar" atualiza este item na mesma
@@ -2169,7 +2208,11 @@ async function salvarPedido(event) {
             if (editandoPedidoId && !shouldGenerateFinance && removiveis.length > 0) {
                 throw new Error('Não foi possível estornar o financeiro vinculado. Nenhuma alteração foi concluída.');
             }
-            // Fallback para salvamento individual
+            // ✅ CORREÇÃO: pedido com financeiro obrigatório não pode ser confirmado sem o financeiro
+            if (shouldGenerateFinance && (pedidoData.contasReceber || []).length > 0) {
+                throw new Error('Não foi possível sincronizar as contas a receber do pedido. Nenhuma alteração foi concluída.');
+            }
+            // Fallback para salvamento individual (somente pedido sem financeiro obrigatório)
             await saveData('vendas/pedidos', window.pedidos);
             
             // Salvar contas individualmente (não ideal, mas funcional como fallback)
@@ -5351,8 +5394,18 @@ function agruparItensRomaneioNoCarrinho() {
                 quantidade: 0,
                 total: 0,
                 unidade: item.unidade || 'm³',
-                origemId: item.origemId
+                origemId: item.origemId,
+                originais: []
             };
+        }
+        // Preservar itens originais para permitir desagrupamento na edição
+        if (String(item.tipo || '').toLowerCase() === 'romaneio_agrupado' && Array.isArray(item.itensOriginais)) {
+            agrupados[key].originais.push(...item.itensOriginais);
+        } else {
+            agrupados[key].originais.push(item);
+        }
+        if (agrupados[key].originais.length > 1 && !agrupados[key].origemId) {
+            agrupados[key].origemId = item.origemId;
         }
         
         agrupados[key].quantidade += (parseFloat(item.quantidade) || 0);
@@ -5373,7 +5426,8 @@ function agruparItensRomaneioNoCarrinho() {
             quantidade: parseFloat(grp.quantidade.toFixed(3)),
             unidade: grp.unidade,
             precoUnitario: parseFloat(precoMedio.toFixed(2)),
-            total: parseFloat(grp.total.toFixed(2))
+            total: parseFloat(grp.total.toFixed(2)),
+            itensOriginais: grp.originais
         };
     });
     
@@ -5424,11 +5478,28 @@ function adicionarItensRomaneio() {
                             espessura,
                             volume: 0,
                             valor: 0,
-                            unidade: cat.unidade || 'm³'
+                            unidade: cat.unidade || 'm³',
+                            originais: []
                         };
                     }
                     agrupadosPorEspessura[key].volume += cat.volume;
                     agrupadosPorEspessura[key].valor += cat.valorTotal || (cat.volume * (cat.precoUnitario > 0 ? cat.precoUnitario : precoPadraoPorM3));
+                    const precoCat = cat.precoUnitario > 0 ? cat.precoUnitario : precoPadraoPorM3;
+                    const base = cat.categoriaBase || categoria;
+                    const dims = cat.dimensoesKey || '';
+                    const pecasInfoCat = construirResumoPecasParaDescricao(cat);
+                    agrupadosPorEspessura[key].originais.push({
+                        id: Date.now() + Math.random(),
+                        produtoId: `romaneio_${normalizarIdRomaneioParte(especieLimpa)}_${normalizarIdRomaneioParte(base)}_${normalizarIdRomaneioParte(dims)}`,
+                        produtoNome: `${especieLimpa} - ${categoria}${pecasInfoCat ? ` - ${pecasInfoCat}` : ''}`,
+                        especie: especieLimpa,
+                        espessura: espessura,
+                        quantidade: cat.volume,
+                        precoUnitario: precoCat,
+                        total: cat.valorTotal || (cat.volume * precoCat),
+                        tipo: 'romaneio',
+                        unidade: cat.unidade || 'm³'
+                    });
                 }
             });
             
@@ -5448,6 +5519,7 @@ function adicionarItensRomaneio() {
                     existente.quantidade = novoQ;
                     existente.total = novoTotal;
                     existente.precoUnitario = novoQ > 0 ? novoTotal / novoQ : 0;
+                    existente.itensOriginais = [...(Array.isArray(existente.itensOriginais) ? existente.itensOriginais : []), ...grp.originais];
                 } else {
                     itensCarrinho.push({
                         id: Date.now() + Math.random(),
@@ -5459,7 +5531,8 @@ function adicionarItensRomaneio() {
                         precoUnitario: precoMedio,
                         total: grp.valor,
                         tipo: 'romaneio_agrupado',
-                        unidade: grp.unidade
+                        unidade: grp.unidade,
+                        itensOriginais: grp.originais
                     });
                 }
             });
@@ -5571,11 +5644,11 @@ function adicionarContaReceber() {
         let baseVencimentoISO;
         let dataVencimentoISO;
         if (tipo === 'a_vista' || tipo === 'entrada' || tipo === 'pix' || tipo === 'cartao' || tipo === 'receber' || tipo === 'permuta') {
-            baseVencimentoISO = pedidoDataISO || vencimento;
+            baseVencimentoISO = vencimento || pedidoDataISO;
             dataVencimentoISO = baseVencimentoISO;
             diasOffset = 0;
         } else {
-            baseVencimentoISO = pedidoDataISO || vencimento;
+            baseVencimentoISO = vencimento || pedidoDataISO;
             dataVencimentoISO = addDaysISO(baseVencimentoISO, diasOffset);
         }
 
@@ -5589,7 +5662,7 @@ function adicionarContaReceber() {
             id: Date.now() + i,
             valor: valorPorParcela,
             vencimento: dataVencimentoISO,
-            dataEmissao: pedidoData,
+            dataEmissao: pedidoDataISO,
             baseVencimento: baseVencimentoISO,
             dias: diasOffset,
             tipo: tipo,
