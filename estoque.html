@@ -2089,8 +2089,8 @@
                             <input type="date" id="saidaData" required>
                         </div>
                         <div class="form-group">
-                            <label for="saidaPlaquetaBusca">Buscar por Plaqueta:</label>
-                            <input type="text" id="saidaPlaquetaBusca" placeholder="Digite a plaqueta" autocomplete="off" aria-expanded="false" aria-controls="saidaPlaquetaResultadosPanel" oninput="buscarToraPorPlaqueta()" onfocus="abrirResultadosPlaquetaSaida()" onblur="agendarRecolherResultadosPlaquetaSaida()" onkeydown="onSaidaPlaquetaKeydown(event)">
+                            <label for="saidaPlaquetaBusca">Buscar tora:</label>
+                            <input type="text" id="saidaPlaquetaBusca" placeholder="Plaqueta, descrição/espécie ou custódia" autocomplete="off" aria-expanded="false" aria-controls="saidaPlaquetaResultadosPanel" oninput="buscarToraPorPlaqueta()" onfocus="abrirResultadosPlaquetaSaida()" onblur="agendarRecolherResultadosPlaquetaSaida()" onkeydown="onSaidaPlaquetaKeydown(event)">
                             <div id="saidaToraInfo" class="saldo-info"></div>
                         </div>
                         <div class="form-group">
@@ -2117,7 +2117,7 @@
                     </div>
                     <div id="saidaPlaquetaResultadosPanel" class="saida-plaqueta-results" aria-hidden="true">
                         <div class="saida-plaqueta-results-header">
-                            <span id="saidaPlaquetaResultadosResumo">Digite uma plaqueta para localizar toras disponíveis</span>
+                            <span id="saidaPlaquetaResultadosResumo">Digite plaqueta, descrição/espécie ou custódia</span>
                             <div class="saida-plaqueta-results-header-actions">
                                 <button type="button" id="saidaPlaquetaAdicionarSelecionadasBtn" class="btn btn-primary btn-small saida-plaqueta-add-selected-btn" onclick="adicionarTorasPlaquetaSelecionadas()" disabled>
                                     <i class="fas fa-plus"></i> Adicionar Selecionadas
@@ -2147,7 +2147,7 @@
                                 </thead>
                                 <tbody id="saidaPlaquetaResultadosBody">
                                     <tr>
-                                        <td colspan="10" class="saida-plaqueta-results-empty">Digite uma plaqueta para localizar toras disponíveis.</td>
+                                <td colspan="10" class="saida-plaqueta-results-empty">Digite plaqueta, descrição/espécie ou custódia.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -2283,6 +2283,9 @@
                     </div>
 
                     <div class="action-buttons">
+                        <button type="button" id="excluirTorasSaidaSelecionadasBtn" onclick="excluirTorasSaidaSelecionadas()" class="btn btn-danger" disabled>
+                            <i class="fas fa-trash-alt"></i> Excluir Selecionadas<span data-selection-count></span>
+                        </button>
                         <button type="submit" class="btn btn-danger">
                             <i class="fas fa-minus-circle"></i> Confirmar Baixa
                         </button>
@@ -2353,7 +2356,7 @@
                     </div>
                     <div class="form-group">
                         <label for="searchEstoque">Buscar:</label>
-                        <input type="text" id="searchEstoque" placeholder="Plaqueta, espécie..." onkeyup="filtrarEstoque()" onkeydown="onBuscaEstoqueEnter(event)">
+                        <input type="text" id="searchEstoque" placeholder="Plaqueta, descrição/espécie ou custódia" onkeyup="filtrarEstoque()" onkeydown="onBuscaEstoqueEnter(event)">
                     </div>
                 </div>
             </div>
@@ -2452,7 +2455,12 @@
                             <option value="">Selecione o Tipo</option>
                             <option value="entrada">Entrada</option>
                             <option value="saida">Saída</option>
+                            <option value="exclusao">Exclusão</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filtroBuscaToraMov">Buscar tora:</label>
+                        <input type="text" id="filtroBuscaToraMov" placeholder="Plaqueta, descrição/espécie ou custódia" oninput="filtrarMovimentacoes()">
                     </div>
                     <div class="form-group">
                         <label for="filtroRemessaBaixa">Remessa de Baixa:</label>
@@ -2472,10 +2480,18 @@
 
             <style>
                 .obs-col {
-                    max-width: 200px;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
+                    min-width: 220px;
+                    max-width: 340px;
+                    white-space: normal;
+                    overflow-wrap: anywhere;
+                }
+                .romaneio-vinculado-list {
+                    display: grid;
+                    gap: 3px;
+                }
+                .romaneio-vinculado-item {
+                    display: block;
+                    line-height: 1.35;
                 }
             </style>
 
@@ -2665,7 +2681,7 @@
                     <div style="overflow-x:auto;">
                         <div class="filtro-toras-modal-grid" style="display:flex; gap:8px; flex-wrap:nowrap; align-items:center; min-width:1090px;">
                             <div class="species-combobox-inline" style="width:420px; min-width:420px;">
-                                <input type="text" id="filtroTorasEspecieModal" class="autocomplete-input" data-species-autocomplete="true" data-species-layout="reserved" data-species-reserve="filtroTorasEspecieModalSuggestionsReserve" placeholder="Espécie ou Plaqueta" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="especieSuggestions" role="combobox" oninput="filtrarTorasDisponiveis()" onkeydown="onBuscaTorasEnter(event)">
+                                <input type="text" id="filtroTorasEspecieModal" class="autocomplete-input" data-species-autocomplete="true" data-species-layout="reserved" data-species-reserve="filtroTorasEspecieModalSuggestionsReserve" placeholder="Espécie, descrição, plaqueta ou custódia" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="especieSuggestions" role="combobox" oninput="filtrarTorasDisponiveis()" onkeydown="onBuscaTorasEnter(event)">
                                 <button type="button" onclick="abrirListaEspeciesEntrada('filtroTorasEspecieModal')" class="btn btn-secondary species-icon-btn" title="Lista de Espécies">
                                     <i class="fas fa-list"></i>
                                 </button>
@@ -2679,7 +2695,7 @@
                     </div>
                     <div id="filtroTorasEspecieModalSuggestionsReserve" class="species-suggestions-reserve" aria-hidden="true"></div>
                     <div style="font-size:12px; color:#666; margin-top:6px; white-space:nowrap;">
-                        Dica: no campo Espécie ou Plaqueta, pressione Enter para selecionar os itens filtrados e limpar a busca.
+                        Dica: no campo de busca, pressione Enter para selecionar os itens filtrados e limpar a busca.
                     </div>
                 </div>
                 
@@ -2738,6 +2754,9 @@
             
             <div class="modal-footer">
                 <div class="action-buttons" style="margin-top: 0; width: 100%; justify-content: flex-end;">
+                    <button type="button" id="excluirTorasModalSelecionadasBtn" onclick="excluirTorasModalSelecionadas()" class="btn btn-danger" disabled>
+                        <i class="fas fa-trash-alt"></i> Excluir Selecionadas<span data-selection-count></span>
+                    </button>
                     <button onclick="confirmarSelecaoToras()" class="btn btn-success">
                         <i class="fas fa-check"></i> Confirmar Seleção
                     </button>
@@ -2827,8 +2846,8 @@
                         <input type="date" id="rastFiltroDataFim">
                     </div>
                     <div class="form-group">
-                        <label for="rastFiltroPlaqueta">Plaqueta:</label>
-                        <input type="text" id="rastFiltroPlaqueta" placeholder="Plaqueta">
+                        <label for="rastFiltroPlaqueta">Buscar tora:</label>
+                        <input type="text" id="rastFiltroPlaqueta" placeholder="Plaqueta, descrição/espécie ou custódia">
                     </div>
                     <div class="form-group">
                         <label for="rastFiltroRomaneio">Romaneio:</label>
@@ -3012,7 +3031,7 @@
     </script>
     <script src="commerce-pdf-share.js?v=9659e27a66f7"></script>
     <script src="estoque_produtos.js?v=b3bbb6bff2e0"></script>
-    <script src="estoque.js?v=8e2247e88dbf"></script>
+        <script src="estoque.js?v=2026-08-02-busca-romaneio-v1"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

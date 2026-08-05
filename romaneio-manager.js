@@ -12,6 +12,19 @@
 
 console.log("📋 === ROMANEIO MANAGER UNIFICADO (v2.2 - Full UI) ===");
 
+function escapeRomaneioHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function toInlineRomaneioArg(value) {
+    return escapeRomaneioHtml(JSON.stringify(String(value ?? '')));
+}
+
 // Helper para chaves de storage
 function getStorageKey(key) {
     const clean = String(key || '').replace(/^\/+/, '');
@@ -431,7 +444,8 @@ class RomaneioManager {
                     #${this.modalId} tbody tr:hover {
                         background-color: #f1f7fb;
                     }
-                    #${this.modalId} .btn-action {
+                    #${this.modalId} .btn-action,
+                    #${this.modalId} .actions-container .btn {
                         margin: 0 2px;
                         width: 32px;
                         height: 32px;
@@ -442,7 +456,8 @@ class RomaneioManager {
                         border-radius: 4px;
                         transition: all 0.2s;
                     }
-                    #${this.modalId} .btn-action:hover {
+                    #${this.modalId} .btn-action:hover,
+                    #${this.modalId} .actions-container .btn:hover {
                         transform: translateY(-1px);
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                     }
@@ -469,7 +484,14 @@ class RomaneioManager {
                         padding: 8px 20px;
                         border-radius: 4px;
                         font-weight: 500;
+                        cursor: pointer;
                         transition: background 0.2s;
+                    }
+                    #${this.modalId} button:not(:disabled) {
+                        cursor: pointer;
+                    }
+                    #${this.modalId} button:disabled {
+                        cursor: not-allowed;
                     }
                     #${this.modalId} .close-btn-footer:hover {
                         background-color: #5a6268;
@@ -582,9 +604,10 @@ class RomaneioManager {
         } else {
             const lower = this.currentFilter.toLowerCase();
             this.filteredRomaneios = this.allRomaneios.filter(r => {
-                const fornecedor = (r.fornecedor?.nome || r.cliente?.nome || r.fornecedor || r.cliente || '').toLowerCase();
-                const obs = (r.observacoes || '').toLowerCase();
-                const data = (r.dataHora || '').toLowerCase();
+                const fornecedorValue = r.fornecedor?.nome || r.cliente?.nome || r.fornecedor || r.cliente || '';
+                const fornecedor = String(typeof fornecedorValue === 'object' ? '' : fornecedorValue).toLowerCase();
+                const obs = String(r.observacoes || '').toLowerCase();
+                const data = String(r.dataHora || '').toLowerCase();
                 return fornecedor.includes(lower) || obs.includes(lower) || data.includes(lower);
             });
         }
@@ -613,7 +636,9 @@ class RomaneioManager {
         tbody.innerHTML = pageItems.map((r, idx) => {
             const globalIdx = start + idx;
             const dataFmt = r.dataHora ? new Date(r.dataHora).toLocaleDateString('pt-BR') : '-';
-            const nome = r.fornecedor?.nome || r.cliente?.nome || r.fornecedor || r.cliente || '<span class="text-muted">Não informado</span>';
+            const nomeValue = r.fornecedor?.nome || r.cliente?.nome || r.fornecedor || r.cliente || 'Não informado';
+            const nome = typeof nomeValue === 'object' ? 'Não informado' : String(nomeValue);
+            const actionId = toInlineRomaneioArg(r.id);
             
             let resumo = '-';
             let qtd = 0;
@@ -634,14 +659,14 @@ class RomaneioManager {
             if (this.type === 'tora') {
                  actions = `
                     <div class="actions-container">
-                        <button class="btn btn-sm btn-primary" onclick="window.editarRomaneioTora('${r.id}')" title="Editar">
+                        <button class="btn btn-sm btn-primary" onclick="window.editarRomaneioTora(${actionId})" title="Editar">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="window.excluirRomaneioTora('${r.id}')" title="Excluir">
+                        <button class="btn btn-sm btn-danger" onclick="window.excluirRomaneioTora(${actionId})" title="Excluir">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                         <div class="print-dropdown" style="display: inline-block; position: relative;">
-                            <button class="btn btn-sm btn-info dropdown-toggle" onclick="window.togglePrintMenuTora(this, '${r.id}', ${globalIdx})" title="Imprimir">
+                            <button class="btn btn-sm btn-info dropdown-toggle" onclick="window.togglePrintMenuTora(this, ${actionId}, ${globalIdx})" title="Imprimir">
                                 <i class="fas fa-print"></i>
                                 <i class="fas fa-caret-down" style="font-size: 10px; margin-left: 2px;"></i>
                             </button>
@@ -651,13 +676,13 @@ class RomaneioManager {
             } else {
                  actions = `
                     <div class="actions-container">
-                        <button class="btn btn-sm btn-primary" onclick="window.editarRomaneioGeneric('${this.type}', '${r.id}')" title="Editar">
+                        <button class="btn btn-sm btn-primary" onclick="window.editarRomaneioGeneric('${this.type}', ${actionId})" title="Editar">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="window.excluirRomaneioGeneric('${this.type}', '${r.id}')" title="Excluir">
+                        <button class="btn btn-sm btn-danger" onclick="window.excluirRomaneioGeneric('${this.type}', ${actionId})" title="Excluir">
                             <i class="fas fa-trash-alt"></i>
                         </button>
-                        <button class="btn btn-sm btn-info" onclick="window.imprimirRomaneioGeneric('${this.type}', '${r.id}')" title="Imprimir">
+                        <button class="btn btn-sm btn-info" onclick="window.imprimirRomaneioGeneric('${this.type}', ${actionId})" title="Imprimir">
                             <i class="fas fa-print"></i>
                         </button>
                     </div>
@@ -666,9 +691,9 @@ class RomaneioManager {
 
             return `
                 <tr>
-                    <td class="fw-bold text-dark">${dataFmt}</td>
-                    <td>${nome}</td>
-                    <td><small class="text-muted">${resumo.substring(0, 30)}${resumo.length > 30 ? '...' : ''}</small></td>
+                    <td class="fw-bold text-dark">${escapeRomaneioHtml(dataFmt)}</td>
+                    <td>${escapeRomaneioHtml(nome)}</td>
+                    <td><small class="text-muted">${escapeRomaneioHtml(resumo.substring(0, 30))}${resumo.length > 30 ? '...' : ''}</small></td>
                     <td class="text-center"><span class="badge bg-light text-dark border">${qtd}</span></td>
                     <td class="text-end fw-bold">${vol.toFixed(3)} m³</td>
                     <td class="text-end text-success fw-bold">R$ ${val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>

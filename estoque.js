@@ -19,6 +19,7 @@ let movimentacoes = [];
 let fornecedores = [];
 let torasSelecionadasBaixa = [];
 let torasSelecionadasModal = [];
+let exclusaoTorasEmLoteEmAndamento = false;
 let itensEntrada = []; // Itens temporários para entrada
 let romaneiosDisponiveis = []; // Cache de romaneios
 let romaneioSelecionadoId = null; // ID do romaneio selecionado
@@ -159,6 +160,33 @@ function normalizarCamposGeoEstoque(item = {}) {
         x4,
         volumeGeo
     };
+}
+
+function normalizarTextoBuscaEstoque(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function obterTextoBuscaTora(item = {}) {
+    const geo = normalizarCamposGeoEstoque(item);
+    return normalizarTextoBuscaEstoque([
+        item.plaqueta,
+        item.descricao,
+        item.descricaoTora,
+        item.description,
+        item.especie,
+        geo.custodia,
+        item.localizacao
+    ].filter(Boolean).join(' '));
+}
+
+function toraCorrespondeBusca(item, termo) {
+    const filtro = normalizarTextoBuscaEstoque(termo);
+    return !filtro || obterTextoBuscaTora(item).includes(filtro);
 }
 
 function formatarMedidaGeoEstoque(value) {
@@ -3504,16 +3532,13 @@ function abrirBaixaIndividual() {
 
 function carregarTorasDisponiveis() {
     const tbody = document.getElementById('torasDisponiveisTable');
-    const especieFiltro = String((document.getElementById('filtroTorasEspecieModal') || {}).value || '').toLowerCase().trim();
+    const especieFiltro = String((document.getElementById('filtroTorasEspecieModal') || {}).value || '').trim();
     const rodoFiltro = String((document.getElementById('filtroTorasRodoModal') || {}).value || '').toLowerCase().trim();
     const comprimentoFiltro = String((document.getElementById('filtroTorasComprimentoModal') || {}).value || '').toLowerCase().trim();
     let torasDisponiveis = estoqueAtual.filter(tora => tora.status === 'disponivel');
 
     if (especieFiltro) {
-        torasDisponiveis = torasDisponiveis.filter(tora =>
-            String(tora.especie || '').toLowerCase().includes(especieFiltro) ||
-            String(tora.plaqueta || '').toLowerCase().includes(especieFiltro)
-        );
+        torasDisponiveis = torasDisponiveis.filter(tora => toraCorrespondeBusca(tora, especieFiltro));
     }
     if (rodoFiltro) {
         torasDisponiveis = torasDisponiveis.filter(tora => {
@@ -3536,6 +3561,7 @@ function carregarTorasDisponiveis() {
         tbody.innerHTML = '<tr><td colspan="19" style="text-align: center;">Nenhuma tora disponível</td></tr>';
         const checkboxTodas = document.getElementById('selecionarTodas');
         if (checkboxTodas) checkboxTodas.checked = false;
+        atualizarAcoesExclusaoToras();
         return;
     }
 
@@ -3575,6 +3601,7 @@ function carregarTorasDisponiveis() {
     if (checkboxTodas) {
         checkboxTodas.checked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
     }
+    atualizarAcoesExclusaoToras();
 }
 
 function filtrarTorasDisponiveis() {
@@ -3658,10 +3685,11 @@ function selecionarTodasToras() {
 }
 
 function toggleToraSelecao(toraId, isChecked, updateCheckbox = true) {
-    const tora = estoqueAtual.find(t => t.id === toraId);
+    const normalizedToraId = String(toraId);
+    const tora = estoqueAtual.find(t => String(t.id) === normalizedToraId);
     if (!tora) return;
 
-    const index = torasSelecionadasModal.findIndex(t => t.id === toraId);
+    const index = torasSelecionadasModal.findIndex(t => String(t.id) === normalizedToraId);
 
     if (isChecked) {
         const jaNaTabela = torasSelecionadasBaixa.some(t => String(t.id) === String(toraId));
@@ -3688,6 +3716,7 @@ function toggleToraSelecao(toraId, isChecked, updateCheckbox = true) {
         const todasSelecionadas = Array.from(checkboxes).every(cb => cb.checked);
         checkboxTodas.checked = todasSelecionadas;
     }
+    atualizarAcoesExclusaoToras();
 }
 
 function confirmarSelecaoToras() {
@@ -3703,6 +3732,7 @@ function confirmarSelecaoToras() {
     torasSelecionadasModal = [];
     fecharModal('selecaoTorasModal');
     atualizarTabelaTorasSaida();
+    atualizarAcoesExclusaoToras();
 }
 
 function adicionarToraManualSaida() {
@@ -3779,6 +3809,7 @@ function abrirSelecaoTorasParaAdicionar() {
     if (modal) modal.style.display = 'block';
     atualizarFiltrosTorasDisponiveisModal();
     carregarTorasDisponiveis();
+    atualizarAcoesExclusaoToras();
 }
 
 function atualizarTabelaTorasSaida() {
@@ -3790,6 +3821,7 @@ function atualizarTabelaTorasSaida() {
         atualizarResumoSaida();
         if (paginacaoEl) paginacaoEl.innerHTML = '';
         applySaidaColumnsConfig();
+        atualizarAcoesExclusaoToras();
         return;
     }
 
@@ -3820,6 +3852,7 @@ function atualizarTabelaTorasSaida() {
     renderizarPaginacaoPadrao('paginacaoSaida', torasSelecionadasBaixa.length, paginaAtualSaida, itensPorPaginaSaida, 'mudarPaginaSaida', { sizeScope: 'saida' });
     applySaidaColumnsConfig();
     atualizarResumoSaida();
+    atualizarAcoesExclusaoToras();
 }
 
 function mudarPaginaSaida(p) {
@@ -3835,6 +3868,50 @@ function removerToraSaida(toraId) {
     atualizarTabelaTorasSaida();
 }
 
+function obterIdsTorasSaidaPersistidasSelecionadas() {
+    const idsEstoque = new Set((estoqueAtual || []).filter(Boolean).map(tora => String(tora.id)));
+    return Array.from(saidaSelecionadas).map(String).filter(id => idsEstoque.has(id));
+}
+
+function obterIdsTorasModalMarcadasParaExclusao() {
+    const idsJaCarregados = new Set((torasSelecionadasBaixa || []).filter(Boolean).map(tora => String(tora.id)));
+    return (torasSelecionadasModal || [])
+        .filter(Boolean)
+        .map(tora => String(tora.id))
+        .filter(id => id && !idsJaCarregados.has(id));
+}
+
+function atualizarAcoesExclusaoToras() {
+    const atualizarBotao = (id, quantidade) => {
+        const botao = document.getElementById(id);
+        if (!botao) return;
+        botao.disabled = exclusaoTorasEmLoteEmAndamento || quantidade === 0;
+        const label = botao.querySelector('[data-selection-count]');
+        if (label) label.textContent = quantidade > 0 ? ` (${quantidade})` : '';
+    };
+
+    atualizarBotao('excluirTorasSaidaSelecionadasBtn', obterIdsTorasSaidaPersistidasSelecionadas().length);
+    atualizarBotao('excluirTorasModalSelecionadasBtn', obterIdsTorasModalMarcadasParaExclusao().length);
+}
+
+async function excluirTorasSaidaSelecionadas() {
+    const ids = obterIdsTorasSaidaPersistidasSelecionadas();
+    if (ids.length === 0) {
+        alert('Selecione ao menos uma tora cadastrada no estoque. Itens manuais não podem ser excluídos por esta ação.');
+        return { success: false, count: 0 };
+    }
+    return excluirTorasDoEstoqueEmLote(ids, { origem: 'baixa_individual' });
+}
+
+async function excluirTorasModalSelecionadas() {
+    const ids = obterIdsTorasModalMarcadasParaExclusao();
+    if (ids.length === 0) {
+        alert('Selecione ao menos uma tora ainda não carregada na baixa.');
+        return { success: false, count: 0 };
+    }
+    return excluirTorasDoEstoqueEmLote(ids, { origem: 'modal_baixa_lote' });
+}
+
 function toggleTodasSaida() {
     const master = document.getElementById('checkTodasSaida');
     const checks = document.querySelectorAll('.check-saida');
@@ -3846,6 +3923,7 @@ function toggleTodasSaida() {
             saidaSelecionadas.delete(c.value);
         }
     });
+    atualizarAcoesExclusaoToras();
 }
 
 function toggleSaida(id, isChecked) {
@@ -3856,6 +3934,7 @@ function toggleSaida(id, isChecked) {
         const master = document.getElementById('checkTodasSaida');
         if (master) master.checked = false;
     }
+    atualizarAcoesExclusaoToras();
 }
 
 function ordenarSaida(coluna) {
@@ -4461,16 +4540,16 @@ function agendarRecolherResultadosPlaquetaSaida() {
 }
 
 function obterCandidatosPlaquetaSaida(termo = '') {
-    const filtro = String(termo || '').trim().toLowerCase();
+    const filtro = normalizarTextoBuscaEstoque(termo);
     const selecionadas = new Set((torasSelecionadasBaixa || []).map(t => String(t && t.id)));
     const disponiveis = (estoqueAtual || []).filter(t => t && t.status === 'disponivel' && !selecionadas.has(String(t.id)));
     const candidatos = filtro
-        ? disponiveis.filter(t => String(t.plaqueta || '').toLowerCase().includes(filtro))
+        ? disponiveis.filter(t => toraCorrespondeBusca(t, filtro))
         : disponiveis;
 
     return candidatos.sort((a, b) => {
-        const pa = String(a.plaqueta || '').toLowerCase();
-        const pb = String(b.plaqueta || '').toLowerCase();
+        const pa = normalizarTextoBuscaEstoque(a.plaqueta);
+        const pb = normalizarTextoBuscaEstoque(b.plaqueta);
         const scoreA = filtro && pa === filtro ? 0 : (filtro && pa.startsWith(filtro) ? 1 : 2);
         const scoreB = filtro && pb === filtro ? 0 : (filtro && pb.startsWith(filtro) ? 1 : 2);
         if (scoreA !== scoreB) return scoreA - scoreB;
@@ -4503,7 +4582,7 @@ function renderizarResultadosPlaquetaSaida(candidatos = [], termo = '') {
         if (!termoLabel && saidaPlaquetaResultados.length > 0) {
             resumo.textContent = `Toras disponíveis para baixa (${saidaPlaquetaResultados.length > 50 ? '50+' : saidaPlaquetaResultados.length})`;
         } else if (saidaPlaquetaResultados.length === 0) {
-            resumo.textContent = termoLabel ? 'Nenhuma tora disponível encontrada' : 'Digite uma plaqueta para localizar toras disponíveis';
+            resumo.textContent = termoLabel ? 'Nenhuma tora disponível encontrada' : 'Digite plaqueta, descrição/espécie ou custódia';
         } else {
             resumo.textContent = `${saidaPlaquetaResultados.length} resultado(s) para "${termoLabel}"`;
         }
@@ -4512,7 +4591,7 @@ function renderizarResultadosPlaquetaSaida(candidatos = [], termo = '') {
     if (saidaPlaquetaResultados.length === 0) {
         body.innerHTML = `
             <tr>
-                <td colspan="10" class="saida-plaqueta-results-empty">${termoLabel ? 'Nenhuma tora disponível encontrada para esta plaqueta.' : 'Digite uma plaqueta para localizar toras disponíveis.'}</td>
+                <td colspan="10" class="saida-plaqueta-results-empty">${termoLabel ? 'Nenhuma tora disponível encontrada para esta busca.' : 'Digite plaqueta, descrição/espécie ou custódia.'}</td>
             </tr>
         `;
         atualizarControlesPlaquetaSaida();
@@ -4602,7 +4681,7 @@ function buscarToraPorPlaqueta() {
 
     if (!termo) {
         toraEncontradaBaixa = null;
-        atualizarInfoToraBaixa(null, 'Digite uma plaqueta para localizar toras disponíveis.');
+        atualizarInfoToraBaixa(null, 'Digite plaqueta, descrição/espécie ou custódia.');
         return;
     }
     if (candidatos.length === 0) {
@@ -4752,12 +4831,7 @@ function carregarTabelaEstoque(filtro = {}) {
     }
 
     if (filtro.busca) {
-        const buscaLower = filtro.busca.toLowerCase();
-        torasDisponiveis = torasDisponiveis.filter(t =>
-            String(t.plaqueta || '').toLowerCase().includes(buscaLower) ||
-            String(t.especie || '').toLowerCase().includes(buscaLower) ||
-            (t.localizacao && t.localizacao.toLowerCase().includes(buscaLower))
-        );
+        torasDisponiveis = torasDisponiveis.filter(t => toraCorrespondeBusca(t, filtro.busca));
     }
 
     // Ordenar por coluna configurada
@@ -5021,58 +5095,106 @@ function atualizarFiltros() {
     }
 }
 
-async function excluirTora(toraId) {
-    if (!confirm('Deseja excluir esta tora do estoque? Esta ação não pode ser desfeita.')) {
-        return;
+async function excluirTorasDoEstoqueEmLote(ids, options = {}) {
+    if (exclusaoTorasEmLoteEmAndamento) return { success: false, count: 0 };
+
+    const idsSolicitados = new Set((Array.isArray(ids) ? ids : []).map(String));
+    const toras = (estoqueAtual || []).filter(tora =>
+        tora && !tora.manualForaEstoque && idsSolicitados.has(String(tora.id))
+    );
+    if (toras.length === 0) {
+        alert('Nenhuma tora cadastrada no estoque foi selecionada para exclusão.');
+        return { success: false, count: 0 };
     }
+
+    const mensagem = toras.length === 1
+        ? 'Excluir permanentemente esta tora do estoque? Esta ação não pode ser desfeita.'
+        : `Excluir permanentemente ${toras.length} toras do estoque? Esta ação não pode ser desfeita.`;
+    if (!confirm(mensagem)) return { success: false, count: 0 };
+
+    exclusaoTorasEmLoteEmAndamento = true;
+    atualizarAcoesExclusaoToras();
 
     try {
-        // Capturar tora antes de remover para registrar movimentação corretamente
-        const toraOriginal = estoqueAtual.find(t => t.id === toraId);
-        // Remover do estoque
-        estoqueAtual = estoqueAtual.filter(t => t.id !== toraId);
+        const agora = new Date();
+        const idsExcluidos = new Set(toras.map(tora => String(tora.id)));
+        const estoqueRestante = estoqueAtual.filter(tora => !tora || !idsExcluidos.has(String(tora.id)));
+        const novasMovimentacoes = toras.map(tora => ({
+            id: generateUniqueId('MOV'),
+            data: agora.toISOString().split('T')[0],
+            tipo: 'exclusao',
+            toraId: tora.id,
+            plaqueta: tora.plaqueta,
+            ...normalizarCamposGeoEstoque(tora),
+            especie: tora.especie,
+            volume: tora.volumeLiquido,
+            observacoes: 'Exclusão permanente em lote',
+            origem: String(options.origem || 'estoque'),
+            created: agora.toISOString()
+        }));
+        const movimentacoesAtualizadas = [...movimentacoes, ...novasMovimentacoes];
 
-        // Registrar movimentação de exclusão
-        if (toraOriginal) {
-            const geo = normalizarCamposGeoEstoque(toraOriginal);
-            const movimentacao = {
-                id: generateUniqueId('MOV'),
-                data: new Date().toISOString().split('T')[0],
-                tipo: 'exclusao',
-                toraId: toraId,
-                plaqueta: toraOriginal.plaqueta,
-                ...geo,
-                especie: toraOriginal.especie,
-                volume: toraOriginal.volumeLiquido,
-                observacoes: 'Exclusão do sistema',
-                created: new Date().toISOString()
-            };
-            movimentacoes.push(movimentacao);
-        }
-
-        // Salvar dados (por registro quando disponível)
-        if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            await window.firebaseService.saveToFirebase('estoqueTorasAtual', String(toraId), null);
-            const mov = movimentacoes[movimentacoes.length - 1];
-            if (mov) {
-                await window.firebaseService.saveToFirebase('movimentacoesToras', String(mov.id), mov);
+        if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
+            const updates = {};
+            toras.forEach(tora => {
+                updates[`estoqueTorasAtual/${String(tora.id)}`] = null;
+            });
+            novasMovimentacoes.forEach(mov => {
+                updates[`movimentacoesToras/${String(mov.id)}`] = mov;
+            });
+            const result = await window.firebaseService.updatePaths(updates);
+            if (result && result.success === false) {
+                throw new Error(result.error || 'Falha ao excluir toras no Firebase');
             }
+        } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+            const resultados = await Promise.all([
+                ...toras.map(tora => window.firebaseService.saveToFirebase('estoqueTorasAtual', String(tora.id), null)),
+                ...novasMovimentacoes.map(mov => window.firebaseService.saveToFirebase('movimentacoesToras', String(mov.id), mov))
+            ]);
+            const falha = resultados.find(result => result && result.success === false);
+            if (falha) throw new Error(falha.error || 'Falha ao excluir toras no Firebase');
         } else {
-            await saveData('estoqueTorasAtual', estoqueAtual);
-            await saveData('movimentacoesToras', movimentacoes);
+            const estoqueSalvo = await saveDataAsync('estoqueTorasAtual', estoqueRestante);
+            const movimentosSalvos = await saveDataAsync('movimentacoesToras', movimentacoesAtualizadas);
+            if (!estoqueSalvo || !movimentosSalvos) throw new Error('Falha ao salvar exclusão localmente');
         }
 
-        // Atualizar interface
+        estoqueAtual = estoqueRestante;
+        movimentacoes = movimentacoesAtualizadas;
+        torasSelecionadasBaixa = torasSelecionadasBaixa.filter(tora => !tora || !idsExcluidos.has(String(tora.id)));
+        torasSelecionadasModal = torasSelecionadasModal.filter(tora => !tora || !idsExcluidos.has(String(tora.id)));
+        idsExcluidos.forEach(id => {
+            saidaSelecionadas.delete(id);
+            saidaPlaquetaSelecionadas.delete(id);
+            estoqueSelecionadas.delete(id);
+        });
+
+        const masterSaida = document.getElementById('checkTodasSaida');
+        if (masterSaida) masterSaida.checked = false;
+        const masterEstoque = document.getElementById('checkTodosEstoque');
+        if (masterEstoque) masterEstoque.checked = false;
+
+        atualizarTabelaTorasSaida();
+        if (document.getElementById('selecaoTorasModal')?.style.display === 'block') carregarTorasDisponiveis();
         atualizarEstatisticas();
-        carregarTabelaEstoque();
+        carregarTabelaEstoque(obterFiltroConsultaEstoqueAtual());
         atualizarFiltros();
+        carregarTabelaMovimentacoes(filtroMovimentacoesAtual);
 
-        alert('Tora excluída com sucesso!');
-
+        alert(`${toras.length} tora(s) excluída(s) permanentemente do estoque.`);
+        return { success: true, count: toras.length };
     } catch (error) {
-        console.error('Erro ao excluir tora:', error);
-        alert('Erro ao excluir tora: ' + error.message);
+        console.error('Erro ao excluir toras do estoque:', error);
+        alert('Erro ao excluir toras: ' + (error && error.message ? error.message : String(error)));
+        return { success: false, count: 0 };
+    } finally {
+        exclusaoTorasEmLoteEmAndamento = false;
+        atualizarAcoesExclusaoToras();
     }
+}
+
+async function excluirTora(toraId) {
+    return excluirTorasDoEstoqueEmLote([toraId], { origem: 'consulta_estoque' });
 }
 
 // Funções de movimentações
@@ -5524,15 +5646,32 @@ async function salvarConfiguracaoColunasMovimentacoes() {
     carregarTabelaMovimentacoes(filtroMovimentacoesAtual);
 }
 
+function formatarRomaneiosVinculadosMovimentacao(mov = {}, options = {}) {
+    const plain = !!options.plain;
+    const romaneios = normalizarRomaneiosRastreabilidade(mov.romaneiosRelacionados || []);
+    if (!romaneios.length) {
+        const observacoes = mov.toraManualForaEstoque
+            ? `MANUAL FORA ESTOQUE - ${mov.observacoes || ''}`.trim()
+            : String(mov.observacoes || '');
+        return plain ? observacoes : escapeHtml(observacoes);
+    }
+
+    const linhas = romaneios.map(romaneio => {
+        const numero = romaneio.numero || romaneio.numeroRomaneio || romaneio.id || 'Sem número';
+        const pessoa = romaneio.clienteNome || 'Não informado';
+        const volume = parseNumeroEstoque(romaneio.volumeSerraria || romaneio.volumeTotal || romaneio.volume);
+        return `Romaneio ${numero} - ${pessoa} - ${formatNumber(volume, 3)} m³`;
+    });
+    if (plain) return linhas.join(' | ');
+    return `<div class="romaneio-vinculado-list">${linhas.map(linha => `<span class="romaneio-vinculado-item">${escapeHtml(linha)}</span>`).join('')}</div>`;
+}
+
 function obterValorCelulaMovimentacao(mov = {}, key = '', options = {}) {
     const plain = !!options.plain;
     const geo = normalizarCamposGeoEstoque(mov);
     const manualBadge = !plain && mov && mov.toraManualForaEstoque
         ? ' <span style="display:inline-block;padding:2px 6px;border-radius:10px;background:#fff3cd;color:#856404;font-size:11px;font-weight:600;">Manual</span>'
         : '';
-    const observacoes = mov && mov.toraManualForaEstoque
-        ? `MANUAL FORA ESTOQUE - ${mov.observacoes || ''}`.trim()
-        : (mov.observacoes || '');
     const tipo = mov.tipo ? String(mov.tipo).toUpperCase() : '';
     const tipoHtml = plain
         ? tipo
@@ -5547,7 +5686,7 @@ function obterValorCelulaMovimentacao(mov = {}, key = '', options = {}) {
         volumeGeo: `${formatarVolumeGeoEstoque(geo.volumeGeo)} m³`,
         documento: escapeHtml(mov.documento || ''),
         remessaId: escapeHtml(mov.remessaId || '-'),
-        observacoes: escapeHtml(observacoes)
+        observacoes: formatarRomaneiosVinculadosMovimentacao(mov, { plain })
     };
     return map[key] ?? '';
 }
@@ -5556,9 +5695,20 @@ function renderMovimentacaoTd(def, mov) {
     const cls = `${def.align || ''}${def.key === 'observacoes' ? ' obs-col' : ''}`.trim();
     const clsAttr = cls ? ` class="${cls}"` : '';
     const titleAttr = def.key === 'observacoes'
-        ? ` title="${obterValorCelulaMovimentacao(mov, def.key, { plain: true })}"`
+        ? ` title="${escapeHtml(obterValorCelulaMovimentacao(mov, def.key, { plain: true }))}"`
         : '';
     return `<td data-col="${escapeHtml(def.key)}"${clsAttr}${titleAttr}>${obterValorCelulaMovimentacao(mov, def.key)}</td>`;
+}
+
+function obterTextoBuscaMovimentacao(mov = {}) {
+    const textoRomaneios = formatarRomaneiosVinculadosMovimentacao(mov, { plain: true });
+    return normalizarTextoBuscaEstoque([
+        obterTextoBuscaTora(mov),
+        mov.documento,
+        mov.remessaId,
+        mov.observacoes,
+        textoRomaneios
+    ].filter(Boolean).join(' '));
 }
 
 async function carregarTabelaMovimentacoes(filtro = {}) {
@@ -5598,6 +5748,10 @@ async function carregarTabelaMovimentacoes(filtro = {}) {
     if (filtro.tipo) {
         movFiltradas = movFiltradas.filter(m => m.tipo === filtro.tipo);
     }
+    if (filtro.buscaTora) {
+        const buscaTora = normalizarTextoBuscaEstoque(filtro.buscaTora);
+        movFiltradas = movFiltradas.filter(m => obterTextoBuscaMovimentacao(m).includes(buscaTora));
+    }
     if (filtro.remessa) {
         const rem = String(filtro.remessa).toLowerCase();
         movFiltradas = movFiltradas.filter(m => {
@@ -5607,8 +5761,8 @@ async function carregarTabelaMovimentacoes(filtro = {}) {
         });
     }
     if (filtro.observacoes) {
-        const obs = String(filtro.observacoes).toLowerCase();
-        movFiltradas = movFiltradas.filter(m => String(m.observacoes || '').toLowerCase().includes(obs));
+        const obs = normalizarTextoBuscaEstoque(filtro.observacoes);
+        movFiltradas = movFiltradas.filter(m => normalizarTextoBuscaEstoque(formatarRomaneiosVinculadosMovimentacao(m, { plain: true })).includes(obs));
     }
 
     // Ordenação dinâmica
@@ -5673,6 +5827,7 @@ async function carregarTabelaMovimentacoes(filtro = {}) {
         tipo: filtroMovimentacoesAtual.tipo || '',
         dataInicio: filtroMovimentacoesAtual.dataInicio || '',
         dataFim: filtroMovimentacoesAtual.dataFim || '',
+        buscaTora: filtroMovimentacoesAtual.buscaTora || '',
         remessa: filtroMovimentacoesAtual.remessa || '',
         observacoes: filtroMovimentacoesAtual.observacoes || '',
         total: baseParaResumo.length,
@@ -5750,6 +5905,7 @@ function filtrarMovimentacoes() {
         dataInicio: document.getElementById('filtroDataInicio').value,
         dataFim: document.getElementById('filtroDataFim').value,
         tipo: document.getElementById('filtroTipoMov').value,
+        buscaTora: document.getElementById('filtroBuscaToraMov')?.value || '',
         remessa: document.getElementById('filtroRemessaBaixa')?.value || '',
         observacoes: document.getElementById('filtroObservacoesMov')?.value || ''
     };
@@ -5794,6 +5950,8 @@ function limparFiltrosMovimentacoes() {
     document.getElementById('filtroDataInicio').value = '';
     document.getElementById('filtroDataFim').value = '';
     document.getElementById('filtroTipoMov').value = '';
+    const inputBuscaTora = document.getElementById('filtroBuscaToraMov');
+    if (inputBuscaTora) inputBuscaTora.value = '';
     const inputRem = document.getElementById('filtroRemessaBaixa');
     if (inputRem) inputRem.value = '';
     const inputObs = document.getElementById('filtroObservacoesMov');
@@ -5869,17 +6027,21 @@ function obterRegistrosRastreabilidadeComFallback() {
 }
 
 function normalizarTextoFiltroRastreabilidade(value) {
-    return String(value || '').trim().toLowerCase();
+    return normalizarTextoBuscaEstoque(value);
 }
 
 function registroRastreabilidadeTexto(reg = {}) {
     const roms = Array.isArray(reg.romaneios) ? reg.romaneios : [];
-    return [
+    return normalizarTextoBuscaEstoque([
         reg.remessaId,
         reg.movimentacaoId,
         reg.toraId,
         reg.plaqueta,
+        reg.descricao,
+        reg.descricaoTora,
+        reg.description,
         reg.especie,
+        reg.custodia,
         reg.numeroRomaneio,
         reg.romaneioId,
         reg.tipoRomaneio,
@@ -5889,7 +6051,7 @@ function registroRastreabilidadeTexto(reg = {}) {
         reg.documento,
         reg.observacoesOriginais,
         roms.map(r => `${r.id || ''} ${r.numero || ''} ${r.tipo || ''} ${r.clienteNome || ''}`).join(' ')
-    ].join(' ').toLowerCase();
+    ].join(' '));
 }
 
 function filtrarRegistrosRastreabilidade(filtros = {}) {
@@ -5915,7 +6077,7 @@ function filtrarRegistrosRastreabilidade(filtros = {}) {
         const d = reg.data ? parseDateLocalSafe(reg.data) : null;
         if (dataInicio && (!d || d < dataInicio)) return false;
         if (dataFim && (!d || d > dataFim)) return false;
-        if (plaqueta && !String(reg.plaqueta || '').toLowerCase().includes(plaqueta)) return false;
+        if (plaqueta && !registroRastreabilidadeTexto(reg).includes(plaqueta)) return false;
         if (remessa && !String(reg.remessaId || '').toLowerCase().includes(remessa)) return false;
         if (movimentacao && !String(reg.movimentacaoId || '').toLowerCase().includes(movimentacao)) return false;
         if (especie && !String(reg.especie || '').toLowerCase().includes(especie)) return false;
@@ -7429,6 +7591,10 @@ async function imprimirMovimentacoesEstoque() {
         if (filtro.dataInicio) out = out.filter(m => m.data >= filtro.dataInicio);
         if (filtro.dataFim) out = out.filter(m => m.data <= filtro.dataFim);
         if (filtro.tipo) out = out.filter(m => m.tipo === filtro.tipo);
+        if (filtro.buscaTora) {
+            const buscaTora = normalizarTextoBuscaEstoque(filtro.buscaTora);
+            out = out.filter(m => obterTextoBuscaMovimentacao(m).includes(buscaTora));
+        }
         if (filtro.remessa) {
             const rem = String(filtro.remessa).toLowerCase();
             out = out.filter(m => {
@@ -7438,8 +7604,8 @@ async function imprimirMovimentacoesEstoque() {
             });
         }
         if (filtro.observacoes) {
-            const obs = String(filtro.observacoes).toLowerCase();
-            out = out.filter(m => String(m.observacoes || '').toLowerCase().includes(obs));
+            const obs = normalizarTextoBuscaEstoque(filtro.observacoes);
+            out = out.filter(m => normalizarTextoBuscaEstoque(formatarRomaneiosVinculadosMovimentacao(m, { plain: true })).includes(obs));
         }
         return out;
     };
@@ -7449,7 +7615,7 @@ async function imprimirMovimentacoesEstoque() {
         lista = movimentacoes.filter(m => movimentacoesSelecionadas.has(String(m.id)));
     } else {
         const filtro = filtroMovimentacoesAtual || {};
-        const hasFiltro = !!(filtro.tipo || filtro.dataInicio || filtro.dataFim || filtro.remessa || filtro.observacoes);
+        const hasFiltro = !!(filtro.tipo || filtro.dataInicio || filtro.dataFim || filtro.buscaTora || filtro.remessa || filtro.observacoes);
         if (hasFiltro) {
             if (!filtro.tipo) {
                 lista = [];
@@ -8181,6 +8347,8 @@ window.toggleToraSelecao = toggleToraSelecao;
 window.confirmarSelecaoToras = confirmarSelecaoToras;
 window.adicionarToraManualSaida = adicionarToraManualSaida;
 window.removerToraSaida = removerToraSaida;
+window.excluirTorasSaidaSelecionadas = excluirTorasSaidaSelecionadas;
+window.excluirTorasModalSelecionadas = excluirTorasModalSelecionadas;
 window.cancelarSaida = cancelarSaida;
 window.buscarToraPorPlaqueta = buscarToraPorPlaqueta;
 window.abrirResultadosPlaquetaSaida = abrirResultadosPlaquetaSaida;
