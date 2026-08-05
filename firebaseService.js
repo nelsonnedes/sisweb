@@ -90,6 +90,9 @@ let sessionContextSnapshot = null;
 let userProfilePromise = null;
 let userProfileUid = '';
 let userProfileSnapshot = null;
+let effectiveUserProfilePromise = null;
+let effectiveUserProfileKey = '';
+let effectiveUserProfileSnapshot = null;
 let tokenResultPromise = null;
 let tokenResultUid = '';
 let tokenResultSnapshot = null;
@@ -353,6 +356,9 @@ function resetSessionSingleFlights(nextUid = '') {
     userProfilePromise = null;
     userProfileUid = '';
     userProfileSnapshot = null;
+    effectiveUserProfilePromise = null;
+    effectiveUserProfileKey = '';
+    effectiveUserProfileSnapshot = null;
     tokenResultPromise = null;
     tokenResultUid = '';
     tokenResultSnapshot = null;
@@ -476,6 +482,77 @@ async function getUserProfileForSession(uid) {
     if (!currentUser || !requestedUid || String(currentUser.uid || '') !== requestedUid) return null;
     const result = await loadUserProfileSingleFlight(currentUser);
     return result && result.ok ? result.profile : null;
+}
+
+async function getEffectiveUserProfile(uid, options = {}) {
+    const currentUser = (auth && auth.currentUser) || getWindowFirebaseAuthUser();
+    const requestedUid = String(uid || currentUser && currentUser.uid || '').trim();
+    if (!currentUser || !requestedUid || String(currentUser.uid || '') !== requestedUid) {
+        return { success: false, data: null, statusKey: 'unknown', source: 'none', warnings: ['auth_uid_mismatch'] };
+    }
+
+    const session = await resolveSessionContextForUser(currentUser);
+    const companyId = normalizeTenantContextValue(session && session.companyId);
+    const requestedCompanyId = normalizeTenantContextValue(options.companyId);
+    if (requestedCompanyId && requestedCompanyId !== companyId) {
+        return { success: false, data: null, statusKey: 'unknown', source: 'none', warnings: ['tenant_mismatch'] };
+    }
+
+    const cacheKey = `${requestedUid}::${companyId || 'no-tenant'}`;
+    const forceRefresh = options.forceRefresh === true;
+    if (!forceRefresh
+        && effectiveUserProfileSnapshot
+        && effectiveUserProfileSnapshot.key === cacheKey
+        && (Date.now() - effectiveUserProfileSnapshot.cachedAt) < 10000) {
+        return effectiveUserProfileSnapshot.result;
+    }
+    if (!forceRefresh && effectiveUserProfilePromise && effectiveUserProfileKey === cacheKey) {
+        return effectiveUserProfilePromise;
+    }
+
+    const generation = authGeneration;
+    effectiveUserProfileKey = cacheKey;
+    const request = (async () => {
+        const readWarnings = [];
+        let rootProfile = null;
+        try {
+            const rootResult = await loadUserProfileSingleFlight(currentUser);
+            rootProfile = rootResult && rootResult.ok ? rootResult.profile : null;
+            if (rootResult && rootResult.ok === false) readWarnings.push('root_profile_unavailable');
+        } catch (_) {
+            readWarnings.push('root_profile_unavailable');
+        }
+
+        let tenantProfile = null;
+        if (companyId) {
+            const startedAt = Date.now();
+            authPerfRead('effective_subscription_tenant_profile', 'physical');
+            try {
+                const tenantSnapshot = await get(child(ref(db), `companies/${companyId}/users/${requestedUid}`));
+                tenantProfile = tenantSnapshot.exists() ? tenantSnapshot.val() : null;
+                authPerfRead('effective_subscription_tenant_profile', 'physical', 'success', Date.now() - startedAt);
+            } catch (_) {
+                readWarnings.push('tenant_profile_unavailable');
+                authPerfRead('effective_subscription_tenant_profile', 'physical', 'error', Date.now() - startedAt);
+            }
+        }
+
+        if (!isCanonicalAuthGenerationCurrent(generation, requestedUid)) {
+            return { success: false, data: null, statusKey: 'unknown', source: 'none', warnings: ['stale_auth_generation'] };
+        }
+        const reconciled = reconcileSubscriptionReplicaProfiles(rootProfile, tenantProfile);
+        const result = {
+            success: !!reconciled.data,
+            ...reconciled,
+            warnings: Array.from(new Set([...readWarnings, ...reconciled.warnings]))
+        };
+        effectiveUserProfileSnapshot = { key: cacheKey, cachedAt: Date.now(), result };
+        return result;
+    })().finally(() => {
+        if (effectiveUserProfilePromise === request) effectiveUserProfilePromise = null;
+    });
+    effectiveUserProfilePromise = request;
+    return request;
 }
 
 async function resolveSessionContextForUser(user, options = {}) {
@@ -1023,6 +1100,141 @@ function resolveSubscriptionStatusForWriteGuard(userDetails) {
     return 'expired';
 }
 
+function getSubscriptionEndTimestamp(profile) {
+    const user = profile && typeof profile === 'object' ? profile : {};
+    const subscription = user.subscription && typeof user.subscription === 'object' ? user.subscription : {};
+    const candidates = [
+        subscription.endDate,
+        subscription.subscriptionEnd,
+        user.subscriptionEnd,
+        user.subscription_end,
+        user.subscriptionEndDate,
+        user.expiresAt,
+        user.expirationDate,
+        user.validUntil
+    ];
+    for (const value of candidates) {
+        if (!value) continue;
+        const parsed = new Date(value);
+        if (!Number.isNaN(parsed.getTime())) return parsed.getTime();
+    }
+    return NaN;
+}
+
+function getSubscriptionStatusMarker(profile) {
+    const user = profile && typeof profile === 'object' ? profile : {};
+    return String(user.subscriptionStatus || user.status || '').trim().toLowerCase();
+}
+
+function isExplicitlyBlockedSubscriptionProfile(profile) {
+    const user = profile && typeof profile === 'object' ? profile : {};
+    const marker = getSubscriptionStatusMarker(user);
+    return user.blocked === true
+        || String(user.accountStatus || '').trim().toLowerCase() === 'blocked'
+        || marker === 'blocked'
+        || marker === 'bloqueado';
+}
+
+function isTrialSubscriptionProfile(profile) {
+    const user = profile && typeof profile === 'object' ? profile : {};
+    const subscription = user.subscription && typeof user.subscription === 'object' ? user.subscription : {};
+    const marker = getSubscriptionStatusMarker(user);
+    const type = String(
+        subscription.type
+        || subscription.planKey
+        || subscription.key
+        || user.planKey
+        || user.plan
+        || user.planType
+        || ''
+    ).trim().toLowerCase();
+    return marker === 'trial'
+        || marker === 'trial_active'
+        || marker === 'teste_ativo'
+        || type === 'trial'
+        || type === 'free_trial'
+        || type === 'teste';
+}
+
+function isPendingSubscriptionProfile(profile) {
+    const user = profile && typeof profile === 'object' ? profile : {};
+    const marker = getSubscriptionStatusMarker(user);
+    const pendingStatus = String(user.pendingPayment && user.pendingPayment.status || '').trim().toLowerCase();
+    return marker === 'pending'
+        || marker === 'pendente'
+        || marker === 'pending_payment'
+        || pendingStatus === 'pending';
+}
+
+function hasSubscriptionReplicaDivergence(rootProfile, tenantProfile) {
+    if (!rootProfile || !tenantProfile) return false;
+    const rootStatus = getSubscriptionStatusMarker(rootProfile);
+    const tenantStatus = getSubscriptionStatusMarker(tenantProfile);
+    const rootEnd = getSubscriptionEndTimestamp(rootProfile);
+    const tenantEnd = getSubscriptionEndTimestamp(tenantProfile);
+    const sameEnd = (Number.isNaN(rootEnd) && Number.isNaN(tenantEnd)) || rootEnd === tenantEnd;
+    return rootStatus !== tenantStatus || !sameEnd;
+}
+
+function buildEffectiveSubscriptionProfile(rootProfile, selectedProfile, statusKey, source, replicas) {
+    const root = rootProfile && typeof rootProfile === 'object' ? rootProfile : null;
+    const selected = selectedProfile && typeof selectedProfile === 'object' ? selectedProfile : {};
+    const data = { ...(root || selected) };
+    const rootSubscription = root && root.subscription && typeof root.subscription === 'object' ? root.subscription : {};
+    const selectedSubscription = selected.subscription && typeof selected.subscription === 'object' ? selected.subscription : {};
+    if (Object.keys(rootSubscription).length || Object.keys(selectedSubscription).length) {
+        data.subscription = { ...rootSubscription, ...selectedSubscription };
+    }
+    for (const key of ['accountStatus', 'pendingPayment', 'trialStart', 'subscriptionStart', 'subscriptionEnd']) {
+        if (Object.prototype.hasOwnProperty.call(selected, key)) data[key] = selected[key];
+    }
+    data.subscriptionStatus = statusKey;
+    if (statusKey === 'blocked') data.accountStatus = 'blocked';
+
+    const rootReplica = replicas.find((entry) => entry.source === 'root');
+    const tenantReplica = replicas.find((entry) => entry.source === 'tenant');
+    const warnings = hasSubscriptionReplicaDivergence(
+        rootReplica && rootReplica.profile,
+        tenantReplica && tenantReplica.profile
+    ) ? ['subscription_replica_divergence'] : [];
+    return { data, statusKey, source, warnings };
+}
+
+function reconcileSubscriptionReplicaProfiles(rootProfile, tenantProfile, nowMs = Date.now()) {
+    const root = rootProfile && typeof rootProfile === 'object' ? rootProfile : null;
+    const tenant = tenantProfile && typeof tenantProfile === 'object' ? tenantProfile : null;
+    const replicas = [
+        root ? { source: 'root', profile: root } : null,
+        tenant ? { source: 'tenant', profile: tenant } : null
+    ].filter(Boolean);
+    if (!replicas.length) {
+        return { data: null, statusKey: 'unknown', source: 'none', warnings: ['profile_missing'] };
+    }
+
+    const blocked = replicas.find(({ profile }) => isExplicitlyBlockedSubscriptionProfile(profile));
+    if (blocked) return buildEffectiveSubscriptionProfile(root, blocked.profile, 'blocked', blocked.source, replicas);
+
+    const future = replicas
+        .map((entry) => ({ ...entry, endMs: getSubscriptionEndTimestamp(entry.profile) }))
+        .filter((entry) => Number.isFinite(entry.endMs) && entry.endMs > nowMs)
+        .sort((a, b) => b.endMs - a.endMs)[0];
+    if (future) {
+        const statusKey = isTrialSubscriptionProfile(future.profile) ? 'trial_active' : 'active';
+        return buildEffectiveSubscriptionProfile(root, future.profile, statusKey, future.source, replicas);
+    }
+
+    const pending = replicas.find(({ profile }) => isPendingSubscriptionProfile(profile));
+    if (pending) return buildEffectiveSubscriptionProfile(root, pending.profile, 'pending', pending.source, replicas);
+
+    const dated = replicas
+        .map((entry) => ({ ...entry, endMs: getSubscriptionEndTimestamp(entry.profile) }))
+        .filter((entry) => Number.isFinite(entry.endMs))
+        .sort((a, b) => b.endMs - a.endMs)[0];
+    const selected = dated || replicas[0];
+    const statusKey = resolveSubscriptionStatusForWriteGuard(selected.profile);
+    return buildEffectiveSubscriptionProfile(root, selected.profile, statusKey, selected.source, replicas);
+}
+
 function isWritePathProtectedBySubscription(finalPath) {
     const path = String(finalPath || '').toLowerCase();
     return path.startsWith('companies/');
@@ -1430,6 +1642,10 @@ async function loadFromFirebase(path) {
         const OPTIONAL_EMPTY_PATHS = new Set([
             'produtos',
             'estoqueComprasMov',
+            'romaneios/tora',
+            'romaneios/pct',
+            'romaneios/tl',
+            'romaneios/pes',
             'vendas/pagamentos_carrego',
             'carregoPagamentos',           // alias camelCase usado em alguns módulos
             'vendas_pagamentos_carrego',    // alias snake_case
@@ -3341,6 +3557,7 @@ window.firebaseService = {
         resolveAuthenticatedTenant: resolveAuthenticatedTenant,
         getIdTokenResult: getIdTokenResultSingleFlight,
         getUserProfile: getUserProfileForSession,
+        getEffectiveUserProfile: getEffectiveUserProfile,
         getCurrentUser: () => authService.getCurrentUser(),
         getCredential: (email, password) => authService.getCredential(email, password),
         reauthenticate: (credential) => authService.reauthenticate(credential),
@@ -3368,6 +3585,7 @@ window.firebaseService = {
     getSessionContext: getSessionContext,
     getConnectionState: getConnectionState,
     getUserProfile: getUserProfileForSession,
+    getEffectiveUserProfile: getEffectiveUserProfile,
     getIdTokenResult: getIdTokenResultSingleFlight,
     loadFromFirebase: loadFromFirebase,
     loadRecentFromFirebase: loadRecentFromFirebase,
@@ -3868,6 +4086,7 @@ export const authService = {
     resolveAuthenticatedTenant,
     getIdTokenResult: getIdTokenResultSingleFlight,
     getUserProfile: getUserProfileForSession,
+    getEffectiveUserProfile: getEffectiveUserProfile,
     onAuthStateChanged: subscribeAuthState,
     sendPasswordResetEmail: async (email) => {
         const normalizedEmail = String(email || '').trim().toLowerCase();
@@ -4113,6 +4332,7 @@ export {
     getSessionContext,
     getConnectionState,
     getUserProfileForSession,
+    getEffectiveUserProfile,
     getIdTokenResultSingleFlight,
     getCurrentUid,
     uploadFile,
@@ -4242,6 +4462,7 @@ const initializeGlobalFirebaseService = () => {
         getSessionContext,
         getConnectionState,
         getUserProfile: getUserProfileForSession,
+        getEffectiveUserProfile,
         getIdTokenResult: getIdTokenResultSingleFlight,
         getCurrentUser: (...args) => authService.getCurrentUser(...args),
         getCredential: (...args) => authService.getCredential(...args),
