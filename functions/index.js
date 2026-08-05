@@ -6488,3 +6488,4 @@ exports.financeDeleteAccount = financeFunctions.financeDeleteAccount;
 exports.financeUpdatePaymentReceipt = financeFunctions.financeUpdatePaymentReceipt;
 exports.financeRegisterPayment = financeFunctions.financeRegisterPayment;
 exports.financeDeletePayment = financeFunctions.financeDeletePayment;
+exports.financeSyncCompra = financeFunctions.financeSyncCompra;
