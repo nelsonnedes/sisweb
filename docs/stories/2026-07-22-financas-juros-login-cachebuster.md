@@ -279,3 +279,21 @@ companies/{companyId}/
 - [x] Cachebuster do firebaseService.js atualizado
 - [x] Deploy produção
 - [x] Testes passando
+
+---
+
+## 9. Recuperacao P0 Da Primeira Conta Financeira - 2026-08-02
+
+### Regressao confirmada
+
+`financeCreateAccounts` voltava sem decisao quando a raiz `financas/{tipo}` ainda era `null`. O callable encerrava com `Criacao financeira sem confirmacao autoritativa` justamente para a primeira conta a pagar ou receber de um tenant.
+
+### Correcao local
+
+- [x] A transacao passou a delegar tambem o estado `null` para `buildAccountsCreateTreeMutation`.
+- [x] Teste de handler reproduz a primeira criacao e confirma repeticao idempotente pelo mesmo `operationId`.
+- [x] Nenhuma regra, caminho, payload ou logica de edicao/exclusao foi alterada.
+- [x] Testes focados e suite completa aprovados.
+- [x] Publicada somente a Function `financeCreateAccounts` em `us-central1`; Hosting, Rules e demais Functions nao fizeram parte deste deploy.
+
+Arquivos deste lote: `functions/finance-functions.js` e `tests/finance-transactions.test.mjs`.

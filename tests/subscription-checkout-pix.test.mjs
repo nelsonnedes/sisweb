@@ -76,7 +76,7 @@ test('configuracoes comerciais podem ser lidas no link publico sem expor dados d
   assert.match(functionsIndex, /paymentMeta:\s*\{\s*supportEmail:/);
   const publicShape = functionsIndex.slice(
     functionsIndex.indexOf('function publicSubscriptionSettingsShape'),
-    functionsIndex.indexOf('function mergeSubscriptionSettingsInput')
+    functionsIndex.indexOf('function subscriberSubscriptionSettingsShape')
   );
   assert.doesNotMatch(publicShape, /pixKey:/);
   assert.doesNotMatch(publicShape, /beneficiary:/);

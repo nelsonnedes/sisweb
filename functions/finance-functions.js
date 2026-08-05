@@ -2116,7 +2116,6 @@ function createHandlers(options = {}) {
             const reference = db.ref(`companies/${access.companyId}/financas/${request.type}`);
             let decision;
             const transaction = await reference.transaction((current) => {
-                if (current === null) return current;
                 decision = buildAccountsCreateTreeMutation(
                     current,
                     request,

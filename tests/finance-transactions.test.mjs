@@ -245,6 +245,97 @@ test('criacao manual em lote e atomica e idempotente', () => {
   assert.equal(partialRetry.outcome, 'conflict');
 });
 
+test('callable cria a primeira conta quando a arvore financeira ainda nao existe', async () => {
+  const snapshot = (value) => ({
+    exists: () => value !== undefined && value !== null,
+    val: () => value,
+  });
+  let persistedTree = null;
+  const database = {
+    ref(path) {
+      return {
+        async get() {
+          if (path === 'companies/tenant-0001/users/member-0001') {
+            return snapshot({ role: 'finance', active: true });
+          }
+          if (path === 'roles/member-0001') return snapshot(undefined);
+          if (path === 'companies/tenant-0001/ownerUid') return snapshot(undefined);
+          return snapshot(undefined);
+        },
+        async transaction(update) {
+          assert.equal(path, 'companies/tenant-0001/financas/receber');
+          const next = update(persistedTree);
+          if (next === undefined) {
+            return { committed: false, snapshot: snapshot(persistedTree) };
+          }
+          persistedTree = next;
+          return { committed: true, snapshot: snapshot(persistedTree) };
+        },
+      };
+    },
+  };
+  class TestHttpsError extends Error {
+    constructor(code, message) {
+      super(message);
+      this.code = code;
+    }
+  }
+  const handlers = createHandlers({
+    database: () => database,
+    HttpsError: TestHttpsError,
+    isSuperAdmin: async () => false,
+    now: () => FIXED_NOW,
+  });
+  const payload = {
+    tipo: 'receber',
+    operationId: 'create-first-receivable-0001',
+    accounts: [{
+      mes: '2026-07',
+      account: {
+        id: 'first-receivable-0001',
+        cliente: 'Cliente Inicial',
+        clienteId: 'client-initial',
+        descricao: 'Primeira conta',
+        valor: 80,
+        valorOriginal: 80,
+        valorRestante: 80,
+        valorTotal: 80,
+        dataVencimento: '2026-07-20',
+        status: 'pendente',
+        categoria: 'outros',
+        tipo: 'pix',
+        jurosTipo: 'none',
+        jurosTaxa: 0,
+        parcela: 1,
+        totalParcelas: 1,
+        origem: 'manual',
+        numero: 'RX000001',
+      },
+    }],
+  };
+  const context = {
+    auth: {
+      uid: 'member-0001',
+      token: { companyId: 'tenant-0001', subscriptionStatus: 'active' },
+    },
+  };
+
+  const first = await handlers.financeCreateAccounts(payload, context);
+  const retry = await handlers.financeCreateAccounts(payload, context);
+
+  assert.equal(first.success, true);
+  assert.equal(first.idempotent, false);
+  assert.equal(first.accounts[0].id, 'first-receivable-0001');
+  assert.equal(retry.success, true);
+  assert.equal(retry.idempotent, true);
+  assert.equal(
+    persistedTree['2026-07']['first-receivable-0001']._financeOperations[
+      'create-first-receivable-0001'
+    ].kind,
+    'create',
+  );
+});
+
 test('criacao manual rejeita valor divergente e particao incorreta', () => {
   assert.throws(
     () => normalizeAccountCreateRequest({
