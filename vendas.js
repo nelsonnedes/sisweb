@@ -17,6 +17,7 @@ function parseDateLocalSafe(str) {
 let pedidoAtual = null;
 let itensCarrinho = [];
 let editandoPedidoId = null;
+let itemEmEdicaoId = null;
 let autoRedistribuirEnabled = true;
 let contasReceberEdicaoBloqueada = false;
 let parcelaEditandoId = null;
@@ -1382,6 +1383,7 @@ async function novoPedido() {
     editandoPedidoId = null;
     pedidoAtual = null;
     itensCarrinho = [];
+    itemEmEdicaoId = null;
     contasReceber = []; // Limpar contas a receber
     autoRedistribuirEnabled = true;
     contasReceberEdicaoBloqueada = false;
@@ -1443,6 +1445,7 @@ function cancelarPedido() {
     editandoPedidoId = null;
     pedidoAtual = null;
     itensCarrinho = [];
+    itemEmEdicaoId = null;
 }
 
 function getPedidoVendaRef(pedidoOuId) {
@@ -1563,7 +1566,7 @@ function montarUpdatesRemocaoContasReceberVenda(lista, options = {}) {
  * @param {number} quantidadeDesejada - Quantidade que se deseja adicionar
  * @returns {Object} { valido: boolean, mensagem: string, estoqueAtual: number }
  */
-function validarEstoque(produtoId, quantidadeDesejada) {
+function validarEstoque(produtoId, quantidadeDesejada, itemEmEdicao) {
     // Produtos manuais e de romaneio não têm controle de estoque
     if (produtoId.startsWith('manual_') || produtoId.startsWith('romaneio_')) {
         return { valido: true, mensagem: '', estoqueAtual: null };
@@ -1586,7 +1589,13 @@ function validarEstoque(produtoId, quantidadeDesejada) {
     
     // Verificar se já existe no carrinho
     const itemNoCarrinho = itensCarrinho.find(i => i.produtoId === produtoId);
-    const quantidadeJaNoCarrinho = itemNoCarrinho ? itemNoCarrinho.quantidade : 0;
+    let quantidadeJaNoCarrinho = itemNoCarrinho ? itemNoCarrinho.quantidade : 0;
+
+    // Ao editar um item existente, a quantidade antiga dele é substituída,
+    // não somada — descontar para validar apenas o delta.
+    if (itemEmEdicao && String(itemEmEdicao.id) === String(itemNoCarrinho && itemNoCarrinho.id)) {
+        quantidadeJaNoCarrinho = 0;
+    }
     
     const quantidadeTotal = quantidadeDesejada + quantidadeJaNoCarrinho;
     
@@ -1625,18 +1634,44 @@ function adicionarItem() {
         return;
     }
     
-    // ✅ VALIDAÇÃO DE ESTOQUE
-    const validacao = validarEstoque(produtoId, quantidade);
+    const produto = window.produtos.find(p => p.id === produtoId);
+    if (!produto) {
+        ToastManager.error('Produto não encontrado', 'Erro');
+        return;
+    }
+
+    // ✅ VALIDAÇÃO DE ESTOQUE (na edição, descontar a quantidade antiga do item)
+    const itemEdicao = itemEmEdicaoId
+        ? itensCarrinho.find(i => String(i.id) === String(itemEmEdicaoId))
+        : null;
+    const validacao = validarEstoque(produtoId, quantidade, itemEdicao);
     
     if (!validacao.valido) {
         ToastManager.error(validacao.mensagem, 'Estoque Insuficiente', 6000);
         return;
     }
     
-    const produto = window.produtos.find(p => p.id === produtoId);
-    if (!produto) {
-        ToastManager.error('Produto não encontrado', 'Erro');
-        return;
+    // ✅ EDIÇÃO DE ITEM: atualizar o item marcado em vez de criar um novo
+    if (itemEmEdicaoId) {
+        const alvo = itensCarrinho.find(i => String(i.id) === String(itemEmEdicaoId));
+        itemEmEdicaoId = null;
+        if (alvo) {
+            alvo.produtoId = produtoId;
+            alvo.produtoNome = produto.nome;
+            alvo.produtoCodigo = produto.codigo;
+            alvo.quantidade = quantidade;
+            alvo.precoUnitario = precoUnitario;
+            alvo.total = quantidade * precoUnitario;
+            alvo.isCarrego = isCarregoProduto(produto);
+            alvo.tipo = 'cadastrado';
+            ToastManager.success(`${produto.nome} atualizado no carrinho`, 'Item atualizado', 2000);
+            document.getElementById('produtoSelect').value = '';
+            document.getElementById('quantidade').value = '';
+            document.getElementById('precoUnitario').value = '';
+            atualizarTabelaItens();
+            atualizarTotais();
+            return;
+        }
     }
     
     // Verificar se o item já existe no carrinho
@@ -1683,7 +1718,7 @@ function removerItem(itemId, options = {}) {
     const item = itensCarrinho.find(i => String(i.id) === String(itemId));
 
     // Remover sem popup de confirmação
-    itensCarrinho = itensCarrinho.filter(i => i.id !== itemId);
+    itensCarrinho = itensCarrinho.filter(i => String(i.id) !== String(itemId));
     atualizarTabelaItens();
     atualizarTotais();
 
@@ -1738,7 +1773,7 @@ function editarItem(itemId) {
                 4000
             );
             
-            // Remover o item antigo (já preenchemos os campos, não precisa return)
+            // O item permanece na lista até o "Adicionar" confirmar a atualização
             break;
         case 'cadastrado':
         default:
@@ -1748,8 +1783,10 @@ function editarItem(itemId) {
             break;
     }
     
-    // Remover item (será adicionado novamente) sem popup, com mensagem amigável
-    removerItem(itemId, { reason: 'edit' });
+    // Marcar item em edição: o próximo "Adicionar" atualiza este item na mesma
+    // posição em vez de criar um novo. O item permanece visível na tabela.
+    itemEmEdicaoId = String(itemId);
+    ToastManager.info('Ajuste os valores e clique em Adicionar para atualizar o item.', 'Editando item', 3500);
 }
 
 function atualizarTabelaItens() {
@@ -2166,6 +2203,7 @@ async function salvarPedido(event) {
         try { editandoPedidoId = null; } catch (_) {}
         try { pedidoAtual = null; } catch (_) {}
         try { itensCarrinho = []; } catch (_) {}
+        try { itemEmEdicaoId = null; } catch (_) {}
         try { contasReceber = []; } catch (_) {}
         try { await listarPedidos(); } catch (_) {}
         
@@ -3049,6 +3087,7 @@ async function clonarPedido(pedidoId) {
     await novoPedido();
     editandoPedidoId = null;
     pedidoAtual = null;
+    itemEmEdicaoId = null;
     const hoje = new Date().toISOString().split('T')[0];
     const dataOrigem = pedido.data || hoje;
     const deslocarData = (value) => addDaysISO(hoje, Math.max(0, diffDaysISO(dataOrigem, value || dataOrigem)));
@@ -4774,6 +4813,29 @@ function adicionarItemManual() {
         return;
     }
     
+    // ✅ EDIÇÃO DE ITEM: atualizar o item marcado em vez de criar um novo
+    if (itemEmEdicaoId) {
+        const alvo = itensCarrinho.find(i => String(i.id) === String(itemEmEdicaoId));
+        itemEmEdicaoId = null;
+        if (alvo) {
+            alvo.produtoNome = nome;
+            alvo.produtoId = `manual_${Date.now()}`;
+            alvo.quantidade = quantidade;
+            alvo.unidade = unidade;
+            alvo.precoUnitario = precoUnitario;
+            alvo.total = quantidade * precoUnitario;
+            alvo.tipo = 'manual';
+            document.getElementById('produtoManual').value = '';
+            document.getElementById('quantidadeManual').value = '';
+            document.getElementById('unidadeManual').value = 'UN';
+            document.getElementById('precoManual').value = '';
+            atualizarTabelaItens();
+            atualizarTotais();
+            ToastManager.success(`${nome} atualizado no carrinho`, 'Item atualizado', 2000);
+            return;
+        }
+    }
+
     const novoItem = {
         id: Date.now(),
         produtoId: `manual_${Date.now()}`,

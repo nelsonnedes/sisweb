@@ -62,5 +62,20 @@ test('acoes de item de clone escapam o id em string literal', () => {
 
 test('removerItem e editarItem comparam id sem tipo rigido', () => {
   assert.match(vendas, /itensCarrinho\.find\(i => String\(i\.id\) === String\(itemId\)\)/);
+  assert.match(vendas, /itensCarrinho\.filter\(i => String\(i\.id\) !== String\(itemId\)\)/);
   assert.match(compras, /itensPedido\.find\(i => String\(i\.id\) === String\(itemId\)\)|function removerItem\(index\)/);
+});
+
+test('edicao de item atualiza em vez de remover e duplicar', () => {
+  assert.match(vendas, /let itemEmEdicaoId = null/);
+  assert.match(vendas, /itemEmEdicaoId = String\(itemId\)/);
+  assert.match(vendas, /itemEmEdicaoId = null;\s*\n\s*if \(alvo\)/);
+  const editBlock = between(vendas, 'function editarItem(itemId', 'function atualizarTabelaItens()');
+  assert.doesNotMatch(editBlock, /removerItem\(itemId, \{ reason: 'edit' \}\)/);
+});
+
+test('validacao de estoque desconta a quantidade do item em edicao', () => {
+  assert.match(vendas, /function validarEstoque\(produtoId, quantidadeDesejada, itemEmEdicao\)/);
+  assert.match(vendas, /String\(itemEmEdicao\.id\) === String\(itemNoCarrinho && itemNoCarrinho\.id\)/);
+  assert.match(vendas, /validarEstoque\(produtoId, quantidade, itemEdicao\)/);
 });

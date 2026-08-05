@@ -23,7 +23,14 @@ Permitir clonar pedidos na Lista de Pedidos de Vendas e Compras sem reaproveitar
 - Os botões Editar/Remover de item renderizavam `onclick="editarItem(${item.id})"` sem aspas; itens clonados com id `ITEM-...` geravam `ReferenceError: ITEM is not defined` ao clicar.
 - Correção: `escapeJsString(item.id)` com aspas simples em `vendas.js` e comparação de id sem tipo rígido (`String(i.id) === String(itemId)`) em `editarItem`/`removerItem`.
 - Compras usa índice numérico (`removerItem(${index})`) e não foi afetado.
-- Testes: 356 aprovados (0 falhas), incluindo 2 novos casos em `tests/order-clone.test.mjs`.
+- Testes: 358 aprovados (0 falhas), incluindo 2 novos casos em `tests/order-clone.test.mjs`.
+
+## Regressão corrigida em 05/08/2026 (edição de itens)
+
+- Ao editar um pedido, excluir um item mostrava "removido com sucesso" mas o item permanecia: o `find` usava coerção de tipo mas o `filter` comparava com `!==` estrito (id numérico vs string do onclick).
+- Ao editar um item e adicionar, o fluxo removia o item e re-adicionava como novo, duplicando o conteúdo quando a remoção falhava.
+- Correção: `removerItem` usa `String(i.id) !== String(itemId)`; `editarItem` marca `itemEmEdicaoId` e o próximo "Adicionar" atualiza o item na mesma posição (mesmo id), sem duplicar; `validarEstoque` desconta a quantidade antiga do item em edição para validar apenas o delta; estado é limpo em novo/cancelar/clonar/salvar.
+- Testes: 358 aprovados (0 falhas), casos novos de edição e validação de estoque em `tests/order-clone.test.mjs`.
 
 ## Segurança Financeira
 
