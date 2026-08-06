@@ -565,11 +565,11 @@ class RomaneioManager {
                                     <tr>
                                         <th style="width: 15%">Data</th>
                                         <th style="width: 25%">Fornecedor/Cliente</th>
-                                        <th style="width: 20%">Resumo</th>
+                                        <th style="width: 16%">Resumo</th>
                                         <th class="text-center" style="width: 10%">Itens</th>
                                         <th class="text-end" style="width: 10%">Volume</th>
                                         <th class="text-end" style="width: 10%">Valor Total</th>
-                                        <th class="text-center" style="width: 10%">Ações</th>
+                                        <th class="text-center" style="width: 14%">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody id="${this.tableId}"></tbody>
@@ -654,36 +654,36 @@ class RomaneioManager {
             
             // Renderização condicional de botões baseada no tipo
             let actions = '';
-            // Estilo padronizado para os botões de ação
+            // ✅ PADRONIZAÇÃO: Botões de ação no padrão canônico (action-button/btn-group)
+            // igual aos modais PCT/TL/PES (print-styles.css cuida do visual)
             
             if (this.type === 'tora') {
                  actions = `
-                    <div class="actions-container">
-                        <button class="btn btn-sm btn-primary" onclick="window.editarRomaneioTora(${actionId})" title="Editar">
+                    <div class="btn-group">
+                        <button class="action-button edit-button" onclick="window.editarRomaneioTora(${actionId})" title="Editar Romaneio">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="window.excluirRomaneioTora(${actionId})" title="Excluir">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
                         <div class="print-dropdown" style="display: inline-block; position: relative;">
-                            <button class="btn btn-sm btn-info dropdown-toggle" onclick="window.togglePrintMenuTora(this, ${actionId}, ${globalIdx})" title="Imprimir">
+                            <button class="action-button print-button" onclick="window.togglePrintMenuTora(this, ${actionId}, ${globalIdx})" title="Imprimir Romaneio">
                                 <i class="fas fa-print"></i>
-                                <i class="fas fa-caret-down" style="font-size: 10px; margin-left: 2px;"></i>
                             </button>
                         </div>
+                        <button class="action-button delete-button" onclick="window.excluirRomaneioTora(${actionId})" title="Excluir Romaneio">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 `;
             } else {
                  actions = `
-                    <div class="actions-container">
-                        <button class="btn btn-sm btn-primary" onclick="window.editarRomaneioGeneric('${this.type}', ${actionId})" title="Editar">
+                    <div class="btn-group">
+                        <button class="action-button edit-button" onclick="window.editarRomaneioGeneric('${this.type}', ${actionId})" title="Editar Romaneio">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="window.excluirRomaneioGeneric('${this.type}', ${actionId})" title="Excluir">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                        <button class="btn btn-sm btn-info" onclick="window.imprimirRomaneioGeneric('${this.type}', ${actionId})" title="Imprimir">
+                        <button class="action-button print-button" onclick="window.imprimirRomaneioGeneric('${this.type}', ${actionId})" title="Imprimir Romaneio">
                             <i class="fas fa-print"></i>
+                        </button>
+                        <button class="action-button delete-button" onclick="window.excluirRomaneioGeneric('${this.type}', ${actionId})" title="Excluir Romaneio">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 `;

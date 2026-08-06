@@ -710,9 +710,9 @@ function renderizarTabela() {
                 <td class="text-right">${formatMoney(item.preco)}</td>
                 <td class="text-right">${formatMoney(item.total)}</td>
                 <td class="text-center">
-                    <div class="actions-container">
-                        <button class="btn-editar" onclick="editarItem(${indexReal})" title="Editar"><i class="fas fa-pencil-alt"></i></button>
-                        <button class="btn-excluir" onclick="removerItem(${indexReal})" title="Excluir"><i class="fas fa-trash"></i></button>
+                    <div class="btn-group">
+                        <button class="action-button edit-button" onclick="editarItem(${indexReal})" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button class="action-button delete-button" onclick="removerItem(${indexReal})" title="Excluir"><i class="fas fa-trash"></i></button>
                     </div>
                 </td>
             `;
@@ -732,9 +732,9 @@ function renderizarTabela() {
                 <td class="text-right">${formatMoney(item.preco)}</td>
                 <td class="text-right">${formatMoney(item.total)}</td>
                 <td class="text-center">
-                    <div class="actions-container">
-                        <button class="btn-editar" onclick="editarItem(${indexReal})" title="Editar"><i class="fas fa-pencil-alt"></i></button>
-                        <button class="btn-excluir" onclick="removerItem(${indexReal})" title="Excluir"><i class="fas fa-trash"></i></button>
+                    <div class="btn-group">
+                        <button class="action-button edit-button" onclick="editarItem(${indexReal})" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button class="action-button delete-button" onclick="removerItem(${indexReal})" title="Excluir"><i class="fas fa-trash"></i></button>
                     </div>
                 </td>
             `;

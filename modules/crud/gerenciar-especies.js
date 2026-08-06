@@ -258,10 +258,10 @@ window.GerenciarEspecies = (function() {
                     </form>
                 </div>
                 <div class="modal-footer species-standard-actions">
-                    <button type="button" class="btn-secondary" onclick="window.GerenciarEspecies.closeModal()">
+                    <button type="button" class="back-button close-modal-btn" onclick="window.GerenciarEspecies.closeModal()">
                         Cancelar
                     </button>
-                    <button type="button" class="btn-primary btn-save" onclick="window.GerenciarEspecies.saveSpecies()">
+                    <button type="button" class="btn-save" onclick="window.GerenciarEspecies.saveSpecies()">
                         <span id="saveButtonText">Salvar Espécie</span>
                     </button>
                 </div>

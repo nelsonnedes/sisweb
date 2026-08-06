@@ -1396,6 +1396,13 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     margin: 0 1px !important;
 }
 
+/* Ícones centralizados: neutraliza regras locais de margem (ex.: romaneiotora) */
+.modal .action-button i,
+#listaModal .action-button i,
+.list-modal .action-button i {
+    margin: 0 !important;
+}
+
 /* Cores padronizadas dos botões */
 .modal .edit-button,
 #listaModal .edit-button,

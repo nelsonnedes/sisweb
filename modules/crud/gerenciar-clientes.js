@@ -314,10 +314,10 @@ window.GerenciarClientes = (function() {
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="window.GerenciarClientes.closeModal()">
+                    <button type="button" class="back-button close-modal-btn" onclick="window.GerenciarClientes.closeModal()">
                         Cancelar
                     </button>
-                    <button type="button" class="btn-primary" onclick="window.GerenciarClientes.saveClient()">
+                    <button type="button" class="btn-save" onclick="window.GerenciarClientes.saveClient()">
                         <span id="saveButtonText">Salvar</span>
                     </button>
                 </div>

@@ -1810,12 +1810,12 @@ async function renderFornecedorListBasic(filter = '') {
                         actionsTd.className = 'text-center';
 
                         const btnGroup = document.createElement('div');
-                        btnGroup.className = 'actions-container'; // Usa classe do CSS global
+                        btnGroup.className = 'btn-group'; // Padrão romaneiopct/romaneiotl
 
                         // Botão Selecionar
                         const selectBtn = document.createElement('button');
-                        selectBtn.className = 'btn-selecionar';
-                        selectBtn.title = 'Selecionar';
+                        selectBtn.className = 'action-button select-button';
+                        selectBtn.title = 'Selecionar Fornecedor';
                         selectBtn.innerHTML = '<i class="fas fa-check"></i>';
                         selectBtn.onclick = () => { try { selectClientFromList(String(f.id)); } catch(_) {} };
 

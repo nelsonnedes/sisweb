@@ -2265,10 +2265,45 @@
             if (mode === 'edit' && client) {
                 title.textContent = 'Editar Cliente';
                 document.getElementById('clientId').value = client.id || '';
-                document.getElementById('clientName').value = client.name || '';
-                document.getElementById('clientPhone').value = client.phone || '';
-                document.getElementById('clientEmail').value = client.email || '';
-                document.getElementById('clientAddress').value = client.address || '';
+                const setField = (fieldId, value) => {
+                    const field = document.getElementById(fieldId);
+                    if (field && value !== undefined && value !== null) {
+                        field.value = value;
+                    }
+                };
+                setField('clientName', client.name || client.nome || '');
+                setField('clientCnpj', client.cnpj || client.documento || client.document || client.cpf || '');
+                setField('clientPersonType', client.tipoPessoa || client.personType || client.fiscalPersonType || '');
+                setField('clientIndIEDest', client.indIEDest || client.indicadorInscricaoEstadual || client.ieIndicator || '');
+                setField('clientStateRegistration', client.inscricaoEstadual || client.stateRegistration || client.ie || '');
+                setField('clientMunicipalRegistration', client.inscricaoMunicipal || client.municipalRegistration || client.im || '');
+                setField('clientSuframa', client.suframa || '');
+                setField('clientState', client.estado || client.state || '');
+                setField('clientPhone', client.phone || client.telefone || '');
+                setField('clientEmail', client.email || '');
+                setField('clientAddress', client.address || client.endereco || '');
+                setField('clientNumber', client.number || client.numero || '');
+                setField('clientNeighborhood', client.neighborhood || client.bairro || '');
+                setField('clientComplement', client.complemento || client.complement || '');
+                setField('clientCep', client.cep || client.postalCode || '');
+                setField('clientMunicipalityCode', client.codigoMunicipio || client.municipioCodigo || client.municipalityCode || client.cMun || client.ibgeCode || '');
+                setField('clientCountryCode', client.paisCodigo || client.countryCode || client.cPais || '1058');
+                setField('clientCountryName', client.pais || client.country || client.countryName || client.xPais || 'Brasil');
+                setField('clientObs', client.obs || client.observacoes || client.observations || '');
+                const cidade = client.cidade || client.city || '';
+                if (cidade) {
+                    const cityField = document.getElementById('clientCity');
+                    if (cityField) {
+                        const cityExists = Array.from(cityField.options).some(o => o.value === cidade);
+                        if (!cityExists) {
+                            const option = document.createElement('option');
+                            option.value = cidade;
+                            option.textContent = cidade;
+                            cityField.appendChild(option);
+                        }
+                        cityField.value = cidade;
+                    }
+                }
                 editingClientId = client.id;
             } else {
                 title.textContent = 'Novo Cliente';
@@ -2296,9 +2331,25 @@
                 const clientData = {
                     id: editingClientId, // Incluir ID para edição
                     name: document.getElementById('clientName').value,
+                    documento: document.getElementById('clientCnpj').value,
+                    tipoPessoa: document.getElementById('clientPersonType').value,
+                    indIEDest: document.getElementById('clientIndIEDest').value,
+                    inscricaoEstadual: document.getElementById('clientStateRegistration').value,
+                    inscricaoMunicipal: document.getElementById('clientMunicipalRegistration').value,
+                    suframa: document.getElementById('clientSuframa').value,
+                    estado: document.getElementById('clientState').value,
+                    cidade: document.getElementById('clientCity').value,
+                    codigoMunicipio: document.getElementById('clientMunicipalityCode').value,
                     phone: document.getElementById('clientPhone').value,
                     email: document.getElementById('clientEmail').value,
-                    address: document.getElementById('clientAddress').value
+                    address: document.getElementById('clientAddress').value,
+                    numero: document.getElementById('clientNumber').value,
+                    bairro: document.getElementById('clientNeighborhood').value,
+                    complemento: document.getElementById('clientComplement').value,
+                    cep: document.getElementById('clientCep').value,
+                    paisCodigo: document.getElementById('clientCountryCode').value,
+                    pais: document.getElementById('clientCountryName').value,
+                    obs: document.getElementById('clientObs').value
                 };
                 
                 try {
@@ -2717,12 +2768,17 @@
                     <td>${client.name || client.nome || 'N/A'}</td>
                     <td>${client.phone || client.telefone || client.celular || 'N/A'}</td>
                     <td style="text-align: center;">
-                        <button class="client-action-button" onclick="selectClientFromList('${client.id}')">
-                            <i class="fas fa-check"></i>
-                        </button>
-                        <button class="client-action-button" onclick="editClientFromList('${client.id}')">
-                            <i class="fas fa-pencil-alt"></i>
-                        </button>
+                        <div class="btn-group">
+                            <button class="action-button select-button" onclick="selectClientFromList('${client.id}')" title="Selecionar Cliente">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="action-button edit-button" onclick="editClientFromList('${client.id}')" title="Editar Cliente">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-button delete-button" onclick="deleteClientFromList('${client.id}')" title="Excluir Cliente">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </td>
                 `;
                 clientListBody.appendChild(row);
@@ -2800,18 +2856,23 @@
                 scientificCell.textContent = specie.nomeCientifico || specie.scientificName || specie.description || 'N/A';
                 const actionsCell = document.createElement('td');
                 actionsCell.style.textAlign = 'center';
+                const btnGroup = document.createElement('div');
+                btnGroup.className = 'btn-group';
                 const selectButton = document.createElement('button');
-                selectButton.className = 'client-action-button';
+                selectButton.className = 'action-button select-button';
                 selectButton.type = 'button';
+                selectButton.title = 'Selecionar Espécie';
                 selectButton.innerHTML = '<i class="fas fa-check"></i>';
                 selectButton.onclick = () => selectSpeciesFromList(specie.id);
                 const editButton = document.createElement('button');
-                editButton.className = 'client-action-button';
+                editButton.className = 'action-button edit-button';
                 editButton.type = 'button';
-                editButton.innerHTML = '<i class="fas fa-pencil-alt"></i>';
+                editButton.title = 'Editar Espécie';
+                editButton.innerHTML = '<i class="fas fa-edit"></i>';
                 editButton.onclick = () => editSpeciesFromList(specie.id);
-                actionsCell.appendChild(selectButton);
-                actionsCell.appendChild(editButton);
+                btnGroup.appendChild(selectButton);
+                btnGroup.appendChild(editButton);
+                actionsCell.appendChild(btnGroup);
                 row.appendChild(nameCell);
                 row.appendChild(scientificCell);
                 row.appendChild(actionsCell);
@@ -2826,6 +2887,15 @@
                 const to = Math.min(end, totalItems);
                 info.textContent = `Exibindo ${from}-${to} de ${totalItems} espécies`;
             }
+        }
+
+        // Mostrar todas as espécies (limpa filtro e paginação)
+        function mostrarTodasEspecies() {
+            const filterInput = document.getElementById('speciesListFilter');
+            if (filterInput) filterInput.value = '';
+            speciesListFilterTerm = '';
+            speciesListPage = 1;
+            renderSpeciesListModal();
         }
 
         // Nova função para abrir modal com lista de clientes
@@ -2947,6 +3017,36 @@
                 openClientModal('edit', client);
                 document.getElementById('clientListModal').style.display = 'none';
             }
+        }
+
+        // Função para excluir cliente da lista (padrão romaneiopct)
+        function deleteClientFromList(clientId) {
+            const client = clients.find(c => c.id == clientId);
+            const clientName = client ? (client.name || client.nome || clientId) : clientId;
+            if (!confirm(`Tem certeza que deseja excluir o cliente "${clientName}"?\n\nEsta ação não pode ser desfeita.`)) {
+                return;
+            }
+            (async () => {
+                try {
+                    const ok = await (window.deleteClient
+                        ? window.deleteClient(clientId)
+                        : (window.clientService && window.clientService.deleteClient
+                            ? window.clientService.deleteClient(clientId)
+                            : false));
+                    if (ok) {
+                        if (selectedClient && selectedClient.id == clientId) {
+                            selectedClient = null;
+                            const input = document.getElementById('clienteInput');
+                            if (input) input.value = '';
+                        }
+                        await carregarClientes();
+                        renderClientListModal();
+                    }
+                } catch (error) {
+                    console.error('Erro ao excluir cliente:', error);
+                    alert('Erro ao excluir cliente: ' + (error.message || error));
+                }
+            })();
         }
 
         // Novas funções para autocomplete de espécie
@@ -3317,6 +3417,7 @@
                     </div>
                     <div>
                         <button type="button" class="back-button close-modal-btn">Fechar</button>
+                        <button type="button" class="btn-adicionar" style="background-color: #17a2b8;" onclick="mostrarTodasEspecies()">Mostrar Todas</button>
                         <button type="button" class="btn-adicionar" onclick="openSpeciesModal('new')">Nova Espécie</button>
                     </div>
                 `;

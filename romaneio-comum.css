@@ -2160,3 +2160,72 @@ textarea:focus {
     text-align: center !important;
     white-space: nowrap !important;
 }
+
+/* ==========================================
+ * ✅ PADRONIZAÇÃO MODAIS (igual romaneiopct):
+ * Cores dos botões de ação das listas
+ * Selecionar = verde | Editar = azul | Excluir = vermelho
+ * ========================================== */
+#clientListModal .action-button,
+#fornecedorListModal .action-button,
+#speciesListModal .action-button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    font-size: 13px !important;
+    color: #ffffff !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+#clientListModal .action-button i,
+#fornecedorListModal .action-button i,
+#speciesListModal .action-button i {
+    margin: 0 !important;
+    line-height: 1 !important;
+}
+
+#clientListModal .action-button.select-button,
+#fornecedorListModal .action-button.select-button,
+#speciesListModal .action-button.select-button {
+    background-color: #28a745 !important;
+}
+
+#clientListModal .action-button.select-button:hover,
+#fornecedorListModal .action-button.select-button:hover,
+#speciesListModal .action-button.select-button:hover {
+    background-color: #218838 !important;
+    transform: translateY(-1px) !important;
+}
+
+#clientListModal .action-button.edit-button,
+#fornecedorListModal .action-button.edit-button,
+#speciesListModal .action-button.edit-button {
+    background-color: #3498db !important;
+}
+
+#clientListModal .action-button.edit-button:hover,
+#fornecedorListModal .action-button.edit-button:hover,
+#speciesListModal .action-button.edit-button:hover {
+    background-color: #2980b9 !important;
+    transform: translateY(-1px) !important;
+}
+
+#clientListModal .action-button.delete-button,
+#fornecedorListModal .action-button.delete-button,
+#speciesListModal .action-button.delete-button {
+    background-color: #e74c3c !important;
+}
+
+#clientListModal .action-button.delete-button:hover,
+#fornecedorListModal .action-button.delete-button:hover,
+#speciesListModal .action-button.delete-button:hover {
+    background-color: #c0392b !important;
+    transform: translateY(-1px) !important;
+}

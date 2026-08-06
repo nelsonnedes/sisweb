@@ -198,8 +198,8 @@ function renderClientList(list = null) {
             <td>${client.name || 'Sem Nome'}</td>
             <td>${client.city || '-'}</td>
             <td class="text-center actions-cell">
-                <div class="actions-container">
-                    <button class="btn-selecionar" onclick="selectPreRomaneioClient('${client.id}', '${client.name}')" title="Selecionar">
+                <div class="btn-group">
+                    <button class="action-button select-button" onclick="selectPreRomaneioClient('${client.id}', '${client.name}')" title="Selecionar Cliente">
                         <i class="fas fa-check"></i>
                     </button>
                 </div>
@@ -471,8 +471,8 @@ function renderSpeciesList(list = null) {
             <td>${displayName}</td>
             <td>${displayDesc}</td>
             <td class="text-center">
-                <div class="actions-container">
-                    <button class="btn-selecionar" onclick="selectSpecies('${displayName}', '${price}')" title="Selecionar">
+                <div class="btn-group">
+                    <button class="action-button select-button" onclick="selectSpecies('${displayName}', '${price}')" title="Selecionar Espécie">
                         <i class="fas fa-check"></i>
                     </button>
                 </div>
@@ -786,11 +786,11 @@ function renderRomaneiosList(list = null) {
             <td class="text-right">${volume} ${type === 'PES' ? 'pés³' : 'm³'}</td>
             <td class="text-right">${value}</td>
             <td class="text-center">
-                <div class="actions-container">
-                    <button class="btn-editar" onclick="carregarPreRomaneio('${item.id}')" title="Editar">
+                <div class="btn-group">
+                    <button class="action-button edit-button" onclick="carregarPreRomaneio('${item.id}')" title="Editar Romaneio">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn-excluir" onclick="excluirPreRomaneio('${item.id}')" title="Excluir">
+                    <button class="action-button delete-button" onclick="excluirPreRomaneio('${item.id}')" title="Excluir Romaneio">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>

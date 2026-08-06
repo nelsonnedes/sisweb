@@ -214,18 +214,38 @@
         .btn-limpar { background-color: #95a5a6; }
         .btn-limpar:hover { background-color: #7f8c8d; }
 
-        /* Botões de Ação na Tabela */
-        .btn-editar, .btn-excluir {
-            padding: 6px 10px;
-            font-size: 12px;
-            margin: 0 2px;
+        /* Botões de Ação na Tabela (padrão canônico action-button) */
+        #tabela-toras .action-button,
+        #tabela-serrados .action-button {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #fff;
+            transition: all 0.2s ease;
         }
 
-        .btn-editar { background-color: #f39c12; }
-        .btn-editar:hover { background-color: #d35400; }
+        #tabela-toras .action-button i,
+        #tabela-serrados .action-button i {
+            margin: 0;
+        }
 
-        .btn-excluir { background-color: #e74c3c; }
-        .btn-excluir:hover { background-color: #c0392b; }
+        #tabela-toras .edit-button { background-color: #3498db; }
+        #tabela-toras .edit-button:hover { background-color: #2980b9; }
+        #tabela-serrados .edit-button { background-color: #3498db; }
+        #tabela-serrados .edit-button:hover { background-color: #2980b9; }
+
+        #tabela-toras .delete-button { background-color: #e74c3c; }
+        #tabela-toras .delete-button:hover { background-color: #c0392b; }
+        #tabela-serrados .delete-button { background-color: #e74c3c; }
+        #tabela-serrados .delete-button:hover { background-color: #c0392b; }
 
         /* === TABELA === */
         .table-responsive {
@@ -537,7 +557,8 @@
             border-radius: 8px 8px 0 0; /* Arredondamento explícito */
         }
 
-        .modal-header h2 {
+        .modal-header h2,
+        .modal-header .modal-title {
             margin: 0;
             font-size: 1.05rem;
             font-weight: 600;
@@ -573,11 +594,6 @@
         #speciesListModal .modal-header {
             margin: 0 !important;
         }
-        
-        #speciesListModal .modal-footer .btn-adicionar {
-            padding: 10px 20px;
-            min-width: 170px;
-        }
 
         #clientListModal .modal-content {
             width: 95%;
@@ -594,11 +610,6 @@
             max-width: 1200px;
         }
 
-        #fornecedorListModal .modal-footer .btn-adicionar {
-            padding: 10px 20px;
-            min-width: 190px;
-        }
-
         #speciesModal .modal-content {
             width: 95%;
             max-width: 650px;
@@ -607,31 +618,6 @@
         #listaModal .modal-content {
             width: 95%;
             max-width: 1100px;
-        }
-
-        /* Ajuste robusto para o botão Nova Espécie */
-        .modal .btn-adicionar {
-            background-color: #2ecc71;
-            color: white;
-            padding: 10px 20px; /* Padding generoso */
-            width: auto; 
-            min-width: 160px; /* Aumentado de 150px para 160px */
-            height: auto; /* Altura automática baseada no padding */
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px; 
-            white-space: nowrap; 
-            font-weight: 600;
-            font-size: 14px;
-            border-radius: 4px;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .modal .btn-adicionar:hover {
-            background-color: #27ae60;
         }
         
         .modal-footer {
@@ -737,128 +723,9 @@
             background: none !important;
         }
 
-        /* Botões de Ação - Estilo "Flat & Clean" */
-        .modal .btn-editar, .modal .btn-excluir, .modal .btn-selecionar {
-            padding: 0;
-            margin: 0 4px;
-            font-size: 13px;
-            border-radius: 6px; /* Cantos mais suaves */
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 28px;
-            height: 28px;
-            min-width: 28px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efeito bounce suave */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
-        }
-        
-        /* Ensure icons are visible */
-        .modal .btn-editar i, .modal .btn-excluir i, .modal .btn-selecionar i {
-            color: white;
-            font-size: 13px;
-        }
-
-        .modal .btn-selecionar {
-            background-color: #2ecc71; /* Verde mais vibrante */
-        }
-        
-        .modal .btn-selecionar:hover {
-            background-color: #27ae60;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(46, 204, 113, 0.3);
-        }
-
-        .modal .btn-editar {
-            background-color: #f1c40f; /* Amarelo/Laranja vibrante */
-        }
-        
-        .modal .btn-editar:hover {
-            background-color: #f39c12;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(241, 196, 15, 0.3);
-        }
-
-        .modal .btn-excluir {
-            background-color: #e74c3c; /* Vermelho padrão */
-        }
-        
-        .modal .btn-excluir:hover {
-            background-color: #c0392b;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
-        }
-
         .modal td.text-center {
             text-align: center;
             vertical-align: middle;
-        }
-        
-        /* Coluna de Ações Fixa e Alinhada */
-        .modal th:last-child, 
-        .modal td:last-child {
-            width: 1%;
-            white-space: nowrap;
-            text-align: center;
-            padding-right: 10px;
-            padding-left: 10px;
-        }
-        
-        /* Container for action buttons to ensure alignment */
-        .actions-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100%;
-            min-height: 30px;
-            gap: 2px;
-        }
-
-        .modal .actions-cell {
-            text-align: center;
-        }
-
-        .modal .actions-cell .actions-container {
-            margin: 0 auto;
-        }
-
-        #clientListModal table,
-        #speciesListModal table {
-            table-layout: fixed;
-        }
-
-        #clientListModal thead th:first-child,
-        #clientListModal td:first-child {
-            width: 55%;
-        }
-
-        #clientListModal thead th:nth-child(2),
-        #clientListModal td:nth-child(2) {
-            width: 35%;
-        }
-
-        #clientListModal thead th:last-child {
-            text-align: center;
-            width: 40px;
-            padding-left: 4px;
-            padding-right: 4px;
-        }
-
-        #clientListModal td.actions-cell {
-            text-align: center;
-            padding-left: 0;
-            padding-right: 0;
-            vertical-align: middle;
-            width: 40px;
-        }
-
-        #clientListModal td.actions-cell .actions-container {
-            width: auto;
-            margin: 0;
-            display: inline-flex;
         }
 
         #clientListModal .table th {
@@ -875,17 +742,17 @@
             line-height: 1.1;
         }
 
-        .actions-container .btn-editar,
-        .actions-container .btn-excluir {
-            justify-content: center;
-            gap: 0;
-            width: 34px;
-            padding-left: 0;
-            padding-right: 0;
+        /* Modal Lista de Pré-Romaneios: colunas por conteúdo + coluna Ações padronizada */
+        #listaModal .table {
+            table-layout: auto !important;
         }
-        
-        .modal td:last-child .actions-container {
-            justify-content: center !important;
+
+        #listaModal .table th:last-child,
+        #listaModal .table td:last-child {
+            width: 140px;
+            min-width: 120px;
+            text-align: center;
+            white-space: nowrap;
         }
 
         /* Responsividade e Layout da Tabela no Modal */
@@ -1361,7 +1228,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
     <div id="clientListModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Selecionar Cliente</h2>
+                <h3 class="modal-title">📋 Lista de Clientes</h3>
                 <span class="close-modal" onclick="closeClientListModal()">&times;</span>
             </div>
             <div class="modal-body">
@@ -1383,7 +1250,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
                 <div id="clientListPagination" class="pagination-controls pagination-container"></div>
             </div>
             <div class="modal-footer">
-                <button class="btn-limpar" onclick="closeClientListModal()">Voltar</button>
+                <button type="button" class="back-button close-modal-btn" onclick="closeClientListModal()">Voltar</button>
                 <button class="btn-adicionar" onclick="openNewClientModal()">
                     <i class="fas fa-plus"></i> Novo Cliente
                 </button>
@@ -1395,7 +1262,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
     <div id="clientModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="clientModalTitle">Novo Cliente</h2>
+                <h3 class="modal-title" id="clientModalTitle">Novo Cliente</h3>
                 <span class="close-modal" onclick="closeNewClientModal()">&times;</span>
             </div>
             <form id="clientForm">
@@ -1547,8 +1414,8 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-limpar" onclick="closeNewClientModal()">Cancelar</button>
-                    <button type="submit" class="btn-salvar">Salvar</button>
+                    <button type="button" class="back-button close-modal-btn" onclick="closeNewClientModal()">Cancelar</button>
+                    <button type="submit" class="btn-save">Salvar</button>
                 </div>
             </form>
         </div>
@@ -1558,7 +1425,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
     <div id="fornecedorListModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Selecionar Fornecedor</h2>
+                <h3 class="modal-title">🚚 Lista de Fornecedores</h3>
                 <span class="close-modal" onclick="closeFornecedorListModal()">&times;</span>
             </div>
             <div class="modal-body">
@@ -1583,7 +1450,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
                 <div id="fornecedorPagination" class="pagination-controls pagination-container"></div>
             </div>
             <div class="modal-footer">
-                <button class="btn-limpar" onclick="closeFornecedorListModal()">Fechar</button>
+                <button type="button" class="back-button close-modal-btn" onclick="closeFornecedorListModal()">Fechar</button>
                 <button class="btn-adicionar" onclick="openNewFornecedorModal()">
                     <i class="fas fa-plus"></i> Novo Fornecedor
                 </button>
@@ -1595,7 +1462,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
     <div id="fornecedorModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="fornecedorModalTitle">Novo Fornecedor</h2>
+                <h3 class="modal-title" id="fornecedorModalTitle">Novo Fornecedor</h3>
                 <span class="close-modal" onclick="closeNewFornecedorModal()">&times;</span>
             </div>
             <form id="fornecedorForm" onsubmit="saveClient(event)">
@@ -1749,8 +1616,8 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-limpar" onclick="closeNewFornecedorModal()">Cancelar</button>
-                    <button type="submit" class="btn-salvar"><i class="fas fa-save"></i> Salvar</button>
+                    <button type="button" class="back-button close-modal-btn" onclick="closeNewFornecedorModal()">Cancelar</button>
+                    <button type="submit" class="btn-save"><i class="fas fa-save"></i> Salvar</button>
                 </div>
             </form>
         </div>
@@ -1782,7 +1649,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
                 <div id="speciesListPagination" class="pagination-controls pagination-container"></div>
             </div>
             <div class="modal-footer">
-                <button class="btn-limpar" onclick="closeSpeciesListModal()">Voltar</button>
+                <button type="button" class="back-button close-modal-btn" onclick="closeSpeciesListModal()">Voltar</button>
                 <button class="btn-adicionar" onclick="openNewSpeciesModal()">
                     <i class="fas fa-plus"></i> Nova Espécie
                 </button>
@@ -1794,7 +1661,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
     <div id="speciesModal" class="modal">
         <div class="modal-content species-standard-modal-content">
             <div class="modal-header species-standard-header">
-                <h2 id="speciesModalTitle">Nova Espécie</h2>
+                <h3 class="modal-title species-standard-title" id="speciesModalTitle">Nova Espécie</h3>
                 <span class="close-modal" onclick="closeNewSpeciesModal()">&times;</span>
             </div>
             <form id="speciesForm" class="species-standard-form">
@@ -1811,8 +1678,8 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
                     </div>
                 </div>
                 <div class="modal-footer species-standard-actions">
-                    <button type="button" class="btn-limpar" onclick="closeNewSpeciesModal()">Cancelar</button>
-                    <button type="submit" class="btn-salvar"><i class="fas fa-save"></i> Salvar</button>
+                    <button type="button" class="back-button close-modal-btn" onclick="closeNewSpeciesModal()">Cancelar</button>
+                    <button type="submit" class="btn-save"><i class="fas fa-save"></i> Salvar</button>
                 </div>
             </form>
         </div>
@@ -1822,7 +1689,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
     <div id="listaModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Meus Pré-Romaneios</h2>
+                <h3 class="modal-title">📋 Meus Pré-Romaneios</h3>
                 <span class="close-modal" onclick="closeListaModal()">&times;</span>
             </div>
             <div class="modal-body">
@@ -1844,7 +1711,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
                 <div id="listaRomaneiosPagination" class="pagination-container"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-limpar" onclick="closeListaModal()">Fechar</button>
+                <button type="button" class="back-button close-modal-btn" onclick="closeListaModal()">Fechar</button>
             </div>
         </div>
     </div>
