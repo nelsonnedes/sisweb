@@ -1464,6 +1464,7 @@ test('callable financeSyncCompra salva pedido e conta a pagar atomicamente', asy
       valorOriginal: 500,
       valorRestante: 500,
       dataVencimento: '2026-05-25',
+      dataEmissao: '2026-05-20',
       status: 'pendente',
       tipoPagamento: 'pagar',
     }],
@@ -1487,6 +1488,7 @@ test('callable financeSyncCompra salva pedido e conta a pagar atomicamente', asy
   assert.equal(account.valorRestante, 500);
   assert.equal(account.valorPago, 0);
   assert.equal(account.dataVencimento, '2026-05-25');
+  assert.equal(account.dataEmissao, '2026-05-20');
   assert.equal(account.status, 'pendente');
   assert.equal(account.fornecedorId, 'supplier-a');
   assert.equal(account.pedidoNumero, 'PC-1001');

@@ -92,6 +92,7 @@ test('compras cai em modo legado quando callable ainda nao publicada e preserva 
   assert.match(js, /financeSyncCompra indisponível/);
   assert.match(js, /Usando modo legado de escrita direta/);
   assert.match(js, /errorCode === 'internal'/);
+  assert.match(js, /dataEmissao: c\.dataEmissao \|\| pedido\.data \|\| ''/);
   assert.match(js, /updates\[`financas\/pagar\/\$\{mk\}\/\$\{contaId\}`\] = conta/);
   assert.match(js, /Não foi possível sincronizar o financeiro do pedido de compra\. Nenhuma alteração foi concluída\./);
 });

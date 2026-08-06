@@ -2056,6 +2056,7 @@ async function salvarPedido(event) {
             valorOriginal: typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor),
             valorRestante: typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor),
             dataVencimento: c.vencimento,
+            dataEmissao: c.dataEmissao || pedido.data || '',
             status: c.status || 'pendente',
             tipoPagamento: c.tipo,
             observacoes: c.observacao || ''
@@ -2114,6 +2115,7 @@ async function salvarPedido(event) {
                                     valorRestante: typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor),
                                     vencimento: c.vencimento,
                                     dataVencimento: c.vencimento,
+                                    dataEmissao: c.dataEmissao || pedido.data || '',
                                     status: c.status || 'pendente',
                                     tipoPagamento: c.tipo,
                                     observacoes: c.observacao || '',

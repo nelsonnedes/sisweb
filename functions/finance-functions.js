@@ -1053,6 +1053,10 @@ function buildCanonicalPurchaseAccount(source, request, nowIso) {
         updatedAt: nowIso,
         revision: 0,
     };
+    // ✅ Atribuir dataEmissao condicionalmente para evitar null vs campo ausente no RTDB
+    if (source.dataEmissao) {
+        account.dataEmissao = String(source.dataEmissao).trim();
+    }
     return { month, account };
 }
 

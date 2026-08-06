@@ -2169,6 +2169,7 @@ async function salvarPedido(event) {
                 valorRestante: conta.valor,
                 dataVencimento: conta.vencimento,
                 vencimento: conta.vencimento, // redundância para compatibilidade
+                dataEmissao: conta.dataEmissao || pedidoData.data || '',
                 status: 'pendente',
                 tipoPagamento: conta.tipo,
                 tipo_pagamento: conta.tipo, // redundância para compatibilidade
