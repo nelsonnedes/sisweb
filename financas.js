@@ -3757,7 +3757,10 @@ async function salvarContaReceber(event) {
             window.__financeSaveInProgress = false;
             window.__financeSaving = false;
             try { const rs = document.getElementById('receberForm')?.querySelector('button[type="submit"]'); setSubmitButtonLoading(rs, false); } catch(_) {}
+            try { carregarTabelaReceber(lastFiltroReceber || {}); } catch(_) {}
+            try { atualizarSelectCategorias(); atualizarSelectTipos(); } catch(_) {}
             mostrarNotificacao('Conta a receber editada com sucesso!', 'success');
+            return;
         } else {
             // ✅ CRIAÇÃO DE NOVA CONTA (comportamento original)
         const parcelConfigsReceber = getGeneratedParcelConfigs('receber', parcelas, valorTotal, dataVencimento);
