@@ -742,18 +742,35 @@
             line-height: 1.1;
         }
 
-        /* Modal Lista de Pré-Romaneios: colunas por conteúdo + coluna Ações padronizada */
-        #listaModal .table {
-            table-layout: auto !important;
+        /* Modal Lista de Pré-Romaneios: colunas no padrão canônico (print-styles.css) */
+        #listaModal table {
+            min-width: 980px;
         }
 
-        #listaModal .table th:last-child,
-        #listaModal .table td:last-child {
-            width: 140px;
-            min-width: 120px;
-            text-align: center;
-            white-space: nowrap;
+        #listaModal .table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #2c3e50 !important;
+            color: #fff !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
         }
+
+        #listaModal .table th:nth-child(1),
+        #listaModal .table td:nth-child(1) { width: 12% !important; min-width: 108px !important; }
+        #listaModal .table th:nth-child(2),
+        #listaModal .table td:nth-child(2) { width: 20% !important; min-width: 180px !important; }
+        #listaModal .table th:nth-child(3),
+        #listaModal .table td:nth-child(3) { width: 25% !important; min-width: 230px !important; }
+        #listaModal .table th:nth-child(4),
+        #listaModal .table td:nth-child(4) { width: 13% !important; min-width: 120px !important; text-align: right !important; }
+        #listaModal .table th:nth-child(5),
+        #listaModal .table td:nth-child(5) { width: 12% !important; min-width: 128px !important; text-align: right !important; }
+        #listaModal .table thead th:nth-child(6),
+        #listaModal .table tbody td:nth-child(6) { width: 18% !important; min-width: 140px !important; text-align: center !important; }
 
         /* Responsividade e Layout da Tabela no Modal */
         .modal table {

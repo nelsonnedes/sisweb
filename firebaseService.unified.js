@@ -1365,6 +1365,123 @@ window.firebaseService = firebaseServiceInstance;
 // Compatibilidade: expor também como FirebaseService
 window.FirebaseService = firebaseServiceInstance;
 
+// ─── authService compat (usado por auth.js via window.firebaseService.authService) ───
+// O auth.js usa window.firebaseService.authService para getCurrentUser/login/logout/
+// onAuthStateChanged. Sem ele, auth.js cai no fallback (user sempre null) e o guard
+// redireciona para o login. Aqui montamos o authService sobre o wrapper compat
+// (window.firebase.auth()) definido pelo firebase-compat-bridge.js.
+function compatAuthInstance() {
+    try {
+        if (window.firebase && typeof window.firebase.auth === 'function') {
+            return window.firebase.auth();
+        }
+    } catch (_) {}
+    return null;
+}
+
+const unifiedAuthService = {
+    getAuth() {
+        return compatAuthInstance();
+    },
+
+    onAuthStateChanged(callback) {
+        const authInstance = compatAuthInstance();
+        if (!authInstance || typeof authInstance.onAuthStateChanged !== 'function') {
+            if (typeof callback === 'function') {
+                setTimeout(() => { try { callback(null); } catch (_) {} }, 0);
+            }
+            return null;
+        }
+        return authInstance.onAuthStateChanged(callback);
+    },
+
+    // Aguarda a restauração da sessão (ex.: primeiro retorno do listener) até 5s
+    getCurrentUser() {
+        const authInstance = compatAuthInstance();
+        if (!authInstance) return Promise.resolve(null);
+        if (authInstance.currentUser) return Promise.resolve(authInstance.currentUser);
+        return new Promise((resolve) => {
+            let settled = false;
+            let unsubscribe = null;
+            const timer = setTimeout(() => {
+                if (settled) return;
+                settled = true;
+                if (typeof unsubscribe === 'function') { try { unsubscribe(); } catch (_) {} }
+                try { resolve(authInstance.currentUser || null); } catch (_) { resolve(null); }
+            }, 5000);
+            try {
+                unsubscribe = authInstance.onAuthStateChanged((user) => {
+                    if (!user || settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    if (typeof unsubscribe === 'function') { try { unsubscribe(); } catch (_) {} }
+                    resolve(user);
+                });
+            } catch (_) {
+                clearTimeout(timer);
+                if (!settled) { settled = true; resolve(authInstance.currentUser || null); }
+            }
+        });
+    },
+
+    async login(email, password) {
+        const authInstance = compatAuthInstance();
+        const normalizedEmail = String(email || '').trim().toLowerCase();
+        const rawPassword = typeof password === 'string' ? password : String(password || '');
+        if (!authInstance || typeof authInstance.signInWithEmailAndPassword !== 'function') {
+            return { success: false, error: 'Serviço de autenticação não disponível.' };
+        }
+        if (!normalizedEmail || !rawPassword) {
+            return { success: false, error: 'Email e senha são obrigatórios.' };
+        }
+        try {
+            const userCredential = await authInstance.signInWithEmailAndPassword(normalizedEmail, rawPassword);
+            return { success: true, user: userCredential.user };
+        } catch (error) {
+            return { success: false, error: error && error.message ? error.message : 'Falha no login.' };
+        }
+    },
+
+    async registerUser(email, password, companyId) {
+        const authInstance = compatAuthInstance();
+        if (!authInstance || typeof authInstance.createUserWithEmailAndPassword !== 'function') {
+            return { success: false, error: 'Serviço de autenticação não disponível.' };
+        }
+        try {
+            const userCredential = await authInstance.createUserWithEmailAndPassword(
+                String(email || '').trim().toLowerCase(),
+                typeof password === 'string' ? password : String(password || '')
+            );
+            return { success: true, user: userCredential.user, companyId: companyId || null };
+        } catch (error) {
+            return { success: false, error: error && error.message ? error.message : 'Falha no cadastro.' };
+        }
+    },
+
+    async logout() {
+        const authInstance = compatAuthInstance();
+        if (authInstance && typeof authInstance.signOut === 'function') {
+            try { await authInstance.signOut(); } catch (_) {}
+        }
+        return { success: true };
+    },
+
+    async sendPasswordResetEmail(email) {
+        const authInstance = compatAuthInstance();
+        if (!authInstance || typeof authInstance.sendPasswordResetEmail !== 'function') {
+            return { success: false, error: 'Serviço de autenticação não disponível.' };
+        }
+        try {
+            await authInstance.sendPasswordResetEmail(String(email || '').trim().toLowerCase());
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error && error.message ? error.message : 'Falha na recuperação de senha.' };
+        }
+    }
+};
+
+firebaseServiceInstance.authService = unifiedAuthService;
+
 // Auto-inicializar
 if (!window._FIREBASE_UNIFIED_INIT_TRIGGERED) {
   window._FIREBASE_UNIFIED_INIT_TRIGGERED = true;
