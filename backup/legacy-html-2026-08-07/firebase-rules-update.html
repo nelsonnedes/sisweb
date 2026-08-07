@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atualizar Regras de Segurança do Firebase</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Atualizar Regras de Segurança do Firebase</h1>
+    
+    <p>Esta página permite atualizar as regras de segurança do Firebase para permitir acesso à coleção "especies" sem autenticação.</p>
+    
+    <h2>Regras atuais (carregadas do arquivo):</h2>
+    <pre id="currentRules"></pre>
+    
+    <button id="updateRulesBtn">Atualizar Regras de Segurança</button>
+    
+    <div id="result"></div>
+    
+    <script type="module">
+        // Importar o Firebase
+        import { app, getAuth, getDatabase, getApps, signInWithEmailAndPassword } from './firebase-init.js?v=21eb04e409d8';
+        
+        // Import shared Firebase service
+        import { 
+            saveToFirebase, 
+            getFromFirebase,
+            isFirebaseOperational 
+        } from './firebaseService.js?v=676ba9f2a922';
+
+        // Variáveis globais
+        let app;
+        let auth;
+        let db;
+        
+        // Inicializar Firebase usando o serviço compartilhado
+        function initFirebase() {
+            try {
+                // Verificar se já existe uma instância Firebase
+                const apps = getApps();
+                if (apps.length > 0) {
+                    app = apps[0];
+                    console.log('✅ Usando instância Firebase existente do firebaseService.js');
+                } else {
+                    console.error('❌ Nenhuma instância Firebase encontrada - firebaseService.js não carregado');
+                    return false;
+                }
+                
+                auth = getAuth(app);
+                db = getDatabase(app);
+                return true;
+            } catch (error) {
+                console.error('Erro ao inicializar Firebase:', error);
+                return false;
+            }
+        }
+        
+        // Inicializar Firebase na primeira execução
+        initFirebase();
+        
+        // Carregar regras do arquivo
+        async function loadRules() {
+            try {
+                const response = await fetch('firebase-rules.json');
+                const rules = await response.json();
+                document.getElementById('currentRules').textContent = JSON.stringify(rules, null, 2);
+                return rules;
+            } catch (error) {
+                console.error('Erro ao carregar regras:', error);
+                showResult('Erro ao carregar regras: ' + error.message, 'error');
+                return null;
+            }
+        }
+        
+        // Atualizar regras no Firebase
+        async function updateRules(rules) {
+            try {
+                // Autenticar como admin (necessário para atualizar regras)
+                // Solicitar credenciais admin para o usuário
+                const email = prompt('Por favor, digite seu email de administrador:');
+                const password = prompt('Por favor, digite sua senha de administrador:');
+                
+                if (!email || !password) {
+                    showResult('Credenciais não fornecidas. Operação cancelada.', 'error');
+                    return;
+                }
+                
+                try {
+                    // Tentar autenticar
+                    await signInWithEmailAndPassword(auth, email, password);
+                    
+                    // Obter token de autenticação
+                    const idToken = await auth.currentUser.getIdToken();
+                    
+                    // Usar a API REST do Firebase Database para atualizar as regras
+                    const databaseURL = "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app";
+                    const url = `${databaseURL}/.settings/rules.json?auth=${idToken}`;
+                    
+                    const response = await fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(rules)
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`Erro na resposta: ${response.status} - ${JSON.stringify(errorData)}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('Regras atualizadas com sucesso:', data);
+                    showResult('Regras de segurança atualizadas com sucesso! A modificação pode levar alguns minutos para propagar.', 'success');
+                    
+                } catch (authError) {
+                    console.error('Erro na autenticação:', authError);
+                    showResult('Erro na autenticação: ' + authError.message, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Erro ao atualizar regras:', error);
+                showResult('Erro ao atualizar regras: ' + error.message, 'error');
+            }
+        }
+        
+        // Mostrar resultado na interface
+        function showResult(message, type) {
+            const resultElement = document.getElementById('result');
+            resultElement.textContent = message;
+            resultElement.className = type;
+            resultElement.style.display = 'block';
+        }
+        
+        // Carregar regras ao iniciar
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadRules();
+            
+            // Configurar botão para atualizar regras
+            document.getElementById('updateRulesBtn').addEventListener('click', async () => {
+                const rules = await loadRules();
+                if (rules) {
+                    if (confirm('Tem certeza que deseja atualizar as regras de segurança do Firebase?')) {
+                        await updateRules(rules);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

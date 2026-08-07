@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Firebase - Folha de Pagamento</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste Firebase - Folha de Pagamento</h1>
+    
+    <div class="test-section">
+        <h3>1. 🔥 Teste de Inicialização do Firebase</h3>
+        <button onclick="testarFirebase()">Testar Firebase</button>
+        <div id="resultado-firebase"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. 💾 Teste de Leitura do Firebase</h3>
+        <button onclick="testarLeitura()">Testar Leitura</button>
+        <div id="resultado-leitura"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. ✍️ Teste de Escrita no Firebase</h3>
+        <button onclick="testarEscrita()">Testar Escrita</button>
+        <div id="resultado-escrita"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. 📊 Teste de Contas a Pagar</h3>
+        <button onclick="testarContasPagar()">Testar Contas</button>
+        <div id="resultado-contas"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>5. 🔍 Logs do Console</h3>
+        <button onclick="limparLogs()">Limpar Logs</button>
+        <div id="logs-console"></div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, get, set, push } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
+            authDomain: "sisweb-7ce82.firebaseapp.com",
+            databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "sisweb-7ce82",
+            storageBucket: "sisweb-7ce82.firebasestorage.app",
+            messagingSenderId: "240003261222",
+            appId: "1:240003261222:web:1aeaf919ddc7e5c691d7e7",
+            measurementId: "G-FTC6JZ5ZGX"
+        };
+        
+        let app, database;
+        
+        try {
+            app = initializeApp(firebaseConfig);
+            database = getDatabase(app);
+            window.database = database;
+            
+            console.log('✅ Firebase inicializado com sucesso');
+            console.log('📊 Database:', database);
+            console.log('🌐 URL:', firebaseConfig.databaseURL);
+            
+            // Atualizar interface
+            document.getElementById('resultado-firebase').innerHTML = 
+                '<div class="success">✅ Firebase inicializado com sucesso!</div>';
+                
+        } catch (error) {
+            console.error('❌ Erro ao inicializar Firebase:', error);
+            document.getElementById('resultado-firebase').innerHTML = 
+                '<div class="error">❌ Erro ao inicializar Firebase: ' + error.message + '</div>';
+        }
+        
+        // Funções de teste
+        window.testarFirebase = function() {
+            if (database) {
+                document.getElementById('resultado-firebase').innerHTML = 
+                    '<div class="success">✅ Firebase está funcionando! Database: ' + (database ? 'OK' : 'FALHOU') + '</div>';
+            } else {
+                document.getElementById('resultado-firebase').innerHTML = 
+                    '<div class="error">❌ Firebase não está disponível</div>';
+            }
+        };
+        
+        window.testarLeitura = async function() {
+            try {
+                if (!database) {
+                    throw new Error('Database não disponível');
+                }
+                
+        const folhasRef = ref(database, 'folhas');
+                const snapshot = await get(folhasRef);
+                
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const count = Object.keys(data || {}).length;
+                    
+                    document.getElementById('resultado-leitura').innerHTML = 
+                        '<div class="success">✅ Leitura OK! Encontradas ' + count + ' folhas</div>' +
+                        '<pre>' + JSON.stringify(data, null, 2).substring(0, 500) + '...</pre>';
+                } else {
+                    document.getElementById('resultado-leitura').innerHTML = 
+                        '<div class="warning">⚠️ Nenhuma folha encontrada (pode ser normal)</div>';
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro na leitura:', error);
+                document.getElementById('resultado-leitura').innerHTML = 
+                    '<div class="error">❌ Erro na leitura: ' + error.message + '</div>';
+            }
+        };
+        
+        window.testarEscrita = async function() {
+            try {
+                if (!database) {
+                    throw new Error('Database não disponível');
+                }
+                
+                const testRef = ref(database, 'teste_folha');
+                const testData = {
+                    timestamp: new Date().toISOString(),
+                    teste: 'Teste de escrita da folha de pagamento',
+                    valor: Math.random() * 1000
+                };
+                
+                await set(testRef, testData);
+                
+                document.getElementById('resultado-escrita').innerHTML = 
+                    '<div class="success">✅ Escrita OK! Dados salvos com sucesso</div>' +
+                    '<pre>' + JSON.stringify(testData, null, 2) + '</pre>';
+                    
+            } catch (error) {
+                console.error('❌ Erro na escrita:', error);
+                document.getElementById('resultado-escrita').innerHTML = 
+                    '<div class="error">❌ Erro na escrita: ' + error.message + '</div>';
+            }
+        };
+        
+        window.testarContasPagar = async function() {
+            try {
+                if (!database) {
+                    throw new Error('Database não disponível');
+                }
+                
+                const contasRef = ref(database, 'contasPagar');
+                const snapshot = await get(contasRef);
+                
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const count = Object.keys(data || {}).length;
+                    
+                    document.getElementById('resultado-contas').innerHTML = 
+                        '<div class="success">✅ Contas a pagar OK! Encontradas ' + count + ' contas</div>' +
+                        '<pre>' + JSON.stringify(data, null, 2).substring(0, 500) + '...</pre>';
+                } else {
+                    document.getElementById('resultado-contas').innerHTML = 
+                        '<div class="warning">⚠️ Nenhuma conta a pagar encontrada (pode ser normal)</div>';
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao buscar contas:', error);
+                document.getElementById('resultado-contas').innerHTML = 
+                    '<div class="error">❌ Erro ao buscar contas: ' + error.message + '</div>';
+            }
+        };
+        
+        window.limparLogs = function() {
+            document.getElementById('logs-console').innerHTML = '';
+        };
+        
+        // Capturar logs do console
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const logsDiv = document.getElementById('logs-console');
+            if (logsDiv) {
+                logsDiv.innerHTML += '<div style="color: green;">📝 ' + args.join(' ') + '</div>';
+            }
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            const logsDiv = document.getElementById('logs-console');
+            if (logsDiv) {
+                logsDiv.innerHTML += '<div style="color: red;">❌ ' + args.join(' ') + '</div>';
+            }
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            const logsDiv = document.getElementById('logs-console');
+            if (logsDiv) {
+                logsDiv.innerHTML += '<div style="color: orange;">⚠️ ' + args.join(' ') + '</div>';
+            }
+        };
+        
+    </script>
+    <script src="../global-footer.js"></script>
+</body>
+</html>

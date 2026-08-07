@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ferramenta de Migração - localStorage para Firebase</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .status-section {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .status-section h3 {
+            margin-top: 0;
+        }
+        
+        .status-ok {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .status-warning {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #007bff;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .log-area {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .data-table th,
+        .data-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .size-info {
+            font-size: 12px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Migração localStorage → Firebase</h1>
+        
+        <div class="status-section">
+            <h3>📊 Status do Sistema</h3>
+            <div id="firebaseStatus">Verificando Firebase...</div>
+            <div id="localStorageStatus">Verificando localStorage...</div>
+            <div id="migrationStatus">Aguardando análise...</div>
+        </div>
+        
+        <div class="status-section">
+            <h3>📋 Dados Encontrados</h3>
+            <table class="data-table" id="dataTable">
+                <thead>
+                    <tr>
+                        <th>Chave</th>
+                        <th>localStorage</th>
+                        <th>Firebase</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                    <tr><td colspan="5">Analisando dados...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="status-section">
+            <h3>🔧 Ferramentas de Migração</h3>
+            <button class="btn btn-primary" onclick="analyzeData()">🔍 Analisar Dados</button>
+            <button class="btn btn-success" onclick="migrateAll()">⬆️ Migrar Tudo para Firebase</button>
+            <button class="btn btn-warning" onclick="syncAll()">🔄 Sincronizar Dados</button>
+            <button class="btn btn-danger" onclick="clearFirebaseData()" title="CUIDADO: Remove todos os dados do Firebase">🗑️ Limpar Firebase</button>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+            <div id="progressText">Pronto para iniciar</div>
+        </div>
+        
+        <div class="status-section">
+            <h3>📝 Log de Operações</h3>
+            <button class="btn btn-primary" onclick="clearLog()">🧹 Limpar Log</button>
+            <div class="log-area" id="logArea"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        import { firebaseService } from './firebaseService.js?v=676ba9f2a922';
+        
+        // Estado global
+        let migrationState = {
+            firebaseOperational: false,
+            localStorageData: {},
+            firebaseData: {},
+            migrationProgress: 0
+        };
+        
+        // Chaves principais do sistema
+        const SYSTEM_KEYS = [
+            'clients', 'clientesTora', 'clientes',
+            'especies',
+            'romaneiosPct', 'romaneiosTora', 'romaneiosTl',
+            'companies', 'empresaInfo',
+            'users', 'currentUser',
+            'systemConfig', 'activityLogs'
+        ];
+        
+        // Função para log
+        function log(message, type = 'info') {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toLocaleTimeString();
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logArea.textContent += `[${timestamp}] ${icon} ${message}\n`;
+            logArea.scrollTop = logArea.scrollHeight;
+            console.log(`Migration Tool: ${message}`);
+        }
+        
+        // Função para atualizar progresso
+        function updateProgress(percentage, text) {
+            document.getElementById('progressBar').style.width = percentage + '%';
+            document.getElementById('progressText').textContent = text;
+            migrationState.migrationProgress = percentage;
+        }
+
+        function persistLocalValue(key, data) {
+            try {
+                if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {
+                    window.SiswebStorage.write(key, data);
+                    return;
+                }
+            } catch (_) {}
+            const payload = typeof data === 'string' ? data : JSON.stringify(data);
+            localStorage.setItem(key, payload);
+        }
+        
+        // Verificar status do Firebase
+        async function checkFirebaseStatus() {
+            try {
+                const status = firebaseService?.isOperational();
+                if (status && status.operational) {
+                    document.getElementById('firebaseStatus').innerHTML = '✅ Firebase: Operacional';
+                    migrationState.firebaseOperational = true;
+                    log('Firebase está operacional', 'success');
+                    return true;
+                } else {
+                    const errorMsg = status?.message || 'Status desconhecido';
+                    document.getElementById('firebaseStatus').innerHTML = `❌ Firebase: ${errorMsg}`;
+                    log(`Firebase não operacional: ${errorMsg}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                document.getElementById('firebaseStatus').innerHTML = `❌ Firebase: Erro - ${error.message}`;
+                log(`Erro ao verificar Firebase: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // Verificar localStorage
+        function checkLocalStorage() {
+            try {
+                const testKey = 'migration_test';
+                persistLocalValue(testKey, 'test');
+                localStorage.removeItem(testKey);
+                
+                let totalSize = 0;
+                let itemCount = 0;
+                
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const value = localStorage.getItem(key);
+                    totalSize += (key.length + value.length) * 2; // Aprox. bytes
+                    itemCount++;
+                }
+                
+                const sizeMB = (totalSize / 1024 / 1024).toFixed(2);
+                document.getElementById('localStorageStatus').innerHTML = 
+                    `✅ localStorage: ${itemCount} itens, ${sizeMB} MB`;
+                log(`localStorage verificado: ${itemCount} itens, ${sizeMB} MB`, 'success');
+                return true;
+            } catch (error) {
+                document.getElementById('localStorageStatus').innerHTML = 
+                    `❌ localStorage: Erro - ${error.message}`;
+                log(`Erro ao verificar localStorage: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // Analisar dados
+        async function analyzeData() {
+            log('Iniciando análise de dados...');
+            updateProgress(0, 'Analisando dados...');
+            
+            const tableBody = document.getElementById('dataTableBody');
+            tableBody.innerHTML = '';
+            
+            for (let i = 0; i < SYSTEM_KEYS.length; i++) {
+                const key = SYSTEM_KEYS[i];
+                updateProgress((i / SYSTEM_KEYS.length) * 100, `Analisando ${key}...`);
+                
+                // Verificar localStorage
+                let localData = null;
+                let localSize = 0;
+                try {
+                    const localValue = localStorage.getItem(key);
+                    if (localValue) {
+                        localData = JSON.parse(localValue);
+                        localSize = localValue.length;
+                    }
+                } catch (error) {
+                    log(`Erro ao ler ${key} do localStorage: ${error.message}`, 'error');
+                }
+                
+                // Verificar Firebase
+                let firebaseData = null;
+                try {
+                    if (migrationState.firebaseOperational) {
+                        const result = await firebaseService.getUserData(key);
+                        if (result) {
+                            firebaseData = result;
+                        }
+                    }
+                } catch (error) {
+                    log(`Erro ao ler ${key} do Firebase: ${error.message}`, 'warning');
+                }
+                
+                // Determinar status
+                let status = '';
+                let statusClass = '';
+                if (localData && firebaseData) {
+                    status = '🔄 Ambos';
+                    statusClass = 'status-warning';
+                } else if (localData && !firebaseData) {
+                    status = '📱 Só Local';
+                    statusClass = 'status-warning';
+                } else if (!localData && firebaseData) {
+                    status = '☁️ Só Firebase';
+                    statusClass = 'status-ok';
+                } else {
+                    status = '❌ Nenhum';
+                    statusClass = 'status-error';
+                }
+                
+                // Adicionar linha à tabela
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td><strong>${key}</strong></td>
+                    <td>${localData ? `✅ (${(localSize/1024).toFixed(1)}KB)` : '❌'}</td>
+                    <td>${firebaseData ? '✅' : '❌'}</td>
+                    <td class="${statusClass}">${status}</td>
+                    <td>
+                        ${localData && !firebaseData ? 
+                            `<button class="btn btn-primary" onclick="migrateKey('${key}')">⬆️ Migrar</button>` : ''}
+                        ${localData && firebaseData ? 
+                            `<button class="btn btn-warning" onclick="syncKey('${key}')">🔄 Sync</button>` : ''}
+                    </td>
+                `;
+                
+                // Armazenar dados no estado
+                migrationState.localStorageData[key] = localData;
+                migrationState.firebaseData[key] = firebaseData;
+            }
+            
+            updateProgress(100, 'Análise concluída');
+            log('Análise de dados concluída', 'success');
+        }
+        
+        // Migrar uma chave específica
+        async function migrateKey(key) {
+            try {
+                log(`Migrando ${key} para Firebase...`);
+                const localData = migrationState.localStorageData[key];
+                
+                if (!localData) {
+                    log(`Nenhum dado local encontrado para ${key}`, 'warning');
+                    return;
+                }
+                
+                if (!migrationState.firebaseOperational) {
+                    log('Firebase não está operacional', 'error');
+                    return;
+                }
+                
+                await firebaseService.saveUserData(key, localData);
+                log(`${key} migrado com sucesso para Firebase`, 'success');
+                
+                // Atualizar estado
+                migrationState.firebaseData[key] = localData;
+                
+                // Recarregar análise
+                await analyzeData();
+                
+            } catch (error) {
+                log(`Erro ao migrar ${key}: ${error.message}`, 'error');
+            }
+        }
+        
+        // Sincronizar uma chave específica
+        async function syncKey(key) {
+            try {
+                log(`Sincronizando ${key}...`);
+                
+                const localData = migrationState.localStorageData[key];
+                const firebaseData = migrationState.firebaseData[key];
+                
+                if (!localData && !firebaseData) {
+                    log(`Nenhum dado encontrado para ${key}`, 'warning');
+                    return;
+                }
+                
+                // Estratégia simples: usar dados do Firebase se existir, senão local
+                if (firebaseData) {
+                    persistLocalValue(key, firebaseData);
+                    log(`${key} sincronizado: Firebase → localStorage`, 'success');
+                } else if (localData) {
+                    await firebaseService.saveUserData(key, localData);
+                    log(`${key} sincronizado: localStorage → Firebase`, 'success');
+                }
+                
+                // Recarregar análise
+                await analyzeData();
+                
+            } catch (error) {
+                log(`Erro ao sincronizar ${key}: ${error.message}`, 'error');
+            }
+        }
+        
+        // Migrar todos os dados
+        async function migrateAll() {
+            if (!confirm('Migrar todos os dados do localStorage para Firebase?')) {
+                return;
+            }
+            
+            log('Iniciando migração completa...');
+            let migrated = 0;
+            let errors = 0;
+            
+            for (let i = 0; i < SYSTEM_KEYS.length; i++) {
+                const key = SYSTEM_KEYS[i];
+                updateProgress((i / SYSTEM_KEYS.length) * 100, `Migrando ${key}...`);
+                
+                try {
+                    const localData = migrationState.localStorageData[key];
+                    if (localData && migrationState.firebaseOperational) {
+                        await firebaseService.saveUserData(key, localData);
+                        migrated++;
+                        log(`✅ ${key} migrado`);
+                    }
+                } catch (error) {
+                    errors++;
+                    log(`❌ Erro ao migrar ${key}: ${error.message}`, 'error');
+                }
+            }
+            
+            updateProgress(100, `Migração concluída: ${migrated} sucesso, ${errors} erros`);
+            log(`Migração completa: ${migrated} chaves migradas, ${errors} erros`, 'success');
+            
+            // Recarregar análise
+            await analyzeData();
+        }
+        
+        // Sincronizar todos os dados
+        async function syncAll() {
+            if (!confirm('Sincronizar todos os dados entre localStorage e Firebase?')) {
+                return;
+            }
+            
+            log('Iniciando sincronização completa...');
+            let synced = 0;
+            let errors = 0;
+            
+            for (let i = 0; i < SYSTEM_KEYS.length; i++) {
+                const key = SYSTEM_KEYS[i];
+                updateProgress((i / SYSTEM_KEYS.length) * 100, `Sincronizando ${key}...`);
+                
+                try {
+                    await syncKey(key);
+                    synced++;
+                } catch (error) {
+                    errors++;
+                    log(`❌ Erro ao sincronizar ${key}: ${error.message}`, 'error');
+                }
+            }
+            
+            updateProgress(100, `Sincronização concluída: ${synced} sucesso, ${errors} erros`);
+            log(`Sincronização completa: ${synced} chaves sincronizadas, ${errors} erros`, 'success');
+        }
+        
+        // Limpar dados do Firebase
+        async function clearFirebaseData() {
+            if (!confirm('ATENÇÃO: Isso removerá TODOS os dados do Firebase. Continuar?')) {
+                return;
+            }
+            
+            if (!confirm('Tem certeza absoluta? Esta ação é IRREVERSÍVEL!')) {
+                return;
+            }
+            
+            log('Removendo dados do Firebase...', 'warning');
+            let removed = 0;
+            let errors = 0;
+            
+            for (let i = 0; i < SYSTEM_KEYS.length; i++) {
+                const key = SYSTEM_KEYS[i];
+                updateProgress((i / SYSTEM_KEYS.length) * 100, `Removendo ${key}...`);
+                
+                try {
+                    if (migrationState.firebaseOperational) {
+                        await firebaseService.removeFromFirebase(key);
+                        removed++;
+                        log(`🗑️ ${key} removido do Firebase`);
+                    }
+                } catch (error) {
+                    errors++;
+                    log(`❌ Erro ao remover ${key}: ${error.message}`, 'error');
+                }
+            }
+            
+            updateProgress(100, `Limpeza concluída: ${removed} removidos, ${errors} erros`);
+            log(`Limpeza do Firebase: ${removed} chaves removidas, ${errors} erros`, 'warning');
+            
+            // Recarregar análise
+            await analyzeData();
+        }
+        
+        // Limpar log
+        function clearLog() {
+            document.getElementById('logArea').textContent = '';
+            log('Log limpo');
+        }
+        
+        // Expor funções globalmente
+        window.analyzeData = analyzeData;
+        window.migrateKey = migrateKey;
+        window.syncKey = syncKey;
+        window.migrateAll = migrateAll;
+        window.syncAll = syncAll;
+        window.clearFirebaseData = clearFirebaseData;
+        window.clearLog = clearLog;
+        
+        // Inicialização
+        async function init() {
+            log('Iniciando ferramenta de migração...');
+            
+            updateProgress(0, 'Verificando sistemas...');
+            
+            const firebaseOk = await checkFirebaseStatus();
+            const localStorageOk = checkLocalStorage();
+            
+            if (firebaseOk && localStorageOk) {
+                document.getElementById('migrationStatus').innerHTML = '✅ Pronto para migração';
+                log('Sistema pronto para migração', 'success');
+                await analyzeData();
+            } else {
+                document.getElementById('migrationStatus').innerHTML = '❌ Sistema não está pronto';
+                log('Sistema não está pronto para migração', 'error');
+            }
+            
+            updateProgress(100, 'Inicialização concluída');
+        }
+        
+        // Inicializar quando carregar
+        document.addEventListener('DOMContentLoaded', init);
+        
+        // Verificar status a cada 30 segundos
+        setInterval(async () => {
+            await checkFirebaseStatus();
+            checkLocalStorage();
+        }, 30000);
+    </script>
+    <script src="global-footer.js?v=7ab6d2f87bf7"></script>
+</body>
+</html> 

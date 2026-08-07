@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Romaneio de Toras</title>
+    
+    <!-- Scripts do Firebase CDN (PRIMEIRO) -->
+    <!-- Firebase via módulo compartilhado (singleton) -->
+
+    <script type="module">
+
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=21eb04e409d8';
+import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
+
+    </script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="layout-comum.css">
+    <link rel="stylesheet" href="romaneio-comum.css?v=20260607pwaqa">
+    <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
+    <link rel="stylesheet" href="print-styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        /* Note: Container styles are now in layout-comum.css */
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            display: inline-block;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .dimensoes-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .dimensao-input {
+            flex: 1;
+        }
+
+        button {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #34495e;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-adicionar {
+            background-color: #27ae60;
+        }
+
+        .btn-adicionar:hover:not(:disabled) {
+            background-color: #219a52;
+        }
+
+        .btn-adicionar.updating {
+            background-color: #f39c12;
+        }
+
+        .btn-adicionar.updating:hover {
+            background-color: #e67e22;
+        }
+
+        .btn-salvar {
+            background-color: #3498db;
+        }
+
+        .btn-salvar:hover:not(:disabled) {
+            background-color: #2980b9;
+        }
+
+        .btn-listar {
+            background-color: #f39c12;
+        }
+
+        .btn-listar:hover:not(:disabled) {
+            background-color: #e67e22;
+        }
+
+        .btn-imprimir {
+            background-color: #8e44ad;
+        }
+
+        .btn-imprimir:hover:not(:disabled) {
+            background-color: #7d3c98;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+
+        th, td {
+            padding: 4px 6px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            height: 24px;
+            vertical-align: middle;
+            font-size: 13px;
+        }
+
+        th {
+            background-color: #2c3e50;
+            color: white;
+            font-size: 13px;
+            height: 28px;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .btn-excluir {
+            padding: 4px 8px;
+            margin: 0 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #e74c3c;
+            color: white;
+            font-size: 12px;
+            height: 24px;
+            line-height: 1;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-excluir:hover {
+            background-color: #c0392b;
+        }
+
+        .total-row {
+            font-weight: bold;
+            background-color: #f8f9fa;
+        }
+
+        .total-row td {
+            border-top: 2px solid #2c3e50;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .section-divider {
+            border-bottom: 2px solid #2c3e50;
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+        }
+
+        /* Estilos responsivos */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .button-row {
+                flex-direction: column;
+            }
+            
+            .dimensoes-container {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            th, td {
+                font-size: 12px;
+                padding: 3px 4px;
+            }
+        }
+
+        /* Loading states */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <main-menu></main-menu>
+            <div class="main-title-section">
+                <h1 class="main-title">Romaneio de Tora</h1>
+                <div class="header-actions">
+                    <button type="button" class="action-button" onclick="abrirListaRomaneios()">
+                        <i class="fas fa-list"></i> Lista de Romaneios
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <div class="form-row">
+            <div class="form-group" style="flex: 0.2;">
+                <label for="dataRomaneio">Data:</label>
+                <input type="date" id="dataRomaneio">
+            </div>
+            
+            <div class="form-group" style="flex: 0.4;">
+                <label for="clienteInput">Fornecedor:</label>
+                <div class="autocomplete-container">
+                    <input type="text" id="clienteInput" class="autocomplete-input" placeholder="Selecionar fornecedor" oninput="showClientSuggestions(this)">
+                    <div class="autocomplete-icons-container">
+                        <span class="autocomplete-icon" title="Listar Fornecedores" onclick="openClientListModal()">
+                            <i class="fas fa-list"></i>
+                        </span>
+                        <span class="autocomplete-icon" title="Editar Fornecedor" onclick="openEditClientModal()">
+                            <i class="fas fa-edit"></i>
+                        </span>
+                        <span class="autocomplete-icon" title="Novo Fornecedor" onclick="openNewClientModal()">
+                            <i class="fas fa-user-plus"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group" style="flex: 0.4;">
+                <label for="especieInput">Espécie:</label>
+                <div class="autocomplete-container">
+                    <input type="text" id="especieInput" class="autocomplete-input" placeholder="Selecionar espécie" oninput="showSpeciesSuggestions(this)">
+                    <div class="autocomplete-icons-container">
+                        <span class="autocomplete-icon" title="Listar Espécies" onclick="openSpeciesListModal()">
+                            <i class="fas fa-list"></i>
+                        </span>
+                        <span class="autocomplete-icon" title="Nova Espécie" onclick="openNewSpeciesModal()">
+                            <i class="fas fa-leaf"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-row">    
+            <div class="form-group" style="flex: 0.33;">
+                <label for="preco">Preço (R$/m³):</label>
+                <input type="text" id="preco" min="0" step="0.01" placeholder="Preço por m³" onInput="formatCurrencyInput(this)">
+            </div>
+            
+            <div class="form-group" style="flex: 0.33;">
+                <label for="plaqueta">Plaqueta:</label>
+                <input type="text" id="plaqueta" placeholder="Número da plaqueta">
+            </div>
+            
+            <div class="form-group" style="flex: 0.33;">
+                <label for="rodo">Rodo (cm):</label>
+                <input type="number" id="rodo" min="1" step="0.1" placeholder="Diâmetro em cm">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group" style="flex: 0.33;">
+                <label for="comprimento">Comprimento (cm):</label>
+                <input type="number" id="comprimento" min="1" step="0.1" placeholder="Comprimento em cm">
+            </div>
+            
+            <div class="form-group" style="flex: 0.33;">
+                <label for="oco1">Oco 1 (cm):</label>
+                <input type="number" id="oco1" min="0" step="0.1" placeholder="Oco 1 em cm">
+            </div>
+            
+            <div class="form-group" style="flex: 0.33;">
+                <label for="oco2">Oco 2 (cm):</label>
+                <input type="number" id="oco2" min="0" step="0.1" placeholder="Oco 2 em cm">
+            </div>
+        </div>
+        
+        <div class="form-buttons no-print">
+            <button type="button" id="btnAdicionar" class="btn-adicionar" onclick="adicionarItem()">
+                <i class="fas fa-plus"></i> Adicionar
+            </button>
+            <button type="button" id="btnSalvar" class="btn-salvar" onclick="salvarRomaneio()">
+                <i class="fas fa-save"></i> Salvar
+            </button>
+            <button type="button" id="btnListar" class="btn-listar" onclick="abrirListaRomaneios()">
+                <i class="fas fa-list"></i> Listar
+            </button>
+        </div>
+
+         <h2>Itens do Romaneio</h2>
+        
+        <div class="table-container">
+            <table id="romaneioTable" class="table">
+                <thead>
+                    <tr>
+                        <th>Plaqueta</th>
+                        <th>Espécie</th>
+                        <th>Rodo</th>
+                        <th>Comprimento</th>
+                        <th>M³ Bruto</th>
+                        <th>Oco 1</th>
+                        <th>Oco 2</th>
+                        <th>Desconto</th>
+                        <th>M³ Liquido</th>
+                        <th>Preço</th>
+                        <th>Valor</th>
+                        <th class="no-print">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Preenchido via JavaScript -->
+                </tbody>
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="4">Total:</td>
+                        <td id="totalVolumeBruto">0,000</td>
+                        <td colspan="3"></td>
+                        <td id="totalVolumeSerraria">0,000</td>
+                        <td></td>
+                        <td id="totalValor">0,00</td>
+                        <td class="no-print"></td>
+                    </tr>
+                </tfoot>
+            </table>
+            <div id="romaneioTablePagination" class="pagination no-print">
+                <!-- Paginação será adicionada via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modais para Sobre e Ajuda -->
+    <div id="aboutModal" class="about-modal">
+        <div class="about-content">
+            <span class="close" onclick="closeAboutModal()">&times;</span>
+            <h2>Sobre o Desenvolvedor</h2>
+            <div class="developer-card">
+                <div class="developer-info">
+                    <div class="developer-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="developer-name">
+                        <h3>Nelson Brito</h3>
+                        <span>Desenvolvedor Full Stack</span>
+                    </div>
+                </div>
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <a href="mailto:nedes1@hotmail.com">nedes1@hotmail.com</a>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        <a href="tel:+5591991311049">(91) 9 9131-1049</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="helpModal" class="modal help-modal">
+        <div class="modal-content help-content">
+            <span class="close" onclick="closeHelpModal()">&times;</span>
+            <h2>Ajuda do Sistema</h2>
+            
+            <div class="help-section">
+                <h3>Cadastro de Fornecedor</h3>
+                <p>Nesta tela você pode:</p>
+                <ul>
+                    <li>Cadastrar novos fornecedores</li>
+                    <li>Selecionar o estado e a cidade automaticamente</li>
+                    <li>Adicionar telefone com formatação automática</li>
+                    <li>Incluir observações sobre o fornecedor</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>Cadastro de Espécie</h3>
+                <p>Nesta área você pode:</p>
+                <ul>
+                    <li>Cadastrar novas espécies</li>
+                    <li>Gerenciar informações sobre cada espécie</li>
+                    <li>Editar e excluir espécies cadastradas</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>Romaneio de Tora</h3>
+                <p>Na tela de romaneio você pode:</p>
+                <ul>
+                    <li>Criar novos romaneios</li>
+                    <li>Selecionar fornecedores cadastrados</li>
+                    <li>Adicionar itens e espécies</li>
+                    <li>Calcular volumes automaticamente</li>
+                    <li>Imprimir ou exportar relatórios</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para listagem de romaneios -->
+    <div id="listaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Lista de Romaneios Tora</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <!-- O conteúdo será gerado dinamicamente via JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="back-button close-modal-btn">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Nova Espécie -->
+    <div id="speciesModal" class="modal species-standard-modal" aria-hidden="true">
+        <div class="modal-content species-standard-modal-content">
+            <div class="modal-header species-standard-header">
+                <h3 class="modal-title species-standard-title" id="speciesModalTitle">Nova Espécie</h3>
+                <button type="button" class="close-modal species-standard-close" aria-label="Fechar modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="speciesForm" class="species-standard-form" onsubmit="saveSpecies(event); return false;">
+                    <input type="hidden" id="speciesId">
+                    <div class="form-group species-standard-field">
+                        <label for="speciesName" class="species-standard-label">Nome da Espécie:</label>
+                        <input type="text" id="speciesName" class="species-standard-input" required>
+                        <div id="speciesNameSuggestionsReserve" class="species-name-suggestions-reserve" aria-hidden="true"></div>
+                        <div id="speciesNameDuplicateHint" class="species-duplicate-hint" aria-live="polite"></div>
+                    </div>
+                    <div class="form-group species-standard-field">
+                        <label for="speciesDescription" class="species-standard-label">Nome Científico:</label>
+                        <textarea id="speciesDescription" class="species-standard-textarea" rows="3" placeholder="Ex.: Handroanthus albus"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer species-standard-actions">
+                <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('speciesModal').style.display='none';">Cancelar</button>
+                <button type="button" class="btn-save" id="saveSpeciesBtn" onclick="saveSpecies()">Salvar Espécie</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Lista de Fornecedores -->
+    <div id="clientListModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Lista de Fornecedores</h3>
+                <span class="close-modal" onclick="document.getElementById('clientListModal').style.display='none'">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="clientListFilter" placeholder="Filtrar fornecedores..." 
+                       style="margin: 10px 0; width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>CNPJ</th>
+                            <th>Cidade</th>
+                            <th>Estado</th>
+                            <th>Telefone</th>
+                            <th>Email</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientListTable">
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('clientListModal').style.display='none'">Fechar</button>
+                <button type="button" class="btn-save" onclick="openNewClientModal()">Novo Fornecedor</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Cadastro/Edição de Fornecedor -->
+    <div id="clientModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="clientModalTitle">Novo Fornecedor</h3>
+                <span class="close-modal" onclick="document.getElementById('clientModal').style.display='none'">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="clientForm" onsubmit="saveClient(event); return false;">
+                    <input type="hidden" id="clientId">
+                    <div class="form-group">
+                        <label for="clientName">Nome:</label>
+                        <input type="text" id="clientName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientCnpj">CNPJ:</label>
+                        <input type="text" id="clientCnpj" placeholder="00.000.000/0000-00">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientStateRegistration">Inscrição Estadual:</label>
+                        <input type="text" id="clientStateRegistration" placeholder="000.000.000.000">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientAddress">Endereço:</label>
+                        <input type="text" id="clientAddress" placeholder="Rua, Avenida, etc.">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientNumber">Número:</label>
+                        <input type="text" id="clientNumber" placeholder="Número da residência/empresa">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientNeighborhood">Bairro:</label>
+                        <input type="text" id="clientNeighborhood" placeholder="Nome do bairro">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientState">Estado:</label>
+                        <select id="clientState" required onchange="carregarCidadesPorEstado(this.value)">
+                            <option value="">Selecione o estado</option>
+                            <option value="AC">Acre</option>
+                            <option value="AL">Alagoas</option>
+                            <option value="AP">Amapá</option>
+                            <option value="AM">Amazonas</option>
+                            <option value="BA">Bahia</option>
+                            <option value="CE">Ceará</option>
+                            <option value="DF">Distrito Federal</option>
+                            <option value="ES">Espírito Santo</option>
+                            <option value="GO">Goiás</option>
+                            <option value="MA">Maranhão</option>
+                            <option value="MT">Mato Grosso</option>
+                            <option value="MS">Mato Grosso do Sul</option>
+                            <option value="MG">Minas Gerais</option>
+                            <option value="PA">Pará</option>
+                            <option value="PB">Paraíba</option>
+                            <option value="PR">Paraná</option>
+                            <option value="PE">Pernambuco</option>
+                            <option value="PI">Piauí</option>
+                            <option value="RJ">Rio de Janeiro</option>
+                            <option value="RN">Rio Grande do Norte</option>
+                            <option value="RS">Rio Grande do Sul</option>
+                            <option value="RO">Rondônia</option>
+                            <option value="RR">Roraima</option>
+                            <option value="SC">Santa Catarina</option>
+                            <option value="SP">São Paulo</option>
+                            <option value="SE">Sergipe</option>
+                            <option value="TO">Tocantins</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientCity">Cidade:</label>
+                        <select id="clientCity" required>
+                            <option value="">Selecione primeiro o estado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientPhone">Telefone:</label>
+                        <input type="text" id="clientPhone" oninput="formatarTelefone(this)">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientEmail">Email:</label>
+                        <input type="email" id="clientEmail">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientObs">Observações:</label>
+                        <textarea id="clientObs" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('clientModal').style.display='none';">Cancelar</button>
+                <button type="button" class="btn-save" id="saveClientBtn" onclick="saveClient()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Lista de Espécies -->
+    <div id="speciesListModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">🌳 Lista de Espécies</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="speciesListFilter" placeholder="🔍 Filtrar por espécie ou nome científico...">
+                </div>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Nome Científico</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="speciesListTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('speciesListModal').style.display='none'">Fechar</button>
+                <button type="button" class="btn-save" onclick="openNewSpeciesModal()">Nova Espécie</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Lista de Romaneios -->
+    <div id="romaneioListModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Lista de Romaneios Tora</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="romaneioListFilter" placeholder="Filtrar romaneios..." 
+                       style="margin: 10px 0; width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Fornecedor</th>
+                            <th>Espécie</th>
+                            <th>Rodo</th>
+                            <th>Comprimento</th>
+                            <th>M³ Bruto</th>
+                            <th>M³ Liquido</th>
+                            <th>Preço</th>
+                            <th>Valor</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="romaneioListTable">
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('romaneioListModal').style.display='none'">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração global de otimização
+        window.PRODUCTION_MODE = true;
+        window.DEBUG_MODE = false;
+        
+        // Função formatarTelefone essencial
+        if (!window.formatarTelefone) {
+            window.formatarTelefone = function(input) {
+                try {
+                    if (!input || !input.value) return;
+                    let telefone = input.value.replace(/\D/g, '');
+                    if (telefone.length === 11) {
+                        input.value = `(${telefone.substring(0, 2)}) ${telefone.substring(2, 7)}-${telefone.substring(7)}`;
+                    }
+                } catch (error) {
+                    console.error('❌ Erro ao formatar telefone:', error);
+                }
+            };
+        }
+    </script>
+
+    <!-- Scripts essenciais de produção (ordem otimizada) -->
+    <script src="estados-cidades.js?v=e634a7c28536"></script>
+    <script src="client-modal-handler.js?v=c18ad593b1f7"></script>
+    <script src="menu-component.js?v=f97c4a2dae9f"></script>
+    <script src="species-utils.js?v=4c5147a6f4fe"></script>
+    <script src="species-store.js?v=67f7145c0a96"></script>
+    <script src="species-modal-standard.js?v=fa1c091a5294"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.enhance === 'function') {
+                window.SiswebSpeciesModal.enhance({ modal: document.getElementById('speciesModal') });
+            }
+        });
+    </script>
+    
+    <!-- Scripts de correção e funcionalidade -->
+    <script src="correcao-interface-database.js?v=018036722c9c"></script>
+    <script src="correcao-funcoes-ausentes.js?v=a69c9b3c404a"></script>
+    
+    <!-- Firebase e Database -->
+    <script src="firebaseService.unified.js?v=07d2b773a0fd"></script>
+    <script src="src/services/databaseAdapter.js?v=04db815c6547"></script>
+    
+    <!-- Scripts principais -->
+    <script src="romaneio-utils.js?v=e2c32c9889fa"></script>
+    <script src="coordenador-inicializacao.js?v=0e0ca03c0c0b"></script>
+    <script src="romaneiotora.js?v=adb467117f0a"></script>
+    <script src="correcao-lista-romaneios.js?v=f7b3cd8ad0ca"></script>
+    <script src="correcao-arrays-validacao.js?v=e11d7b791ed7"></script>
+    
+    <!-- Script de garantias como backup -->
+    <script src="garantia-fluxo-fornecedor.js?v=520c1ca7b927"
+            onload="console.log('✅ garantia-fluxo-fornecedor.js carregado')"
+            onerror="console.log('⚠️ garantia-fluxo-fornecedor.js não encontrado')"></script>
+    
+    <!-- Sistema de inicialização otimizado para produção -->
+    <script>
+    (function() {
+        'use strict';
+        
+        // Evitar execução múltipla
+        if (window._PRODUCAO_INICIALIZADA) return;
+        window._PRODUCAO_INICIALIZADA = true;
+        
+        // Configuração de produção
+        const CONFIG = {
+            FIREBASE_TIMEOUT: 15000,
+            ADAPTER_TIMEOUT: 10000,
+            RETRY_DELAY: 200,
+            MAX_RETRIES: 30
+        };
+        
+        // Função otimizada para aguardar Firebase
+        async function aguardarFirebase() {
+            return new Promise((resolve) => {
+                const startTime = Date.now();
+                let attempts = 0;
+                
+                const check = () => {
+                    attempts++;
+                    
+                    if (window.firebase && typeof window.firebase.initializeApp === 'function') {
+                        resolve({ success: true, firebase: window.firebase });
+                        return;
+                    }
+                    
+                    if (Date.now() - startTime > CONFIG.FIREBASE_TIMEOUT) {
+                        console.warn('⚠️ Firebase timeout, continuando...');
+                        resolve({ success: false, timeout: true });
+                        return;
+                    }
+                    
+                    setTimeout(check, CONFIG.RETRY_DELAY);
+                };
+                
+                check();
+            });
+        }
+        
+        // Função otimizada para aguardar DatabaseAdapter
+        async function aguardarAdapter() {
+            return new Promise((resolve) => {
+                let attempts = 0;
+                
+                const check = () => {
+                    attempts++;
+                    
+                    if (window.databaseAdapter || window.dbAdapter) {
+                        if (!window.databaseAdapter && window.dbAdapter) {
+                            window.databaseAdapter = window.dbAdapter;
+                        }
+                        resolve(true);
+                        return;
+                    }
+                    
+                    if (attempts >= CONFIG.MAX_RETRIES) {
+                        console.warn('⚠️ DatabaseAdapter não encontrado, continuando...');
+                        resolve(false);
+                        return;
+                    }
+                    
+                    setTimeout(check, CONFIG.RETRY_DELAY);
+                };
+                
+                check();
+            });
+        }
+        
+        // Inicialização principal otimizada
+        async function inicializar() {
+            try {
+                // Aguardar Firebase
+                const firebaseResult = await aguardarFirebase();
+                
+                // Aguardar DatabaseAdapter
+                await aguardarAdapter();
+                
+                // Inicializar FirebaseService se disponível
+                if (window.firebaseService && !window.firebaseService.isReady) {
+                    try {
+                        await window.firebaseService.initialize();
+                    } catch (error) {
+                        console.warn('⚠️ FirebaseService não inicializado:', error.message);
+                    }
+                }
+                
+                // Marcar como pronto
+                window._FIREBASE_READY = true;
+                
+                // Carregar dados essenciais
+                try {
+                    if (typeof carregarEspecies === 'function') {
+                        await carregarEspecies();
+                    }
+                    if (typeof carregarClientes === 'function') {
+                        await carregarClientes();
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Erro ao carregar dados:', error.message);
+                }
+                
+                // Disparar evento de sistema pronto
+                window.dispatchEvent(new CustomEvent('sistemaRomaneiosPronto', {
+                    detail: { 
+                        timestamp: new Date().toISOString(),
+                        production: true
+                    }
+                }));
+                
+            } catch (error) {
+                console.error('❌ Erro na inicialização:', error);
+                window._FIREBASE_READY = false;
+            }
+        }
+        
+        // Inicializar quando DOM estiver pronto
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(inicializar, 1000);
+            });
+        } else {
+            setTimeout(inicializar, 1000);
+        }
+        
+    })();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Aplicar Estratégia Híbrida - SISWEB</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #3498db;
+            background: #f8f9fa;
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .console-output {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .status-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .status-card h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-ok { background: #27ae60; }
+        .status-warning { background: #f39c12; }
+        .status-error { background: #e74c3c; }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Aplicar Estratégia Híbrida</h1>
+            <p>Ferramenta para implementar a estratégia híbrida Firebase + localStorage em todo o sistema SISWEB</p>
+        </div>
+
+        <div class="content">
+            <!-- Status Atual -->
+            <div class="section">
+                <h2>📊 Status Atual do Sistema</h2>
+                <div class="status-grid" id="statusGrid">
+                    <div class="status-card">
+                        <h3><span class="status-indicator status-warning" id="firebaseStatus"></span>Firebase</h3>
+                        <p id="firebaseText">Verificando...</p>
+                    </div>
+                    <div class="status-card">
+                        <h3><span class="status-indicator status-warning" id="localStorageStatus"></span>localStorage</h3>
+                        <p id="localStorageText">Verificando...</p>
+                    </div>
+                    <div class="status-card">
+                        <h3><span class="status-indicator status-warning" id="hybridStatus"></span>Estratégia Híbrida</h3>
+                        <p id="hybridText">Verificando...</p>
+                    </div>
+                    <div class="status-card">
+                        <h3><span class="status-indicator status-warning" id="dataStatus"></span>Dados</h3>
+                        <p id="dataText">Verificando...</p>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-info" onclick="verificarStatus()">
+                        🔍 Verificar Status
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ações Principais -->
+            <div class="section">
+                <h2>🚀 Ações Principais</h2>
+                <div class="alert alert-info">
+                    <strong>ℹ️ Informação:</strong> A correção automática aplicará a estratégia híbrida em todos os módulos que ainda não a implementam.
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="executarCorrecaoCompleta()">
+                        🔧 Executar Correção Completa
+                    </button>
+                    <button class="btn btn-success" onclick="testarImplementacao()">
+                        🧪 Testar Implementação
+                    </button>
+                    <button class="btn btn-warning" onclick="criarDadosExemplo()">
+                        📝 Criar Dados de Exemplo
+                    </button>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar"></div>
+                </div>
+                <p id="progressText">Pronto para iniciar</p>
+            </div>
+
+            <!-- Diagnóstico Detalhado -->
+            <div class="section">
+                <h2>🔍 Diagnóstico Detalhado</h2>
+                <div class="button-group">
+                    <button class="btn btn-info" onclick="verificarArquivos()">
+                        📁 Verificar Arquivos
+                    </button>
+                    <button class="btn btn-info" onclick="verificarDados()">
+                        📋 Verificar Dados
+                    </button>
+                    <button class="btn btn-info" onclick="verificarSincronizacao()">
+                        🔄 Verificar Sincronização
+                    </button>
+                </div>
+            </div>
+
+            <!-- Console de Saída -->
+            <div class="section">
+                <h2>💻 Console de Saída</h2>
+                <div class="console-output" id="consoleOutput">
+Aguardando comandos...
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-warning" onclick="limparConsole()">
+                        🧹 Limpar Console
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="firebaseService.js?v=676ba9f2a922"></script>
+    <script src="corrigir_estrategia_hibrida.js?v=76d4197e7932"></script>
+    <script>
+        // Variáveis globais
+        let consoleElement = document.getElementById('consoleOutput');
+        let progressBar = document.getElementById('progressBar');
+        let progressText = document.getElementById('progressText');
+
+        // Interceptar console.log para mostrar na interface
+        const originalConsoleLog = console.log;
+        const originalConsoleWarn = console.warn;
+        const originalConsoleError = console.error;
+
+        function addToConsole(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = type === 'error' ? 'color: #ff6b6b' : 
+                              type === 'warn' ? 'color: #feca57' : 
+                              'color: #00ff00';
+            
+            consoleElement.innerHTML += `<span style="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            consoleElement.scrollTop = consoleElement.scrollHeight;
+        }
+
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+
+        console.warn = function(...args) {
+            originalConsoleWarn.apply(console, args);
+            addToConsole(args.join(' '), 'warn');
+        };
+
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+
+        // Funções da interface
+        function updateProgress(percentage, text) {
+            progressBar.style.width = percentage + '%';
+            progressText.textContent = text;
+        }
+
+        function updateStatus(elementId, status, text) {
+            const indicator = document.getElementById(elementId);
+            const textElement = document.getElementById(elementId.replace('Status', 'Text'));
+            
+            indicator.className = 'status-indicator ' + 
+                (status === 'ok' ? 'status-ok' : 
+                 status === 'warning' ? 'status-warning' : 
+                 'status-error');
+            
+            textElement.textContent = text;
+        }
+
+        function persistLocalValue(key, data) {
+            try {
+                if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {
+                    window.SiswebStorage.write(key, data);
+                    return;
+                }
+            } catch (_) {}
+            const payload = typeof data === 'string' ? data : JSON.stringify(data);
+            localStorage.setItem(key, payload);
+        }
+
+        async function verificarStatus() {
+            console.log('🔍 Verificando status do sistema...');
+            updateProgress(10, 'Verificando Firebase...');
+
+            // Verificar Firebase
+            try {
+                const firebaseOk = window.firebaseService && window.firebaseService.authService;
+                updateStatus('firebaseStatus', firebaseOk ? 'ok' : 'error', 
+                           firebaseOk ? 'Disponível' : 'Indisponível');
+                updateProgress(25, 'Firebase verificado');
+            } catch (error) {
+                updateStatus('firebaseStatus', 'error', 'Erro: ' + error.message);
+            }
+
+            // Verificar localStorage
+            updateProgress(40, 'Verificando localStorage...');
+            try {
+                persistLocalValue('teste_status', 'ok');
+                localStorage.removeItem('teste_status');
+                updateStatus('localStorageStatus', 'ok', 'Funcional');
+            } catch (error) {
+                updateStatus('localStorageStatus', 'error', 'Com problemas');
+            }
+
+            // Verificar estratégia híbrida
+            updateProgress(60, 'Verificando estratégia híbrida...');
+            const getDataOk = typeof window.getData === 'function';
+            const saveDataOk = typeof window.saveData === 'function';
+            
+            if (getDataOk && saveDataOk) {
+                const getDataStr = window.getData.toString();
+                const isHybrid = getDataStr.includes('firebaseService') && getDataStr.includes('localStorage');
+                updateStatus('hybridStatus', isHybrid ? 'ok' : 'warning', 
+                           isHybrid ? 'Implementada' : 'Parcial');
+            } else {
+                updateStatus('hybridStatus', 'error', 'Não implementada');
+            }
+
+            // Verificar dados
+            updateProgress(80, 'Verificando dados...');
+            const chaves = ['romaneiosPct', 'romaneiosTL', 'romaneiosTora'];
+            let dadosEncontrados = 0;
+            
+            chaves.forEach(chave => {
+                const dados = localStorage.getItem(chave);
+                if (dados) dadosEncontrados++;
+            });
+
+            updateStatus('dataStatus', dadosEncontrados > 0 ? 'ok' : 'warning', 
+                        `${dadosEncontrados}/${chaves.length} tipos com dados`);
+
+            updateProgress(100, 'Verificação completa');
+            console.log('✅ Verificação de status concluída');
+        }
+
+        async function executarCorrecaoCompleta() {
+            console.log('🚀 Iniciando correção completa...');
+            updateProgress(0, 'Iniciando...');
+
+            try {
+                if (typeof window.executarCorrecaoCompleta === 'function') {
+                    updateProgress(20, 'Executando correções...');
+                    await window.executarCorrecaoCompleta();
+                    updateProgress(100, 'Correção completa finalizada');
+                    
+                    // Atualizar status após correção
+                    setTimeout(() => {
+                        verificarStatus();
+                    }, 2000);
+                } else {
+                    console.error('❌ Função de correção não encontrada');
+                    updateProgress(0, 'Erro: função não encontrada');
+                }
+            } catch (error) {
+                console.error('❌ Erro na correção:', error);
+                updateProgress(0, 'Erro na correção');
+            }
+        }
+
+        async function testarImplementacao() {
+            console.log('🧪 Testando implementação...');
+            updateProgress(0, 'Iniciando testes...');
+
+            try {
+                if (typeof window.testarImplementacaoHibrida === 'function') {
+                    updateProgress(50, 'Executando testes...');
+                    await window.testarImplementacaoHibrida();
+                    updateProgress(100, 'Testes concluídos');
+                } else {
+                    console.error('❌ Função de teste não encontrada');
+                }
+            } catch (error) {
+                console.error('❌ Erro nos testes:', error);
+            }
+        }
+
+        async function criarDadosExemplo() {
+            console.log('📝 Criando dados de exemplo...');
+            updateProgress(0, 'Iniciando criação...');
+
+            try {
+                if (typeof window.criarDadosExemplo === 'function') {
+                    updateProgress(50, 'Criando dados...');
+                    await window.criarDadosExemplo();
+                    updateProgress(100, 'Dados criados');
+                    
+                    // Atualizar status após criação
+                    setTimeout(() => {
+                        verificarStatus();
+                    }, 1000);
+                } else {
+                    console.error('❌ Função de criação não encontrada');
+                }
+            } catch (error) {
+                console.error('❌ Erro na criação:', error);
+            }
+        }
+
+        function verificarArquivos() {
+            console.log('📁 Verificando arquivos do sistema...');
+            
+            const arquivos = [
+                'vendas.js', 'estoque.js', 'financas.js', 'notas-fiscais.js',
+                'romaneiopct_salvar.js', 'romaneiopct_tabela.js', 'romaneiotl.js'
+            ];
+
+            arquivos.forEach(arquivo => {
+                const scripts = document.querySelectorAll(`script[src*="${arquivo}"]`);
+                console.log(`${arquivo}: ${scripts.length > 0 ? '✅ Encontrado' : '❌ Não encontrado'}`);
+            });
+        }
+
+        function verificarDados() {
+            console.log('📋 Verificando dados armazenados...');
+            
+            const chaves = ['romaneiosPct', 'romaneiosTL', 'romaneiosTora', 'clients', 'produtos'];
+            
+            chaves.forEach(chave => {
+                try {
+                    const dados = localStorage.getItem(chave);
+                    if (dados) {
+                        const parsed = JSON.parse(dados);
+                        const count = Array.isArray(parsed) ? parsed.length : 'N/A';
+                        console.log(`${chave}: ✅ ${count} itens`);
+                    } else {
+                        console.log(`${chave}: ⚠️ Vazio`);
+                    }
+                } catch (error) {
+                    console.log(`${chave}: ❌ Erro`);
+                }
+            });
+        }
+
+        async function verificarSincronizacao() {
+            console.log('🔄 Verificando sincronização Firebase...');
+            
+            if (!window.firebaseService || !window.firebaseService.authService) {
+                console.log('❌ Firebase não disponível para sincronização');
+                return;
+            }
+
+            try {
+                const testData = { teste: true, timestamp: Date.now() };
+                const resultado = await window.firebaseService.saveToFirebase('teste_sync', null, testData);
+                console.log(`Teste de sincronização: ${resultado.success ? '✅ Sucesso' : '❌ Falha'}`);
+                
+                if (resultado.success) {
+                    const dadosRecuperados = await window.firebaseService.loadFromFirebase('teste_sync');
+                    console.log(`Recuperação de dados: ${dadosRecuperados ? '✅ Sucesso' : '❌ Falha'}`);
+                }
+            } catch (error) {
+                console.error('❌ Erro na verificação de sincronização:', error);
+            }
+        }
+
+        function limparConsole() {
+            consoleElement.innerHTML = 'Console limpo...\n';
+            updateProgress(0, 'Pronto para iniciar');
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 Interface de correção carregada');
+            console.log('📋 Use os botões acima para executar as ações');
+            
+            // Verificar status inicial
+            setTimeout(() => {
+                verificarStatus();
+            }, 1000);
+        });
+    </script>
+    <script src="global-footer.js?v=7ab6d2f87bf7"></script>
+</body>
+</html> 

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema</title>
+    <!-- Estilos necessários -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="menu.css">
+    <!-- Scripts necessários -->
+    <script src="menu-component.js?v=f97c4a2dae9f"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Usar o componente de menu -->
+        <main-menu></main-menu>
+
+        <!-- Conteúdo específico da página vai aqui -->
+        
+    </div>
+
+    <!-- Modais de Ajuda e Sobre -->
+    <div id="aboutModal" class="about-modal">
+        <div class="about-content">
+            <span class="close" onclick="closeAboutModal()">&times;</span>
+            <h2>Sobre o Desenvolvedor</h2>
+            <div class="developer-card">
+                <div class="developer-info">
+                    <div class="developer-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="developer-name">
+                        <h3>Nelson Brito</h3>
+                        <span>Desenvolvedor Full Stack</span>
+                    </div>
+                </div>
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <a href="mailto:nedes1@hotmail.com">nedes1@hotmail.com</a>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        <a href="tel:+5591991311049">(91) 9 9131-1049</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="helpModal" class="modal help-modal">
+        <div class="modal-content help-content">
+            <span class="close" onclick="closeHelpModal()">&times;</span>
+            <h2>Ajuda do Sistema</h2>
+            <!-- Conteúdo da ajuda -->
+        </div>
+    </div>
+
+    <!-- Scripts comuns -->
+    <script src="auth.js?v=cbbfbc7f784a"></script>
+    <script type="module">
+        // Importar firebaseService e disponibilizar globalmente
+        import { authService, isFirebaseOperational } from './firebaseService.js?v=676ba9f2a922';
+        
+        // Disponibilizar firebaseService globalmente para auth.js
+        window.firebaseService = { authService, isFirebaseOperational };
+        
+        console.log("✅ firebaseService carregado e disponibilizado globalmente no template.html");
+    </script>
+    <script>
+        // Funções para os modais
+        function showAbout() {
+            document.getElementById('aboutModal').style.display = 'block';
+        }
+
+        function closeAboutModal() {
+            document.getElementById('aboutModal').style.display = 'none';
+        }
+
+        function showHelp() {
+            document.getElementById('helpModal').style.display = 'block';
+        }
+
+        function closeHelpModal() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+
+        // Fechar modais ao clicar fora
+        window.onclick = function(event) {
+            const aboutModal = document.getElementById('aboutModal');
+            const helpModal = document.getElementById('helpModal');
+            
+            if (event.target == aboutModal) {
+                aboutModal.style.display = 'none';
+            }
+            if (event.target == helpModal) {
+                helpModal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Aplicar Estratégia Híbrida V2 - SISWEB</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .version-badge {
+            background: #e74c3c;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #3498db;
+            background: #f8f9fa;
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .console-output {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            border: 1px solid #333;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .status-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .status-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .status-card h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-ok { background: #27ae60; }
+        .status-warning { background: #f39c12; }
+        .status-error { background: #e74c3c; }
+        .status-loading { 
+            background: #3498db; 
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 25px;
+            background: #ecf0f1;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 15px 0;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+            width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255,255,255,0.3),
+                transparent
+            );
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .improvements {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .improvements h3 {
+            margin-bottom: 15px;
+        }
+
+        .improvements ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .improvements li {
+            padding: 5px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .improvements li::before {
+            content: '⚡';
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Aplicar Estratégia Híbrida V2</h1>
+            <p>Ferramenta otimizada para implementar a estratégia híbrida Firebase + localStorage</p>
+            <div class="version-badge">V2 - SEM TRAVAMENTOS</div>
+        </div>
+
+        <div class="content">
+            <!-- Melhorias da V2 -->
+            <div class="improvements">
+                <h3>⚡ Melhorias da Versão 2.0</h3>
+                <ul>
+                    <li>Operações assíncronas com delays para evitar travamentos</li>
+                    <li>Melhor tratamento de erros e recuperação</li>
+                    <li>Interface responsiva com feedback visual</li>
+                    <li>Limpeza automática de recursos (cleanup)</li>
+                    <li>Progressão detalhada por fase</li>
+                </ul>
+            </div>
+
+            <!-- Status Atual -->
+            <div class="section">
+                <h2>📊 Status Atual do Sistema</h2>
+                <div class="status-grid" id="statusGrid">
+                    <div class="status-card">
+                        <h3><span class="status-indicator status-loading" id="firebaseStatus"></span>Firebase</h3>
+                        <p id="firebaseText">Aguardando verificação...</p>
+                    </div>
+                    <div class="status-card">
+                        <h3><span class="status-indicator status-loading" id="localStorageStatus"></span>localStorage</h3>
+                        <p id="localStorageText">Aguardando verificação...</p>
+                    </div>
+                    <div class="status-card">
+                        <h3><span class="status-indicator status-loading" id="hybridStatus"></span>Estratégia Híbrida</h3>
+                        <p id="hybridText">Aguardando verificação...</p>
+                    </div>
+                    <div class="status-card">
+                        <h3><span class="status-indicator status-loading" id="dataStatus"></span>Dados</h3>
+                        <p id="dataText">Aguardando verificação...</p>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-info" onclick="verificarStatus()" id="btnVerificarStatus">
+                        🔍 Verificar Status
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ações Principais -->
+            <div class="section">
+                <h2>🚀 Ações Principais</h2>
+                <div class="alert alert-info">
+                    <strong>ℹ️ Nova Versão:</strong> Esta versão V2 inclui otimizações para evitar travamentos e melhor feedback visual durante o processo.
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="executarCorrecaoCompleta()" id="btnCorrecaoCompleta">
+                        🔧 Executar Correção Completa V2
+                    </button>
+                    <button class="btn btn-success" onclick="testarImplementacao()" id="btnTestarImplementacao">
+                        🧪 Testar Implementação
+                    </button>
+                    <button class="btn btn-warning" onclick="criarDadosExemplo()" id="btnCriarDados">
+                        📝 Criar Dados de Exemplo
+                    </button>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar"></div>
+                </div>
+                <div class="progress-text" id="progressText">Pronto para iniciar</div>
+            </div>
+
+            <!-- Diagnóstico Detalhado -->
+            <div class="section">
+                <h2>🔍 Diagnóstico Detalhado</h2>
+                <div class="button-group">
+                    <button class="btn btn-info" onclick="verificarArquivos()" id="btnVerificarArquivos">
+                        📁 Verificar Arquivos
+                    </button>
+                    <button class="btn btn-info" onclick="verificarDados()" id="btnVerificarDados">
+                        📋 Verificar Dados
+                    </button>
+                    <button class="btn btn-info" onclick="verificarSincronizacao()" id="btnVerificarSync">
+                        🔄 Verificar Sincronização
+                    </button>
+                </div>
+            </div>
+
+            <!-- Console de Saída -->
+            <div class="section">
+                <h2>💻 Console de Saída</h2>
+                <div class="console-output" id="consoleOutput">
+🔧 Ferramenta de Correção V2 carregada
+⚡ Versão otimizada para evitar travamentos
+📋 Aguardando comandos...
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-warning" onclick="limparConsole()">
+                        🧹 Limpar Console
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="firebaseService.js?v=676ba9f2a922"></script>
+    <script src="corrigir_estrategia_hibrida_v2.js?v=e5cd9e730652"></script>
+    <script>
+        // Variáveis globais
+        let consoleElement = document.getElementById('consoleOutput');
+        let progressBar = document.getElementById('progressBar');
+        let progressText = document.getElementById('progressText');
+        let isExecuting = false;
+
+        // Interceptar console.log para mostrar na interface
+        const originalConsoleLog = console.log;
+        const originalConsoleWarn = console.warn;
+        const originalConsoleError = console.error;
+
+        function addToConsole(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = type === 'error' ? 'color: #ff6b6b' : 
+                              type === 'warn' ? 'color: #feca57' : 
+                              'color: #00ff00';
+            
+            consoleElement.innerHTML += `<span style="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            consoleElement.scrollTop = consoleElement.scrollHeight;
+        }
+
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+
+        console.warn = function(...args) {
+            originalConsoleWarn.apply(console, args);
+            addToConsole(args.join(' '), 'warn');
+        };
+
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+
+        // Funções da interface
+        function updateProgress(percentage, text) {
+            progressBar.style.width = Math.max(0, Math.min(100, percentage)) + '%';
+            progressText.textContent = text;
+        }
+
+        function updateStatus(elementId, status, text) {
+            const indicator = document.getElementById(elementId);
+            const textElement = document.getElementById(elementId.replace('Status', 'Text'));
+            
+            if (indicator && textElement) {
+                indicator.className = 'status-indicator ' + 
+                    (status === 'ok' ? 'status-ok' : 
+                     status === 'warning' ? 'status-warning' : 
+                     status === 'loading' ? 'status-loading' :
+                     'status-error');
+                
+                textElement.textContent = text;
+            }
+        }
+
+        function setButtonLoading(buttonId, loading) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                if (loading) {
+                    button.disabled = true;
+                    button.classList.add('btn-loading');
+                    button.style.color = 'transparent';
+                } else {
+                    button.disabled = false;
+                    button.classList.remove('btn-loading');
+                    button.style.color = '';
+                }
+            }
+        }
+
+        function setAllButtonsState(disabled) {
+            const buttons = ['btnVerificarStatus', 'btnCorrecaoCompleta', 'btnTestarImplementacao', 
+                           'btnCriarDados', 'btnVerificarArquivos', 'btnVerificarDados', 'btnVerificarSync'];
+            
+            buttons.forEach(buttonId => {
+                const button = document.getElementById(buttonId);
+                if (button) {
+                    button.disabled = disabled;
+                }
+            });
+        }
+
+        function persistLocalValue(key, data) {
+            try {
+                if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {
+                    window.SiswebStorage.write(key, data);
+                    return;
+                }
+            } catch (_) {}
+            const payload = typeof data === 'string' ? data : JSON.stringify(data);
+            localStorage.setItem(key, payload);
+        }
+
+        async function verificarStatus() {
+            if (isExecuting) return;
+            
+            console.log('🔍 Verificando status do sistema...');
+            setButtonLoading('btnVerificarStatus', true);
+            updateProgress(10, 'Verificando Firebase...');
+
+            try {
+                // Verificar Firebase
+                updateStatus('firebaseStatus', 'loading', 'Verificando...');
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                const firebaseOk = window.firebaseService && window.firebaseService.authService;
+                updateStatus('firebaseStatus', firebaseOk ? 'ok' : 'error', 
+                           firebaseOk ? 'Disponível' : 'Indisponível');
+                updateProgress(25, 'Firebase verificado');
+
+                // Verificar localStorage
+                updateProgress(40, 'Verificando localStorage...');
+                updateStatus('localStorageStatus', 'loading', 'Verificando...');
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                try {
+                    persistLocalValue('teste_status', 'ok');
+                    localStorage.removeItem('teste_status');
+                    updateStatus('localStorageStatus', 'ok', 'Funcional');
+                } catch (error) {
+                    updateStatus('localStorageStatus', 'error', 'Com problemas');
+                }
+
+                // Verificar estratégia híbrida
+                updateProgress(60, 'Verificando estratégia híbrida...');
+                updateStatus('hybridStatus', 'loading', 'Verificando...');
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                const getDataOk = typeof window.getData === 'function';
+                const saveDataOk = typeof window.saveData === 'function';
+                
+                if (getDataOk && saveDataOk) {
+                    const getDataStr = window.getData.toString();
+                    const isHybrid = getDataStr.includes('firebaseService') && getDataStr.includes('localStorage');
+                    updateStatus('hybridStatus', isHybrid ? 'ok' : 'warning', 
+                               isHybrid ? 'Implementada' : 'Parcial');
+                } else {
+                    updateStatus('hybridStatus', 'error', 'Não implementada');
+                }
+
+                // Verificar dados
+                updateProgress(80, 'Verificando dados...');
+                updateStatus('dataStatus', 'loading', 'Verificando...');
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                const chaves = ['romaneiosPct', 'romaneiosTL', 'romaneiosTora'];
+                let dadosEncontrados = 0;
+                
+                chaves.forEach(chave => {
+                    const dados = localStorage.getItem(chave);
+                    if (dados) dadosEncontrados++;
+                });
+
+                updateStatus('dataStatus', dadosEncontrados > 0 ? 'ok' : 'warning', 
+                            `${dadosEncontrados}/${chaves.length} tipos com dados`);
+
+                updateProgress(100, 'Verificação completa');
+                console.log('✅ Verificação de status concluída');
+                
+            } catch (error) {
+                console.error('❌ Erro na verificação:', error);
+                updateProgress(0, 'Erro na verificação');
+            } finally {
+                setButtonLoading('btnVerificarStatus', false);
+            }
+        }
+
+        async function executarCorrecaoCompleta() {
+            if (isExecuting) return;
+            
+            isExecuting = true;
+            console.log('🚀 Iniciando correção completa V2...');
+            setButtonLoading('btnCorrecaoCompleta', true);
+            setAllButtonsState(true);
+            updateProgress(0, 'Iniciando correção...');
+
+            try {
+                if (typeof window.executarCorrecaoCompleta === 'function') {
+                    await window.executarCorrecaoCompleta();
+                    
+                    // Atualizar status após correção
+                    setTimeout(() => {
+                        verificarStatus();
+                    }, 2000);
+                } else {
+                    console.error('❌ Função de correção V2 não encontrada');
+                    updateProgress(0, 'Erro: função não encontrada');
+                }
+            } catch (error) {
+                console.error('❌ Erro na correção:', error);
+                updateProgress(0, 'Erro na correção');
+            } finally {
+                isExecuting = false;
+                setButtonLoading('btnCorrecaoCompleta', false);
+                setAllButtonsState(false);
+            }
+        }
+
+        async function testarImplementacao() {
+            if (isExecuting) return;
+            
+            console.log('🧪 Testando implementação...');
+            setButtonLoading('btnTestarImplementacao', true);
+            updateProgress(0, 'Iniciando testes...');
+
+            try {
+                if (typeof window.testarImplementacaoHibrida === 'function') {
+                    updateProgress(50, 'Executando testes...');
+                    await window.testarImplementacaoHibrida();
+                    updateProgress(100, 'Testes concluídos');
+                } else {
+                    console.error('❌ Função de teste não encontrada');
+                }
+            } catch (error) {
+                console.error('❌ Erro nos testes:', error);
+            } finally {
+                setButtonLoading('btnTestarImplementacao', false);
+            }
+        }
+
+        async function criarDadosExemplo() {
+            if (isExecuting) return;
+            
+            console.log('📝 Criando dados de exemplo...');
+            setButtonLoading('btnCriarDados', true);
+            updateProgress(0, 'Iniciando criação...');
+
+            try {
+                if (typeof window.criarDadosExemplo === 'function') {
+                    updateProgress(50, 'Criando dados...');
+                    await window.criarDadosExemplo();
+                    updateProgress(100, 'Dados criados');
+                    
+                    // Atualizar status após criação
+                    setTimeout(() => {
+                        verificarStatus();
+                    }, 1000);
+                } else {
+                    console.error('❌ Função de criação não encontrada');
+                }
+            } catch (error) {
+                console.error('❌ Erro na criação:', error);
+            } finally {
+                setButtonLoading('btnCriarDados', false);
+            }
+        }
+
+        function verificarArquivos() {
+            console.log('📁 Verificando arquivos do sistema...');
+            setButtonLoading('btnVerificarArquivos', true);
+            
+            setTimeout(() => {
+                const arquivos = [
+                    'vendas.js', 'estoque.js', 'financas.js', 'notas-fiscais.js',
+                    'romaneiopct_salvar.js', 'romaneiopct_tabela.js', 'romaneiotl.js'
+                ];
+
+                arquivos.forEach(arquivo => {
+                    const scripts = document.querySelectorAll(`script[src*="${arquivo}"]`);
+                    console.log(`${arquivo}: ${scripts.length > 0 ? '✅ Encontrado' : '❌ Não encontrado'}`);
+                });
+                
+                setButtonLoading('btnVerificarArquivos', false);
+            }, 1000);
+        }
+
+        function verificarDados() {
+            console.log('📋 Verificando dados armazenados...');
+            setButtonLoading('btnVerificarDados', true);
+            
+            setTimeout(() => {
+                const chaves = ['romaneiosPct', 'romaneiosTL', 'romaneiosTora', 'clients', 'produtos'];
+                
+                chaves.forEach(chave => {
+                    try {
+                        const dados = localStorage.getItem(chave);
+                        if (dados) {
+                            const parsed = JSON.parse(dados);
+                            const count = Array.isArray(parsed) ? parsed.length : 'N/A';
+                            console.log(`${chave}: ✅ ${count} itens`);
+                        } else {
+                            console.log(`${chave}: ⚠️ Vazio`);
+                        }
+                    } catch (error) {
+                        console.log(`${chave}: ❌ Erro`);
+                    }
+                });
+                
+                setButtonLoading('btnVerificarDados', false);
+            }, 1000);
+        }
+
+        async function verificarSincronizacao() {
+            console.log('🔄 Verificando sincronização Firebase...');
+            setButtonLoading('btnVerificarSync', true);
+            
+            try {
+                if (!window.firebaseService || !window.firebaseService.authService) {
+                    console.log('❌ Firebase não disponível para sincronização');
+                    return;
+                }
+
+                const testData = { teste: true, timestamp: Date.now() };
+                const resultado = await window.firebaseService.authService.saveUserData('teste_sync', testData);
+                console.log(`Teste de sincronização: ${resultado && resultado.success ? '✅ Sucesso' : '❌ Falha'}`);
+                
+                if (resultado && resultado.success) {
+                    const dadosRecuperados = await window.firebaseService.authService.getUserData('teste_sync');
+                    console.log(`Recuperação de dados: ${dadosRecuperados ? '✅ Sucesso' : '❌ Falha'}`);
+                }
+            } catch (error) {
+                console.error('❌ Erro na verificação de sincronização:', error);
+            } finally {
+                setButtonLoading('btnVerificarSync', false);
+            }
+        }
+
+        function limparConsole() {
+            consoleElement.innerHTML = '🔧 Console limpo - Ferramenta V2 pronta\n⚡ Versão otimizada carregada\n📋 Aguardando comandos...\n';
+            updateProgress(0, 'Pronto para iniciar');
+        }
+
+        // Expor updateProgress globalmente para o script de correção
+        window.updateProgress = updateProgress;
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 Interface de correção V2 carregada');
+            console.log('⚡ Versão otimizada para evitar travamentos');
+            console.log('📋 Use os botões acima para executar as ações');
+            
+            // Verificar status inicial após um pequeno delay
+            setTimeout(() => {
+                verificarStatus();
+            }, 1500);
+        });
+    </script>
+    <script src="global-footer.js?v=7ab6d2f87bf7"></script>
+</body>
+</html> 

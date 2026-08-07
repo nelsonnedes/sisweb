@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificador de Romaneios - LocalStorage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .tipo-romaneio {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .tipo-romaneio h3 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .romaneio-item {
+            background: #f9f9f9;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 4px solid #3498db;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.found {
+            background: #2ecc71;
+            color: white;
+        }
+        .status.empty {
+            background: #e74c3c;
+            color: white;
+        }
+        .status.error {
+            background: #f39c12;
+            color: white;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .details {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 300px;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Verificador de Romaneios no LocalStorage</h1>
+        
+        <button onclick="verificarTodosRomaneios()">Verificar Todos os Romaneios</button>
+        <button onclick="limparLocalStorage()">Limpar LocalStorage (Cuidado!)</button>
+        <button onclick="exportarDados()">Exportar Dados</button>
+        
+        <div id="resultados"></div>
+    </div>
+
+    <script>
+        function verificarTodosRomaneios() {
+            const tipos = [
+                { key: 'romaneiosTL', nome: 'Romaneio TL' },
+                { key: 'romaneiosPct', nome: 'Romaneio PCT' },
+                { key: 'romaneiosPes', nome: 'Romaneio PES' },
+                { key: 'romaneiosTora', nome: 'Romaneio TORA' }
+            ];
+            
+            let html = '<h2>📊 Análise dos Romaneios</h2>';
+            
+            tipos.forEach(tipo => {
+                html += verificarTipoRomaneio(tipo.key, tipo.nome);
+            });
+            
+            // Verificar outras chaves relacionadas
+            html += verificarOutrasChaves();
+            
+            document.getElementById('resultados').innerHTML = html;
+        }
+        
+        function verificarTipoRomaneio(key, nome) {
+            let html = `<div class="tipo-romaneio">`;
+            html += `<h3>${nome} (${key})</h3>`;
+            
+            try {
+                const dados = localStorage.getItem(key);
+                
+                if (!dados) {
+                    html += `<span class="status empty">VAZIO</span>`;
+                    html += `<div class="details">Nenhum dado encontrado para esta chave</div>`;
+                } else {
+                    try {
+                        const romaneios = JSON.parse(dados);
+                        
+                        if (Array.isArray(romaneios)) {
+                            if (romaneios.length === 0) {
+                                html += `<span class="status empty">ARRAY VAZIO</span>`;
+                                html += `<div class="details">Array existe mas está vazio</div>`;
+                            } else {
+                                html += `<span class="status found">${romaneios.length} ROMANEIOS</span>`;
+                                html += `<div class="details">`;
+                                
+                                romaneios.forEach((romaneio, index) => {
+                                    html += `<div class="romaneio-item">`;
+                                    html += `<strong>Romaneio ${index + 1}:</strong><br>`;
+                                    html += `📅 Data: ${romaneio.data ? new Date(romaneio.data).toLocaleDateString() : 'Não informada'}<br>`;
+                                    html += `👤 Cliente: ${getClienteName(romaneio)}<br>`;
+                                    html += `📦 Itens: ${romaneio.itens ? romaneio.itens.length : 0}<br>`;
+                                    html += `📊 Volume: ${getVolume(romaneio)}<br>`;
+                                    html += `💰 Valor: ${getValor(romaneio)}<br>`;
+                                    html += `🔑 ID: ${romaneio.id || 'Não informado'}`;
+                                    html += `</div>`;
+                                });
+                                
+                                html += `</div>`;
+                                html += `<details><summary>Ver JSON completo</summary><pre>${JSON.stringify(romaneios, null, 2)}</pre></details>`;
+                            }
+                        } else {
+                            html += `<span class="status error">FORMATO INVÁLIDO</span>`;
+                            html += `<div class="details">Dados não são um array: ${typeof romaneios}</div>`;
+                            html += `<pre>${JSON.stringify(romaneios, null, 2)}</pre>`;
+                        }
+                    } catch (parseError) {
+                        html += `<span class="status error">ERRO JSON</span>`;
+                        html += `<div class="details">Erro ao parsear JSON: ${parseError.message}</div>`;
+                        html += `<pre>${dados.substring(0, 500)}...</pre>`;
+                    }
+                }
+            } catch (error) {
+                html += `<span class="status error">ERRO</span>`;
+                html += `<div class="details">Erro ao acessar localStorage: ${error.message}</div>`;
+            }
+            
+            html += `</div>`;
+            return html;
+        }
+        
+        function verificarOutrasChaves() {
+            let html = `<div class="tipo-romaneio">`;
+            html += `<h3>🔍 Outras Chaves Relacionadas</h3>`;
+            
+            const chavesRelacionadas = [];
+            
+            // Verificar todas as chaves do localStorage
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.toLowerCase().includes('romaneio') || key.toLowerCase().includes('cliente'))) {
+                    chavesRelacionadas.push(key);
+                }
+            }
+            
+            if (chavesRelacionadas.length === 0) {
+                html += `<div class="details">Nenhuma chave relacionada encontrada</div>`;
+            } else {
+                chavesRelacionadas.forEach(key => {
+                    const value = localStorage.getItem(key);
+                    html += `<div class="romaneio-item">`;
+                    html += `<strong>${key}:</strong><br>`;
+                    html += `Tamanho: ${value ? value.length : 0} caracteres<br>`;
+                    
+                    try {
+                        const parsed = JSON.parse(value);
+                        if (Array.isArray(parsed)) {
+                            html += `Tipo: Array com ${parsed.length} itens`;
+                        } else if (typeof parsed === 'object') {
+                            html += `Tipo: Objeto com ${Object.keys(parsed).length} propriedades`;
+                        } else {
+                            html += `Tipo: ${typeof parsed}`;
+                        }
+                    } catch (e) {
+                        html += `Tipo: String (não JSON)`;
+                    }
+                    
+                    html += `</div>`;
+                });
+            }
+            
+            html += `</div>`;
+            return html;
+        }
+        
+        function getClienteName(romaneio) {
+            if (romaneio.cliente) {
+                return romaneio.cliente.nome || romaneio.cliente.name || 'Nome não informado';
+            }
+            if (romaneio.clienteNome) {
+                return romaneio.clienteNome;
+            }
+            if (romaneio.transportador) {
+                return romaneio.transportador.nome || romaneio.transportador.name || 'Transportador';
+            }
+            return 'Cliente não informado';
+        }
+        
+        function getVolume(romaneio) {
+            if (romaneio.volumeTotal) return romaneio.volumeTotal + ' m³';
+            if (romaneio.totalVolume) return romaneio.totalVolume + ' m³';
+            if (romaneio.totais && romaneio.totais.volume) return romaneio.totais.volume + ' m³';
+            return 'Não calculado';
+        }
+        
+        function getValor(romaneio) {
+            if (romaneio.valorTotal) return 'R$ ' + romaneio.valorTotal;
+            if (romaneio.totalValor) return 'R$ ' + romaneio.totalValor;
+            if (romaneio.totais && romaneio.totais.valor) return 'R$ ' + romaneio.totais.valor;
+            return 'Não calculado';
+        }
+        
+        function limparLocalStorage() {
+            if (confirm('⚠️ ATENÇÃO! Isso vai apagar TODOS os dados do localStorage. Deseja continuar?')) {
+                localStorage.clear();
+                alert('LocalStorage limpo!');
+                verificarTodosRomaneios();
+            }
+        }
+        
+        function exportarDados() {
+            const dados = {};
+            
+            // Exportar todos os dados do localStorage
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                
+                try {
+                    dados[key] = JSON.parse(value);
+                } catch (e) {
+                    dados[key] = value;
+                }
+            }
+            
+            const blob = new Blob([JSON.stringify(dados, null, 2)], {
+                type: 'application/json'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `dados_romaneios_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // Verificar automaticamente ao carregar a página
+        window.addEventListener('load', verificarTodosRomaneios);
+    </script>
+    <script src="global-footer.js?v=7ab6d2f87bf7"></script>
+</body>
+</html> 

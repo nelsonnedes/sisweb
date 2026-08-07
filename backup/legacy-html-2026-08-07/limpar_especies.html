@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpeza de Espécies Undefined</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        button {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #34495e;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .warning {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            color: #333;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Limpeza de Espécies Undefined</h1>
+        
+        <p>Esta ferramenta irá remover todas as espécies com o nome "undefined" ou que estejam inválidas no banco de dados.</p>
+        
+        <button id="checkBtn">Verificar Espécies</button>
+        <button id="cleanBtn" style="background-color: #c0392b;">Limpar Espécies Undefined</button>
+        <button id="goHomeBtn" style="background-color: #3498db;">Voltar para Página Principal</button>
+        
+        <div id="results" class="results" style="display: none;"></div>
+    </div>
+    
+    <script>
+        function resolveCompanyId() {
+            try {
+                const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                if (svc && typeof svc.getTenantId === 'function') {
+                    const t = svc.getTenantId();
+                    if (t) return String(t);
+                }
+            } catch (_) {}
+            try {
+                if (window.appTenantId) return String(window.appTenantId);
+                if (window.companyInfo) {
+                    const raw = window.companyInfo;
+                    const id = raw.companyId || raw.companyID || raw.tenantId || raw.id;
+                    if (id) return String(id);
+                }
+                const stored = localStorage.getItem('company_info');
+                if (stored) {
+                    const obj = JSON.parse(stored);
+                    const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
+                    if (id) return String(id);
+                }
+            } catch (_) {}
+            return null;
+        }
+
+        function getLocalStorageKeys(key) {
+            const keys = [];
+            try {
+                const base = String(key || '');
+                if (!base) return keys;
+                const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
+                if (svc && typeof svc.getNamespacedPath === 'function') {
+                    const ns = svc.getNamespacedPath(base);
+                    if (ns && ns !== base) keys.push(ns);
+                } else {
+                    const companyId = resolveCompanyId();
+                    if (companyId && !/^companies\//.test(base) && !/^users\//.test(base)) {
+                        keys.push(`companies/${companyId}/${base}`);
+                    }
+                }
+                keys.push(base);
+            } catch (_) {}
+            return [...new Set(keys)];
+        }
+
+        function readLocalStorageValue(key) {
+            for (const k of getLocalStorageKeys(key)) {
+                const val = localStorage.getItem(k);
+                if (val) return val;
+            }
+            return null;
+        }
+
+        function persistLocalValue(key, data) {
+            try {
+                if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {
+                    window.SiswebStorage.write(key, data);
+                    return;
+                }
+            } catch (_) {}
+            const payload = JSON.stringify(data);
+            for (const k of getLocalStorageKeys(key)) {
+                localStorage.setItem(k, payload);
+            }
+        }
+
+        function getData(key) {
+            try {
+                const data = readLocalStorageValue(key);
+                return data ? JSON.parse(data) : [];
+            } catch (e) {
+                console.error('Erro ao recuperar dados:', e);
+                return [];
+            }
+        }
+        
+        function saveData(key, data) {
+            try {
+                persistLocalValue(key, data);
+                return true;
+            } catch (e) {
+                console.error('Erro ao salvar dados:', e);
+                return false;
+            }
+        }
+        
+        // Função para verificar espécies
+        function checkSpecies() {
+            const species = getData('especies');
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.style.display = 'block';
+            
+            // Filtrar espécies inválidas
+            const invalidSpecies = species.filter(specie => 
+                !specie.especie && !specie.name && !specie.nome ||
+                specie.name === 'undefined' || 
+                specie.name === undefined ||
+                specie.nome === 'undefined' || 
+                specie.nome === undefined
+            );
+            
+            if (invalidSpecies.length === 0) {
+                resultsDiv.innerHTML = '<p class="success">Não foram encontradas espécies inválidas no banco de dados!</p>';
+                return;
+            }
+            
+            // Exibir informações das espécies inválidas
+            let html = `
+                <p class="warning">Encontradas ${invalidSpecies.length} espécies inválidas:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>Nome Científico</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            invalidSpecies.forEach(specie => {
+                const nome = specie.especie || specie.nome || specie.name || 'undefined';
+                html += `
+                    <tr>
+                        <td>${specie.id || 'N/A'}</td>
+                        <td>${nome}</td>
+                        <td>${specie.nomeCientifico || specie.description || specie.descricao || 'N/A'}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+                <p>Clique em "Limpar Espécies Undefined" para remover estes registros.</p>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        // Função para limpar espécies inválidas
+        function cleanSpecies() {
+            const species = getData('especies');
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.style.display = 'block';
+            
+            // Contar quantas espécies existem antes
+            const countBefore = species.length;
+            
+            // Filtrar espécies válidas (remover as inválidas)
+            const validSpecies = species.filter(specie => 
+                (specie.especie && specie.especie !== 'undefined' && specie.especie !== undefined) ||
+                (specie.name && specie.name !== 'undefined' && specie.name !== undefined) ||
+                (specie.nome && specie.nome !== 'undefined' && specie.nome !== undefined)
+            );
+            
+            // Contar quantas foram removidas
+            const removedCount = countBefore - validSpecies.length;
+            
+            if (removedCount === 0) {
+                resultsDiv.innerHTML = '<p class="success">Não foram encontradas espécies inválidas para remover!</p>';
+                return;
+            }
+            
+            // Salvar a nova lista de espécies
+            if (saveData('especies', validSpecies)) {
+                resultsDiv.innerHTML = `
+                    <p class="success">Limpeza concluída com sucesso!</p>
+                    <p>Foram removidas ${removedCount} espécies inválidas.</p>
+                    <p>O banco de dados agora contém ${validSpecies.length} espécies válidas.</p>
+                `;
+            } else {
+                resultsDiv.innerHTML = '<p class="warning">Erro ao salvar as alterações. Por favor, tente novamente.</p>';
+            }
+        }
+        
+        // Event Listeners
+        document.getElementById('checkBtn').addEventListener('click', checkSpecies);
+        document.getElementById('cleanBtn').addEventListener('click', cleanSpecies);
+        document.getElementById('goHomeBtn').addEventListener('click', function() {
+            window.location.href = 'index.html';
+        });
+    </script>
+    <script src="global-footer.js?v=7ab6d2f87bf7"></script>
+</body>
+</html> 
