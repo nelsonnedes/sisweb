@@ -32,51 +32,15 @@
       .info-toggle.active { color:#0d47a1; }
     </style>
     
-    <!-- ✅ FIREBASE - CÓPIA EXATA DO ROMANEIOPCT -->
+    <!-- ✅ FIREBASE - SINGLETON COMPARTILHADO (firebase-init.js) -->
     <script type="module">
-        import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-        import { getAuth, onAuthStateChanged, signInAnonymously, setPersistence, browserLocalPersistence, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { app, auth, db, onAuthStateChanged, setPersistence, browserLocalPersistence, signOut } from '../firebase-init.js?v=21eb04e409d8';
         const authPerfPayroll = (() => {
             try { return window.__SISWEB_AUTH_PERF__ || null; } catch (_) { return null; }
         })();
         try { authPerfPayroll?.phase('firebase_init_start', 'payroll_page', 'started', 0); } catch (_) {}
-        
-        const firebaseConfig = {
-            // ✅ MESMAS CREDENCIAIS DO ROMANEIO TL (compatível com PCT)
-            apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
-            authDomain: "sisweb-7ce82.firebaseapp.com",
-            databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "sisweb-7ce82",
-            storageBucket: "sisweb-7ce82.firebasestorage.app",
-            messagingSenderId: "240003261222",
-            appId: "1:240003261222:web:1aeaf919ddc7e5c691d7e7",
-            measurementId: "G-FTC6JZ5ZGX"
-        };
-        
-        // Reutilizar instância global do Firebase se existir para evitar perda de sessão
-        let app;
-        try {
-            if (window._FIREBASE_APP) {
-                console.log('♻️ Reutilizando app Firebase global');
-                app = window._FIREBASE_APP;
-            } else {
-                const apps = getApps();
-                if (apps && apps.length > 0) {
-                    console.log('♻️ Reutilizando app Firebase existente');
-                    app = apps[0];
-                } else {
-                    app = initializeApp(firebaseConfig);
-                    console.log('✅ Firebase inicializado (Folha)');
-                }
-            }
-        } catch (e) {
-            console.warn('⚠️ Falha ao reutilizar app, inicializando novo', e && e.message);
-            app = initializeApp(firebaseConfig);
-        }
 
-        window.database = getDatabase(app);
-        const auth = getAuth(app);
+        window.database = db;
         try { authPerfPayroll?.phase('firebase_init_ready', 'payroll_page', 'ready', 0); } catch (_) {}
         // Expor objetos/funções necessárias para integração com guardas
         window.firebaseAuth = auth;
@@ -116,7 +80,6 @@
         }, 3000);
 
         // 🔐 AUTENTICAÇÃO PARA ESCRITA (regras com login habilitadas)
-        let __anonAuthInFlight = false;
         // Desabilitar tentativa de login anônimo por padrão
         if (typeof window.ENABLE_ANON_AUTH === 'undefined') window.ENABLE_ANON_AUTH = false;
         try { authPerfPayroll?.listener('auth', 'add', 'payroll_page', 0); } catch (_) {}

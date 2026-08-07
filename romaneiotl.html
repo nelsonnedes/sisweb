@@ -1804,42 +1804,18 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
         })();
         try { authPerfShipping?.phase('firebase_init_start', 'shipping_page', 'started', 0); } catch (_) {}
 
-        // ✅ CONFIGURAÇÃO FIREBASE CORRETA - PROJETO SISWEB-7CE82
-        const firebaseConfig = {
-            apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
-            authDomain: "sisweb-7ce82.firebaseapp.com",
-            databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "sisweb-7ce82",
-            storageBucket: "sisweb-7ce82.firebasestorage.app",
-            messagingSenderId: "240003261222",
-            appId: "1:240003261222:web:1aeaf919ddc7e5c691d7e7",
-            measurementId: "G-FTC6JZ5ZGX"
-        };
-        
-        // Inicializar Firebase (idempotente) com verificação de SDK
-        if (typeof window.firebase !== 'undefined' && firebase.apps) {
-            if (firebase.apps.length === 0) {
-                firebase.initializeApp(firebaseConfig);
-                console.log('✅ Firebase inicializado (compat)');
-            } else {
-                console.log('♻️ Reutilizando Firebase app existente (compat)');
-            }
-            try { authPerfShipping?.phase('firebase_init_ready', 'shipping_page', 'ready', 0); } catch (_) {}
-        } else {
-            try { authPerfShipping?.phase('firebase_init_error', 'shipping_page', 'error', 0); } catch (_) {}
-            console.warn('⚠️ Firebase SDK (compat) indisponível no ambiente atual. Operando em modo offline.');
-        }
-
         // Aguardar o compat bridge (module deferred) antes de usar o SDK global.
         // Módulos ES executam após o parse do documento; o script clássico abaixo roda antes.
         const aguardarFirebaseTLCompat = (timeoutMs = 15000) => new Promise((resolve) => {
             const startTime = Date.now();
             const verificar = () => {
                 if (typeof window.firebase !== 'undefined' && window.firebase.apps) {
+                    try { authPerfShipping?.phase('firebase_init_ready', 'shipping_page', 'ready', 0); } catch (_) {}
                     resolve(true);
                     return;
                 }
                 if (Date.now() - startTime > timeoutMs) {
+                    try { authPerfShipping?.phase('firebase_init_error', 'shipping_page', 'timeout', 0); } catch (_) {}
                     resolve(false);
                     return;
                 }

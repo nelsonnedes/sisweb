@@ -6,6 +6,16 @@
  * firebase-init.js como ÚNICO ponto de import do Firebase SDK,
  * detectando imports diretos do CDN que bypassam o singleton.
  *
+ * v1.2 (Passo 3 — correções):
+ *   • Reconhece cachebuster (?v=...) nos imports do firebase-init.js
+ *   • Reconhece firebase-compat-bridge.js e firebaseService.js como
+ *     bootstrap canônico (transitivo via firebase-init.js)
+ *   • Varre também subdiretórios de deploy (folha_pagamento/)
+ *   • Novos checks: signInAnonymously (violação multi-tenant) e
+ *     initializeApp inline (bootstrap duplicado)
+ *   • Páginas que importam o singleton são classificadas como
+ *     "com Firebase" (antes caíam em "SEM FIREBASE")
+ *
  * Uso:
  *   node tools/healthcheck-firebase-sdk.mjs               # verificação local
  *   node tools/healthcheck-firebase-sdk.mjs --production   # + HEAD requests CDN
@@ -14,7 +24,7 @@
  *   node tools/healthcheck-firebase-sdk.mjs --help         # ajuda
  */
 
-import { readFileSync, readdirSync, existsSync } from 'fs';
+import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
 import https from 'https';
 import http from 'http';
@@ -25,11 +35,32 @@ const OBSOLETE_VERSIONS = ['9.6.1', '9.22.0', '9.23.0'];
 const ALLOWED_VERSIONS = [TARGET_VERSION];
 const PROJECT_ROOT = process.cwd();
 const FIREBASE_INIT_MODULE = 'firebase-init.js';
+// Diretórios que fazem parte do deploy (raiz + subpastas de páginas publicadas)
+const SCAN_SUBDIRS = ['folha_pagamento'];
+// Arquivos bootstrap canônicos (não são páginas; são o singleton em si)
+const BOOTSTRAP_FILES = new Set([
+  'firebase-init.js',
+  'firebase-compat-bridge.js',
+  'firebaseService.js',
+  'firebaseService.unified.js',
+  'src/services/firebaseService.js'
+]);
 
 // Padrões para detecção de imports diretos do CDN (bypass do singleton)
 const CDN_IMPORT_RE = /(?:from\s+|import\s*\()\s*['"][^'"]*firebasejs\/([^'"]*?)\/([^'"]*?)(?:\.js|\.mjs)(?:\?[^'"]*)?['"]/gi;
 const CDN_SCRIPT_RE = /(?:src|href)="[^"]*firebasejs\/([^"]*?)\/([^"]*?)(?:\.js|\.mjs)(?:\?[^"']*)?"/gi;
-const FIREBASE_INIT_IMPORT_RE = /from\s*['"]\.\/firebase-init\.js['"]|import\(['"]\.\/firebase-init\.js/gi;
+
+// Import do firebase-init.js (com ou sem cachebuster ?v=...)
+const FIREBASE_INIT_IMPORT_RE = /from\s*['"]\.{0,2}\/firebase-init\.js(?:\?[^'"]*)?['"]|import\(['"]\.{0,2}\/firebase-init\.js(?:\?[^'"]*)?/gi;
+// Import do compat bridge (shim que emula window.firebase a partir do singleton)
+// Cobre: from './bridge.js', import('./bridge.js') e side-effect import './bridge.js'
+const COMPAT_BRIDGE_IMPORT_RE = /(?:from\s*|import\s*\(|import\s+)['"]\.{0,2}\/firebase-compat-bridge\.js(?:\?[^'"]*)?['"]/gi;
+// Import do firebaseService (raiz ou src/services) — transitivamente usa firebase-init.js
+const FIREBASE_SERVICE_IMPORT_RE = /(?:from\s*['"]|import\(['"]|src\s*=\s*['"])(?:\.{0,2}\/)?firebaseService\.js(?:\?[^'"]*)?['"]|src\s*=\s*['"]src\/services\/firebaseService\.js(?:\?[^'"]*)?['"]/gi;
+// Uso de login anônimo (violação do isolamento multi-tenant)
+const SIGNIN_ANONYMOUS_RE = /signInAnonymously/gi;
+// Bootstrap duplicado: initializeApp fora do singleton (sem ser via firebase-init.js)
+const INLINE_INITIALIZE_APP_RE = /(?:firebase\.)?initializeApp\s*\(/gi;
 
 const args = process.argv.slice(2);
 const CHECK_PRODUCTION = args.includes('--production');
@@ -38,7 +69,7 @@ const CI_MODE = args.includes('--ci');
 
 if (args.includes('--help')) {
   console.log(`
-  Firebase SDK Healthcheck v1.1 — compliance com firebase-init.js
+  Firebase SDK Healthcheck v1.2 — compliance com firebase-init.js
   ===============================================================
   Verifica versão do Firebase SDK e compliance com módulo compartilhado.
 
@@ -48,10 +79,14 @@ if (args.includes('--help')) {
     --ci           Exit code 1 se houver qualquer erro ou warning
     --help         Mostra esta ajuda
 
-  Novas verificações (v1.1):
-    • firebase-init.js existe     — módulo singleton obrigatório
-    • Pages com Firebase          — devem importar via firebase-init.js
-    • Pages sem import do init    — se têm Firebase direto do CDN, é ERRO
+  Verificações (v1.2):
+    • firebase-init.js existe      — módulo singleton obrigatório
+    • Pages com Firebase           — devem importar via firebase-init.js
+      (aceita cachebuster ?v=, firebase-compat-bridge.js e firebaseService.js)
+    • Pages sem import do init     — se têm Firebase direto do CDN, é ERRO
+    • signInAnonymously            — proibido (isolamento multi-tenant)
+    • initializeApp inline         — proibido (bootstrap duplicado)
+    • Scan recursivo               — inclui folha_pagamento/ (deploy)
 
   Exemplos:
     node tools/healthcheck-firebase-sdk.mjs
@@ -99,19 +134,34 @@ function httpHead(url) {
   });
 }
 
+function regexAll(re, html) {
+  const out = [];
+  re.lastIndex = 0;
+  let m;
+  while ((m = re.exec(html)) !== null) out.push(m[0].trim());
+  return out;
+}
+
+function regexTest(re, html) {
+  re.lastIndex = 0;
+  return re.test(html);
+}
+
 /**
  * Verifica compliance com firebase-init.js:
  * - firebase-init.js existe no projeto
  * - Páginas com Firebase devem importar de firebase-init.js
+ *   (direto, via compat bridge ou via firebaseService.js)
  * - Páginas NÃO devem importar Firebase diretamente do CDN
+ * - Páginas NÃO devem usar signInAnonymously nem initializeApp inline
  */
 function checkFirebaseInitCompliance(html, filePath) {
   const issues = [];
 
   // 1. Detecta imports diretos do CDN (from "https://...gstatic.com/firebasejs/...")
   const cdnImports = [];
-  let m;
   CDN_IMPORT_RE.lastIndex = 0;
+  let m;
   while ((m = CDN_IMPORT_RE.exec(html)) !== null) {
     cdnImports.push({ version: m[1], module: m[2], raw: m[0].trim() });
   }
@@ -123,13 +173,20 @@ function checkFirebaseInitCompliance(html, filePath) {
     cdnScripts.push({ version: m[1], module: m[2], raw: m[0].trim() });
   }
 
-  // 3. Detecta se importa firebase-init.js
-  FIREBASE_INIT_IMPORT_RE.lastIndex = 0;
-  const hasFirebaseInitImport = FIREBASE_INIT_IMPORT_RE.test(html);
+  // 3. Detecta se importa o bootstrap canônico (init, bridge ou firebaseService)
+  const hasFirebaseInitImport = regexTest(FIREBASE_INIT_IMPORT_RE, html)
+    || regexTest(COMPAT_BRIDGE_IMPORT_RE, html)
+    || regexTest(FIREBASE_SERVICE_IMPORT_RE, html);
+
+  // 4. Detecta login anônimo (violação multi-tenant)
+  const signInAnonymously = regexAll(SIGNIN_ANONYMOUS_RE, html);
+
+  // 5. Detecta bootstrap duplicado (initializeApp inline)
+  const inlineInitializeApp = regexAll(INLINE_INITIALIZE_APP_RE, html);
 
   const totalDirectCdn = cdnImports.length + cdnScripts.length;
 
-  // Se tem referências diretas ao CDN mas NÃO importa firebase-init.js → ERRO
+  // Se tem referências diretas ao CDN mas NÃO importa o bootstrap canônico → ERRO
   if (totalDirectCdn > 0 && !hasFirebaseInitImport) {
     for (const imp of cdnImports) {
       issues.push(`IMPORT_DIRETO_CDN: ${imp.raw}`);
@@ -139,7 +196,7 @@ function checkFirebaseInitCompliance(html, filePath) {
     }
   }
 
-  // Se importa firebase-init.js MAS também tem referências diretas ao CDN → AVISO
+  // Se importa o bootstrap canônico MAS também tem referências diretas ao CDN → AVISO
   if (totalDirectCdn > 0 && hasFirebaseInitImport) {
     for (const imp of cdnImports) {
       issues.push(`CDN_DIRETO_MESMO_COM_INIT: ${imp.raw}`);
@@ -149,13 +206,44 @@ function checkFirebaseInitCompliance(html, filePath) {
     }
   }
 
+  // signInAnonymously em qualquer página é ERRO (isolamento multi-tenant)
+  if (signInAnonymously.length > 0) {
+    for (const s of signInAnonymously) {
+      issues.push(`SIGNIN_ANONIMO_PROIBIDO: ${s}`);
+    }
+  }
+
+  // initializeApp inline (fora do singleton) é ERRO (bootstrap duplicado)
+  if (inlineInitializeApp.length > 0) {
+    for (const s of inlineInitializeApp) {
+      issues.push(`INITIALIZE_APP_INLINE: ${s}`);
+    }
+  }
+
   return {
     hasFirebaseInitImport,
     directCdnImports: cdnImports.length,
     directCdnScripts: cdnScripts.length,
     totalDirectCdn,
+    signInAnonymously,
+    inlineInitializeApp,
     issues
   };
+}
+
+/**
+ * Lista os arquivos HTML do deploy: raiz + subdiretórios publicados.
+ */
+function listHtmlFiles() {
+  const files = readdirSync(PROJECT_ROOT).filter(f => f.endsWith('.html')).map(f => join(PROJECT_ROOT, f));
+  for (const dir of SCAN_SUBDIRS) {
+    const full = join(PROJECT_ROOT, dir);
+    if (!existsSync(full) || !statSync(full).isDirectory()) continue;
+    for (const f of readdirSync(full)) {
+      if (f.endsWith('.html')) files.push(join(full, f));
+    }
+  }
+  return files;
 }
 
 // ─── Core ─────────────────────────────────────────────────────────────────────
@@ -182,7 +270,9 @@ async function checkFile(filePath, firebaseInitExists) {
     compliance
   };
 
-  if (refs.length === 0) {
+  const usesFirebase = refs.length > 0 || compliance.hasFirebaseInitImport;
+
+  if (!usesFirebase) {
     result.status = 'no_firebase';
     return result;
   }
@@ -230,23 +320,25 @@ async function checkFile(filePath, firebaseInitExists) {
     result.errors.push(`DUPLICADO: modulos carregados 2+ vezes: ${result.dupes.join(', ')}`);
   }
 
-  // Compliance: versões obsoletas ou imports diretos do CDN sem firebase-init
+  // Compliance: imports diretos do CDN sem bootstrap canônico, anon auth, init duplicado
   if (!compliance.hasFirebaseInitImport && compliance.totalDirectCdn > 0) {
     for (const issue of compliance.issues) {
       result.errors.push(`COMPLIANCE: ${issue}`);
     }
-  } else if (compliance.hasFirebaseInitImport && compliance.totalDirectCdn > 0) {
+  } else {
     for (const issue of compliance.issues) {
-      result.errors.push(`COMPLIANCE_WARN: ${issue}`);
+      if (issue.startsWith('CDN_DIRETO_MESMO_COM_INIT')) {
+        result.errors.push(`COMPLIANCE_WARN: ${issue}`);
+      } else {
+        result.errors.push(`COMPLIANCE: ${issue}`);
+      }
     }
   }
 
-  // Verifica se firebase-init.js existe (relatado apenas na primeira página com Firebase)
-  // O report já mostra o status no resumo, não poluir cada página com o mesmo erro.
-
   // Final status
-  const hasComplianceError = compliance.totalDirectCdn > 0 && !compliance.hasFirebaseInitImport;
-  const hasComplianceWarning = compliance.totalDirectCdn > 0 && compliance.hasFirebaseInitImport;
+  const hasComplianceError = compliance.issues.some(i => !i.startsWith('CDN_DIRETO_MESMO_COM_INIT'))
+    && (compliance.totalDirectCdn > 0 || compliance.signInAnonymously.length > 0 || compliance.inlineInitializeApp.length > 0);
+  const hasComplianceWarning = compliance.issues.some(i => i.startsWith('CDN_DIRETO_MESMO_COM_INIT'));
   const hasSystemError = !firebaseInitExists && result.totalRefs > 0;
 
   if (result.obsoleteVersions.length > 0 || result.unknownVersions.length > 0 || hasComplianceError || hasSystemError) {
@@ -263,13 +355,15 @@ async function checkFile(filePath, firebaseInitExists) {
 function buildReport(results, firebaseInitExists) {
   const total = results.length;
   const withFirebase = results.filter(r => r.status !== 'no_firebase');
-  const ok = results.filter(r => r.status === 'ok' && r.totalRefs > 0);
+  const ok = results.filter(r => r.status === 'ok' && (r.totalRefs > 0 || (r.compliance && r.compliance.hasFirebaseInitImport)));
   const warnings = results.filter(r => r.status === 'warning');
   const errors = results.filter(r => r.status === 'error');
   const noFb = results.filter(r => r.status === 'no_firebase');
 
   const pagesWithInit = results.filter(r => r.compliance && r.compliance.hasFirebaseInitImport).length;
   const pagesWithDirectCdn = results.filter(r => r.compliance && r.compliance.totalDirectCdn > 0).length;
+  const pagesWithAnon = results.filter(r => r.compliance && r.compliance.signInAnonymously.length > 0).length;
+  const pagesWithInitInline = results.filter(r => r.compliance && r.compliance.inlineInitializeApp.length > 0).length;
 
   let report = '';
   const t = (s) => { report += s + '\n'; };
@@ -292,8 +386,10 @@ function buildReport(results, firebaseInitExists) {
   t(`  Erros:                    ${errors.length}`);
   t('');
   t(`  ─── Compliance firebase-init.js ───`);
-  t(`  Pages importando init:    ${pagesWithInit}`);
+  t(`  Pages via bootstrap único: ${pagesWithInit}`);
   t(`  Pages com CDN direto:     ${pagesWithDirectCdn}`);
+  t(`  Pages com signInAnonymously: ${pagesWithAnon}`);
+  t(`  Pages com initializeApp:  ${pagesWithInitInline}`);
   t('');
 
   if (errors.length > 0) {
@@ -355,12 +451,11 @@ function pathRelative(fullPath) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  const htmlFiles = readdirSync(PROJECT_ROOT).filter(f => f.endsWith('.html'));
+  const htmlFiles = listHtmlFiles();
   const firebaseInitExists = existsSync(join(PROJECT_ROOT, FIREBASE_INIT_MODULE));
   const results = [];
 
-  for (const file of htmlFiles) {
-    const filePath = join(PROJECT_ROOT, file);
+  for (const filePath of htmlFiles) {
     const result = await checkFile(filePath, firebaseInitExists);
     results.push(result);
   }
@@ -381,7 +476,9 @@ async function main() {
       compliance: r.compliance ? {
         hasFirebaseInitImport: r.compliance.hasFirebaseInitImport,
         directCdnImports: r.compliance.directCdnImports,
-        directCdnScripts: r.compliance.directCdnScripts
+        directCdnScripts: r.compliance.directCdnScripts,
+        signInAnonymously: r.compliance.signInAnonymously.length,
+        inlineInitializeApp: r.compliance.inlineInitializeApp.length
       } : undefined
     }));
     process.stdout.write(JSON.stringify(output, null, 2) + '\n');
