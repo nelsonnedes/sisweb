@@ -308,14 +308,13 @@ class FirebaseService {
                 };
             }
 
-            // 🔐 Tentar autenticação anônima (se módulo Auth estiver disponível)
+            // 🔐 Aguardar sessão real (nunca criar sessão anônima em app multi-tenant)
             try {
                 if (this.firebase && typeof this.firebase.auth === 'function') {
-                    await new Promise((resolve, reject) => {
+                    await new Promise((resolve) => {
                         const auth = this.firebase.auth();
                         let settled = false;
                         const done = (res) => { if (!settled) { settled = true; resolve(res); } };
-                        const fail = (err) => { if (!settled) { settled = true; reject(err); } };
                         try {
                             auth.onAuthStateChanged((user) => {
                                 if (user) {
@@ -323,19 +322,26 @@ class FirebaseService {
                                     this.currentUid = user.uid;
                                     done(user);
                                 } else {
-                                    auth.signInAnonymously().then(done).catch(fail);
+                                    console.warn('⚠️ Nenhum usuário autenticado — sessão anônima não será criada (multi-tenant).');
+                                    this.currentUid = null;
+                                    done(null);
                                 }
-                            }, fail);
+                            }, () => {
+                                console.warn('⚠️ onAuthStateChanged falhou — prosseguindo sem autenticação.');
+                                this.currentUid = null;
+                                done(null);
+                            });
                         } catch (e) {
-                            console.warn('⚠️ onAuthStateChanged não disponível, tentando signInAnonymously direto...', e.message);
-                            auth.signInAnonymously().then(done).catch(fail);
+                            console.warn('⚠️ onAuthStateChanged não disponível — prosseguindo sem autenticação.', e.message);
+                            this.currentUid = null;
+                            done(null);
                         }
                     });
                 } else {
                     console.warn('⚠️ Firebase Auth não disponível — prosseguindo sem autenticação');
                 }
             } catch (authError) {
-                console.warn('⚠️ Falha ao autenticar anonimamente:', authError.message);
+                console.warn('⚠️ Erro ao configurar autenticação:', authError.message);
             }
             
             this.isReady = true;

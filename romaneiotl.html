@@ -1855,7 +1855,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
                 return;
             }
 
-            // 🔐 AUTENTICAÇÃO ANÔNIMA PARA ESCRITA (regras com login)
+            // 🔐 SESSÃO REAL (sem login anônimo em app multi-tenant autenticada)
             try {
                 const auth = firebase.auth();
                 try { authPerfShipping?.listener('auth', 'add', 'shipping_page', 0); } catch (_) {}
@@ -1864,22 +1864,19 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
                     if (user) {
                         console.log('🔐 [TL] Usuário autenticado');
                         window.firebaseAuthUser = user;
+                        iniciarListenerRealtimeTL();
                     } else {
-                        console.log('🔐 [TL] Nenhum usuário autenticado. Efetuando login anônimo...');
-                        auth.signInAnonymously()
-                            .then(function(cred){
-                                console.log('🔐 [TL] Login anônimo realizado');
-                                window.firebaseAuthUser = cred.user;
-                            })
-                            .catch(function(err){
-                                console.error('❌ [TL] Falha no login anônimo:', err && err.code ? err.code : 'unknown');
-                            });
+                        console.log('🔐 [TL] Nenhum usuário autenticado. Listener realtime não iniciado (sem sessão anônima).');
+                        window.firebaseAuthUser = null;
                     }
                 });
-            } catch(e){ console.error('❌ [TL] Erro ao configurar autenticação anônima:', e && e.code ? e.code : 'unknown'); }
+            } catch(e){ console.error('❌ [TL] Erro ao configurar autenticação:', e && e.code ? e.code : 'unknown'); }
 
-            // 📡 LISTENER REALTIME PARA ROMANEIOS TL
-            try {
+            // 📡 LISTENER REALTIME PARA ROMANEIOS TL (somente com sessão real)
+            function iniciarListenerRealtimeTL() {
+                if (window.__tlRealtimeAttached) return;
+                window.__tlRealtimeAttached = true;
+                try {
                 const db = firebase.database();
                 const resolvePath = (p) => {
                     try {
@@ -1927,7 +1924,8 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
                         console.error('❌ [TL] Erro no listener realtime:', error);
                     });
                 }
-            } catch(e){ console.error('❌ [TL] Erro ao configurar listener realtime:', e); }
+                } catch(e){ console.error('❌ [TL] Erro ao configurar listener realtime:', e); }
+            }
         }
 
         configurarAuthEListenerTL();
