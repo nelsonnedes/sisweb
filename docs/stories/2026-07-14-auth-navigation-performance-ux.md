@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress - Fases 0, 1, 2, 3 e 4 (dedup/TTL/alertas/unsubscribe/migracao explicita) implementadas; harness E2E isolado e Fase 5 (PWA) pendentes.
+In Progress - Fases 0, 1, 2, 3, 4 e 5 (dedup/TTL/alertas/unsubscribe/migracao explicita/PWA) implementadas; harness E2E isolado e Fase 6 (Portal de Acesso) pendentes.
 
 ## Ajuste Operacional - 2026-07-15
 
@@ -276,10 +276,12 @@ Verificado em 2026-08-08: `tests/firebase-read-dedup-ttl.test.mjs` (6 testes: wr
 
 ### Fase 5 - PWA E Assets
 
-- [ ] Manter `network-first` para documentos HTML.
-- [ ] Usar `stale-while-revalidate` ou `cache-first` com revisao para JS/CSS versionados.
-- [ ] Unificar as verificacoes de atualizacao do Service Worker.
-- [ ] Validar upgrade, rollback e limpeza de cache por versao.
+- [x] Manter `network-first` para documentos HTML (navegacao `request.mode === 'navigate'` sempre tenta a rede com fallback ao cache offline; nunca serve HTML antigo como resposta primaria).
+- [x] Usar `stale-while-revalidate` ou `cache-first` com revisao para JS/CSS versionados (JS/CSS/worker passam por `staleWhileRevalidate` — cache quente servido na hora e revalidacao em background com `cache: no-store`; imagens/fontes/midia e precache usam `cacheFirst`; a revisao e o `APP_VERSION`, com limpeza de caches antigos no `activate`).
+- [x] Unificar as verificacoes de atualizacao do Service Worker (registro centralizado em `menu-component.js`: `registerServiceWorker` + `setupUpdateChecks` com checagens em `focus`, `online`, `pageshow`, `visibilitychange`, timer de 30 min e `window.SiswebPWACheckForUpdate`; `SKIP_WAITING` enviado quando ha worker instalado).
+- [x] Validar upgrade, rollback e limpeza de cache por versao (testes: `APP_VERSION` novo aplicado em 5 suites, nova estrategia por destino validada em `tests/pwa-mobile-menu-session.test.mjs`, limpeza de caches antigos no `activate`, `GET_VERSION`/`SKIP_WAITING`/`SISWEB_PWA_UPDATED` preservados).
+
+Verificado em 2026-08-08: `sw.js` com `APP_VERSION = 2026-08-08-pwa-fase5-swr-v1`, build allowlisted de 452 arquivos e 19.864.514 bytes, deploy restrito ao Hosting sem alterar Functions, Rules ou dados.
 
 ### Fase 6 - Portal De Acesso Premium
 
@@ -478,6 +480,7 @@ Observacao: os scripts atuais de lint/typecheck cobrem principalmente `folha_pag
 - `tests/pwa-mobile-menu-session.test.mjs`
 - `tests/tenant-operational-safe-modules.test.mjs`
 - `tests/vendas-tenant-auth-guard.test.mjs`
+- `sw.js`
 - `docs/stories/2026-07-14-auth-navigation-performance-ux.md`
 
 ## File List Previsto
