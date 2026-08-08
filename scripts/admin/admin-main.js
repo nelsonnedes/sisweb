@@ -3459,6 +3459,11 @@
                         return;
                     }
                     showActionMessage("Dados de assinatura removidos com sucesso.", "success");
+                    if (window.firebaseService && typeof window.firebaseService.invalidateReadCacheForPath === "function") {
+                        window.firebaseService.invalidateReadCacheForPath("companies");
+                        window.firebaseService.invalidateReadCacheForPath("users");
+                        window.firebaseService.invalidateReadCacheForPath("subscriptionRequests");
+                    }
                     lastLoadedAt = 0;
                     await loadUsersAndDashboard();
                     try { applySubscriptionsFilter(); } catch (_) {}
@@ -3541,6 +3546,11 @@
                         }
                     }
                     showActionMessage(summary, "success");
+                    if (window.firebaseService && typeof window.firebaseService.invalidateReadCacheForPath === "function") {
+                        window.firebaseService.invalidateReadCacheForPath("companies");
+                        window.firebaseService.invalidateReadCacheForPath("users");
+                        window.firebaseService.invalidateReadCacheForPath("subscriptionRequests");
+                    }
                     lastLoadedAt = 0;
                     await loadUsersAndDashboard();
                     try { applySubscriptionsFilter(); } catch (_) {}
@@ -5626,6 +5636,13 @@
                     var refreshBtn = document.getElementById("refreshDataBtn");
                     if (refreshBtn) {
                         refreshBtn.addEventListener("click",function() {
+                            if (window.firebaseService && typeof window.firebaseService.invalidateReadCacheForPath === "function") {
+                                window.firebaseService.invalidateReadCacheForPath("companies");
+                                window.firebaseService.invalidateReadCacheForPath("users");
+                                window.firebaseService.invalidateReadCacheForPath("subscriptionRequests");
+                                window.firebaseService.invalidateReadCacheForPath("financialEvents");
+                            }
+                            lastLoadedAt = 0;
                             switchTab(activeTab);
                         });
                     }
