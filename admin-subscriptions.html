@@ -567,7 +567,10 @@
             .subscriptions-table.responsive-stack tbody td[colspan]::before { content: none; }
         }
     </style>
-</head>
+
+    <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
+    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
+    <script src="sentry-init.js?v=279872380246"></script></head>
 <body>
     <div class="container">
         <main-menu></main-menu>
@@ -782,12 +785,12 @@
         </div>
     </div>
 
-    <script src="auth.js?v=cbbfbc7f784a"></script>
+    <script src="auth.js?v=d1239cbe15f0"></script>
     <script type="module">
         import * as firebaseSvc from './firebaseService.js';
         window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
     </script>
-    <script src="menu-component.js?v=f97c4a2dae9f"></script>
+    <script src="menu-component.js?v=ac491560b4db"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
     <script>
         // Variável para armazenar os dados da assinatura atual

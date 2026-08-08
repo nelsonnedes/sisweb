@@ -1104,6 +1104,12 @@ class FirebaseServiceTL {
             }
         } catch (error) {
             console.error('❌ Erro ao salvar dados:', error && error.code ? error.code : 'unknown');
+            if (window.SentryMonitor && window.SentryMonitor.reportDataIssue) {
+                window.SentryMonitor.reportDataIssue('gravacao_falhou', {
+                    path: key, op: 'saveData',
+                    errorCode: error && error.code, errorMessage: (error && error.message || '').slice(0, 300)
+                });
+            }
             const fallbackData = { ...dataWithMeta, _metadata: { ...dataWithMeta._metadata, source: 'localStorage' } };
             this.writeLocalStorage(key, fallbackData);
             this.syncQueue.set(key, fallbackData);
@@ -1306,6 +1312,12 @@ class FirebaseServiceTL {
                 this.syncQueue.delete(key);
             } catch (error) {
                 console.error('❌ Erro ao sincronizar registro:', error && error.code ? error.code : 'unknown');
+                if (window.SentryMonitor && window.SentryMonitor.reportDataIssue) {
+                    window.SentryMonitor.reportDataIssue('conflito', {
+                        path: key, op: 'syncQueue',
+                        errorCode: error && error.code, errorMessage: (error && error.message || '').slice(0, 300)
+                    });
+                }
             }
         }
 
@@ -1359,6 +1371,12 @@ class FirebaseServiceTL {
             return { success: true };
         } catch (error) {
             console.error('❌ Erro ao excluir dados:', error && error.code ? error.code : 'unknown');
+            if (window.SentryMonitor && window.SentryMonitor.reportDataIssue) {
+                window.SentryMonitor.reportDataIssue('exclusao_falhou', {
+                    path: key, op: 'deleteData',
+                    errorCode: error && error.code, errorMessage: (error && error.message || '').slice(0, 300)
+                });
+            }
             return { success: false, error: error.message };
         }
     }

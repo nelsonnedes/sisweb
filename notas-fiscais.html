@@ -6,7 +6,11 @@
     <title>Notas Fiscais - Sistema de Gestão</title>
     <script>
         if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
-            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
+            document.write('
+    <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
+    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
+    <script src="sentry-init.js?v=279872380246"></script>
+<script src="auth-performance-diagnostics.js?v=6ef6e56a8b86"><\/script>');
         }
     </script>
     <link rel="stylesheet" href="menu.css">
@@ -1772,7 +1776,7 @@
             normalizeCompanyProfileForReport,
             getCompanyProfileForReport,
             resolveAuthenticatedTenant
-        } from './firebaseService.js?v=676ba9f2a922';
+        } from './firebaseService.js?v=3d948f6ba91d';
         window.firebaseService = {
             ...(window.firebaseService || {}),
             loadFromFirebase,
@@ -1806,29 +1810,29 @@
             getCompanyProfileForReport
         };
     </script>
-    <script src="auth.js?v=cbbfbc7f784a"></script>
-    <script src="menu-component.js?v=f97c4a2dae9f"></script>
+    <script src="auth.js?v=d1239cbe15f0"></script>
+    <script src="menu-component.js?v=ac491560b4db"></script>
     <script src="cities-loader.js?v=7cbcd32f8b64"></script>
-    <script src="client-service.js?v=fbb1e80d1713"></script>
-    <script src="openNewClientModal.js?v=fe2ff86f8dec"></script>
-    <script src="storageService.js?v=91f2b2ba7396"></script>
+    <script src="client-service.js?v=3061965a094a"></script>
+    <script src="openNewClientModal.js?v=9054df7477ae"></script>
+    <script src="storageService.js?v=26c2875bf32d"></script>
     <!-- Módulos Fiscais -->
-    <script src="nf-tables.js?v=7c63cd52c4de"></script>
-    <script src="nf-config.js?v=1103fb395b06"></script>
+    <script src="nf-tables.js?v=c29ca4795e79"></script>
+    <script src="nf-config.js?v=80e593be7369"></script>
     <!-- node-forge: necessário para extrair metadados do certificado .pfx no browser -->
     <script src="https://unpkg.com/node-forge@1.3.1/dist/forge.min.js"></script>
-    <script src="nf-cert.js?v=8f519215db0d"></script>
-    <script src="nf-validator.js?v=fc1580c1d4d9"></script>
-    <script src="nf-xml-builder.js?v=4a77345fb0e9"></script>
-    <script src="nf-storage.js?v=f29af1e4abbe"></script>
-    <script src="nf-service.js?v=b940b850e57a"></script>
+    <script src="nf-cert.js?v=b522cff21ec4"></script>
+    <script src="nf-validator.js?v=f5434c6237c4"></script>
+    <script src="nf-xml-builder.js?v=bcd43e0f4abc"></script>
+    <script src="nf-storage.js?v=051cf66862ba"></script>
+    <script src="nf-service.js?v=ab492888118c"></script>
     <!-- Novos módulos Fase 0 -->
-    <script src="nf-naturezas.js?v=93147c02bf1c"></script>
-    <script src="nf-preferencias.js?v=b97bc3b041ab"></script>
-    <script src="nf-produtos-nf.js?v=4e5d30c7df02"></script>
+    <script src="nf-naturezas.js?v=6f54a56f44a2"></script>
+    <script src="nf-preferencias.js?v=36b0ace1b9be"></script>
+    <script src="nf-produtos-nf.js?v=1c8f0b89d73f"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="nf-danfe.js?v=8f1995582cc6"></script>
+    <script src="nf-danfe.js?v=e3ffb1d82b8c"></script>
     <script>
     // ─── Inicialização NFService ──────────────────────────────────────────────
     function isFirebaseOfflineModeNF() {

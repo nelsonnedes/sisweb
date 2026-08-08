@@ -95,7 +95,11 @@
         });
     </script>
     <!-- 🔒 Guarda de Autenticação de UI (redireciona para login quando necessário) -->
-    <script>
+    
+    <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
+    <script src="../sentry/sentry.browser.min.js?v=05285296b9b9"></script>
+    <script src="../sentry-init.js?v=279872380246"></script>
+<script>
       (function(){
         const isInSubfolder = (location.pathname||'').includes('/folha_pagamento/');
         const loginUrlBase = isInSubfolder ? '../login.html' : 'login.html';

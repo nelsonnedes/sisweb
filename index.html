@@ -7,7 +7,7 @@
     <title>Dashboard - Sistema Sisweb</title>
     <script>
         if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
-            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
+            document.write('<script src="auth-performance-diagnostics.js?v=6ef6e56a8b86"><\/script>');
         }
     </script>
     <link rel="manifest" href="manifest.json">
@@ -52,20 +52,24 @@
         })();
     </script>
     
-    <script defer src="menu-component.js?v=f97c4a2dae9f"></script>
+    <script defer src="menu-component.js?v=ac491560b4db"></script>
     <!-- Firebase SDK -->
     <!-- Firebase via módulo compartilhado (singleton) -->
 
     <script type="module">
 
-        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=21eb04e409d8';
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=e4f56badf571';
 import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
 
     </script><!-- Módulos do Dashboard -->
-    <script defer src="modules/core/firebase-service.js?v=d500073b4127"></script>
-    <script defer src="modules/core/responsive-manager.js?v=dee4c97c8f56"></script>
-    <script defer src="modules/dashboard/dashboard-core.js?v=e417c7a5ccc8"></script>
-    <script defer src="modules/dashboard/dashboard-widgets.js?v=4b0c758f6662"></script>
+    <script defer src="modules/core/firebase-service.js?v=f67b203712b2"></script>
+    <script defer src="modules/core/responsive-manager.js?v=1cadc2459e3b"></script>
+    <script defer src="modules/dashboard/dashboard-core.js?v=eed088ee3f1d"></script>
+    
+    <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
+    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
+    <script src="sentry-init.js?v=279872380246"></script>
+<script defer src="modules/dashboard/dashboard-widgets.js?v=3f61599d3aeb"></script>
     <!-- Adicionar fontes do Google para melhorar a tipografia -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

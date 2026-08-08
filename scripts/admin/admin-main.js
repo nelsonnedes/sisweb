@@ -5216,6 +5216,353 @@
                 var canSettings = window.hasAdminPageAccess ? await window.hasAdminPageAccess("settings") : false;
                 return {isSuperAdmin:isSuperAdmin,canDashboard:canDashboard,canSubscriptions:canSubscriptions,canSettings:canSettings};
             }
+
+            // ─── Monitoramento de Erros (Sentry) — aba Segurança & Auditoria ──
+            var sentryIssuesCache = {};
+            var sentryIssuesOrder = [];
+            var sentryLevelFilterValue = "all";
+            var sentrySearchValue = "";
+            var sentrySubscription = null;
+            var sentryMetaSubscription = null;
+            var sentrySyncLabel = "—";
+            var sentryCopyFeedbackTimer = null;
+            var SENTRY_BELL_SEEN_KEY = "sentry_bell_seen_v1";
+
+            function sentryIsSuperAdmin() {
+                return !!(currentAccessModel && currentAccessModel.isSuperAdmin);
+            }
+            function sentryGetIssuesList() {
+                var list = [];
+                for (var i = 0; i < sentryIssuesOrder.length; i++) {
+                    var it = sentryIssuesCache[sentryIssuesOrder[i]];
+                    if (it) list.push(it);
+                }
+                return list;
+            }
+            function sentryIssues24h() {
+                var now = Date.now();
+                var out = [];
+                var list = sentryGetIssuesList();
+                for (var i = 0; i < list.length; i++) {
+                    var it = list[i];
+                    if (!it || !it.lastSeen) continue;
+                    var t = Date.parse(it.lastSeen);
+                    if (!isNaN(t) && (now - t) <= 24 * 3600 * 1000 && (it.level === "error" || it.level === "fatal")) out.push(it);
+                }
+                return out;
+            }
+            function sentryLevelClass(level) {
+                if (level === "fatal" || level === "error") return "tag red";
+                if (level === "warning") return "tag yellow";
+                return "tag gray";
+            }
+            function sentryFmtDate(iso) {
+                if (!iso) return "-";
+                var d = new Date(iso);
+                if (isNaN(d.getTime())) return String(iso);
+                return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+            }
+            function sentryEscapeHtml(text) {
+                return String(text == null ? "" : text)
+                    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+            }
+            function sentryRenderIssuesTable() {
+                var body = document.getElementById("sentryIssuesBody");
+                var meta = document.getElementById("sentryMeta");
+                if (!body) return;
+                var list = sentryGetIssuesList().filter(function(it) {
+                    if (sentryLevelFilterValue !== "all" && it.level !== sentryLevelFilterValue) return false;
+                    if (sentrySearchValue) {
+                        var hay = (((it.title || "") + " " + ((it.tags && it.tags.page) || "") + " " + ((it.tags && it.tags.company_id) || "") + " " + ((it.tags && it.tags.release) || "") + " " + (it.message || "")).toLowerCase());
+                        if (hay.indexOf(sentrySearchValue.toLowerCase()) < 0) return false;
+                    }
+                    return true;
+                });
+                if (!list.length) {
+                    body.innerHTML = '<tr><td colspan="9" class="empty-state">' + (sentryIssuesOrder.length ? "Nenhum erro com os filtros atuais." : "Nenhum erro registrado ainda. Clique em Sincronizar para buscar da Sentry.") + '</td></tr>';
+                    if (meta) meta.textContent = "0 issues";
+                    return;
+                }
+                var rows = "";
+                for (var i = 0; i < list.length; i++) {
+                    var it = list[i];
+                    var page = (it.tags && it.tags.page) || "-";
+                    var company = (it.tags && (it.tags.company_id || it.tags.companyId)) || "-";
+                    var release = (it.tags && it.tags.release) || "-";
+                    rows += '<tr>'
+                        + '<td><span class="' + sentryLevelClass(it.level) + '">' + sentryEscapeHtml(it.level || "error") + '</span></td>'
+                        + '<td title="' + sentryEscapeHtml(it.title) + '" style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + sentryEscapeHtml(it.title) + '</td>'
+                        + '<td>' + sentryEscapeHtml(page) + '</td>'
+                        + '<td>' + sentryEscapeHtml(company) + '</td>'
+                        + '<td>' + sentryEscapeHtml(release) + '</td>'
+                        + '<td>' + sentryEscapeHtml(sentryFmtDate(it.firstSeen)) + '</td>'
+                        + '<td>' + sentryEscapeHtml(sentryFmtDate(it.lastSeen)) + '</td>'
+                        + '<td>' + (it.count || 0) + '</td>'
+                        + '<td><button type="button" class="btn small" data-sentry-copy="' + sentryEscapeHtml(it.id) + '"><i class="fas fa-copy"></i><span>Copiar</span></button></td>'
+                        + '</tr>';
+                }
+                body.innerHTML = rows;
+                if (meta) meta.textContent = list.length + " issue(s)";
+                var btns = body.querySelectorAll("button[data-sentry-copy]");
+                for (var j = 0; j < btns.length; j++) {
+                    btns[j].addEventListener("click", (function(id) { return function() { sentryCopyIssueReport(id); }; })(btns[j].getAttribute("data-sentry-copy")));
+                }
+            }
+            function sentryRenderKpis() {
+                var list = sentryGetIssuesList();
+                var now = Date.now();
+                var count24h = 0, critical = 0;
+                var pages = new Set();
+                for (var i = 0; i < list.length; i++) {
+                    var it = list[i];
+                    var t = it.lastSeen ? Date.parse(it.lastSeen) : NaN;
+                    if (!isNaN(t) && (now - t) <= 24 * 3600 * 1000 && (it.level === "error" || it.level === "fatal")) count24h++;
+                    if ((it.level === "error" || it.level === "fatal") && String(it.status || "unresolved") !== "resolved") critical++;
+                    var p = it.tags && it.tags.page;
+                    if (p) pages.add(p);
+                }
+                var el = document.getElementById("sentryKpi24h");
+                if (el) el.textContent = count24h;
+                el = document.getElementById("sentryKpiCritical");
+                if (el) el.textContent = critical;
+                el = document.getElementById("sentryKpiPages");
+                if (el) el.textContent = pages.size;
+                el = document.getElementById("sentryKpiSync");
+                if (el) el.textContent = sentrySyncLabel;
+            }
+            function sentryApplyFilters() {
+                var lv = document.getElementById("sentryLevelFilter");
+                var sr = document.getElementById("sentrySearch");
+                sentryLevelFilterValue = lv ? lv.value : "all";
+                sentrySearchValue = sr ? sr.value : "";
+                sentryRenderIssuesTable();
+            }
+            function sentryUpdateBell() {
+                var host = document.getElementById("sentryBellHost");
+                var badge = document.getElementById("sentryBellBadge");
+                if (!host || !badge) return;
+                if (!sentryIsSuperAdmin()) { host.style.display = "none"; return; }
+                var recent = sentryIssues24h();
+                var unseen = 0;
+                try {
+                    var seen = JSON.parse(window.localStorage.getItem(SENTRY_BELL_SEEN_KEY) || "{}");
+                    for (var i = 0; i < recent.length; i++) {
+                        var key = recent[i].id;
+                        if (!seen[key] || (Date.now() - seen[key]) > 24 * 3600 * 1000) unseen++;
+                    }
+                } catch (_) { unseen = recent.length; }
+                host.style.display = "";
+                if (unseen > 0) {
+                    badge.style.display = "";
+                    badge.textContent = unseen > 99 ? "99+" : String(unseen);
+                } else {
+                    badge.style.display = "none";
+                }
+            }
+            function sentryRenderBellList() {
+                var listEl = document.getElementById("sentryBellList");
+                if (!listEl) return;
+                var recent = sentryIssues24h().slice(0, 12);
+                if (!recent.length) { listEl.textContent = "Nenhum erro nas últimas 24 horas."; return; }
+                var html = "";
+                for (var i = 0; i < recent.length; i++) {
+                    var it = recent[i];
+                    var page = (it.tags && it.tags.page) || "?";
+                    html += '<div style="padding:7px 6px;border-bottom:1px solid #f1f5f9;display:flex;gap:8px;align-items:flex-start;">'
+                        + '<span class="' + sentryLevelClass(it.level) + '" style="flex-shrink:0;">' + sentryEscapeHtml(it.level || "error") + '</span>'
+                        + '<div style="min-width:0;">'
+                        + '<div style="font-weight:600;color:#0f172a;word-break:break-word;">' + sentryEscapeHtml(it.title) + '</div>'
+                        + '<div style="color:#64748b;font-size:0.72rem;">' + sentryEscapeHtml(page) + ' · ' + (it.count || 0) + ' ocorr. · ' + sentryEscapeHtml(sentryFmtDate(it.lastSeen)) + '</div>'
+                        + '</div></div>';
+                }
+                listEl.innerHTML = html;
+            }
+            function sentryToggleBell() {
+                var pop = document.getElementById("sentryBellPop");
+                if (!pop) return;
+                var isOpen = pop.style.display !== "none";
+                pop.style.display = isOpen ? "none" : "block";
+                if (!isOpen) sentryRenderBellList();
+            }
+            function sentryMarkBellSeen() {
+                var recent = sentryIssues24h();
+                var seen = {};
+                try { seen = JSON.parse(window.localStorage.getItem(SENTRY_BELL_SEEN_KEY) || "{}"); } catch (_) { seen = {}; }
+                for (var i = 0; i < recent.length; i++) seen[recent[i].id] = Date.now();
+                try { window.localStorage.setItem(SENTRY_BELL_SEEN_KEY, JSON.stringify(seen)); } catch (_) {}
+                sentryUpdateBell();
+            }
+            function sentryHandleIssuesSnapshot(data) {
+                sentryIssuesCache = {};
+                sentryIssuesOrder = [];
+                if (data && typeof data === "object") {
+                    var keys = Object.keys(data).sort(function(a, b) {
+                        var la = (data[a] && data[a].lastSeen) || "";
+                        var lb = (data[b] && data[b].lastSeen) || "";
+                        return String(lb).localeCompare(String(la));
+                    });
+                    for (var i = 0; i < keys.length; i++) {
+                        var it = data[keys[i]];
+                        if (it && it.id) { sentryIssuesCache[it.id] = it; sentryIssuesOrder.push(it.id); }
+                    }
+                }
+                sentryRenderKpis();
+                sentryRenderIssuesTable();
+                sentryUpdateBell();
+            }
+            async function sentrySyncNow() {
+                var btn = document.getElementById("sentrySyncBtn");
+                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Sincronizando...</span>'; }
+                try {
+                    var result = await window.firebaseService.callFunction("sentrySyncIssues", { statsPeriod: "14d" });
+                    if (result && result.error && result.success === false) {
+                        sentryShowCopyFeedback("Sincronização falhou: " + String(result.error).slice(0, 200), true);
+                    } else {
+                        sentryShowCopyFeedback("Sincronizado com a Sentry (" + (result && result.count != null ? result.count + " issues" : "ok") + ").", false);
+                    }
+                } catch (err) {
+                    sentryShowCopyFeedback("Falha ao sincronizar: " + String((err && err.message) || err).slice(0, 200), true);
+                } finally {
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt"></i><span>Sincronizar</span>'; }
+                }
+            }
+            function sentryBuildReportText(issue, events) {
+                var tags = issue.tags || {};
+                var lines = [];
+                lines.push("RELATORIO SENTRY - " + (issue.title || "sem titulo"));
+                lines.push("--------------------------------------------------");
+                lines.push("Issue ID: " + issue.id);
+                lines.push("Nivel: " + issue.level);
+                lines.push("Status: " + issue.status);
+                lines.push("Tipo: " + (issue.type || "-"));
+                lines.push("Mensagem: " + (issue.message || "-"));
+                lines.push("Pagina: " + (tags.page || "-"));
+                lines.push("Empresa (company_id): " + (tags.company_id || tags.companyId || "-"));
+                lines.push("Release: " + (tags.release || "-"));
+                lines.push("Data issue: " + (tags.data_issue || "-"));
+                lines.push("Data path: " + (tags.data_path || "-"));
+                lines.push("Primeira ocorrencia: " + (issue.firstSeen || "-"));
+                lines.push("Ultima ocorrencia: " + (issue.lastSeen || "-"));
+                lines.push("Ocorrencias: " + issue.count + " | Usuarios afetados: " + issue.userCount);
+                if (events && events.length) {
+                    lines.push("Eventos recentes: " + events.length);
+                    for (var i = 0; i < events.length; i++) {
+                        var ev = events[i];
+                        lines.push("  * " + (ev.timestamp || "-") + " [" + (ev.level || "-") + "] " + (ev.message || "-"));
+                        if (ev.frames && ev.frames.length) {
+                            var top = ev.frames[ev.frames.length - 1];
+                            lines.push("    Stack topo: " + (top.filename || "?") + ":" + (top.line || "?") + " em " + (top.function || "?"));
+                        }
+                    }
+                }
+                lines.push("");
+                lines.push("Cole este texto no chat de suporte do desenvolvedor para diagnostico.");
+                return lines.join("\n");
+            }
+            async function sentryCopyIssueReport(issueId) {
+                if (!issueId) return;
+                var cached = sentryIssuesCache[issueId] || null;
+                var events = null;
+                try {
+                    var detail = await window.firebaseService.callFunction("sentryGetIssueDetail", { issueId: issueId });
+                    if (detail && detail.success) {
+                        if (detail.issue) cached = detail.issue;
+                        if (detail.events) events = detail.events;
+                    }
+                } catch (err) { }
+                if (!cached) { sentryShowCopyFeedback("Issue nao encontrado.", true); return; }
+                var text = sentryBuildReportText(cached, events);
+                try {
+                    await navigator.clipboard.writeText(text);
+                    sentryShowCopyFeedback("Relatorio do issue " + issueId + " copiado. Cole no chat para diagnostico.", false);
+                } catch (err) {
+                    sentryShowCopyFeedback("Nao foi possivel copiar (navegador bloqueou).", true);
+                }
+            }
+            function sentryCopySummary() {
+                var list = sentryGetIssuesList();
+                if (!list.length) { sentryShowCopyFeedback("Nada para copiar ainda. Sincronize primeiro.", true); return; }
+                var lines = [];
+                lines.push("RESUMO DE ERROS (Sentry) - " + new Date().toLocaleString("pt-BR"));
+                lines.push("--------------------------------------------------");
+                lines.push("Total de issues sincronizados: " + list.length);
+                for (var i = 0; i < list.length; i++) {
+                    var it = list[i];
+                    var tags = it.tags || {};
+                    lines.push("[" + (it.level || "error") + "] " + (it.title || "-") + " | pagina: " + (tags.page || "-") + " | empresa: " + (tags.company_id || "-") + " | " + (it.count || 0) + " ocorr. | ultima: " + (it.lastSeen || "-"));
+                }
+                lines.push("");
+                lines.push("Cole este texto no chat de suporte do desenvolvedor para diagnostico.");
+                var text = lines.join("\n");
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(function() {
+                        sentryShowCopyFeedback("Resumo copiado (" + list.length + " issues). Cole no chat para diagnostico.", false);
+                    }).catch(function() {
+                        sentryShowCopyFeedback("Nao foi possivel copiar.", true);
+                    });
+                } else {
+                    sentryShowCopyFeedback("Nao foi possivel copiar.", true);
+                }
+            }
+            function sentryShowCopyFeedback(msg, isError) {
+                var el = document.getElementById("sentryCopyFeedback");
+                if (!el) return;
+                el.style.display = "block";
+                el.textContent = msg;
+                el.style.color = isError ? "#991b1b" : "#166534";
+                el.style.background = isError ? "#fef2f2" : "#f0fdf4";
+                el.style.borderColor = isError ? "#fecaca" : "#bbf7d0";
+                clearTimeout(sentryCopyFeedbackTimer);
+                sentryCopyFeedbackTimer = setTimeout(function() { if (el) el.style.display = "none"; }, 6000);
+            }
+            function sentryInit() {
+                if (!sentryIsSuperAdmin()) return;
+                var host = document.getElementById("sentryBellHost");
+                if (host) host.style.display = "";
+                var syncBtn = document.getElementById("sentrySyncBtn");
+                if (syncBtn) syncBtn.addEventListener("click", sentrySyncNow);
+                var copySummaryBtn = document.getElementById("sentryCopySummaryBtn");
+                if (copySummaryBtn) copySummaryBtn.addEventListener("click", sentryCopySummary);
+                var levelFilter = document.getElementById("sentryLevelFilter");
+                if (levelFilter) levelFilter.addEventListener("change", sentryApplyFilters);
+                var search = document.getElementById("sentrySearch");
+                if (search) search.addEventListener("input", sentryApplyFilters);
+                var reloadBtn = document.getElementById("sentryReloadBtn");
+                if (reloadBtn) reloadBtn.addEventListener("click", function() {
+                    if (levelFilter) levelFilter.value = "all";
+                    if (search) search.value = "";
+                    sentryApplyFilters();
+                });
+                var bellBtn = document.getElementById("sentryBellBtn");
+                if (bellBtn) bellBtn.addEventListener("click", sentryToggleBell);
+                var markSeen = document.getElementById("sentryBellMarkSeen");
+                if (markSeen) markSeen.addEventListener("click", sentryMarkBellSeen);
+                document.addEventListener("click", function(e) {
+                    var pop = document.getElementById("sentryBellPop");
+                    var hostEl = document.getElementById("sentryBellHost");
+                    if (pop && hostEl && pop.style.display !== "none" && !hostEl.contains(e.target)) pop.style.display = "none";
+                });
+                if (window.firebaseService && typeof window.firebaseService.subscribe === "function") {
+                    try {
+                        if (sentrySubscription && sentrySubscription.unsubscribe) sentrySubscription.unsubscribe();
+                        sentrySubscription = window.firebaseService.subscribe("system/sentry/issues", function(snapshot) {
+                            sentryHandleIssuesSnapshot(snapshot && snapshot.data ? snapshot.data : null);
+                        });
+                    } catch (err) {
+                        if (console && console.warn) console.warn("Sentry subscribe falhou:", err && err.message);
+                    }
+                    try {
+                        if (sentryMetaSubscription && sentryMetaSubscription.unsubscribe) sentryMetaSubscription.unsubscribe();
+                        sentryMetaSubscription = window.firebaseService.subscribe("system/sentry/meta", function(snapshot) {
+                            var meta = snapshot && snapshot.data ? snapshot.data : null;
+                            if (meta && meta.lastSyncAt) sentrySyncLabel = sentryFmtDate(meta.lastSyncAt);
+                            sentryRenderKpis();
+                        });
+                    } catch (err) { }
+                }
+                sentryHandleIssuesSnapshot(null);
+            }
             async function bootstrap() {
                 var guard = document.getElementById("guardMessage");
                 var metaEl = document.getElementById("adminMeta");
@@ -5274,6 +5621,7 @@
                         : (allowedTabs.indexOf("dashboard") >= 0 ? "dashboard" : allowedTabs[0]);
                     renderAllowedTabs();
                     await switchTab(activeTab);
+                    sentryInit();
                     if (metaEl) metaEl.textContent = buildAccessLabel(access);
                     var refreshBtn = document.getElementById("refreshDataBtn");
                     if (refreshBtn) {

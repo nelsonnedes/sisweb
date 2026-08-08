@@ -9,7 +9,11 @@
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
-    <script src="menu-component.js?v=f97c4a2dae9f"></script>
+    
+    <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
+    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
+    <script src="sentry-init.js?v=279872380246"></script>
+<script src="menu-component.js?v=ac491560b4db"></script>
     <style>
         :root {
             --manual-bg: #eef2f7;
@@ -549,9 +553,9 @@
         </div>
     </div>
 
-    <script src="assets/help-manual/help-gallery.generated.js?v=7220fe5b36c2"></script>
+    <script src="assets/help-manual/help-gallery.generated.js?v=de12ab0067f0"></script>
     <script type="module">
-        import { authService } from './firebaseService.js?v=676ba9f2a922';
+        import { authService } from './firebaseService.js?v=3d948f6ba91d';
 
         async function applyManualAccessMode() {
             let isAuthenticated = false;
@@ -576,6 +580,6 @@
             applyManualAccessMode();
         }
     </script>
-    <script src="ajuda.js?v=314909aa9ec5"></script>
+    <script src="ajuda.js?v=cbcbcaafdf4c"></script>
 </body>
 </html>

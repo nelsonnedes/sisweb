@@ -6,7 +6,7 @@
     <title>Romaneio TL - Sistema Sisweb</title>
     <script>
         if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
-            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
+            document.write('<script src="auth-performance-diagnostics.js?v=6ef6e56a8b86"><\/script>');
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -18,7 +18,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Loading / status styles reutilizáveis -->
     <link rel="stylesheet" href="folha_pagamento/folha-loading-styles.css">
-    <script src="menu-component.js?v=f97c4a2dae9f"></script>
+    <script src="menu-component.js?v=ac491560b4db"></script>
     
     <!--
     ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -320,7 +320,11 @@
             console.log('🛡️ Sistema de supressão de erros de extensões ativado');
         })();
     </script>
-    <script>
+    
+    <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
+    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
+    <script src="sentry-init.js?v=279872380246"></script>
+<script>
     document.addEventListener('DOMContentLoaded', function() {
         if (!window.initPreRomaneioSelector) return;
         window.initPreRomaneioSelector({
@@ -1795,7 +1799,7 @@
 
     <script type="module">
 
-        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=21eb04e409d8';
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=e4f56badf571';
 import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
 
     </script><script>
@@ -1908,46 +1912,46 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
     </script>
 
     <!-- Gerenciador compatível de conexão (Singleton) -->
-    <script src="firebase-connection-manager-compat.js?v=717987254970"></script>
+    <script src="firebase-connection-manager-compat.js?v=ccf75e112c9a"></script>
     
     <!-- Módulos Base (carregados primeiro) -->
-    <script src="species-utils.js?v=4c5147a6f4fe"></script>
-    <script src="species-store.js?v=67f7145c0a96"></script>
-    <script src="species-modal-standard.js?v=fa1c091a5294"></script>
-    <script src="modules/core/firebase-service.js?v=d500073b4127"></script>
-    <script src="modules/core/utils.js?v=6cd42ed4e9be"></script>
-    <script src="modules/core/romaneio-messages.js?v=5d58f6afc99b"></script>
-    <script src="pre-romaneio-selector.js?v=8bfd1a2c847e"></script>
+    <script src="species-utils.js?v=f0ddb6f8e353"></script>
+    <script src="species-store.js?v=603ae6b9dd3d"></script>
+    <script src="species-modal-standard.js?v=cd805c4328e7"></script>
+    <script src="modules/core/firebase-service.js?v=f67b203712b2"></script>
+    <script src="modules/core/utils.js?v=7ccdca69ee33"></script>
+    <script src="modules/core/romaneio-messages.js?v=114b5f8a30f6"></script>
+    <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
     
     <!-- Estados e Cidades (dependência para CRUD) -->
     <script src="estados-cidades.js?v=e634a7c28536"></script>
     
     <!-- Módulos CRUD (dependem de estados-cidades) -->
-    <script src="modules/crud/gerenciar-clientes.js?v=7431dc1ad062"></script>
-    <script src="modules/crud/gerenciar-especies.js?v=acde56e0d92f"></script>
+    <script src="modules/crud/gerenciar-clientes.js?v=821aaee0d3ba"></script>
+    <script src="modules/crud/gerenciar-especies.js?v=781168c69294"></script>
     
     <!-- Módulos de Navegação e Formatação -->
-    <script src="modules/core/navegacao-enter.js?v=e905841215c1"></script>
-    <script src="modules/core/formatacao-campos.js?v=5c41cc21ef09"></script>
+    <script src="modules/core/navegacao-enter.js?v=eb76c699775d"></script>
+    <script src="modules/core/formatacao-campos.js?v=68d9ed39c238"></script>
     
     <!-- Módulos de Itens -->
-    <script src="modules/items/adicionar-item.js?v=32a9e9ca0e70"></script>
-    <script src="romaneio-table-enhancements.js?v=cbd0da360107"></script>
-    <script src="modules/items/renderizar-tabela.js?v=a0c0648e67b7"></script>
-    <script src="modules/items/editar-item.js?v=57f81eeee583"></script>
-    <script src="modules/items/excluir-item.js?v=52c4508d7805"></script>
+    <script src="modules/items/adicionar-item.js?v=770a7aee9ea8"></script>
+    <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
+    <script src="modules/items/renderizar-tabela.js?v=115f1129fc08"></script>
+    <script src="modules/items/editar-item.js?v=1ffca2e95b12"></script>
+    <script src="modules/items/excluir-item.js?v=f7d5f45f65f6"></script>
     
     <!-- Módulos de Romaneio -->
-    <script src="modules/romaneio/salvar-romaneio.js?v=c3d3076f80a6"></script>
-    <script src="romaneio-print-config.js?v=ef3c6d7f8c2e"></script>
-    <script src="modules/reports/imprimir-romaneio.js?v=8dfe53c1fc8f"></script>
+    <script src="modules/romaneio/salvar-romaneio.js?v=48f84558d529"></script>
+    <script src="romaneio-print-config.js?v=24205aca3d2d"></script>
+    <script src="modules/reports/imprimir-romaneio.js?v=816cf055ebe9"></script>
 
     <!-- Módulos de Modais (dependem dos CRUD) -->
-    <script src="modules/modals/modal-clientes.js?v=bc2fbf886dea"></script>
-    <script src="modules/modals/modal-especies.js?v=3a3b2aa8230f"></script>
-    <script src="modules/modals/modal-lista-romaneios.js?v=baeeaeb72272"></script>
-    <script src="romaneios-client-save-fix.js?v=a5d20ef9cd6d"></script>
-    <script src="schema-migration-contatos.js?v=f086747ad6d7"></script>
+    <script src="modules/modals/modal-clientes.js?v=5e3200981415"></script>
+    <script src="modules/modals/modal-especies.js?v=042b4605b67c"></script>
+    <script src="modules/modals/modal-lista-romaneios.js?v=2546d449a224"></script>
+    <script src="romaneios-client-save-fix.js?v=e944ef0ec8ee"></script>
+    <script src="schema-migration-contatos.js?v=2e13b2ae3d91"></script>
 
     <script>
         // ✅ VARIÁVEIS GLOBAIS PARA COMPATIBILIDADE

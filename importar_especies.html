@@ -15,12 +15,16 @@
 
     <script type="module">
 
-        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=21eb04e409d8';
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=e4f56badf571';
 import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
 
     </script><!-- Menu Component -->
-    <script src="menu-component.js?v=f97c4a2dae9f"></script>
-    <script src="species-utils.js?v=4c5147a6f4fe"></script>
+    <script src="menu-component.js?v=ac491560b4db"></script>
+    
+    <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
+    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
+    <script src="sentry-init.js?v=279872380246"></script>
+<script src="species-utils.js?v=f0ddb6f8e353"></script>
     
     <style>
         /* Page Specific Styles */

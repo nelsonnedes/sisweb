@@ -7,13 +7,29 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="styles/admin-premium.css?v=2026-06-11-profile-admin-v1">
-</head>
+
+    <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
+    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
+    <script src="sentry-init.js?v=279872380246"></script></head>
 <body>
     <main-menu></main-menu>
     <div class="shell">
         <div class="header">
             <h1 class="title"><i class="fas fa-shield-alt"></i><span>Admin Unificado</span></h1>
             <div class="meta" id="adminMeta">Verificando permissões...</div>
+            <div id="sentryBellHost" style="display:none;position:relative;margin-left:12px;">
+                <button type="button" id="sentryBellBtn" class="btn small" style="position:relative;padding:6px 10px;" title="Erros de produção (Sentry) nas últimas 24h" aria-label="Abrir alertas de erros de produção">
+                    <i class="fas fa-bell"></i>
+                    <span id="sentryBellBadge" style="display:none;position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;border-radius:999px;font-size:0.65rem;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px;"></span>
+                </button>
+                <div id="sentryBellPop" style="display:none;position:absolute;right:0;top:calc(100% + 6px);width:340px;max-height:420px;overflow:auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:60;padding:10px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <span style="font-weight:700;font-size:0.85rem;color:#0f172a;">Erros de produção (24h)</span>
+                        <button type="button" id="sentryBellMarkSeen" class="btn small" style="font-size:0.7rem;"><i class="fas fa-check"></i><span>Marcar como vistos</span></button>
+                    </div>
+                    <div id="sentryBellList" style="font-size:0.78rem;color:#475569;">Carregando...</div>
+                </div>
+            </div>
         </div>
         <div id="guardMessage" class="guard">Acesso restrito. Você não possui permissão para este módulo.</div>
         <div id="adminNotice" class="guard" style="display:none;border-color:#bfdbfe;background:#eff6ff;color:#1e3a8a;"></div>
@@ -539,6 +555,84 @@
                     </table>
                 </div>
                 <div id="securityPagination" class="admin-pagination-host"></div>
+
+                <!-- Monitoramento de Erros (Sentry) -->
+                <div class="section" style="margin-top:18px;border-top:1px solid #e2e8f0;padding-top:14px;">
+                    <div class="section-header-inline">
+                        <div>
+                            <div class="section-title"><i class="fas fa-bug" style="color:#ef4444;margin-right:6px;"></i>Monitoramento de Erros (Sentry)</div>
+                            <div style="font-size:0.78rem;color:#64748b;margin-top:2px;">Erros de produção reportados pelo SDK Sentry. Somente metadados — sem dados de clientes.</div>
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            <span class="badge pill" id="sentryMeta">—</span>
+                            <button type="button" class="btn small" id="sentrySyncBtn" title="Buscar issues atualizados da Sentry API">
+                                <i class="fas fa-sync-alt"></i><span>Sincronizar</span>
+                            </button>
+                            <button type="button" class="btn small" id="sentryCopySummaryBtn" title="Copiar resumo dos erros para diagnóstico">
+                                <i class="fas fa-copy"></i><span>Copiar resumo</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- KPIs -->
+                    <div class="grid-dashboard" style="margin-top:10px;">
+                        <div class="card sec-threat-card">
+                            <div class="card-header"><div class="card-title">Erros 24h</div><span class="tag red">últimas 24 horas</span></div>
+                            <div id="sentryKpi24h" class="card-value">—</div>
+                            <div class="card-description">Ocorrências de erro/fatal nas últimas 24 horas.</div>
+                        </div>
+                        <div class="card sec-threat-card">
+                            <div class="card-header"><div class="card-title">Críticos</div><span class="tag red">error/fatal</span></div>
+                            <div id="sentryKpiCritical" class="card-value">—</div>
+                            <div class="card-description">Issues abertos com nível error ou fatal.</div>
+                        </div>
+                        <div class="card sec-threat-card">
+                            <div class="card-header"><div class="card-title">Páginas afetadas</div><span class="tag yellow">distintas</span></div>
+                            <div id="sentryKpiPages" class="card-value">—</div>
+                            <div class="card-description">Páginas com erros no período sincronizado.</div>
+                        </div>
+                        <div class="card sec-threat-card">
+                            <div class="card-header"><div class="card-title">Último sync</div><span class="tag gray">Sentry API</span></div>
+                            <div id="sentryKpiSync" class="card-value">—</div>
+                            <div class="card-description">Data da última sincronização com a Sentry.</div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="filters">
+                        <select id="sentryLevelFilter">
+                            <option value="all">Nível: Todos</option>
+                            <option value="fatal">Fatal</option>
+                            <option value="error">Erro</option>
+                            <option value="warning">Aviso</option>
+                        </select>
+                        <input id="sentrySearch" type="text" placeholder="Filtrar por mensagem, página, empresa ou release">
+                        <button type="button" class="btn small" id="sentryReloadBtn"><i class="fas fa-rotate-left"></i><span>Redefinir filtros</span></button>
+                    </div>
+
+                    <!-- Tabela de issues -->
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nível</th>
+                                    <th>Erro</th>
+                                    <th>Página</th>
+                                    <th>Empresa</th>
+                                    <th>Release</th>
+                                    <th>1ª vez</th>
+                                    <th>Última</th>
+                                    <th>Ocorrências</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sentryIssuesBody">
+                                <tr><td colspan="9" class="empty-state">Carregando erros do Sentry... (se vazio, clique em Sincronizar)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="sentryCopyFeedback" style="display:none;margin-top:8px;font-size:0.8rem;color:#166534;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;"></div>
+                </div>
             </div>
             <div id="tab-settings" data-tab-panel="settings" style="display:none;margin-top:6px;">
                 <div class="section-header-inline">
@@ -1017,11 +1111,11 @@
         </div>
     </div>
 
-    <script src="firebaseService.js?v=676ba9f2a922" type="module"></script>
-    <script src="auth.js?v=cbbfbc7f784a"></script>
-    <script src="menu-component.js?v=f97c4a2dae9f"></script>
+    <script src="firebaseService.js?v=3d948f6ba91d" type="module"></script>
+    <script src="auth.js?v=d1239cbe15f0"></script>
+    <script src="menu-component.js?v=ac491560b4db"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
-    <script src="scripts/admin/admin-ui.js?v=e68d3a0af9a9"></script>
-    <script src="scripts/admin/admin-main.js?v=2a2ab140fe69"></script>
+    <script src="scripts/admin/admin-ui.js?v=ec6765700811"></script>
+    <script src="scripts/admin/admin-main.js?v=6ad34b2bb1d9"></script>
 </body>
 </html>

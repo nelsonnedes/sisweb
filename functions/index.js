@@ -6560,3 +6560,9 @@ exports.financeUpdatePaymentReceipt = financeFunctions.financeUpdatePaymentRecei
 exports.financeRegisterPayment = financeFunctions.financeRegisterPayment;
 exports.financeDeletePayment = financeFunctions.financeDeletePayment;
 exports.financeSyncCompra = financeFunctions.financeSyncCompra;
+
+const sentryFunctions = require('./sentry-functions');
+sentryFunctions.configure({ isCallerSuperAdmin });
+exports.sentrySyncIssues = sentryFunctions.sentrySyncIssues;
+exports.sentryGetIssueDetail = sentryFunctions.sentryGetIssueDetail;
+exports.sentryWebhook = sentryFunctions.sentryWebhook;

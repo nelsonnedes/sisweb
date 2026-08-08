@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assinatura - Sistema</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://sdk.mercadopago.com/js/v2"></script>
+    
+    <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
+    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
+    <script src="sentry-init.js?v=279872380246"></script>
+<script src="https://sdk.mercadopago.com/js/v2"></script>
     <style>
         * {
             margin: 0;
@@ -1241,8 +1245,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-    <script src="menu-component.js?v=f97c4a2dae9f"></script>
-    <script src="auth.js?v=cbbfbc7f784a"></script>
+    <script src="menu-component.js?v=ac491560b4db"></script>
+    <script src="auth.js?v=d1239cbe15f0"></script>
     <script type="module">
         import {
             authService,
@@ -1257,7 +1261,7 @@
             subscribe,
             getTenantId,
             getCurrentUid
-        } from './firebaseService.js?v=676ba9f2a922';
+        } from './firebaseService.js?v=3d948f6ba91d';
         window.firebaseService = {
             ...(window.firebaseService || {}),
             authService,

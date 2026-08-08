@@ -14,13 +14,17 @@
     <title>Portal de Acesso - SisWeb</title>
     <script>
         if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
-            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
+            document.write('<script src="auth-performance-diagnostics.js?v=6ef6e56a8b86"><\/script>');
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     
     <!-- Script para suprimir erros de extensões do navegador -->
-    <script>
+    
+    <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
+    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
+    <script src="sentry-init.js?v=279872380246"></script>
+<script>
         // ✅ CORREÇÃO: Suprimir erros de message channel causados por extensões do navegador
         // Estes erros não afetam a funcionalidade do sistema, são causados por extensões
         (function() {
@@ -782,8 +786,8 @@
     </div>
 
     <!-- Carregar auth.js tradicional primeiro -->
-    <script src="js/deep-clean.js?v=e7ff245a98e5"></script>
-    <script src="auth.js?v=cbbfbc7f784a"></script>
+    <script src="js/deep-clean.js?v=26495e9d74f4"></script>
+    <script src="auth.js?v=d1239cbe15f0"></script>
     <script>
         window.__siswebLoginInitialSearch = window.location.search || '';
 
@@ -1291,8 +1295,8 @@
     <!-- Importar módulos do Firebase -->
     <script type="module">
         // Importar os serviços necessários do Firebase
-                import { app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-init.js?v=21eb04e409d8';
-        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=676ba9f2a922';
+                import { app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-init.js?v=e4f56badf571';
+        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=3d948f6ba91d';
         
         // Disponibilizar firebaseService globalmente para auth.js
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim };

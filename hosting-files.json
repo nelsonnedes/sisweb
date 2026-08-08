@@ -448,5 +448,7 @@
   "validation-system.js",
   "vendas.html",
   "vendas.js",
-  "verificacao-final-sistema.js"
+  "verificacao-final-sistema.js",
+  "sentry/sentry.browser.min.js",
+  "sentry-init.js"
 ]

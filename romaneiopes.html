@@ -8,10 +8,14 @@
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="romaneio-comum.css?v=20260607pwaqa">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
-    <script src="menu-component.js?v=f97c4a2dae9f"></script>
+    <script src="menu-component.js?v=ac491560b4db"></script>
     <link rel="stylesheet" href="print-styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script>
+    
+    <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
+    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
+    <script src="sentry-init.js?v=279872380246"></script>
+<script>
         (function() {
             function isExtErr(m){if(!m)return false;var s=typeof m==='string'?m:(m.message||String(m));s=s.toLowerCase();return s.includes('message channel closed')||s.includes('extension context invalidated')||s.includes('chrome-extension://')||s.includes('moz-extension://')||s.includes('safari-extension://');}
             window.addEventListener('error',function(e){if(isExtErr(e.message||e.error)){e.preventDefault();e.stopPropagation();}});
@@ -1256,10 +1260,10 @@
     </div>
 
     <!-- Scripts -->
-    <script src="species-utils.js?v=4c5147a6f4fe"></script>
-    <script src="species-store.js?v=67f7145c0a96"></script>
-    <script src="species-modal-standard.js?v=fa1c091a5294"></script>
-    <script src="auth.js?v=cbbfbc7f784a"></script>
+    <script src="species-utils.js?v=f0ddb6f8e353"></script>
+    <script src="species-store.js?v=603ae6b9dd3d"></script>
+    <script src="species-modal-standard.js?v=cd805c4328e7"></script>
+    <script src="auth.js?v=d1239cbe15f0"></script>
     <script type="module">
         import {
             authService,
@@ -1275,7 +1279,7 @@
             db,
             auth,
             app
-        } from './firebaseService.js?v=676ba9f2a922';
+        } from './firebaseService.js?v=3d948f6ba91d';
         const tenantFromContext = (() => {
             try {
                 if (window.appTenantId) return String(window.appTenantId);
@@ -1308,14 +1312,14 @@
             app
         };
     </script>
-    <script src="client-utils.js?v=9ad9d6ce3f72"></script>
-    <script src="client-modal-handler.js?v=c18ad593b1f7"></script>
-    <script src="client-service.js?v=fbb1e80d1713"></script>
-    <script src="schema-migration-contatos.js?v=f086747ad6d7"></script>
-    <script src="romaneios-client-save-fix.js?v=a5d20ef9cd6d"></script>
-    <script src="pre-romaneio-selector.js?v=8bfd1a2c847e"></script>
-    <script src="romaneio-table-enhancements.js?v=cbd0da360107"></script>
-    <script src="romaneio-print-config.js?v=ef3c6d7f8c2e"></script>
+    <script src="client-utils.js?v=d93fb3fb82f5"></script>
+    <script src="client-modal-handler.js?v=c8564bb412a4"></script>
+    <script src="client-service.js?v=3061965a094a"></script>
+    <script src="schema-migration-contatos.js?v=2e13b2ae3d91"></script>
+    <script src="romaneios-client-save-fix.js?v=e944ef0ec8ee"></script>
+    <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
+    <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
+    <script src="romaneio-print-config.js?v=24205aca3d2d"></script>
     <script>
         let itens = [];
         let preco = 0;

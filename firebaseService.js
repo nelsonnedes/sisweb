@@ -2195,6 +2195,12 @@ async function saveToFirebase(path, key, data, options) {
         
     } catch (error) {
         console.error('❌ Erro ao salvar dados no Firebase:', error && error.code ? error.code : 'unknown');
+        if (window.SentryMonitor && window.SentryMonitor.reportDataIssue) {
+            window.SentryMonitor.reportDataIssue('gravacao_falhou', {
+                path: path, op: 'saveData',
+                errorCode: error && error.code, errorMessage: (error && error.message || '').slice(0, 300)
+            });
+        }
         
         // Tratamento específico para PERMISSION_DENIED
         if (error.code === 'PERMISSION_DENIED' || error.message.includes('permission_denied')) {
@@ -3973,6 +3979,12 @@ async function deleteFromFirebase(path) {
         
     } catch (error) {
         console.error('❌ Erro ao remover dados do Firebase:', error && error.code ? error.code : 'unknown');
+        if (window.SentryMonitor && window.SentryMonitor.reportDataIssue) {
+            window.SentryMonitor.reportDataIssue('exclusao_falhou', {
+                path: path, op: 'removeData',
+                errorCode: error && error.code, errorMessage: (error && error.message || '').slice(0, 300)
+            });
+        }
         return {
             success: false,
             error: error.message
