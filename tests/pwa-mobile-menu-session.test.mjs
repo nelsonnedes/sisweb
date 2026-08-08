@@ -48,7 +48,7 @@ test('PWA verifica updates instalados e service worker responde versao atual', (
   const menuComponent = read('menu-component.js');
   const sw = read('sw.js');
 
-  assert.match(sw, /const APP_VERSION = '2026-07-21-coderabbit-hardening-v1'/);
+  assert.match(sw, /const APP_VERSION = '2026-08-08-pwa-fase5-swr-v1'/);
   assert.match(menuComponent, /window\.addEventListener\('online', \(\) => checkForUpdate\(true\)\)/);
   assert.match(menuComponent, /window\.addEventListener\('pageshow', \(\) => checkForUpdate\(true\)\)/);
   assert.match(menuComponent, /window\.setTimeout\(\(\) => checkForUpdate\(true\), 1500\)/);
@@ -62,6 +62,30 @@ test('PWA verifica updates instalados e service worker responde versao atual', (
   assert.match(sw, /cache: 'no-store'/);
   assert.match(menuComponent, /sessionStorage\.setItem\('siswebPwaUpdateReady', PWA_VERSION\)/);
   assert.doesNotMatch(menuComponent, /window\.location\.reload\(\)/);
+});
+
+test('PWA fase 5: network-first so para HTML, SWR para JS/CSS e cache-first para assets', () => {
+  const sw = read('sw.js');
+
+  // Navegacao: network-first (HTML sempre da rede, fallback ao cache)
+  assert.match(sw, /if \(request\.mode === 'navigate'\)/);
+  assert.match(sw, /event\.respondWith\(networkFirst\(request\)\);/);
+  assert.match(sw, /async function networkFirst\(request\) \{/);
+
+  // JS/CSS/worker: stale-while-revalidate (cache quente + revalidacao em background)
+  assert.match(sw, /request\.destination === 'script' \|\| request\.destination === 'style' \|\| request\.destination === 'worker'/);
+  assert.match(sw, /event\.respondWith\(staleWhileRevalidate\(request\)\);/);
+  assert.match(sw, /async function staleWhileRevalidate\(request\) \{/);
+  assert.match(sw, /if \(cached\) \{\s*return cached;\s*\}/);
+
+  // Imagens/fontes/midia: cache-first
+  assert.match(sw, /destination === 'image' \|\| destination === 'font' \|\| destination === 'audio' \|\| destination === 'video'/);
+  assert.match(sw, /event\.respondWith\(cacheFirst\(request\)\);/);
+  assert.match(sw, /async function cacheFirst\(request\) \{/);
+
+  // Limpeza de cache por versao no activate
+  assert.match(sw, /\.filter\(\(cacheName\) => cacheName !== CACHE_NAME\)/);
+  assert.match(sw, /caches\.delete\(cacheName\)/);
 });
 
 test('menu principal tem escopo proprio para manter visual igual entre paginas', () => {
