@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress - Fases 0, 1, 2, 3, 4 e 5 (dedup/TTL/alertas/unsubscribe/migracao explicita/PWA) implementadas; harness E2E isolado e Fase 6 (Portal de Acesso) pendentes.
+In Progress - Fases 0, 1, 2, 3, 4, 5 e 6 (dedup/TTL/alertas/unsubscribe/migracao explicita/PWA/Portal de Acesso Premium) implementadas; harness E2E isolado e Fase 7 (QA, Rollout e Encerramento) pendentes.
 
 ## Ajuste Operacional - 2026-07-15
 
@@ -285,14 +285,16 @@ Verificado em 2026-08-08: `sw.js` com `APP_VERSION = 2026-08-08-pwa-fase5-swr-v1
 
 ### Fase 6 - Portal De Acesso Premium
 
-- [ ] Consolidar um unico controlador para Login, Registro e Recuperacao.
-- [ ] Corrigir a estrutura de scripts e remover implementacoes orfas/duplicadas.
-- [ ] Reutilizar a Central de Suporte publica sob demanda em `Fale Conosco`.
-- [ ] Implementar estados acessiveis no mesmo painel ou dialogos semanticos completos.
-- [ ] Desabilitar submit duplo com `aria-busy` e feedback por `aria-live`.
-- [ ] Usar mensagem neutra na Recuperacao para evitar enumeracao de contas.
-- [ ] Padronizar Inter, tokens visuais, iconografia, contraste, foco e movimento reduzido com a Home.
-- [ ] Manter painel compacto, rodape externo e acoes visiveis em mobile/desktop.
+- [x] Consolidar um unico controlador para Login, Registro e Recuperacao (`window.handleLogin` em script classico com `authService` e `executeLogin`; `handleRegister`/`handlePasswordReset` exclusivamente via `authService` no modulo; remocao das implementacoes duplicadas).
+- [x] Corrigir a estrutura de scripts e remover implementacoes orfas/duplicadas (E-08: handlers duplicados eliminados; E-09: `</script>` soltos removidos; `src/components/auth/login-form.js` segue orfao e fora do bootstrap).
+- [x] Reutilizar a Central de Suporte publica sob demanda em `Fale Conosco` (`faleConoscoBtn` no rodape abre `contactModal` com WhatsApp `wa.me` e `mailto` a partir de `SISWEB_SUPPORT_CONFIG`, herdado do padrao de `__siswebGetSupportConfig` do menu).
+- [x] Implementar estados acessiveis no mesmo painel ou dialogos semanticos completos (modais com `role="dialog"`, `aria-modal`, `aria-labelledby`/`aria-describedby`, focus trap com Tab/Escape, restauracao de foco e fechamento por backdrop).
+- [x] Desabilitar submit duplo com `aria-busy` e feedback por `aria-live` (`aria-busy` nos forms + `setFormBusy` desabilitando submit e mostrando spinner; `role="alert"`/`aria-live` nas mensagens de erro/sucesso).
+- [x] Usar mensagem neutra na Recuperacao para evitar enumeracao de contas ("Se existir uma conta com este email, enviaremos um link de recuperacao").
+- [x] Padronizar Inter, tokens visuais, iconografia, contraste, foco e movimento reduzido com a Home (tokens visuais alinhados, `prefers-reduced-motion`, foco visivel).
+- [x] Manter painel compacto, rodape externo e acoes visiveis em mobile/desktop (forms `method="post"` sem envio de credenciais pela query string; botoes de teste/enumeracao removidos).
+
+Verificado em 2026-08-08: login.html reescrito (1.810 linhas, 6 blocos de script), contrato `tests/auth-session-phase2.test.mjs` preservado (22/22), suite completa 384 pass / 0 fail / 1 skip (Emulator), lint/typecheck/`node --check` do JS extraido limpos, build allowlisted de 452 arquivos e 19.843.206 bytes e deploy restrito ao Hosting publicado.
 
 ### Fase 7 - QA, Rollout E Encerramento
 
@@ -430,10 +432,10 @@ Observacao: os scripts atuais de lint/typecheck cobrem principalmente `folha_pag
 - [x] `git diff --check` sem erro de whitespace.
 - [x] `npm run lint` concluido sem erro.
 - [x] `npm run typecheck` concluido sem erro.
-- [x] `npm test` concluido com 281 testes aprovados e 1 skip esperado para o Emulator no comando geral.
+- [x] `npm test` concluido com 384 testes aprovados e 1 skip esperado para o Emulator no comando geral.
 - [x] `npm run test:security:emulator` equivalente concluido com 13/13 testes RBAC aprovados no Emulator ativo.
 - [x] `npm audit --audit-level=high` concluido sem vulnerabilidades.
-- [x] `npm run build:hosting` concluido com 448 arquivos allowlisted e 19.446.823 bytes no diretorio de build.
+- [x] `npm run build:hosting` concluido com 452 arquivos allowlisted e 19.843.206 bytes no diretorio de build.
 - [x] Nenhum dado, Rule ou Function foi alterado; somente o Hosting reconciliado foi publicado.
 
 ## File List Atual
