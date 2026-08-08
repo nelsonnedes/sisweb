@@ -622,15 +622,12 @@ function ensureDataCompatibility() {
 // Inicializar compatibilidade quando carregado
 if (typeof window !== 'undefined') {
     ensureDataCompatibility();
-    
-    // Tentar sincronização inicial após um delay
-    setTimeout(async () => {
-        try {
-            await syncAllData();
-        } catch (error) {
-            console.warn('Erro na sincronização inicial:', error.message);
-        }
-    }, 3000);
+
+    // ✅ CORREÇÃO (Fase 4 - Auth/Performance): removido o syncAllData automático
+    // que rodava 3s após o load e causava leituras/escritas em cascata
+    // (7 chaves baixadas/atualizadas sem necessidade). A sincronização agora
+    // é explícita: syncData(key) / syncAllData() ficam disponíveis em window
+    // para chamadas pontuais (migração idempotente) quando o código precisar.
 }
 
 // Exportar funções

@@ -175,6 +175,12 @@ npm run test:finance-whitelist
 
 **Prioridade:** P1.
 
+**Status (2026-08-08):** concluida e validada.
+
+- CSV usa `statusNorm`/`totalAtualizado` normalizados exibidos na tela (financas.js); 22/22 em `tests/financas-relatorios-exportacoes.test.mjs`.
+- Impressao selecionada restaurada com A4, tabela de dez colunas e cabecalho empresarial; 57/57 focados aprovados conforme registro da story `2026-07-15-financas-integridade-seguranca-relatorios.md`.
+- Juros e callers: 17/17 em `tests/financas-juros-callers.test.mjs`.
+
 1. Corrigir CSV para usar os valores normalizados exibidos na tela.
 2. Restaurar o contrato de classes/colunas da impressao selecionada sem acoplar teste a detalhes irrelevantes.
 3. Validar A4 retrato e paisagem, quebra de pagina, cabecalho, logo, totais e rodape.
@@ -195,6 +201,12 @@ node --test tests/financas-juros-callers.test.mjs
 ## Fase 4 - Validar o bootstrap Firebase antes da migracao ampla
 
 **Prioridade:** P1.
+
+**Status (2026-08-08):** concluida e validada.
+
+- Healthcheck corrigido (`tools/healthcheck-firebase-sdk.mjs --ci`): cachebuster, scan recursivo, anon/initApp; hoje 27/27 paginas com Firebase no bootstrap unico, 0 CDN direto, 0 `initializeApp` nas paginas, 0 `signInAnonymously`, status `SAUDÁVEL` (commits `9e2a2fb`, `378f304`).
+- `folha.html` (subpasta) migrada ao singleton; as 27 paginas publicadas consomem `firebase-init.js` + `firebase-compat-bridge.js`.
+- Migracao por ondas concluida sem big-bang (empresa/romaneios/folha por ultimo conforme registro da story de Auth).
 
 **Arquivos principais:**
 
@@ -239,6 +251,11 @@ node --test tests/financas-juros-callers.test.mjs
 ## Fase 5 - Tornar os gates de qualidade confiaveis
 
 **Prioridade:** P1.
+
+**Status (2026-08-08):** concluida e validada.
+
+- Suite completa: 377 aprovados / 0 falhas / 1 skip esperado (`npm test`), incl. `tests/sentry-monitor.test.mjs` (4), `tests/sentry-admin-monitor.test.mjs` (6), finance 33/33, relatorios 22/22, juros 17/17.
+- Lint (`npm run lint`), typecheck (`npm run typecheck`) e `git diff --check` sem erros; healthcheck sem falso positivo.
 
 1. Atualizar testes que fixam cachebusters antigos para consultar o manifesto ou verificar semantica.
 2. Manter testes funcionais independentes da versao textual do asset.
@@ -319,6 +336,8 @@ Os comandos acima sao referencia de ordem; os alvos exatos devem ser definidos p
 5. Fases 4 e 5: integrar bootstrap em ondas e restaurar gates confiaveis.
 6. Fase 6: concluir Auth/tenant/performance e segundo tenant.
 7. Fase 7: concluir smoke fiscal A1.
+
+**Status (2026-08-08):** Fases 0 a 5 concluidas e validadas no branch `codex/recovery-p0-freebuff-regressions` (377/377 testes, healthcheck saudavel, Sentry instrumentado e publicado). Em andamento: Fase 6 (Auth/tenant/performance).
 
 ## Criterio de conclusao
 

@@ -562,8 +562,11 @@ class FolhaCargos {
      */
     async loadCargos() {
         try {
+            if (this._cargosListenerBound) return;
+            this._cargosListenerBound = true;
             if (!window.database) {
                 console.warn('⚠️ Firebase não inicializado');
+                this._cargosListenerBound = false;
                 return;
             }
             
@@ -573,7 +576,7 @@ class FolhaCargos {
             const collection = (cargosConfig && cargosConfig.COLLECTION) || 'cargos';
             const cargosRef = ref(window.database, this._resolvePath(collection));
             
-            onValue(cargosRef, (snapshot) => {
+            const handler = (snapshot) => {
                 const data = snapshot.val();
                 this.cargos = data ? Object.values(data) : [];
                 
@@ -582,7 +585,8 @@ class FolhaCargos {
                 // Atualizar autocomplete
                 this.updateAutocomplete();
                 
-            }, (error) => {
+            };
+            const errorHandler = (error) => {
                 const msg = String((error && (error.code || error.message)) || error || '');
                 if (msg.toLowerCase().includes('permission')) {
                     console.warn('⚠️ Sem permissão para carregar cargos');
@@ -590,9 +594,13 @@ class FolhaCargos {
                 }
                 console.error('❌ Erro ao carregar cargos:', error);
                 this.showNotification('Erro ao carregar cargos', 'error');
-            });
+            };
+
+            onValue(cargosRef, handler, errorHandler);
+            this._cargosUnsubscribe = () => { try { off(cargosRef, handler); } catch (_) {} this._cargosUnsubscribe = null; };
             
         } catch (error) {
+            this._cargosListenerBound = false;
             console.error('❌ Erro ao conectar com Firebase:', error);
             this.showNotification('Erro de conexão com o banco de dados', 'error');
         }

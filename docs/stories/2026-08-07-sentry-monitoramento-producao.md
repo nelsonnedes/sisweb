@@ -80,12 +80,14 @@
 
 ## Ativação (pós-deploy)
 
+Verificação em produção em 2026-08-08:
+
 - [x] **DSN configurado** em `sentry-init.js` (projeto real, ingest.us) — erros já chegam ao Sentry.
-- [ ] **Auth Token com `project:read`**: Sentry → Settings → Auth Tokens → criar/editar token com scope `project:read` (+ `org:read`).
-- [ ] **Secret `SENTRY_API_TOKEN`**: `firebase functions:secrets:set SENTRY_API_TOKEN` (cole o token `sntrys_...`).
-- [ ] **Secret `SENTRY_WEBHOOK_TOKEN`**: `firebase functions:secrets:set SENTRY_WEBHOOK_TOKEN` (gerar token forte, ex.: 24 bytes base64url).
-- [ ] `firebase deploy --only functions:index.js,functions:sentrySyncIssues,functions:sentryGetIssueDetail,functions:sentryWebhook` (ou `firebase deploy --only functions`) e depois `firebase deploy --only hosting`.
-- [ ] **Webhook no Sentry**: Settings → Projects → javascript-nextjs → Webhooks (plugin/Internal Integration) → URL `https://us-central1-sisweb-7ce82.cloudfunctions.net/sentryWebhook?token=<SENTRY_WEBHOOK_TOKEN>` → salvar e enviar teste.
-- [ ] No admin (aba Segurança & Auditoria → Monitoramento de Erros): clicar "Sincronizar" e conferir issues + sininho.
+- [x] **Secret `SENTRY_API_TOKEN`** criada e ENABLED no projeto (v1).
+- [x] **Secret `SENTRY_WEBHOOK_TOKEN`** criada e ENABLED no projeto (v1).
+- [x] **Functions publicadas**: `sentrySyncIssues`, `sentryGetIssueDetail`, `sentryWebhook` listadas em produção (v2, nodejs22, us-central1).
+- [x] **Hosting publicado**: `sentry/sentry.browser.min.js` e `sentry-init.js` servidos do live `sisweb-7ce82.web.app` (SDK @sentry/browser 10.69.0).
+- [ ] **Webhook no Sentry**: Settings → Projects → javascript-nextjs → Webhooks (plugin/Internal Integration) → URL `https://us-central1-sisweb-7ce82.cloudfunctions.net/sentryWebhook?token=<SENTRY_WEBHOOK_TOKEN>` → salvar e enviar teste (ação manual no painel do Sentry).
+- [ ] No admin (aba Segurança & Auditoria → Monitoramento de Erros): clicar "Sincronizar" e conferir issues + sininho (requer sessão superadmin autenticada).
 - [ ] Configurar alertas no Sentry: e-mail/Telegram para `[dados]` e novas issues.
 - [ ] Conferir no Sentry (Issues) se os primeiros erros de produção chegam; criar alerta de "novas issues" para monitorar regressões.

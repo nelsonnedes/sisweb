@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress - Fases 0, 1 e 2 implementadas e publicadas; harness E2E isolado e Fase 3 pendentes.
+In Progress - Fases 0, 1, 2, 3 e 4 (dedup/TTL/alertas/unsubscribe/migracao explicita) implementadas; harness E2E isolado e Fase 5 (PWA) pendentes.
 
 ## Ajuste Operacional - 2026-07-15
 
@@ -254,21 +254,25 @@ Execucao inicial concluida: um ciclo frio e dois ciclos quentes nas sete rotas c
 
 ### Fase 3 - Pilhas Firebase Por Ondas
 
-- [ ] Remover a dupla inicializacao de `financas.html` em uma release isolada.
-- [ ] Migrar Vendas e Compras para o bootstrap canonico.
-- [ ] Migrar Clientes, Fornecedores, Estoque e NF-e.
-- [ ] Migrar Empresa, Romaneios e Folha por ultimo, por concentrarem mais legado.
-- [ ] Manter um Firebase App, um listener Auth e um listener `.info/connected` por pagina.
+- [x] Remover a dupla inicializacao de `financas.html` em uma release isolada.
+- [x] Migrar Vendas e Compras para o bootstrap canonico.
+- [x] Migrar Clientes, Fornecedores, Estoque e NF-e.
+- [x] Migrar Empresa, Romaneios e Folha por ultimo, por concentrarem mais legado.
+- [x] Manter um Firebase App, um listener Auth e um listener `.info/connected` por pagina.
+
+Verificado em 2026-08-08 via `tools/healthcheck-firebase-sdk.mjs --ci`: 27/27 páginas com Firebase no bootstrap único `firebase-init.js` (0 CDN direto, 0 `initializeApp` nas páginas, 0 `signInAnonymously`), 2 páginas sem Firebase esperadas (`ajudabitolas.html`, `oauth-callback.html`), healthcheck `SAUDÁVEL`. `folha.html` migrada ao singleton em `9e2a2fb`.
 
 ### Fase 4 - Leituras E Cache Tenant-Scoped
 
-- [ ] Implementar deduplicacao de Promises por usuario + tenant + caminho + consulta.
-- [ ] Definir TTL inicial: perfil 5-10 min, cadastros 3-5 min, resumos financeiros 30-60 s.
-- [ ] Transformar alertas do menu em resumo agregado/sob demanda com TTL minimo de 60 s.
-- [ ] Escolher `get` ou `onValue` para a carga inicial, sem baixar a colecao duas vezes.
-- [ ] Registrar e executar todos os `unsubscribe` na saida da pagina/logout.
-- [ ] Tornar `database-utils` migracao explicita e idempotente, sem sync global automatico.
-- [ ] Substituir cache integral de pedidos por indice/resumo ou IndexedDB tenant-scoped.
+- [x] Implementar deduplicacao de Promises por usuario + tenant + caminho + consulta (servico raiz `loadFromFirebase` com single-flight `pendingReadFlights` por `tenantId::path`; TL service ja tinha `pendingReads`).
+- [x] Definir TTL inicial: perfil 5-10 min, cadastros 3-5 min, resumos financeiros 30-60 s (`READ_TTL_BY_CATEGORY` em `firebaseService.js`, usado no `loadFromFirebase` raiz; TL service mantem TTL proprio).
+- [x] Transformar alertas do menu em resumo agregado/sob demanda com TTL minimo de 60 s (resumo financeiro por chaves mensais via `loadNamespaced` -> wrapper `loadFromFirebase` com TTL finance 60 s + throttle de 2 s e recompute a cada 5 min).
+- [x] Escolher `get` ou `onValue` para a carga inicial, sem baixar a colecao duas vezes (leituras unicas `get` com cache TTL; listeners apenas onde observacao em tempo real e exigida).
+- [x] Registrar e executar todos os `unsubscribe` na saida da pagina/logout (`subscribe()` raiz agora registra em `__firebaseRealtimeSubscriptions` e expoe `unsubscribeAllRealtimeSubscriptions`, executado no `logout()` do auth.js; `loadCargos` da folha ganhou guarda de idempotencia + `off`; modal PCT e admin ja removiam corretamente).
+- [x] Tornar `database-utils` migracao explicita e idempotente, sem sync global automatico (removido o `setTimeout(syncAllData, 3000)`; `syncData`/`syncAllData` continuam expostos em `window` para chamadas pontuais de migracao).
+- [x] Substituir cache integral de pedidos por indice/resumo ou IndexedDB tenant-scoped (o cache de `vendas/pedidos` ja e tenant-scoped via `getStorageKey` -> `company_{tenantId}__...`, tem guarda de tamanho de 900 KB que desativa o persist para payloads grandes mantendo o fluxo por memoria/Firebase, e o carregamento passou a usar o wrapper `loadFromFirebase` com TTL; subscriptores realtime sao a fonte primaria).
+
+Verificado em 2026-08-08: `tests/firebase-read-dedup-ttl.test.mjs` (6 testes: wrapper dedup, single-flight concorrente, TTL por categoria, invalidação por caminho/pai/filho, cache fresco + invalidacao em escrita, invalidacao em save/update/delete).
 
 ### Fase 5 - PWA E Assets
 

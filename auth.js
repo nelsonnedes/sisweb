@@ -1682,6 +1682,11 @@ async function logout() {
             try { window.__SESSION_SUPERADMIN = false; } catch (_) {}
             try { window.__SESSION_SUPERADMIN_UID = ''; } catch (_) {}
         } catch (_) {}
+        try {
+            if (window.firebaseService && typeof window.firebaseService.unsubscribeAllRealtimeSubscriptions === 'function') {
+                window.firebaseService.unsubscribeAllRealtimeSubscriptions();
+            }
+        } catch (_) {}
         
         // Redirecionar para página de login preservando alvo
         const target = encodeURIComponent('index.html');

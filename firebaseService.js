@@ -1446,8 +1446,72 @@ export function isFirebaseOperational() {
     return { operational: true };
 }
 
+// ─── Dedup (single-flight) e cache de leituras tenant-scoped ─────────────────
+// Chave: `${tenantId || 'no-tenant'}::${path}`. Dedup é sempre seguro (evita
+// leituras duplicadas concorrentes). Cache de valor tem TTL por categoria e é
+// invalidado em qualquer escrita do próprio serviço (save/update/remove).
+const pendingReadFlights = new Map();
+const readCacheStore = new Map();
+const READ_TTL_BY_CATEGORY = Object.freeze({
+    profile: 5 * 60 * 1000,   // perfil do usuário/empresa: 5-10 min
+    catalog: 3 * 60 * 1000,   // cadastros: 3-5 min
+    finance: 60 * 1000,       // resumos financeiros: 30-60 s
+    default: 60 * 1000
+});
+
+function getReadTtlForPath(path) {
+    const p = String(path || '');
+    if (/^(users\/|companies\/[^/]+\/(profile|users)(\/|$))/.test(p)) return READ_TTL_BY_CATEGORY.profile;
+    if (/^(especies|species|clients|clientes|fornecedores|fornecedor|produtos|romaneios)(\/|$)/.test(p)) return READ_TTL_BY_CATEGORY.catalog;
+    if (/^(financas|contasPagar|contasReceber|contas_pagar|contas_receber)(\/|$)/.test(p)) return READ_TTL_BY_CATEGORY.finance;
+    return READ_TTL_BY_CATEGORY.default;
+}
+
+function readFlightKey(path) {
+    const tenantId = getTenantId();
+    return `${tenantId || 'no-tenant'}::${String(path || '')}`;
+}
+
+function invalidateReadCacheForPath(path) {
+    const prefix = `${getTenantId() || 'no-tenant'}::`;
+    const p = String(path || '');
+    for (const key of readCacheStore.keys()) {
+        if (!key.startsWith(prefix)) continue;
+        const cachedPath = key.slice(prefix.length);
+        if (cachedPath === p || cachedPath.startsWith(p + '/') || p.startsWith(cachedPath + '/')) {
+            readCacheStore.delete(key);
+        }
+    }
+}
+
 // ✅ FUNÇÃO PRINCIPAL PARA CARREGAR DADOS DO FIREBASE
 async function loadFromFirebase(path) {
+    const flightKey = readFlightKey(path);
+    const existing = pendingReadFlights.get(flightKey);
+    if (existing) return existing;
+
+    const cached = readCacheStore.get(flightKey);
+    if (cached && (Date.now() - cached.at) < getReadTtlForPath(path)) {
+        authPerfRead(path, 'logical');
+        return cached.result;
+    }
+
+    const flight = (async () => {
+        const result = await loadFromFirebaseCore(path);
+        if (result && result.success && result.data !== null && result.data !== undefined) {
+            readCacheStore.set(flightKey, { result, at: Date.now() });
+        }
+        return result;
+    })();
+    pendingReadFlights.set(flightKey, flight);
+    try {
+        return await flight;
+    } finally {
+        pendingReadFlights.delete(flightKey);
+    }
+}
+
+async function loadFromFirebaseCore(path) {
     try {
         authPerfRead(path, 'logical');
         console.log('🔥 Carregando dados do Firebase');
@@ -2187,6 +2251,10 @@ async function saveToFirebase(path, key, data, options) {
             console.log('✅ Dados salvos no Firebase');
         }
         
+        invalidateReadCacheForPath(path);
+        if (writePath && writePath !== path) invalidateReadCacheForPath(writePath);
+        if (resultKey && typeof resultKey === 'string') invalidateReadCacheForPath(`${writePath}/${resultKey}`);
+
         return {
             success: true,
             key: resultKey,
@@ -2260,6 +2328,7 @@ async function updatePaths(updatesObj) {
             if (!writePermission.allowed) return denyReadOnlyWrite(key, writePermission.status);
         }
         await update(baseRef, ns);
+        for (const key of Object.keys(ns || {})) invalidateReadCacheForPath(key);
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -3970,6 +4039,9 @@ async function deleteFromFirebase(path) {
         const reference = ref(db, finalDeletePath);
         await remove(reference);
         
+        invalidateReadCacheForPath(path);
+        if (finalDeletePath && finalDeletePath !== path) invalidateReadCacheForPath(finalDeletePath);
+
         console.log('✅ Dados removidos do Firebase');
         
         return {
@@ -4357,6 +4429,7 @@ export {
     normalizeCompanyProfileForReport,
     getCompanyProfileForReport,
     subscribe,
+    unsubscribeAllRealtimeSubscriptions,
     createCompanyOnboarding,
     setCompanyClaim,
     syncMyAdminClaims,
@@ -4410,6 +4483,9 @@ export {
     app
 };
 
+// Registro global de subscriptions realtime para limpeza no logout/saída da página
+const __firebaseRealtimeSubscriptions = new Set();
+
 function subscribe(path, callback) {
     try {
         const status = isFirebaseOperational();
@@ -4430,19 +4506,37 @@ function subscribe(path, callback) {
         onValue(reference, handler, (error) => {
             console.error('❌ Erro na assinatura realtime:', error && error.code ? error.code : 'unknown');
         });
-        return {
+        const subscription = {
             ref: reference,
             callback: handler,
             unsubscribe: () => {
                 try { off(reference, handler); } catch (_) {}
+                __firebaseRealtimeSubscriptions.delete(subscription);
             }
         };
+        __firebaseRealtimeSubscriptions.add(subscription);
+        return subscription;
     } catch (error) {
         console.error('❌ Erro ao criar assinatura realtime:', error && error.code ? error.code : 'unknown');
         return {
             unsubscribe: () => {}
         };
     }
+}
+
+function unsubscribeAllRealtimeSubscriptions() {
+    let count = 0;
+    __firebaseRealtimeSubscriptions.forEach((subscription) => {
+        try {
+            if (subscription && typeof subscription.unsubscribe === 'function') {
+                subscription.unsubscribe();
+                count += 1;
+            }
+        } catch (_) {}
+    });
+    __firebaseRealtimeSubscriptions.clear();
+    if (count > 0) console.log(`🔌 ${count} assinatura(s) realtime encerrada(s)`);
+    return count;
 }
 
 async function sendSubscriptionEmail(payload) {
@@ -4467,6 +4561,7 @@ const initializeGlobalFirebaseService = () => {
         updatePaths,
         serverTimestamp: getServerTimestamp,
         subscribe,
+        unsubscribeAllRealtimeSubscriptions,
         authService,
         authPersistenceReady,
         authReadyPromise,
