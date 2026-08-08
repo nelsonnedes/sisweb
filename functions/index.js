@@ -1843,6 +1843,36 @@ exports.fullUserCleanup = https.onCall(async (data, context) => {
             }
         }
 
+        // 2b. Buscar companyId nos mirrors de companies (users/subscriptionRequests de outras empresas)
+        if (!resolvedCompanyId) {
+            try {
+                const companiesSnap = await admin.database().ref('companies').get();
+                if (companiesSnap.exists()) {
+                    const companiesMap = companiesSnap.val() || {};
+                    for (const cId of Object.keys(companiesMap || {})) {
+                        const companyNode = companiesMap[cId] || {};
+                        const companyUsers = companyNode.users || {};
+                        const targetMirror = companyUsers[targetUid];
+                        if (targetMirror && (targetMirror.companyId || targetMirror.tenantId || targetMirror.companyID)) {
+                            resolvedCompanyId = String(targetMirror.companyId || targetMirror.tenantId || targetMirror.companyID);
+                            break;
+                        }
+                        const companyReqs = companyNode.subscriptionRequests || {};
+                        for (const reqKey of Object.keys(companyReqs || {})) {
+                            const subReq = companyReqs[reqKey] || {};
+                            if (String(subReq.uid || subReq.userId || '') === targetUid && (subReq.companyId || subReq.tenantId)) {
+                                resolvedCompanyId = String(subReq.companyId || subReq.tenantId);
+                                break;
+                            }
+                        }
+                        if (resolvedCompanyId) break;
+                    }
+                }
+            } catch (resolveErr2) {
+                console.warn('[fullUserCleanup] Falha ao resolver companyId via companies:', resolveErr2 && resolveErr2.message ? resolveErr2.message : resolveErr2);
+            }
+        }
+
         // 3. Remover usuário do Firebase Auth (se não for o caller)
         try {
             await admin.auth().deleteUser(targetUid);
@@ -1983,11 +2013,11 @@ exports.fullUserCleanup = https.onCall(async (data, context) => {
                     const companyUsers = companyUsersSnap.exists() ? (companyUsersSnap.val() || {}) : {};
                     const remainingUsers = Object.keys(companyUsers || {}).filter((uid) => uid !== targetUid);
 
-                    // Se o owner está sendo removido e não há mais usuários, remove o profile da empresa
+                    // Se o owner está sendo removido e não há mais usuários, remove a empresa inteira
                     if (ownerUid === targetUid && remainingUsers.length === 0) {
                         await removePath(
-                            admin.database().ref(`companies/${resolvedCompanyId}/profile`),
-                            'companies/' + resolvedCompanyId + '/profile'
+                            admin.database().ref(`companies/${resolvedCompanyId}`),
+                            'companies/' + resolvedCompanyId
                         );
 
                         // Remover tenant raiz se existir
@@ -1996,7 +2026,29 @@ exports.fullUserCleanup = https.onCall(async (data, context) => {
                             'tenants/' + resolvedCompanyId
                         );
 
-                        removedPaths.push('companies/' + resolvedCompanyId + ' (profile removido por ser owner sem usuários restantes)');
+                        // Remover subscriptionRequests globais vinculados à empresa
+                        try {
+                            const allReqsSnap = await admin.database().ref('subscriptionRequests').get();
+                            if (allReqsSnap.exists()) {
+                                const allReqs = allReqsSnap.val() || {};
+                                const reqUpdates = {};
+                                Object.keys(allReqs || {}).forEach((reqUid) => {
+                                    const userReqs = allReqs[reqUid] || {};
+                                    Object.keys(userReqs || {}).forEach((reqId) => {
+                                        const rq = userReqs[reqId] || {};
+                                        if (String(rq.companyId || rq.tenantId || '') === resolvedCompanyId) {
+                                            reqUpdates[reqUid + '/' + reqId] = null;
+                                        }
+                                    });
+                                });
+                                if (Object.keys(reqUpdates).length) {
+                                    await admin.database().ref('subscriptionRequests').update(reqUpdates);
+                                    removedPaths.push('subscriptionRequests (globais da empresa ' + resolvedCompanyId + ': ' + Object.keys(reqUpdates).length + ')');
+                                }
+                            }
+                        } catch (_) {}
+
+                        removedPaths.push('companies/' + resolvedCompanyId + ' (empresa removida por ser owner sem usuários restantes)');
                     }
                 }
             } catch (_) {}
@@ -2010,16 +2062,35 @@ exports.fullUserCleanup = https.onCall(async (data, context) => {
                 const crossRemovals = [];
                 Object.keys(allCompanies || {}).forEach((cId) => {
                     if (cId !== resolvedCompanyId) {
-                        crossRemovals.push(
-                            admin.database().ref(`companies/${cId}/users/${targetUid}`).remove().catch(() => {}).then(() => {
-                                removedPaths.push('companies/' + cId + '/users/' + targetUid + ' (cross-company)');
-                            })
-                        );
-                        crossRemovals.push(
-                            admin.database().ref(`companies/${cId}/subscriptionRequests/${targetUid}`).remove().catch(() => {}).then(() => {
-                                removedPaths.push('companies/' + cId + '/subscriptionRequests/' + targetUid + ' (cross-company)');
-                            })
-                        );
+                        const companyNode = allCompanies[cId] || {};
+                        const companyUsers = companyNode.users || {};
+                        const ownerUid = String(companyNode.ownerUid || companyNode.adminOwnerUid || companyNode.primaryUserUid || companyNode.createdBy || companyNode.createdByUid || '').trim();
+                        const hasTarget = companyUsers[targetUid] || (companyNode.subscriptionRequests || {})[targetUid];
+                        if (hasTarget) {
+                            crossRemovals.push(
+                                admin.database().ref(`companies/${cId}/users/${targetUid}`).remove().catch(() => {}).then(() => {
+                                    removedPaths.push('companies/' + cId + '/users/' + targetUid + ' (cross-company)');
+                                })
+                            );
+                            crossRemovals.push(
+                                admin.database().ref(`companies/${cId}/subscriptionRequests/${targetUid}`).remove().catch(() => {}).then(() => {
+                                    removedPaths.push('companies/' + cId + '/subscriptionRequests/' + targetUid + ' (cross-company)');
+                                })
+                            );
+                            // Se o usuário era owner dessa empresa cross e não há mais usuários, remove a empresa inteira
+                            if (ownerUid === targetUid && Object.keys(companyUsers || {}).filter((uid) => uid !== targetUid).length === 0) {
+                                crossRemovals.push(
+                                    admin.database().ref(`companies/${cId}`).remove().catch(() => {}).then(() => {
+                                        removedPaths.push('companies/' + cId + ' (empresa cross removida por ser owner)');
+                                    })
+                                );
+                                crossRemovals.push(
+                                    admin.database().ref(`tenants/${cId}`).remove().catch(() => {}).then(() => {
+                                        removedPaths.push('tenants/' + cId + ' (tenant cross removido)');
+                                    })
+                                );
+                            }
+                        }
                     }
                 });
                 if (crossRemovals.length) await Promise.all(crossRemovals);
