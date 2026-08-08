@@ -2156,8 +2156,110 @@ exports.fullUserCleanup = https.onCall(async (data, context) => {
     }
 });
 
-exports.deleteSubscriptionManagedData = https.onCall(async (data, context) => {
+exports.sweepOrphanCompanies = https.onCall(async (data, context) => {
     if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem chamar esta função.');
+    }
+    const callerUid = context.auth.uid;
+    await assertSuperAdmin(context, 'Apenas superadmin pode executar a varredura de empresas órfãs.');
+
+    const payload = data || {};
+    const dryRun = payload.dryRun === true;
+    const nowIso = new Date().toISOString();
+    const results = [];
+
+    try {
+        const companiesSnap = await admin.database().ref('companies').get();
+        if (!companiesSnap.exists()) {
+            return { success: true, dryRun, scanned: 0, orphaned: 0, removed: 0, failed: 0, results: [] };
+        }
+        const companiesMap = companiesSnap.val() || {};
+
+        for (const companyId of Object.keys(companiesMap || {})) {
+            const companyNode = companiesMap[companyId] || {};
+            if (typeof companyNode !== 'object') continue;
+
+            const companyUsers = companyNode.users || {};
+            const ownerUid = String(
+                companyNode.ownerUid
+                || companyNode.adminOwnerUid
+                || companyNode.primaryUserUid
+                || companyNode.createdBy
+                || companyNode.createdByUid
+                || ''
+            ).trim();
+            const hasRemainingUsers = Object.keys(companyUsers || {}).some((uid) => Boolean(companyUsers[uid]));
+
+            let ownerExists = false;
+            if (ownerUid) {
+                try {
+                    const ownerSnap = await admin.database().ref(`users/${ownerUid}`).get();
+                    ownerExists = ownerSnap.exists();
+                } catch (_) {}
+            }
+
+            const isOrphan = !hasRemainingUsers && (!ownerUid || !ownerExists);
+            const entry = {
+                companyId,
+                name: String(companyNode.name || '').slice(0, 80) || null,
+                ownerUid: ownerUid || null,
+                remainingUsers: Object.keys(companyUsers || {}).length,
+                ownerExists,
+                orphan: isOrphan
+            };
+
+            if (!isOrphan) {
+                results.push(entry);
+                continue;
+            }
+
+            if (dryRun) {
+                results.push({ ...entry, action: 'dry-run: seria removida' });
+                continue;
+            }
+
+            try {
+                await admin.database().ref(`companies/${companyId}`).remove();
+                await admin.database().ref(`tenants/${companyId}`).remove().catch(() => {});
+                results.push({ ...entry, action: 'removida' });
+            } catch (removeErr) {
+                console.error('[sweepOrphanCompanies] Falha ao remover ' + companyId + ':', removeErr);
+                results.push({ ...entry, action: 'falha', error: removeErr && removeErr.message ? removeErr.message : String(removeErr) });
+            }
+        }
+
+        const orphaned = results.filter((r) => r.orphan);
+        const removed = results.filter((r) => r.action === 'removida');
+        const failed = results.filter((r) => r.action === 'falha');
+
+        await admin.database().ref('subscriptionAdminPurgeAudit/' + callerUid).push({
+            at: nowIso,
+            by: callerUid,
+            type: 'sweepOrphanCompanies',
+            dryRun,
+            scanned: results.length,
+            orphaned: orphaned.length,
+            removed: removed.length,
+            failed: failed.length,
+            reviewNote: String(payload.reviewNote || 'Varredura de empresas órfãs').slice(0, 200)
+        });
+
+        return {
+            success: true,
+            dryRun,
+            scanned: results.length,
+            orphaned: orphaned.length,
+            removed: removed.length,
+            failed: failed.length,
+            results
+        };
+    } catch (err) {
+        console.error('[sweepOrphanCompanies] Erro geral:', err);
+        throw new functions.https.HttpsError('internal', 'Erro durante varredura de empresas órfãs. Tente novamente ou contate o suporte.');
+    }
+});
+
+exports.deleteSubscriptionManagedData = https.onCall(async (data, context) => {    if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem chamar esta função.');
     }
     const callerUid = context.auth.uid;

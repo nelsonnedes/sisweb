@@ -3115,6 +3115,15 @@ async function fullUserCleanup(payload) {
     }
 }
 
+async function sweepOrphanCompanies(payload) {
+    try {
+        const data = payload && typeof payload === 'object' ? payload : {};
+        return await callAdminCallableWithRetry('sweepOrphanCompanies', data);
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
 async function getCampaignExecutiveSummary() {
     try {
         return await callAdminCallableWithRetry('getCampaignExecutiveSummary', {});
@@ -4463,6 +4472,7 @@ export {
     updateSubscriptionFinancialEvent,
     deleteSubscriptionManagedData,
     fullUserCleanup,
+    sweepOrphanCompanies,
     invalidateReadCacheForPath,
     createSupportTicket,
     sendPublicSupportEmail,

@@ -3560,12 +3560,76 @@
                     showActionMessage((err && err.message) || "Erro ao excluir usuário completamente.", "error");
                 }
             }
+            async function sweepOrphanCompaniesFlow() {
+                try {
+                    if (!canMutateSensitiveData()) {
+                        showActionMessage("Permissão insuficiente: somente super-admin pode executar varredura de empresas órfãs.", "error");
+                        return;
+                    }
+                    if (!window.firebaseService || typeof window.firebaseService.sweepOrphanCompanies !== "function") {
+                        showActionMessage("Serviço de varredura de empresas órfãs indisponível.", "error");
+                        return;
+                    }
+                    var warning =
+                        "Varredura de empresas órfãs\n\n" +
+                        "Verifica todas as empresas do banco e identifica aquelas sem nenhum usuário vinculado " +
+                        "cujo proprietário (ownerUid) não existe mais na base (empresas órfãs deixadas por exclusões incompletas).\n\n" +
+                        "1º será executada em MODO SIMULAÇÃO (nenhum dado será apagado) e o resultado exibido.\n\n" +
+                        "Deseja continuar?";
+                    var ok = window.AdminUI && typeof window.AdminUI.confirm === "function"
+                        ? await window.AdminUI.confirm(warning, "Varredura de Empresas Órfãs")
+                        : confirm(warning);
+                    if (!ok) return;
+
+                    showActionMessage("Executando varredura (modo simulação)...", "info");
+                    var dryResult = await window.firebaseService.sweepOrphanCompanies({ dryRun: true });
+                    if (!dryResult || dryResult.success === false) {
+                        showActionMessage((dryResult && dryResult.error) || "Falha na varredura.", "error");
+                        return;
+                    }
+                    var orphanList = (dryResult.results || []).filter(function(r) { return r.orphan; });
+                    if (!orphanList.length) {
+                        showActionMessage("Varredura concluída: nenhuma empresa órfã encontrada.", "success");
+                        return;
+                    }
+                    var lines = orphanList.map(function(r) {
+                        return "• " + (r.name || r.companyId) + " (" + r.companyId + ")" + (r.ownerUid ? " — owner: " + r.ownerUid : "");
+                    });
+                    var detail = "Empresas órfãs encontradas: " + orphanList.length + "\n\n" + lines.join("\n") +
+                        "\n\nDeseja REMOVER estas empresas permanentemente?";
+                    var confirmRemove = window.AdminUI && typeof window.AdminUI.confirm === "function"
+                        ? await window.AdminUI.confirm(detail, "Remover Empresas Órfãs")
+                        : confirm(detail);
+                    if (!confirmRemove) {
+                        showActionMessage("Varredura concluída em modo simulação — nada foi removido.", "success");
+                        return;
+                    }
+                    showActionMessage("Removendo empresas órfãs...", "info");
+                    var result = await window.firebaseService.sweepOrphanCompanies({ dryRun: false, reviewNote: "Varredura de órfãs via admin (remocao)" });
+                    if (!result || result.success === false) {
+                        showActionMessage((result && result.error) || "Falha ao remover empresas órfãs.", "error");
+                        return;
+                    }
+                    var msg = "Varredura concluída: " + result.scanned + " verificadas, " + result.removed + " removidas" +
+                        (result.failed > 0 ? ", " + result.failed + " falhas" : "") + ".";
+                    showActionMessage(msg, result.failed > 0 ? "error" : "success");
+                    if (window.firebaseService && typeof window.firebaseService.invalidateReadCacheForPath === "function") {
+                        window.firebaseService.invalidateReadCacheForPath("companies");
+                        window.firebaseService.invalidateReadCacheForPath("tenants");
+                    }
+                    lastLoadedAt = 0;
+                    await loadUsersAndDashboard();
+                    try { renderCompanyManagementTable(); } catch (_) {}
+                } catch (err) {
+                    showActionMessage((err && err.message) || "Erro na varredura de empresas órfãs.", "error");
+                }
+            }
+
             function buildAccessLabel(access) {
                 var role = access.isSuperAdmin ? "Super Admin" : "Admin";
                 var lanes = [];
                 if (access.canDashboard || access.isSuperAdmin) lanes.push("Dashboard");
-                if (access.canSubscriptions || access.isSuperAdmin) lanes.push("Assinaturas");
-                if (access.canSettings || access.isSuperAdmin) lanes.push("Configurações/Status/Campanhas/Financeiro");
+                if (access.canSubscriptions || access.isSuperAdmin) lanes.push("Assinaturas");                if (access.canSettings || access.isSuperAdmin) lanes.push("Configurações/Status/Campanhas/Financeiro");
                 if (access.isSuperAdmin) lanes.push("Suporte");
                 return role + " • " + lanes.join(" / ");
             }
@@ -5683,6 +5747,14 @@
                     if (secRiskFilterEl) secRiskFilterEl.addEventListener("change", applyAdminAccessAuditFilter);
                     if (companiesSearchEl) companiesSearchEl.addEventListener("input",renderCompanyManagementTable);
                     if (companiesReloadEl) companiesReloadEl.addEventListener("click",function() {loadCompanyProfiles(true);});
+                    var companiesSweepEl = document.getElementById("companiesSweepOrphans");
+                    if (companiesSweepEl) {
+                        companiesSweepEl.addEventListener("click", function() { sweepOrphanCompaniesFlow(); });
+                        if (!canMutateSensitiveData()) {
+                            companiesSweepEl.disabled = true;
+                            companiesSweepEl.title = "Somente super-admin pode executar varredura de empresas órfãs.";
+                        }
+                    }
                     if (companiesSaveEl) companiesSaveEl.addEventListener("click",function() {saveCompanyProfileFromAdmin();});
                     if (companiesSaveEl && !canMutateSensitiveData()) {
                         companiesSaveEl.disabled = true;
