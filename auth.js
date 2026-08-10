@@ -2084,7 +2084,11 @@ window.getSystemAlerts = getSystemAlerts;
         const existingFooter = document.querySelector('.global-system-footer');
         if (existingFooter) {
             if (isLoginPage && loginNote && loginNote.parentElement && existingFooter.parentElement !== loginNote.parentElement) {
-                loginNote.insertAdjacentElement('afterend', existingFooter);
+                // No Portal de Acesso (Fase 6) o rodape global ja esta fora do card (filho do body).
+                // Mover para dentro do form causaria layout shift visivel (flicker) no primeiro paint.
+                if (existingFooter.parentElement !== document.body) {
+                    loginNote.insertAdjacentElement('afterend', existingFooter);
+                }
             }
             setFooterModuleName(existingFooter);
             bindFooterContact(existingFooter);

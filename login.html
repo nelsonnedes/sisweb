@@ -17,7 +17,7 @@
             document.write('<script src="auth-performance-diagnostics.js?v=6ef6e56a8b86"><\/script>');
         }
     </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="assets/fontawesome/all.min.css?v=20260808">
     <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
     <script src="sentry-init.js?v=279872380246"></script>
     <script>
@@ -64,6 +64,7 @@
 
         body {
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
@@ -1571,9 +1572,8 @@
             }
 
             try {
-                if (window._FIREBASE_CONNECTED === false) {
-                    setSystemHealth('warn', 'Dados em reconexão', 'Verificando a sessão do Firebase Auth independentemente do banco em tempo real.');
-                }
+                // RTDB desconectado nao bloqueia login (FR-02): nao exibe aviso transitório
+                // que mudaria a altura do card durante o boot (CLS/flicker).
 
                 const user = await authService.getCurrentUser();
 
