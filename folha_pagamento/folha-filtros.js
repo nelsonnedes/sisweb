@@ -1334,19 +1334,25 @@ class FolhaFiltros {
         // Limpar objeto de filtros ativos
         this.filtrosAtivos = {};
         
+        // Helper: normalizar mesAno tanto "YYYY-MM" quanto "MM/YYYY" (escopo do método)
+        const normalizeMes = (val) => { 
+            if (window.FolhaUtils && typeof window.FolhaUtils.normalizeMesAno === 'function') { 
+                return window.FolhaUtils.normalizeMesAno(val); 
+            } 
+            const s = String(val||'').trim(); 
+            if (/^\d{4}-\d{2}$/.test(s)) return s; 
+            const m = s.match(/^(\d{2})\/(\d{4})$/); 
+            if (m) return `${m[2]}-${m[1]}`; 
+            const m2 = s.match(/^(\d{4})[\/-](\d{2})$/); 
+            if (m2) return `${m2[1]}-${m2[2]}`; 
+            return s; 
+        };
+        
         // 1. Resetar Mês/Ano para o mês atual (padrão) se houver dados
         const mesAno = document.getElementById('mesAno');
         if (mesAno) {
             const now = new Date();
             const mesAtual = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-            
-            // Verificar se existe dados para o mês atual
-            const normalizeMes = (val) => { 
-                if (window.FolhaUtils && typeof window.FolhaUtils.normalizeMesAno === 'function') { 
-                    return window.FolhaUtils.normalizeMesAno(val); 
-                } 
-                return String(val||'').trim(); 
-            };
             
             const existeMes = Array.isArray(this.dadosOriginais) && this.dadosOriginais.some(f => normalizeMes(f.mesAno) === mesAtual);
             
