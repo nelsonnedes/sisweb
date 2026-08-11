@@ -56,8 +56,8 @@ Permitir que o usuário ajuste as larguras das colunas das listas de clientes (4
 ### Mecânica do drag
 
 - Handle de 8px no lado direito de cada `<th>`, criado via CSS (pseudo-elemento/div com `cursor: col-resize`).
-- Eventos: `pointerdown` → `setPointerCapture`; `pointermove` atualiza `width` do `<th>` em tempo real (e demais células da coluna via `colgroup`? Não — aplica no `<th>` + `<td>` com `nth-child`, ou via `table-layout: fixed`); `pointerup` finaliza e agenda gravação debounced.
-- Durante o drag a tabela recebe `table-layout: fixed` para que as larguras dos `<th>` sejam respeitadas.
+- Eventos: `pointerdown` → `setPointerCapture`; `pointermove` atualiza `width` do `<th>` em tempo real; `pointerup` finaliza e agenda gravação debounced.
+- Durante o drag a tabela recebe `table-layout: fixed` (as larguras dos `<th>` passam a governar as células). Após o drag, `table-layout: fixed` é mantido apenas se houver larguras salvas; caso contrário volta a `auto`.
 - `title` do `<th>` mostra a largura atual em px durante o drag.
 - Touch funciona via pointer events; sem drag não há alteração — larguras salvas continuam aplicadas.
 
