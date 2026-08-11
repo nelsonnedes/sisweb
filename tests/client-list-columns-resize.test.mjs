@@ -54,6 +54,15 @@ test('modulo: aplicacao de larguras, drag com pointer events e observer', () => 
   assert.match(src, /injectStyles/);
 });
 
+test('modulo: closures do drag com escopo por iteracao (sem var compartilhado no loop)', () => {
+  const block = src.match(/function attachResize\(table\) \{[\s\S]*?\n    \}/)?.[0] || '';
+  assert.ok(block.length > 0, 'bloco attachResize encontrado');
+  assert.match(block, /let th = headers\[index\]/);
+  assert.match(block, /let handle = document\.createElement\('div'\)/);
+  assert.doesNotMatch(block, /var th = headers\[index\]/);
+  assert.doesNotMatch(block, /var handle = document\.createElement/);
+});
+
 test('paginas: tag do modulo com data-page e data-target corretos', () => {
   assert.match(pages.preromaneio, /modules\/core\/client-list-columns\.js[^>]*data-page="preromaneio"[^>]*data-target="clientListTable"/);
   assert.match(pages.tl, /modules\/core\/client-list-columns\.js[^>]*data-page="tl"[^>]*data-target="clientListTable"/);

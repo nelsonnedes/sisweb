@@ -187,10 +187,10 @@
     function attachResize(table) {
         var headers = table.querySelectorAll('thead th');
         for (let index = 0; index < headers.length; index++) {
-            var th = headers[index];
+            let th = headers[index];
             if (th.__clcAttached) continue;
             th.__clcAttached = true;
-            var handle = document.createElement('div');
+            let handle = document.createElement('div');
             handle.className = 'clc-handle';
             handle.title = 'Arraste para ajustar a largura';
             th.appendChild(handle);
