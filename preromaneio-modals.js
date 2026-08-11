@@ -18,6 +18,9 @@ let currentPageSupplier = 1;
 let currentPageSpecies = 1;
 let currentPageRomaneios = 1;
 
+// Estado do cliente em edição (padrão romaneiopct/romaneiopes)
+let editingClientId = null;
+
 function parseRomaneioDateCandidate(value) {
     if (!value) return 0;
     if (typeof value === 'number' && isFinite(value)) return value;
@@ -125,7 +128,7 @@ async function openClientListModal() {
     if (!modal || !tbody) return;
     
     modal.style.display = 'block';
-    tbody.innerHTML = '<tr><td colspan="3" class="text-center">Carregando...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Carregando...</td></tr>';
 
     try {
         // Tentar carregar de 'clients' e depois 'clientes'
@@ -154,8 +157,11 @@ async function openClientListModal() {
         // Normalizar nomes
         clientList = clientList.map(c => ({
             ...c,
-            name: c.name || c.nome || 'Sem Nome',
-            city: c.city || c.cidade || '-'
+            name: c.name || c.nome || 'Não informado',
+            city: c.city || c.cidade || '',
+            state: c.state || c.estado || '',
+            phone: c.phone || c.telefone || c.celular || '',
+            email: c.email || ''
         }));
 
         cachedClients = clientList;
@@ -182,7 +188,7 @@ function renderClientList(list = null) {
     tbody.innerHTML = '';
 
     if (dataToRender.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center">Nenhum cliente encontrado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhum cliente encontrado.</td></tr>';
         document.getElementById('clientListPagination').innerHTML = '';
         return;
     }
@@ -192,19 +198,40 @@ function renderClientList(list = null) {
     const end = start + ITEMS_PER_PAGE;
     const paginatedItems = dataToRender.slice(start, end);
 
+    const clientValue = (...values) => values.find(value => String(value || '').trim()) || 'Não informado';
+    const appendCell = (row, value) => {
+        const cell = document.createElement('td');
+        cell.textContent = value;
+        row.appendChild(cell);
+    };
+    const createClientAction = (className, title, icon, onClick) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `action-button ${className}`;
+        button.title = title;
+        button.setAttribute('aria-label', title);
+        button.innerHTML = `<i class="fas ${icon}" aria-hidden="true"></i>`;
+        button.addEventListener('click', onClick);
+        return button;
+    };
+
     paginatedItems.forEach(client => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${client.name || 'Sem Nome'}</td>
-            <td>${client.city || '-'}</td>
-            <td class="text-center actions-cell">
-                <div class="btn-group">
-                    <button class="action-button select-button" onclick="selectPreRomaneioClient('${client.id}', '${client.name}')" title="Selecionar Cliente">
-                        <i class="fas fa-check"></i>
-                    </button>
-                </div>
-            </td>
-        `;
+        appendCell(tr, clientValue(client.name, client.nome));
+        appendCell(tr, clientValue(client.city, client.cidade));
+        appendCell(tr, clientValue(client.state, client.estado));
+        appendCell(tr, clientValue(client.phone, client.telefone, client.celular));
+        appendCell(tr, clientValue(client.email));
+
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'text-center actions-cell';
+        const actionGroup = document.createElement('div');
+        actionGroup.className = 'btn-group';
+        actionGroup.appendChild(createClientAction('select-button', 'Selecionar Cliente', 'fa-check', () => selectPreRomaneioClient(client.id, clientValue(client.name, client.nome))));
+        actionGroup.appendChild(createClientAction('edit-button', 'Editar Cliente', 'fa-edit', () => editPreRomaneioClient(client.id)));
+        actionGroup.appendChild(createClientAction('delete-button', 'Excluir Cliente', 'fa-trash', () => deletePreRomaneioClient(client.id)));
+        actionsCell.appendChild(actionGroup);
+        tr.appendChild(actionsCell);
         tbody.appendChild(tr);
     });
 
@@ -216,9 +243,9 @@ function renderClientList(list = null) {
 
 function filterClientList() {
     const term = document.getElementById('clientListFilter').value.toLowerCase();
-    const filtered = cachedClients.filter(c => 
-        (c.name && c.name.toLowerCase().includes(term)) || 
-        (c.city && c.city.toLowerCase().includes(term))
+    const filtered = cachedClients.filter(c =>
+        [c.name, c.nome, c.city, c.cidade, c.state, c.estado, c.phone, c.telefone, c.celular, c.email]
+            .some(value => String(value || '').toLowerCase().includes(term))
     );
     currentPageClient = 1; // Reset page on filter
     renderClientList(filtered);
@@ -236,9 +263,94 @@ function selectPreRomaneioClient(id, name) {
     if (suggestions) suggestions.remove();
 }
 
+function populateClientModal(client) {
+    const setField = (fieldId, value) => {
+        const field = document.getElementById(fieldId);
+        if (field && value !== undefined && value !== null) {
+            field.value = value;
+        }
+    };
+    setField('clientName', client.name || client.nome || '');
+    setField('clientCnpj', client.cnpj || client.documento || client.document || client.cpf || '');
+    setField('clientPersonType', client.tipoPessoa || client.personType || client.fiscalPersonType || '');
+    setField('clientIndIEDest', client.indIEDest || client.indicadorInscricaoEstadual || client.ieIndicator || '');
+    setField('clientStateRegistration', client.inscricaoEstadual || client.stateRegistration || client.ie || '');
+    setField('clientMunicipalRegistration', client.inscricaoMunicipal || client.municipalRegistration || client.im || '');
+    setField('clientSuframa', client.suframa || '');
+    setField('clientState', client.estado || client.state || '');
+    setField('clientPhone', client.phone || client.telefone || '');
+    setField('clientEmail', client.email || '');
+    setField('clientAddress', client.address || client.endereco || '');
+    setField('clientNumber', client.number || client.numero || '');
+    setField('clientNeighborhood', client.neighborhood || client.bairro || '');
+    setField('clientComplement', client.complemento || client.complement || '');
+    setField('clientCep', client.cep || client.postalCode || '');
+    setField('clientMunicipalityCode', client.codigoMunicipio || client.municipioCodigo || client.municipalityCode || client.cMun || client.ibgeCode || '');
+    setField('clientCountryCode', client.paisCodigo || client.countryCode || client.cPais || '1058');
+    setField('clientCountryName', client.pais || client.country || client.countryName || client.xPais || 'Brasil');
+    setField('clientObs', client.obs || client.observacoes || client.observations || '');
+    const cidade = client.cidade || client.city || '';
+    if (cidade) {
+        const cityField = document.getElementById('clientCity');
+        if (cityField) {
+            const cityExists = Array.from(cityField.options).some(o => o.value === cidade);
+            if (!cityExists) {
+                const option = document.createElement('option');
+                option.value = cidade;
+                option.textContent = cidade;
+                cityField.appendChild(option);
+            }
+            cityField.value = cidade;
+        }
+    }
+}
+
+function editPreRomaneioClient(id) {
+    const client = cachedClients.find(c => String(c.id) === String(id));
+    if (!client) {
+        alert('Cliente não encontrado.');
+        return;
+    }
+    const form = document.getElementById('clientForm');
+    if (form) form.reset();
+    const citySelect = document.getElementById('clientCity');
+    if (citySelect) citySelect.innerHTML = '<option value="">Selecione primeiro o estado</option>';
+    const title = document.getElementById('clientModalTitle');
+    if (title) title.textContent = 'Editar Cliente';
+    editingClientId = client.id;
+    populateClientModal(client);
+    const modal = document.getElementById('clientModal');
+    if (modal) modal.style.display = 'block';
+}
+
+async function deletePreRomaneioClient(id) {
+    const client = cachedClients.find(c => String(c.id) === String(id));
+    const clientName = client ? (client.name || client.nome || id) : id;
+    if (!confirm(`Tem certeza que deseja excluir o cliente "${clientName}"?\n\nEsta ação não pode ser desfeita.`)) {
+        return;
+    }
+    try {
+        const ok = await (window.deleteClient
+            ? window.deleteClient(id)
+            : (window.clientService && window.clientService.deleteClient
+                ? window.clientService.deleteClient(id)
+                : false));
+        if (ok) {
+            cachedClients = cachedClients.filter(c => String(c.id) !== String(id));
+            renderClientList();
+        }
+    } catch (error) {
+        console.error('Erro ao excluir cliente:', error);
+        alert('Erro ao excluir cliente: ' + (error.message || error));
+    }
+}
+
 function openNewClientModal() {
     const modal = document.getElementById('clientModal');
     if (!modal) return;
+    editingClientId = null;
+    const title = document.getElementById('clientModalTitle');
+    if (title) title.textContent = 'Novo Cliente';
     try {
         const form = document.getElementById('clientForm');
         if (form) form.reset();
@@ -357,13 +469,26 @@ if (clientForm) {
         try {
             const svc = window.firebaseService;
             let id = null;
-            try {
-                if (svc && svc.database && typeof svc.database.ref === 'function') {
-                    id = svc.database.ref('clients').push().key;
-                }
-            } catch (_) {}
-            if (!id) id = `${Date.now()}`;
-            const dataToSave = { ...newClient, id };
+            const editingId = editingClientId ? String(editingClientId) : null;
+            if (!editingId) {
+                try {
+                    if (svc && svc.database && typeof svc.database.ref === 'function') {
+                        id = svc.database.ref('clients').push().key;
+                    }
+                } catch (_) {}
+                if (!id) id = `${Date.now()}`;
+            } else {
+                id = editingId;
+            }
+            const existing = editingId
+                ? (cachedClients.find(c => String(c.id) === editingId) || {})
+                : {};
+            const dataToSave = {
+                ...newClient,
+                id,
+                createdAt: existing.createdAt || nowIso,
+                updatedAt: nowIso
+            };
 
             let result = null;
             if (svc && typeof svc.saveData === 'function') {
@@ -375,15 +500,26 @@ if (clientForm) {
             }
 
             if (result && result.success) {
-                selectPreRomaneioClient(id, dataToSave.name);
+                if (editingId) {
+                    const idx = cachedClients.findIndex(c => String(c.id) === editingId);
+                    if (idx >= 0) {
+                        cachedClients[idx] = dataToSave;
+                    } else {
+                        cachedClients.push(dataToSave);
+                    }
+                    cachedClients.sort((a, b) => (a.name || a.nome || '').localeCompare(b.name || b.nome || ''));
+                    renderClientList();
+                    alert('Cliente atualizado com sucesso!');
+                } else {
+                    selectPreRomaneioClient(id, dataToSave.name);
+                }
                 closeNewClientModal();
-                alert('Cliente cadastrado com sucesso!');
             } else {
                 throw new Error('Erro ao salvar');
             }
         } catch (error) {
             console.error(error);
-            alert('Erro ao cadastrar cliente.');
+            alert('Erro ao salvar cliente.');
         }
     });
 }

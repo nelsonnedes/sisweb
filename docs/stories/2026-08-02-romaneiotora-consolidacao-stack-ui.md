@@ -39,6 +39,13 @@
 - [ ] smoke local desktop: listar, editar, excluir e imprimir romaneio
 - [ ] smoke local: listar/cadastrar/editar fornecedor e especie
 - [ ] smoke mobile: modal, tabela, paginacao e menus de impressao
+- [x] lista de clientes PES e Pre-romaneio seguindo o contrato PCT: seis colunas, `textContent`, fallback `Não informado` e tres acoes
+- [x] `editPreRomaneioClient` e `deletePreRomaneioClient` implementados no Pre-romaneio (antes apenas referenciados pelos botoes)
+- [x] `node --test tests/romaneios-client-list-standard.test.mjs tests/romaneiotora-active-stack.test.mjs`: 14/14
+- [x] `node --check preromaneio-modals.js` e blocos inline de `preromaneio.html`/`romaneiopes.html`
+- [x] `npm test` (11/08/2026): 390 aprovados e 1 skip esperado do Emulator
+- [x] `npm run lint` e `npm run typecheck` (11/08/2026)
+- [ ] smoke autenticado desktop/mobile da Lista de Clientes em PCT, PES e Pre-romaneio
 - [x] Hosting publicado em 02/08/2026 depois dos gates completos
 
 ## Divida controlada
@@ -52,3 +59,7 @@
 - `romaneiotora_tabela.js`
 - `romaneio-manager.js`
 - `tests/romaneiotora-active-stack.test.mjs`
+- `romaneiopes.html`
+- `preromaneio.html`
+- `preromaneio-modals.js`
+- `tests/romaneios-client-list-standard.test.mjs`

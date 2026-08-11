@@ -2806,28 +2806,40 @@
                     </tr>
                 `;
             }
+            const clientValue = (...values) => values.find(value => String(value || '').trim()) || 'Não informado';
+            const appendCell = (row, value) => {
+                const cell = document.createElement('td');
+                cell.textContent = value;
+                row.appendChild(cell);
+            };
+            const createClientAction = (className, title, icon, onClick) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `action-button ${className}`;
+                button.title = title;
+                button.setAttribute('aria-label', title);
+                button.innerHTML = `<i class="fas ${icon}" aria-hidden="true"></i>`;
+                button.addEventListener('click', onClick);
+                return button;
+            };
             pageItems.forEach(client => {
                 const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${client.name || client.nome || 'N/A'}</td>
-                    <td>${client.cidade || client.city || 'N/A'}</td>
-                    <td>${client.estado || client.state || 'N/A'}</td>
-                    <td>${client.phone || client.telefone || client.celular || 'N/A'}</td>
-                    <td>${client.email || 'N/A'}</td>
-                    <td style="text-align: center;">
-                        <div class="btn-group">
-                            <button class="action-button select-button" onclick="selectClientFromList('${client.id}')" title="Selecionar Cliente">
-                                <i class="fas fa-check"></i>
-                            </button>
-                            <button class="action-button edit-button" onclick="editClientFromList('${client.id}')" title="Editar Cliente">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="action-button delete-button" onclick="deleteClientFromList('${client.id}')" title="Excluir Cliente">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                `;
+                const clientId = client.id;
+                appendCell(row, clientValue(client.name, client.nome));
+                appendCell(row, clientValue(client.cidade, client.city));
+                appendCell(row, clientValue(client.estado, client.state));
+                appendCell(row, clientValue(client.phone, client.telefone, client.celular));
+                appendCell(row, clientValue(client.email));
+
+                const actionsCell = document.createElement('td');
+                actionsCell.style.textAlign = 'center';
+                const actionGroup = document.createElement('div');
+                actionGroup.className = 'btn-group';
+                actionGroup.appendChild(createClientAction('select-button', 'Selecionar Cliente', 'fa-check', () => selectClientFromList(clientId)));
+                actionGroup.appendChild(createClientAction('edit-button', 'Editar Cliente', 'fa-edit', () => editClientFromList(clientId)));
+                actionGroup.appendChild(createClientAction('delete-button', 'Excluir Cliente', 'fa-trash', () => deleteClientFromList(clientId)));
+                actionsCell.appendChild(actionGroup);
+                row.appendChild(actionsCell);
                 clientListBody.appendChild(row);
             });
             const pagination = document.getElementById('clientListPagination');
