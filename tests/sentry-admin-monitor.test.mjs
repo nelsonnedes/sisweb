@@ -23,6 +23,7 @@ test('sentry-functions.js existe, usa secrets e RBAC superadmin (sem token hardc
   assert.match(src, /defineSecret\('SENTRY_WEBHOOK_TOKEN'\)/, 'token do webhook deve vir de secret');
   assert.match(src, /sentrySyncIssues = onCallV2/, 'deve exportar sentrySyncIssues');
   assert.match(src, /sentryGetIssueDetail = onCallV2/, 'deve exportar sentryGetIssueDetail');
+  assert.match(src, /sentryResolveIssue = onCallV2/, 'deve exportar sentryResolveIssue');
   assert.match(src, /sentryWebhook = onRequestV2/, 'deve exportar sentryWebhook');
   assert.match(src, /assertSuperAdminCall\(request\)/, 'toda callable deve exigir superadmin');
   assert.match(src, /timingSafeEqual/, 'webhook deve validar token com timing-safe compare');
@@ -32,12 +33,13 @@ test('sentry-functions.js existe, usa secrets e RBAC superadmin (sem token hardc
   assert.doesNotMatch(src, /b4258fde0ba4c6c34342d39454e23501/, 'secret do DSN nunca hardcoded no backend');
 });
 
-test('functions/index.js registra as 3 exports do módulo Sentry', () => {
+test('functions/index.js registra as 4 exports do módulo Sentry', () => {
   const idx = read('functions/index.js');
   assert.match(idx, /const sentryFunctions = require\('\.\/sentry-functions'\)/, 'deve importar o módulo');
   assert.match(idx, /sentryFunctions\.configure\(\{ isCallerSuperAdmin \}\)/, 'deve injetar o helper de RBAC');
   assert.match(idx, /exports\.sentrySyncIssues = sentryFunctions\.sentrySyncIssues/, 'deve registrar sentrySyncIssues');
   assert.match(idx, /exports\.sentryGetIssueDetail = sentryFunctions\.sentryGetIssueDetail/, 'deve registrar sentryGetIssueDetail');
+  assert.match(idx, /exports\.sentryResolveIssue = sentryFunctions\.sentryResolveIssue/, 'deve registrar sentryResolveIssue');
   assert.match(idx, /exports\.sentryWebhook = sentryFunctions\.sentryWebhook/, 'deve registrar sentryWebhook');
 });
 

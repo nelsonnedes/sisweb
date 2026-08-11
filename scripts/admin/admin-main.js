@@ -5373,7 +5373,11 @@
                         + '<td>' + sentryEscapeHtml(sentryFmtDate(it.firstSeen)) + '</td>'
                         + '<td>' + sentryEscapeHtml(sentryFmtDate(it.lastSeen)) + '</td>'
                         + '<td>' + (it.count || 0) + '</td>'
-                        + '<td><button type="button" class="btn small" data-sentry-copy="' + sentryEscapeHtml(it.id) + '"><i class="fas fa-copy"></i><span>Copiar</span></button></td>'
+                        + '<td><button type="button" class="btn small" data-sentry-copy="' + sentryEscapeHtml(it.id) + '"><i class="fas fa-copy"></i><span>Copiar</span></button>'
+                        + (String(it.status || "unresolved") === "resolved"
+                            ? '<span class="badge pill" style="background:#dcfce7;color:#166534;margin-left:6px;">Resolvido</span>'
+                            : '<button type="button" class="btn small" data-sentry-resolve="' + sentryEscapeHtml(it.id) + '" style="margin-left:6px;"><i class="fas fa-check"></i><span>Resolver</span></button>')
+                        + '</td>'
                         + '</tr>';
                 }
                 body.innerHTML = rows;
@@ -5382,6 +5386,30 @@
                 for (var j = 0; j < btns.length; j++) {
                     btns[j].addEventListener("click", (function(id) { return function() { sentryCopyIssueReport(id); }; })(btns[j].getAttribute("data-sentry-copy")));
                 }
+                var resolveBtns = body.querySelectorAll("button[data-sentry-resolve]");
+                for (var k = 0; k < resolveBtns.length; k++) {
+                    resolveBtns[k].addEventListener("click", (function(id) { return function() { sentryResolveIssueAction(id); }; })(resolveBtns[k].getAttribute("data-sentry-resolve")));
+                }
+            }
+            function sentryResolveIssueAction(issueId) {
+                if (!window.confirm("Marcar esta issue como resolvida na Sentry?\n\nEsta ação não pode ser desfeita.")) return;
+                var btn = null;
+                var all = document.querySelectorAll("button[data-sentry-resolve='" + issueId + "']");
+                if (all && all.length) btn = all[all.length - 1];
+                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Resolvendo...</span>'; }
+                window.firebaseService.callFunction("sentryResolveIssue", { issueId: issueId }).then(function(result) {
+                    if (result && result.error && result.success === false) {
+                        sentryShowCopyFeedback("Falha ao resolver: " + String(result.error).slice(0, 200), true);
+                        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i><span>Resolver</span>'; }
+                        return;
+                    }
+                    sentryShowCopyFeedback("Issue " + issueId + " marcada como resolvida na Sentry.", false);
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i><span>Resolvido</span>'; }
+                    setTimeout(function() { sentrySyncNow(); }, 800);
+                }).catch(function(err) {
+                    sentryShowCopyFeedback("Falha ao resolver: " + String((err && err.message) || err).slice(0, 200), true);
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i><span>Resolver</span>'; }
+                });
             }
             function sentryRenderKpis() {
                 var list = sentryGetIssuesList();

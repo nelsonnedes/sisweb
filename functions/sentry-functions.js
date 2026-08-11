@@ -280,6 +280,68 @@ exports.sentryGetIssueDetail = onCallV2(
     }
 );
 
+// ─── 2b) Resolver um issue (marcar como resolvido na Sentry) ────────────────
+exports.sentryResolveIssue = onCallV2(
+    { region: 'us-central1', secrets: [SENTRY_API_TOKEN] },
+    async (request) => {
+        await assertSuperAdminCall(request);
+        const token = SENTRY_API_TOKEN.value();
+        if (!token) {
+            throw new HttpsErrorV2('failed-precondition', 'SENTRY_API_TOKEN não configurado (secrete nas Cloud Functions).');
+        }
+        const issueId = String(request && request.data && request.data.issueId || '').replace(/[^0-9]/g, '').slice(0, 16);
+        if (!issueId) {
+            throw new HttpsErrorV2('invalid-argument', 'issueId inválido.');
+        }
+
+        let issue;
+        try {
+            const res = await fetch(SENTRY_BASE + '/api/0/issues/' + issueId + '/', {
+                method: 'PUT',
+                headers: {
+                    Authorization: 'Bearer ' + token,
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: 'resolved' })
+            });
+            const text = await res.text();
+            let body = null;
+            try { body = text ? JSON.parse(text) : null; } catch (_) { body = null; }
+            if (!res.ok) {
+                const detail = body && body.detail ? String(body.detail).slice(0, 200) : (body && body.error ? String(body.error).slice(0, 200) : 'HTTP ' + res.status);
+                const err = new Error('Sentry API: ' + detail);
+                err.status = res.status;
+                throw err;
+            }
+            issue = body;
+        } catch (e) {
+            const status = e && e.status;
+            if (status === 404) throw new HttpsErrorV2('not-found', 'Issue não encontrado na Sentry.');
+            if (status === 401 || status === 403) {
+                throw new HttpsErrorV2('permission-denied', 'Token da Sentry API inválido ou sem permissão.');
+            }
+            throw new HttpsErrorV2('unavailable', 'Falha ao resolver o issue na Sentry: ' + (e && e.message ? e.message : String(e)));
+        }
+
+        // Atualizar o RTDB para refletir o novo status (mantém histórico com status resolved)
+        const clean = cleanIssue(issue);
+        if (clean && clean.id) {
+            try {
+                await admin.database().ref(RTDB_ISSUES_PATH + '/' + clean.id).update({
+                    ...clean,
+                    resolvedAt: new Date().toISOString(),
+                    source: 'resolve'
+                });
+            } catch (dbError) {
+                console.warn('⚠️ Falha ao atualizar RTDB após resolver issue:', dbError);
+            }
+        }
+
+        return { success: true, issue: clean, resolvedAt: new Date().toISOString() };
+    }
+);
+
 // ─── 3) Webhook do Sentry (push realtime → sininho) ─────────────────────────
 exports.sentryWebhook = onRequestV2(
     { region: 'us-central1', secrets: [SENTRY_WEBHOOK_TOKEN], cors: false },

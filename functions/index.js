@@ -6667,4 +6667,5 @@ const sentryFunctions = require('./sentry-functions');
 sentryFunctions.configure({ isCallerSuperAdmin });
 exports.sentrySyncIssues = sentryFunctions.sentrySyncIssues;
 exports.sentryGetIssueDetail = sentryFunctions.sentryGetIssueDetail;
+exports.sentryResolveIssue = sentryFunctions.sentryResolveIssue;
 exports.sentryWebhook = sentryFunctions.sentryWebhook;
