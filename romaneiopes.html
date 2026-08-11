@@ -1652,7 +1652,12 @@
                     id: client.id || client.clientId || client.uid || String(Date.now() + idx),
                     name: client.name || client.nome || client.razaoSocial || '',
                     nome: client.nome || client.name || client.razaoSocial || '',
-                    phone: client.phone || client.telefone || client.celular || ''
+                    phone: client.phone || client.telefone || client.celular || '',
+                    cidade: client.cidade || client.city || client.municipio || '',
+                    city: client.cidade || client.city || client.municipio || '',
+                    estado: client.estado || client.state || client.uf || '',
+                    state: client.estado || client.state || client.uf || '',
+                    email: client.email || ''
                 }))
                 .filter(client => String(client.name || '').trim() !== '')
                 .sort(function(a,b){
@@ -2775,7 +2780,12 @@
                 ? clients.filter(client => {
                     const name = (client.name || '').toLowerCase();
                     const phone = (client.phone || '').toLowerCase();
-                    return name.includes(clientListFilterTerm) || phone.includes(clientListFilterTerm);
+                    const cidade = (client.cidade || '').toLowerCase();
+                    const estado = (client.estado || '').toLowerCase();
+                    const email = (client.email || '').toLowerCase();
+                    return name.includes(clientListFilterTerm) || phone.includes(clientListFilterTerm)
+                        || cidade.includes(clientListFilterTerm) || estado.includes(clientListFilterTerm)
+                        || email.includes(clientListFilterTerm);
                 })
                 : clients;
             const totalItems = filtered.length;
@@ -2786,11 +2796,24 @@
             const end = start + listItemsPerPage;
             const pageItems = filtered.slice(start, end);
             clientListBody.innerHTML = '';
+            if (pageItems.length === 0) {
+                clientListBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 20px; color: #666;">
+                            <i class="fas fa-users"></i><br>
+                            ${filtered.length === 0 ? 'Nenhum cliente cadastrado' : 'Nenhum cliente encontrado com os filtros aplicados'}
+                        </td>
+                    </tr>
+                `;
+            }
             pageItems.forEach(client => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${client.name || client.nome || 'N/A'}</td>
+                    <td>${client.cidade || client.city || 'N/A'}</td>
+                    <td>${client.estado || client.state || 'N/A'}</td>
                     <td>${client.phone || client.telefone || client.celular || 'N/A'}</td>
+                    <td>${client.email || 'N/A'}</td>
                     <td style="text-align: center;">
                         <div class="btn-group">
                             <button class="action-button select-button" onclick="selectClientFromList('${client.id}')" title="Selecionar Cliente">
@@ -2949,15 +2972,18 @@
                 modalBody.className = 'modal-body';
                 modalBody.innerHTML = `
                     <div style="margin-bottom: 15px;">
-                        <input type="text" id="clientListFilter" placeholder="🔍 Filtrar por nome ou telefone..." 
+                        <input type="text" id="clientListFilter" placeholder="🔍 Filtrar por nome, cidade, estado, telefone ou email..." 
                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
                     </div>
-                    <div class="table-container">
+                    <div class="table-container" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
                         <table class="table">
                             <thead>
                                 <tr>
                                     <th>Nome</th>
+                                    <th>Cidade</th>
+                                    <th>Estado</th>
                                     <th>Telefone</th>
+                                    <th>Email</th>
                                     <th style="width: 120px; text-align: center;">Ações</th>
                                 </tr>
                             </thead>
