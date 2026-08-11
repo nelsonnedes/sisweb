@@ -314,6 +314,7 @@
   "menu.css",
   "menu.js",
   "modificar_romaneio.js",
+  "modules/core/client-list-columns.js",
   "modules/core/firebase-service.js",
   "modules/core/formatacao-campos.js",
   "modules/core/hybrid-sync-service.js",
