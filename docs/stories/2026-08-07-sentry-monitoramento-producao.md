@@ -87,7 +87,9 @@ Verificação em produção em 2026-08-08:
 - [x] **Secret `SENTRY_WEBHOOK_TOKEN`** criada e ENABLED no projeto (v1).
 - [x] **Functions publicadas**: `sentrySyncIssues`, `sentryGetIssueDetail`, `sentryWebhook` listadas em produção (v2, nodejs22, us-central1).
 - [x] **Hosting publicado**: `sentry/sentry.browser.min.js` e `sentry-init.js` servidos do live `sisweb-7ce82.web.app` (SDK @sentry/browser 10.69.0).
+- [x] **Botão "Resolver" no painel admin** (commit `e8e795e`): callable `sentryResolveIssue` (PUT `status: resolved` na Sentry API), RBAC superadmin, badge "Resolvido", re-sync automático pós-resolução.
+- [x] **FIX PÓS-PRODUÇÃO (2026-08-10/11 — ver handoff):** Token `SENTRY_API_TOKEN` original tinha apena escopo `org:ci` → `sentrySyncIssues`/`sentryGetIssueDetail`/`sentryResolveIssue` retornavam 403 ("Token da Sentry API inválido ou sem permissão"). Novo token com escopos `project:read` + `project:write` (+ org/team/alerts/event) criado no Sentry, secret atualizado para **versão 2** e as 3 functions redeployadas. **Validado em produção:** sync OK (count=1, stored=1), PUT resolve OK (200) e botão "Resolver" funcionou de ponta a ponta (issue `JAVASCRIPT-NEXTJS-2` marcada como resolvida na Sentry + RTDB).
 - [ ] **Webhook no Sentry**: Settings → Projects → javascript-nextjs → Webhooks (plugin/Internal Integration) → URL `https://us-central1-sisweb-7ce82.cloudfunctions.net/sentryWebhook?token=<SENTRY_WEBHOOK_TOKEN>` → salvar e enviar teste (ação manual no painel do Sentry).
-- [ ] No admin (aba Segurança & Auditoria → Monitoramento de Erros): clicar "Sincronizar" e conferir issues + sininho (requer sessão superadmin autenticada).
 - [ ] Configurar alertas no Sentry: e-mail/Telegram para `[dados]` e novas issues.
 - [ ] Conferir no Sentry (Issues) se os primeiros erros de produção chegam; criar alerta de "novas issues" para monitorar regressões.
+- [ ] Corrigir a issue `ReferenceError: normalizeMes is not defined` (folha_pagamento/folha-filtros) — já corrigida no código pelo commit `0d65508` (helper movido para o escopo do método `limparFiltros`); aguardar nova release e conferir se reaparece no Sentry.
