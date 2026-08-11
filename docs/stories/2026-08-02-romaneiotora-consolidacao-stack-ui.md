@@ -47,7 +47,7 @@
 - [x] `npm run lint` e `npm run typecheck` (11/08/2026)
 - [ ] smoke autenticado desktop/mobile da Lista de Clientes em PCT, PES e Pre-romaneio
 - [x] Hosting publicado em 02/08/2026 depois dos gates completos
-- [x] resize de colunas com persistencia (spec 2026-08-11): modulo client-list-columns nas 5 paginas, testes 8/8
+- [x] resize de colunas com persistencia (spec 2026-08-11): modulo client-list-columns nas 5 paginas, testes 7/7
 - [x] romaneiopes sem largura fixa de 40px na coluna Acoes (contrato PCT 120px)
 - [ ] smoke autenticado desktop/mobile: arrastar colunas, recarregar pagina e conferir persistencia (local + Firebase)
 
