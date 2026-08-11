@@ -45,11 +45,11 @@
 - [x] `node --check preromaneio-modals.js` e blocos inline de `preromaneio.html`/`romaneiopes.html`
 - [x] `npm test` (11/08/2026): 390 aprovados e 1 skip esperado do Emulator
 - [x] `npm run lint` e `npm run typecheck` (11/08/2026)
-- [ ] smoke autenticado desktop/mobile da Lista de Clientes em PCT, PES e Pre-romaneio
+- [x] smoke autenticado desktop/mobile da Lista de Clientes em PCT, PES e Pre-romaneio
 - [x] Hosting publicado em 02/08/2026 depois dos gates completos
-- [x] resize de colunas com persistencia (spec 2026-08-11): modulo client-list-columns nas 5 paginas, testes 7/7
+- [x] resize de colunas com persistencia (spec 2026-08-11): modulo client-list-columns nas 5 paginas, testes 9/9
 - [x] romaneiopes sem largura fixa de 40px na coluna Acoes (contrato PCT 120px)
-- [ ] smoke autenticado desktop/mobile: arrastar colunas, recarregar pagina e conferir persistencia (local + Firebase)
+- [x] smoke autenticado desktop/mobile: arrastar colunas, recarregar pagina e conferir persistencia (local + Firebase) — 11/08/2026: PCT desktop (Nome 210px) e mobile 390px (Nome 200px), PES Acoes 120px, fornecedores tora (Nome 229px); persistencia confirmada em localStorage e Firebase (`users/{uid}/preferences/clientListColumns/{tenant}/{page}` e `fornecedorListColumns/{tenant}`); smoke encontrou e corrigiu 2 bugs: (1) `var` compartilhado no loop de attachResize fazia qualquer arraste redimensionar Acoes, (2) assinatura errada de saveToFirebase impedia a gravacao remota — commits 592d135 e 679987c
 
 ## Divida controlada
 
