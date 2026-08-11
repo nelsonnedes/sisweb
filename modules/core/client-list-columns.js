@@ -120,13 +120,13 @@
     function remoteSave(clean) {
         var path = buildPath();
         var svc = window.firebaseService;
-        if (svc && typeof svc.saveData === 'function') {
-            return svc.saveData(path, clean).catch(function (e) {
+        if (svc && typeof svc.saveToFirebase === 'function') {
+            return svc.saveToFirebase(path, null, clean).catch(function (e) {
                 console.error('client-list-columns: falha ao salvar remoto', e);
             });
         }
-        if (svc && typeof svc.saveToFirebase === 'function') {
-            return svc.saveToFirebase(path, clean).catch(function (e) {
+        if (svc && typeof svc.saveData === 'function') {
+            return svc.saveData(path, clean).catch(function (e) {
                 console.error('client-list-columns: falha ao salvar remoto', e);
             });
         }

@@ -43,6 +43,13 @@ test('modulo: persistencia local + remota com debounce e espelho', () => {
   assert.match(src, /setTimeout\(function \(\) \{/);
 });
 
+test('modulo: saveToFirebase chamado com a assinatura (path, null, clean)', () => {
+  const remote = src.match(/function remoteSave\(clean\) \{[\s\S]*?\n    \}/)?.[0] || '';
+  assert.ok(remote.length > 0, 'bloco remoteSave encontrado');
+  assert.match(remote, /saveToFirebase\(path, null, clean\)/);
+  assert.doesNotMatch(remote, /saveToFirebase\(path, clean\)/);
+});
+
 test('modulo: aplicacao de larguras, drag com pointer events e observer', () => {
   assert.match(src, /function applyWidths\(table, clean\)/);
   assert.match(src, /table\.classList\.add\('clc-fixed'\)/);
