@@ -53,3 +53,16 @@ test('modulo: aplicacao de larguras, drag com pointer events e observer', () => 
   assert.match(src, /window\.ClientListColumns = \{/);
   assert.match(src, /injectStyles/);
 });
+
+test('paginas: tag do modulo com data-page e data-target corretos', () => {
+  assert.match(pages.preromaneio, /modules\/core\/client-list-columns\.js[^>]*data-page="preromaneio"[^>]*data-target="clientListTable"/);
+  assert.match(pages.tl, /modules\/core\/client-list-columns\.js[^>]*data-page="tl"[^>]*data-target="clientListTable"/);
+  assert.match(pages.pct, /modules\/core\/client-list-columns\.js[^>]*data-page="pct"[^>]*data-target="clientListTable"/);
+  assert.match(pages.pes, /modules\/core\/client-list-columns\.js[^>]*data-page="pes"[^>]*data-target="clientListBody"/);
+  assert.match(pages.tora, /modules\/core\/client-list-columns\.js[^>]*data-page="fornecedores"[^>]*data-target="fornecedorListTable"/);
+});
+
+test('romaneiopes: divergencia de Acoes corrigida (sem 40px !important no modal)', () => {
+  const pesCss = pages.pes.match(/#clientListModal[\s\S]{0,1200}/)?.[0] || '';
+  assert.doesNotMatch(pesCss, /40px !important/);
+});
