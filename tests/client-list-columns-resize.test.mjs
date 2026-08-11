@@ -62,7 +62,6 @@ test('paginas: tag do modulo com data-page e data-target corretos', () => {
   assert.match(pages.tora, /modules\/core\/client-list-columns\.js[^>]*data-page="fornecedores"[^>]*data-target="fornecedorListTable"/);
 });
 
-test('romaneiopes: divergencia de Acoes corrigida (sem 40px !important no modal)', () => {
-  const pesCss = pages.pes.match(/#clientListModal[\s\S]{0,1200}/)?.[0] || '';
-  assert.doesNotMatch(pesCss, /40px !important/);
+test('romaneiopes: divergencia de Acoes corrigida (sem regras de tabela para clientListModal)', () => {
+  assert.doesNotMatch(pages.pes, /#clientListModal \.table/);
 });
