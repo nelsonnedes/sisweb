@@ -47,9 +47,10 @@
 - [x] `npm run lint` e `npm run typecheck` (11/08/2026)
 - [x] smoke autenticado desktop/mobile da Lista de Clientes em PCT, PES e Pre-romaneio
 - [x] Hosting publicado em 02/08/2026 depois dos gates completos
-- [x] resize de colunas com persistencia (spec 2026-08-11): modulo client-list-columns nas 5 paginas, testes 9/9
+- [x] resize de colunas com persistencia (spec 2026-08-11): modulo client-list-columns nas 5 paginas, testes 10/10
 - [x] romaneiopes sem largura fixa de 40px na coluna Acoes (contrato PCT 120px)
 - [x] smoke autenticado desktop/mobile: arrastar colunas, recarregar pagina e conferir persistencia (local + Firebase) — 11/08/2026: PCT desktop (Nome 210px) e mobile 390px (Nome 200px), PES Acoes 120px, fornecedores tora (Nome 229px); persistencia confirmada em localStorage e Firebase (`users/{uid}/preferences/clientListColumns/{tenant}/{page}` e `fornecedorListColumns/{tenant}`); smoke encontrou e corrigiu 2 bugs: (1) `var` compartilhado no loop de attachResize fazia qualquer arraste redimensionar Acoes, (2) assinatura errada de saveToFirebase impedia a gravacao remota — commits 592d135 e 679987c
+- [x] review da persistencia remota encontrou residual no TL (adapter monkey-patch `romaneios-client-save-fix.js` criava child push-key com id null): corrigido em 92164e3 (id null delega `saveData(base, data)` flat, convencao nativa; `'auto'` mantem push-key) + cache-bust v2 do modulo nas 5 paginas (8824c81); verificado em producao 11/08/2026: TL drag Nome 142px -> RTDB bruto flat `{Nome:142}` sem child; regressao PCT `{Acoes:120, Nome:203}` flat; testes 10/10 + regressao 24/24, lint 0
 
 ## Divida controlada
 
