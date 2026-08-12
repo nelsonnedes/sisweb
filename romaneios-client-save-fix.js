@@ -73,7 +73,10 @@ function ensureFirebaseServiceAdapters() {
                 if (!base) return { success: false, error: 'Path inválido' };
 
                 let finalId = (id === undefined || id === null) ? null : String(id);
-                if (!finalId || finalId === 'auto') {
+                if (finalId === null) {
+                    return svc.saveData(base, data);
+                }
+                if (finalId === 'auto') {
                     try {
                         if (svc.database && typeof svc.getNamespacedPath === 'function') {
                             const writePath = svc.getNamespacedPath(base);

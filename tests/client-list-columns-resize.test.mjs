@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const src = read('modules/core/client-list-columns.js');
+const saveFix = read('romaneios-client-save-fix.js');
 const pages = {
   preromaneio: read('preromaneio.html'),
   tl: read('romaneiotl.html'),
@@ -43,10 +44,14 @@ test('modulo: persistencia local + remota com debounce e espelho', () => {
   assert.match(src, /setTimeout\(function \(\) \{/);
 });
 
-test('modulo: saveToFirebase chamado com a assinatura (path, null, clean)', () => {
+test('modulo: saveToFirebase chamado com a assinatura (path, null, clean) e anterior ao fallback saveData', () => {
   const remote = src.match(/function remoteSave\(clean\) \{[\s\S]*?\n    \}/)?.[0] || '';
   assert.ok(remote.length > 0, 'bloco remoteSave encontrado');
-  assert.match(remote, /saveToFirebase\(path, null, clean\)/);
+  const saveToFirebaseIdx = remote.indexOf('svc.saveToFirebase(path, null, clean)');
+  const saveDataIdx = remote.indexOf('svc.saveData(path, clean)');
+  assert.ok(saveToFirebaseIdx >= 0, 'saveToFirebase(path, null, clean) presente');
+  assert.ok(saveDataIdx >= 0, 'fallback saveData(path, clean) presente');
+  assert.ok(saveToFirebaseIdx < saveDataIdx, 'saveToFirebase (3-arg, convencao global) deve ser tentado antes do saveData local');
   assert.doesNotMatch(remote, /saveToFirebase\(path, clean\)/);
 });
 
@@ -76,6 +81,15 @@ test('paginas: tag do modulo com data-page e data-target corretos', () => {
   assert.match(pages.pct, /modules\/core\/client-list-columns\.js[^>]*data-page="pct"[^>]*data-target="clientListTable"/);
   assert.match(pages.pes, /modules\/core\/client-list-columns\.js[^>]*data-page="pes"[^>]*data-target="clientListBody"/);
   assert.match(pages.tora, /modules\/core\/client-list-columns\.js[^>]*data-page="fornecedores"[^>]*data-target="fornecedorListTable"/);
+});
+
+test('romaneios-client-save-fix: id null grava flat (convencao nativa), id auto segue com push-key', () => {
+  const patch = saveFix.match(/svc\.saveToFirebase = async \(path, id, data\) => \{[\s\S]*?\n        \};/)?.[0] || '';
+  assert.ok(patch.length > 0, 'patch saveToFirebase do adapter encontrado');
+  const nullBranch = patch.match(/finalId === null\) \{[\s\S]*?\n                \}/)?.[0] || '';
+  assert.ok(nullBranch.includes('svc.saveData(base, data)'), 'id null delega para saveData(base, data) (escrita flat, sem push-key)');
+  assert.ok(nullBranch.indexOf('push()') < 0, 'id null nao gera child push-key');
+  assert.ok(patch.includes("finalId === 'auto'"), 'id auto mantem geracao de key');
 });
 
 test('romaneiopes: divergencia de Acoes corrigida (sem regras de tabela para clientListModal)', () => {
