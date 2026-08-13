@@ -59,38 +59,7 @@
     border-bottom: 1px solid #dee2e6;
 }
 
-/* Botões de ação */
-#romaneioTable .btn-editar,
-#romaneioTable .btn-excluir {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    margin: 0 2px;
-    padding: 0;
-    border: none;
-    border-radius: 3px;
-    font-size: 12px;
-    color: white;
-    cursor: pointer;
-}
-
-#romaneioTable .btn-editar {
-    background-color: #28a745;
-}
-
-#romaneioTable .btn-excluir {
-    background-color: #dc3545;
-}
-
-#romaneioTable .btn-editar:hover {
-    background-color: #218838;
-}
-
-#romaneioTable .btn-excluir:hover {
-    background-color: #c82333;
-}
+/* Botões de ação da tabela (definidos no bloco posterior: border-radius 4px + vertical-align) */
 
 /* Container para a tabela */
 .itens-container {
@@ -455,7 +424,9 @@ textarea:focus {
     display: none;
 }
 
-.imprimir-options.show {
+.imprimir-options.show,
+.dropdown-menu.show,
+.print-menu.show {
     display: block !important;
 }
 
@@ -524,8 +495,7 @@ textarea:focus {
 }
 
 /* ✅ DROPDOWN MENU GENÉRICO */
-.dropdown-menu {
-    position: fixed !important;
+.dropdown-menu {    position: fixed !important;
     background-color: white;
     min-width: 200px;
     box-shadow: 0px 4px 12px 0px rgba(0,0,0,0.15);
@@ -534,10 +504,6 @@ textarea:focus {
     border: 1px solid #ccc;
     padding: 4px 0;
     display: none;
-}
-
-.dropdown-menu.show {
-    display: block !important;
 }
 
 .dropdown-menu a,
@@ -570,10 +536,6 @@ textarea:focus {
     border: 1px solid #ddd;
     padding: 6px 0;
     display: none;
-}
-
-.print-menu.show {
-    display: block !important;
 }
 
 /* ✅ CORREÇÕES PARA POSICIONAMENTO EM DIFERENTES RESOLUÇÕES */
@@ -1375,6 +1337,7 @@ textarea:focus {
     border-color: #dc2626 !important;
 }
 
+#speciesModal .back-button,
 #speciesModal .back-button.close-modal-btn {
     background: #475569 !important;
     color: #fff !important;
@@ -1384,21 +1347,8 @@ textarea:focus {
     font-weight: 700 !important;
 }
 
+#speciesModal .back-button:hover,
 #speciesModal .back-button.close-modal-btn:hover {
-    background: #334155 !important;
-    border-color: #334155 !important;
-}
-
-#speciesModal .back-button {
-    background: #475569 !important;
-    color: #fff !important;
-    border: 1px solid #475569 !important;
-    border-radius: 10px !important;
-    padding: 10px 16px !important;
-    font-weight: 700 !important;
-}
-
-#speciesModal .back-button:hover {
     background: #334155 !important;
     border-color: #334155 !important;
 }
