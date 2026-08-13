@@ -117,7 +117,7 @@
                     id: key,
                     key,
                     firebaseKey: key,
-                    originalId: value.id || value.key || key
+                    originalId: value.originalId || value.id || value.key || key
                 }, index, { id: key });
                 acc[normalized.id] = normalized;
                 return acc;
@@ -130,7 +130,7 @@
                 id: key,
                 key,
                 firebaseKey: key,
-                originalId: value.id || value.key || key
+                originalId: value.originalId || value.id || value.key || key
             }, index, { id: key });
             acc[key] = normalized;
             return acc;
@@ -148,7 +148,7 @@
                     id: key,
                     key,
                     firebaseKey: key,
-                    originalId: value.id || value.key || key
+                    originalId: value.originalId || value.id || value.key || key
                 };
             })
             : Object.keys(rawData || {}).map((key) => {
@@ -158,7 +158,7 @@
                     id: key,
                     key,
                     firebaseKey: key,
-                    originalId: value.id || value.key || key
+                    originalId: value.originalId || value.id || value.key || key
                 };
             });
 

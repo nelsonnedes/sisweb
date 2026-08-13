@@ -85,3 +85,10 @@ Thumbs.db
 logs-*.md
 /.codex-worktrees/
 .vscode/
+
+# Skill sync artifacts locais (subagent-driven-development e session dumps)
+/.agents/
+/.trae/skills/subagent-driven-development/
+/.claude/skills/subagent-driven-development/
+/skills-lock.json
+/new-session-*.json

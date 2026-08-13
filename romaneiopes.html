@@ -1226,23 +1226,25 @@
                 <h3 class="modal-title species-standard-title" id="speciesModalTitle">Nova Espécie</h3>
                 <button type="button" class="close-modal species-standard-close" aria-label="Fechar modal">&times;</button>
             </div>
-            <form id="speciesForm" class="species-standard-form">
-                <input type="hidden" id="speciesId">
-                <div class="form-group species-standard-field">
-                    <label for="speciesName" class="species-standard-label">Nome da Espécie:</label>
-                    <input type="text" id="speciesName" class="species-standard-input" required>
-                    <div id="speciesNameSuggestionsReserve" class="species-name-suggestions-reserve" aria-hidden="true"></div>
-                    <div id="speciesNameDuplicateHint" class="species-duplicate-hint" aria-live="polite"></div>
-                </div>
-                <div class="form-group species-standard-field">
-                    <label for="speciesDescription" class="species-standard-label">Nome Científico:</label>
-                    <textarea id="speciesDescription" class="species-standard-textarea" rows="3" placeholder="Ex.: Handroanthus albus"></textarea>
-                </div>
-                <div class="modal-footer species-standard-actions">
-                    <button type="button" class="back-button close-modal-btn">Cancelar</button>
-                    <button type="submit" class="btn-save">Salvar Espécie</button>
-                </div>
-            </form>
+            <div class="modal-body">
+                <form id="speciesForm" class="species-standard-form">
+                    <input type="hidden" id="speciesId">
+                    <div class="form-group species-standard-field">
+                        <label for="speciesName" class="species-standard-label">Nome da Espécie:</label>
+                        <input type="text" id="speciesName" class="species-standard-input" required>
+                        <div id="speciesNameSuggestionsReserve" class="species-name-suggestions-reserve" aria-hidden="true"></div>
+                        <div id="speciesNameDuplicateHint" class="species-duplicate-hint" aria-live="polite"></div>
+                    </div>
+                    <div class="form-group species-standard-field">
+                        <label for="speciesDescription" class="species-standard-label">Nome Científico:</label>
+                        <textarea id="speciesDescription" class="species-standard-textarea" rows="3" placeholder="Ex.: Handroanthus albus"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer species-standard-actions">
+                <button type="button" class="back-button close-modal-btn">Cancelar</button>
+                <button type="submit" form="speciesForm" class="btn-save">Salvar Espécie</button>
+            </div>
         </div>
     </div>
 

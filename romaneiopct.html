@@ -3225,6 +3225,34 @@
             } catch (_) {}
         }
 
+        // ✅ ABERTURA CENTRALIZADA DO MODAL DE ESPÉCIE (padrão romaneiotl/romaneiopes)
+        // Usa SiswebSpeciesModal.showModal (display:flex + .is-open = centralizado).
+        // Fallback seguro para forceShowOverlayModal se o módulo não estiver carregado.
+        function showSpeciesModalCentered(modalEl, zIndex = 10000000) {
+            if (!modalEl) return;
+            try {
+                // Reanexar ao <body> para evitar pais ocultos (ex.: #listaModal display:none)
+                if (modalEl.parentElement !== document.body && typeof modalEl.parentElement !== 'undefined') {
+                    try {
+                        if (modalEl.parentElement && modalEl.parentElement !== document.body) {
+                            document.body.appendChild(modalEl);
+                        }
+                    } catch (_) {}
+                }
+                if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.showModal === 'function') {
+                    window.SiswebSpeciesModal.showModal(modalEl);
+                    modalEl.style.setProperty('z-index', String(zIndex), 'important');
+                    modalEl.style.setProperty('position', 'fixed', 'important');
+                    modalEl.style.setProperty('inset', '0');
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    forceShowOverlayModal(modalEl, zIndex);
+                }
+            } catch (_) {
+                forceShowOverlayModal(modalEl, zIndex);
+            }
+        }
+
         function openClientListModal(event) {
             if (event) {
                 event.preventDefault();
@@ -3856,7 +3884,7 @@
                 window.SiswebSpeciesModal.enhance({ modal });
             }
             
-            forceShowOverlayModal(modal, 10000000);
+            showSpeciesModalCentered(modal);
             setTimeout(() => debugModalGeometry('speciesModal'), 50);
             
             // Focar no campo nome
@@ -3902,7 +3930,7 @@
                 window.SiswebSpeciesModal.enhance({ modal });
             }
             
-            forceShowOverlayModal(modal, 10000000);
+            showSpeciesModalCentered(modal);
             setTimeout(() => debugModalGeometry('speciesModal'), 50);
             
             // Focar no campo nome

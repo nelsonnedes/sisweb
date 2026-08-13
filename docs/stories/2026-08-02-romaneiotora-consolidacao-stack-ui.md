@@ -53,6 +53,7 @@
 - [x] review da persistencia remota encontrou residual no TL (adapter monkey-patch `romaneios-client-save-fix.js` criava child push-key com id null): corrigido em 92164e3 (id null delega `saveData(base, data)` flat, convencao nativa; `'auto'` mantem push-key) + cache-bust v2 do modulo nas 5 paginas (8824c81); verificado em producao 11/08/2026: TL drag Nome 142px -> RTDB bruto flat `{Nome:142}` sem child; regressao PCT `{Acoes:120, Nome:203}` flat; testes 10/10 + regressao 24/24, lint 0
 - [x] smoke autenticado (12/08/2026) encontrou bug P0 de producao: cadastro de especie gravava em `especies/undefined.id` — `push().key` indefinido. Causa raiz: `firebase-compat-bridge.js` retornava `Promise.resolve(newRef)` em `push()`, perdendo o `.key` sincrono do SDK modular (contrato ThenableReference). Corrigido no bridge (push() expoe `.key` sincronamente + delega `.then/.catch/.finally` sem loop de assimilacao) e coberto por teste `tests/firebase-init.test.mjs`; verificado em producao 12/08/2026: cadastro de especie e cliente com push-key, sem child `undefined.id`
 - [x] fix do push-key em producao (12/08/2026): deploy do bridge + cache-bust `?v=d6c28d76d1de` nas 9 paginas; validacao autenticada end-to-end em `species.html`: cadastro `ESP SMOKE PUSHFIX FIM 0812` gravado em `companies/1774030248295/especies/-Ozv3eCvAUWBWnY4GL5Q` com `firebaseKey == storedId` (push-key), 101 keys no namespace, sem child `undefined`; registro de teste removido em seguida; logout da sessao ao final
+- [x] modal de especie aberto centralizado (13/08/2026): `romaneiopct.html` passou a usar `SiswebSpeciesModal.showModal` (display:flex + `.is-open`) com helper `showSpeciesModalCentered` (reanexa ao `<body>` para escapar de pais ocultos e tem fallback para `forceShowOverlayModal`); `romaneiopes.html` teve o form reposicionado em `.modal-body` com botao submit fora do form via `form="speciesForm"` (contrato do modal padrao); `species-modal-standard.js`/`species-utils.js` preservam `originalId` ao re-normalizar listas ja normalizadas — edicao que altera apenas o nome cientifico nao e mais bloqueada como duplicata; coberto por `tests/species-edit-duplicate.test.mjs` (3 testes); `npm test`: 404 aprovados, lint 0, typecheck 0
 
 ## Divida controlada
 
@@ -71,3 +72,6 @@
 - `tests/romaneios-client-list-standard.test.mjs`
 - `modules/core/client-list-columns.js`
 - `tests/client-list-columns-resize.test.mjs`
+- `species-modal-standard.js`
+- `species-utils.js`
+- `tests/species-edit-duplicate.test.mjs`
