@@ -43,7 +43,7 @@ function insertBridgeImport(html) {
   const initImportMatch = html.match(/(import\s+.*from\s+['"]\.\/firebase-init\.js(?:\?v=[^'"]+)?['"].*)\n/);
   if (initImportMatch) {
     const after = initImportMatch.index + initImportMatch[0].length;
-    return html.slice(0, after) + `import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim\n` + html.slice(after);
+    return html.slice(0, after) + `import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim\n` + html.slice(after);
   }
 
   // Se não tiver firebase-init, insere antes do primeiro <script> com conteúdo
@@ -51,7 +51,7 @@ function insertBridgeImport(html) {
   if (firstScriptMatch) {
     const at = firstScriptMatch.index;
     const prefix = firstScriptMatch[1] || '\n    ';
-    const bridgeImport = `${prefix}<!-- Compat bridge (substitui SDK compat do CDN) -->\n${prefix}<script type="module">\n${prefix}    import './firebase-compat-bridge.js?v=21eb04e409d8';\n${prefix}</script>\n`;
+    const bridgeImport = `${prefix}<!-- Compat bridge (substitui SDK compat do CDN) -->\n${prefix}<script type="module">\n${prefix}    import './firebase-compat-bridge.js?v=d6c28d76d1de';\n${prefix}</script>\n`;
     return html.slice(0, at) + bridgeImport + html.slice(at);
   }
 

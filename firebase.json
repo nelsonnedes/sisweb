@@ -144,7 +144,9 @@
       "RELATORIO_PERDA_DADOS_CLIENTES.md",
       "CORRECOES_CLIENTES_SUMARIO.md",
       "FIREBASE_SECURITY_GUIDE.md",
-      "DIAGRAMA_E_ESQUEMA_SISWEB.dm"
+      "DIAGRAMA_E_ESQUEMA_SISWEB.dm",
+      "skills-lock.json",
+      "new-session-*.json"
     ],
     "headers": [
       {
