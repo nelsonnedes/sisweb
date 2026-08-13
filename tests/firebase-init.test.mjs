@@ -179,6 +179,25 @@ test('firebase-compat-bridge.js importa de firebase-init.js corretamente', () =>
   assert.match(source, /currentUser/, 'bridge deve emular currentUser');
 });
 
+test('firebase-compat-bridge.js — push() emula ThenableReference com .key síncrono', () => {
+  const source = read('firebase-compat-bridge.js');
+
+  // ref.push() precisa expor .key de forma síncrona (uso: ref.push().key)
+  // e manter comportamento de Promise para await ref.push(value).
+  assert.match(source, /get key\(\)/,
+    'bridge deve expor .key no compat ref (getter)');
+  assert.match(source, /compatNewRef\.then\s*=/,
+    'push() deve anexar .then ao ref compat (ThenableReference)');
+  assert.match(source, /compatNewRef\.catch\s*=/,
+    'push() deve anexar .catch ao ref compat');
+  assert.match(source, /compatNewRef\.finally\s*=/,
+    'push() deve anexar .finally ao ref compat');
+  assert.match(source, /push\(databaseRef\)/,
+    'push() deve gerar a chave via push modular (com .key)');
+  assert.doesNotMatch(source, /return Promise\.resolve\(newRef\)/,
+    'push() sem valor não deve retornar apenas uma Promise (perde .key)');
+});
+
 test('firebase-init.js — arquivo principal não regrediu em tamanho', () => {
   const source = read('firebase-init.js');
   const lines = source.split('\n').length;

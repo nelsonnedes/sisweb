@@ -47,6 +47,10 @@ function createCompatRef(databaseRef) {
   const compatRef = {
     _ref: databaseRef,
 
+    get key() {
+      return databaseRef.key;
+    },
+
     once(eventType) {
       if (eventType === 'value') {
         return get(databaseRef).then(snapshot => ({
@@ -75,10 +79,25 @@ function createCompatRef(databaseRef) {
 
     push(value) {
       const newRef = push(databaseRef);
-      if (value !== undefined) {
-        return set(newRef, value).then(() => newRef);
-      }
-      return Promise.resolve(newRef);
+      // Emula ThenableReference do SDK compat: expoe .key sincronamente
+      // e mantem comportamento de Promise para await ref.push(value).
+      //
+      // IMPORTANTE: o wrapper compat NUNCA deve ser o valor de resolucao
+      // de uma promise, pois ele e thenable e o assimilador entraria em
+      // recursao infinita (promise -> compatNewRef -> promise -> ...).
+      // Por isso resolvemos sempre com newRef (ThenableReference real do
+      // SDK modular), que assimila para um valor plain apos a escrita.
+      const compatNewRef = createCompatRef(newRef);
+      const promise = value !== undefined
+        ? set(newRef, value).then(() => newRef)
+        : Promise.resolve(newRef);
+      compatNewRef.then = (onFulfilled, onRejected) => promise.then(
+        () => (typeof onFulfilled === 'function' ? onFulfilled(newRef) : newRef),
+        onRejected
+      );
+      compatNewRef.catch = (onRejected) => compatNewRef.then(undefined, onRejected);
+      compatNewRef.finally = (onFinally) => promise.finally(onFinally).then(() => newRef);
+      return compatNewRef;
     },
 
     on(eventType, callback, cancelCallback) {
