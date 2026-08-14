@@ -8862,6 +8862,7 @@ function getContaFinanceInfo(conta) {
     const tsInicio = Math.max(tsBaseJuros || 0, tsEmissao || 0) || tsVenc || tsHoje;
     const tsFim = (tsVenc && tsHoje > tsVenc) ? tsHoje : (tsVenc || tsHoje);
     const diasTotalCalculo = (tsFim > tsInicio) ? Math.floor((tsFim - tsInicio) / 86400000) : 0;
+    const diasContrato = diasTotalCalculo;
     const jurosAberto = (temJuros && valorRestante > 0 && diasTotalCalculo > 0)
         ? computeJurosByPeriod(valorRestante, taxa, diasTotalCalculo, tipo)
         : 0;
