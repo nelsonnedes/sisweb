@@ -2937,7 +2937,9 @@ function computeFilteredReceber(filtro = {}) {
     } else {
         contasFiltradas = contasFiltradas.filter(c => parseCurrencyValue(c.valorRestante ?? (c.valor ?? 0)) > 0);
     }
-    if (filtro.clienteId) contasFiltradas = contasFiltradas.filter(c => c.clienteId === filtro.clienteId);
+    if (filtro.clienteId) {
+        contasFiltradas = contasFiltradas.filter(c => String(c.clienteId || (c.cliente && typeof c.cliente === 'object' ? c.cliente.id : '') || '') === String(filtro.clienteId));
+    }
     if (filtro.categoria) {
         const catKey = normalizeCategoriaKey(filtro.categoria);
         const tipoKeys = {
@@ -3021,7 +3023,9 @@ function computeFilteredPagar(filtro = {}) {
     } else {
         contasFiltradas = contasFiltradas.filter(c => parseCurrencyValue(c.valorRestante ?? (c.valor ?? 0)) > 0);
     }
-    if (filtro.fornecedorId) contasFiltradas = contasFiltradas.filter(c => c.fornecedorId === filtro.fornecedorId);
+    if (filtro.fornecedorId) {
+        contasFiltradas = contasFiltradas.filter(c => String(c.fornecedorId || (c.fornecedor && typeof c.fornecedor === 'object' ? c.fornecedor.id : '') || '') === String(filtro.fornecedorId) || String(c.funcionarioId || '') === String(filtro.fornecedorId));
+    }
     if (filtro.categoria) {
         const catKey = normalizeCategoriaKey(filtro.categoria);
         const tipoKeys = {
@@ -4386,7 +4390,7 @@ async function carregarTabelaReceber(filtro = {}) {
     
     // Filtros adicionais (cliente, categoria e datas)
     if (filtro.clienteId) {
-        contasFiltradas = contasFiltradas.filter(c => c.clienteId === filtro.clienteId);
+        contasFiltradas = contasFiltradas.filter(c => String(c.clienteId || (c.cliente && typeof c.cliente === 'object' ? c.cliente.id : '') || '') === String(filtro.clienteId));
     }
     if (filtro.pedidoNumero) {
         const needle = String(filtro.pedidoNumero).trim().toLowerCase();

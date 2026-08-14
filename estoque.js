@@ -190,7 +190,6 @@ function toraCorrespondeBusca(item, termo) {
 }
 
 function obterTextoBuscaMovimentacao(mov = {}) {
-    const geo = normalizarCamposGeoEstoque(mov);
     let romaneiosTexto = '';
     if (mov.romaneiosRelacionados) {
         const romaneios = normalizarRomaneiosRastreabilidade(mov.romaneiosRelacionados);
@@ -199,14 +198,12 @@ function obterTextoBuscaMovimentacao(mov = {}) {
             return `romaneio ${r.numero || ''} ${cliente}`;
         }).join(' ');
     }
+    const toraTexto = obterTextoBuscaTora(mov);
     return normalizarTextoBuscaEstoque([
-        mov.id,
+        toraTexto,
         mov.tipo,
-        mov.plaqueta,
-        mov.especie,
         mov.documento,
         mov.observacoes,
-        geo.custodia,
         romaneiosTexto
     ].filter(Boolean).join(' '));
 }
@@ -227,10 +224,11 @@ function formatarRomaneiosVinculadosMovimentacao(mov = {}, options = {}) {
 
     const linhas = roms.map(r => {
         const cliente = r.clienteNome || (typeof r.cliente === 'object' ? (r.cliente.nome || r.cliente.name) : r.cliente) || '';
-        const vol = formatNumber(r.volume || 0, 3);
+        const volVal = r.volume !== undefined ? r.volume : (r.volumeSerraria !== undefined ? r.volumeSerraria : (r.volumeTora !== undefined ? r.volumeTora : (r.volumeGeometrico !== undefined ? r.volumeGeometrico : 0)));
+        const vol = formatNumber(volVal, 3);
         const numero = r.numero || '';
         const texto = `Romaneio ${numero} - ${cliente} - ${vol} m³`;
-        return plain ? texto : escapeHtml(texto);
+        return plain ? texto : `<span class="romaneio-vinculado-item">${escapeHtml(texto)}</span>`;
     });
 
     return plain ? linhas.join(' | ') : linhas.join('<br>');
@@ -5956,10 +5954,9 @@ function filtrarMovimentacoes() {
         dataInicio: document.getElementById('filtroDataInicio').value,
         dataFim: document.getElementById('filtroDataFim').value,
         tipo: document.getElementById('filtroTipoMov').value,
-        buscaTora: document.getElementById('filtroBuscaToraMov')?.value || '',
+        buscaTora: document.getElementById('filtroBuscaToraMov') ? document.getElementById('filtroBuscaToraMov').value : '',
         remessa: document.getElementById('filtroRemessaBaixa')?.value || '',
-        observacoes: document.getElementById('filtroObservacoesMov')?.value || '',
-        buscaTora: document.getElementById('filtroBuscaToraMov')?.value || ''
+        observacoes: document.getElementById('filtroObservacoesMov')?.value || ''
     };
     paginaAtualMovimentacoes = 1;
     carregarTabelaMovimentacoes(filtro);
@@ -6094,7 +6091,7 @@ function registroRastreabilidadeTexto(reg = {}) {
         reg.plaqueta,
         reg.descricao || reg.descricaoTora || reg.description || '',
         reg.especie,
-        geo.custodia,
+        reg.custodia || geo.custodia,
         reg.numeroRomaneio,
         reg.romaneioId,
         reg.tipoRomaneio,
