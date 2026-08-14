@@ -2277,6 +2277,15 @@ function configurarEventos() {
     if (pagarJurosTipoEl) {
         pagarJurosTipoEl.addEventListener('change', () => updateJurosRateFieldState('pagar'));
     }
+    const receberTipoEl = document.getElementById('receberTipo');
+    if (receberTipoEl) {
+        receberTipoEl.addEventListener('change', function() {
+            const multaCont = document.getElementById('receberMultaContainer');
+            if (multaCont) {
+                multaCont.style.display = this.value === 'boleto' ? 'block' : 'none';
+            }
+        });
+    }
     
     // Formatação sem símbolo para Valor Total (receber/pagar)
     ['receberValorTotal', 'pagarValorTotal', 'pagamentoValor'].forEach(campoId => {
@@ -3590,6 +3599,7 @@ async function salvarContaReceber(event) {
         const tipoValor = (document.getElementById('receberTipo')?.value || 'receber');
         const jurosTipo = normalizeJurosTipoKey(document.getElementById('receberJurosTipo')?.value || 'none');
         const jurosTaxa = parseJurosTaxa(document.getElementById('receberJurosTaxa')?.value || 0);
+        const multaTaxa = parseJurosTaxa(document.getElementById('receberMultaTaxa')?.value || 0);
         const observacoes = document.getElementById('receberObservacoes').value;
         const anexoManualFile = document.getElementById('receberAnexoManual')?.files?.[0] || null;
 
@@ -3669,6 +3679,7 @@ async function salvarContaReceber(event) {
                 tipo: tipoKey,
                 jurosTipo,
                 jurosTaxa,
+                multaTaxa,
                 jurosBaseDate: contaOriginal.jurosBaseDate || null,
                 observacoes: observacoesNorm,
                 parcela: 1,
@@ -3792,6 +3803,7 @@ async function salvarContaReceber(event) {
                 tipo: tipoKey,
                 jurosTipo,
                 jurosTaxa,
+                multaTaxa,
                 jurosBaseDate: null,
                 observacoes: observacoesNorm,
                 parcela: i + 1,
@@ -6113,6 +6125,12 @@ async function editarConta(id, tipo) {
             if (jurosTipoField) jurosTipoField.value = normalizeJurosTipoKey(conta.jurosTipo);
             if (jurosTaxaField) jurosTaxaField.value = parseJurosTaxa(conta.jurosTaxa || 0);
             updateJurosRateFieldState('receber');
+            const multaTaxaField = document.getElementById('receberMultaTaxa');
+            const multaCont = document.getElementById('receberMultaContainer');
+            if (multaTaxaField) multaTaxaField.value = parseJurosTaxa(conta.multaTaxa ?? 2);
+            if (multaCont) {
+                multaCont.style.display = String(conta.tipo || '').toLowerCase().trim() === 'boleto' ? 'block' : 'none';
+            }
             
             try {
                 const numeroInput = document.getElementById('receberNumero');
@@ -8108,7 +8126,7 @@ function limparFormulario(formId) {
         if (listRec) listRec.innerHTML = '';
         if (window.generatedParcelAttachmentCache) window.generatedParcelAttachmentCache.receber = {};
         
-        ['receberValorTotal', 'receberDataVencimento', 'receberParcelas', 'receberCliente', 'receberTipo', 'receberCategoria', 'receberJurosTipo', 'receberJurosTaxa'].forEach(id => {
+        ['receberValorTotal', 'receberDataVencimento', 'receberParcelas', 'receberCliente', 'receberTipo', 'receberCategoria', 'receberJurosTipo', 'receberJurosTaxa', 'receberMultaTaxa'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.disabled = false;
         });
@@ -8117,8 +8135,12 @@ function limparFormulario(formId) {
 
         const jurosTipoRec = document.getElementById('receberJurosTipo');
         const jurosTaxaRec = document.getElementById('receberJurosTaxa');
+        const multaTaxaRec = document.getElementById('receberMultaTaxa');
+        const multaContRec = document.getElementById('receberMultaContainer');
         if (jurosTipoRec) jurosTipoRec.value = 'none';
         if (jurosTaxaRec) jurosTaxaRec.value = '0';
+        if (multaTaxaRec) multaTaxaRec.value = '2';
+        if (multaContRec) multaContRec.style.display = 'none';
         updateJurosRateFieldState('receber');
         const gerarBtnR = document.getElementById('receberGerarParcelasBtn');
         if (gerarBtnR) gerarBtnR.style.display = 'inline-block';

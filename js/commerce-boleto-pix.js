@@ -194,6 +194,8 @@
       const jurosVal = Number(financeInfo ? (financeInfo.jurosAberto + financeInfo.jurosAcumulado) : 0);
       const valorTotal = Number(financeInfo && financeInfo.totalAtualizado > 0 ? financeInfo.totalAtualizado : (conta.valor || valorOriginal));
       const diasAtraso = financeInfo ? (financeInfo.diasAtraso || 0) : 0;
+      const multaPct = Number(conta.multaTaxa ?? 2);
+      const jurosPct = Number(conta.jurosTaxa ?? 1) || 1;
       
       // --- CÉLULA 1: Beneficiário ---
       doc.setFont('Helvetica', 'bold');
@@ -276,7 +278,7 @@
       doc.setFont('Helvetica', 'bold');
       doc.setFontSize(7.5);
       doc.setTextColor(185, 28, 28); // Vermelho escuro para instrução de atraso
-      doc.text(`* Atraso acumulado: ${diasAtraso} dias. Multa de 2% e juros de 1% a.m. se aplicam após vencimento.`, startX + 3, startY + 49);
+      doc.text(`* Atraso acumulado: ${diasAtraso} dias. Multa de ${multaPct}% e juros de ${jurosPct}% a.m. se aplicam após vencimento.`, startX + 3, startY + 49);
       
       doc.setFont('Helvetica', 'normal');
       doc.setFontSize(8);
@@ -359,7 +361,7 @@
       doc.setFontSize(6.2);
       doc.setTextColor(100, 116, 139);
       
-      const clausula1 = "INSTRUÇÃO DE INADIMPLEMENTO E NEGATIVAÇÃO: O não pagamento deste título até a data de vencimento ensejará a aplicação imediata de multa moratória de 2% e juros de mora de 1% ao mês, calculados pro rata die, conforme art. 406 do Código Civil. Decorrido o prazo de 5 (cinco) dias de atraso, o débito será encaminhado para inclusão definitiva nos órgãos de proteção ao crédito (SPC/SERASA), bem como ao Tabelionato de Protesto de Títulos da comarca, sob amparo da Lei Federal nº 9.492/97, gerando restrição imediata ao crédito do devedor.";
+      const clausula1 = `INSTRUÇÃO DE INADIMPLEMENTO E NEGATIVAÇÃO: O não pagamento deste título até a data de vencimento ensejará a aplicação imediata de multa moratória de ${multaPct}% e juros de mora de ${jurosPct}% ao mês, calculados pro rata die, conforme art. 406 do Código Civil. Decorrido o prazo de 5 (cinco) dias de atraso, o débito será encaminhado para inclusão definitiva nos órgãos de proteção ao crédito (SPC/SERASA), bem como ao Tabelionato de Protesto de Títulos da comarca, sob amparo da Lei Federal nº 9.492/97, gerando restrição imediata ao crédito do devedor.`;
       const splitC1 = doc.splitTextToSize(clausula1, width);
       doc.text(splitC1, startX, startY + 3.5);
       
