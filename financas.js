@@ -4226,8 +4226,16 @@ function getTodayISODateLocal() {
     return formatISODateLocal(new Date());
 }
 
+function getTodayISODateUTC() {
+    const now = new Date();
+    const y = now.getUTCFullYear();
+    const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(now.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
 function getTodayStartTimestampLocal() {
-    return normalizeDateToTimestamp(getTodayISODateLocal()) || 0;
+    return normalizeDateToTimestamp(getTodayISODateUTC()) || 0;
 }
 
 function mergeFinanceMonthData(existingArr, incomingArr, monthKey, tombstoneStorageKey) {
@@ -8976,7 +8984,7 @@ function formatDate(dateValue) {
     return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('pt-BR');
 }
 
-// ✅ NORMALIZAÇÃO DE DATAS PARA COMPARAÇÃO
+// ✅ NORMALIZAÇÃO DE DATAS PARA COMPARAÇÃO (UTC — alinhado com backend)
 function normalizeDateToTimestamp(value) {
     if (!value && value !== 0) return null;
     if (typeof value === 'number') {
@@ -8985,14 +8993,13 @@ function normalizeDateToTimestamp(value) {
     if (typeof value === 'string') {
         const v = value.trim();
         if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
-            // ✅ Interpretar como meia-noite LOCAL para evitar deslocamentos por UTC
             const [y, m, d] = v.split('-').map(Number);
-            const t = new Date(y, m - 1, d).getTime();
+            const t = Date.UTC(y, m - 1, d);
             return isNaN(t) ? null : t;
         }
         if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
             const [d, m, y] = v.split('/');
-            const t = new Date(Number(y), Number(m) - 1, Number(d)).getTime();
+            const t = Date.UTC(Number(y), Number(m) - 1, Number(d));
             return isNaN(t) ? null : t;
         }
         const t = new Date(v).getTime();
