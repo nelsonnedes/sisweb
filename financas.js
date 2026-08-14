@@ -9424,7 +9424,7 @@ async function abrirBoletoPixLamina(contaId, tipo) {
         let sacado = null;
         const sacadoId = getFinanceSacadoReferenceId(conta);
         if (sacadoId && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-            const path = `clientes/${sacadoId}`;
+            const path = `clients/${sacadoId}`;
             try {
                 const res = await window.firebaseService.loadFromFirebase(path);
                 if (res && res.success) {
