@@ -66,6 +66,21 @@ test('modulo: aplicacao de larguras, drag com pointer events e observer', () => 
   assert.match(src, /injectStyles/);
 });
 
+test('modulo: larguras aplicadas com !important (vence CSS global com width XX% !important do fornecedor)', () => {
+  assert.match(src, /function setColumnWidth\(th, px\)/);
+  assert.match(src, /th\.style\.setProperty\('width', px \+ 'px', 'important'\)/);
+  assert.match(src, /setColumnWidth\(headers\[index\], clean\[label\]\)/);
+  assert.match(src, /setColumnWidth\(th, width\)/);
+  assert.doesNotMatch(src, /headers\[index\]\.style\.width = clean\[label\]/);
+  assert.doesNotMatch(src, /th\.style\.width = width \+ 'px'/);
+});
+
+test('modulo: table-layout fixed aplicado via inline !important (vence table-layout auto !important do CSS global)', () => {
+  assert.match(src, /function ensureFixedLayout\(table\)/);
+  assert.match(src, /table\.style\.setProperty\('table-layout', 'fixed', 'important'\)/);
+  assert.match(src, /ensureFixedLayout\(table\)/);
+});
+
 test('modulo: closures do drag com escopo por iteracao (sem var compartilhado no loop)', () => {
   const block = src.match(/function attachResize\(table\) \{[\s\S]*?\n    \}/)?.[0] || '';
   assert.ok(block.length > 0, 'bloco attachResize encontrado');

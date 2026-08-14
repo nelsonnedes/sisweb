@@ -174,14 +174,25 @@
         return widthsCache;
     }
 
+    function setColumnWidth(th, px) {
+        if (!th) return;
+        th.style.setProperty('width', px + 'px', 'important');
+    }
+
+    function ensureFixedLayout(table) {
+        if (!table) return;
+        table.style.setProperty('table-layout', 'fixed', 'important');
+        table.classList.add('clc-fixed');
+    }
+
     function applyWidths(table, clean) {
         if (!table || !clean) return;
         var headers = table.querySelectorAll('thead th');
         contract().forEach(function (label, index) {
             if (index >= headers.length || !clean[label]) return;
-            headers[index].style.width = clean[label] + 'px';
+            setColumnWidth(headers[index], clean[label]);
         });
-        if (Object.keys(clean).length > 0) table.classList.add('clc-fixed');
+        if (Object.keys(clean).length > 0) ensureFixedLayout(table);
     }
 
     function attachResize(table) {
@@ -207,8 +218,8 @@
                 } catch (_) {}
                 function onMove(ev) {
                     var width = clamp(startWidth + (ev.clientX - startX), min, MAX_WIDTH);
-                    th.style.width = width + 'px';
-                    table.classList.add('clc-fixed');
+                    setColumnWidth(th, width);
+                    ensureFixedLayout(table);
                     th.title = width + 'px';
                 }
                 function onUp() {
@@ -237,7 +248,7 @@
         if (document.getElementById('clc-styles')) return;
         var style = document.createElement('style');
         style.id = 'clc-styles';
-        style.textContent = '.client-list-cols th{position:relative;}.clc-handle{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;touch-action:none;user-select:none;-webkit-user-select:none;}.clc-handle:hover{background:rgba(0,0,0,.12);}.client-list-cols.clc-fixed{table-layout:fixed;width:auto;}.clc-resizing th{user-select:none;}.clc-resizing{cursor:col-resize;}';
+        style.textContent = '.client-list-cols th{position:relative;}.clc-handle{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;touch-action:none;user-select:none;-webkit-user-select:none;z-index:20;}.clc-handle:hover{background:rgba(0,0,0,.12);}.client-list-cols.clc-fixed{table-layout:fixed;width:auto;}.clc-resizing th{user-select:none;}.clc-resizing{cursor:col-resize;}';
         document.head.appendChild(style);
     }
 
