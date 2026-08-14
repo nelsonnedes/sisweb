@@ -6216,16 +6216,15 @@ async function editarConta(id, tipo) {
                         const temHistorico = Array.isArray(conta.historicosPagamento) && conta.historicosPagamento.length > 0;
                         const temPago = parseCurrencyValue(conta.valorPago || 0) > 0 || !!conta.dataPagamento;
                         const lock = temHistorico || temPago || statusLower === 'parcial' || statusLower === 'pago';
-                        if (lock) {
-                            if (valorField) valorField.disabled = true;
-                            if (dataField) dataField.disabled = true;
-                            if (parcelasField) parcelasField.disabled = true;
-                            if (clienteField) clienteField.disabled = true;
-                            if (tipoFieldRec) tipoFieldRec.disabled = true;
-                            if (categoriaField) categoriaField.disabled = true;
-                            if (jurosTipoField) jurosTipoField.disabled = true;
-                            if (jurosTaxaField) jurosTaxaField.disabled = true;
-                        }
+                        
+                        if (valorField) valorField.disabled = lock;
+                        if (dataField) dataField.disabled = lock;
+                        if (parcelasField) parcelasField.disabled = true; // Sempre desabilitar parcelas na edição
+                        if (clienteField) clienteField.disabled = lock;
+                        if (tipoFieldRec) tipoFieldRec.disabled = lock;
+                        if (categoriaField) categoriaField.disabled = lock;
+                        if (jurosTipoField) jurosTipoField.disabled = lock;
+                        if (jurosTaxaField) jurosTaxaField.disabled = lock;
                     } catch(_) {}
                     
                 } catch (errCli) {
@@ -6380,22 +6379,21 @@ async function editarConta(id, tipo) {
             if (jurosTipoField) jurosTipoField.value = normalizeJurosTipoKey(conta.jurosTipo);
             if (jurosTaxaField) jurosTaxaField.value = parseJurosTaxa(conta.jurosTaxa || 0);
             updateJurosRateFieldState('pagar');
-            try {
-                const statusLower = String(conta.status || '').toLowerCase();
-                const temHistorico = Array.isArray(conta.historicosPagamento) && conta.historicosPagamento.length > 0;
-                const temPago = parseCurrencyValue(conta.valorPago || 0) > 0 || !!conta.dataPagamento;
-                const lock = temHistorico || temPago || statusLower === 'parcial' || statusLower === 'pago';
-                if (lock) {
-                    if (valorField) valorField.disabled = true;
-                    if (dataField) dataField.disabled = true;
-                    if (parcelasField) parcelasField.disabled = true;
-                    if (fornecedorField) fornecedorField.disabled = true;
-                    if (tipoField) tipoField.disabled = true;
-                    if (categoriaField) categoriaField.disabled = true;
-                        if (jurosTipoField) jurosTipoField.disabled = true;
-                        if (jurosTaxaField) jurosTaxaField.disabled = true;
-                }
-            } catch(_) {}
+                try {
+                    const statusLower = String(conta.status || '').toLowerCase();
+                    const temHistorico = Array.isArray(conta.historicosPagamento) && conta.historicosPagamento.length > 0;
+                    const temPago = parseCurrencyValue(conta.valorPago || 0) > 0 || !!conta.dataPagamento;
+                    const lock = temHistorico || temPago || statusLower === 'parcial' || statusLower === 'pago';
+                    
+                    if (valorField) valorField.disabled = lock;
+                    if (dataField) dataField.disabled = lock;
+                    if (parcelasField) parcelasField.disabled = true; // Sempre desabilitar parcelas na edição
+                    if (fornecedorField) fornecedorField.disabled = lock;
+                    if (tipoField) tipoField.disabled = lock;
+                    if (categoriaField) categoriaField.disabled = lock;
+                    if (jurosTipoField) jurosTipoField.disabled = lock;
+                    if (jurosTaxaField) jurosTaxaField.disabled = lock;
+                } catch(_) {}
             updateManualAttachmentButtonState('pagar');
             scrollToForm('pagarForm');
         }
@@ -8090,12 +8088,18 @@ function limparFormulario(formId) {
         const listRec = document.getElementById('receberParcelasList');
         if (listRec) listRec.innerHTML = '';
         if (window.generatedParcelAttachmentCache) window.generatedParcelAttachmentCache.receber = {};
-        const parcelasFieldR = document.getElementById('receberParcelas');
-        if (parcelasFieldR) parcelasFieldR.disabled = false;
+        
+        ['receberValorTotal', 'receberDataVencimento', 'receberParcelas', 'receberCliente', 'receberTipo', 'receberCategoria', 'receberJurosTipo', 'receberJurosTaxa'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = false;
+        });
+        const numInput = document.getElementById('receberNumero');
+        if (numInput) numInput.readOnly = false;
+
         const jurosTipoRec = document.getElementById('receberJurosTipo');
         const jurosTaxaRec = document.getElementById('receberJurosTaxa');
-        if (jurosTipoRec) { jurosTipoRec.disabled = false; jurosTipoRec.value = 'none'; }
-        if (jurosTaxaRec) { jurosTaxaRec.disabled = false; jurosTaxaRec.value = '0'; }
+        if (jurosTipoRec) jurosTipoRec.value = 'none';
+        if (jurosTaxaRec) jurosTaxaRec.value = '0';
         updateJurosRateFieldState('receber');
         const gerarBtnR = document.getElementById('receberGerarParcelasBtn');
         if (gerarBtnR) gerarBtnR.style.display = 'inline-block';
@@ -8105,12 +8109,18 @@ function limparFormulario(formId) {
         const listPag = document.getElementById('pagarParcelasList');
         if (listPag) listPag.innerHTML = '';
         if (window.generatedParcelAttachmentCache) window.generatedParcelAttachmentCache.pagar = {};
-        const parcelasField = document.getElementById('pagarParcelas');
-        if (parcelasField) parcelasField.disabled = false;
+        
+        ['pagarValorTotal', 'pagarDataVencimento', 'pagarParcelas', 'pagarFornecedor', 'pagarTipo', 'pagarCategoria', 'pagarJurosTipo', 'pagarJurosTaxa'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = false;
+        });
+        const numInput = document.getElementById('pagarNumero');
+        if (numInput) numInput.readOnly = false;
+
         const jurosTipoPag = document.getElementById('pagarJurosTipo');
         const jurosTaxaPag = document.getElementById('pagarJurosTaxa');
-        if (jurosTipoPag) { jurosTipoPag.disabled = false; jurosTipoPag.value = 'none'; }
-        if (jurosTaxaPag) { jurosTaxaPag.disabled = false; jurosTaxaPag.value = '0'; }
+        if (jurosTipoPag) jurosTipoPag.value = 'none';
+        if (jurosTaxaPag) jurosTaxaPag.value = '0';
         updateJurosRateFieldState('pagar');
         const gerarBtn = document.getElementById('pagarGerarParcelasBtn');
         if (gerarBtn) gerarBtn.style.display = 'inline-block';
@@ -8848,12 +8858,12 @@ function getContaFinanceInfo(conta) {
     const tsEmissao = normalizeDateToTimestamp(conta && conta.dataEmissao);
     const tsHoje = getTodayStartTimestampLocal();
 
-    // ✅ Juros CONTRATUAIS: período emissao->vencimento (nao juros de mora acumulados)
+    // ✅ Juros MORA + CONTRATUAIS: projeta o cálculo até hoje se estiver vencida
     const tsInicio = Math.max(tsBaseJuros || 0, tsEmissao || 0) || tsVenc || tsHoje;
-    const tsFim = tsVenc || tsHoje;
-    const diasContrato = (tsFim > tsInicio) ? Math.floor((tsFim - tsInicio) / 86400000) : 0;
-    const jurosAberto = (temJuros && valorRestante > 0 && diasContrato > 0)
-        ? computeJurosByPeriod(valorRestante, taxa, diasContrato, tipo)
+    const tsFim = (tsVenc && tsHoje > tsVenc) ? tsHoje : (tsVenc || tsHoje);
+    const diasTotalCalculo = (tsFim > tsInicio) ? Math.floor((tsFim - tsInicio) / 86400000) : 0;
+    const jurosAberto = (temJuros && valorRestante > 0 && diasTotalCalculo > 0)
+        ? computeJurosByPeriod(valorRestante, taxa, diasTotalCalculo, tipo)
         : 0;
     const totalAtualizado = valorRestante + jurosAberto;
     const diasAtraso = (tsVenc && tsHoje > tsVenc) ? Math.floor((tsHoje - tsVenc) / 86400000) : 0;
