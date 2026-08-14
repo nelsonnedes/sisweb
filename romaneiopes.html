@@ -3826,7 +3826,8 @@
                 ? { ...alvo.especie, name: alvo.especie.name || alvo.especie.nome || '' }
                 : { id: null, name: String(alvo.especie || '') };
             preco = parseFloat(alvo.preco) || 0;
-            itens = Array.isArray(alvo.itens) ? alvo.itens.map(item => ({ ...item })) : [];
+            const rawItens = alvo.itens || alvo.items || [];
+            itens = Array.isArray(rawItens) ? rawItens.map(item => ({ ...item })) : [];
             atualizarTabela();
             const btnSalvar = document.getElementById('btnSalvar');
             if (btnSalvar) btnSalvar.innerHTML = '<i class="fas fa-save"></i> Atualizar';

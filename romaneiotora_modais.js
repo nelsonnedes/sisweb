@@ -3018,6 +3018,9 @@ async function editarRomaneio(romaneioId) {
         
         
         // âœ… FECHAR MODAL DE LISTA PRIMEIRO
+        if (romaneioParaEditar) {
+            romaneioParaEditar.itens = romaneioParaEditar.itens || romaneioParaEditar.items || [];
+        }
         const listaModal = document.getElementById('listaModal');
         if (listaModal) {
             listaModal.style.display = 'none';
