@@ -1018,14 +1018,14 @@ async function ensureFinanceTenantContext(timeoutMs = 7000) {
 }
 
 // Funções de inicialização
-function inicializarSistema() {
+async function inicializarSistema() {
     
     // ✅ CORREÇÃO: Usar função específica para configurar datas
     configurarDatasDoMesAtual();
     sanitizeAllPrintPreferences();
     
-    // Carregar dados
-    carregarDados();
+    // Carregar dados (aguarda tenant estar pronto)
+    await carregarDados();
     
     // Configurar eventos
     configurarEventos();
