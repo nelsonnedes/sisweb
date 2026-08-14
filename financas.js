@@ -2338,6 +2338,7 @@ function configurarEventos() {
         });
         window.financeCadastroListenersBound = true;
     }
+    window.financeInitializingFilters = false;
 }
 
 async function imprimirTabela(tipo) {
