@@ -95,6 +95,19 @@
     return '';
   }
 
+  function getImageDimensions(dataUrl) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      };
+      img.onerror = () => {
+        resolve(null);
+      };
+      img.src = dataUrl;
+    });
+  }
+
   function getPdfImageFormat(dataUrl) {
     const value = String(dataUrl || '');
     if (/^data:image\/jpe?g;base64,/i.test(value)) return 'JPEG';
@@ -137,7 +150,22 @@
 
       if (logoDataUrl && (logoDataUrl.startsWith('data:image') || logoDataUrl.startsWith('http'))) {
         try {
-          doc.addImage(logoDataUrl, getPdfImageFormat(logoDataUrl), startX + width - 35, startY - 2, 35, 14);
+          let imgW = 35;
+          let imgH = 14;
+          const dims = await getImageDimensions(logoDataUrl);
+          if (dims && dims.width > 0 && dims.height > 0) {
+            const ratio = dims.width / dims.height;
+            if (ratio > (35 / 14)) {
+              imgW = 35;
+              imgH = 35 / ratio;
+            } else {
+              imgH = 14;
+              imgW = 14 * ratio;
+            }
+          }
+          const posX = startX + width - imgW;
+          const posY = startY - 2 + (14 - imgH) / 2;
+          doc.addImage(logoDataUrl, getPdfImageFormat(logoDataUrl), posX, posY, imgW, imgH);
         } catch (e) {
           console.warn('Falha ao adicionar imagem da logo no PDF:', e);
         }
