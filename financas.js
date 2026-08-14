@@ -8727,13 +8727,13 @@ function computeContaJurosInfo(conta, referenceDate = null) {
     const tsEmissao = normalizeDateToTimestamp(conta && conta.dataEmissao);
     const tsRef = referenceDate ? normalizeDateToTimestamp(referenceDate) : getTodayStartTimestampLocal();
     const tsStart = Math.max(tsVenc || 0, tsBaseJuros || 0, tsEmissao || 0);
+    const diasAtraso = (tsVenc && tsRef && tsRef > tsStart) ? Math.floor((tsRef - tsStart) / 86400000) : 0;
     if (!tsVenc || !tsRef || tsRef <= tsStart || taxa <= 0 || tipo === 'none' || status === 'pago') {
         const baseNoJuros = status === 'parcial'
             ? parseCurrencyValue((conta && conta.valorRestante) ?? (conta && conta.valor) ?? 0)
             : parseCurrencyValue((conta && conta.valorOriginal) ?? (conta && conta.valor) ?? 0);
-        return { tipo, taxa, diasAtraso: 0, base: baseNoJuros, juros: 0, totalComJuros: baseNoJuros };
+        return { tipo, taxa, diasAtraso, base: baseNoJuros, juros: 0, totalComJuros: baseNoJuros };
     }
-    const diasAtraso = Math.floor((tsRef - tsStart) / 86400000);
     const base = status === 'parcial'
         ? parseCurrencyValue((conta && conta.valorRestante) ?? (conta && conta.valor) ?? 0)
         : parseCurrencyValue((conta && conta.valorOriginal) ?? (conta && conta.valor) ?? 0);
