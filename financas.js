@@ -4280,20 +4280,26 @@ async function ensureReceberDataForRange(filtro) {
         const overlay = document.getElementById('financeLoadingOverlay');
         if (total > 0 && overlay) overlay.style.display = 'flex';
         if (toLoad.length === 0) return;
-        for (const mk of toLoad) {
+        const results = await Promise.all(toLoad.map(async (mk) => {
             try {
                 const rec = await window.firebaseService.loadFromFirebase(`financas/receber/${mk}`);
-                const arr = (rec && rec.success && rec.data) ? (Array.isArray(rec.data) ? rec.data : Object.values(rec.data || {})) : [];
-                contasReceber = mergeFinanceMonthData(contasReceber, arr, mk, 'contasReceber_deletedIds');
-                anyRemoteSuccess = anyRemoteSuccess || (rec && rec.success === true);
-                anyRemoteFail = anyRemoteFail || (!rec || rec.success === false);
+                done += 1;
+                if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
+                return { mk, rec };
             } catch (e) {
-                anyRemoteFail = true;
+                done += 1;
+                if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
+                return { mk, rec: { success: false, data: [] } };
             }
+        }));
+
+        results.forEach(({ mk, rec }) => {
+            const arr = (rec && rec.success && rec.data) ? (Array.isArray(rec.data) ? rec.data : Object.values(rec.data || {})) : [];
+            contasReceber = mergeFinanceMonthData(contasReceber, arr, mk, 'contasReceber_deletedIds');
+            anyRemoteSuccess = anyRemoteSuccess || (rec && rec.success === true);
+            anyRemoteFail = anyRemoteFail || (!rec || rec.success === false);
             window.financeMonthsLoadedReceber.add(mk);
-            done += 1;
-            if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
-        }
+        });
         // Limpar contador ao concluir
         if (cntEl) setTimeout(()=>{ cntEl.textContent = ''; }, 600);
         if (overlay) overlay.style.display = 'none';
@@ -4918,20 +4924,26 @@ async function ensurePagarDataForRange(filtro) {
         const overlay = document.getElementById('financeLoadingOverlay');
         if (total > 0 && overlay) overlay.style.display = 'flex';
         if (toLoad.length === 0) return;
-        for (const mk of toLoad) {
+        const results = await Promise.all(toLoad.map(async (mk) => {
             try {
                 const pag = await window.firebaseService.loadFromFirebase(`financas/pagar/${mk}`);
-                const arr = (pag && pag.success && pag.data) ? (Array.isArray(pag.data) ? pag.data : Object.values(pag.data || {})) : [];
-                contasPagar = mergeFinanceMonthData(contasPagar, arr, mk, 'contasPagar_deletedIds');
-                anyRemoteSuccess = anyRemoteSuccess || (pag && pag.success === true);
-                anyRemoteFail = anyRemoteFail || (!pag || pag.success === false);
+                done += 1;
+                if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
+                return { mk, pag };
             } catch (e) {
-                anyRemoteFail = true;
+                done += 1;
+                if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
+                return { mk, pag: { success: false, data: [] } };
             }
+        }));
+
+        results.forEach(({ mk, pag }) => {
+            const arr = (pag && pag.success && pag.data) ? (Array.isArray(pag.data) ? pag.data : Object.values(pag.data || {})) : [];
+            contasPagar = mergeFinanceMonthData(contasPagar, arr, mk, 'contasPagar_deletedIds');
+            anyRemoteSuccess = anyRemoteSuccess || (pag && pag.success === true);
+            anyRemoteFail = anyRemoteFail || (!pag || pag.success === false);
             window.financeMonthsLoadedPagar.add(mk);
-            done += 1;
-            if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
-        }
+        });
         if (cntEl) setTimeout(()=>{ cntEl.textContent = ''; }, 600);
         if (overlay) overlay.style.display = 'none';
         window.financeOffline = (!!window.firebaseAuthDisabled) || (anyRemoteFail && !anyRemoteSuccess);
@@ -7303,16 +7315,21 @@ async function loadFinanceReportMonthsStrict(tipo, months) {
     const loadedKey = tipo === 'receber' ? 'financeMonthsLoadedReceber' : 'financeMonthsLoadedPagar';
     window[confirmedKey] = window[confirmedKey] || new Set();
     window[loadedKey] = window[loadedKey] || new Set();
-    for (const month of normalizedMonths) {
-        if (window[confirmedKey].has(month)) continue;
+    const results = await Promise.all(normalizedMonths.map(async (month) => {
+        if (window[confirmedKey].has(month)) return null;
         const result = await service.loadFromFirebase(`financas/${tipo}/${month}`);
         if (!result || result.success !== true) throw new Error(`Não foi possível confirmar a partição ${month} do relatório.`);
-        const records = normalizeFinanceReportCollection(result.data);
-        if (tipo === 'receber') contasReceber = mergeFinanceMonthData(contasReceber, records, month, 'contasReceber_deletedIds');
-        else contasPagar = mergeFinanceMonthData(contasPagar, records, month, 'contasPagar_deletedIds');
-        window[confirmedKey].add(month);
-        window[loadedKey].add(month);
-    }
+        return { month, data: result.data };
+    }));
+    
+    results.forEach((res) => {
+        if (!res) return;
+        const records = normalizeFinanceReportCollection(res.data);
+        if (tipo === 'receber') contasReceber = mergeFinanceMonthData(contasReceber, records, res.month, 'contasReceber_deletedIds');
+        else contasPagar = mergeFinanceMonthData(contasPagar, records, res.month, 'contasPagar_deletedIds');
+        window[confirmedKey].add(res.month);
+        window[loadedKey].add(res.month);
+    });
     if (tipo === 'receber') subscribeReceberMonths(normalizedMonths);
     else subscribePagarMonths(normalizedMonths);
 }
@@ -7348,8 +7365,10 @@ async function ensureFinanceReportScope({ origem, tipo, dataInicio, dataFim }) {
 }
 
 function isFinanceDateInRange(value, start, end) {
-    const normalized = normalizeDateISOInput(value || '');
-    return !!normalized && normalized >= start && normalized <= end;
+    const ts = normalizeDateToTimestamp(value);
+    const startTs = normalizeDateToTimestamp(start);
+    const endTs = normalizeDateToTimestamp(end);
+    return ts !== null && startTs !== null && endTs !== null && ts >= startTs && ts <= endTs;
 }
 
 function getFinancePartyName(conta, tipo) {
