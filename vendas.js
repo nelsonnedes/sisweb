@@ -2528,23 +2528,31 @@ async function atualizarEstoqueProdutos(itens, tipo) {
 async function listarPedidos() {
     if (!guardOperationalAccessVendas()) return;
     try {
-        LoadingManager.show('Carregando pedidos...');
         pedidosListPage = 1;
         pedidosSelecionados.clear();
-        const fresh = await getData('vendas/pedidos') || [];
-        if (Array.isArray(fresh)) {
-            window.pedidos = fresh.map(p => {
-                if (p && p.contasReceber) {
-                    p.contasReceber = normalizarContasReceberLista(p.contasReceber);
-                }
-                return p;
-            });
-        }
         const search = document.getElementById('searchPedidos');
         if (search) search.value = '';
-        await popularFiltrosPedidosVenda();
-        await carregarTabelaPedidos();
-        document.getElementById('listaPedidosModal').style.display = 'block';
+        
+        // Se já temos pedidos em memória, renderizar de imediato
+        if (Array.isArray(window.pedidos) && window.pedidos.length > 0) {
+            await popularFiltrosPedidosVenda();
+            await carregarTabelaPedidos();
+            document.getElementById('listaPedidosModal').style.display = 'block';
+        } else {
+            LoadingManager.show('Carregando pedidos...');
+            const fresh = await getData('vendas/pedidos') || [];
+            if (Array.isArray(fresh)) {
+                window.pedidos = fresh.map(p => {
+                    if (p && p.contasReceber) {
+                        p.contasReceber = normalizarContasReceberLista(p.contasReceber);
+                    }
+                    return p;
+                });
+            }
+            await popularFiltrosPedidosVenda();
+            await carregarTabelaPedidos();
+            document.getElementById('listaPedidosModal').style.display = 'block';
+        }
     } catch (e) {
         console.error('Erro ao listar pedidos:', e);
         ToastManager.error('Erro ao carregar pedidos: ' + (e && e.message ? e.message : e), 'Erro');
@@ -2555,6 +2563,7 @@ async function listarPedidos() {
 
 async function carregarTabelaPedidos(filtro = '') {
     const tbody = document.getElementById('pedidosTable');
+    if (!tbody) return;
     const getPedidoStatus = (pedido) => {
         const raw = pedido?.status ?? pedido?.statusPedido ?? pedido?.statusVenda ?? pedido?.statusPedidoVenda ?? pedido?.situacao ?? pedido?.state;
         const text = typeof raw === 'string' ? raw : (raw && raw.label) ? raw.label : '';
@@ -2643,14 +2652,19 @@ async function carregarTabelaPedidos(filtro = '') {
     const end = start + pedidosListItemsPerPage;
     const paginated = pedidosListFiltered.slice(start, end);
     
+    // Indexar clientes para resolução rápida O(1)
+    const clientesMap = new Map();
+    (Array.isArray(window.clientes) ? window.clientes : []).forEach(c => {
+        if (c && c.id) clientesMap.set(String(c.id), c);
+    });
+
     tbody.innerHTML = paginated.map(pedido => {
-        // Determinar nome do cliente com fallback
+        // Determinar nome do cliente com lookup indexado O(1)
         let nomeCliente = 'Cliente não encontrado';
         if (pedido.cliente) {
             nomeCliente = pedido.cliente.nome || pedido.cliente.name || 'Nome não informado';
         } else if (pedido.clienteId) {
-            // Tentar buscar cliente pelos dados carregados
-            const clienteEncontrado = window.clientes.find(c => c.id === pedido.clienteId);
+            const clienteEncontrado = clientesMap.get(String(pedido.clienteId));
             if (clienteEncontrado) {
                 nomeCliente = clienteEncontrado.nome || clienteEncontrado.name || 'Nome não informado';
             }
@@ -2857,27 +2871,31 @@ async function imprimirPedidosVendaSelecionadosDesktop(pedidosParaImprimir) {
     }
 
     LoadingManager.show('Preparando impressão...');
-    const documentos = [];
-    for (const pedido of pedidos) {
-        documentos.push(await gerarHTMLImpressaoPedido(pedido));
-    }
-    const html = montarHTMLImpressaoLotePedidos(documentos, 'Pedidos de Venda');
-    if (window.SiswebCommercePdf && typeof window.SiswebCommercePdf.printHtmlDocument === 'function') {
-        window.SiswebCommercePdf.printHtmlDocument({
-            html,
-            windowFeatures: 'width=900,height=700'
-        });
-    } else {
-        const janela = window.open('', '_blank', 'width=900,height=700');
-        if (janela) {
-            janela.document.write(html);
-            janela.document.close();
-            janela.onload = function() {
-                setTimeout(() => janela.print(), 250);
-            };
-        } else {
-            window.print();
+    try {
+        const documentos = [];
+        for (const pedido of pedidos) {
+            documentos.push(await gerarHTMLImpressaoPedido(pedido));
         }
+        const html = montarHTMLImpressaoLotePedidos(documentos, 'Pedidos de Venda');
+        if (window.SiswebCommercePdf && typeof window.SiswebCommercePdf.printHtmlDocument === 'function') {
+            window.SiswebCommercePdf.printHtmlDocument({
+                html,
+                windowFeatures: 'width=900,height=700'
+            });
+        } else {
+            const janela = window.open('', '_blank', 'width=900,height=700');
+            if (janela) {
+                janela.document.write(html);
+                janela.document.close();
+                janela.onload = function() {
+                    setTimeout(() => janela.print(), 250);
+                };
+            } else {
+                window.print();
+            }
+        }
+    } finally {
+        LoadingManager.hide();
     }
 }
 
@@ -6607,7 +6625,7 @@ async function gerarHTMLImpressaoPedido(pedido) {
         ? (pedido.cliente.nome || pedido.cliente.name || 'Cliente não informado')
         : 'Cliente não informado';
     const statusLabel = getStatusLabel(pedido.status);
-    const dadosEmpresa = await obterDadosEmpresa();
+    const dadosEmpresa = arguments[1] || await obterDadosEmpresa();
 
     const htmlItens = (pedido.itens || []).map((item, index) => {
         const nomeLimpo = String(item.produtoNome || item.produto || item.nome || item.descricao || '')

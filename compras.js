@@ -2195,41 +2195,43 @@ async function salvarPedido(event) {
 
 async function listarPedidos() {
     if (!guardOperationalAccessCompras()) return;
-    LoadingManager.show('Carregando pedidos...');
-    const tbody = document.getElementById('pedidosTable');
     pedidosSelecionados.clear();
     
-    // Tentar carregar da tabela oficial 'pedidosCompra' primeiro
-    let pedidosRemotos = [];
-    try {
-        // Usar getData para aproveitar a lógica de fallback e formatação do firebaseService
-        const dados = await getData('pedidosCompra');
-        if (dados && Array.isArray(dados)) {
-            pedidosRemotos = dados;
-        }
-    } catch (e) {
-        console.warn('Erro ao carregar de pedidosCompra:', e);
-    }
-
-    // Se falhar ou estiver vazio, tentar fallback local 'compras' (legado)
-    if (pedidosRemotos.length > 0) {
-        window.compras = pedidosRemotos;
+    // Se já temos compras carregadas em memória, renderizar de imediato sem loading bloqueante
+    if (Array.isArray(window.compras) && window.compras.length > 0) {
+        pedidosListPage = 1;
+        prepararFiltrosPedidosCompras();
+        renderListaPedidosCompras();
+        document.getElementById('listaPedidosModal').style.display = 'block';
     } else {
-        // Tentar carregar legacy se pedidosCompra estiver vazio
-        const legacy = await getData('compras');
-        if (legacy && legacy.length > 0) {
-             window.compras = legacy;
-        } else {
-             window.compras = window.compras || [];
+        LoadingManager.show('Carregando pedidos...');
+        let pedidosRemotos = [];
+        try {
+            const dados = await getData('pedidosCompra');
+            if (dados && Array.isArray(dados)) {
+                pedidosRemotos = dados;
+            }
+        } catch (e) {
+            console.warn('Erro ao carregar de pedidosCompra:', e);
         }
+
+        if (pedidosRemotos.length > 0) {
+            window.compras = pedidosRemotos;
+        } else {
+            const legacy = await getData('compras');
+            if (legacy && legacy.length > 0) {
+                window.compras = legacy;
+            } else {
+                window.compras = window.compras || [];
+            }
+        }
+        
+        pedidosListPage = 1;
+        prepararFiltrosPedidosCompras();
+        renderListaPedidosCompras();
+        document.getElementById('listaPedidosModal').style.display = 'block';
+        LoadingManager.hide();
     }
-    
-    pedidosListPage = 1;
-    prepararFiltrosPedidosCompras();
-    renderListaPedidosCompras();
-    
-    document.getElementById('listaPedidosModal').style.display = 'block';
-    LoadingManager.hide();
 }
 
 function prepararFiltrosPedidosCompras() {
@@ -2552,27 +2554,31 @@ async function imprimirPedidosCompraSelecionadosDesktop(pedidosParaImprimir) {
     }
 
     LoadingManager.show('Preparando impressão...');
-    const documentos = [];
-    for (const pedido of pedidos) {
-        documentos.push(await gerarHTMLImpressaoPedidoCompra(pedido));
-    }
-    const html = montarHTMLImpressaoLotePedidos(documentos, 'Pedidos de Compra');
-    if (window.SiswebCommercePdf && typeof window.SiswebCommercePdf.printHtmlDocument === 'function') {
-        window.SiswebCommercePdf.printHtmlDocument({
-            html,
-            windowFeatures: 'width=900,height=700'
-        });
-    } else {
-        const janela = window.open('', '_blank', 'width=900,height=700');
-        if (janela) {
-            janela.document.write(html);
-            janela.document.close();
-            janela.onload = function() {
-                setTimeout(() => janela.print(), 250);
-            };
-        } else {
-            window.print();
+    try {
+        const documentos = [];
+        for (const pedido of pedidos) {
+            documentos.push(await gerarHTMLImpressaoPedidoCompra(pedido));
         }
+        const html = montarHTMLImpressaoLotePedidos(documentos, 'Pedidos de Compra');
+        if (window.SiswebCommercePdf && typeof window.SiswebCommercePdf.printHtmlDocument === 'function') {
+            window.SiswebCommercePdf.printHtmlDocument({
+                html,
+                windowFeatures: 'width=900,height=700'
+            });
+        } else {
+            const janela = window.open('', '_blank', 'width=900,height=700');
+            if (janela) {
+                janela.document.write(html);
+                janela.document.close();
+                janela.onload = function() {
+                    setTimeout(() => janela.print(), 250);
+                };
+            } else {
+                window.print();
+            }
+        }
+    } finally {
+        LoadingManager.hide();
     }
 }
 
@@ -3377,7 +3383,7 @@ async function obterDadosEmpresa() {
 }
 
 async function gerarHTMLImpressaoPedidoCompra(pedido) {
-    const dadosEmpresa = await obterDadosEmpresa();
+    const dadosEmpresa = arguments[1] || await obterDadosEmpresa();
     const helper = window.SiswebCommercePdf || {};
     const htmlEscape = typeof helper.escapeHtml === 'function'
         ? helper.escapeHtml
