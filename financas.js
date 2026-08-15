@@ -8923,10 +8923,14 @@ function getContaFinanceInfo(conta) {
 
         // Juros do período em aberto (desde último pagamento até hoje)
         const openPeriod = getOpenJurosPeriod(conta, timeline);
-        const jurosAberto = (temJuros && valorRestante > 0)
+        const jurosAberto = (temJuros && valorRestante > 0 && openPeriod.dias > 0)
             ? computeJurosByPeriod(valorRestante, taxa, openPeriod.dias, tipo)
             : 0;
-        const totalAtualizado = valorRestante + jurosAberto;
+        const multaTaxaNum = parseJurosTaxa(conta.multaTaxa ?? (String(conta.tipo || '').toLowerCase() === 'boleto' ? 2 : 0));
+        const multaAberto = (openPeriod.dias > 0 && multaTaxaNum > 0 && valorRestante > 0 && (!conta.historicosPagamento || conta.historicosPagamento.length === 0))
+            ? Math.round(valorRestante * (multaTaxaNum / 100) * 100) / 100
+            : 0;
+        const totalAtualizado = valorRestante + jurosAberto + multaAberto;
 
         // Status calculado com precisão de centavo
         const restanteCents = Math.round(valorRestante * 100);
@@ -8941,13 +8945,14 @@ function getContaFinanceInfo(conta) {
         }
 
         const tipoLabel = tipo === 'composto' ? 'Composto' : (tipo === 'simples' ? 'Simples' : 'Sem juros');
-        const tooltip = `title="Tipo: ${tipoLabel} | Taxa: ${taxa.toFixed(2)}% | Dias atraso: ${openPeriod.dias} | Juros período aberto: ${formatCurrency(jurosAberto)} | Juros acumulado histórico: ${formatCurrency(jurosAcumulado)}"`;
+        const tooltip = `title="Tipo: ${tipoLabel} | Taxa: ${taxa.toFixed(2)}% | Dias atraso: ${openPeriod.dias} | Juros período aberto: ${formatCurrency(jurosAberto)} | Multa: ${formatCurrency(multaAberto)} | Juros acumulado histórico: ${formatCurrency(jurosAcumulado)}"`;
 
         return {
             valorOriginal,
             valorPago,
             valorRestante,
             jurosAberto,
+            multaAberto,
             totalAtualizado,
             jurosAcumulado,
             statusNorm,
@@ -8965,31 +8970,38 @@ function getContaFinanceInfo(conta) {
 
     const tsVenc = getContaVencimentoTimestamp(conta);
     const tsBaseJuros = normalizeDateToTimestamp(conta.jurosBaseDate);
-    const tsEmissao = normalizeDateToTimestamp(conta && conta.dataEmissao);
     const tsHoje = getTodayStartTimestampLocal();
 
-    // ✅ Juros MORA + CONTRATUAIS: projeta o cálculo até hoje se estiver vencida
-    const tsInicio = Math.max(tsBaseJuros || 0, tsEmissao || 0) || tsVenc || tsHoje;
-    const tsFim = (tsVenc && tsHoje > tsVenc) ? tsHoje : (tsVenc || tsHoje);
-    const diasTotalCalculo = (tsFim > tsInicio) ? Math.floor((tsFim - tsInicio) / 86400000) : 0;
-    const diasContrato = diasTotalCalculo;
-    const jurosAberto = (temJuros && valorRestante > 0 && diasTotalCalculo > 0)
-        ? computeJurosByPeriod(valorRestante, taxa, diasTotalCalculo, tipo)
-        : 0;
-    const totalAtualizado = valorRestante + jurosAberto;
+    // ✅ Juros MORA + CONTRATUAIS: Calculados estritamente por dias de atraso a partir do vencimento (ou jurosBaseDate se especificado)
     const diasAtraso = (tsVenc && tsHoje > tsVenc) ? Math.floor((tsHoje - tsVenc) / 86400000) : 0;
+    const tsInicio = tsBaseJuros || tsVenc || tsHoje;
+    const tsFim = (tsVenc && tsHoje > tsVenc) ? tsHoje : (tsVenc || tsHoje);
+    const diasCalculo = tsBaseJuros ? ((tsFim > tsInicio) ? Math.floor((tsFim - tsInicio) / 86400000) : 0) : diasAtraso;
+    const diasContrato = diasCalculo;
+    
+    const jurosAberto = (temJuros && valorRestante > 0 && diasCalculo > 0)
+        ? computeJurosByPeriod(valorRestante, taxa, diasCalculo, tipo)
+        : 0;
+    
+    const multaTaxaNum = parseJurosTaxa(conta.multaTaxa ?? (String(conta.tipo || '').toLowerCase() === 'boleto' ? 2 : 0));
+    const multaAberto = (diasAtraso > 0 && multaTaxaNum > 0 && valorRestante > 0)
+        ? Math.round(valorRestante * (multaTaxaNum / 100) * 100) / 100
+        : 0;
+        
+    const totalAtualizado = valorRestante + jurosAberto + multaAberto;
 
     let statusNorm = statusRaw;
     if (statusNorm === 'pendente' && tsVenc && tsVenc < tsHoje) statusNorm = 'vencido';
 
     const tipoLabel = tipo === 'composto' ? 'Composto' : (tipo === 'simples' ? 'Simples' : 'Sem juros');
-    const tooltip = `title="Tipo: ${tipoLabel} | Taxa: ${taxa.toFixed(2)}% | Dias contrato: ${diasContrato} | Juros: ${formatCurrency(jurosAberto)}"`;
+    const tooltip = `title="Tipo: ${tipoLabel} | Taxa: ${taxa.toFixed(2)}% | Dias contrato: ${diasContrato} | Dias atraso: ${diasAtraso} | Juros: ${formatCurrency(jurosAberto)} | Multa: ${formatCurrency(multaAberto)}"`;
 
     return {
         valorOriginal,
         valorPago,
         valorRestante,
         jurosAberto,
+        multaAberto,
         totalAtualizado,
         jurosAcumulado: 0,
         statusNorm,
@@ -9006,7 +9018,8 @@ function getContaJurosDisplay(conta) {
                :  info.valorOriginal);
     return {
         totalComJuros: info.totalAtualizado > 0 ? info.totalAtualizado : base,
-        juros: info.jurosAberto + info.jurosAcumulado,
+        juros: info.jurosAberto + info.jurosAcumulado + (info.multaAberto || 0),
+        multa: info.multaAberto || 0,
         diasAtraso: info.diasAtraso,
         tooltip: info.tooltip
     };

@@ -219,8 +219,8 @@
       
       // --- DADOS DINÂMICOS DE JUROS E VALORES ---
       const valorOriginal = Number(financeInfo ? financeInfo.valorOriginal : (conta.valorOriginal || conta.valor || 0));
-      const jurosVal = Number(financeInfo ? (financeInfo.jurosAberto + financeInfo.jurosAcumulado) : 0);
-      const valorTotal = Number(financeInfo && financeInfo.totalAtualizado > 0 ? financeInfo.totalAtualizado : (conta.valor || valorOriginal));
+      const jurosVal = Number(financeInfo ? (financeInfo.jurosAberto + financeInfo.jurosAcumulado + (financeInfo.multaAberto || 0)) : 0);
+      const valorTotal = Number(financeInfo && financeInfo.totalAtualizado > 0 ? financeInfo.totalAtualizado : (valorOriginal + jurosVal));
       const diasAtraso = financeInfo ? (financeInfo.diasAtraso || 0) : 0;
       const multaPct = Number(conta.multaTaxa ?? 2);
       const jurosPct = Number(conta.jurosTaxa ?? 1) || 1;
