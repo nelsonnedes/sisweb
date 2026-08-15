@@ -774,7 +774,7 @@
     </div>
 
     <script src="js/deep-clean.js?v=26495e9d74f4"></script>
-    <script src="auth.js?v=d1239cbe15f0"></script>
+    <script src="auth.js?v=4fa226ae91ed"></script>
     <script>
         // ═══════════════════════════════════════════════════════════════════════
         // CONTROLADOR ÚNICO DO PORTAL DE ACESSO (Fase 6)
@@ -1205,7 +1205,7 @@
         // Registro e Recuperação usam exclusivamente authService (sem duplicatas).
         // ═══════════════════════════════════════════════════════════════════════
         import { app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-init.js?v=e4f56badf571';
-        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=3d948f6ba91d';
+        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=ad95660f5cac';
 
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim };
         if (typeof window.runLoginHealthCheck === 'function') {
