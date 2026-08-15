@@ -92,6 +92,7 @@
 
 ## 10. Histórico recente (mini-log por data)
 
+- **2026-08-15:** sincronização completa Antigravity + OpenCode; resolução de conflito de cache-busters; correção de fallback canônico de `openClientListModal`, validação de `safeId` em `species-manager.js`, guard de uid/tenant em `client-list-columns.js`; suíte de testes 416/415 pass (0 falhas).
 - **2026-08-14:** fix UTC financeiro (fuso SP front+back) deployado; fix modais romaneios (4/página, 26px, margin 0) deployado; runbook quota + handoff criados; verificação Login com gstatic OK daqui; incidente gstatic do cliente diagnosticado como rede.
 - **2026-08-11:** handoff incidente Sentry (token SENTRY_API_TOKEN com escopo de escrita; 403 no Resolver resolvido).
 - **2026-08-10:** commit guard folha normalizeMes; modal lista clientes unificado; monitoramento Sentry (story 2026-08-07).
