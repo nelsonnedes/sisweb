@@ -2280,9 +2280,25 @@ function configurarEventos() {
     const receberTipoEl = document.getElementById('receberTipo');
     if (receberTipoEl) {
         receberTipoEl.addEventListener('change', function() {
+            const isBoleto = this.value === 'boleto';
             const multaCont = document.getElementById('receberMultaContainer');
             if (multaCont) {
-                multaCont.style.display = this.value === 'boleto' ? 'block' : 'none';
+                multaCont.style.display = isBoleto ? 'block' : 'none';
+            }
+            if (isBoleto) {
+                const multaField = document.getElementById('receberMultaTaxa');
+                if (multaField && (!multaField.value || parseFloat(multaField.value) === 0)) {
+                    multaField.value = '2.00';
+                }
+                const jurosTipoField = document.getElementById('receberJurosTipo');
+                const jurosTaxaField = document.getElementById('receberJurosTaxa');
+                if (jurosTipoField && (!jurosTipoField.value || jurosTipoField.value === 'none')) {
+                    jurosTipoField.value = 'simples';
+                    if (jurosTaxaField && (!jurosTaxaField.value || parseFloat(jurosTaxaField.value) === 0)) {
+                        jurosTaxaField.value = '1.00';
+                    }
+                    updateJurosRateFieldState('receber');
+                }
             }
         });
     }
@@ -6289,21 +6305,22 @@ async function editarConta(id, tipo) {
                         }
                     }
                     
-                    // 3. Bloquear campos se necessário (após carga assíncrona)
+                    // 3. Bloquear campos APENAS se houver recebimentos/pagamentos parciais registrados
                     try {
                         const statusLower = String(conta.status || '').toLowerCase();
                         const temHistorico = Array.isArray(conta.historicosPagamento) && conta.historicosPagamento.length > 0;
-                        const temPago = parseCurrencyValue(conta.valorPago || 0) > 0 || !!conta.dataPagamento;
-                        const lock = temHistorico || temPago || statusLower === 'parcial' || statusLower === 'pago';
+                        const valorPagoNum = parseCurrencyValue(conta.valorPago || 0);
+                        const temPagoEfetivo = valorPagoNum > 0;
+                        const lockFinanceiro = temHistorico || temPagoEfetivo || statusLower === 'parcial' || statusLower === 'pago';
                         
-                        if (valorField) valorField.disabled = lock;
-                        if (dataField) dataField.disabled = lock;
-                        if (parcelasField) parcelasField.disabled = true; // Sempre desabilitar parcelas na edição
-                        if (clienteField) clienteField.disabled = lock;
-                        if (tipoFieldRec) tipoFieldRec.disabled = lock;
-                        if (categoriaField) categoriaField.disabled = lock;
-                        if (jurosTipoField) jurosTipoField.disabled = lock;
-                        if (jurosTaxaField) jurosTaxaField.disabled = lock;
+                        if (valorField) valorField.disabled = lockFinanceiro;
+                        if (dataField) dataField.disabled = lockFinanceiro;
+                        if (parcelasField) parcelasField.disabled = true; // Conta individual preserva estrutura
+                        if (clienteField) clienteField.disabled = lockFinanceiro;
+                        if (tipoFieldRec) tipoFieldRec.disabled = lockFinanceiro;
+                        if (categoriaField) categoriaField.disabled = lockFinanceiro;
+                        if (jurosTipoField) jurosTipoField.disabled = lockFinanceiro;
+                        if (jurosTaxaField) jurosTaxaField.disabled = lockFinanceiro;
                     } catch(_) {}
                     
                 } catch (errCli) {
@@ -6461,17 +6478,18 @@ async function editarConta(id, tipo) {
                 try {
                     const statusLower = String(conta.status || '').toLowerCase();
                     const temHistorico = Array.isArray(conta.historicosPagamento) && conta.historicosPagamento.length > 0;
-                    const temPago = parseCurrencyValue(conta.valorPago || 0) > 0 || !!conta.dataPagamento;
-                    const lock = temHistorico || temPago || statusLower === 'parcial' || statusLower === 'pago';
+                    const valorPagoNum = parseCurrencyValue(conta.valorPago || 0);
+                    const temPagoEfetivo = valorPagoNum > 0;
+                    const lockFinanceiro = temHistorico || temPagoEfetivo || statusLower === 'parcial' || statusLower === 'pago';
                     
-                    if (valorField) valorField.disabled = lock;
-                    if (dataField) dataField.disabled = lock;
-                    if (parcelasField) parcelasField.disabled = true; // Sempre desabilitar parcelas na edição
-                    if (fornecedorField) fornecedorField.disabled = lock;
-                    if (tipoField) tipoField.disabled = lock;
-                    if (categoriaField) categoriaField.disabled = lock;
-                    if (jurosTipoField) jurosTipoField.disabled = lock;
-                    if (jurosTaxaField) jurosTaxaField.disabled = lock;
+                    if (valorField) valorField.disabled = lockFinanceiro;
+                    if (dataField) dataField.disabled = lockFinanceiro;
+                    if (parcelasField) parcelasField.disabled = true; // Conta individual preserva estrutura
+                    if (fornecedorField) fornecedorField.disabled = lockFinanceiro;
+                    if (tipoField) tipoField.disabled = lockFinanceiro;
+                    if (categoriaField) categoriaField.disabled = lockFinanceiro;
+                    if (jurosTipoField) jurosTipoField.disabled = lockFinanceiro;
+                    if (jurosTaxaField) jurosTaxaField.disabled = lockFinanceiro;
                 } catch(_) {}
             updateManualAttachmentButtonState('pagar');
             scrollToForm('pagarForm');
