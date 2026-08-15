@@ -238,6 +238,32 @@ function parseInterestRate(value) {
     return Number.isFinite(rate) && rate > 0 ? rate : 0;
 }
 
+const FINANCE_TIME_ZONE = 'America/Sao_Paulo';
+
+// ✅ Dia civil atual no fuso do negócio (America/Sao_Paulo). O backend valida
+// juros/status contra o dia da empresa, não contra UTC (senão às 21h locais a
+// conta que vence hoje já apareceria com 1 dia de atraso).
+function getTodayISODateInTimeZone(nowIso, timeZone) {
+    const date = nowIso === undefined || nowIso === null ? new Date() : new Date(nowIso);
+    if (Number.isNaN(date.getTime())) return null;
+    try {
+        return new Intl.DateTimeFormat('en-CA', {
+            timeZone: timeZone || FINANCE_TIME_ZONE,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).format(date);
+    } catch (_) {
+        return null;
+    }
+}
+
+// ✅ Day number (igual a dateToDayNumber) do dia civil atual no fuso do negócio.
+function todayDayNumber(nowIso) {
+    const isoDate = getTodayISODateInTimeZone(nowIso, FINANCE_TIME_ZONE);
+    return isoDate ? dateToDayNumber(isoDate) : null;
+}
+
 function dateToDayNumber(value) {
     if (value === undefined || value === null || value === '') return null;
     if (typeof value === 'number' && Number.isFinite(value)) {
@@ -649,7 +675,7 @@ function currentFinancialState(account, nowIso = new Date().toISOString()) {
     if (storedStatus === 'pendente' || storedStatus === 'vencido') {
         const dueDay = dateToDayNumber(account.dataVencimento ?? account.vencimento);
         if (dueDay !== null) {
-            const todayDay = dateToDayNumber(nowIso);
+            const todayDay = todayDayNumber(nowIso);
             status = todayDay !== null && dueDay < todayDay ? 'vencido' : 'pendente';
         }
     }
@@ -854,7 +880,7 @@ function buildCanonicalCreatedAccount(item, request, companyId, nowIso) {
     }
 
     const dueDay = dateToDayNumber(dueDate);
-    const todayDay = dateToDayNumber(nowIso);
+    const todayDay = todayDayNumber(nowIso);
     const status = dueDay !== null && todayDay !== null && dueDay < todayDay
         ? 'vencido'
         : 'pendente';
@@ -1135,7 +1161,7 @@ function assertRegisterMutation(account, current, patch, operationId, nowIso) {
         throw new FinanceValidationError('operationId do histórico não corresponde à operação.');
     }
     const paymentDay = dateToDayNumber(payment.data);
-    const todayDay = dateToDayNumber(nowIso);
+    const todayDay = todayDayNumber(nowIso);
     const previousPayment = current.history.length
         ? current.history[current.history.length - 1]
         : null;
@@ -1259,7 +1285,7 @@ function assertDeleteMutation(account, current, patch, nowIso) {
         : null;
     const expectedInterestBaseDate = lastPayment ? lastPayment.data : null;
     const dueDay = dateToDayNumber(account && (account.dataVencimento ?? account.vencimento));
-    const todayDay = dateToDayNumber(nowIso);
+    const todayDay = todayDayNumber(nowIso);
     const status = recalculated.remainingCents === 0
         ? 'pago'
         : (recalculated.paidCents > 0
@@ -1677,7 +1703,7 @@ function buildAccountEditTreeMutation(currentTree, request, nowIso) {
     }
     const remainingCents = totalHistoricalValueCents - current.paidCents;
     const dueDay = dateToDayNumber(account.dataVencimento ?? account.vencimento);
-    const todayDay = dateToDayNumber(nowIso);
+    const todayDay = todayDayNumber(nowIso);
     const status = remainingCents === 0
         ? 'pago'
         : (current.paidCents > 0
@@ -2596,6 +2622,8 @@ exports.__test = {
     createHandlers,
     currentFinancialState,
     expectedStateMatches,
+    getTodayISODateInTimeZone,
+    todayDayNumber,
     isInactiveAccessRecord,
     moneyToCents,
     normalizeExpectedState,

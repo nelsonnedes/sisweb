@@ -4227,11 +4227,19 @@ function getTodayISODateLocal() {
 }
 
 function getTodayISODateUTC() {
-    const now = new Date();
-    const y = now.getUTCFullYear();
-    const m = String(now.getUTCMonth() + 1).padStart(2, '0');
-    const d = String(now.getUTCDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    // ✅ Dia civil atual no fuso do negócio (America/Sao_Paulo), alinhado com o
+    // backend (functions/finance-functions.js todayDayNumber). Evita que às 21h
+    // locais o dia UTC já vire o seguinte e contas vencendo hoje pareçam ter
+    // 1 dia de atraso. Mantém Date.UTC apenas na conversão para timestamp.
+    try {
+        return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+    } catch (_) {
+        const now = new Date();
+        const y = now.getUTCFullYear();
+        const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+        const d = String(now.getUTCDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
 }
 
 function getTodayStartTimestampLocal() {
