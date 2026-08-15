@@ -2948,9 +2948,14 @@ function computeFilteredReceber(filtro = {}) {
         contasFiltradas = contasFiltradas.filter(c => parseCurrencyValue(c.valorRestante ?? (c.valor ?? 0)) > 0);
     }
     if (filtro.clienteId) {
-        contasFiltradas = contasFiltradas.filter(c => String(c.clienteId || (c.cliente && typeof c.cliente === 'object' ? c.cliente.id : '') || '') === String(filtro.clienteId));
+        const needleId = String(filtro.clienteId).trim().toLowerCase();
+        contasFiltradas = contasFiltradas.filter(c => {
+            const cid = String(c.clienteId || c.clientId || (c.cliente && typeof c.cliente === 'object' ? (c.cliente.id || c.cliente.clientId) : '') || '').trim().toLowerCase();
+            const cname = String((c.cliente && typeof c.cliente === 'object' ? (c.cliente.nome || c.cliente.name) : c.cliente) || c.clienteNome || '').trim().toLowerCase();
+            return cid === needleId || (needleId.length > 2 && cname === needleId);
+        });
     }
-    if (filtro.categoria) {
+    if (filtro.categoria && String(filtro.categoria).toLowerCase() !== 'todos') {
         const catKey = normalizeCategoriaKey(filtro.categoria);
         const tipoKeys = {
             'a_vista':1,'a_prazo':1,'entrada':1,'parcela':1,'parcelado':1,
@@ -2965,7 +2970,7 @@ function computeFilteredReceber(filtro = {}) {
             return catCmp === catKey;
         });
     }
-    if (filtro.tipo) {
+    if (filtro.tipo && String(filtro.tipo).toLowerCase() !== 'todos') {
         const tkey = normalizeTipoKey(filtro.tipo);
         contasFiltradas = contasFiltradas.filter(c => resolveFinanceTipoOperacional(c) === tkey);
     }
@@ -2974,7 +2979,8 @@ function computeFilteredReceber(filtro = {}) {
         contasFiltradas = contasFiltradas.filter(c => String(c.pedidoNumero || c.numero || '').toLowerCase().includes(needle));
     }
     const inicioTs = normalizeDateToTimestamp(filtro.dataInicio);
-    const fimTs = normalizeDateToTimestamp(filtro.dataFim);
+    const rawFimTs = normalizeDateToTimestamp(filtro.dataFim);
+    const fimTs = rawFimTs !== null ? rawFimTs + 86400000 - 1 : null;
     if (inicioTs) contasFiltradas = contasFiltradas.filter(c => {
         const tsVenc = getContaVencimentoTimestamp(c);
         const tsEmi = normalizeDateToTimestamp(c && c.dataEmissao);
@@ -3034,9 +3040,14 @@ function computeFilteredPagar(filtro = {}) {
         contasFiltradas = contasFiltradas.filter(c => parseCurrencyValue(c.valorRestante ?? (c.valor ?? 0)) > 0);
     }
     if (filtro.fornecedorId) {
-        contasFiltradas = contasFiltradas.filter(c => String(c.fornecedorId || (c.fornecedor && typeof c.fornecedor === 'object' ? c.fornecedor.id : '') || '') === String(filtro.fornecedorId) || String(c.funcionarioId || '') === String(filtro.fornecedorId));
+        const needleId = String(filtro.fornecedorId).trim().toLowerCase();
+        contasFiltradas = contasFiltradas.filter(c => {
+            const fid = String(c.fornecedorId || c.funcionarioId || (c.fornecedor && typeof c.fornecedor === 'object' ? (c.fornecedor.id || c.fornecedor.fornecedorId) : '') || '').trim().toLowerCase();
+            const fname = String((c.fornecedor && typeof c.fornecedor === 'object' ? (c.fornecedor.nome || c.fornecedor.name) : c.fornecedor) || c.fornecedorNome || c.funcionarioNome || '').trim().toLowerCase();
+            return fid === needleId || (needleId.length > 2 && fname === needleId);
+        });
     }
-    if (filtro.categoria) {
+    if (filtro.categoria && String(filtro.categoria).toLowerCase() !== 'todos') {
         const catKey = normalizeCategoriaKey(filtro.categoria);
         const tipoKeys = {
             'a_vista':1,'a_prazo':1,'entrada':1,'parcela':1,'parcelado':1,
@@ -3051,12 +3062,17 @@ function computeFilteredPagar(filtro = {}) {
             return catCmp === catKey;
         });
     }
+    if (filtro.tipo && String(filtro.tipo).toLowerCase() !== 'todos') {
+        const tkey = normalizeTipoKey(filtro.tipo);
+        contasFiltradas = contasFiltradas.filter(c => resolveFinanceTipoOperacional(c) === tkey);
+    }
     if (filtro.pedidoNumero) {
         const needle = String(filtro.pedidoNumero).trim().toLowerCase();
         contasFiltradas = contasFiltradas.filter(c => String(c.pedidoNumero || c.numero || '').toLowerCase().includes(needle));
     }
     const inicioTs = normalizeDateToTimestamp(filtro.dataInicio);
-    const fimTs = normalizeDateToTimestamp(filtro.dataFim);
+    const rawFimTs = normalizeDateToTimestamp(filtro.dataFim);
+    const fimTs = rawFimTs !== null ? rawFimTs + 86400000 - 1 : null;
     if (inicioTs) contasFiltradas = contasFiltradas.filter(c => {
         const tsVenc = getContaVencimentoTimestamp(c);
         const tsEmi = normalizeDateToTimestamp(c && c.dataEmissao);
@@ -4417,7 +4433,12 @@ async function carregarTabelaReceber(filtro = {}) {
     
     // Filtros adicionais (cliente, categoria e datas)
     if (filtro.clienteId) {
-        contasFiltradas = contasFiltradas.filter(c => String(c.clienteId || (c.cliente && typeof c.cliente === 'object' ? c.cliente.id : '') || '') === String(filtro.clienteId));
+        const needleId = String(filtro.clienteId).trim().toLowerCase();
+        contasFiltradas = contasFiltradas.filter(c => {
+            const cid = String(c.clienteId || c.clientId || (c.cliente && typeof c.cliente === 'object' ? (c.cliente.id || c.cliente.clientId) : '') || '').trim().toLowerCase();
+            const cname = String((c.cliente && typeof c.cliente === 'object' ? (c.cliente.nome || c.cliente.name) : c.cliente) || c.clienteNome || '').trim().toLowerCase();
+            return cid === needleId || (needleId.length > 2 && cname === needleId);
+        });
     }
     if (filtro.pedidoNumero) {
         const needle = String(filtro.pedidoNumero).trim().toLowerCase();
@@ -4440,9 +4461,10 @@ async function carregarTabelaReceber(filtro = {}) {
         contasFiltradas = contasFiltradas.filter(c => resolveFinanceTipoOperacional(c) === tkey);
     }
     
-    // ✅ Comparação robusta por datas (normalizadas para timestamp)
+    // ✅ Comparação robusta por datas (normalizadas para timestamp com inclusão de dia final completo)
     const inicioTs = normalizeDateToTimestamp(filtro.dataInicio);
-    const fimTs = normalizeDateToTimestamp(filtro.dataFim);
+    const rawFimTs = normalizeDateToTimestamp(filtro.dataFim);
+    const fimTs = rawFimTs !== null ? rawFimTs + 86400000 - 1 : null;
 
     if (inicioTs) {
         contasFiltradas = contasFiltradas.filter(c => {
@@ -4706,7 +4728,12 @@ async function carregarTabelaPagar(filtro = {}) {
     
     // Filtros adicionais (fornecedor, categoria e outros)
     if (filtro.fornecedorId) {
-        contasFiltradas = contasFiltradas.filter(c => String(c.fornecedorId || '') === String(filtro.fornecedorId) || String(c.funcionarioId || '') === String(filtro.fornecedorId));
+        const needleId = String(filtro.fornecedorId).trim().toLowerCase();
+        contasFiltradas = contasFiltradas.filter(c => {
+            const fid = String(c.fornecedorId || c.funcionarioId || (c.fornecedor && typeof c.fornecedor === 'object' ? (c.fornecedor.id || c.fornecedor.fornecedorId) : '') || '').trim().toLowerCase();
+            const fname = String((c.fornecedor && typeof c.fornecedor === 'object' ? (c.fornecedor.nome || c.fornecedor.name) : c.fornecedor) || c.fornecedorNome || c.funcionarioNome || '').trim().toLowerCase();
+            return fid === needleId || (needleId.length > 2 && fname === needleId);
+        });
     }
     if (filtro.pedidoNumero) {
         const needle = String(filtro.pedidoNumero).trim().toLowerCase();
@@ -4729,9 +4756,10 @@ async function carregarTabelaPagar(filtro = {}) {
         contasFiltradas = contasFiltradas.filter(c => resolveFinanceTipoOperacional(c) === tkey);
     }
     
-    // ✅ Comparação robusta por datas (normalizadas para timestamp)
+    // ✅ Comparação robusta por datas (normalizadas para timestamp com inclusão de dia final completo)
     const inicioTs = normalizeDateToTimestamp(filtro.dataInicio);
-    const fimTs = normalizeDateToTimestamp(filtro.dataFim);
+    const rawFimTs = normalizeDateToTimestamp(filtro.dataFim);
+    const fimTs = rawFimTs !== null ? rawFimTs + 86400000 - 1 : null;
 
     if (inicioTs) {
         contasFiltradas = contasFiltradas.filter(c => {
@@ -4889,26 +4917,32 @@ async function ensureReceberMonths(months) {
         const msgEl = document.getElementById('financeLoadingMessage');
         const cntEl = document.getElementById('financeLoadingCounter');
         const total = toLoad.length;
+        if (total === 0) return;
         let done = 0;
         let anyRemoteSuccess = false;
         let anyRemoteFail = false;
-        if (total > 0 && msgEl) msgEl.textContent = 'Carregando meses (Receber)...';
-        if (total > 0 && cntEl) cntEl.textContent = `0/${total}`;
-        for (const mk of toLoad) {
+        if (msgEl) msgEl.textContent = 'Carregando meses (Receber)...';
+        if (cntEl) cntEl.textContent = `0/${total}`;
+        const results = await Promise.all(toLoad.map(async (mk) => {
             try {
                 const rec = await window.firebaseService.loadFromFirebase(`financas/receber/${mk}`);
-                const arr = (rec && rec.success && rec.data) ? (Array.isArray(rec.data) ? rec.data : Object.values(rec.data || {})) : [];
-                contasReceber = mergeFinanceMonthData(contasReceber, arr, mk, 'contasReceber_deletedIds');
-                anyRemoteSuccess = anyRemoteSuccess || (rec && rec.success === true);
-                anyRemoteFail = anyRemoteFail || (!rec || rec.success === false);
-                
+                done += 1;
+                if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
+                return { mk, rec };
             } catch (e) {
-                anyRemoteFail = true;
+                done += 1;
+                if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
+                return { mk, rec: { success: false, data: [] } };
             }
+        }));
+
+        results.forEach(({ mk, rec }) => {
+            const arr = (rec && rec.success && rec.data) ? (Array.isArray(rec.data) ? rec.data : Object.values(rec.data || {})) : [];
+            contasReceber = mergeFinanceMonthData(contasReceber, arr, mk, 'contasReceber_deletedIds');
+            anyRemoteSuccess = anyRemoteSuccess || (rec && rec.success === true);
+            anyRemoteFail = anyRemoteFail || (!rec || rec.success === false);
             window.financeMonthsLoadedReceber.add(mk);
-            done += 1;
-            if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
-        }
+        });
         if (cntEl) setTimeout(()=>{ cntEl.textContent = ''; }, 600);
         window.financeOffline = (!!window.firebaseAuthDisabled) || (anyRemoteFail && !anyRemoteSuccess);
         updateOfflineBadge();
@@ -4984,25 +5018,32 @@ async function ensurePagarMonths(months) {
         const msgEl = document.getElementById('financeLoadingMessage');
         const cntEl = document.getElementById('financeLoadingCounter');
         const total = toLoad.length;
+        if (total === 0) return;
         let done = 0;
         let anyRemoteSuccess = false;
         let anyRemoteFail = false;
-        if (total > 0 && msgEl) msgEl.textContent = 'Carregando meses (Pagar)...';
-        if (total > 0 && cntEl) cntEl.textContent = `0/${total}`;
-        for (const mk of toLoad) {
+        if (msgEl) msgEl.textContent = 'Carregando meses (Pagar)...';
+        if (cntEl) cntEl.textContent = `0/${total}`;
+        const results = await Promise.all(toLoad.map(async (mk) => {
             try {
                 const pag = await window.firebaseService.loadFromFirebase(`financas/pagar/${mk}`);
-                const arr = (pag && pag.success && pag.data) ? (Array.isArray(pag.data) ? pag.data : Object.values(pag.data || {})) : [];
-                contasPagar = mergeFinanceMonthData(contasPagar, arr, mk, 'contasPagar_deletedIds');
-                anyRemoteSuccess = anyRemoteSuccess || (pag && pag.success === true);
-                anyRemoteFail = anyRemoteFail || (!pag || pag.success === false);
+                done += 1;
+                if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
+                return { mk, pag };
             } catch (e) {
-                anyRemoteFail = true;
+                done += 1;
+                if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
+                return { mk, pag: { success: false, data: [] } };
             }
+        }));
+
+        results.forEach(({ mk, pag }) => {
+            const arr = (pag && pag.success && pag.data) ? (Array.isArray(pag.data) ? pag.data : Object.values(pag.data || {})) : [];
+            contasPagar = mergeFinanceMonthData(contasPagar, arr, mk, 'contasPagar_deletedIds');
+            anyRemoteSuccess = anyRemoteSuccess || (pag && pag.success === true);
+            anyRemoteFail = anyRemoteFail || (!pag || pag.success === false);
             window.financeMonthsLoadedPagar.add(mk);
-            done += 1;
-            if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
-        }
+        });
         if (cntEl) setTimeout(()=>{ cntEl.textContent = ''; }, 600);
         window.financeOffline = (!!window.firebaseAuthDisabled) || (anyRemoteFail && !anyRemoteSuccess);
         updateOfflineBadge();
@@ -7394,7 +7435,9 @@ function isFinanceDateInRange(value, start, end) {
     const ts = normalizeDateToTimestamp(value);
     const startTs = normalizeDateToTimestamp(start);
     const endTs = normalizeDateToTimestamp(end);
-    return ts !== null && startTs !== null && endTs !== null && ts >= startTs && ts <= endTs;
+    if (ts === null || startTs === null || endTs === null) return false;
+    const endOfDayTs = endTs + 86400000 - 1;
+    return ts >= startTs && ts <= endOfDayTs;
 }
 
 function getFinancePartyName(conta, tipo) {
