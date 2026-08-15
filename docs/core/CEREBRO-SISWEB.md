@@ -92,7 +92,14 @@
 
 ## 10. Histórico recente (mini-log por data)
 
-- **2026-08-15:** sincronização completa Antigravity + OpenCode; resolução de conflito de cache-busters; correção de fallback canônico de `openClientListModal`, validação de `safeId` em `species-manager.js`, guard de uid/tenant em `client-list-columns.js`; suíte de testes 416/415 pass (0 falhas).
+- **2026-08-15:** 
+  - Otimização de performance $O(1)$ e zero-lag de abertura do modal de pedidos em Vendas (`vendas.js`) e Compras (`compras.js`);
+  - Reutilização de `obterDadosEmpresa` no lote de impressão eliminando requisições repetidas;
+  - Desbloqueio completo de edição em contas pendentes/vencidas sem pagamento no Financeiro (`financas.js`);
+  - Cálculo de juros de mora e multa contratual (2%) por vencimento individual de fatura + suporte a Juros Compostos;
+  - Backfill e migração atômica de `dataEmissao` em 331 contas legadas no Firebase RTDB;
+  - Correção de CSP para ingest do Sentry no `index.html`;
+  - Suíte completa passando com 416 testes executados / 415 pass / 0 falhas e deploy no Firebase Hosting ativo.
 - **2026-08-14:** fix UTC financeiro (fuso SP front+back) deployado; fix modais romaneios (4/página, 26px, margin 0) deployado; runbook quota + handoff criados; verificação Login com gstatic OK daqui; incidente gstatic do cliente diagnosticado como rede.
 - **2026-08-11:** handoff incidente Sentry (token SENTRY_API_TOKEN com escopo de escrita; 403 no Resolver resolvido).
 - **2026-08-10:** commit guard folha normalizeMes; modal lista clientes unificado; monitoramento Sentry (story 2026-08-07).
