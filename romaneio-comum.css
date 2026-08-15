@@ -1056,6 +1056,7 @@ textarea:focus {
     justify-content: center !important;
     gap: 6px !important;
     flex-wrap: nowrap !important;
+    margin: 0 !important;
 }
 
 #clientListModal .action-button,
@@ -1067,9 +1068,9 @@ textarea:focus {
 #clientListModal .btn-excluir,
 #fornecedorListModal .btn-excluir,
 #speciesListModal .btn-excluir {
-    width: 30px !important;
-    min-width: 30px !important;
-    height: 30px !important;
+    width: 26px !important;
+    min-width: 26px !important;
+    height: 26px !important;
     padding: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
@@ -1584,18 +1585,26 @@ textarea:focus {
     font-size: 12px !important;
     letter-spacing: 0.3px !important;
     text-transform: uppercase !important;
-    padding: 6px 8px !important;
+    padding: 5px 8px !important;
     line-height: 1.1 !important;
+    height: 32px !important;
     border-bottom: 2px solid #1a252f !important;
 }
 
 #clientListModal .table tbody td,
 #fornecedorListModal .table tbody td,
 #speciesListModal .table tbody td {
-    padding: 6px 8px !important;
+    padding: 3px 8px !important;
     font-size: 12.5px !important;
     line-height: 1.1 !important;
+    height: 26px !important;
     border-bottom: 1px solid #f1f1f1 !important;
+}
+
+#clientListModal .table tbody tr,
+#fornecedorListModal .table tbody tr,
+#speciesListModal .table tbody tr {
+    height: 32px !important;
 }
 
 #clientListModal .table tbody tr:nth-child(even),
@@ -2122,14 +2131,14 @@ textarea:focus {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    width: 32px !important;
-    min-width: 32px !important;
-    height: 32px !important;
+    width: 26px !important;
+    min-width: 26px !important;
+    height: 26px !important;
     padding: 0 !important;
     border: none !important;
     border-radius: 6px !important;
     cursor: pointer !important;
-    font-size: 13px !important;
+    font-size: 12px !important;
     color: #ffffff !important;
     transition: all 0.2s ease-in-out !important;
 }

@@ -12,7 +12,7 @@ let cachedSpecies = [];
 let cachedRomaneios = [];
 
 // Pagination State
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 4;
 let currentPageClient = 1;
 let currentPageSupplier = 1;
 let currentPageSpecies = 1;
@@ -167,6 +167,12 @@ async function openClientListModal() {
         cachedClients = clientList;
         currentPageClient = 1; // Reset to first page
         renderClientList();
+
+        // ✅ FOCO AUTOMÁTICO NO CAMPO DE FILTRO
+        const filterInput = document.getElementById('clientListFilter');
+        if (filterInput) {
+            setTimeout(() => filterInput.focus(), 300);
+        }
     } catch (error) {
         console.error('Erro ao carregar clientes:', error);
         tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Erro ao carregar clientes: ' + error.message + '</td></tr>';

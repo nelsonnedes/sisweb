@@ -88,7 +88,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css?v=20260324_2">
-    <link rel="stylesheet" href="romaneio-comum.css?v=20260607pwaqa">
+    <link rel="stylesheet" href="romaneio-comum.css?v=32f16c9d8794">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <link rel="stylesheet" href="print-styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -351,15 +351,15 @@
         }
 
         #clientListModal .table th {
-            padding: 6px 8px;
-            height: 30px;
+            padding: 5px 8px;
+            height: 26px;
             font-size: 12px;
             line-height: 1.1;
         }
 
         #clientListModal .table td {
-            padding: 6px 8px;
-            height: 28px;
+            padding: 4px 8px;
+            height: 24px;
             font-size: 12.5px;
             line-height: 1.1;
         }
@@ -2665,11 +2665,11 @@
 
     <!-- Scripts -->
     <script src="utils.js?v=8d69788a751e"></script>
-    <script src="species-utils.js?v=f0ddb6f8e353"></script>
+    <script src="species-utils.js?v=ac1a2bae7bea"></script>
     <script src="species-store.js?v=603ae6b9dd3d"></script>
-    <script src="species-modal-standard.js?v=cd805c4328e7"></script>
-    <script src="data-functions.js?v=1380160f5957"></script>
-    <script src="auth.js?v=d1239cbe15f0"></script>
+    <script src="species-modal-standard.js?v=99c2cf53cc3e"></script>
+    <script src="data-functions.js?v=8dd76c97712b"></script>
+    <script src="auth.js?v=4fa226ae91ed"></script>
     <script src="validation-system.js?v=f70152f1f65e"></script>
     <script src="cache-system.js?v=a307288b87e9"></script>
     <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
@@ -2690,7 +2690,7 @@
             db,
             auth,
             app
-        } from './firebaseService.js?v=3d948f6ba91d';
+        } from './firebaseService.js?v=ad95660f5cac';
         
         // Disponibilizar firebaseService COMPLETO globalmente para auth.js e romaneiopct_funcoes.js
         window.firebaseService = { 
@@ -2775,12 +2775,12 @@
         console.log("✅ Funções disponíveis:", Object.keys(window.firebaseService));
     </script>
     <script src="client-utils.js?v=d93fb3fb82f5"></script>
-    <script src="client-modal-handler.js?v=c8564bb412a4"></script>
+    <script src="client-modal-handler.js?v=4772af1e6bfb"></script>
     <script src="client-service.js?v=3061965a094a"></script>
     <script src="schema-migration-contatos.js?v=2e13b2ae3d91"></script>
     
     <!-- ✅ CORREÇÕES PARA SALVAMENTO DE CLIENTES -->
-    <script src="romaneios-client-save-fix.js?v=e944ef0ec8ee"></script>
+    <script src="romaneios-client-save-fix.js?v=7b9c0e02d555"></script>
     
     <!-- ❌ DESABILITADO: species-manager.js - CONFLITA COM MODAIS PADRONIZADOS PCT -->
     <!-- <script src="species-manager.js?v=1a286bc19de6"></script> -->
@@ -2866,8 +2866,8 @@
     <script src="modules/romaneiopct/modal-lista-romaneios-pct.js?v=7aecf79805c3"></script>
     
     <!-- 5. Modal de Clientes PCT -->
-    <script src="modules/romaneiopct/modal-clientes-pct.js?v=10e109cf7e3e"></script>
-    <script src="modules/core/client-list-columns.js?v=20260814fixed" data-page="pct" data-target="clientListTable"></script>
+    <script src="modules/romaneiopct/modal-clientes-pct.js?v=cbe2e8c9f860"></script>
+    <script src="modules/core/client-list-columns.js?v=0b5067a17aeb" data-page="pct" data-target="clientListTable"></script>
     
     <!-- 6. Modal de Espécies PCT -->
     <script src="modules/romaneiopct/modal-especies-pct.js?v=458ad82213f0"></script>

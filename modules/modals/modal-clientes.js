@@ -20,7 +20,7 @@ window.ModalClientes = (function() {
         tableId: 'clientListTable',
         filterId: 'clientListFilter',
         paginationId: 'clientListPagination',
-        itemsPerPage: 5
+        itemsPerPage: 4
     };
 
     // ✅ ESTADO DO MODAL

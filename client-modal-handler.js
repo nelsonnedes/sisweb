@@ -305,3 +305,50 @@ window.openNewClientModal = function() {
     }
 };
 }
+
+/**
+ * ✅ GUARD PARA openClientListModal
+ * Evita "ReferenceError: openClientListModal is not defined" quando o usuário
+ * clica no ícone de Listar Clientes antes do módulo padrão terminar de carregar
+ * (módulos são carregados de forma assíncrona no fim da página).
+ * Quando a implementação real estiver disponível, delega para ela.
+ */
+(function instalarGuardOpenClientListModal() {
+    if (typeof window.openClientListModal === 'function') return;
+
+    let pendingEvent = null;
+
+    window.openClientListModal = function(event) {
+        pendingEvent = event;
+
+        const realOpen = (() => {
+            if (typeof window.ModalClientesPCT?.openModal === 'function') return window.ModalClientesPCT.openModal;
+            if (typeof window.ModalClientes?.openModal === 'function') return window.ModalClientes.openModal;
+            if (typeof window.openClientListModalOriginal === 'function') return window.openClientListModalOriginal;
+            return null;
+        })();
+
+        if (realOpen) {
+            window.openClientListModal = realOpen;
+            return realOpen(event);
+        }
+
+        // Ainda não carregado: tentar garantir o load do módulo padrão e aguardar
+        const carregarModuloPCT = () => {
+            try {
+                if (!window.inicializadorModaisPCT || typeof window.inicializadorModaisPCT.inicializar !== 'function') return false;
+                window.inicializadorModaisPCT.inicializar().then(() => {
+                    if (typeof window.openClientListModal === 'function' && window.openClientListModal !== window.openClientListModalGuard) {
+                        window.openClientListModal(pendingEvent);
+                    }
+                }).catch(() => {});
+                return true;
+            } catch (_) { return false; }
+        };
+
+        window.openClientListModalGuard = window.openClientListModal;
+        if (!carregarModuloPCT()) {
+            console.warn('⚠️ openClientListModal ainda não disponível; tente novamente em instantes.');
+        }
+    };
+})();

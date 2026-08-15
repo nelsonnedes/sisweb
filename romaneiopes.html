@@ -6,7 +6,7 @@
     <title>Romaneio PES - Sistema Sisweb</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <link rel="stylesheet" href="romaneio-comum.css?v=20260607pwaqa">
+    <link rel="stylesheet" href="romaneio-comum.css?v=32f16c9d8794">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <script src="menu-component.js?v=ac491560b4db"></script>
     <link rel="stylesheet" href="print-styles.css">
@@ -503,10 +503,10 @@
         }
 
         .modal table td {
-            padding: 6px 8px;
+            padding: 4px 8px;
             border-bottom: 1px solid #eee;
             vertical-align: middle;
-            height: 32px;
+            height: 24px;
             font-size: 13px;
             line-height: 1.1;
         }
@@ -1249,10 +1249,10 @@
     </div>
 
     <!-- Scripts -->
-    <script src="species-utils.js?v=f0ddb6f8e353"></script>
+    <script src="species-utils.js?v=ac1a2bae7bea"></script>
     <script src="species-store.js?v=603ae6b9dd3d"></script>
-    <script src="species-modal-standard.js?v=cd805c4328e7"></script>
-    <script src="auth.js?v=d1239cbe15f0"></script>
+    <script src="species-modal-standard.js?v=99c2cf53cc3e"></script>
+    <script src="auth.js?v=4fa226ae91ed"></script>
     <script type="module">
         import {
             authService,
@@ -1268,7 +1268,7 @@
             db,
             auth,
             app
-        } from './firebaseService.js?v=3d948f6ba91d';
+        } from './firebaseService.js?v=ad95660f5cac';
         const tenantFromContext = (() => {
             try {
                 if (window.appTenantId) return String(window.appTenantId);
@@ -1302,14 +1302,14 @@
         };
     </script>
     <script src="client-utils.js?v=d93fb3fb82f5"></script>
-    <script src="client-modal-handler.js?v=c8564bb412a4"></script>
+    <script src="client-modal-handler.js?v=4772af1e6bfb"></script>
     <script src="client-service.js?v=3061965a094a"></script>
     <script src="schema-migration-contatos.js?v=2e13b2ae3d91"></script>
-    <script src="romaneios-client-save-fix.js?v=e944ef0ec8ee"></script>
+    <script src="romaneios-client-save-fix.js?v=7b9c0e02d555"></script>
     <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
     <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
     <script src="romaneio-print-config.js?v=24205aca3d2d"></script>
-    <script src="modules/core/client-list-columns.js?v=20260814fixed" data-page="pes" data-target="clientListBody"></script>
+    <script src="modules/core/client-list-columns.js?v=0b5067a17aeb" data-page="pes" data-target="clientListBody"></script>
     <script>
         let itens = [];
         let preco = 0;
@@ -2685,7 +2685,7 @@
         let speciesListPage = 1;
         let romaneioListPage = 1;
         let romaneiosPesModalList = [];
-        const listItemsPerPage = 5;
+        const listItemsPerPage = 4;
 
         function getRomaneioRecencyTimestampPes(romaneio) {
             if (!romaneio || typeof romaneio !== 'object') return 0;
@@ -3050,6 +3050,9 @@
             
             // Exibir o modal
             clientListModal.style.display = 'block';
+
+            const focusFilter = clientListModal.querySelector('#clientListFilter');
+            setTimeout(() => focusFilter.focus(), 300);
         }
         
         // Função para selecionar cliente da lista

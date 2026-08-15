@@ -1765,7 +1765,7 @@ async function renderFornecedorListBasic(filter = '') {
                     return nome.includes(termo) || cnpj.includes(termo) || cidade.includes(termo) || estado.includes(termo) || telefone.includes(termo) || email.includes(termo);
                 });
             }
-            const pageSize = window._fornPageSize || 10;
+            const pageSize = window._fornPageSize || 4;
             window._fornPageSize = pageSize;
             const pageIndex = typeof window._fornPageIndex === 'number' ? window._fornPageIndex : 0;
             window._fornPageIndex = pageIndex;
@@ -1936,7 +1936,7 @@ async function openFornecedorListModal() {
         const filterInput = document.getElementById('fornecedorListFilter');
         if (filterInput) {
             filterInput.oninput = () => renderFornecedorListBasic(filterInput.value);
-            filterInput.focus();
+            setTimeout(() => filterInput.focus(), 300);
         }
     } catch(_) {}
 }
