@@ -189,6 +189,50 @@ function toraCorrespondeBusca(item, termo) {
     return !filtro || obterTextoBuscaTora(item).includes(filtro);
 }
 
+function obterTextoBuscaMovimentacao(mov = {}) {
+    let romaneiosTexto = '';
+    if (mov.romaneiosRelacionados) {
+        const romaneios = normalizarRomaneiosRastreabilidade(mov.romaneiosRelacionados);
+        romaneiosTexto = romaneios.map(r => {
+            const cliente = r.clienteNome || (typeof r.cliente === 'object' ? (r.cliente.nome || r.cliente.name) : r.cliente) || '';
+            return `romaneio ${r.numero || ''} ${cliente}`;
+        }).join(' ');
+    }
+    const toraTexto = obterTextoBuscaTora(mov);
+    return normalizarTextoBuscaEstoque([
+        toraTexto,
+        mov.tipo,
+        mov.documento,
+        mov.observacoes,
+        romaneiosTexto
+    ].filter(Boolean).join(' '));
+}
+
+function formatarRomaneiosVinculadosMovimentacao(mov = {}, options = {}) {
+    const plain = !!options.plain;
+    const roms = mov && mov.romaneiosRelacionados
+        ? normalizarRomaneiosRastreabilidade(mov.romaneiosRelacionados)
+        : [];
+        
+    const observacoesBase = mov && mov.toraManualForaEstoque
+        ? `MANUAL FORA ESTOQUE - ${mov.observacoes || ''}`.trim()
+        : (mov.observacoes || '');
+
+    if (roms.length === 0) {
+        return plain ? observacoesBase : escapeHtml(observacoesBase);
+    }
+
+    const linhas = roms.map(r => {
+        const cliente = r.clienteNome || (typeof r.cliente === 'object' ? (r.cliente.nome || r.cliente.name) : r.cliente) || '';
+        const volVal = r.volume !== undefined ? r.volume : (r.volumeSerraria !== undefined ? r.volumeSerraria : (r.volumeTora !== undefined ? r.volumeTora : (r.volumeGeometrico !== undefined ? r.volumeGeometrico : 0)));
+        const vol = formatNumber(volVal, 3);
+        const numero = r.numero || '';
+        const texto = `Romaneio ${numero} - ${cliente} - ${vol} m³`;
+        return plain ? texto : `<span class="romaneio-vinculado-item">${escapeHtml(texto)}</span>`;
+    });
+
+    return plain ? linhas.join(' | ') : linhas.join('<br>');
+}
 function formatarMedidaGeoEstoque(value) {
     if (window.ToraGeometry && typeof window.ToraGeometry.formatarMedidaCm === 'function') {
         return window.ToraGeometry.formatarMedidaCm(value);
@@ -4823,7 +4867,7 @@ function carregarTabelaEstoque(filtro = {}) {
     // Aplicar filtros
     const especieFiltro = String(filtro.especie || '').trim().toLowerCase();
     if (especieFiltro) {
-        torasDisponiveis = torasDisponiveis.filter(t => String(t.especie || '').toLowerCase().includes(especieFiltro));
+        torasDisponiveis = torasDisponiveis.filter(t => toraCorrespondeBusca(t, especieFiltro));
     }
 
     if (filtro.localizacao) {
@@ -5764,6 +5808,10 @@ async function carregarTabelaMovimentacoes(filtro = {}) {
         const obs = normalizarTextoBuscaEstoque(filtro.observacoes);
         movFiltradas = movFiltradas.filter(m => normalizarTextoBuscaEstoque(formatarRomaneiosVinculadosMovimentacao(m, { plain: true })).includes(obs));
     }
+    if (filtro.buscaTora) {
+        const buscaT = normalizarTextoBuscaEstoque(filtro.buscaTora);
+        movFiltradas = movFiltradas.filter(m => obterTextoBuscaMovimentacao(m).includes(buscaT));
+    }
 
     // Ordenação dinâmica
     const { coluna, direcao } = ordemMovimentacoes;
@@ -5830,6 +5878,7 @@ async function carregarTabelaMovimentacoes(filtro = {}) {
         buscaTora: filtroMovimentacoesAtual.buscaTora || '',
         remessa: filtroMovimentacoesAtual.remessa || '',
         observacoes: filtroMovimentacoesAtual.observacoes || '',
+        buscaTora: filtroMovimentacoesAtual.buscaTora || '',
         total: baseParaResumo.length,
         selecionados: Array.from(movimentacoesSelecionadas).sort()
     });
@@ -5905,7 +5954,7 @@ function filtrarMovimentacoes() {
         dataInicio: document.getElementById('filtroDataInicio').value,
         dataFim: document.getElementById('filtroDataFim').value,
         tipo: document.getElementById('filtroTipoMov').value,
-        buscaTora: document.getElementById('filtroBuscaToraMov')?.value || '',
+        buscaTora: document.getElementById('filtroBuscaToraMov') ? document.getElementById('filtroBuscaToraMov').value : '',
         remessa: document.getElementById('filtroRemessaBaixa')?.value || '',
         observacoes: document.getElementById('filtroObservacoesMov')?.value || ''
     };
@@ -5956,6 +6005,8 @@ function limparFiltrosMovimentacoes() {
     if (inputRem) inputRem.value = '';
     const inputObs = document.getElementById('filtroObservacoesMov');
     if (inputObs) inputObs.value = '';
+    const inputBuscaT = document.getElementById('filtroBuscaToraMov');
+    if (inputBuscaT) inputBuscaT.value = '';
 
     movimentacoesSelecionadas.clear();
     const masterCheck = document.getElementById('checkTodasMovimentacoes');
@@ -6032,16 +6083,15 @@ function normalizarTextoFiltroRastreabilidade(value) {
 
 function registroRastreabilidadeTexto(reg = {}) {
     const roms = Array.isArray(reg.romaneios) ? reg.romaneios : [];
+    const geo = normalizarCamposGeoEstoque(reg);
     return normalizarTextoBuscaEstoque([
         reg.remessaId,
         reg.movimentacaoId,
         reg.toraId,
         reg.plaqueta,
-        reg.descricao,
-        reg.descricaoTora,
-        reg.description,
+        reg.descricao || reg.descricaoTora || reg.description || '',
         reg.especie,
-        reg.custodia,
+        reg.custodia || geo.custodia,
         reg.numeroRomaneio,
         reg.romaneioId,
         reg.tipoRomaneio,

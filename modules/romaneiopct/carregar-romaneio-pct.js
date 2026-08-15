@@ -265,6 +265,7 @@
             
             if (romaneioIndex !== -1) {
                 let romaneio = romaneios[romaneioIndex];
+                romaneio.itens = romaneio.itens || romaneio.items || [];
                 console.log('📋 ROMANEIO ENCONTRADO:');
                 console.log('- ID:', romaneio.id);
                 console.log('- Cliente:', romaneio.cliente?.nome || 'N/A');

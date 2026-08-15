@@ -146,7 +146,9 @@
       "FIREBASE_SECURITY_GUIDE.md",
       "DIAGRAMA_E_ESQUEMA_SISWEB.dm",
       "skills-lock.json",
-      "new-session-*.json"
+      "new-session-*.json",
+      "session_export.json",
+      "session_messages.json"
     ],
     "headers": [
       {

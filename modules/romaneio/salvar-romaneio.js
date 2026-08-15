@@ -727,6 +727,29 @@ window.SalvarRomaneio = (function() {
             }
             
             if (!romaneio) {
+                // Fallback: tentar carregar do localStorage usando chaves possíveis
+                console.log('⚠️ Romaneio não encontrado no FirebaseService, tentando localStorage diretamente...');
+                const tenantId = window.FirebaseService?.getTenantId() || '';
+                const keysToTry = [
+                    `companies/${tenantId}/romaneios/tl/${romaneioId}`,
+                    `romaneios/tl/${romaneioId}`,
+                    `romaneioTL_${romaneioId}`
+                ];
+                for (const key of keysToTry) {
+                    const localData = localStorage.getItem(key);
+                    if (localData) {
+                        try {
+                            romaneio = JSON.parse(localData);
+                            console.log(`✅ Romaneio recuperado do localStorage usando chave: ${key}`);
+                            break;
+                        } catch (e) {
+                            console.warn(`⚠️ Erro ao parsear romaneio do localStorage (${key}):`, e);
+                        }
+                    }
+                }
+            }
+            
+            if (!romaneio) {
                 throw new Error('Romaneio não encontrado');
             }
             
@@ -771,10 +794,13 @@ window.SalvarRomaneio = (function() {
             console.error('❌ Campo clienteInput não encontrado');
         }
         
+        // Obter a lista de itens suportando tanto 'items' quanto 'itens'
+        const itemsList = romaneio.items || romaneio.itens || [];
+        
         // Preencher espécie padrão (primeira espécie dos itens)
         const especieInput = document.getElementById('especieInput');
-        if (especieInput && romaneio.items && romaneio.items.length > 0) {
-            const primeiraEspecie = romaneio.items[0].especie;
+        if (especieInput && itemsList.length > 0) {
+            const primeiraEspecie = itemsList[0].especie;
             if (primeiraEspecie) {
                 especieInput.value = primeiraEspecie;
                 // Definir espécie selecionada globalmente
@@ -792,11 +818,11 @@ window.SalvarRomaneio = (function() {
         }
         
         // Carregar itens
-        if (romaneio.items && Array.isArray(romaneio.items)) {
-            console.log(`📦 Processando ${romaneio.items.length} itens para edição...`);
+        if (Array.isArray(itemsList) && itemsList.length > 0) {
+            console.log(`📦 Processando ${itemsList.length} itens para edição...`);
             
             // Normalizar campos nos itens carregados
-            const itensNormalizados = romaneio.items.map((item, index) => {
+            const itensNormalizados = itemsList.map((item, index) => {
                 console.log(`🔍 Processando item ${index + 1}:`, item);
                 
                 const itemNormalizado = {

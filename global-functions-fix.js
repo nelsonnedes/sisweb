@@ -293,7 +293,25 @@ document.addEventListener('DOMContentLoaded', function() {
         // Expor funções de clientes/fornecedores se existirem no escopo local
         if (typeof openClientListModal !== 'undefined' && !window.openClientListModal) {
             window.openClientListModal = openClientListModal;
-            console.log("✅ openClientListModal exposta globalmente");
+            console.log("✅ openClientListModal exposta globalmente (escopo local)");
+        }
+
+        // Fallback canônico: delegar para ModalClientes ou ModalClientesPCT se disponíveis
+        if (!window.openClientListModal) {
+            window.openClientListModal = function(event) {
+                if (window.ModalClientesPCT && typeof window.ModalClientesPCT.openModal === 'function') {
+                    return window.ModalClientesPCT.openModal(event);
+                }
+                if (window.ModalClientes && typeof window.ModalClientes.openModal === 'function') {
+                    return window.ModalClientes.openModal(event);
+                }
+                // Último recurso: modal nativo
+                const m = document.getElementById('clientListModal');
+                if (m) { m.style.display = 'flex'; return; }
+                console.warn('⚠️ openClientListModal: nenhuma implementação encontrada');
+            };
+            window.openClientListModal._isFallback = true;
+            console.log("✅ openClientListModal: fallback canônico registrado");
         }
         
         if (typeof openNewClientModal !== 'undefined' && !window.openNewClientModal) {

@@ -2277,6 +2277,15 @@ function configurarEventos() {
     if (pagarJurosTipoEl) {
         pagarJurosTipoEl.addEventListener('change', () => updateJurosRateFieldState('pagar'));
     }
+    const receberTipoEl = document.getElementById('receberTipo');
+    if (receberTipoEl) {
+        receberTipoEl.addEventListener('change', function() {
+            const multaCont = document.getElementById('receberMultaContainer');
+            if (multaCont) {
+                multaCont.style.display = this.value === 'boleto' ? 'block' : 'none';
+            }
+        });
+    }
     
     // Formatação sem símbolo para Valor Total (receber/pagar)
     ['receberValorTotal', 'pagarValorTotal', 'pagamentoValor'].forEach(campoId => {
@@ -2338,6 +2347,7 @@ function configurarEventos() {
         });
         window.financeCadastroListenersBound = true;
     }
+    window.financeInitializingFilters = false;
 }
 
 async function imprimirTabela(tipo) {
@@ -2937,7 +2947,9 @@ function computeFilteredReceber(filtro = {}) {
     } else {
         contasFiltradas = contasFiltradas.filter(c => parseCurrencyValue(c.valorRestante ?? (c.valor ?? 0)) > 0);
     }
-    if (filtro.clienteId) contasFiltradas = contasFiltradas.filter(c => c.clienteId === filtro.clienteId);
+    if (filtro.clienteId) {
+        contasFiltradas = contasFiltradas.filter(c => String(c.clienteId || (c.cliente && typeof c.cliente === 'object' ? c.cliente.id : '') || '') === String(filtro.clienteId));
+    }
     if (filtro.categoria) {
         const catKey = normalizeCategoriaKey(filtro.categoria);
         const tipoKeys = {
@@ -3021,7 +3033,9 @@ function computeFilteredPagar(filtro = {}) {
     } else {
         contasFiltradas = contasFiltradas.filter(c => parseCurrencyValue(c.valorRestante ?? (c.valor ?? 0)) > 0);
     }
-    if (filtro.fornecedorId) contasFiltradas = contasFiltradas.filter(c => c.fornecedorId === filtro.fornecedorId);
+    if (filtro.fornecedorId) {
+        contasFiltradas = contasFiltradas.filter(c => String(c.fornecedorId || (c.fornecedor && typeof c.fornecedor === 'object' ? c.fornecedor.id : '') || '') === String(filtro.fornecedorId) || String(c.funcionarioId || '') === String(filtro.fornecedorId));
+    }
     if (filtro.categoria) {
         const catKey = normalizeCategoriaKey(filtro.categoria);
         const tipoKeys = {
@@ -3585,6 +3599,7 @@ async function salvarContaReceber(event) {
         const tipoValor = (document.getElementById('receberTipo')?.value || 'receber');
         const jurosTipo = normalizeJurosTipoKey(document.getElementById('receberJurosTipo')?.value || 'none');
         const jurosTaxa = parseJurosTaxa(document.getElementById('receberJurosTaxa')?.value || 0);
+        const multaTaxa = parseJurosTaxa(document.getElementById('receberMultaTaxa')?.value || 0);
         const observacoes = document.getElementById('receberObservacoes').value;
         const anexoManualFile = document.getElementById('receberAnexoManual')?.files?.[0] || null;
 
@@ -3664,6 +3679,7 @@ async function salvarContaReceber(event) {
                 tipo: tipoKey,
                 jurosTipo,
                 jurosTaxa,
+                multaTaxa,
                 jurosBaseDate: contaOriginal.jurosBaseDate || null,
                 observacoes: observacoesNorm,
                 parcela: 1,
@@ -3787,6 +3803,7 @@ async function salvarContaReceber(event) {
                 tipo: tipoKey,
                 jurosTipo,
                 jurosTaxa,
+                multaTaxa,
                 jurosBaseDate: null,
                 observacoes: observacoesNorm,
                 parcela: i + 1,
@@ -4283,20 +4300,26 @@ async function ensureReceberDataForRange(filtro) {
         const overlay = document.getElementById('financeLoadingOverlay');
         if (total > 0 && overlay) overlay.style.display = 'flex';
         if (toLoad.length === 0) return;
-        for (const mk of toLoad) {
+        const results = await Promise.all(toLoad.map(async (mk) => {
             try {
                 const rec = await window.firebaseService.loadFromFirebase(`financas/receber/${mk}`);
-                const arr = (rec && rec.success && rec.data) ? (Array.isArray(rec.data) ? rec.data : Object.values(rec.data || {})) : [];
-                contasReceber = mergeFinanceMonthData(contasReceber, arr, mk, 'contasReceber_deletedIds');
-                anyRemoteSuccess = anyRemoteSuccess || (rec && rec.success === true);
-                anyRemoteFail = anyRemoteFail || (!rec || rec.success === false);
+                done += 1;
+                if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
+                return { mk, rec };
             } catch (e) {
-                anyRemoteFail = true;
+                done += 1;
+                if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
+                return { mk, rec: { success: false, data: [] } };
             }
+        }));
+
+        results.forEach(({ mk, rec }) => {
+            const arr = (rec && rec.success && rec.data) ? (Array.isArray(rec.data) ? rec.data : Object.values(rec.data || {})) : [];
+            contasReceber = mergeFinanceMonthData(contasReceber, arr, mk, 'contasReceber_deletedIds');
+            anyRemoteSuccess = anyRemoteSuccess || (rec && rec.success === true);
+            anyRemoteFail = anyRemoteFail || (!rec || rec.success === false);
             window.financeMonthsLoadedReceber.add(mk);
-            done += 1;
-            if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
-        }
+        });
         // Limpar contador ao concluir
         if (cntEl) setTimeout(()=>{ cntEl.textContent = ''; }, 600);
         if (overlay) overlay.style.display = 'none';
@@ -4394,7 +4417,7 @@ async function carregarTabelaReceber(filtro = {}) {
     
     // Filtros adicionais (cliente, categoria e datas)
     if (filtro.clienteId) {
-        contasFiltradas = contasFiltradas.filter(c => c.clienteId === filtro.clienteId);
+        contasFiltradas = contasFiltradas.filter(c => String(c.clienteId || (c.cliente && typeof c.cliente === 'object' ? c.cliente.id : '') || '') === String(filtro.clienteId));
     }
     if (filtro.pedidoNumero) {
         const needle = String(filtro.pedidoNumero).trim().toLowerCase();
@@ -4921,20 +4944,26 @@ async function ensurePagarDataForRange(filtro) {
         const overlay = document.getElementById('financeLoadingOverlay');
         if (total > 0 && overlay) overlay.style.display = 'flex';
         if (toLoad.length === 0) return;
-        for (const mk of toLoad) {
+        const results = await Promise.all(toLoad.map(async (mk) => {
             try {
                 const pag = await window.firebaseService.loadFromFirebase(`financas/pagar/${mk}`);
-                const arr = (pag && pag.success && pag.data) ? (Array.isArray(pag.data) ? pag.data : Object.values(pag.data || {})) : [];
-                contasPagar = mergeFinanceMonthData(contasPagar, arr, mk, 'contasPagar_deletedIds');
-                anyRemoteSuccess = anyRemoteSuccess || (pag && pag.success === true);
-                anyRemoteFail = anyRemoteFail || (!pag || pag.success === false);
+                done += 1;
+                if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
+                return { mk, pag };
             } catch (e) {
-                anyRemoteFail = true;
+                done += 1;
+                if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
+                return { mk, pag: { success: false, data: [] } };
             }
+        }));
+
+        results.forEach(({ mk, pag }) => {
+            const arr = (pag && pag.success && pag.data) ? (Array.isArray(pag.data) ? pag.data : Object.values(pag.data || {})) : [];
+            contasPagar = mergeFinanceMonthData(contasPagar, arr, mk, 'contasPagar_deletedIds');
+            anyRemoteSuccess = anyRemoteSuccess || (pag && pag.success === true);
+            anyRemoteFail = anyRemoteFail || (!pag || pag.success === false);
             window.financeMonthsLoadedPagar.add(mk);
-            done += 1;
-            if (cntEl) cntEl.textContent = `${done}/${total} (${mk})`;
-        }
+        });
         if (cntEl) setTimeout(()=>{ cntEl.textContent = ''; }, 600);
         if (overlay) overlay.style.display = 'none';
         window.financeOffline = (!!window.firebaseAuthDisabled) || (anyRemoteFail && !anyRemoteSuccess);
@@ -6104,6 +6133,12 @@ async function editarConta(id, tipo) {
             if (jurosTipoField) jurosTipoField.value = normalizeJurosTipoKey(conta.jurosTipo);
             if (jurosTaxaField) jurosTaxaField.value = parseJurosTaxa(conta.jurosTaxa || 0);
             updateJurosRateFieldState('receber');
+            const multaTaxaField = document.getElementById('receberMultaTaxa');
+            const multaCont = document.getElementById('receberMultaContainer');
+            if (multaTaxaField) multaTaxaField.value = parseJurosTaxa(conta.multaTaxa ?? 2);
+            if (multaCont) {
+                multaCont.style.display = String(conta.tipo || '').toLowerCase().trim() === 'boleto' ? 'block' : 'none';
+            }
             
             try {
                 const numeroInput = document.getElementById('receberNumero');
@@ -6219,16 +6254,15 @@ async function editarConta(id, tipo) {
                         const temHistorico = Array.isArray(conta.historicosPagamento) && conta.historicosPagamento.length > 0;
                         const temPago = parseCurrencyValue(conta.valorPago || 0) > 0 || !!conta.dataPagamento;
                         const lock = temHistorico || temPago || statusLower === 'parcial' || statusLower === 'pago';
-                        if (lock) {
-                            if (valorField) valorField.disabled = true;
-                            if (dataField) dataField.disabled = true;
-                            if (parcelasField) parcelasField.disabled = true;
-                            if (clienteField) clienteField.disabled = true;
-                            if (tipoFieldRec) tipoFieldRec.disabled = true;
-                            if (categoriaField) categoriaField.disabled = true;
-                            if (jurosTipoField) jurosTipoField.disabled = true;
-                            if (jurosTaxaField) jurosTaxaField.disabled = true;
-                        }
+                        
+                        if (valorField) valorField.disabled = lock;
+                        if (dataField) dataField.disabled = lock;
+                        if (parcelasField) parcelasField.disabled = true; // Sempre desabilitar parcelas na edição
+                        if (clienteField) clienteField.disabled = lock;
+                        if (tipoFieldRec) tipoFieldRec.disabled = lock;
+                        if (categoriaField) categoriaField.disabled = lock;
+                        if (jurosTipoField) jurosTipoField.disabled = lock;
+                        if (jurosTaxaField) jurosTaxaField.disabled = lock;
                     } catch(_) {}
                     
                 } catch (errCli) {
@@ -6383,22 +6417,21 @@ async function editarConta(id, tipo) {
             if (jurosTipoField) jurosTipoField.value = normalizeJurosTipoKey(conta.jurosTipo);
             if (jurosTaxaField) jurosTaxaField.value = parseJurosTaxa(conta.jurosTaxa || 0);
             updateJurosRateFieldState('pagar');
-            try {
-                const statusLower = String(conta.status || '').toLowerCase();
-                const temHistorico = Array.isArray(conta.historicosPagamento) && conta.historicosPagamento.length > 0;
-                const temPago = parseCurrencyValue(conta.valorPago || 0) > 0 || !!conta.dataPagamento;
-                const lock = temHistorico || temPago || statusLower === 'parcial' || statusLower === 'pago';
-                if (lock) {
-                    if (valorField) valorField.disabled = true;
-                    if (dataField) dataField.disabled = true;
-                    if (parcelasField) parcelasField.disabled = true;
-                    if (fornecedorField) fornecedorField.disabled = true;
-                    if (tipoField) tipoField.disabled = true;
-                    if (categoriaField) categoriaField.disabled = true;
-                        if (jurosTipoField) jurosTipoField.disabled = true;
-                        if (jurosTaxaField) jurosTaxaField.disabled = true;
-                }
-            } catch(_) {}
+                try {
+                    const statusLower = String(conta.status || '').toLowerCase();
+                    const temHistorico = Array.isArray(conta.historicosPagamento) && conta.historicosPagamento.length > 0;
+                    const temPago = parseCurrencyValue(conta.valorPago || 0) > 0 || !!conta.dataPagamento;
+                    const lock = temHistorico || temPago || statusLower === 'parcial' || statusLower === 'pago';
+                    
+                    if (valorField) valorField.disabled = lock;
+                    if (dataField) dataField.disabled = lock;
+                    if (parcelasField) parcelasField.disabled = true; // Sempre desabilitar parcelas na edição
+                    if (fornecedorField) fornecedorField.disabled = lock;
+                    if (tipoField) tipoField.disabled = lock;
+                    if (categoriaField) categoriaField.disabled = lock;
+                    if (jurosTipoField) jurosTipoField.disabled = lock;
+                    if (jurosTaxaField) jurosTaxaField.disabled = lock;
+                } catch(_) {}
             updateManualAttachmentButtonState('pagar');
             scrollToForm('pagarForm');
         }
@@ -7308,16 +7341,21 @@ async function loadFinanceReportMonthsStrict(tipo, months) {
     const loadedKey = tipo === 'receber' ? 'financeMonthsLoadedReceber' : 'financeMonthsLoadedPagar';
     window[confirmedKey] = window[confirmedKey] || new Set();
     window[loadedKey] = window[loadedKey] || new Set();
-    for (const month of normalizedMonths) {
-        if (window[confirmedKey].has(month)) continue;
+    const results = await Promise.all(normalizedMonths.map(async (month) => {
+        if (window[confirmedKey].has(month)) return null;
         const result = await service.loadFromFirebase(`financas/${tipo}/${month}`);
         if (!result || result.success !== true) throw new Error(`Não foi possível confirmar a partição ${month} do relatório.`);
-        const records = normalizeFinanceReportCollection(result.data);
-        if (tipo === 'receber') contasReceber = mergeFinanceMonthData(contasReceber, records, month, 'contasReceber_deletedIds');
-        else contasPagar = mergeFinanceMonthData(contasPagar, records, month, 'contasPagar_deletedIds');
-        window[confirmedKey].add(month);
-        window[loadedKey].add(month);
-    }
+        return { month, data: result.data };
+    }));
+    
+    results.forEach((res) => {
+        if (!res) return;
+        const records = normalizeFinanceReportCollection(res.data);
+        if (tipo === 'receber') contasReceber = mergeFinanceMonthData(contasReceber, records, res.month, 'contasReceber_deletedIds');
+        else contasPagar = mergeFinanceMonthData(contasPagar, records, res.month, 'contasPagar_deletedIds');
+        window[confirmedKey].add(res.month);
+        window[loadedKey].add(res.month);
+    });
     if (tipo === 'receber') subscribeReceberMonths(normalizedMonths);
     else subscribePagarMonths(normalizedMonths);
 }
@@ -7353,8 +7391,10 @@ async function ensureFinanceReportScope({ origem, tipo, dataInicio, dataFim }) {
 }
 
 function isFinanceDateInRange(value, start, end) {
-    const normalized = normalizeDateISOInput(value || '');
-    return !!normalized && normalized >= start && normalized <= end;
+    const ts = normalizeDateToTimestamp(value);
+    const startTs = normalizeDateToTimestamp(start);
+    const endTs = normalizeDateToTimestamp(end);
+    return ts !== null && startTs !== null && endTs !== null && ts >= startTs && ts <= endTs;
 }
 
 function getFinancePartyName(conta, tipo) {
@@ -8093,12 +8133,22 @@ function limparFormulario(formId) {
         const listRec = document.getElementById('receberParcelasList');
         if (listRec) listRec.innerHTML = '';
         if (window.generatedParcelAttachmentCache) window.generatedParcelAttachmentCache.receber = {};
-        const parcelasFieldR = document.getElementById('receberParcelas');
-        if (parcelasFieldR) parcelasFieldR.disabled = false;
+        
+        ['receberValorTotal', 'receberDataVencimento', 'receberParcelas', 'receberCliente', 'receberTipo', 'receberCategoria', 'receberJurosTipo', 'receberJurosTaxa', 'receberMultaTaxa'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = false;
+        });
+        const numInput = document.getElementById('receberNumero');
+        if (numInput) numInput.readOnly = false;
+
         const jurosTipoRec = document.getElementById('receberJurosTipo');
         const jurosTaxaRec = document.getElementById('receberJurosTaxa');
-        if (jurosTipoRec) { jurosTipoRec.disabled = false; jurosTipoRec.value = 'none'; }
-        if (jurosTaxaRec) { jurosTaxaRec.disabled = false; jurosTaxaRec.value = '0'; }
+        const multaTaxaRec = document.getElementById('receberMultaTaxa');
+        const multaContRec = document.getElementById('receberMultaContainer');
+        if (jurosTipoRec) jurosTipoRec.value = 'none';
+        if (jurosTaxaRec) jurosTaxaRec.value = '0';
+        if (multaTaxaRec) multaTaxaRec.value = '2';
+        if (multaContRec) multaContRec.style.display = 'none';
         updateJurosRateFieldState('receber');
         const gerarBtnR = document.getElementById('receberGerarParcelasBtn');
         if (gerarBtnR) gerarBtnR.style.display = 'inline-block';
@@ -8108,12 +8158,18 @@ function limparFormulario(formId) {
         const listPag = document.getElementById('pagarParcelasList');
         if (listPag) listPag.innerHTML = '';
         if (window.generatedParcelAttachmentCache) window.generatedParcelAttachmentCache.pagar = {};
-        const parcelasField = document.getElementById('pagarParcelas');
-        if (parcelasField) parcelasField.disabled = false;
+        
+        ['pagarValorTotal', 'pagarDataVencimento', 'pagarParcelas', 'pagarFornecedor', 'pagarTipo', 'pagarCategoria', 'pagarJurosTipo', 'pagarJurosTaxa'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = false;
+        });
+        const numInput = document.getElementById('pagarNumero');
+        if (numInput) numInput.readOnly = false;
+
         const jurosTipoPag = document.getElementById('pagarJurosTipo');
         const jurosTaxaPag = document.getElementById('pagarJurosTaxa');
-        if (jurosTipoPag) { jurosTipoPag.disabled = false; jurosTipoPag.value = 'none'; }
-        if (jurosTaxaPag) { jurosTaxaPag.disabled = false; jurosTaxaPag.value = '0'; }
+        if (jurosTipoPag) jurosTipoPag.value = 'none';
+        if (jurosTaxaPag) jurosTaxaPag.value = '0';
         updateJurosRateFieldState('pagar');
         const gerarBtn = document.getElementById('pagarGerarParcelasBtn');
         if (gerarBtn) gerarBtn.style.display = 'inline-block';
@@ -8730,13 +8786,13 @@ function computeContaJurosInfo(conta, referenceDate = null) {
     const tsEmissao = normalizeDateToTimestamp(conta && conta.dataEmissao);
     const tsRef = referenceDate ? normalizeDateToTimestamp(referenceDate) : getTodayStartTimestampLocal();
     const tsStart = Math.max(tsVenc || 0, tsBaseJuros || 0, tsEmissao || 0);
+    const diasAtraso = (tsVenc && tsRef && tsRef > tsStart) ? Math.floor((tsRef - tsStart) / 86400000) : 0;
     if (!tsVenc || !tsRef || tsRef <= tsStart || taxa <= 0 || tipo === 'none' || status === 'pago') {
         const baseNoJuros = status === 'parcial'
             ? parseCurrencyValue((conta && conta.valorRestante) ?? (conta && conta.valor) ?? 0)
             : parseCurrencyValue((conta && conta.valorOriginal) ?? (conta && conta.valor) ?? 0);
-        return { tipo, taxa, diasAtraso: 0, base: baseNoJuros, juros: 0, totalComJuros: baseNoJuros };
+        return { tipo, taxa, diasAtraso, base: baseNoJuros, juros: 0, totalComJuros: baseNoJuros };
     }
-    const diasAtraso = Math.floor((tsRef - tsStart) / 86400000);
     const base = status === 'parcial'
         ? parseCurrencyValue((conta && conta.valorRestante) ?? (conta && conta.valor) ?? 0)
         : parseCurrencyValue((conta && conta.valorOriginal) ?? (conta && conta.valor) ?? 0);
@@ -8851,12 +8907,13 @@ function getContaFinanceInfo(conta) {
     const tsEmissao = normalizeDateToTimestamp(conta && conta.dataEmissao);
     const tsHoje = getTodayStartTimestampLocal();
 
-    // ✅ Juros CONTRATUAIS: período emissao->vencimento (nao juros de mora acumulados)
+    // ✅ Juros MORA + CONTRATUAIS: projeta o cálculo até hoje se estiver vencida
     const tsInicio = Math.max(tsBaseJuros || 0, tsEmissao || 0) || tsVenc || tsHoje;
-    const tsFim = tsVenc || tsHoje;
-    const diasContrato = (tsFim > tsInicio) ? Math.floor((tsFim - tsInicio) / 86400000) : 0;
-    const jurosAberto = (temJuros && valorRestante > 0 && diasContrato > 0)
-        ? computeJurosByPeriod(valorRestante, taxa, diasContrato, tipo)
+    const tsFim = (tsVenc && tsHoje > tsVenc) ? tsHoje : (tsVenc || tsHoje);
+    const diasTotalCalculo = (tsFim > tsInicio) ? Math.floor((tsFim - tsInicio) / 86400000) : 0;
+    const diasContrato = diasTotalCalculo;
+    const jurosAberto = (temJuros && valorRestante > 0 && diasTotalCalculo > 0)
+        ? computeJurosByPeriod(valorRestante, taxa, diasTotalCalculo, tipo)
         : 0;
     const totalAtualizado = valorRestante + jurosAberto;
     const diasAtraso = (tsVenc && tsHoje > tsVenc) ? Math.floor((tsHoje - tsVenc) / 86400000) : 0;
@@ -9397,7 +9454,7 @@ async function abrirBoletoPixLamina(contaId, tipo) {
         let sacado = null;
         const sacadoId = getFinanceSacadoReferenceId(conta);
         if (sacadoId && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-            const path = `clientes/${sacadoId}`;
+            const path = `clients/${sacadoId}`;
             try {
                 const res = await window.firebaseService.loadFromFirebase(path);
                 if (res && res.success) {
