@@ -1306,7 +1306,8 @@ class SpeciesManager {
         console.log("💾 Salvando espécie v2.0...");
         
         try {
-            const id = String(document.getElementById('speciesId').value || '').trim();
+            let id = String(document.getElementById('speciesId').value || '').trim();
+            if (id === 'undefined' || id === 'null') id = '';
             const name = document.getElementById('speciesName').value;
             const scientificName = document.getElementById('speciesDescription').value;
             const matchesSpeciesId = (species, targetId) => {
@@ -1424,16 +1425,23 @@ class SpeciesManager {
                     ? window.SiswebSpecies.toCanonicalRecord(savedRecord, 0, { id: savedRecord.id || specieData.id, updatedAt: new Date().toISOString() })
                     : savedRecord;
 
+                // Bloquear escrita se o ID for inválido para evitar "especies/undefined"
+                const safeId = String(canonicalRecord.id || '').trim();
+                if (!safeId || safeId === 'undefined' || safeId === 'null') {
+                    console.error('❌ Abortando escrita de espécie: ID inválido', safeId, canonicalRecord);
+                    throw new Error('ID de espécie inválido, gravação abortada para evitar espécie/undefined.');
+                }
+
                 // Tentar salvar no Firebase apenas no registro correto em especies/{id}
                 if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-                    await window.firebaseService.saveToFirebase('especies', canonicalRecord.id, canonicalRecord);
-                    console.log(`✅ Espécie salva via firebaseService em especies/${canonicalRecord.id}`);
+                    await window.firebaseService.saveToFirebase('especies', safeId, { ...canonicalRecord, id: safeId });
+                    console.log(`✅ Espécie salva via firebaseService em especies/${safeId}`);
                 } else if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
-                    await window.firebaseService.saveData(`especies/${canonicalRecord.id}`, canonicalRecord);
-                    console.log(`✅ Espécie salva via firebaseService.saveData em especies/${canonicalRecord.id}`);
+                    await window.firebaseService.saveData(`especies/${safeId}`, { ...canonicalRecord, id: safeId });
+                    console.log(`✅ Espécie salva via firebaseService.saveData em especies/${safeId}`);
                 } else if (window.databaseAdapter && typeof window.databaseAdapter.saveData === 'function') {
-                    await window.databaseAdapter.saveData(`especies/${canonicalRecord.id}`, canonicalRecord);
-                    console.log(`✅ Espécie salva via databaseAdapter em especies/${canonicalRecord.id}`);
+                    await window.databaseAdapter.saveData(`especies/${safeId}`, { ...canonicalRecord, id: safeId });
+                    console.log(`✅ Espécie salva via databaseAdapter em especies/${safeId}`);
                 }
             } catch (error) {
                 console.error("❌ Erro ao salvar no storage:", error);

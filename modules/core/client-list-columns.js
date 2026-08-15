@@ -136,7 +136,9 @@
     function scheduleSave(clean) {
         saveLocal(clean);
         widthsCache = clean;
-        if (resolveUid() === 'anon') return;
+        var uid = resolveUid();
+        var tenant = resolveTenant();
+        if (uid === 'anon' || tenant === 'default') return;
         clearTimeout(saveTimer);
         saveTimer = setTimeout(function () {
             remoteSave(clean);
