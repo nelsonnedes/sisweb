@@ -1118,6 +1118,26 @@ class FirebaseServiceTL {
     }
 
     /**
+     * 💾 Salvar registro individual ou coleção no Firebase com invalidação de cache
+     */
+    async saveToFirebase(path, key, data, options = {}) {
+        let fullKey = String(path || '').trim();
+        if (key !== null && key !== undefined && String(key).trim() !== '') {
+            fullKey = `${fullKey}/${String(key).trim()}`;
+        }
+        if (data === null || data === undefined) {
+            const res = await this.deleteData(fullKey);
+            this.invalidateCollectionCache(path);
+            return res;
+        }
+        const res = await this.saveData(fullKey, data);
+        if (res && res.success) {
+            this.invalidateCollectionCache(path);
+        }
+        return res;
+    }
+
+    /**
      * 📖 Carregar dados com prioridade Firebase - COMPATÍVEL COM ROMANEIOPCT
      */
     async loadFromFirebase(path, options = {}) {
@@ -1493,5 +1513,6 @@ window.getDataTL = (key) => window.firebaseServiceTL.loadData(key);
 window.deleteDataTL = (key) => window.firebaseServiceTL.deleteData(key);
 // ✅ COMPATIBILIDADE: Aliases com nomes alternativos para os módulos
 window.firebaseServiceTL.getFromFirebase = (key, options) => window.firebaseServiceTL.loadFromFirebase(key, options);
+window.saveToFirebaseTL = (path, key, data, options) => window.firebaseServiceTL.saveToFirebase(path, key, data, options);
 
 console.log('🔥 Firebase Service TL carregado com sucesso (v2.1.0)');

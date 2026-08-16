@@ -517,14 +517,9 @@ window.GerenciarEspecies = (function() {
         
         console.log(`📝 Dados coletados do formulário:`, campos);
         
-        // Validar campos obrigatórios
-        if (!campos.nome) {
-            mostrarErro('Nome da espécie é obrigatório');
-            return null;
-        }
-
-        if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
-            const duplicate = window.SiswebSpeciesModal.getExactDuplicate(campos.nome, campos.id || editingSpeciesId, () => readLocalArray('especies'));
+         if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
+            const currentId = campos.id || editingSpeciesId;
+            const duplicate = window.SiswebSpeciesModal.getExactDuplicate(campos.nome, currentId);
             if (duplicate) {
                 mostrarErro(`Espécie já cadastrada: ${getSpeciesName(duplicate)}. Use o cadastro existente para evitar duplicidade.`);
                 return null;
@@ -587,10 +582,10 @@ window.GerenciarEspecies = (function() {
                 try {
                     console.log(`🔥 Salvando no Firebase: especies/${especie.id}`);
                     let firebaseResult = null;
-                    if (svc && typeof svc.saveData === 'function') {
-                        firebaseResult = await svc.saveData(`especies/${especie.id}`, especie);
-                    } else if (svc && typeof svc.saveToFirebase === 'function') {
+                    if (svc && typeof svc.saveToFirebase === 'function') {
                         firebaseResult = await svc.saveToFirebase('especies', especie.id, especie);
+                    } else if (svc && typeof svc.saveData === 'function') {
+                        firebaseResult = await svc.saveData(`especies/${especie.id}`, especie);
                     } else if (window.databaseAdapter && typeof window.databaseAdapter.saveData === 'function') {
                         firebaseResult = await window.databaseAdapter.saveData(`especies/${especie.id}`, especie);
                     }
@@ -598,6 +593,12 @@ window.GerenciarEspecies = (function() {
                     if (firebaseResult && firebaseResult.success) {
                         console.log(`✅ Espécie salva no Firebase com sucesso:`, firebaseResult);
                         resultado = { success: true };
+                        if (svc && typeof svc.invalidateCollectionCache === 'function') {
+                            svc.invalidateCollectionCache('especies');
+                        }
+                        if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.invalidate === 'function') {
+                            window.SiswebSpeciesStore.invalidate();
+                        }
                     } else {
                         console.warn(`⚠️ Firebase retornou resultado inesperado:`, firebaseResult);
                         throw new Error(firebaseResult?.error || 'Resposta inválida do Firebase');
@@ -622,9 +623,6 @@ window.GerenciarEspecies = (function() {
                     console.log(`🔄 Espécie atualizada no localStorage`);
                 } else {
                     especiesLocal.push(especie);
-                    console.log(`➕ Espécie adicionada ao localStorage`);
-                }
-                
                 writeLocalArray('especies', especiesLocal);
                 console.log(`📦 Espécie salva no localStorage com sucesso:`, especie);
                 resultado = { success: true };

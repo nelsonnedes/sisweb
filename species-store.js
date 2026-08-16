@@ -272,7 +272,7 @@
             return state.items;
         }
 
-        const result = await svc.loadFromFirebase(COLLECTION);
+        const result = await svc.loadFromFirebase(COLLECTION, { forceRefresh: opts.force === true });
         const data = result && result.success && result.data ? result.data : result;
         return setItems(data || [], {
             tenantId: tenant,
@@ -398,6 +398,13 @@
         }
     }
 
+    function invalidate() {
+        state.loadedAt = 0;
+        state.items = [];
+        state.loadingPromise = null;
+        notify();
+    }
+
     async function init(options) {
         const opts = options || {};
         if (opts.realtime !== false) startRealtime();
@@ -413,6 +420,7 @@
         subscribe,
         startRealtime,
         stopRealtime,
+        invalidate,
         resolveTenantId,
         getSnapshot,
         normalizeList,
@@ -422,6 +430,7 @@
     };
 
     global.addEventListener('species:updated', () => {
+        invalidate();
         getAll({ force: true, waitRemote: true, timeoutMs: 5000 }).catch(() => {});
     });
 })(window);
