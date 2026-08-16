@@ -1491,13 +1491,7 @@ if (!window.firebaseService) window.firebaseService = window.firebaseServiceTL;
 window.saveDataTL = (key, data) => window.firebaseServiceTL.saveData(key, data);
 window.getDataTL = (key) => window.firebaseServiceTL.loadData(key);
 window.deleteDataTL = (key) => window.firebaseServiceTL.deleteData(key);
-window.firebaseServiceTL.getFromFirebase = (key) => window.firebaseServiceTL.loadFromFirebase(key);
-
-// ✅ COMPATIBILIDADE: Métodos alternativos para os módulos
-window.firebaseServiceTL.getData = window.firebaseServiceTL.loadData;
-window.firebaseServiceTL.saveData = window.firebaseServiceTL.saveData;
-window.firebaseServiceTL.deleteData = window.firebaseServiceTL.deleteData;
-window.firebaseServiceTL.loadFromFirebase = window.firebaseServiceTL.loadFromFirebase;
-window.firebaseServiceTL.invalidateCache = (path) => window.firebaseServiceTL.invalidateCache(path);
+// ✅ COMPATIBILIDADE: Aliases com nomes alternativos para os módulos
+window.firebaseServiceTL.getFromFirebase = (key, options) => window.firebaseServiceTL.loadFromFirebase(key, options);
 
 console.log('🔥 Firebase Service TL carregado com sucesso (v2.1.0)');
