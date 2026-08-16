@@ -870,6 +870,10 @@ window.ModalClientesPCT = (function() {
                         if (modalTitle) {
                             modalTitle.textContent = 'Editar Cliente';
                         }
+                        const saveBtn = document.getElementById('saveClientBtn') || document.querySelector('#clientModal .btn-save');
+                        if (saveBtn) {
+                            saveBtn.textContent = 'Atualizar';
+                        }
                         
                         console.log(`✅ PCT: Cliente "${client.nome}" carregado para edição com sequência corrigida`);
                     } else if (clientModal) {

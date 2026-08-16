@@ -2324,9 +2324,13 @@
                     }
                 }
                 editingClientId = client.id;
+                const saveBtn = document.getElementById('saveClientBtn') || document.querySelector('#clientModal .btn-save');
+                if (saveBtn) saveBtn.textContent = 'Atualizar';
             } else {
                 title.textContent = 'Novo Cliente';
                 editingClientId = null;
+                const saveBtn = document.getElementById('saveClientBtn') || document.querySelector('#clientModal .btn-save');
+                if (saveBtn) saveBtn.textContent = 'Salvar';
             }
             
             modal.style.display = 'block';

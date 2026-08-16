@@ -3389,9 +3389,14 @@
                     clientIdField.value = '';
                 }
 
+                const modalTitle = document.getElementById('clientModalTitle');
+                const saveBtn = document.getElementById('saveClientBtn') || document.querySelector('#clientModal .btn-save');
+
                 // Se é edição, carregar dados do cliente
                 if (clientId) {
                     console.log(`🔄 Carregando dados do cliente ${clientId} para edição`);
+                    if (modalTitle) modalTitle.textContent = 'Editar Cliente';
+                    if (saveBtn) saveBtn.textContent = 'Atualizar';
                     
                     // Tentar usar funções disponíveis para edição
                     setTimeout(() => {
@@ -3401,6 +3406,9 @@
                             console.log('⚠️ Função de carregamento específica não disponível');
                         }
                     }, 200);
+                } else {
+                    if (modalTitle) modalTitle.textContent = 'Novo Cliente';
+                    if (saveBtn) saveBtn.textContent = 'Salvar';
                 }
                 
                 return;

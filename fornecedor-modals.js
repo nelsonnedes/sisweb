@@ -459,10 +459,18 @@ function openNewFornecedorModal() {
         // Limpar ID (novo registro)
         const idInput = document.getElementById('fornecedorId');
         if (idInput) idInput.value = '';
+        window.editingClientId = null;
+        window.editingFornecedorId = null;
 
         // Atualizar título
         const title = document.getElementById('fornecedorModalTitle');
         if (title) title.textContent = 'Novo Fornecedor';
+
+        // Atualizar texto do botão para Salvar
+        const saveBtns = document.querySelectorAll('#fornecedorModal .btn-save, #fornecedorModal button[type="submit"], #saveFornecedorBtn');
+        saveBtns.forEach(btn => {
+            btn.textContent = 'Salvar';
+        });
 
         // Exibir o modal
         const modal = document.getElementById('fornecedorModal');
@@ -628,16 +636,25 @@ async function openEditFornecedorModal(fornecedor) {
                 }
             });
 
-            console.log("✅ Campos preenchidos para edição");
+            window.editingClientId = fornecedorData.id || null;
+            window.editingFornecedorId = fornecedorData.id || null;
+            console.log("✅ Campos preenchidos para edição. ID:", fornecedorData.id);
         }
 
         // Atualizar título do modal
         const modalTitle = document.querySelector('#fornecedorModal .modal-title') ||
                           document.querySelector('#fornecedorModal h2') ||
-                          document.querySelector('#fornecedorModal h3');
+                          document.querySelector('#fornecedorModal h3') ||
+                          document.getElementById('fornecedorModalTitle');
         if (modalTitle) {
             modalTitle.textContent = 'Editar Fornecedor';
         }
+
+        // Atualizar texto do botão para Atualizar
+        const saveBtns = document.querySelectorAll('#fornecedorModal .btn-save, #fornecedorModal button[type="submit"], #saveFornecedorBtn');
+        saveBtns.forEach(btn => {
+            btn.textContent = 'Atualizar';
+        });
 
         // Exibir modal
         modal.style.display = 'block';
@@ -914,11 +931,18 @@ async function loadClientForEdit(fornecedor) {
     }
 
     // Atualizar título
-    const title = document.getElementById('fornecedorModalTitle');
+    const title = document.getElementById('fornecedorModalTitle') ||
+                  document.querySelector('#fornecedorModal .modal-title');
     if (title) {
         title.textContent = 'Editar Fornecedor';
         console.log("✅ Título do modal atualizado");
     }
+
+    // Atualizar texto do botão para Atualizar
+    const saveBtns = document.querySelectorAll('#fornecedorModal .btn-save, #fornecedorModal button[type="submit"], #saveFornecedorBtn');
+    saveBtns.forEach(btn => {
+        btn.textContent = 'Atualizar';
+    });
 
     // ✅ GARANTIR QUE O MODAL SEJA EXIBIDO CORRETAMENTE
     const modal = document.getElementById('fornecedorModal');
@@ -973,7 +997,13 @@ async function saveClient(event) {
 
     try {
         // Obter valores do formulário
-        const id = document.getElementById('fornecedorId')?.value || '';
+        const id = String(
+            document.getElementById('fornecedorId')?.value ||
+            document.querySelector('#fornecedorModal #fornecedorId')?.value ||
+            window.editingClientId ||
+            window.editingFornecedorId ||
+            ''
+        ).trim();
         const nome = document.getElementById('fornecedorName')?.value || '';
         const cnpj = document.getElementById('fornecedorCnpj')?.value || '';
         const tipoPessoa = document.getElementById('fornecedorPersonType')?.value || '';
@@ -1086,15 +1116,19 @@ async function saveClient(event) {
             updated: new Date().toISOString()
         };
 
-        if (window.firebaseService && window.firebaseService.saveToFirebase) {
+        if (window.firebaseService && (window.firebaseService.saveToFirebase || window.firebaseService.saveData)) {
             console.log("🔥 Salvando via Firebase (tabela fornecedores)...");
 
             let savedOk = false;
             let savedId = id;
+            const basePath = getFornecedorBasePath();
             if (id) {
-                const basePath = getFornecedorBasePath();
                 if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
                     await window.firebaseService.saveToFirebase(basePath, String(id), fornecedorData);
+                    savedOk = true;
+                    savedId = id;
+                } else if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
+                    await window.firebaseService.saveData(`${basePath}/${id}`, fornecedorData);
                     savedOk = true;
                     savedId = id;
                 }
@@ -1102,9 +1136,12 @@ async function saveClient(event) {
                 const newId = generateUniqueId('FORN');
                 fornecedorData.id = newId;
                 fornecedorData.created = new Date().toISOString();
-                const basePath = getFornecedorBasePath();
                 if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
                     await window.firebaseService.saveToFirebase(basePath, String(newId), fornecedorData);
+                    savedOk = true;
+                    savedId = newId;
+                } else if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
+                    await window.firebaseService.saveData(`${basePath}/${newId}`, fornecedorData);
                     savedOk = true;
                     savedId = newId;
                 }
@@ -1113,6 +1150,13 @@ async function saveClient(event) {
             if (savedOk) {
                 const finalFornecedor = { ...fornecedorData, id: savedId };
                 console.log("✅ Fornecedor salvo com sucesso:", finalFornecedor.nome || finalFornecedor.name);
+
+                window.editingClientId = null;
+                window.editingFornecedorId = null;
+
+                // Resetar botão para Salvar
+                const saveBtns = document.querySelectorAll('#fornecedorModal .btn-save, #fornecedorModal button[type="submit"], #saveFornecedorBtn');
+                saveBtns.forEach(btn => { btn.textContent = 'Salvar'; });
 
                 // Fechar o modal
                 const modal = document.getElementById('fornecedorModal');
@@ -1165,6 +1209,13 @@ async function saveClient(event) {
             await saveData(basePath, fornecedorList);
 
             console.log("✅ Fornecedor salvo via fallback");
+
+            window.editingClientId = null;
+            window.editingFornecedorId = null;
+
+            // Resetar botão para Salvar
+            const saveBtns = document.querySelectorAll('#fornecedorModal .btn-save, #fornecedorModal button[type="submit"], #saveFornecedorBtn');
+            saveBtns.forEach(btn => { btn.textContent = 'Salvar'; });
 
             // Fechar modal e atualizar interface
             const modal = document.getElementById('fornecedorModal');

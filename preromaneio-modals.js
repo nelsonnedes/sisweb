@@ -323,6 +323,8 @@ function editPreRomaneioClient(id) {
     if (citySelect) citySelect.innerHTML = '<option value="">Selecione primeiro o estado</option>';
     const title = document.getElementById('clientModalTitle');
     if (title) title.textContent = 'Editar Cliente';
+    const saveBtn = document.querySelector('#clientModal .btn-save, #clientModal button[type="submit"]');
+    if (saveBtn) saveBtn.textContent = 'Atualizar';
     editingClientId = client.id;
     populateClientModal(client);
     const modal = document.getElementById('clientModal');
@@ -357,6 +359,8 @@ function openNewClientModal() {
     editingClientId = null;
     const title = document.getElementById('clientModalTitle');
     if (title) title.textContent = 'Novo Cliente';
+    const saveBtn = document.querySelector('#clientModal .btn-save, #clientModal button[type="submit"]');
+    if (saveBtn) saveBtn.textContent = 'Salvar';
     try {
         const form = document.getElementById('clientForm');
         if (form) form.reset();
