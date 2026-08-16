@@ -1031,7 +1031,7 @@
                 <button type="button" id="btnSalvar" class="btn-salvar">
                     <i class="fas fa-save"></i> Salvar
                 </button>
-                <button type="button" id="btnListar" class="btn-listar">
+                <button type="button" id="btnListar" class="btn-listar" onclick="showRomaneiosList()">
                     <i class="fas fa-list"></i> Listar
                 </button>
                 <div class="pre-romaneio-group">
@@ -2039,11 +2039,23 @@
         }
 
         async function loadRomaneiosPesCompany() {
-            if (!window.firebaseService || typeof window.firebaseService.loadFromFirebase !== 'function') {
-                return [];
+            let data = null;
+            if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+                try {
+                    const result = await window.firebaseService.loadFromFirebase('romaneios/pes');
+                    data = result ? (result.data !== undefined ? result.data : result) : null;
+                } catch (_) {}
             }
-            const result = await window.firebaseService.loadFromFirebase('romaneios/pes');
-            const data = result ? (result.data !== undefined ? result.data : result) : null;
+            if (!data || (Array.isArray(data) && data.length === 0)) {
+                const tenantId = resolveCompanyId() || '';
+                const keys = [`companies/${tenantId}/romaneios/pes`, 'romaneios/pes', 'romaneios_pes'];
+                for (const k of keys) {
+                    const raw = localStorage.getItem(k);
+                    if (raw) {
+                        try { data = JSON.parse(raw); break; } catch (_) {}
+                    }
+                }
+            }
             const utils = window.RomaneioDataUtils;
             const lista = utils && typeof utils.normalizeRomaneioCollection === 'function'
                 ? utils.normalizeRomaneioCollection(data, { type: 'PES' })
@@ -2756,22 +2768,19 @@
 
             renderizarTabelaPes();
             setRomaneioEmissionDate();
-            await carregarClientes();
-            await carregarEspecies();
-            const activeElement = document.activeElement;
-            const canSetInitialFocus = !activeElement || activeElement === document.body || activeElement === document.documentElement;
-            const espessuraInput = document.getElementById('espessura');
-            if (espessuraInput && canSetInitialFocus) espessuraInput.focus();
-            
-            // Adicionar evento ao botão Listar Romaneios
-            document.getElementById('btnListar').addEventListener('click', async function() {
-                try {
-                    await showRomaneiosList();
-                } catch (error) {
-                    console.error('❌ Erro ao abrir modal de listagem PES:', error);
-                    alert('Não foi possível abrir a lista de romaneios PES. Recarregue a página e tente novamente.');
-                }
-            });
+
+            // Adicionar evento ao botão Listar Romaneios imediatamente
+            const btnListar = document.getElementById('btnListar');
+            if (btnListar) {
+                btnListar.addEventListener('click', async function() {
+                    try {
+                        await showRomaneiosList();
+                    } catch (error) {
+                        console.error('❌ Erro ao abrir modal de listagem PES:', error);
+                        alert('Não foi possível abrir a lista de romaneios PES. Recarregue a página e tente novamente.');
+                    }
+                });
+            }
 
             if (window.initPreRomaneioSelector) {
                 window.initPreRomaneioSelector({
@@ -2786,6 +2795,19 @@
                     }
                 });
             }
+
+            // Carregar dados remotos em segundo plano sem bloquear a interface
+            try {
+                await Promise.allSettled([
+                    carregarClientes(),
+                    carregarEspecies()
+                ]);
+            } catch (_) {}
+
+            const activeElement = document.activeElement;
+            const canSetInitialFocus = !activeElement || activeElement === document.body || activeElement === document.documentElement;
+            const espessuraInput = document.getElementById('espessura');
+            if (espessuraInput && canSetInitialFocus) espessuraInput.focus();
 
             const btnLimparPre = document.getElementById('btnLimparPreRomaneio');
             if (btnLimparPre) {
@@ -4022,6 +4044,7 @@
             // Exibir o modal
             romaneioListModal.style.display = 'block';
         }
+        window.showRomaneiosList = showRomaneiosList;
 
         async function editRomaneio(index) {
             const romaneios = await loadRomaneiosPesCompany();
@@ -4064,6 +4087,7 @@
             if (modal) modal.style.display = 'none';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+        window.editRomaneio = editRomaneio;
         
         // Função para excluir romaneio
         async function deleteRomaneio(index) {
