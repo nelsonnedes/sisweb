@@ -95,6 +95,7 @@
 - **2026-08-16:**
   - Correção de sincronização instantânea em Espécies (`species.html` / `js/species.js`): atualização otimista local + invalidação profunda de cache multi-alias (`especies`, `species`, etc.) no `firebase-service.js`, garantindo que a lista atualize na hora ao salvar/editar sem depender de F5;
   - Correção de verificação de duplicidade (`species-modal-standard.js`): `getSpeciesList` e `getExactDuplicate` agora priorizam a lista autoritativa em memória (`extraSource`), evitando falsos positivos de duplicidade gerados por chaves legadas e permitindo renomear e editar normalmente;
+  - Correção de `RangeError: Maximum call stack size exceeded` (`modules/core/firebase-service.js`): removida reatribuição circular/auto-referencial que sobrescrevia `invalidateCache` na instância;
   - Análise e diagnóstico de Pen Test (OWASP ZAP);
   - Criação e deploy de `robots.txt` e `sitemap.xml` com regras de desindexação de áreas administrativas e privadas;
   - Configuração de cache e headers HTTP para robôs no `firebase.json`;
