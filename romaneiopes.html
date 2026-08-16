@@ -3289,7 +3289,8 @@
         
         // Função para salvar espécie
         async function saveSpecies(speciesData) {
-            const species = getData('especies') || [];
+            const raw = getData('especies');
+            const currentSpeciesList = normalizeSpeciesListForPes(raw || species || []);
             const companyId = resolveCompanyId();
             const now = new Date().toISOString();
             const currentSpeciesId = String(editingSpeciesId || document.getElementById('speciesId')?.value || '').trim();
@@ -3309,7 +3310,7 @@
             if (!isEditing) dataWithCompany.createdAt = dataWithCompany.createdAt || now;
 
             if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
-                const duplicate = window.SiswebSpeciesModal.getExactDuplicate(speciesData.especie, idToSave, () => species);
+                const duplicate = window.SiswebSpeciesModal.getExactDuplicate(speciesData.especie, idToSave, () => currentSpeciesList);
                 if (duplicate) {
                     alert(`Espécie já cadastrada: ${getSpeciesDisplayName(duplicate)}. Use o cadastro existente para evitar duplicidade.`);
                     return false;
@@ -3318,23 +3319,24 @@
             
             if (isEditing) {
                 // Atualizar espécie existente
-                const index = species.findIndex(s => matchesSpeciesId(s, idToSave));
+                const index = currentSpeciesList.findIndex(s => matchesSpeciesId(s, idToSave));
                 if (index !== -1) {
-                    species[index] = {
+                    currentSpeciesList[index] = {
                         ...dataWithCompany,
                         id: idToSave,
-                        createdAt: species[index].createdAt || dataWithCompany.createdAt
+                        createdAt: currentSpeciesList[index].createdAt || dataWithCompany.createdAt
                     };
                 } else {
-                    species.push({ ...dataWithCompany, id: idToSave });
+                    currentSpeciesList.push({ ...dataWithCompany, id: idToSave });
                 }
             } else {
                 // Adicionar nova espécie
-                species.push(dataWithCompany);
+                currentSpeciesList.push(dataWithCompany);
             }
+            species = currentSpeciesList;
             editingSpeciesId = idToSave;
             
-            if (saveData('especies', species)) {
+            if (saveData('especies', currentSpeciesList)) {
                 // 💾 Persistir espécie por registro no Firebase quando disponível
                 try {
                     if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
@@ -3352,8 +3354,12 @@
                     return false;
                 }
 
+                try {
+                    window.dispatchEvent(new CustomEvent('species:updated', { detail: { id: idToSave, nome: dataWithCompany.especie } }));
+                } catch (_) {}
+
                 alert(isEditing ? 'Espécie atualizada com sucesso!' : 'Espécie cadastrada com sucesso!');
-                await carregarEspecies(); // Recarregar a lista de espécies
+                await carregarEspecies({ force: true }); // Recarregar a lista de espécies
                 return true;
             } else {
                 alert('Erro ao salvar espécie. Por favor, tente novamente.');
