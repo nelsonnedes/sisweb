@@ -1,0 +1,1352 @@
+{
+  "Pré-Romaneio": {
+    "mainButtons": [
+      {
+        "text": "Pacote",
+        "id": null,
+        "className": "tab-button active",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(44, 62, 80)",
+        "height": "39px",
+        "padding": "10px 20px",
+        "borderRadius": "5px 5px 0px 0px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Toda Largura",
+        "id": null,
+        "className": "tab-button",
+        "bg": "rgb(248, 249, 250)",
+        "color": "rgb(127, 140, 141)",
+        "height": "37px",
+        "padding": "10px 20px",
+        "borderRadius": "5px 5px 0px 0px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Pés",
+        "id": null,
+        "className": "tab-button",
+        "bg": "rgb(248, 249, 250)",
+        "color": "rgb(127, 140, 141)",
+        "height": "37px",
+        "padding": "10px 20px",
+        "borderRadius": "5px 5px 0px 0px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Toras",
+        "id": null,
+        "className": "tab-button",
+        "bg": "rgb(248, 249, 250)",
+        "color": "rgb(127, 140, 141)",
+        "height": "37px",
+        "padding": "10px 20px",
+        "borderRadius": "5px 5px 0px 0px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Adicionar Item",
+        "id": null,
+        "className": "btn-adicionar",
+        "bg": "rgb(22, 163, 74)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 18px",
+        "borderRadius": "6px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Limpar",
+        "id": null,
+        "className": "btn-limpar",
+        "bg": "rgb(217, 119, 6)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 16px",
+        "borderRadius": "6px",
+        "fontSize": "13.5px"
+      },
+      {
+        "text": "Salvar Pré-Romaneio",
+        "id": null,
+        "className": "btn-salvar",
+        "bg": "rgb(37, 99, 235)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 20px",
+        "borderRadius": "6px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Meus Romaneios",
+        "id": null,
+        "className": "btn-listar",
+        "bg": "rgb(2, 132, 199)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 18px",
+        "borderRadius": "6px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "×",
+        "id": null,
+        "className": "",
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "height": "36px",
+        "padding": "10px 20px",
+        "borderRadius": "4px",
+        "fontSize": "16px"
+      }
+    ],
+    "modals": [
+      {
+        "id": "clientListModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Voltar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Novo Cliente",
+            "id": null,
+            "className": "btn-adicionar",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          }
+        ]
+      },
+      {
+        "id": "clientModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Cancelar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "8px 20px"
+          },
+          {
+            "text": "Salvar",
+            "id": null,
+            "className": "btn-save",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "auto",
+            "borderRadius": "8px",
+            "padding": "8px 14px"
+          }
+        ]
+      },
+      {
+        "id": "clientModalTitle",
+        "className": "modal-title",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "fornecedorListModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Fechar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Novo Fornecedor",
+            "id": null,
+            "className": "btn-adicionar",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          }
+        ]
+      },
+      {
+        "id": "fornecedorModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Cancelar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "8px 20px"
+          },
+          {
+            "text": "Salvar",
+            "id": null,
+            "className": "btn-save",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "auto",
+            "borderRadius": "8px",
+            "padding": "8px 14px"
+          }
+        ]
+      },
+      {
+        "id": "fornecedorModalTitle",
+        "className": "modal-title",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "speciesListModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Voltar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Nova Espécie",
+            "id": null,
+            "className": "btn-adicionar",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          }
+        ]
+      },
+      {
+        "id": "speciesModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Cancelar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "8px 20px"
+          },
+          {
+            "text": "Salvar",
+            "id": null,
+            "className": "btn-save",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "auto",
+            "borderRadius": "8px",
+            "padding": "8px 14px"
+          }
+        ]
+      },
+      {
+        "id": "speciesModalTitle",
+        "className": "modal-title species-standard-title",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "listaModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Fechar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          }
+        ]
+      }
+    ]
+  },
+  "Romaneio TL": {
+    "mainButtons": [
+      {
+        "text": "Adicionar",
+        "id": "addButton",
+        "className": "btn-adicionar",
+        "bg": "rgb(22, 163, 74)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 18px",
+        "borderRadius": "6px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Salvar",
+        "id": "btnSalvar",
+        "className": "btn-salvar",
+        "bg": "rgb(37, 99, 235)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 20px",
+        "borderRadius": "6px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Listar",
+        "id": "btnListar",
+        "className": "btn-listar",
+        "bg": "rgb(2, 132, 199)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 18px",
+        "borderRadius": "6px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Carregar Itens",
+        "id": "btnCarregarPreRomaneio",
+        "className": "btn-carregar",
+        "bg": "rgb(5, 150, 105)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 16px",
+        "borderRadius": "6px",
+        "fontSize": "13.5px"
+      },
+      {
+        "text": "Limpar",
+        "id": "btnLimparPreRomaneio",
+        "className": "btn-limpar-pre",
+        "bg": "rgb(217, 119, 6)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 16px",
+        "borderRadius": "6px",
+        "fontSize": "13.5px"
+      }
+    ],
+    "modals": [
+      {
+        "id": "clientListModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Fechar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Novo Cliente",
+            "id": null,
+            "className": "btn-adicionar",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          }
+        ]
+      },
+      {
+        "id": "clientModalInfo",
+        "className": "",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "speciesListModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Fechar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Mostrar Todas",
+            "id": null,
+            "className": "btn-mostrar-todas",
+            "bg": "rgb(2, 132, 199)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Nova Espécie",
+            "id": null,
+            "className": "btn-adicionar",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          }
+        ]
+      },
+      {
+        "id": "speciesModalInfo",
+        "className": "",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "listaModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Configurar Impressão",
+            "id": null,
+            "className": "romaneio-print-config-trigger",
+            "bg": "rgb(241, 245, 249)",
+            "color": "rgb(51, 65, 85)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 16px"
+          },
+          {
+            "text": "Fechar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          }
+        ]
+      },
+      {
+        "id": "romaneioModalInfo",
+        "className": "",
+        "footerStyle": null,
+        "buttons": []
+      }
+    ]
+  },
+  "Romaneio PCT": {
+    "mainButtons": [
+      {
+        "text": "Adicionar",
+        "id": "btnAdicionar",
+        "className": "btn-adicionar",
+        "bg": "rgb(22, 163, 74)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 18px",
+        "borderRadius": "6px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Salvar",
+        "id": "btnSalvar",
+        "className": "btn-salvar",
+        "bg": "rgb(37, 99, 235)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 20px",
+        "borderRadius": "6px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Listar",
+        "id": "btnListar",
+        "className": "btn-listar",
+        "bg": "rgb(2, 132, 199)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 18px",
+        "borderRadius": "6px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Carregar Itens",
+        "id": "btnCarregarPreRomaneio",
+        "className": "btn-salvar btn-carregar",
+        "bg": "rgb(5, 150, 105)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 16px",
+        "borderRadius": "6px",
+        "fontSize": "13.5px"
+      },
+      {
+        "text": "Limpar",
+        "id": "btnLimparPreRomaneio",
+        "className": "btn-listar btn-carregar btn-limpar-pre",
+        "bg": "rgb(217, 119, 6)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 16px",
+        "borderRadius": "6px",
+        "fontSize": "13.5px"
+      }
+    ],
+    "modals": [
+      {
+        "id": "aboutModal",
+        "className": "about-modal",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "helpModal",
+        "className": "modal help-modal",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "listaModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Configurar Impressão",
+            "id": null,
+            "className": "romaneio-print-config-trigger",
+            "bg": "rgb(241, 245, 249)",
+            "color": "rgb(51, 65, 85)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 16px"
+          },
+          {
+            "text": "Fechar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Fechar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Novo Cliente",
+            "id": null,
+            "className": "btn-adicionar",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Cancelar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Salvar",
+            "id": "saveClientBtn",
+            "className": "btn-save",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "auto",
+            "borderRadius": "8px",
+            "padding": "8px 14px"
+          },
+          {
+            "text": "Fechar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Mostrar Todas",
+            "id": null,
+            "className": "btn-mostrar-todas",
+            "bg": "rgb(2, 132, 199)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Nova Espécie",
+            "id": null,
+            "className": "btn-adicionar",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "×",
+            "id": null,
+            "className": "close-modal species-standard-close",
+            "bg": "rgba(0, 0, 0, 0)",
+            "color": "rgb(255, 255, 255)",
+            "height": "26px",
+            "borderRadius": "6px",
+            "padding": "0px"
+          },
+          {
+            "text": "Cancelar",
+            "id": null,
+            "className": "back-button",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Salvar Espécie",
+            "id": null,
+            "className": "btn-save",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "auto",
+            "borderRadius": "8px",
+            "padding": "8px 14px"
+          }
+        ]
+      },
+      {
+        "id": "romaneioModalInfo",
+        "className": "",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "clientListModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Fechar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Novo Cliente",
+            "id": null,
+            "className": "btn-adicionar",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          }
+        ]
+      },
+      {
+        "id": "clientModalInfo",
+        "className": "",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "clientModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Cancelar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Salvar",
+            "id": "saveClientBtn",
+            "className": "btn-save",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "auto",
+            "borderRadius": "8px",
+            "padding": "8px 14px"
+          }
+        ]
+      },
+      {
+        "id": "clientModalTitle",
+        "className": "modal-title",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "speciesListModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Fechar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Mostrar Todas",
+            "id": null,
+            "className": "btn-mostrar-todas",
+            "bg": "rgb(2, 132, 199)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Nova Espécie",
+            "id": null,
+            "className": "btn-adicionar",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          }
+        ]
+      },
+      {
+        "id": "speciesModalInfo",
+        "className": "",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "speciesModal",
+        "className": "modal species-standard-modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "×",
+            "id": null,
+            "className": "close-modal species-standard-close",
+            "bg": "rgba(0, 0, 0, 0)",
+            "color": "rgb(255, 255, 255)",
+            "height": "26px",
+            "borderRadius": "6px",
+            "padding": "0px"
+          },
+          {
+            "text": "Cancelar",
+            "id": null,
+            "className": "back-button",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Salvar Espécie",
+            "id": null,
+            "className": "btn-save",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "auto",
+            "borderRadius": "8px",
+            "padding": "8px 14px"
+          }
+        ]
+      },
+      {
+        "id": "speciesModalTitle",
+        "className": "modal-title species-standard-title",
+        "footerStyle": null,
+        "buttons": []
+      }
+    ]
+  },
+  "Romaneio PES": {
+    "mainButtons": [
+      {
+        "text": "Adicionar",
+        "id": "btnAdicionar",
+        "className": "btn-adicionar",
+        "bg": "rgb(22, 163, 74)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 18px",
+        "borderRadius": "6px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Salvar",
+        "id": "btnSalvar",
+        "className": "btn-salvar",
+        "bg": "rgb(37, 99, 235)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 20px",
+        "borderRadius": "6px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Listar",
+        "id": "btnListar",
+        "className": "btn-listar",
+        "bg": "rgb(2, 132, 199)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 18px",
+        "borderRadius": "6px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Carregar Itens",
+        "id": "btnCarregarPreRomaneio",
+        "className": "btn-salvar btn-carregar",
+        "bg": "rgb(5, 150, 105)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 16px",
+        "borderRadius": "6px",
+        "fontSize": "13.5px"
+      },
+      {
+        "text": "Limpar",
+        "id": "btnLimparPreRomaneio",
+        "className": "btn-listar btn-carregar btn-limpar-pre",
+        "bg": "rgb(217, 119, 6)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 16px",
+        "borderRadius": "6px",
+        "fontSize": "13.5px"
+      }
+    ],
+    "modals": [
+      {
+        "id": "helpModal",
+        "className": "modal help-modal",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "clientModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Cancelar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "8px 20px"
+          },
+          {
+            "text": "Salvar",
+            "id": "saveClientBtn",
+            "className": "btn-save",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "auto",
+            "borderRadius": "8px",
+            "padding": "8px 14px"
+          }
+        ]
+      },
+      {
+        "id": "clientModalTitle",
+        "className": "modal-title",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "speciesModal",
+        "className": "modal species-standard-modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "×",
+            "id": null,
+            "className": "close-modal species-standard-close",
+            "bg": "rgba(0, 0, 0, 0)",
+            "color": "rgb(255, 255, 255)",
+            "height": "26px",
+            "borderRadius": "6px",
+            "padding": "0px"
+          },
+          {
+            "text": "Cancelar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "8px 20px"
+          },
+          {
+            "text": "Salvar Espécie",
+            "id": null,
+            "className": "btn-save",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "auto",
+            "borderRadius": "8px",
+            "padding": "8px 14px"
+          }
+        ]
+      },
+      {
+        "id": "speciesModalTitle",
+        "className": "modal-title species-standard-title",
+        "footerStyle": null,
+        "buttons": []
+      }
+    ]
+  },
+  "Romaneio TORA": {
+    "mainButtons": [
+      {
+        "text": "Adicionar",
+        "id": "btnAdicionar",
+        "className": "btn btn-success",
+        "bg": "rgb(22, 163, 74)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 18px",
+        "borderRadius": "6px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Salvar",
+        "id": "btnSalvar",
+        "className": "btn btn-primary",
+        "bg": "rgb(37, 99, 235)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 20px",
+        "borderRadius": "6px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Listar",
+        "id": "btnListar",
+        "className": "btn btn-info",
+        "bg": "rgb(2, 132, 199)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 18px",
+        "borderRadius": "6px",
+        "fontSize": "14px"
+      },
+      {
+        "text": "Importar",
+        "id": "btnImportar",
+        "className": "btn btn-secondary",
+        "bg": "rgb(71, 85, 105)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 16px",
+        "borderRadius": "6px",
+        "fontSize": "13.5px"
+      },
+      {
+        "text": "Carregar Itens",
+        "id": "btnCarregarPreRomaneio",
+        "className": "btn btn-success btn-carregar",
+        "bg": "rgb(5, 150, 105)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 16px",
+        "borderRadius": "6px",
+        "fontSize": "13.5px"
+      },
+      {
+        "text": "Limpar",
+        "id": "btnLimparPreRomaneio",
+        "className": "btn btn-secondary btn-carregar btn-limpar-pre",
+        "bg": "rgb(217, 119, 6)",
+        "color": "rgb(255, 255, 255)",
+        "height": "38px",
+        "padding": "0px 16px",
+        "borderRadius": "6px",
+        "fontSize": "13.5px"
+      }
+    ],
+    "modals": [
+      {
+        "id": "aboutModal",
+        "className": "about-modal",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "helpModal",
+        "className": "modal help-modal",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "speciesModal",
+        "className": "modal species-standard-modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "×",
+            "id": null,
+            "className": "close-modal species-standard-close",
+            "bg": "rgba(0, 0, 0, 0)",
+            "color": "rgb(255, 255, 255)",
+            "height": "26px",
+            "borderRadius": "6px",
+            "padding": "0px"
+          },
+          {
+            "text": "Cancelar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "8px 20px"
+          },
+          {
+            "text": "Salvar Espécie",
+            "id": "saveSpeciesBtn",
+            "className": "btn-save",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "auto",
+            "borderRadius": "8px",
+            "padding": "8px 14px"
+          }
+        ]
+      },
+      {
+        "id": "speciesModalTitle",
+        "className": "modal-title species-standard-title",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "fornecedorListModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Fechar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Novo Fornecedor",
+            "id": null,
+            "className": "btn-adicionar",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          }
+        ]
+      },
+      {
+        "id": "speciesListModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Fechar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Mostrar Todas",
+            "id": null,
+            "className": "btn-mostrar-todas",
+            "bg": "rgb(2, 132, 199)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          },
+          {
+            "text": "Nova Espécie",
+            "id": null,
+            "className": "btn-adicionar",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "0px 18px"
+          }
+        ]
+      },
+      {
+        "id": "speciesModalInfo",
+        "className": "",
+        "footerStyle": null,
+        "buttons": []
+      },
+      {
+        "id": "fornecedorModal",
+        "className": "modal",
+        "footerStyle": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": "14px 20px",
+          "background": "rgb(250, 250, 250)",
+          "borderTop": "1px solid rgb(229, 231, 235)"
+        },
+        "buttons": [
+          {
+            "text": "Cancelar",
+            "id": null,
+            "className": "back-button close-modal-btn",
+            "bg": "rgb(100, 116, 139)",
+            "color": "rgb(255, 255, 255)",
+            "height": "38px",
+            "borderRadius": "6px",
+            "padding": "8px 20px"
+          },
+          {
+            "text": "Salvar",
+            "id": "saveFornecedorBtn",
+            "className": "btn-save",
+            "bg": "rgb(22, 163, 74)",
+            "color": "rgb(255, 255, 255)",
+            "height": "auto",
+            "borderRadius": "8px",
+            "padding": "8px 14px"
+          }
+        ]
+      },
+      {
+        "id": "fornecedorModalTitle",
+        "className": "modal-title",
+        "footerStyle": null,
+        "buttons": []
+      }
+    ]
+  }
+}

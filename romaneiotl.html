@@ -1598,9 +1598,9 @@
                     </div>
                     
                 <div class="buttons-container" style="display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap; align-items: center;">
-                    <button type="button" id="addButton" class="btn btn-success"><i class="fas fa-plus"></i> Adicionar</button>
-                    <button type="button" class="btn btn-primary" onclick="salvarRomaneio()"><i class="fas fa-save"></i> Salvar</button>
-                    <button type="button" class="btn btn-info" onclick="abrirListaRomaneios()"><i class="fas fa-list"></i> Listar</button>
+                    <button type="button" id="addButton" class="btn-adicionar"><i class="fas fa-plus"></i> Adicionar</button>
+                    <button type="button" id="btnSalvar" class="btn-salvar" onclick="salvarRomaneio()"><i class="fas fa-save"></i> Salvar</button>
+                    <button type="button" id="btnListar" class="btn-listar" onclick="abrirListaRomaneios()"><i class="fas fa-list"></i> Listar</button>
                     <div class="pre-romaneio-group" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                         <div class="pre-romaneio-left" style="display: flex; gap: 5px; align-items: center;">
                             <label for="preRomaneioSelect" style="margin: 0;">Pré-Romaneio (TL):</label>
@@ -1608,10 +1608,10 @@
                                 <option value="">Selecione</option>
                             </select>
                         </div>
-                        <button type="button" id="btnCarregarPreRomaneio" class="btn btn-success btn-carregar">
+                        <button type="button" id="btnCarregarPreRomaneio" class="btn-carregar">
                             <i class="fas fa-download"></i> Carregar Itens
                         </button>
-                        <button type="button" id="btnLimparPreRomaneio" class="btn btn-warning btn-carregar btn-limpar-pre">
+                        <button type="button" id="btnLimparPreRomaneio" class="btn-limpar-pre">
                             <i class="fas fa-eraser"></i> Limpar
                         </button>
                     </div>
@@ -1756,7 +1756,7 @@
                         <button type="button" class="back-button close-modal-btn">
                             <i class="fas fa-times"></i> Fechar
                         </button>
-                        <button type="button" class="btn-adicionar" onclick="window.ModalEspecies.showAllSpecies()" style="background-color: #17a2b8;">
+                        <button type="button" class="btn-mostrar-todas" onclick="window.ModalEspecies.showAllSpecies()">
                             <i class="fas fa-eye"></i> Mostrar Todas
                         </button>
                         <button type="button" class="btn-adicionar" onclick="openNewSpeciesModal()">

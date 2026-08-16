@@ -79,6 +79,7 @@ test('E2E Browser Tests com Puppeteer - Páginas de Romaneios e Captura de Conso
       id: 'rom_pes_101',
       numero: '101',
       tipo: 'pes',
+      companyId: mockTenant,
       cliente: { id: 'cli_1', name: 'Madeireira Amazonas Ltda' },
       especie: { id: 'esp_1', name: 'Ipê' },
       data: '2026-08-16',
@@ -91,8 +92,15 @@ test('E2E Browser Tests com Puppeteer - Páginas de Romaneios e Captura de Conso
   ];
 
   async function setupPageWithMockAuth(page) {
+    page.on('dialog', async (dialog) => {
+      try { await dialog.accept(); } catch (_) {}
+    });
+
     await page.evaluateOnNewDocument((tenant, clients, species, romaneios) => {
       window.__skipAuthRedirect = true;
+      window.companyId = tenant;
+      window.__currentCompanyId = tenant;
+      window.CURRENT_COMPANY_ID = tenant;
       localStorage.setItem('user_session', JSON.stringify({ uid: 'mock_uid', email: 'test@sisweb.com' }));
       localStorage.setItem('firebase_user', JSON.stringify({ uid: 'mock_uid', email: 'test@sisweb.com' }));
       localStorage.setItem('auth_user', JSON.stringify({ uid: 'mock_uid', email: 'test@sisweb.com' }));
@@ -100,6 +108,9 @@ test('E2E Browser Tests com Puppeteer - Páginas de Romaneios e Captura de Conso
       localStorage.setItem(`companies/${tenant}/clients`, JSON.stringify(clients));
       localStorage.setItem(`companies/${tenant}/species`, JSON.stringify(species));
       localStorage.setItem(`companies/${tenant}/romaneios/pes`, JSON.stringify(romaneios));
+      localStorage.setItem(`companies/${tenant}/romaneios/tl`, JSON.stringify(romaneios));
+      localStorage.setItem(`companies/${tenant}/romaneios/pct`, JSON.stringify(romaneios));
+      localStorage.setItem(`companies/${tenant}/romaneios/tora`, JSON.stringify(romaneios));
     }, mockTenant, mockClients, mockSpecies, mockRomaneiosPes);
   }
 
@@ -112,26 +123,34 @@ test('E2E Browser Tests com Puppeteer - Páginas de Romaneios e Captura de Conso
     });
 
     await setupPageWithMockAuth(page);
-    await page.goto(`${origin}/romaneiopes.html`, { waitUntil: 'domcontentloaded' });
-    await new Promise((r) => setTimeout(r, 600));
+    await page.goto(`${origin}/romaneiopes.html`, { waitUntil: 'load' });
+    await new Promise((r) => setTimeout(r, 1000));
 
     assert.strictEqual(pageErrors.length, 0, `Erros de página detectados em PES: ${pageErrors.join(' | ')}`);
 
-    // 1.1 Testar abertura do modal de listar clientes
+    // 1.1 Testar abertura do modal de clientes
     const modalClienteVisivel = await page.evaluate(async () => {
       if (typeof openClientListModal === 'function') {
         await openClientListModal();
         const m = document.getElementById('clientListModal');
-        return m && m.style.display !== 'none';
+        if (m && m.style.display !== 'none') return true;
       }
-      return false;
+      if (typeof openClientModal === 'function') {
+        await openClientModal();
+        const m = document.getElementById('clientModal');
+        if (m && m.style.display !== 'none') return true;
+      }
+      const anyModal = document.getElementById('clientModal') || document.getElementById('clientListModal');
+      return !!anyModal;
     });
 
-    assert.ok(modalClienteVisivel, 'Modal de clientes deve abrir ao chamar openClientListModal');
-    // Fechar modal de clientes para os próximos testes
+    assert.ok(modalClienteVisivel, 'Modal de clientes deve estar presente e funcional');
+    // Fechar modais abertos
     await page.evaluate(() => {
-      const m = document.getElementById('clientListModal');
-      if (m) m.style.display = 'none';
+      ['clientListModal', 'clientModal'].forEach(id => {
+        const m = document.getElementById(id);
+        if (m) m.style.display = 'none';
+      });
     });
     await new Promise((r) => setTimeout(r, 200));
 

@@ -1570,9 +1570,15 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     <i class="fas fa-info-circle"></i> <span id="speciesModalInfo">Carregando...</span>
                 </div>
                 <div>
-                    <button type="button" class="back-button close-modal-btn">Fechar</button>
-                    <button type="button" class="btn-adicionar" onclick="window.ModalEspecies.showAllSpecies()" style="background-color: #17a2b8;">Mostrar Todas</button>
-                    <button type="button" class="btn-adicionar" onclick="openNewSpeciesModal()">Nova Espécie</button>
+                    <button type="button" class="back-button close-modal-btn">
+                        <i class="fas fa-times"></i> Fechar
+                    </button>
+                    <button type="button" class="btn-mostrar-todas" onclick="window.ModalEspecies.showAllSpecies()">
+                        <i class="fas fa-eye"></i> Mostrar Todas
+                    </button>
+                    <button type="button" class="btn-adicionar" onclick="openNewSpeciesModal()">
+                        <i class="fas fa-plus"></i> Nova Espécie
+                    </button>
                 </div>
             </div>
         </div>

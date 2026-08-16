@@ -712,52 +712,6 @@ textarea:focus {
     overflow-y: auto !important;
 }
 
-#speciesListModal .modal-footer {
-    display: flex;
-    justify-content: space-between; /* manter info à esquerda e botões à direita */
-    align-items: center;
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
-}
-
-/* Botões padrão do footer do modal de espécies */
-#speciesListModal .modal-footer .back-button {
-    background-color: #2c3e50; /* mantém a identidade do header */
-    color: white;
-    border: none;
-    padding: 8px 14px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-#speciesListModal .modal-footer .back-button:hover {
-    background-color: #34495e;
-}
-
-#speciesListModal .modal-footer .btn-adicionar {
-    background-color: #27ae60; /* Nova Espécie */
-    color: white;
-    border: none;
-    padding: 8px 14px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-#speciesListModal .modal-footer .btn-adicionar:hover {
-    background-color: #219a52;
-}
-
-#speciesListModal .modal-footer .btn-adicionar[style*="background-color: #17a2b8"] {
-    background-color: #17a2b8 !important; /* Mostrar Todas */
-}
-
-#speciesListModal .modal-footer .btn-adicionar[style*="background-color: #17a2b8"]:hover {
-    background-color: #138496 !important;
-}
-
 /* ====== Responsivo ====== */
 @media (max-width: 992px) {
     #speciesListModal .table thead th:nth-child(1),
@@ -2559,5 +2513,377 @@ textarea:focus {
     color: #ffffff !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 4px 8px rgba(111, 66, 193, 0.35) !important;
+}
+
+/* ==========================================================================
+   PADRONIZAÇÃO CANÔNICA GLOBAL — SISWEB BOTÕES & MODAIS DE ROMANEIOS
+   Garante 100% de consistência visual em Pré-Romaneio, TL, PCT, PES e Tora.
+   ========================================================================== */
+
+/* 1. BOTÕES PRINCIPAIS DAS PÁGINAS (Barra de Ações) */
+.form-buttons,
+.buttons-container {
+    display: flex !important;
+    gap: 10px !important;
+    margin: 20px 0 !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+}
+
+/* ➕ Adicionar Item (Verde Sucesso) */
+button.btn-adicionar,
+#btnAdicionar,
+#addButton,
+.form-buttons .btn-adicionar,
+.form-buttons .btn-success {
+    background-color: #16a34a !important;
+    border: 1px solid #16a34a !important;
+    color: #ffffff !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 18px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+}
+
+button.btn-adicionar:hover,
+#btnAdicionar:hover,
+#addButton:hover,
+.form-buttons .btn-adicionar:hover,
+.form-buttons .btn-success:hover {
+    background-color: #15803d !important;
+    border-color: #15803d !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(22, 163, 74, 0.25) !important;
+}
+
+/* 💾 Salvar Romaneio (Azul Primário) */
+button.btn-salvar,
+#btnSalvar,
+.form-buttons .btn-salvar,
+.form-buttons .btn-primary {
+    background-color: #2563eb !important;
+    border: 1px solid #2563eb !important;
+    color: #ffffff !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 20px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+}
+
+button.btn-salvar:hover,
+#btnSalvar:hover,
+.form-buttons .btn-salvar:hover,
+.form-buttons .btn-primary:hover {
+    background-color: #1d4ed8 !important;
+    border-color: #1d4ed8 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.25) !important;
+}
+
+/* 📋 Listar Romaneios (Ciano / Azul Informativo) */
+button.btn-listar,
+#btnListar,
+#btnMeusRomaneios,
+.form-buttons .btn-listar,
+.form-buttons .btn-info {
+    background-color: #0284c7 !important;
+    border: 1px solid #0284c7 !important;
+    color: #ffffff !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 18px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+}
+
+button.btn-listar:hover,
+#btnListar:hover,
+#btnMeusRomaneios:hover,
+.form-buttons .btn-listar:hover,
+.form-buttons .btn-info:hover {
+    background-color: #0369a1 !important;
+    border-color: #0369a1 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(2, 132, 199, 0.25) !important;
+}
+
+/* 📥 Carregar Pré-Romaneio (Verde Esmeralda) */
+button.btn-carregar,
+#btnCarregarPreRomaneio,
+.pre-romaneio-group .btn-carregar,
+.pre-romaneio-group .btn-success,
+.pre-romaneio-group .btn-salvar {
+    background-color: #059669 !important;
+    border: 1px solid #059669 !important;
+    color: #ffffff !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 16px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    font-size: 13.5px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+}
+
+button.btn-carregar:hover,
+#btnCarregarPreRomaneio:hover,
+.pre-romaneio-group .btn-carregar:hover,
+.pre-romaneio-group .btn-success:hover,
+.pre-romaneio-group .btn-salvar:hover {
+    background-color: #047857 !important;
+    border-color: #047857 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(5, 150, 105, 0.25) !important;
+}
+
+/* 🧹 Limpar Pré-Romaneio / Formulário (Laranja / Âmbar) */
+button.btn-limpar-pre,
+button.btn-limpar,
+#btnLimparPreRomaneio,
+.pre-romaneio-group .btn-limpar-pre,
+.pre-romaneio-group .btn-warning,
+.pre-romaneio-group .btn-secondary,
+.pre-romaneio-group .btn-danger {
+    background-color: #d97706 !important;
+    border: 1px solid #d97706 !important;
+    color: #ffffff !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 16px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    font-size: 13.5px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+}
+
+button.btn-limpar-pre:hover,
+button.btn-limpar:hover,
+#btnLimparPreRomaneio:hover,
+.pre-romaneio-group .btn-limpar-pre:hover,
+.pre-romaneio-group .btn-warning:hover,
+.pre-romaneio-group .btn-secondary:hover,
+.pre-romaneio-group .btn-danger:hover {
+    background-color: #b45309 !important;
+    border-color: #b45309 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(217, 119, 6, 0.25) !important;
+}
+
+/* 📂 Importar Romaneio (Cinza Grafite / Slate) */
+button.btn-importar,
+#btnImportar,
+.form-buttons .btn-importar,
+.form-buttons .btn-secondary {
+    background-color: #475569 !important;
+    border: 1px solid #475569 !important;
+    color: #ffffff !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 16px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    font-size: 13.5px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+button.btn-importar:hover,
+#btnImportar:hover,
+.form-buttons .btn-importar:hover,
+.form-buttons .btn-secondary:hover {
+    background-color: #334155 !important;
+    border-color: #334155 !important;
+    transform: translateY(-1px) !important;
+}
+
+/* 2. RODAPÉS DE TODOS OS MODAIS (.modal-footer) */
+.modal .modal-footer,
+.modal-footer {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 14px 20px !important;
+    background: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+    box-sizing: border-box !important;
+    gap: 10px !important;
+    flex-wrap: wrap !important;
+    border-radius: 0 0 10px 10px !important;
+}
+
+/* Botões de Fechar / Voltar / Cancelar em Rodapés de Modais */
+.modal-footer .back-button,
+.modal-footer .close-modal-btn,
+.modal-footer button.back-button,
+.modal-footer button.close-modal-btn,
+#clientListModal .modal-footer .back-button,
+#speciesListModal .modal-footer .back-button,
+#fornecedorListModal .modal-footer .back-button,
+#listaModal .modal-footer .back-button,
+#romaneioListModal .modal-footer .back-button {
+    background-color: #64748b !important;
+    border: 1px solid #64748b !important;
+    color: #ffffff !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 18px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    font-size: 13.5px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.modal-footer .back-button:hover,
+.modal-footer .close-modal-btn:hover,
+.modal-footer button.back-button:hover,
+.modal-footer button.close-modal-btn:hover,
+#clientListModal .modal-footer .back-button:hover,
+#speciesListModal .modal-footer .back-button:hover,
+#fornecedorListModal .modal-footer .back-button:hover,
+#listaModal .modal-footer .back-button:hover,
+#romaneioListModal .modal-footer .back-button:hover {
+    background-color: #475569 !important;
+    border-color: #475569 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(100, 116, 139, 0.25) !important;
+}
+
+/* Botões de Novo Cadastro nos Rodapés de Modais de Lista */
+.modal-footer .btn-adicionar,
+.modal-footer button.btn-adicionar,
+#clientListModal .modal-footer .btn-adicionar,
+#speciesListModal .modal-footer .btn-adicionar,
+#fornecedorListModal .modal-footer .btn-adicionar {
+    background-color: #16a34a !important;
+    border: 1px solid #16a34a !important;
+    color: #ffffff !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 18px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    font-size: 13.5px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.modal-footer .btn-adicionar:hover,
+.modal-footer button.btn-adicionar:hover,
+#clientListModal .modal-footer .btn-adicionar:hover,
+#speciesListModal .modal-footer .btn-adicionar:hover,
+#fornecedorListModal .modal-footer .btn-adicionar:hover {
+    background-color: #15803d !important;
+    border-color: #15803d !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(22, 163, 74, 0.25) !important;
+}
+
+/* Botão Mostrar Todas (Ciano) */
+.modal-footer .btn-adicionar[style*="17a2b8"],
+.modal-footer button[onclick*="showAllSpecies"],
+.modal-footer button[onclick*="ShowAll"] {
+    background-color: #0284c7 !important;
+    border-color: #0284c7 !important;
+    color: #ffffff !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 18px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    font-size: 13.5px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.modal-footer .btn-adicionar[style*="17a2b8"]:hover,
+.modal-footer button[onclick*="showAllSpecies"]:hover,
+.modal-footer button[onclick*="ShowAll"]:hover {
+    background-color: #0369a1 !important;
+    border-color: #0369a1 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(2, 132, 199, 0.25) !important;
+}
+
+/* Botão Configurar Impressão */
+.romaneio-print-config-trigger,
+.modal-footer .romaneio-print-config-trigger {
+    background-color: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 16px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.romaneio-print-config-trigger:hover,
+.modal-footer .romaneio-print-config-trigger:hover {
+    background-color: #e2e8f0 !important;
+    border-color: #94a3b8 !important;
+    color: #0f172a !important;
+    transform: translateY(-1px) !important;
 }
 
