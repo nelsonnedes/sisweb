@@ -92,6 +92,11 @@
 
 ## 10. Histórico recente (mini-log por data)
 
+- **2026-08-16:**
+  - Análise e diagnóstico de Pen Test (OWASP ZAP);
+  - Criação e deploy de `robots.txt` e `sitemap.xml` com regras de desindexação de áreas administrativas e privadas;
+  - Configuração de cache e headers HTTP para robôs no `firebase.json`;
+  - Suíte de 416 testes validada (0 falhas) e deploy no Firebase Hosting ativo.
 - **2026-08-15:** 
   - Otimização de performance $O(1)$ e zero-lag de abertura do modal de pedidos em Vendas (`vendas.js`) e Compras (`compras.js`);
   - Reutilização de `obterDadosEmpresa` no lote de impressão eliminando requisições repetidas;
