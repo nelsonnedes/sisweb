@@ -966,6 +966,14 @@ class SpeciesManager {
         }
     }
 
+    async openSpeciesModal() {
+        return this.openModal();
+    }
+
+    async openSpeciesListModal() {
+        return this.openModal();
+    }
+
     // ✅ FECHAR MODAL
     closeModal() {
         const modal = document.getElementById(SPECIES_CONFIG.modalId);
@@ -1464,7 +1472,7 @@ class SpeciesManager {
             // Reabrir lista de espécies se foi aberta a partir da lista
             if (this.returnToList) {
                 this.returnToList = false;
-                await this.openSpeciesModal();
+                await this.openModal();
             } else {
                 const listModal = document.getElementById(SPECIES_CONFIG.modalId);
                 if (listModal && (listModal.style.display === 'flex' || listModal.style.display === 'block')) {
