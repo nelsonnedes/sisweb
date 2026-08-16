@@ -2085,22 +2085,124 @@ textarea:focus {
     cursor: pointer !important;
 }
 
-/* ✅ PADRONIZAÇÃO DE CONTAINER DE MODAL E TABELA RESPONSIVA SEM OVERFLOW OCULTO */
-#clientListModal .modal-content,
-#fornecedorListModal .modal-content {
-    max-width: 920px !important;
-    width: 92% !important;
-    margin: 30px auto !important;
+/* ==========================================================================
+   PADRONIZAÇÃO UNIFICADA DE MODAIS (ALTURA, LARGURA, POSIÇÃO E CENTRALIZAÇÃO)
+   Padrão de referência: Romaneio TL (romaneiotl.html)
+   ========================================================================== */
+
+/* 1. Backdrop / Overlay do Modal */
+.modal,
+#clientListModal,
+#fornecedorListModal,
+#speciesListModal,
+#clientModal,
+#fornecedorModal,
+#speciesModal,
+#newClientModal,
+#listaModal,
+#romaneioListModal {
+    display: none;
+    position: fixed !important;
+    z-index: 100000 !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    padding: 40px 15px !important;
     box-sizing: border-box !important;
 }
 
-#clientListModal .modal-body,
-#fornecedorListModal .modal-body {
-    overflow-x: auto !important;
-    max-width: 100% !important;
-    width: 100% !important;
+/* 2. Conteúdo dos Modais de LISTAGEM (Clientes, Fornecedores, Espécies, Romaneios) */
+#clientListModal .modal-content,
+#fornecedorListModal .modal-content,
+#speciesListModal .modal-content,
+#listaModal .modal-content,
+#romaneioListModal .modal-content {
+    background-color: #fefefe !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border: 1px solid #ddd !important;
+    width: min(92vw, 1100px) !important;
+    max-width: 1100px !important;
+    height: auto !important;
+    max-height: calc(100vh - 80px) !important;
+    border-radius: 8px !important;
+    position: relative !important;
+    z-index: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25) !important;
+    overflow: hidden !important;
     box-sizing: border-box !important;
-    padding: 15px !important;
+}
+
+/* 3. Conteúdo dos Modais de FORMULÁRIO (Novo / Editar Cliente, Fornecedor, Espécie) */
+#clientModal .modal-content,
+#fornecedorModal .modal-content,
+#speciesModal .modal-content,
+#newClientModal .modal-content,
+#financeClienteModal .modal-content,
+#financeFornecedorModal .modal-content {
+    background-color: #fefefe !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border: 1px solid #ddd !important;
+    width: min(92vw, 850px) !important;
+    max-width: 850px !important;
+    height: auto !important;
+    max-height: calc(100vh - 80px) !important;
+    border-radius: 8px !important;
+    position: relative !important;
+    z-index: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25) !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* 4. Cabeçalho Padronizado */
+#clientListModal .modal-header,
+#fornecedorListModal .modal-header,
+#speciesListModal .modal-header,
+#clientModal .modal-header,
+#fornecedorModal .modal-header,
+#speciesModal .modal-header,
+#newClientModal .modal-header,
+#listaModal .modal-header,
+#romaneioListModal .modal-header {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 14px 20px !important;
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
+    color: #ffffff !important;
+    border-radius: 8px 8px 0 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    border-bottom: 1px solid #ddd !important;
+}
+
+/* 5. Corpo Padronizado com Rolagem Interna Limpa */
+#clientListModal .modal-body,
+#fornecedorListModal .modal-body,
+#speciesListModal .modal-body,
+#clientModal .modal-body,
+#fornecedorModal .modal-body,
+#speciesModal .modal-body,
+#newClientModal .modal-body,
+#listaModal .modal-body,
+#romaneioListModal .modal-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 20px !important;
+    box-sizing: border-box !important;
 }
 
 #clientListModal .table,
