@@ -1126,10 +1126,11 @@ class FirebaseServiceTL {
         
         try {
             const canonicalOnly = options && options.canonicalOnly === true;
+            const forceRefresh = options && options.forceRefresh === true;
             const candidates = canonicalOnly ? [path] : this.resolveReadCandidates(path);
             const scopedCandidates = candidates.map(candidate => this.getNamespacedPath(candidate));
             const cacheKeys = [path, ...candidates, ...scopedCandidates];
-            const cached = this.readFreshCache(cacheKeys);
+            const cached = forceRefresh ? null : this.readFreshCache(cacheKeys);
             if (cached !== null && cached !== undefined) {
                 authPerfTLCache(path, 'memory', 'hit');
                 return { success: true, data: cached, source: 'memory-cache' };
@@ -1439,6 +1440,23 @@ class FirebaseServiceTL {
                     if (nsCand) {
                         this.cache.delete(nsCand);
                         this.removeLocalStorage(nsCand);
+                    }
+                } catch (_) {}
+            }
+        }
+
+        // Limpar aliases especiais de espécies
+        const isSpecies = /^(especies|species|especiesPct|data\/species)(\/|$)/.test(cleanPath);
+        if (isSpecies) {
+            const speciesAliases = ['especies', 'species', 'especiesPct', 'data/species'];
+            for (const alias of speciesAliases) {
+                this.cache.delete(alias);
+                this.removeLocalStorage(alias);
+                try {
+                    const nsAlias = this.getNamespacedPath(alias);
+                    if (nsAlias) {
+                        this.cache.delete(nsAlias);
+                        this.removeLocalStorage(nsAlias);
                     }
                 } catch (_) {}
             }

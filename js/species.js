@@ -194,11 +194,15 @@ function enhanceSpeciesModal() {
 }
 
 // Data Operations
-async function loadSpecies() {
+async function loadSpecies(options = {}) {
     showLoading(true);
     try {
         await ensureAuthAndTenant();
-        const result = await window.firebaseService.loadFromFirebase('especies');
+        const forceRefresh = options && options.forceRefresh === true;
+        if (forceRefresh && window.firebaseService && typeof window.firebaseService.invalidateCache === 'function') {
+            window.firebaseService.invalidateCache('especies');
+        }
+        const result = await window.firebaseService.loadFromFirebase('especies', { forceRefresh });
         if (result.success && result.data) {
             // Convert object to array
             currentSpecies = (speciesTools.normalizeList
@@ -232,14 +236,15 @@ async function loadSpecies() {
                 currentSpecies = currentSpecies.filter(s => !deletedIds.has(s.id));
                 if (cleaned) showToast(`Removidos ${cleaned} registros vazios.`, 'success');
             }
-        } else {
+        } else if (!currentSpecies || currentSpecies.length === 0) {
             currentSpecies = [];
         }
         
         // Sort by name
         currentSpecies.sort((a, b) => getSpeciesName(a).localeCompare(getSpeciesName(b)));
         
-        renderTable();
+        const currentFilter = elements.searchInput ? elements.searchInput.value : '';
+        renderTable(filterList(currentSpecies, currentFilter));
     } catch (error) {
         console.error('Erro ao carregar espécies:', error);
         showToast('Erro ao carregar espécies', 'error');
@@ -304,12 +309,43 @@ async function handleSave(e) {
         if (result && result.success) {
             showToast(isEditMode ? 'Espécie atualizada!' : 'Espécie criada!', 'success');
             closeModal();
+
+            // 1. Atualização Otimista Imediata na Memória Local
+            const normalizedSaved = normalizeSpecies(dataToSave);
+            if (isEditMode) {
+                const idx = currentSpecies.findIndex(s => [s && s.id, s && s.key, s && s.firebaseKey, s && s.originalId]
+                    .map(v => String(v || '').trim())
+                    .filter(Boolean)
+                    .includes(String(finalId).trim()));
+                if (idx !== -1) {
+                    currentSpecies[idx] = { ...currentSpecies[idx], ...normalizedSaved };
+                } else {
+                    currentSpecies.push(normalizedSaved);
+                }
+            } else {
+                currentSpecies.push(normalizedSaved);
+            }
+
+            // Re-ordenar por nome
+            currentSpecies.sort((a, b) => getSpeciesName(a).localeCompare(getSpeciesName(b)));
+
+            // Renderizar tabela imediatamente
+            const activeFilter = elements.searchInput ? elements.searchInput.value : '';
+            renderTable(filterList(currentSpecies, activeFilter));
+
+            // 2. Invalidação de Cache no serviço Firebase
             try {
                 if (window.firebaseService && typeof window.firebaseService.invalidateCache === 'function') {
                     window.firebaseService.invalidateCache('especies');
+                    window.firebaseService.invalidateCache('species');
+                }
+                if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.invalidate === 'function') {
+                    window.SiswebSpeciesStore.invalidate();
                 }
             } catch (_) {}
-            await loadSpecies();
+
+            // 3. Recarregar do Firebase com forceRefresh
+            await loadSpecies({ forceRefresh: true });
         } else {
             throw new Error((result && result.error) || 'Falha ao salvar espécie');
         }
@@ -356,7 +392,14 @@ window.deleteSpecies = async (id) => {
         const result = await window.firebaseService.deleteData(`especies/${cleanId}`);
         
         if (result.success) {
-            currentSpecies = currentSpecies.filter(s => s.id !== cleanId);
+            currentSpecies = currentSpecies.filter(s => ![s && s.id, s && s.key, s && s.firebaseKey, s && s.originalId]
+                .map(v => String(v || '').trim())
+                .filter(Boolean)
+                .includes(cleanId));
+            
+            const activeFilter = elements.searchInput ? elements.searchInput.value : '';
+            renderTable(filterList(currentSpecies, activeFilter));
+
             try {
                 if (window.firebaseService && typeof window.firebaseService.removeLocalStorage === 'function') {
                     window.firebaseService.removeLocalStorage('especies');
@@ -370,10 +413,14 @@ window.deleteSpecies = async (id) => {
                 }
                 if (window.firebaseService && typeof window.firebaseService.invalidateCache === 'function') {
                     window.firebaseService.invalidateCache('especies');
+                    window.firebaseService.invalidateCache('species');
+                }
+                if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.invalidate === 'function') {
+                    window.SiswebSpeciesStore.invalidate();
                 }
             } catch (_) {}
             showToast('Espécie excluída!', 'success');
-            await loadSpecies();
+            await loadSpecies({ forceRefresh: true });
         } else {
             throw new Error(result.error);
         }
