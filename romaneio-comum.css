@@ -2110,8 +2110,11 @@ textarea:focus {
     height: 100vh !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    background-color: rgba(0, 0, 0, 0.5) !important;
-    padding: 40px 15px !important;
+    background-color: rgba(0, 0, 0, 0.45) !important;
+    padding-top: 60px !important;
+    padding-bottom: 40px !important;
+    padding-left: 15px !important;
+    padding-right: 15px !important;
     box-sizing: border-box !important;
 }
 
@@ -2124,11 +2127,11 @@ textarea:focus {
     background-color: #fefefe !important;
     margin: 0 auto !important;
     padding: 0 !important;
-    border: 1px solid #ddd !important;
+    border: 1px solid #888 !important;
     width: min(92vw, 1100px) !important;
     max-width: 1100px !important;
     height: auto !important;
-    max-height: calc(100vh - 80px) !important;
+    max-height: calc(100vh - 110px) !important;
     border-radius: 8px !important;
     position: relative !important;
     z-index: 1 !important;
@@ -2149,11 +2152,11 @@ textarea:focus {
     background-color: #fefefe !important;
     margin: 0 auto !important;
     padding: 0 !important;
-    border: 1px solid #ddd !important;
+    border: 1px solid #888 !important;
     width: min(92vw, 850px) !important;
     max-width: 850px !important;
     height: auto !important;
-    max-height: calc(100vh - 80px) !important;
+    max-height: calc(100vh - 110px) !important;
     border-radius: 8px !important;
     position: relative !important;
     z-index: 1 !important;
@@ -2164,7 +2167,24 @@ textarea:focus {
     box-sizing: border-box !important;
 }
 
-/* 4. Cabeçalho Padronizado */
+/* 4. Formulários dentro de Modais - Flex vertical para manter footer sempre fixo e visível */
+#clientModal form,
+#fornecedorModal form,
+#speciesModal form,
+#newClientModal form,
+#clientForm,
+#fornecedorForm,
+#speciesForm {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+/* 5. Cabeçalho Padronizado */
 #clientListModal .modal-header,
 #fornecedorListModal .modal-header,
 #speciesListModal .modal-header,
@@ -2187,7 +2207,7 @@ textarea:focus {
     border-bottom: 1px solid #ddd !important;
 }
 
-/* 5. Corpo Padronizado com Rolagem Interna Limpa */
+/* 6. Corpo Padronizado com Rolagem Interna Limpa (Rolagem exclusiva no modal-body) */
 #clientListModal .modal-body,
 #fornecedorListModal .modal-body,
 #speciesListModal .modal-body,
@@ -2203,6 +2223,46 @@ textarea:focus {
     overflow-x: hidden !important;
     padding: 20px !important;
     box-sizing: border-box !important;
+}
+
+/* 7. Eliminar barra de rolagem vertical interna duplicada no meio das tabelas */
+#clientListModal .modal-table-scroll,
+#fornecedorListModal .modal-table-scroll,
+#speciesListModal .modal-table-scroll,
+#listaModal .modal-table-scroll,
+#romaneioListModal .modal-table-scroll,
+#clientListModal .table-container,
+#fornecedorListModal .table-container,
+#speciesListModal .table-container,
+#clientListModal .table-responsive,
+#fornecedorListModal .table-responsive,
+#speciesListModal .table-responsive {
+    overflow-y: visible !important;
+    overflow-x: auto !important;
+    max-height: none !important;
+}
+
+/* 8. Rodapé Padronizado */
+#clientListModal .modal-footer,
+#fornecedorListModal .modal-footer,
+#speciesListModal .modal-footer,
+#clientModal .modal-footer,
+#fornecedorModal .modal-footer,
+#speciesModal .modal-footer,
+#newClientModal .modal-footer,
+#listaModal .modal-footer,
+#romaneioListModal .modal-footer {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 14px 20px !important;
+    border-top: 1px solid #e5e7eb !important;
+    background-color: #fafafa !important;
+    border-radius: 0 0 8px 8px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    min-height: 60px !important;
 }
 
 #clientListModal .table,

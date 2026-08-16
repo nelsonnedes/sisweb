@@ -680,11 +680,12 @@
         }
 
         .modal-table-scroll {
-            max-height: none; /* Remove altura fixa */
-            overflow-y: auto; /* Rolagem na tabela se necessário */
+            max-height: none;
+            overflow-y: visible; /* Elimina barra de rolagem vertical interna duplicada */
+            overflow-x: auto; /* Rolagem horizontal apenas se tabela for larga */
             border: 1px solid #eee;
             border-radius: 4px;
-            flex: 1; /* Tabela cresce para ocupar espaço */
+            flex: 1 1 auto;
         }
         
         /* === MODAL TABLE & ACTIONS (REFINED) === */
