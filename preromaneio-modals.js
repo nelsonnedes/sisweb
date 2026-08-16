@@ -258,11 +258,20 @@ function filterClientList() {
 }
 
 function selectPreRomaneioClient(id, name) {
-    const input = document.getElementById('clienteInput');
+    const input = document.getElementById('clienteInput') || document.getElementById('clientInput');
     if (input) {
         input.value = name;
         input.dataset.id = id;
+        try {
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (_) {}
     }
+    const found = cachedClients.find(c => String(c.id) === String(id)) || { id, name, nome: name };
+    window.selectedClient = found;
+    window.selectedFornecedor = found;
+    window.clienteSelecionado = found;
+
     closeClientListModal();
     // Hide suggestions if open
     const suggestions = document.querySelector('.autocomplete-items');
@@ -653,9 +662,19 @@ function selectSpecies(name, price) {
     const input = document.getElementById(inputId);
     const priceInput = document.getElementById(priceId);
     
-    if (input) input.value = name;
+    if (input) {
+        input.value = name;
+        try {
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (_) {}
+    }
     if (priceInput) {
         priceInput.value = price;
+        try {
+            priceInput.dispatchEvent(new Event('input', { bubbles: true }));
+            priceInput.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (_) {}
     }
     
     closeSpeciesListModal();
