@@ -890,6 +890,9 @@ function toCanonicalSpeciesTora(specie, index = 0, options = {}) {
 
 // FunÃ§Ã£o para abrir o modal de lista de espÃ©cies
 async function openSpeciesListModal() {
+    if (window.ModalEspecies && typeof window.ModalEspecies.openModal === 'function') {
+        return window.ModalEspecies.openModal();
+    }
     
     let modal = document.getElementById('speciesListModal');
     
@@ -959,6 +962,9 @@ async function openSpeciesListModal() {
 
 // FunÃ§Ã£o para renderizar lista de espÃ©cies
 async function renderSpeciesList(filter = '') {
+    if (window.ModalEspecies && typeof window.ModalEspecies.refresh === 'function') {
+        return window.ModalEspecies.refresh();
+    }
     
     const tableBody = document.getElementById('speciesListTable');
     if (!tableBody) {
@@ -1643,13 +1649,19 @@ async function saveSpecies() {
                 // Recarregar lista se estiver aberta ou reabrir se iniciou da lista
                 if (window.returnToSpeciesListTora) {
                     window.returnToSpeciesListTora = false;
-                    if (typeof openSpeciesListModal === 'function') {
+                    if (window.ModalEspecies && typeof window.ModalEspecies.openModal === 'function') {
+                        await window.ModalEspecies.openModal();
+                    } else if (typeof openSpeciesListModal === 'function') {
                         await openSpeciesListModal();
                     }
                 } else {
-                    const listModal = document.getElementById('speciesListModal');
-                    if (listModal && listModal.style.display === 'block') {
-                        await renderSpeciesList('');
+                    if (window.ModalEspecies && typeof window.ModalEspecies.refresh === 'function') {
+                        await window.ModalEspecies.refresh();
+                    } else {
+                        const listModal = document.getElementById('speciesListModal');
+                        if (listModal && (listModal.style.display === 'block' || listModal.style.display === 'flex')) {
+                            await renderSpeciesList('');
+                        }
                     }
                 }
                 

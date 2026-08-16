@@ -693,7 +693,13 @@ class SpeciesManager {
 
     // ✅ RENDERIZAÇÃO UNIFICADA
     async renderSpeciesList(filter = '') {
-        console.log("🌿 === RENDERIZAÇÃO UNIFICADA DE ESPÉCIES v2.0 ===");
+        console.log("🌿 === RENDERIZAÇÃO DE ESPÉCIES ===");
+        if (window.ModalEspecies && typeof window.ModalEspecies.refresh === 'function') {
+            return window.ModalEspecies.refresh();
+        }
+        if (window.ModalEspeciesPCT && typeof window.ModalEspeciesPCT.refresh === 'function') {
+            return window.ModalEspeciesPCT.refresh();
+        }
         console.log("🔍 Filtro:", filter);
         
         const tableBody = document.getElementById(SPECIES_CONFIG.tableId);
@@ -930,7 +936,13 @@ class SpeciesManager {
 
     // ✅ ABRIR MODAL
     async openModal() {
-        console.log("🌿 === ABRINDO MODAL DE ESPÉCIES v2.0 ===");
+        console.log("🌿 === ABRINDO MODAL DE ESPÉCIES ===");
+        if (window.ModalEspecies && typeof window.ModalEspecies.openModal === 'function') {
+            return window.ModalEspecies.openModal();
+        }
+        if (window.ModalEspeciesPCT && typeof window.ModalEspeciesPCT.openModal === 'function') {
+            return window.ModalEspeciesPCT.openModal();
+        }
         
         try {
             // Criar modal se necessário
