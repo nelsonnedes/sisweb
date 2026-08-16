@@ -1716,7 +1716,7 @@ async function loadFromFirebaseCore(path) {
             'system/operationalAlerts/firebaseBilling',
             'system/deployHealth/firebase'
         ]);
-        if (OPTIONAL_EMPTY_PATHS.has(path)) {
+        if (OPTIONAL_EMPTY_PATHS.has(path) || path.startsWith('configuracoes/')) {
             console.log('ℹ️ Caminho consultado está vazio no Firebase');
             return { success: true, data: null, source: 'firebase' };
         }
