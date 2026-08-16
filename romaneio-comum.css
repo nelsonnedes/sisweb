@@ -2359,3 +2359,156 @@ textarea:focus {
     background-color: #c0392b !important;
     transform: translateY(-1px) !important;
 }
+
+/* 10. Organização e Alinhamento em Linhas (Grid/Flex) para Modais de Cadastro (TL, PCT, PES, Tora, Pré-Romaneio) */
+#clientModal .form-row,
+#fornecedorModal .form-row,
+#speciesModal .form-row,
+#newClientModal .form-row,
+#clientForm .form-row,
+#fornecedorForm .form-row,
+#speciesForm .form-row,
+.modal-body .form-row {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 12px !important;
+    margin-bottom: 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+#clientModal .form-row > .form-group,
+#fornecedorModal .form-row > .form-group,
+#speciesModal .form-row > .form-group,
+#newClientModal .form-row > .form-group,
+#clientForm .form-row > .form-group,
+#fornecedorForm .form-row > .form-group,
+#speciesForm .form-row > .form-group,
+.modal-body .form-row > .form-group {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    margin-bottom: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+}
+
+#clientModal .form-group,
+#fornecedorModal .form-group,
+#speciesModal .form-group,
+#newClientModal .form-group,
+#clientForm .form-group,
+#fornecedorForm .form-group,
+#speciesForm .form-group,
+.modal-body .form-group {
+    margin-bottom: 10px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+#clientModal .form-group label,
+#fornecedorModal .form-group label,
+#speciesModal .form-group label,
+#newClientModal .form-group label,
+#clientForm .form-group label,
+#fornecedorForm .form-group label,
+#speciesForm .form-group label,
+.modal-body .form-group label {
+    display: block !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    margin-bottom: 4px !important;
+}
+
+#clientModal .form-group input,
+#clientModal .form-group select,
+#clientModal .form-group textarea,
+#fornecedorModal .form-group input,
+#fornecedorModal .form-group select,
+#fornecedorModal .form-group textarea,
+#speciesModal .form-group input,
+#speciesModal .form-group select,
+#speciesModal .form-group textarea,
+#newClientModal .form-group input,
+#newClientModal .form-group select,
+#newClientModal .form-group textarea,
+#clientForm input,
+#clientForm select,
+#clientForm textarea,
+#fornecedorForm input,
+#fornecedorForm select,
+#fornecedorForm textarea,
+#speciesForm input,
+#speciesForm select,
+#speciesForm textarea,
+.modal-body input,
+.modal-body select,
+.modal-body textarea {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+    background-color: #fff !important;
+    color: #1f2937 !important;
+}
+
+#clientModal .form-group input,
+#clientModal .form-group select,
+#fornecedorModal .form-group input,
+#fornecedorModal .form-group select,
+#speciesModal .form-group input,
+#speciesModal .form-group select,
+#newClientModal .form-group input,
+#newClientModal .form-group select,
+#clientForm input,
+#clientForm select,
+#fornecedorForm input,
+#fornecedorForm select,
+#speciesForm input,
+#speciesForm select,
+.modal-body input:not([type="checkbox"]):not([type="radio"]),
+.modal-body select {
+    height: 38px !important;
+}
+
+#clientModal .form-group textarea,
+#fornecedorModal .form-group textarea,
+#speciesModal .form-group textarea,
+#newClientModal .form-group textarea,
+#clientForm textarea,
+#fornecedorForm textarea,
+#speciesForm textarea,
+.modal-body textarea {
+    min-height: 70px !important;
+    resize: vertical !important;
+}
+
+@media (max-width: 640px) {
+    #clientModal .form-row,
+    #fornecedorModal .form-row,
+    #speciesModal .form-row,
+    #newClientModal .form-row,
+    #clientForm .form-row,
+    #fornecedorForm .form-row,
+    #speciesForm .form-row,
+    .modal-body .form-row {
+        flex-direction: column !important;
+        gap: 0 !important;
+    }
+    
+    #clientModal .form-row > .form-group,
+    #fornecedorModal .form-row > .form-group,
+    #speciesModal .form-row > .form-group,
+    #newClientModal .form-row > .form-group,
+    #clientForm .form-row > .form-group,
+    #fornecedorForm .form-row > .form-group,
+    #speciesForm .form-row > .form-group,
+    .modal-body .form-row > .form-group {
+        margin-bottom: 10px !important;
+    }
+}
