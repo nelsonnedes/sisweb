@@ -848,6 +848,57 @@ window.SalvarRomaneio = (function() {
     }
 
     /**
+     * ✅ CLONAR ROMANEIO
+     * Carrega todos os dados e itens no formulário, mas limpa o ID para salvar como novo registro
+     */
+    async function clonarRomaneio(romaneioId, dadosPreCarregados = null) {
+        console.log('📋 Clonando romaneio TL:', romaneioId);
+        try {
+            let romaneio = dadosPreCarregados;
+            const sid = String(romaneioId || '').trim();
+            if (!romaneio && window.ModalListaRomaneios?.state?.romaneios) {
+                romaneio = window.ModalListaRomaneios.state.romaneios.find(r => String(r && (r.id || r.firebaseKey)) === sid);
+            }
+            if (!romaneio) {
+                const res = await carregarRomaneioParaEdicao(romaneioId, null);
+                if (!res) throw new Error('Romaneio não encontrado para clonagem');
+            } else {
+                preencherFormularioEdicao(romaneio);
+            }
+
+            // LIMPAR ESTADO DE EDIÇÃO (Salvar como novo registro)
+            currentRomaneioId = null;
+            currentRomaneioData = null;
+
+            // Redefinir data para a data atual
+            setRomaneioEmissionDate();
+
+            // Garantir que o botão Salvar esteja no modo novo registro
+            const btnSalvar = document.querySelector('button[onclick*="salvarRomaneio"], #btnSalvar');
+            if (btnSalvar) {
+                btnSalvar.innerHTML = '<i class="fas fa-save"></i> Salvar';
+            }
+
+            // Rolar suavemente para o topo
+            try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (_) {}
+
+            const msgSucesso = 'Romaneio clonado com sucesso! Pronto para salvar como novo.';
+            if (typeof window.__toast === 'function') {
+                window.__toast(msgSucesso, 'success');
+            } else if (window.Utils && window.Utils.showToast) {
+                window.Utils.showToast(msgSucesso, 'success');
+            } else {
+                alert(msgSucesso);
+            }
+            return true;
+        } catch (err) {
+            console.error('❌ Erro ao clonar romaneio TL:', err);
+            mostrarErro('Erro ao clonar romaneio');
+            return false;
+        }
+    }
+
+    /**
      * Preencher formulário para edição
      */
     function preencherFormularioEdicao(romaneio) {
@@ -1058,6 +1109,7 @@ window.SalvarRomaneio = (function() {
     return {
         salvarRomaneio,
         carregarRomaneioParaEdicao,
+        clonarRomaneio,
         cancelarEdicao,
         isEditMode,
         obterEstatisticas,

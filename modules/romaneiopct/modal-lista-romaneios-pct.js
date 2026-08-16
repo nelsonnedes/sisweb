@@ -791,21 +791,11 @@ window.ModalListaRomaneiosPCT = (function() {
                                         <td style="text-align: center;">
                     <div class="btn-group" style="display: flex; gap: 5px; justify-content: center;">
                         <button class="action-button edit-button" onclick="window.ModalListaRomaneiosPCT.editRomaneio('${romaneio.id}')" title="Editar Romaneio">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                        ${(() => {
-                            // ✅ NOVO: Botão de Lançar Contas a Receber
-                            const jaLancado = romaneio.contasReceberLancado === true;
-                            
-                            // Declarar variáveis ANTES dos logs de debug
-                            const botaoFinanceiroClass = jaLancado ? 'action-button financeiro-button disabled' : 'action-button financeiro-button';
-                            const botaoFinanceiroTitle = jaLancado ? 'Já lançado em Contas a Receber' : 'Lançar Contas a Receber';
-                            const botaoFinanceiroOnclick = jaLancado ? '' : `onclick="window.ModalListaRomaneiosPCT.lancarContasReceber('${romaneio.id}')"`;
-                            
-                            return `<button class="${botaoFinanceiroClass}" ${botaoFinanceiroOnclick} title="${botaoFinanceiroTitle}">
-                                        <i class="fas fa-money-bill-wave"></i>
-                                    </button>`;
-                        })()}
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button clone-button" onclick="window.ModalListaRomaneiosPCT.clonarRomaneio('${romaneio.id}')" title="Clonar Romaneio">
+                            <i class="fas fa-copy"></i>
+                        </button>
                         <div class="dropdown">
                             <button class="action-button print-button" onclick="window.ModalListaRomaneiosPCT.togglePrintDropdown(this)" title="Imprimir Romaneio">
                                         <i class="fas fa-print"></i>
@@ -928,22 +918,37 @@ window.ModalListaRomaneiosPCT = (function() {
     }
 
     function editRomaneio(romaneioId) {
-        console.log(` PCT: Editando romaneio ${romaneioId}`);
-        
-        // ✅ VERIFICAR SE O ROMANEIO JÁ FOI LANÇADO EM CONTAS A RECEBER
+        console.log(`📝 PCT: Editando romaneio ${romaneioId}`);
         const sid = String(romaneioId || '');
         const romaneio = state.romaneios.find(r => String(r.id) === sid || String(r.firebaseKey) === sid || String(r.numero) === sid);
-        if (romaneio && romaneio.contasReceberLancado === true) {
-            showWarning(MSG_WARNING_EDIT_BLOCKED);
-            console.log('⚠️ PCT: Tentativa de editar romaneio já lançado bloqueada:', romaneioId);
-            return;
-        }
         
         if (window.carregarRomaneio) {
             window.carregarRomaneio(romaneioId, null, romaneio);
             closeModal();
         } else {
-            console.error(" PCT: Função carregarRomaneio não disponível");
+            console.error("❌ PCT: Função carregarRomaneio não disponível");
+        }
+    }
+
+    function clonarRomaneio(romaneioId) {
+        console.log(`📋 PCT: Clonando romaneio ${romaneioId}`);
+        const sid = String(romaneioId || '');
+        const romaneio = state.romaneios.find(r => String(r.id) === sid || String(r.firebaseKey) === sid || String(r.numero) === sid);
+
+        if (window.clonarRomaneioPCT) {
+            closeModal();
+            window.clonarRomaneioPCT(romaneioId, state.romaneios, romaneio);
+        } else if (window.CarregarRomaneioPCT?.clonarRomaneio) {
+            closeModal();
+            window.CarregarRomaneioPCT.clonarRomaneio(romaneioId, state.romaneios, romaneio);
+        } else if (window.carregarRomaneio) {
+            closeModal();
+            window.carregarRomaneio(romaneioId, null, romaneio);
+            window.romaneioEmEdicao = null;
+            const btn = document.getElementById('btnSalvar');
+            if (btn) btn.innerHTML = '<i class="fas fa-save"></i> Salvar';
+        } else {
+            console.error("❌ PCT: Função clonarRomaneio não disponível");
         }
     }
     
@@ -1958,6 +1963,7 @@ async function simularExclusaoReativacao(romaneioId) {
         openModal,
         closeModal,
         editRomaneio,
+        clonarRomaneio,
         printRomaneio,
         deleteRomaneio,
         togglePrintDropdown,
@@ -1984,10 +1990,12 @@ async function simularExclusaoReativacao(romaneioId) {
 // ✅ FUNÇÕES GLOBAIS PARA COMPATIBILIDADE PCT
 setTimeout(() => {
     if (window.ModalListaRomaneiosPCT) {
-window.abrirListaRomaneios = window.ModalListaRomaneiosPCT.openModal;
-window.excluirRomaneio = window.ModalListaRomaneiosPCT.deleteRomaneio;
-window.imprimirRomaneioFromList = window.ModalListaRomaneiosPCT.printRomaneio;
-window.togglePrintDropdown = window.ModalListaRomaneiosPCT.togglePrintDropdown;
+        window.abrirListaRomaneios = window.ModalListaRomaneiosPCT.openModal;
+        window.editarRomaneio = window.ModalListaRomaneiosPCT.editRomaneio;
+        window.clonarRomaneio = window.ModalListaRomaneiosPCT.clonarRomaneio;
+        window.excluirRomaneio = window.ModalListaRomaneiosPCT.deleteRomaneio;
+        window.imprimirRomaneioFromList = window.ModalListaRomaneiosPCT.printRomaneio;
+        window.togglePrintDropdown = window.ModalListaRomaneiosPCT.togglePrintDropdown;
         window.testarModalPCT = window.ModalListaRomaneiosPCT.testarModal;
         window.criarDadosTestePCT = window.ModalListaRomaneiosPCT.criarDadosTeste;
         window.testarReativacaoPCT = window.ModalListaRomaneiosPCT.testarReativacaoPCT;

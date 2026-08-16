@@ -1205,7 +1205,7 @@
         // Registro e Recuperação usam exclusivamente authService (sem duplicatas).
         // ═══════════════════════════════════════════════════════════════════════
         import { app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-init.js?v=e4f56badf571';
-        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=ad95660f5cac';
+        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=0e56b7c5b276';
 
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim };
         if (typeof window.runLoginHealthCheck === 'function') {

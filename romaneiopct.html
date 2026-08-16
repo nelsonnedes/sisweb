@@ -410,6 +410,16 @@
             background-color: #2980b9;
         }
 
+        .action-button.clone-button {
+            background-color: #6f42c1;
+            color: #ffffff;
+        }
+
+        .action-button.clone-button:hover {
+            background-color: #59359a;
+            color: #ffffff;
+        }
+
         .action-button.select-button {
             background-color: #28a745; /* rgb(40, 167, 69) - padronizado com romaneiotl */
         }
@@ -1984,6 +1994,18 @@
             background-color: #2980b9 !important;
         }
 
+        #listaModal .clone-button {
+            background-color: #6f42c1 !important;
+            border-color: #6f42c1 !important;
+            color: white !important;
+        }
+
+        #listaModal .clone-button:hover {
+            background-color: #59359a !important;
+            border-color: #59359a !important;
+            color: white !important;
+        }
+
         #listaModal .financeiro-button {
             background-color: #27ae60 !important;
             color: white !important;
@@ -2601,8 +2623,12 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="back-button close-modal-btn" onclick="closeClientModal()">Cancelar</button>
-                    <button type="submit" class="btn-save" id="saveClientBtn">Salvar</button>
+                    <button type="button" class="back-button close-modal-btn" onclick="closeClientModal()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn-save" id="saveClientBtn">
+                        <i class="fas fa-save"></i> Salvar
+                    </button>
                 </div>
             </form>
         </div>
@@ -2645,9 +2671,15 @@
                         <i class="fas fa-info-circle"></i> <span id="speciesModalInfo">Carregando...</span>
                     </div>
                     <div>
-                        <button type="button" class="back-button close-modal-btn">Fechar</button>
-                        <button type="button" class="btn-adicionar" onclick="window.ModalEspeciesPCT.showAllSpecies()" style="background-color: #17a2b8;">Mostrar Todas</button>
-                        <button type="button" class="btn-adicionar" onclick="openNewSpeciesModal(event)">Nova Espécie</button>
+                        <button type="button" class="back-button close-modal-btn">
+                            <i class="fas fa-times"></i> Fechar
+                        </button>
+                        <button type="button" class="btn-adicionar" onclick="window.ModalEspeciesPCT.showAllSpecies()" style="background-color: #17a2b8;">
+                            <i class="fas fa-eye"></i> Mostrar Todas
+                        </button>
+                        <button type="button" class="btn-adicionar" onclick="openNewSpeciesModal(event)">
+                            <i class="fas fa-plus"></i> Nova Espécie
+                        </button>
                     </div>
             </div>
         </div>
@@ -2682,8 +2714,12 @@
                 </form>
             </div>
             <div class="modal-footer species-standard-actions">
-                <button type="button" class="back-button" onclick="closeSpeciesModal()">Cancelar</button>
-                <button type="submit" form="speciesForm" class="btn-save">Salvar Espécie</button>
+                <button type="button" class="back-button" onclick="closeSpeciesModal()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="submit" form="speciesForm" class="btn-save">
+                    <i class="fas fa-save"></i> Salvar Espécie
+                </button>
             </div>
         </div>
     </div>
@@ -2691,8 +2727,8 @@
     <!-- Scripts -->
     <script src="utils.js?v=8d69788a751e"></script>
     <script src="species-utils.js?v=ac1a2bae7bea"></script>
-    <script src="species-store.js?v=20260816c"></script>
-    <script src="species-modal-standard.js?v=20260816c"></script>
+    <script src="species-store.js?v=1c274b02dd71"></script>
+    <script src="species-modal-standard.js?v=aabe6d5f2ce4"></script>
     <script src="data-functions.js?v=8dd76c97712b"></script>
     <script src="auth.js?v=4fa226ae91ed"></script>
     <script src="validation-system.js?v=f70152f1f65e"></script>
@@ -2715,7 +2751,7 @@
             db,
             auth,
             app
-        } from './firebaseService.js?v=ad95660f5cac';
+        } from './firebaseService.js?v=0e56b7c5b276';
         
         // Disponibilizar firebaseService COMPLETO globalmente para auth.js e romaneiopct_funcoes.js
         window.firebaseService = { 
@@ -2808,7 +2844,7 @@
     <script src="romaneios-client-save-fix.js?v=7b9c0e02d555"></script>
     
     <!-- ❌ DESABILITADO: species-manager.js - CONFLITA COM MODAIS PADRONIZADOS PCT -->
-    <!-- <script src="species-manager.js?v=1a286bc19de6"></script> -->
+    <!-- <script src="species-manager.js?v=14f755b5358c"></script> -->
     <script src="dimensoes.js?v=c93c3dabc7a7"></script>
     <script src="fix-import-errors.js?v=e936e63322d6"></script>
     
@@ -2884,18 +2920,18 @@
     <script src="modules/romaneiopct/preservar-propriedades-financeiras.js?v=557f1791c0db"></script>
     
     <!-- 3. Sistema de carregamento de dados PCT -->
-    <script src="modules/romaneiopct/carregar-romaneio-pct.js?v=20260816_editfix01"></script>
+    <script src="modules/romaneiopct/carregar-romaneio-pct.js?v=7a3cb6f6763c"></script>
     <script src="modules/core/romaneio-messages.js?v=114b5f8a30f6"></script>
     
     <!-- 4. Modal de Lista de Romaneios PCT -->
-    <script src="modules/romaneiopct/modal-lista-romaneios-pct.js?v=20260816_editfix01"></script>
+    <script src="modules/romaneiopct/modal-lista-romaneios-pct.js?v=18bd77fea720"></script>
     
     <!-- 5. Modal de Clientes PCT -->
-    <script src="modules/romaneiopct/modal-clientes-pct.js?v=cbe2e8c9f860"></script>
-    <script src="modules/core/client-list-columns.js?v=0b5067a17aeb" data-page="pct" data-target="clientListTable"></script>
+    <script src="modules/romaneiopct/modal-clientes-pct.js?v=7a725056f812"></script>
+    <script src="modules/core/client-list-columns.js?v=2caabf5273d4" data-page="pct" data-target="clientListTable"></script>
     
     <!-- 6. Modal de Espécies PCT -->
-    <script src="modules/romaneiopct/modal-especies-pct.js?v=458ad82213f0"></script>
+    <script src="modules/romaneiopct/modal-especies-pct.js?v=e1358a1d6577"></script>
     
     <!-- 7. Navegação Enter PCT -->
     <script src="modules/romaneiopct/navegacao-pct.js?v=87ee0b0cd605"></script>

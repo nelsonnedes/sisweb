@@ -1241,8 +1241,8 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="auth.js?v=4fa226ae91ed"></script>
     <script src="client-service.js?v=3061965a094a"></script> <!-- Para autocompletes -->
     <script src="species-utils.js?v=ac1a2bae7bea"></script>
-    <script src="species-store.js?v=603ae6b9dd3d"></script>
-    <script src="species-modal-standard.js?v=99c2cf53cc3e"></script>
+    <script src="species-store.js?v=1c274b02dd71"></script>
+    <script src="species-modal-standard.js?v=aabe6d5f2ce4"></script>
     
     <!-- Modais (Lista de Clientes, Novo Cliente, Espécies, Meus Romaneios) -->
     
@@ -1275,8 +1275,10 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 <div id="clientListPagination" class="pagination-controls pagination-container"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="back-button close-modal-btn" onclick="closeClientListModal()">Voltar</button>
-                <button class="btn-adicionar" onclick="openNewClientModal()">
+                <button type="button" class="back-button close-modal-btn" onclick="closeClientListModal()">
+                    <i class="fas fa-times"></i> Voltar
+                </button>
+                <button type="button" class="btn-adicionar" onclick="openNewClientModal()">
                     <i class="fas fa-plus"></i> Novo Cliente
                 </button>
             </div>
@@ -1439,8 +1441,12 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="back-button close-modal-btn" onclick="closeNewClientModal()">Cancelar</button>
-                    <button type="submit" class="btn-save">Salvar</button>
+                    <button type="button" class="back-button close-modal-btn" onclick="closeNewClientModal()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn-save">
+                        <i class="fas fa-save"></i> Salvar
+                    </button>
                 </div>
             </form>
         </div>
@@ -1475,8 +1481,10 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 <div id="fornecedorPagination" class="pagination-controls pagination-container"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="back-button close-modal-btn" onclick="closeFornecedorListModal()">Fechar</button>
-                <button class="btn-adicionar" onclick="openNewFornecedorModal()">
+                <button type="button" class="back-button close-modal-btn" onclick="closeFornecedorListModal()">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+                <button type="button" class="btn-adicionar" onclick="openNewFornecedorModal()">
                     <i class="fas fa-plus"></i> Novo Fornecedor
                 </button>
             </div>
@@ -1641,8 +1649,12 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="back-button close-modal-btn" onclick="closeNewFornecedorModal()">Cancelar</button>
-                    <button type="submit" class="btn-save"><i class="fas fa-save"></i> Salvar</button>
+                    <button type="button" class="back-button close-modal-btn" onclick="closeNewFornecedorModal()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn-save">
+                        <i class="fas fa-save"></i> Salvar
+                    </button>
                 </div>
             </form>
         </div>
@@ -1674,8 +1686,10 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 <div id="speciesListPagination" class="pagination-controls pagination-container"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="back-button close-modal-btn" onclick="closeSpeciesListModal()">Voltar</button>
-                <button class="btn-adicionar" onclick="openNewSpeciesModal()">
+                <button type="button" class="back-button close-modal-btn" onclick="closeSpeciesListModal()">
+                    <i class="fas fa-times"></i> Voltar
+                </button>
+                <button type="button" class="btn-adicionar" onclick="openNewSpeciesModal()">
                     <i class="fas fa-plus"></i> Nova Espécie
                 </button>
             </div>
@@ -1703,8 +1717,12 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     </div>
                 </div>
                 <div class="modal-footer species-standard-actions">
-                    <button type="button" class="back-button close-modal-btn" onclick="closeNewSpeciesModal()">Cancelar</button>
-                    <button type="submit" class="btn-save"><i class="fas fa-save"></i> Salvar</button>
+                    <button type="button" class="back-button close-modal-btn" onclick="closeNewSpeciesModal()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn-save">
+                        <i class="fas fa-save"></i> Salvar
+                    </button>
                 </div>
             </form>
         </div>
@@ -1736,16 +1754,18 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 <div id="listaRomaneiosPagination" class="pagination-container"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="back-button close-modal-btn" onclick="closeListaModal()">Fechar</button>
+                <button type="button" class="back-button close-modal-btn" onclick="closeListaModal()">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Scripts de Modais e Lógica -->
-    <script src="fornecedor-modals.js?v=c6343576b96d"></script>
-    <script src="preromaneio-modals.js?v=20260816_editfix01"></script>
-    <script src="modules/core/client-list-columns.js?v=0b5067a17aeb" data-page="preromaneio" data-target="clientListTable"></script>
-    <script src="modules/core/client-list-columns.js?v=0b5067a17aeb" data-page="fornecedores" data-target="fornecedorListTable"></script>
+    <script src="fornecedor-modals.js?v=99e76c051f9d"></script>
+    <script src="preromaneio-modals.js?v=b178ff9525f4"></script>
+    <script src="modules/core/client-list-columns.js?v=2caabf5273d4" data-page="preromaneio" data-target="clientListTable"></script>
+    <script src="modules/core/client-list-columns.js?v=2caabf5273d4" data-page="fornecedores" data-target="fornecedorListTable"></script>
     <script src="tora-geometry-utils.js?v=a582b726e981"></script>
     <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
     <script src="preromaneio.js?v=f1b9d910cd88"></script>

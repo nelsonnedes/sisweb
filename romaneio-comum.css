@@ -1308,69 +1308,102 @@ textarea:focus {
 
 #clientModal .modal-footer,
 #fornecedorModal .modal-footer,
-#speciesModal .modal-footer {
+#speciesModal .modal-footer,
+#newClientModal .modal-footer,
+#newFornecedorModal .modal-footer,
+#newSpeciesModal .modal-footer {
     display: flex !important;
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
     padding: 14px 20px !important;
     background: #f8fafc !important;
-    border-top: 1px solid #e5e7eb !important;
+    border-top: 1px solid #e2e8f0 !important;
     width: 100% !important;
     box-sizing: border-box !important;
+    gap: 12px !important;
 }
 
+/* ✅ Botão Salvar (Direita - Verde Sucesso Canônico) */
 #clientModal .btn-save,
 #fornecedorModal .btn-save,
-#speciesModal .btn-save {
+#speciesModal .btn-save,
+#newClientModal .btn-save,
+#newFornecedorModal .btn-save,
+#newSpeciesModal .btn-save,
+.modal-footer .btn-save {
     background: #16a34a !important;
-    color: #fff !important;
+    color: #ffffff !important;
     border: 1px solid #16a34a !important;
     border-radius: 6px !important;
-    padding: 8px 20px !important;
+    padding: 8px 22px !important;
     font-weight: 700 !important;
+    font-size: 13.5px !important;
+    min-height: 38px !important;
     cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    transition: all 0.2s ease !important;
 }
 
 #clientModal .btn-save:hover,
 #fornecedorModal .btn-save:hover,
-#speciesModal .btn-save:hover {
+#speciesModal .btn-save:hover,
+#newClientModal .btn-save:hover,
+#newFornecedorModal .btn-save:hover,
+#newSpeciesModal .btn-save:hover,
+.modal-footer .btn-save:hover {
     background: #15803d !important;
     border-color: #15803d !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(22, 163, 74, 0.25) !important;
 }
 
+/* ✅ Botão Cancelar / Fechar (Esquerda - Cinza Neutro Profissional) */
+#clientModal .back-button,
 #clientModal .back-button.close-modal-btn,
-#fornecedorModal .back-button.close-modal-btn {
-    background: #ef4444 !important;
-    color: #fff !important;
-    border: 1px solid #ef4444 !important;
-    border-radius: 6px !important;
-    padding: 8px 20px !important;
-    font-weight: 700 !important;
-    cursor: pointer !important;
-}
-
-#clientModal .back-button.close-modal-btn:hover,
-#fornecedorModal .back-button.close-modal-btn:hover {
-    background: #dc2626 !important;
-    border-color: #dc2626 !important;
-}
-
+#fornecedorModal .back-button,
+#fornecedorModal .back-button.close-modal-btn,
 #speciesModal .back-button,
-#speciesModal .back-button.close-modal-btn {
-    background: #475569 !important;
-    color: #fff !important;
-    border: 1px solid #475569 !important;
+#speciesModal .back-button.close-modal-btn,
+#newClientModal .back-button,
+#newFornecedorModal .back-button,
+#newSpeciesModal .back-button,
+.modal-footer .back-button,
+.modal-footer .close-modal-btn {
+    background: #64748b !important;
+    color: #ffffff !important;
+    border: 1px solid #64748b !important;
     border-radius: 6px !important;
     padding: 8px 20px !important;
-    font-weight: 700 !important;
+    font-weight: 600 !important;
+    font-size: 13.5px !important;
+    min-height: 38px !important;
     cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    transition: all 0.2s ease !important;
 }
 
+#clientModal .back-button:hover,
+#clientModal .back-button.close-modal-btn:hover,
+#fornecedorModal .back-button:hover,
+#fornecedorModal .back-button.close-modal-btn:hover,
 #speciesModal .back-button:hover,
-#speciesModal .back-button.close-modal-btn:hover {
-    background: #334155 !important;
-    border-color: #334155 !important;
+#speciesModal .back-button.close-modal-btn:hover,
+#newClientModal .back-button:hover,
+#newFornecedorModal .back-button:hover,
+#newSpeciesModal .back-button:hover,
+.modal-footer .back-button:hover,
+.modal-footer .close-modal-btn:hover {
+    background: #475569 !important;
+    border-color: #475569 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(100, 116, 139, 0.25) !important;
 }
 
 /* Modais: Lista de Romaneios (TL/PCT/TORA via #listaModal, PES via #romaneioListModal) */
@@ -2512,3 +2545,19 @@ textarea:focus {
         margin-bottom: 10px !important;
     }
 }
+
+/* ✅ Botão de Ação: Clonar Romaneio */
+.action-button.clone-button,
+.btn-clonar {
+    background-color: #6f42c1 !important;
+    color: #ffffff !important;
+}
+
+.action-button.clone-button:hover,
+.btn-clonar:hover {
+    background-color: #59359a !important;
+    color: #ffffff !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(111, 66, 193, 0.35) !important;
+}
+

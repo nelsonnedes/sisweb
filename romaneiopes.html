@@ -510,6 +510,20 @@
             background-color: #c0392b;
         }
 
+        .action-button.clone-button,
+        #romaneioListModal .clone-button {
+            background-color: #6f42c1 !important;
+            border-color: #6f42c1 !important;
+            color: #ffffff !important;
+        }
+
+        .action-button.clone-button:hover,
+        #romaneioListModal .clone-button:hover {
+            background-color: #59359a !important;
+            border-color: #59359a !important;
+            color: #ffffff !important;
+        }
+
         .btn-group {
             display: flex;
             gap: 2px;
@@ -1270,8 +1284,12 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="back-button close-modal-btn">Cancelar</button>
-                    <button type="submit" class="btn-save" id="saveClientBtn">Salvar</button>
+                    <button type="button" class="back-button close-modal-btn">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn-save" id="saveClientBtn">
+                        <i class="fas fa-save"></i> Salvar
+                    </button>
                 </div>
             </form>
         </div>
@@ -1300,16 +1318,20 @@
                 </form>
             </div>
             <div class="modal-footer species-standard-actions">
-                <button type="button" class="back-button close-modal-btn">Cancelar</button>
-                <button type="submit" form="speciesForm" class="btn-save">Salvar Espécie</button>
+                <button type="button" class="back-button close-modal-btn">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="submit" form="speciesForm" class="btn-save">
+                    <i class="fas fa-save"></i> Salvar Espécie
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
     <script src="species-utils.js?v=ac1a2bae7bea"></script>
-    <script src="species-store.js?v=20260816c"></script>
-    <script src="species-modal-standard.js?v=20260816c"></script>
+    <script src="species-store.js?v=1c274b02dd71"></script>
+    <script src="species-modal-standard.js?v=aabe6d5f2ce4"></script>
     <script src="auth.js?v=4fa226ae91ed"></script>
     <script type="module">
         import {
@@ -1326,7 +1348,7 @@
             db,
             auth,
             app
-        } from './firebaseService.js?v=ad95660f5cac';
+        } from './firebaseService.js?v=0e56b7c5b276';
         const tenantFromContext = (() => {
             try {
                 if (window.appTenantId) return String(window.appTenantId);
@@ -1367,7 +1389,7 @@
     <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
     <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
     <script src="romaneio-print-config.js?v=24205aca3d2d"></script>
-    <script src="modules/core/client-list-columns.js?v=0b5067a17aeb" data-page="pes" data-target="clientListBody"></script>
+    <script src="modules/core/client-list-columns.js?v=2caabf5273d4" data-page="pes" data-target="clientListBody"></script>
     <script>
         let itens = [];
         let itemEmEdicaoIndex = -1; // Para controlar edição de itens
@@ -4014,6 +4036,12 @@
                     <td style="text-align: right;">${formatarMoeda(valorTotal)}</td>
                     <td style="text-align: center;">
                         <div class="btn-group">
+                        <button class="action-button edit-button" onclick="editRomaneio(${index})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button clone-button" onclick="clonarRomaneio(${index})" title="Clonar Romaneio">
+                            <i class="fas fa-copy"></i>
+                        </button>
                         <div class="print-dropdown">
                             <button class="action-button print-button" onclick="togglePrintMenu(this, event)" title="Imprimir">
                                 <i class="fas fa-print"></i>
@@ -4024,9 +4052,6 @@
                                 <button onclick="printRomaneio(${index}, 'sem-preco')"><i class="fas fa-file-times"></i> Sem Preço</button>
                             </div>
                         </div>
-                        <button class="action-button edit-button" onclick="editRomaneio(${index})" title="Editar">
-                            <i class="fas fa-edit"></i>
-                        </button>
                         <button class="action-button delete-button" onclick="deleteRomaneio(${index})" title="Excluir">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -4063,6 +4088,7 @@
                 return;
             }
             romaneioEmEdicao = String(alvo.id);
+            window.romaneioEmEdicao = romaneioEmEdicao;
             setRomaneioEmissionDate(alvo.dataEmissao || alvo.data || alvo.timestamp);
             document.getElementById('clienteInput').value = typeof alvo.cliente === 'object'
                 ? (alvo.cliente.nome || alvo.cliente.name || '')
@@ -4088,6 +4114,59 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         window.editRomaneio = editRomaneio;
+
+        async function clonarRomaneio(index) {
+            const romaneios = await loadRomaneiosPesCompany();
+            const sid = String(index !== undefined && index !== null ? index : '').trim();
+            const alvo = (typeof index === 'number' && Number.isInteger(index) ? (romaneiosPesModalList[index] || romaneios[index]) : null)
+                || romaneios.find(r => String(r && (r.id || r.firebaseKey || r.numero)) === sid)
+                || (Array.isArray(romaneiosPesModalList) ? romaneiosPesModalList.find(r => String(r && (r.id || r.firebaseKey || r.numero)) === sid) : null)
+                || romaneiosPesModalList[index]
+                || romaneios[index];
+            if (!alvo) {
+                alert('Romaneio não encontrado para clonagem.');
+                return;
+            }
+            // Limpar identificadores para salvar como novo registro
+            romaneioEmEdicao = null;
+            window.romaneioEmEdicao = null;
+            registroEmEdicao = null;
+            itemEmEdicaoIndex = -1;
+            
+            setRomaneioEmissionDate();
+            document.getElementById('clienteInput').value = typeof alvo.cliente === 'object'
+                ? (alvo.cliente.nome || alvo.cliente.name || '')
+                : (alvo.cliente || '');
+            document.getElementById('especieInput').value = typeof alvo.especie === 'object'
+                ? (alvo.especie.nome || alvo.especie.name || '')
+                : (alvo.especie || '');
+            document.getElementById('preco').value = String(alvo.preco || 0);
+            selectedClient = typeof alvo.cliente === 'object'
+                ? { ...alvo.cliente, name: alvo.cliente.name || alvo.cliente.nome || '' }
+                : { id: null, name: String(alvo.cliente || '') };
+            selectedSpecies = typeof alvo.especie === 'object'
+                ? { ...alvo.especie, name: alvo.especie.name || alvo.especie.nome || '' }
+                : { id: null, name: String(alvo.especie || '') };
+            preco = parseFloat(alvo.preco) || 0;
+            const rawItens = alvo.itens || alvo.items || [];
+            itens = Array.isArray(rawItens) ? rawItens.map(item => ({ ...item })) : [];
+            atualizarTabela();
+            const btnSalvar = document.getElementById('btnSalvar');
+            if (btnSalvar) btnSalvar.innerHTML = '<i class="fas fa-save"></i> Salvar';
+            const modal = document.getElementById('romaneioListModal');
+            if (modal) modal.style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            const msg = 'Romaneio clonado com sucesso! Pronto para salvar como novo.';
+            if (typeof window.__toast === 'function') {
+                window.__toast(msg, 'success');
+            } else if (window.Utils && window.Utils.showToast) {
+                window.Utils.showToast(msg, 'success');
+            } else {
+                alert(msg);
+            }
+        }
+        window.clonarRomaneio = clonarRomaneio;
         
         // Função para excluir romaneio
         async function deleteRomaneio(index) {

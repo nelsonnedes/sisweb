@@ -923,6 +923,19 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     border-color: #007bff !important;
 }
 
+/* ✅ ESTILO ESPECÍFICO PARA BOTÃO DE CLONAGEM */
+#listaModal .clone-button {
+    border-color: #6f42c1 !important;
+    background-color: #6f42c1 !important;
+    color: white !important;
+}
+
+#listaModal .clone-button:hover {
+    background-color: #59359a !important;
+    border-color: #59359a !important;
+    color: white !important;
+}
+
 /* ✅ ESTILO ESPECÍFICO PARA BOTÃO DE EXCLUSÃO */
 #listaModal .delete-button {
     border-color: #dc3545 !important;
@@ -1415,6 +1428,27 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
 #listaModal .edit-button:hover,
 .list-modal .edit-button:hover {
     background-color: #2980b9 !important;
+}
+
+/* ✅ BOTÃO CLONAR ROMANEIO */
+.modal .clone-button,
+#listaModal .clone-button,
+#romaneioListModal .clone-button,
+.list-modal .clone-button,
+.action-button.clone-button {
+    background-color: #6f42c1 !important;
+    border-color: #6f42c1 !important;
+    color: white !important;
+}
+
+.modal .clone-button:hover,
+#listaModal .clone-button:hover,
+#romaneioListModal .clone-button:hover,
+.list-modal .clone-button:hover,
+.action-button.clone-button:hover {
+    background-color: #59359a !important;
+    border-color: #59359a !important;
+    color: white !important;
 }
 
 .modal .financeiro-button,

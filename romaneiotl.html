@@ -1426,6 +1426,21 @@
             transition: background-color 0.2s ease !important;
         }
 
+        /* ✅ BOTÃO CLONAR ROMANEIO */
+        #listaModal .clone-button,
+        .modal .clone-button {
+            background-color: #6f42c1 !important;
+            border-color: #6f42c1 !important;
+            color: white !important;
+        }
+
+        #listaModal .clone-button:hover,
+        .modal .clone-button:hover {
+            background-color: #59359a !important;
+            border-color: #59359a !important;
+            color: white !important;
+        }
+
         /* ✅ BOTÃO FINANCEIRO INATIVO - CINZA */
         .modal .financeiro-button.disabled {
             background-color: #95a5a6 !important;
@@ -1593,10 +1608,10 @@
                                 <option value="">Selecione</option>
                             </select>
                         </div>
-                        <button type="button" id="btnCarregarPreRomaneio" class="btn btn-success">
+                        <button type="button" id="btnCarregarPreRomaneio" class="btn btn-success btn-carregar">
                             <i class="fas fa-download"></i> Carregar Itens
                         </button>
-                        <button type="button" id="btnLimparPreRomaneio" class="btn btn-danger">
+                        <button type="button" id="btnLimparPreRomaneio" class="btn btn-warning btn-carregar btn-limpar-pre">
                             <i class="fas fa-eraser"></i> Limpar
                         </button>
                     </div>
@@ -1690,8 +1705,12 @@
                         <i class="fas fa-info-circle"></i> <span id="clientModalInfo">Carregando...</span>
             </div>
                     <div>
-                        <button type="button" class="back-button close-modal-btn">Fechar</button>
-                        <button type="button" class="btn-adicionar" onclick="openNewClientModal()">Novo Cliente</button>
+                        <button type="button" class="back-button close-modal-btn">
+                            <i class="fas fa-times"></i> Fechar
+                        </button>
+                        <button type="button" class="btn-adicionar" onclick="openNewClientModal()">
+                            <i class="fas fa-plus"></i> Novo Cliente
+                        </button>
         </div>
     </div>
         </div>
@@ -1734,9 +1753,15 @@
                         <i class="fas fa-info-circle"></i> <span id="speciesModalInfo">Carregando...</span>
                     </div>
                     <div>
-                        <button type="button" class="back-button close-modal-btn">Fechar</button>
-                        <button type="button" class="btn-adicionar" onclick="window.ModalEspecies.showAllSpecies()" style="background-color: #17a2b8;">Mostrar Todas</button>
-                        <button type="button" class="btn-adicionar" onclick="openNewSpeciesModal()">Nova Espécie</button>
+                        <button type="button" class="back-button close-modal-btn">
+                            <i class="fas fa-times"></i> Fechar
+                        </button>
+                        <button type="button" class="btn-adicionar" onclick="window.ModalEspecies.showAllSpecies()" style="background-color: #17a2b8;">
+                            <i class="fas fa-eye"></i> Mostrar Todas
+                        </button>
+                        <button type="button" class="btn-adicionar" onclick="openNewSpeciesModal()">
+                            <i class="fas fa-plus"></i> Nova Espécie
+                        </button>
                     </div>
             </div>
         </div>
@@ -1916,9 +1941,9 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     
     <!-- Módulos Base (carregados primeiro) -->
     <script src="species-utils.js?v=ac1a2bae7bea"></script>
-    <script src="species-store.js?v=20260816c"></script>
-    <script src="species-modal-standard.js?v=20260816c"></script>
-    <script src="modules/core/firebase-service.js?v=20260816c"></script>
+    <script src="species-store.js?v=1c274b02dd71"></script>
+    <script src="species-modal-standard.js?v=aabe6d5f2ce4"></script>
+    <script src="modules/core/firebase-service.js?v=fea8c01c1977"></script>
     <script src="modules/core/utils.js?v=7ccdca69ee33"></script>
     <script src="modules/core/romaneio-messages.js?v=114b5f8a30f6"></script>
     <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
@@ -1927,8 +1952,8 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="estados-cidades.js?v=e634a7c28536"></script>
     
     <!-- Módulos CRUD (dependem de estados-cidades) -->
-    <script src="modules/crud/gerenciar-clientes.js?v=20260816_p01"></script>
-    <script src="modules/crud/gerenciar-especies.js?v=781168c69294"></script>
+    <script src="modules/crud/gerenciar-clientes.js?v=3fa129bc7332"></script>
+    <script src="modules/crud/gerenciar-especies.js?v=d30534480ca9"></script>
     
     <!-- Módulos de Navegação e Formatação -->
     <script src="modules/core/navegacao-enter.js?v=eb76c699775d"></script>
@@ -1942,15 +1967,15 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="modules/items/excluir-item.js?v=f7d5f45f65f6"></script>
     
     <!-- Módulos de Romaneio -->
-    <script src="modules/romaneio/salvar-romaneio.js?v=20260816_editfix01"></script>
+    <script src="modules/romaneio/salvar-romaneio.js?v=08eb22ea9ca2"></script>
     <script src="romaneio-print-config.js?v=24205aca3d2d"></script>
     <script src="modules/reports/imprimir-romaneio.js?v=816cf055ebe9"></script>
 
     <!-- Módulos de Modais (dependem dos CRUD) -->
     <script src="modules/modals/modal-clientes.js?v=79f76ff97975"></script>
-    <script src="modules/core/client-list-columns.js?v=0b5067a17aeb" data-page="tl" data-target="clientListTable"></script>
-    <script src="modules/modals/modal-especies.js?v=042b4605b67c"></script>
-    <script src="modules/modals/modal-lista-romaneios.js?v=20260816_editfix01"></script>
+    <script src="modules/core/client-list-columns.js?v=2caabf5273d4" data-page="tl" data-target="clientListTable"></script>
+    <script src="modules/modals/modal-especies.js?v=eff5e678d32c"></script>
+    <script src="modules/modals/modal-lista-romaneios.js?v=c74781e40c30"></script>
     <script src="romaneios-client-save-fix.js?v=7b9c0e02d555"></script>
     <script src="schema-migration-contatos.js?v=2e13b2ae3d91"></script>
 

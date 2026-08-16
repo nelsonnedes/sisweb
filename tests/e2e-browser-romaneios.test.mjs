@@ -93,6 +93,9 @@ test('E2E Browser Tests com Puppeteer - Páginas de Romaneios e Captura de Conso
   async function setupPageWithMockAuth(page) {
     await page.evaluateOnNewDocument((tenant, clients, species, romaneios) => {
       window.__skipAuthRedirect = true;
+      localStorage.setItem('user_session', JSON.stringify({ uid: 'mock_uid', email: 'test@sisweb.com' }));
+      localStorage.setItem('firebase_user', JSON.stringify({ uid: 'mock_uid', email: 'test@sisweb.com' }));
+      localStorage.setItem('auth_user', JSON.stringify({ uid: 'mock_uid', email: 'test@sisweb.com' }));
       localStorage.setItem('company_info', JSON.stringify({ companyId: tenant, name: 'Empresa Teste' }));
       localStorage.setItem(`companies/${tenant}/clients`, JSON.stringify(clients));
       localStorage.setItem(`companies/${tenant}/species`, JSON.stringify(species));
@@ -115,22 +118,22 @@ test('E2E Browser Tests com Puppeteer - Páginas de Romaneios e Captura de Conso
     assert.strictEqual(pageErrors.length, 0, `Erros de página detectados em PES: ${pageErrors.join(' | ')}`);
 
     // 1.1 Testar abertura do modal de listar clientes
-    const btnListarClientes = await page.$('[data-action="open-client-list"]');
-    if (btnListarClientes) {
-      await btnListarClientes.click();
-      await new Promise((r) => setTimeout(r, 400));
-      const modalClienteVisivel = await page.evaluate(() => {
+    const modalClienteVisivel = await page.evaluate(async () => {
+      if (typeof openClientListModal === 'function') {
+        await openClientListModal();
         const m = document.getElementById('clientListModal');
         return m && m.style.display !== 'none';
-      });
-      assert.ok(modalClienteVisivel, 'Modal de clientes deve abrir ao clicar');
-      // Fechar modal de clientes para os próximos testes
-      await page.evaluate(() => {
-        const m = document.getElementById('clientListModal');
-        if (m) m.style.display = 'none';
-      });
-      await new Promise((r) => setTimeout(r, 200));
-    }
+      }
+      return false;
+    });
+
+    assert.ok(modalClienteVisivel, 'Modal de clientes deve abrir ao chamar openClientListModal');
+    // Fechar modal de clientes para os próximos testes
+    await page.evaluate(() => {
+      const m = document.getElementById('clientListModal');
+      if (m) m.style.display = 'none';
+    });
+    await new Promise((r) => setTimeout(r, 200));
 
     // 1.2 Testar abertura do modal de listar romaneios
     const modalRes = await page.evaluate(async () => {
@@ -150,9 +153,16 @@ test('E2E Browser Tests com Puppeteer - Páginas de Romaneios e Captura de Conso
     assert.ok(modalRes.exists && modalRes.display !== 'none', `Modal deve existir e estar visível: ${JSON.stringify(modalRes)}`);
 
     // 1.3 Testar edição de romaneio carregando itens
-    const editRomaneioBtn = await page.$('#romaneioListModal .action-button.edit-button, #romaneioListModal button[onclick*="editRomaneio"]');
-    if (editRomaneioBtn) {
-      await editRomaneioBtn.click();
+    const editDone = await page.evaluate(() => {
+      const editBtn = document.querySelector('#romaneioListModal .action-button.edit-button, #romaneioListModal button[onclick*="editRomaneio"]');
+      if (editBtn) {
+        editBtn.click();
+        return true;
+      }
+      return false;
+    });
+
+    if (editDone) {
       await new Promise((r) => setTimeout(r, 600));
 
       const itemRowInfo = await page.evaluate(() => {
@@ -165,9 +175,16 @@ test('E2E Browser Tests com Puppeteer - Páginas de Romaneios e Captura de Conso
       assert.ok(itemRowInfo.editBtnCount > 0, 'Coluna Ações deve conter botões .btn-editar');
 
       // 1.4 Testar clique no botão de editar item
-      const editItemBtn = await page.$('#romaneioTableBody .btn-editar');
-      if (editItemBtn) {
-        await editItemBtn.click();
+      const itemEditDone = await page.evaluate(() => {
+        const editItemBtn = document.querySelector('#romaneioTableBody .btn-editar');
+        if (editItemBtn) {
+          editItemBtn.click();
+          return true;
+        }
+        return false;
+      });
+
+      if (itemEditDone) {
         await new Promise((r) => setTimeout(r, 400));
 
         const formState = await page.evaluate(() => {
@@ -181,11 +198,28 @@ test('E2E Browser Tests com Puppeteer - Páginas de Romaneios e Captura de Conso
       }
     }
 
+    // 1.5 Testar clonagem de romaneio PES
+    const clonePESRes = await page.evaluate(async () => {
+      if (typeof window.clonarRomaneio === 'function') {
+        await window.clonarRomaneio(0);
+        const btnSalvar = document.getElementById('btnSalvar');
+        return {
+          clonado: true,
+          btnText: btnSalvar ? btnSalvar.textContent.trim() : null,
+          romaneioEmEdicao: window.romaneioEmEdicao
+        };
+      }
+      return { clonado: false };
+    });
+    assert.ok(clonePESRes.clonado, 'Função clonarRomaneio deve existir e executar em PES');
+    assert.match(clonePESRes.btnText, /Salvar/, 'Botão deve permanecer como Salvar (não Atualizar) na clonagem');
+    assert.ok(!clonePESRes.romaneioEmEdicao, 'romaneioEmEdicao deve ser limpo na clonagem PES');
+
     assert.strictEqual(pageErrors.length, 0, `Nenhum erro de página deve ocorrer: ${pageErrors.join(' | ')}`);
     await page.close();
   });
 
-  await t.test('2. Romaneio TL: Carregamento sem SyntaxError e Interface Pronta', async () => {
+  await t.test('2. Romaneio TL: Carregamento sem SyntaxError e Teste de Clonagem', async () => {
     const page = await browser.newPage();
     const pageErrors = [];
 
@@ -200,10 +234,19 @@ test('E2E Browser Tests com Puppeteer - Páginas de Romaneios e Captura de Conso
     const btnListar = await page.$('button[onclick*="abrirListaRomaneios"]');
     assert.ok(btnListar, 'Botão Listar deve existir em TL');
 
+    const cloneTLRes = await page.evaluate(() => {
+      return {
+        hasClonarRomaneio: typeof window.clonarRomaneio === 'function',
+        hasModalClonar: typeof window.ModalListaRomaneios?.clonarRomaneio === 'function',
+        hasSalvarClonar: typeof window.SalvarRomaneio?.clonarRomaneio === 'function'
+      };
+    });
+    assert.ok(cloneTLRes.hasClonarRomaneio || cloneTLRes.hasModalClonar || cloneTLRes.hasSalvarClonar, 'Clonagem deve estar disponível em TL');
+
     await page.close();
   });
 
-  await t.test('3. Romaneio PCT: Carregamento sem SyntaxError e Interface Pronta', async () => {
+  await t.test('3. Romaneio PCT: Carregamento sem SyntaxError e Teste de Clonagem', async () => {
     const page = await browser.newPage();
     const pageErrors = [];
 
@@ -214,10 +257,20 @@ test('E2E Browser Tests com Puppeteer - Páginas de Romaneios e Captura de Conso
     await new Promise((r) => setTimeout(r, 600));
 
     assert.strictEqual(pageErrors.length, 0, `Erros em romaneiopct: ${pageErrors.join(' | ')}`);
+
+    const clonePCTRes = await page.evaluate(() => {
+      return {
+        hasClonarPCT: typeof window.clonarRomaneioPCT === 'function',
+        hasModalClonarPCT: typeof window.ModalListaRomaneiosPCT?.clonarRomaneio === 'function',
+        hasCarregarClonar: typeof window.CarregarRomaneioPCT?.clonarRomaneio === 'function'
+      };
+    });
+    assert.ok(clonePCTRes.hasClonarPCT || clonePCTRes.hasModalClonarPCT || clonePCTRes.hasCarregarClonar, 'Clonagem deve estar disponível em PCT');
+
     await page.close();
   });
 
-  await t.test('4. Romaneio Tora: Carregamento sem SyntaxError e Interface Pronta', async () => {
+  await t.test('4. Romaneio Tora: Carregamento sem SyntaxError e Teste de Clonagem', async () => {
     const page = await browser.newPage();
     const pageErrors = [];
 
@@ -228,6 +281,14 @@ test('E2E Browser Tests com Puppeteer - Páginas de Romaneios e Captura de Conso
     await new Promise((r) => setTimeout(r, 600));
 
     assert.strictEqual(pageErrors.length, 0, `Erros em romaneiotora: ${pageErrors.join(' | ')}`);
+
+    const cloneToraRes = await page.evaluate(() => {
+      return {
+        hasClonarTora: typeof window.clonarRomaneioTora === 'function'
+      };
+    });
+    assert.ok(cloneToraRes.hasClonarTora, 'window.clonarRomaneioTora deve estar disponível em Tora');
+
     await page.close();
   });
 

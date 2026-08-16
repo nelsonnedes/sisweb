@@ -416,12 +416,6 @@ window.ModalListaRomaneios = (function() {
             const totalVolume = totaisRecalculados.volume.toFixed(3);
             const totalValue = formatCurrency(totaisRecalculados.valor);
             
-            // ✅ NOVO: Verificar se romaneio já foi lançado para contas a receber
-            const jaLancado = romaneio.contasReceberLancado === true;
-            const botaoFinanceiroClass = jaLancado ? 'action-button financeiro-button disabled' : 'action-button financeiro-button';
-            const botaoFinanceiroTitle = jaLancado ? 'Já lançado em Contas a Receber' : 'Lançar Contas a Receber';
-            const botaoFinanceiroOnclick = jaLancado ? '' : `onclick="window.ModalListaRomaneios.lancarContasReceber('${romaneio.id}')"`;
-            
             return `
                 <tr>
                     <td title="${escapeHtml(data)}">${escapeHtml(data)}</td>
@@ -435,8 +429,8 @@ window.ModalListaRomaneios = (function() {
                             <button class="action-button edit-button" onclick="window.ModalListaRomaneios.editRomaneio('${romaneio.id}')" title="Editar Romaneio">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="${botaoFinanceiroClass}" ${botaoFinanceiroOnclick} title="${botaoFinanceiroTitle}">
-                                <i class="fas fa-money-bill-wave"></i>
+                            <button class="action-button clone-button" onclick="window.ModalListaRomaneios.clonarRomaneio('${romaneio.id}')" title="Clonar Romaneio">
+                                <i class="fas fa-copy"></i>
                             </button>
                             <div class="dropdown">
                                 <button class="action-button print-button" onclick="window.ModalListaRomaneios.togglePrintDropdown(this)" title="Imprimir Romaneio">
@@ -569,22 +563,8 @@ window.ModalListaRomaneios = (function() {
      */
     function editRomaneio(romaneioId) {
         dbg(`✏️ Editando romaneio: ${romaneioId}`);
-        
-        // ✅ VERIFICAR SE O ROMANEIO JÁ FOI LANÇADO EM CONTAS A RECEBER
         const sid = String(romaneioId || '');
         const romaneio = state.romaneios.find(r => String(r.id) === sid || String(r.firebaseKey) === sid);
-        if (romaneio && romaneio.contasReceberLancado === true) {
-            try {
-                const msg = '⚠️ Este romaneio já foi lançado em Contas a Receber. Cancele o lançamento para editar.';
-                if (typeof window.__toast === 'function') {
-                    window.__toast(msg, 'warning', { duration: 5000 });
-                } else if (window.Utils && window.Utils.showToast) {
-                    window.Utils.showToast(msg, 'warning');
-                }
-            } catch (_) {}
-            dbg('⚠️ TL: Tentativa de editar romaneio já lançado bloqueada:', romaneioId);
-            return;
-        }
         
         // Implementar edição de romaneio
         if (window.SalvarRomaneio && window.SalvarRomaneio.carregarRomaneioParaEdicao) {
@@ -593,6 +573,26 @@ window.ModalListaRomaneios = (function() {
         } else {
             console.error('❌ Funcionalidade de edição não disponível');
             showError(MSG_ERROR_EDIT_UNAVAILABLE);
+        }
+    }
+
+    /**
+     * ✅ CLONAR ROMANEIO
+     */
+    function clonarRomaneio(romaneioId) {
+        dbg(`📋 Clonando romaneio: ${romaneioId}`);
+        const sid = String(romaneioId || '');
+        const romaneio = state.romaneios.find(r => String(r.id) === sid || String(r.firebaseKey) === sid);
+
+        if (window.SalvarRomaneio && typeof window.SalvarRomaneio.clonarRomaneio === 'function') {
+            closeModal();
+            window.SalvarRomaneio.clonarRomaneio(romaneioId, romaneio);
+        } else if (window.SalvarRomaneio && typeof window.SalvarRomaneio.carregarRomaneioParaEdicao === 'function') {
+            closeModal();
+            window.SalvarRomaneio.carregarRomaneioParaEdicao(romaneioId, romaneio);
+        } else {
+            console.error('❌ Funcionalidade de clonagem não disponível');
+            showError('Funcionalidade de clonagem não disponível');
         }
     }
 
@@ -1454,6 +1454,7 @@ window.ModalListaRomaneios = (function() {
         openModal,
         closeModal,
         editRomaneio,
+        clonarRomaneio,
         printRomaneio,
         deleteRomaneio,
         togglePrintDropdown,
@@ -1526,10 +1527,10 @@ window.ModalListaRomaneios = (function() {
 // ✅ FUNÇÕES GLOBAIS PARA COMPATIBILIDADE
 window.abrirListaRomaneios = window.ModalListaRomaneios.openModal;
 window.editarRomaneio = window.ModalListaRomaneios.editRomaneio;
+window.clonarRomaneio = window.ModalListaRomaneios.clonarRomaneio;
 window.excluirRomaneio = window.ModalListaRomaneios.deleteRomaneio;
 window.imprimirRomaneio = window.ModalListaRomaneios.printRomaneio;
 window.togglePrintDropdown = window.ModalListaRomaneios.togglePrintDropdown;
-window.lancarContasReceberRomaneio = window.ModalListaRomaneios.lancarContasReceber;
 
 // 📡 Atualizar lista quando chegar evento realtime do TL
 window.addEventListener('romaneiosTL:updated', async function() {

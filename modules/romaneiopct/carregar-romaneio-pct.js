@@ -566,8 +566,52 @@
         return comp * larg * esp;
     }
 
+    /**
+     * ✅ FUNÇÃO DE CLONAGEM DO ROMANEIO PCT
+     */
+    async function clonarRomaneio(id, romaneios = null, dadosPreCarregados = null) {
+        console.log('📋 PCT: Clonando romaneio:', id);
+        try {
+            await carregarRomaneio(id, romaneios, dadosPreCarregados);
+
+            // Limpar estado de edição (pronto para salvar como novo)
+            window.romaneioEmEdicao = null;
+
+            // Garantir que o botão volte para Salvar
+            const btnSalvar = document.getElementById('btnSalvar');
+            if (btnSalvar) {
+                btnSalvar.innerHTML = '<i class="fas fa-save"></i> Salvar';
+            }
+
+            // Atualizar data de emissão para data atual
+            const dataInput = document.getElementById('romaneioData');
+            if (dataInput) {
+                dataInput.value = new Date().toISOString().split('T')[0];
+            }
+
+            const msg = 'Romaneio clonado com sucesso! Pronto para salvar como novo.';
+            if (typeof window.__toast === 'function') {
+                window.__toast(msg, 'success');
+            } else if (window.Utils && window.Utils.showToast) {
+                window.Utils.showToast(msg, 'success');
+            } else {
+                alert(msg);
+            }
+            return true;
+        } catch (err) {
+            console.error('❌ Erro ao clonar romaneio PCT:', err);
+            alert('Erro ao clonar romaneio: ' + err.message);
+            return false;
+        }
+    }
+
     // ✅ EXPOR FUNÇÕES GLOBALMENTE
     window.carregarRomaneio = carregarRomaneio;
+    window.clonarRomaneioPCT = clonarRomaneio;
+    window.CarregarRomaneioPCT = {
+        carregarRomaneio,
+        clonarRomaneio
+    };
     
     console.log('✅ Módulo CarregarRomaneoPCT carregado com sucesso');
 

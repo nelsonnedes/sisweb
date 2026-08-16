@@ -663,6 +663,9 @@ class RomaneioManager {
                         <button class="action-button edit-button" onclick="window.editarRomaneioTora(${actionId})" title="Editar Romaneio">
                             <i class="fas fa-edit"></i>
                         </button>
+                        <button class="action-button clone-button" onclick="window.clonarRomaneioTora(${actionId})" title="Clonar Romaneio">
+                            <i class="fas fa-copy"></i>
+                        </button>
                         <div class="print-dropdown" style="display: inline-block; position: relative;">
                             <button class="action-button print-button" onclick="window.togglePrintMenuTora(this, ${actionId}, ${globalIdx})" title="Imprimir Romaneio">
                                 <i class="fas fa-print"></i>
@@ -998,6 +1001,93 @@ window.editarRomaneioTora = async function(romaneioId, dadosPreCarregados = null
 window.excluirRomaneioTora = function(id) {
     if (confirm('Excluir romaneio Tora?')) {
         window.romaneioToraManager.deleteData(id);
+    }
+};
+
+window.clonarRomaneioTora = async function(romaneioId, dadosPreCarregados = null) {
+    const manager = window.romaneioToraManager;
+    const sid = String(romaneioId || '').trim();
+    let romaneio = dadosPreCarregados || null;
+    
+    if (!romaneio && manager && typeof manager.getData === 'function') {
+        const romaneios = await manager.getData();
+        romaneio = (Array.isArray(romaneios) ? romaneios : []).find(r => String(r && (r.id || r.firebaseKey || r.numero)) === sid);
+    }
+    
+    if (!romaneio && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+        try {
+            const res = await window.firebaseService.loadFromFirebase('romaneios/tora');
+            if (res && res.success && res.data) {
+                const lista = Array.isArray(res.data) ? res.data : Object.entries(res.data).map(([k, v]) => ({ id: (v && v.id) || k, firebaseKey: k, ...(v || {}) }));
+                romaneio = lista.find(r => String(r && (r.id || r.firebaseKey || r.numero)) === sid);
+            }
+        } catch (_) {}
+    }
+    
+    if (!romaneio) { alert('Romaneio não encontrado para clonagem!'); return; }
+    
+    console.log("📋 Clonando Romaneio Tora:", romaneio);
+    
+    // Limpar campos de edição para salvar como novo
+    window.romaneioEditandoId = null;
+    window.romaneioOriginalDataHora = null;
+    window.romaneioOriginalDataFormatada = null;
+    window.romaneioOriginalHoraFormatada = null;
+    window.romaneioOriginalCriadoEm = null;
+    
+    window.clienteSelecionado = romaneio.fornecedor || romaneio.cliente;
+    
+    let itensNormalizados = [];
+    if (romaneio.itens) {
+        if (Array.isArray(romaneio.itens)) {
+            itensNormalizados = romaneio.itens.map(it => ({ ...it }));
+        } else if (typeof romaneio.itens === 'object') {
+            itensNormalizados = Object.values(romaneio.itens).map(it => ({ ...it }));
+        }
+    }
+    window.romaneioItems = itensNormalizados;
+    
+    const btnSalvar = document.getElementById('btnSalvar');
+    if (btnSalvar) {
+        btnSalvar.innerHTML = '<i class="fas fa-save"></i> Salvar Romaneio';
+        btnSalvar.classList.remove('btn-atualizar'); 
+    }
+    
+    const tituloPagina = document.querySelector('.main-title, h1, h2');
+    if (tituloPagina) {
+        tituloPagina.innerHTML = `Romaneio de Toras`;
+    }
+    
+    if (document.getElementById('clienteInput')) {
+        document.getElementById('clienteInput').value = window.clienteSelecionado?.nome || window.clienteSelecionado?.name || '';
+    }
+    if (document.getElementById('fornecedorInput')) {
+        document.getElementById('fornecedorInput').value = window.clienteSelecionado?.nome || window.clienteSelecionado?.name || '';
+    }
+    if (document.getElementById('motoristaInput') && romaneio.motorista) {
+        document.getElementById('motoristaInput').value = romaneio.motorista;
+    }
+    if (document.getElementById('placaInput') && romaneio.placa) {
+        document.getElementById('placaInput').value = romaneio.placa;
+    }
+    
+    if (typeof window.updateTableBody === 'function') window.updateTableBody();
+    if (typeof window.atualizarTotais === 'function') window.atualizarTotais();
+    if (typeof window.renderizarTabela === 'function') window.renderizarTabela();
+    
+    const modal = document.getElementById(manager ? manager.modalId : 'romaneioListModal');
+    if (modal) modal.style.display = 'none';
+    
+    const form = document.querySelector('form');
+    if (form) form.scrollIntoView({behavior: 'smooth'});
+    
+    const msg = 'Romaneio clonado com sucesso! Pronto para salvar como novo.';
+    if (window.Utils?.showToast) {
+        window.Utils.showToast(msg, 'success');
+    } else if (typeof window.__toast === 'function') {
+        window.__toast(msg, 'success');
+    } else {
+        alert(msg);
     }
 };
 

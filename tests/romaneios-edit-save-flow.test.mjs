@@ -35,8 +35,12 @@ test('Fluxo de Edição e Salvamento de Romaneios em todas as 5 abas', async (t)
     assert.match(html, /onclick="abrirListaRomaneios\(\)"/, 'Botão Listar deve chamar abrirListaRomaneios');
     // Botão de editar na lista chama editRomaneio
     assert.match(listModalJs, /editRomaneio\('\$\{romaneio\.id\}'\)/, 'Botão editar deve chamar editRomaneio com ID');
+    // Botão de clonar na lista chama clonarRomaneio
+    assert.match(listModalJs, /clonarRomaneio\('\$\{romaneio\.id\}'\)/, 'Botão clonar deve chamar clonarRomaneio com ID');
     // editRomaneio chama carregarRomaneioParaEdicao
     assert.match(listModalJs, /window\.SalvarRomaneio\.carregarRomaneioParaEdicao\(romaneioId,\s*romaneio\)/, 'editRomaneio deve acionar carregarRomaneioParaEdicao com dados pre-carregados');
+    // SalvarRomaneio implementa clonarRomaneio
+    assert.match(saveJs, /async function clonarRomaneio\(romaneioId/, 'SalvarRomaneio deve implementar clonarRomaneio');
     // carregarRomaneioParaEdicao define currentRomaneioId
     assert.match(saveJs, /currentRomaneioId = String\(/, 'carregarRomaneioParaEdicao deve definir currentRomaneioId');
     // salvarRomaneio preserva o ID e atualiza registro
@@ -53,6 +57,10 @@ test('Fluxo de Edição e Salvamento de Romaneios em todas as 5 abas', async (t)
     assert.match(html, /onclick="abrirListaRomaneios\(\)"/, 'Botão Listar deve chamar abrirListaRomaneios');
     // Botão de editar chama editRomaneio
     assert.match(listModalJs, /editRomaneio\('\$\{romaneio\.id\}'\)/, 'Botão editar deve chamar editRomaneio com ID');
+    // Botão de clonar chama clonarRomaneio
+    assert.match(listModalJs, /clonarRomaneio\('\$\{romaneio\.id\}'\)/, 'Botão clonar deve chamar clonarRomaneio com ID');
+    // CarregarRomaneioPCT implementa clonarRomaneio
+    assert.match(loadJs, /async function clonarRomaneio\(id/, 'CarregarRomaneioPCT deve implementar clonarRomaneio');
     // editRomaneio chama window.carregarRomaneio
     assert.match(listModalJs, /window\.carregarRomaneio\(romaneioId,\s*null,\s*romaneio\)/, 'editRomaneio deve chamar carregarRomaneio com dados pre-carregados');
     // carregarRomaneio define window.romaneioEmEdicao
@@ -69,6 +77,9 @@ test('Fluxo de Edição e Salvamento de Romaneios em todas as 5 abas', async (t)
     assert.match(html, /showRomaneiosList/, 'Função showRomaneiosList deve existir');
     // Botão de editar chama editRomaneio
     assert.match(html, /editRomaneio\(\$\{index\}\)/, 'Botão editar deve chamar editRomaneio com index');
+    // Botão de clonar chama clonarRomaneio
+    assert.match(html, /clonarRomaneio\(\$\{index\}\)/, 'Botão clonar deve chamar clonarRomaneio com index');
+    assert.match(html, /async function clonarRomaneio\(index\)/, 'Função clonarRomaneio deve existir no escopo PES');
     // editRomaneio seta romaneioEmEdicao
     assert.match(html, /romaneioEmEdicao = String\(alvo\.id\)/, 'editRomaneio deve setar romaneioEmEdicao com alvo.id');
     // Tabela de itens tem botão e função de editar item
@@ -89,6 +100,9 @@ test('Fluxo de Edição e Salvamento de Romaneios em todas as 5 abas', async (t)
     assert.match(html, /onclick="abrirListaRomaneios\(\)"/, 'Botão Listar deve chamar abrirListaRomaneios');
     // Botão de editar chama editarRomaneioTora
     assert.match(managerJs, /onclick="window\.editarRomaneioTora\(\$\{actionId\}\)"/, 'Botão editar deve chamar editarRomaneioTora');
+    // Botão de clonar chama clonarRomaneioTora
+    assert.match(managerJs, /onclick="window\.clonarRomaneioTora\(\$\{actionId\}\)"/, 'Botão clonar deve chamar clonarRomaneioTora');
+    assert.match(managerJs, /window\.clonarRomaneioTora = async function/, 'window.clonarRomaneioTora deve ser implementado');
     // editarRomaneioTora seta window.romaneioEditandoId
     assert.match(managerJs, /window\.romaneioEditandoId = romaneio\.id/, 'editarRomaneioTora deve setar window.romaneioEditandoId');
     // salvarRomaneio usa window.romaneioEditandoId se isEdicao
