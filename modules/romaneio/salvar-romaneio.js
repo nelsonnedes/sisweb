@@ -711,37 +711,103 @@ window.SalvarRomaneio = (function() {
     /**
      * ✅ CARREGAR ROMANEIO PARA EDIÇÃO
      */
-    async function carregarRomaneioParaEdicao(romaneioId) {
-        console.log(`📂 Carregando romaneio para edição: ${romaneioId}`);
+    async function carregarRomaneioParaEdicao(romaneioId, dadosPreCarregados = null) {
+        const sid = String(romaneioId || '').trim();
+        console.log(`📂 Carregando romaneio para edição: ${sid}`);
         
         try {
-            let romaneio = null;
+            let romaneio = dadosPreCarregados || null;
             
-            // Tentar carregar do Firebase primeiro
-            if (window.FirebaseService) {
-                try {
-                    romaneio = await window.FirebaseService.getData(`romaneios/tl/${romaneioId}`);
-                } catch (firebaseError) {
-                    console.warn('⚠️ Erro ao carregar do Firebase:', firebaseError);
+            // 1. Tentar pegar do estado em memória do modal de lista de romaneios TL
+            if (!romaneio && window.ModalListaRomaneios && window.ModalListaRomaneios.state) {
+                const listState = window.ModalListaRomaneios.state;
+                if (Array.isArray(listState.romaneios)) {
+                    romaneio = listState.romaneios.find(r => String(r && (r.id || r.firebaseKey)) === sid);
+                    if (romaneio) {
+                        console.log('✅ Romaneio encontrado no estado em memória de ModalListaRomaneios:', sid);
+                    }
                 }
             }
             
+            // 2. Tentar carregar do Firebase usando o serviço canônico
             if (!romaneio) {
-                // Fallback: tentar carregar do localStorage usando chaves possíveis
-                console.log('⚠️ Romaneio não encontrado no FirebaseService, tentando localStorage diretamente...');
-                const tenantId = window.FirebaseService?.getTenantId() || '';
+                const svc = getRomaneioDataService() || window.FirebaseService || window.firebaseService || window.firebaseServiceTL;
+                if (svc) {
+                    try {
+                        if (typeof svc.loadFromFirebase === 'function') {
+                            const res = await svc.loadFromFirebase('romaneios/tl');
+                            if (res && res.success && res.data) {
+                                let lista = [];
+                                if (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function') {
+                                    lista = window.RomaneioDataUtils.normalizeRomaneioCollection(res.data, { type: 'TL' });
+                                } else if (Array.isArray(res.data)) {
+                                    lista = res.data;
+                                } else if (typeof res.data === 'object') {
+                                    lista = Object.entries(res.data).map(([k, v]) => ({ id: (v && v.id) || k, firebaseKey: k, ...(v || {}) }));
+                                }
+                                romaneio = lista.find(r => String(r && (r.id || r.firebaseKey)) === sid);
+                            }
+                        } else if (typeof svc.getData === 'function') {
+                            const direct = await svc.getData(`romaneios/tl/${sid}`);
+                            if (direct && typeof direct === 'object') {
+                                romaneio = { id: sid, ...direct };
+                            } else {
+                                const all = await svc.getData('romaneios/tl');
+                                if (all && typeof all === 'object') {
+                                    const lista = Array.isArray(all) ? all : Object.entries(all).map(([k, v]) => ({ id: (v && v.id) || k, firebaseKey: k, ...(v || {}) }));
+                                    romaneio = lista.find(r => String(r && (r.id || r.firebaseKey)) === sid);
+                                }
+                            }
+                        }
+                    } catch (firebaseError) {
+                        console.warn('⚠️ Erro ao carregar do Firebase:', firebaseError);
+                    }
+                }
+            }
+            
+            // 3. Fallback: tentar carregar do localStorage usando chaves possíveis
+            if (!romaneio) {
+                console.log('⚠️ Buscando romaneio no localStorage...');
+                const tenantId = resolveCompanyId() || window.FirebaseService?.getTenantId?.() || '';
                 const keysToTry = [
-                    `companies/${tenantId}/romaneios/tl/${romaneioId}`,
-                    `romaneios/tl/${romaneioId}`,
-                    `romaneioTL_${romaneioId}`
-                ];
+                    resolveStorageKey('romaneios/tl'),
+                    `companies/${tenantId}/romaneios/tl`,
+                    `companies/${tenantId}/romaneios/tl/${sid}`,
+                    `romaneios/tl/${sid}`,
+                    `romaneios/tl`,
+                    `romaneioTL_${sid}`
+                ].filter(Boolean);
+                
                 for (const key of keysToTry) {
                     const localData = localStorage.getItem(key);
                     if (localData) {
                         try {
-                            romaneio = JSON.parse(localData);
-                            console.log(`✅ Romaneio recuperado do localStorage usando chave: ${key}`);
-                            break;
+                            const parsed = JSON.parse(localData);
+                            if (parsed && typeof parsed === 'object') {
+                                if (String(parsed.id) === sid || String(parsed.firebaseKey) === sid) {
+                                    romaneio = parsed;
+                                    console.log(`✅ Romaneio recuperado do localStorage direto (${key})`);
+                                    break;
+                                } else if (parsed[sid]) {
+                                    romaneio = { id: sid, ...parsed[sid] };
+                                    console.log(`✅ Romaneio recuperado do mapa no localStorage (${key})`);
+                                    break;
+                                } else if (Array.isArray(parsed)) {
+                                    romaneio = parsed.find(r => String(r && (r.id || r.firebaseKey)) === sid);
+                                    if (romaneio) {
+                                        console.log(`✅ Romaneio recuperado do array no localStorage (${key})`);
+                                        break;
+                                    }
+                                } else {
+                                    // Verificar valores do objeto
+                                    const found = Object.values(parsed).find(r => r && (String(r.id) === sid || String(r.firebaseKey) === sid));
+                                    if (found) {
+                                        romaneio = found;
+                                        console.log(`✅ Romaneio recuperado das entradas no localStorage (${key})`);
+                                        break;
+                                    }
+                                }
+                            }
                         } catch (e) {
                             console.warn(`⚠️ Erro ao parsear romaneio do localStorage (${key}):`, e);
                         }
@@ -754,13 +820,24 @@ window.SalvarRomaneio = (function() {
             }
             
             // Definir ID atual para edição
-            currentRomaneioId = romaneioId;
+            currentRomaneioId = String((romaneio && (romaneio.id || romaneio.firebaseKey)) || sid);
             currentRomaneioData = romaneio;
             
             // Preencher formulário
             preencherFormularioEdicao(romaneio);
             
-            console.log('✅ Romaneio carregado para edição');
+            // Atualizar botão da interface para indicar modo de edição
+            const btnSalvar = document.querySelector('button[onclick*="salvarRomaneio"], #btnSalvar');
+            if (btnSalvar) {
+                btnSalvar.innerHTML = '<i class="fas fa-save"></i> Atualizar';
+            }
+            
+            // Rolar suavemente para o topo do formulário
+            try {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (_) {}
+            
+            console.log('✅ Romaneio carregado para edição com sucesso:', currentRomaneioId);
             return true;
             
         } catch (error) {

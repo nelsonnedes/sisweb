@@ -571,7 +571,8 @@ window.ModalListaRomaneios = (function() {
         dbg(`✏️ Editando romaneio: ${romaneioId}`);
         
         // ✅ VERIFICAR SE O ROMANEIO JÁ FOI LANÇADO EM CONTAS A RECEBER
-        const romaneio = state.romaneios.find(r => r.id === romaneioId);
+        const sid = String(romaneioId || '');
+        const romaneio = state.romaneios.find(r => String(r.id) === sid || String(r.firebaseKey) === sid);
         if (romaneio && romaneio.contasReceberLancado === true) {
             try {
                 const msg = '⚠️ Este romaneio já foi lançado em Contas a Receber. Cancele o lançamento para editar.';
@@ -588,7 +589,7 @@ window.ModalListaRomaneios = (function() {
         // Implementar edição de romaneio
         if (window.SalvarRomaneio && window.SalvarRomaneio.carregarRomaneioParaEdicao) {
             closeModal();
-            window.SalvarRomaneio.carregarRomaneioParaEdicao(romaneioId);
+            window.SalvarRomaneio.carregarRomaneioParaEdicao(romaneioId, romaneio);
         } else {
             console.error('❌ Funcionalidade de edição não disponível');
             showError(MSG_ERROR_EDIT_UNAVAILABLE);

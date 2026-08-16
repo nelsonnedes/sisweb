@@ -36,9 +36,9 @@ test('Fluxo de Edição e Salvamento de Romaneios em todas as 5 abas', async (t)
     // Botão de editar na lista chama editRomaneio
     assert.match(listModalJs, /editRomaneio\('\$\{romaneio\.id\}'\)/, 'Botão editar deve chamar editRomaneio com ID');
     // editRomaneio chama carregarRomaneioParaEdicao
-    assert.match(listModalJs, /window\.SalvarRomaneio\.carregarRomaneioParaEdicao\(romaneioId\)/, 'editRomaneio deve acionar carregarRomaneioParaEdicao');
+    assert.match(listModalJs, /window\.SalvarRomaneio\.carregarRomaneioParaEdicao\(romaneioId,\s*romaneio\)/, 'editRomaneio deve acionar carregarRomaneioParaEdicao com dados pre-carregados');
     // carregarRomaneioParaEdicao define currentRomaneioId
-    assert.match(saveJs, /currentRomaneioId = romaneioId;/, 'carregarRomaneioParaEdicao deve definir currentRomaneioId');
+    assert.match(saveJs, /currentRomaneioId = String\(/, 'carregarRomaneioParaEdicao deve definir currentRomaneioId');
     // salvarRomaneio preserva o ID e atualiza registro
     assert.match(saveJs, /const romaneioId = isEdicao \? currentRomaneioId : gerarIdRomaneio\(\)/, 'salvarRomaneio deve manter currentRomaneioId ao editar');
   });
