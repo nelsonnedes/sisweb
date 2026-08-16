@@ -413,37 +413,34 @@ async function editClientFromList(id) {
 
 // Função para selecionar fornecedor (atualizar interface)
 function selectClient(fornecedor) {
+    if (!fornecedor) return;
     console.log("🔄 Selecionando fornecedor na interface:", fornecedor);
     console.log("📝 Nome do fornecedor:", fornecedor.nome || fornecedor.name);
 
     const nomeParaExibir = fornecedor.nome || fornecedor.name || '';
-    const fornecedorInput = document.getElementById('fornecedorInput');
+    const fornecedorInput = document.getElementById('fornecedorInput') || 
+                            document.getElementById('clienteInput') || 
+                            document.getElementById('clientInput');
     if (fornecedorInput) {
         fornecedorInput.value = nomeParaExibir;
-        console.log("✅ Campo fornecedorInput atualizado com:", nomeParaExibir);
+        console.log("✅ Campo de fornecedor atualizado com:", nomeParaExibir);
+        try {
+            fornecedorInput.dispatchEvent(new Event('input', { bubbles: true }));
+            fornecedorInput.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (_) {}
     } else {
-        const clienteInput = document.getElementById('clienteInput');
-        if (clienteInput) {
-            clienteInput.value = nomeParaExibir;
-            console.log("✅ Campo clienteInput atualizado com:", nomeParaExibir);
-        } else {
-            const altInput = document.getElementById('clientInput');
-            if (altInput) {
-                altInput.value = nomeParaExibir;
-                console.log("✅ Campo alternativo clientInput atualizado com:", nomeParaExibir);
-            } else {
-                console.error("❌ Nenhum campo de input encontrado (fornecedorInput, clienteInput ou clientInput)");
-            }
-        }
+        console.error("❌ Nenhum campo de input encontrado (fornecedorInput, clienteInput ou clientInput)");
     }
 
     window.selectedClient = fornecedor;
     window.selectedFornecedor = fornecedor;
     window.clienteSelecionado = fornecedor;
+    window.fornecedorSelecionado = fornecedor;
 
-    console.log("✅ Fornecedor selecionado e armazenado globalmente:", fornecedor.nome || fornecedor.name);
+    console.log("✅ Fornecedor selecionado e armazenado globalmente:", nomeParaExibir);
 
     try { window.dispatchEvent(new CustomEvent('fornecedores:updated', { detail: { fornecedor } })); } catch {}
+    try { window.dispatchEvent(new CustomEvent('suppliers:updated', { detail: { fornecedor } })); } catch {}
 }
 
 // Função para abrir modal de novo fornecedor (implementação direta)
@@ -1169,11 +1166,14 @@ async function saveClient(event) {
                     await renderFornecedorListBasic(fi ? fi.value : '');
                 }
 
-                // Se estivemos editando um fornecedor já selecionado, atualizar os dados selecionados
-                const fornecedorInput = document.getElementById('fornecedorInput') || document.getElementById('clienteInput');
-                if (fornecedorInput && fornecedorInput.value && fornecedorInput.value.toLowerCase() === nome.toLowerCase()) {
-                    window.selectedClient = finalFornecedor;
-                    window.selectedFornecedor = finalFornecedor;
+                // Atualizar e selecionar fornecedor no campo da página principal
+                try {
+                    selectClient(finalFornecedor);
+                    if (typeof selectFornecedor === 'function') {
+                        selectFornecedor(finalFornecedor);
+                    }
+                } catch (selErr) {
+                    console.warn("⚠️ Erro ao selecionar fornecedor na tela:", selErr);
                 }
 
                 // Notificar o usuário
@@ -1191,6 +1191,7 @@ async function saveClient(event) {
             const basePath = getFornecedorBasePath();
             const fornecedorList = await getData(basePath) || [];
 
+            let savedId = id;
             if (id) {
                 // Atualizar fornecedor existente
                 const index = fornecedorList.findIndex(f => String(f.id) === String(id));
@@ -1201,7 +1202,8 @@ async function saveClient(event) {
                 }
             } else {
                 // Criar novo fornecedor
-                fornecedorData.id = generateUniqueId('for');
+                savedId = generateUniqueId('for');
+                fornecedorData.id = savedId;
                 fornecedorData.created = new Date().toISOString();
                 fornecedorList.push(fornecedorData);
             }
@@ -1209,6 +1211,8 @@ async function saveClient(event) {
             await saveData(basePath, fornecedorList);
 
             console.log("✅ Fornecedor salvo via fallback");
+
+            const finalFornecedor = { ...fornecedorData, id: savedId };
 
             window.editingClientId = null;
             window.editingFornecedorId = null;
@@ -1225,6 +1229,16 @@ async function saveClient(event) {
             if (listModal && listModal.style.display === 'block') {
                 const fi = document.getElementById('fornecedorListFilter');
                 await renderFornecedorListBasic(fi ? fi.value : '');
+            }
+
+            // Atualizar e selecionar fornecedor no campo da página principal
+            try {
+                selectClient(finalFornecedor);
+                if (typeof selectFornecedor === 'function') {
+                    selectFornecedor(finalFornecedor);
+                }
+            } catch (selErr) {
+                console.warn("⚠️ Erro ao selecionar fornecedor na tela:", selErr);
             }
 
             window.__toast(id ? 'Fornecedor atualizado com sucesso!' : 'Fornecedor cadastrado com sucesso!', 'success');
