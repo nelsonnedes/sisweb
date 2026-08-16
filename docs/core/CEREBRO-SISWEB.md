@@ -93,6 +93,7 @@
 ## 10. Histórico recente (mini-log por data)
 
 - **2026-08-16:**
+  - Correção de sincronização instantânea em Espécies (`species.html` / `js/species.js`): atualização otimista local + invalidação profunda de cache multi-alias (`especies`, `species`, etc.) no `firebase-service.js`, garantindo que a lista atualize na hora ao salvar/editar sem depender de F5;
   - Análise e diagnóstico de Pen Test (OWASP ZAP);
   - Criação e deploy de `robots.txt` e `sitemap.xml` com regras de desindexação de áreas administrativas e privadas;
   - Configuração de cache e headers HTTP para robôs no `firebase.json`;
