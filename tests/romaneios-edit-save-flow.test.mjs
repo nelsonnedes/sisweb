@@ -54,7 +54,7 @@ test('Fluxo de Edição e Salvamento de Romaneios em todas as 5 abas', async (t)
     // Botão de editar chama editRomaneio
     assert.match(listModalJs, /editRomaneio\('\$\{romaneio\.id\}'\)/, 'Botão editar deve chamar editRomaneio com ID');
     // editRomaneio chama window.carregarRomaneio
-    assert.match(listModalJs, /window\.carregarRomaneio\(romaneioId\)/, 'editRomaneio deve chamar carregarRomaneio');
+    assert.match(listModalJs, /window\.carregarRomaneio\(romaneioId,\s*null,\s*romaneio\)/, 'editRomaneio deve chamar carregarRomaneio com dados pre-carregados');
     // carregarRomaneio define window.romaneioEmEdicao
     assert.match(loadJs, /window\.romaneioEmEdicao = \{/, 'carregarRomaneio deve setar window.romaneioEmEdicao');
     // salvarRomaneio usa window.romaneioEmEdicao?.id

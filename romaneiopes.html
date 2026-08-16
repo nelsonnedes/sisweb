@@ -3862,7 +3862,12 @@
 
         async function editRomaneio(index) {
             const romaneios = await loadRomaneiosPesCompany();
-            const alvo = romaneiosPesModalList[index] || romaneios[index];
+            const sid = String(index !== undefined && index !== null ? index : '').trim();
+            const alvo = (typeof index === 'number' && Number.isInteger(index) ? (romaneiosPesModalList[index] || romaneios[index]) : null)
+                || romaneios.find(r => String(r && (r.id || r.firebaseKey || r.numero)) === sid)
+                || (Array.isArray(romaneiosPesModalList) ? romaneiosPesModalList.find(r => String(r && (r.id || r.firebaseKey || r.numero)) === sid) : null)
+                || romaneiosPesModalList[index]
+                || romaneios[index];
             if (!alvo) {
                 alert('Romaneio não encontrado para edição.');
                 return;

@@ -919,10 +919,25 @@ window.imprimirRomaneioTora = async function(romaneioId, tipo = 'completo') {
     w.document.close();
 };
 
-window.editarRomaneioTora = async function(romaneioId) {
+window.editarRomaneioTora = async function(romaneioId, dadosPreCarregados = null) {
     const manager = window.romaneioToraManager;
-    const romaneios = await manager.getData();
-    const romaneio = romaneios.find(r => r.id === romaneioId || r.firebaseKey === romaneioId);
+    const sid = String(romaneioId || '').trim();
+    let romaneio = dadosPreCarregados || null;
+    
+    if (!romaneio && manager && typeof manager.getData === 'function') {
+        const romaneios = await manager.getData();
+        romaneio = (Array.isArray(romaneios) ? romaneios : []).find(r => String(r && (r.id || r.firebaseKey || r.numero)) === sid);
+    }
+    
+    if (!romaneio && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+        try {
+            const res = await window.firebaseService.loadFromFirebase('romaneios/tora');
+            if (res && res.success && res.data) {
+                const lista = Array.isArray(res.data) ? res.data : Object.entries(res.data).map(([k, v]) => ({ id: (v && v.id) || k, firebaseKey: k, ...(v || {}) }));
+                romaneio = lista.find(r => String(r && (r.id || r.firebaseKey || r.numero)) === sid);
+            }
+        } catch (_) {}
+    }
     
     if (!romaneio) { alert('Romaneio não encontrado!'); return; }
     

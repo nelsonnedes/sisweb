@@ -931,7 +931,8 @@ window.ModalListaRomaneiosPCT = (function() {
         console.log(` PCT: Editando romaneio ${romaneioId}`);
         
         // ✅ VERIFICAR SE O ROMANEIO JÁ FOI LANÇADO EM CONTAS A RECEBER
-        const romaneio = state.romaneios.find(r => r.id === romaneioId);
+        const sid = String(romaneioId || '');
+        const romaneio = state.romaneios.find(r => String(r.id) === sid || String(r.firebaseKey) === sid || String(r.numero) === sid);
         if (romaneio && romaneio.contasReceberLancado === true) {
             showWarning(MSG_WARNING_EDIT_BLOCKED);
             console.log('⚠️ PCT: Tentativa de editar romaneio já lançado bloqueada:', romaneioId);
@@ -939,7 +940,7 @@ window.ModalListaRomaneiosPCT = (function() {
         }
         
         if (window.carregarRomaneio) {
-            window.carregarRomaneio(romaneioId);
+            window.carregarRomaneio(romaneioId, null, romaneio);
             closeModal();
         } else {
             console.error(" PCT: Função carregarRomaneio não disponível");

@@ -205,18 +205,32 @@
      * ✅ CARREGAR ROMANEIO PCT PARA EDIÇÃO
      * @param {string} id - ID do romaneio
      * @param {number} indice - Índice do romaneio (opcional)
+     * @param {Object} dadosPreCarregados - Objeto do romaneio pré-carregado (opcional)
      */
-    async function carregarRomaneio(id, indice) {
+    async function carregarRomaneio(id, indice, dadosPreCarregados = null) {
+        const sid = String(id || '').trim();
         console.log('🔍 INÍCIO CARREGAMENTO ROMANEIO PCT:');
         console.log('================================');
-        console.log('ID solicitado:', id);
+        console.log('ID solicitado:', sid);
         console.log('Índice:', indice);
         
         try {
             // Fonte canônica: companies/{companyId}/romaneios/pct via firebaseService.
             let romaneios = [];
             
-            if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+            // 1. Tentar pegar do estado em memória do modal de lista PCT primeiro
+            if (window.ModalListaRomaneiosPCT && window.ModalListaRomaneiosPCT.state && Array.isArray(window.ModalListaRomaneiosPCT.state.romaneios)) {
+                romaneios = [...window.ModalListaRomaneiosPCT.state.romaneios];
+            }
+            
+            if (dadosPreCarregados && typeof dadosPreCarregados === 'object') {
+                const jaExiste = romaneios.some(r => String(r.id) === String(dadosPreCarregados.id));
+                if (!jaExiste) {
+                    romaneios.unshift(dadosPreCarregados);
+                }
+            }
+            
+            if (romaneios.length === 0 && window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
                 try {
                     console.log('🔥 PCT: Tentando carregar de romaneios/pct...');
                     const firebaseResult = await window.firebaseService.loadFromFirebase('romaneios/pct');
@@ -250,16 +264,14 @@
             
             romaneios = filterByActiveTenant(romaneios).map(({ __source, ...rest }) => rest);
             
-            // ✅ VALIDAÇÃO FINAL
-            if (romaneios.length === 0) {
-                console.log('ℹ️ PCT: Nenhum romaneio encontrado em companies/{companyId}/romaneios/pct');
-                romaneios = [];
-            }
-            
-            // Procurar pelo ID (com fallback por número)
-            let romaneioIndex = romaneios.findIndex(r => r.id == id);
+            // Procurar pelo ID (com fallback por firebaseKey ou por número)
+            let romaneioIndex = romaneios.findIndex(r => String(r.id) === sid || String(r.firebaseKey) === sid);
             if (romaneioIndex === -1) {
-                romaneioIndex = romaneios.findIndex(r => r.numero == id);
+                romaneioIndex = romaneios.findIndex(r => String(r.numero) === sid);
+            }
+            if (romaneioIndex === -1 && dadosPreCarregados) {
+                romaneios.push(dadosPreCarregados);
+                romaneioIndex = romaneios.length - 1;
             }
             console.log('🔍 Índice do romaneio encontrado:', romaneioIndex);
             
@@ -473,6 +485,16 @@
                         modalListaRomaneiosPCT.style.display = 'none';
                         console.log('🚪 Modal PCT da lista de romaneios fechado automaticamente');
                     }
+                    
+                    // Atualizar botão de salvar para indicar edição
+                    const btnSalvar = document.getElementById('btnSalvar');
+                    if (btnSalvar) {
+                        btnSalvar.innerHTML = '<i class="fas fa-save"></i> Atualizar';
+                    }
+                    
+                    try {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } catch (_) {}
                     
                     console.log('✅ CARREGAMENTO CONCLUÍDO');
                     console.log('================================');

@@ -972,8 +972,24 @@ function renderRomaneiosList(list = null) {
     });
 }
 
-async function carregarPreRomaneio(id) {
-    const item = cachedRomaneios.find(r => r.id === id);
+async function carregarPreRomaneio(id, dadosPreCarregados = null) {
+    const sid = String(id || '').trim();
+    let item = dadosPreCarregados || null;
+    
+    if (!item && Array.isArray(cachedRomaneios)) {
+        item = cachedRomaneios.find(r => String(r && (r.id || r.firebaseKey)) === sid);
+    }
+    
+    if (!item && window.firebaseService) {
+        try {
+            const res = await window.firebaseService.loadFromFirebase('preromaneios');
+            if (res && res.success && res.data) {
+                const lista = Array.isArray(res.data) ? res.data : Object.entries(res.data).map(([k, v]) => ({ id: (v && v.id) || k, firebaseKey: k, ...(v || {}) }));
+                item = lista.find(r => String(r && (r.id || r.firebaseKey)) === sid);
+            }
+        } catch (_) {}
+    }
+    
     if (item) {
         // Call function in preromaneio.js to load data
         if (typeof loadPreRomaneioData === 'function') {
@@ -982,6 +998,8 @@ async function carregarPreRomaneio(id) {
         } else {
             console.error('Função loadPreRomaneioData não encontrada em preromaneio.js');
         }
+    } else {
+        alert('Pré-Romaneio não encontrado para edição.');
     }
 }
 
