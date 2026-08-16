@@ -1428,111 +1428,79 @@ async function carregarCidadesPorEstado(estado) {
 // ✅ FUNÇÃO PARA EDITAR FORNECEDOR
 async function editarFornecedor(fornecedorId) {
     console.log("🔄 Editando fornecedor ID:", fornecedorId);
-
-    try {
-        let fornecedorList = [];
-
-        const basePath = getFornecedorBasePath();
-        if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-            try {
-                const res = await window.firebaseService.loadFromFirebase(basePath);
-                fornecedorList = normalizeFornecedores(res && res.data);
-            } catch (error) {
-                console.warn("⚠️ Erro ao carregar fornecedores do Firebase, usando localStorage");
-            }
-        }
-
-        if (!Array.isArray(fornecedorList) || fornecedorList.length === 0) {
-            const fornecedoresLS = await getData(basePath) || [];
-            fornecedorList = fornecedoresLS;
-        }
-
-        // Encontrar o fornecedor
-        const fornecedor = fornecedorList.find(f => String(f.id) === String(fornecedorId));
-
-        if (!fornecedor) {
-            console.error("❌ Fornecedor não encontrado:", fornecedorId);
-            window.__toast('Fornecedor não encontrado!', 'error');
-            return;
-        }
-
-        console.log("✅ Abrindo edição para:", fornecedor.nome || fornecedor.name);
-
-        // Abrir modal de edição
-        await openEditFornecedorModal(fornecedor);
-
-    } catch (error) {
-        console.error("❌ Erro ao editar fornecedor:", error);
-        window.__toast('Erro ao editar fornecedor: ' + error.message, 'error');
-    }
+    return await editClientFromList(fornecedorId);
 }
 
 // ✅ FUNÇÃO PARA EXCLUIR FORNECEDOR
 async function excluirFornecedor(fornecedorId) {
     console.log("🗑️ Excluindo fornecedor ID:", fornecedorId);
 
-    if (!confirm('Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita.')) {
-        return;
-    }
-
     try {
-        let fornecedorList = [];
-        const basePath = getFornecedorBasePath();
+        const fornecedorList = await fetchFornecedores();
+        const fornecedor = fornecedorList.find(f => String(f.id) === String(fornecedorId));
 
-        if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-            try {
-                const res = await window.firebaseService.loadFromFirebase(basePath);
-                fornecedorList = normalizeFornecedores(res && res.data);
-            } catch (error) {
-                console.warn("⚠️ Erro ao carregar fornecedores do Firebase, usando localStorage");
-            }
-        }
+        const fornecedorNome = fornecedor ? (fornecedor.nome || fornecedor.name || `ID ${fornecedorId}`) : `ID ${fornecedorId}`;
 
-        if (!Array.isArray(fornecedorList) || fornecedorList.length === 0) {
-            const fornecedoresLS = await getData(basePath) || [];
-            fornecedorList = fornecedoresLS;
-        }
-
-        // Encontrar e remover o fornecedor
-        const fornecedorIndex = fornecedorList.findIndex(f => String(f.id) === String(fornecedorId));
-
-        if (fornecedorIndex === -1) {
-            window.__toast('Fornecedor não encontrado!', 'error');
+        if (!confirm(`Tem certeza que deseja excluir o fornecedor "${fornecedorNome}"?\n\nEsta ação não pode ser desfeita.`)) {
             return;
         }
 
-        const fornecedorNome = fornecedorList[fornecedorIndex].nome || fornecedorList[fornecedorIndex].name;
-        fornecedorList.splice(fornecedorIndex, 1);
+        const basePath = getFornecedorBasePath();
+        const directItemPath = `${basePath}/${fornecedorId}`;
 
-        // Persistir em 'fornecedores'
-        let saved = false;
-
-        if (window.firebaseService && window.firebaseService.saveData) {
+        // 1. Remover do Firebase se disponível
+        if (window.firebaseService) {
             try {
-                saved = await window.firebaseService.saveData(basePath, fornecedorList);
-            } catch (error) {
-                console.warn("⚠️ Erro ao salvar no Firebase, usando localStorage");
+                if (typeof window.firebaseService.removeFromFirebase === 'function') {
+                    await window.firebaseService.removeFromFirebase(directItemPath);
+                } else if (typeof window.firebaseService.deleteFromFirebase === 'function') {
+                    await window.firebaseService.deleteFromFirebase(directItemPath);
+                } else if (typeof window.firebaseService.saveToFirebase === 'function') {
+                    await window.firebaseService.saveToFirebase(basePath, String(fornecedorId), null);
+                } else if (typeof window.firebaseService.saveData === 'function') {
+                    await window.firebaseService.saveData(directItemPath, null);
+                }
+            } catch (fbErr) {
+                console.warn("⚠️ Erro ao remover do Firebase:", fbErr);
             }
         }
 
-        if (!saved) {
-            saved = await saveData(basePath, fornecedorList);
-        }
-
-        if (saved) {
-            console.log(`✅ Fornecedor ${fornecedorNome} excluído com sucesso`);
-
-            // Atualizar a lista se modal estiver aberto
-            const listModal = document.getElementById('fornecedorListModal');
-            if (listModal && listModal.style.display === 'block') {
-                const fi = document.getElementById('fornecedorListFilter');
-                await renderFornecedorListBasic(fi ? fi.value : '');
+        // 2. Remover do localStorage (cache local)
+        try {
+            const currentList = (await getData(basePath)) || (await getData('fornecedores')) || [];
+            if (Array.isArray(currentList)) {
+                const updatedList = currentList.filter(f => String(f.id) !== String(fornecedorId));
+                await saveData(basePath, updatedList);
+                await saveData('fornecedores', updatedList);
             }
-
-            window.__toast(`Fornecedor ${fornecedorNome} excluído com sucesso!`, 'success');
-        } else {
-            throw new Error('Falha ao salvar a lista atualizada');
+        } catch (lsErr) {
+            console.warn("⚠️ Erro ao atualizar cache local:", lsErr);
         }
+
+        // 3. Limpar seleção caso este fornecedor esteja selecionado
+        const fornInput = document.getElementById('fornecedorInput') || document.getElementById('clienteInput');
+        if (fornInput && (fornInput.value === fornecedorNome || (window.selectedFornecedor && String(window.selectedFornecedor.id) === String(fornecedorId)))) {
+            fornInput.value = '';
+            window.selectedFornecedor = null;
+            window.selectedClient = null;
+        }
+
+        // 4. Disparar eventos
+        try {
+            window.dispatchEvent(new CustomEvent('fornecedores:updated', { detail: { deletedId: fornecedorId } }));
+            window.dispatchEvent(new CustomEvent('suppliers:updated', { detail: { deletedId: fornecedorId } }));
+        } catch (_) {}
+
+        console.log(`✅ Fornecedor ${fornecedorNome} excluído com sucesso`);
+
+        // 5. Atualizar a listagem se o modal estiver aberto
+        const listModal = document.getElementById('fornecedorListModal');
+        if (listModal && listModal.style.display === 'block') {
+            const fi = document.getElementById('fornecedorListFilter');
+            await renderFornecedorListBasic(fi ? fi.value : '');
+        }
+
+        window.__toast(`Fornecedor "${fornecedorNome}" excluído com sucesso!`, 'success');
 
     } catch (error) {
         console.error(`❌ Erro ao excluir fornecedor ${fornecedorId}:`, error);
