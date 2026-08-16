@@ -363,6 +363,9 @@ async function deletePreRomaneioClient(id) {
 }
 
 function openNewClientModal() {
+    const listModal = document.getElementById('clientListModal');
+    if (listModal) listModal.style.display = 'none';
+
     const modal = document.getElementById('clientModal');
     if (!modal) return;
     editingClientId = null;

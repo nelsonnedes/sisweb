@@ -2303,6 +2303,9 @@
         
         // Função para abrir o modal de cliente
         function openClientModal(mode, client = null) {
+            const listModal = document.getElementById('clientListModal');
+            if (listModal) listModal.style.display = 'none';
+
             const modal = document.getElementById('clientModal');
             const title = document.getElementById('clientModalTitle');
             const form = document.getElementById('clientForm');

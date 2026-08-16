@@ -449,6 +449,9 @@ function openNewFornecedorModal() {
 
     // ✅ IMPLEMENTAÇÃO DIRETA PARA EVITAR RECURSÃO INFINITA
     try {
+        const listModal = document.getElementById('fornecedorListModal');
+        if (listModal) listModal.style.display = 'none';
+
         // Resetar o formulário
         const form = document.getElementById('fornecedorForm');
         if (form) form.reset();
