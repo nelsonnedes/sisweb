@@ -88,7 +88,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css?v=20260324_2">
-    <link rel="stylesheet" href="romaneio-comum.css?v=32f16c9d8794">
+    <link rel="stylesheet" href="romaneio-comum.css?v=20260816_p01">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <link rel="stylesheet" href="print-styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -2450,136 +2450,161 @@
                 <h3 class="modal-title" id="clientModalTitle">Novo Cliente</h3>
                 <span class="close-modal" onclick="closeClientModal()">&times;</span>
             </div>
-            <div class="modal-body">
-                <form id="clientForm">
-                    <input type="hidden" id="clientId" name="id">
-                    <div class="form-group span-2">
-                        <label for="clientName">Nome:</label>
+            <form id="clientForm">
+                <input type="hidden" id="clientId" name="id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="clientName">Nome / Razão Social *</label>
                         <input type="text" id="clientName" name="name" required>
                     </div>
+
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="clientCnpj">CPF / CNPJ</label>
+                            <input type="text" id="clientCnpj" name="cnpj" placeholder="000.000.000-00">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="clientPersonType">Tipo de pessoa</label>
+                            <select id="clientPersonType" name="personType">
+                                <option value="">Não informado</option>
+                                <option value="juridica">Pessoa jurídica</option>
+                                <option value="fisica">Pessoa física</option>
+                                <option value="estrangeiro">Estrangeiro</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="clientIndIEDest">Indicador IE</label>
+                            <select id="clientIndIEDest" name="indIEDest">
+                                <option value="">Não informado</option>
+                                <option value="1">Contribuinte ICMS</option>
+                                <option value="2">Contribuinte isento</option>
+                                <option value="9">Não contribuinte</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="clientStateRegistration">Inscrição Estadual</label>
+                            <input type="text" id="clientStateRegistration" name="stateRegistration" placeholder="IE / ISENTO">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="clientMunicipalRegistration">Inscrição Municipal</label>
+                            <input type="text" id="clientMunicipalRegistration" name="municipalRegistration" placeholder="Opcional">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="clientSuframa">SUFRAMA</label>
+                            <input type="text" id="clientSuframa" name="suframa" placeholder="Opcional">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="clientPhone">Telefone</label>
+                            <input type="text" id="clientPhone" name="phone" placeholder="(00) 00000-0000">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="clientEmail">Email</label>
+                            <input type="email" id="clientEmail" name="email" placeholder="email@exemplo.com">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 0.8;">
+                            <label for="clientCep">CEP</label>
+                            <input type="text" id="clientCep" name="cep" placeholder="00000-000">
+                        </div>
+                        <div class="form-group" style="flex: 1.2;">
+                            <label for="clientAddress">Endereço</label>
+                            <input type="text" id="clientAddress" name="address" placeholder="Rua, Avenida, etc">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 0.6;">
+                            <label for="clientNumber">Número</label>
+                            <input type="text" id="clientNumber" name="number" placeholder="Nº">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="clientNeighborhood">Bairro</label>
+                            <input type="text" id="clientNeighborhood" name="neighborhood" placeholder="Bairro">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="clientComplement">Complemento</label>
+                            <input type="text" id="clientComplement" name="complement" placeholder="Sala, lote, referência">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="clientState">Estado</label>
+                            <select id="clientState" name="state">
+                                <option value="">Selecione o estado</option>
+                                <option value="AC">Acre</option>
+                                <option value="AL">Alagoas</option>
+                                <option value="AP">Amapá</option>
+                                <option value="AM">Amazonas</option>
+                                <option value="BA">Bahia</option>
+                                <option value="CE">Ceará</option>
+                                <option value="DF">Distrito Federal</option>
+                                <option value="ES">Espírito Santo</option>
+                                <option value="GO">Goiás</option>
+                                <option value="MA">Maranhão</option>
+                                <option value="MT">Mato Grosso</option>
+                                <option value="MS">Mato Grosso do Sul</option>
+                                <option value="MG">Minas Gerais</option>
+                                <option value="PA">Pará</option>
+                                <option value="PB">Paraíba</option>
+                                <option value="PR">Paraná</option>
+                                <option value="PE">Pernambuco</option>
+                                <option value="PI">Piauí</option>
+                                <option value="RJ">Rio de Janeiro</option>
+                                <option value="RN">Rio Grande do Norte</option>
+                                <option value="RS">Rio Grande do Sul</option>
+                                <option value="RO">Rondônia</option>
+                                <option value="RR">Roraima</option>
+                                <option value="SC">Santa Catarina</option>
+                                <option value="SP">São Paulo</option>
+                                <option value="SE">Sergipe</option>
+                                <option value="TO">Tocantins</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="clientCity">Cidade</label>
+                            <select id="clientCity" name="city">
+                                <option value="">Selecione primeiro o estado</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="clientMunicipalityCode">Código IBGE do município</label>
+                            <input type="text" id="clientMunicipalityCode" name="municipalityCode" placeholder="Ex: 1501402">
+                        </div>
+                        <div class="form-group" style="flex: 0.6;">
+                            <label for="clientCountryCode">Código do país</label>
+                            <input type="text" id="clientCountryCode" name="countryCode" value="1058" placeholder="1058">
+                        </div>
+                        <div class="form-group" style="flex: 0.8;">
+                            <label for="clientCountryName">País</label>
+                            <input type="text" id="clientCountryName" name="countryName" value="Brasil" placeholder="Brasil">
+                        </div>
+                    </div>
+
                     <div class="form-group">
-                        <label for="clientCnpj">CPF / CNPJ:</label>
-                        <input type="text" id="clientCnpj" name="cnpj" placeholder="000.000.000-00">
+                        <label for="clientObs">Observações</label>
+                        <textarea id="clientObs" name="obs" rows="3" placeholder="Observações adicionais"></textarea>
                     </div>
-                    <div class="form-group">
-                        <label for="clientPersonType">Tipo de pessoa:</label>
-                        <select id="clientPersonType" name="personType">
-                            <option value="">Não informado</option>
-                            <option value="juridica">Pessoa jurídica</option>
-                            <option value="fisica">Pessoa física</option>
-                            <option value="estrangeiro">Estrangeiro</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="clientIndIEDest">Indicador IE:</label>
-                        <select id="clientIndIEDest" name="indIEDest">
-                            <option value="">Não informado</option>
-                            <option value="1">Contribuinte ICMS</option>
-                            <option value="2">Contribuinte isento</option>
-                            <option value="9">Não contribuinte</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="clientStateRegistration">Inscrição Estadual:</label>
-                        <input type="text" id="clientStateRegistration" name="stateRegistration" placeholder="IE / ISENTO">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientMunicipalRegistration">Inscrição Municipal:</label>
-                        <input type="text" id="clientMunicipalRegistration" name="municipalRegistration" placeholder="Opcional">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientSuframa">SUFRAMA:</label>
-                        <input type="text" id="clientSuframa" name="suframa" placeholder="Opcional">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientState">Estado:</label>
-                        <select id="clientState" name="state">
-                            <option value="">Selecione o estado</option>
-                            <option value="AC">Acre</option>
-                            <option value="AL">Alagoas</option>
-                            <option value="AP">Amapá</option>
-                            <option value="AM">Amazonas</option>
-                            <option value="BA">Bahia</option>
-                            <option value="CE">Ceará</option>
-                            <option value="DF">Distrito Federal</option>
-                            <option value="ES">Espírito Santo</option>
-                            <option value="GO">Goiás</option>
-                            <option value="MA">Maranhão</option>
-                            <option value="MT">Mato Grosso</option>
-                            <option value="MS">Mato Grosso do Sul</option>
-                            <option value="MG">Minas Gerais</option>
-                            <option value="PA">Pará</option>
-                            <option value="PB">Paraíba</option>
-                            <option value="PR">Paraná</option>
-                            <option value="PE">Pernambuco</option>
-                            <option value="PI">Piauí</option>
-                            <option value="RJ">Rio de Janeiro</option>
-                            <option value="RN">Rio Grande do Norte</option>
-                            <option value="RS">Rio Grande do Sul</option>
-                            <option value="RO">Rondônia</option>
-                            <option value="RR">Roraima</option>
-                            <option value="SC">Santa Catarina</option>
-                            <option value="SP">São Paulo</option>
-                            <option value="SE">Sergipe</option>
-                            <option value="TO">Tocantins</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="clientCity">Cidade:</label>
-                        <select id="clientCity" name="city">
-                            <option value="">Selecione primeiro o estado</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="clientMunicipalityCode">Código IBGE do município:</label>
-                        <input type="text" id="clientMunicipalityCode" name="municipalityCode" placeholder="Ex: 1501402">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientPhone">Telefone:</label>
-                        <input type="text" id="clientPhone" name="phone">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientEmail">Email:</label>
-                        <input type="email" id="clientEmail" name="email">
-                    </div>
-                    <div class="form-group span-2">
-                        <label for="clientAddress">Endereço:</label>
-                        <input type="text" id="clientAddress" name="address">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientNumber">Número:</label>
-                        <input type="text" id="clientNumber" name="number">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientNeighborhood">Bairro:</label>
-                        <input type="text" id="clientNeighborhood" name="neighborhood">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientComplement">Complemento:</label>
-                        <input type="text" id="clientComplement" name="complement">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientCep">CEP:</label>
-                        <input type="text" id="clientCep" name="cep" placeholder="00000-000">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientCountryCode">Código do país:</label>
-                        <input type="text" id="clientCountryCode" name="countryCode" value="1058" placeholder="1058">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientCountryName">País:</label>
-                        <input type="text" id="clientCountryName" name="countryName" value="Brasil" placeholder="Brasil">
-                    </div>
-                    <div class="form-group span-2">
-                        <label for="clientObs">Observações:</label>
-                        <textarea id="clientObs" name="obs" rows="3"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="back-button close-modal-btn" onclick="closeClientModal()">Cancelar</button>
-                <button type="submit" form="clientForm" class="btn-save" id="saveClientBtn">Salvar</button>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="back-button close-modal-btn" onclick="closeClientModal()">Cancelar</button>
+                    <button type="submit" class="btn-save" id="saveClientBtn">Salvar</button>
+                </div>
+            </form>
         </div>
     </div>
 
