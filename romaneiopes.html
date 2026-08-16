@@ -3008,12 +3008,10 @@
                 row.appendChild(actionsCell);
                 clientListBody.appendChild(row);
             });
-            const pagination = document.getElementById('clientListPagination');
             renderPaginationControls(totalItems, clientListPage, pagination, (page) => {
                 clientListPage = page;
                 renderClientListModal();
             });
-            const info = document.getElementById('clientModalInfo');
             if (info) {
                 const from = totalItems === 0 ? 0 : start + 1;
                 const to = Math.min(end, totalItems);
