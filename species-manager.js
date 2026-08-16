@@ -1054,6 +1054,7 @@ class SpeciesManager {
     // ✅ EDITAR ESPÉCIE
     editSpecies(id) {
         console.log(`✏️ Editando espécie v2.0: ${id}`);
+        this.returnToList = true;
         
         try {
             const matchesSpeciesId = (species, targetId) => {
@@ -1460,10 +1461,15 @@ class SpeciesManager {
             // Selecionar a espécie recém salva
             this.selectSpecies(specieData.id, getSpeciesDisplayName(specieData), this.speciesModalReturnInputId || null);
             
-            // Atualizar lista se estiver aberta
-            const listModal = document.getElementById(SPECIES_CONFIG.modalId);
-            if (listModal && listModal.style.display === 'flex') {
-                await this.renderSpeciesList('');
+            // Reabrir lista de espécies se foi aberta a partir da lista
+            if (this.returnToList) {
+                this.returnToList = false;
+                await this.openSpeciesModal();
+            } else {
+                const listModal = document.getElementById(SPECIES_CONFIG.modalId);
+                if (listModal && (listModal.style.display === 'flex' || listModal.style.display === 'block')) {
+                    await this.renderSpeciesList('');
+                }
             }
             
             try {

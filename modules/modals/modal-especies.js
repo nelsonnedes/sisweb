@@ -643,7 +643,7 @@ window.ModalEspecies = (function() {
         
         // Abrir modal de edição via módulo CRUD
         if (window.GerenciarEspecies && typeof window.GerenciarEspecies.openEditSpeciesModal === 'function') {
-            window.GerenciarEspecies.openEditSpeciesModal(specieId);
+            window.GerenciarEspecies.openEditSpeciesModal(specieId, { returnToList: true });
         } else if (window.speciesManagerInstance && typeof window.speciesManagerInstance.editSpecies === 'function') {
             window.speciesManagerInstance.editSpecies(specieId);
         } else if (typeof window.editSpeciesFromList === 'function') {

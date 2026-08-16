@@ -1636,10 +1636,21 @@ async function saveSpecies() {
                 // Fechar modal
                 closeSpeciesModal();
                 
-                // Recarregar lista se estiver aberta
-                const listModal = document.getElementById('speciesListModal');
-                if (listModal && listModal.style.display === 'block') {
-                    await renderSpeciesList('');
+                try {
+                    window.dispatchEvent(new CustomEvent('species:updated', { detail: { id: idToSave, nome } }));
+                } catch (_) {}
+
+                // Recarregar lista se estiver aberta ou reabrir se iniciou da lista
+                if (window.returnToSpeciesListTora) {
+                    window.returnToSpeciesListTora = false;
+                    if (typeof openSpeciesListModal === 'function') {
+                        await openSpeciesListModal();
+                    }
+                } else {
+                    const listModal = document.getElementById('speciesListModal');
+                    if (listModal && listModal.style.display === 'block') {
+                        await renderSpeciesList('');
+                    }
                 }
                 
                 // Recarregar dados globais
@@ -1647,10 +1658,10 @@ async function saveSpecies() {
                     await window.carregarEspecies();
                 }
                 
-                // Notificar usuÃ¡rio
+                // Notificar usuário
                 const mensagem = isEdit ? 
-                    `EspÃ©cie "${nome}" atualizada com sucesso!` : 
-                    `EspÃ©cie "${nome}" cadastrada com sucesso!`;
+                    `Espécie "${nome}" atualizada com sucesso!` : 
+                    `Espécie "${nome}" cadastrada com sucesso!`;
                 alert(mensagem);
                 
                 return true;

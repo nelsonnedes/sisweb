@@ -669,7 +669,7 @@ window.ModalEspeciesPCT = (function() {
             closeModal();
             
             // Abrir modal de edição com dados da espécie
-            window.openSpeciesEditModal(specieId, specie);
+            window.openSpeciesEditModal(specieId, specie, { returnToList: true });
             
         } else {
             console.warn('⚠️ PCT: Modal padronizado não disponível, usando fallback prompt');

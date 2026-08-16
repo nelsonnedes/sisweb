@@ -3390,6 +3390,13 @@
                         document.getElementById('especieInput').value = speciesData.especie;
                         selectedSpecies = { ...selectedSpecies, ...speciesData };
                     }
+
+                    if (window.returnToSpeciesListPES) {
+                        window.returnToSpeciesListPES = false;
+                        if (typeof openSpeciesListModal === 'function') {
+                            await openSpeciesListModal();
+                        }
+                    }
                 }
             });
             
@@ -3560,6 +3567,7 @@
                 .filter(Boolean)
                 .includes(normalizedSpeciesId));
             if (specie) {
+                window.returnToSpeciesListPES = true;
                 openSpeciesModal('edit', specie);
                 document.getElementById('speciesListModal').style.display = 'none';
             }

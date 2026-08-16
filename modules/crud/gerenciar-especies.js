@@ -19,6 +19,7 @@ window.GerenciarEspecies = (function() {
     const MODAL_ID = 'speciesModal';
     let isProcessing = false;
     let editingSpeciesId = null;
+    let returnToSpeciesListModal = false;
     const speciesTools = window.SiswebSpecies || {};
 
     function normalizeSpeciesId(value) {
@@ -49,6 +50,7 @@ window.GerenciarEspecies = (function() {
         if (speciesTools.getScientificName) return speciesTools.getScientificName(specie);
         return String((specie && (specie.nomeCientifico || specie.scientificName || specie.scientific || specie.descricao || specie.description || specie.decription)) || '').trim();
     }
+
     function resolveCompanyId() {
         try {
             const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService;
@@ -96,6 +98,9 @@ window.GerenciarEspecies = (function() {
             if (rawNs) {
                 const parsed = JSON.parse(rawNs);
                 if (Array.isArray(parsed)) return parsed;
+                if (parsed && typeof parsed === 'object') {
+                    return Object.keys(parsed).map(k => ({ ...parsed[k], id: k, key: k, firebaseKey: k }));
+                }
             }
         } catch (_) {}
         try {
@@ -103,6 +108,9 @@ window.GerenciarEspecies = (function() {
             if (raw) {
                 const parsed = JSON.parse(raw);
                 if (Array.isArray(parsed)) return parsed;
+                if (parsed && typeof parsed === 'object') {
+                    return Object.keys(parsed).map(k => ({ ...parsed[k], id: k, key: k, firebaseKey: k }));
+                }
             }
         } catch (_) {}
         return [];
@@ -128,24 +136,20 @@ window.GerenciarEspecies = (function() {
      */
     function openNewSpeciesModal() {
         console.log('🌿 Abrindo modal de nova espécie...');
+        returnToSpeciesListModal = false;
         
         try {
-            // ✅ Fechar lista de espécies se estiver aberta (padronização UX)
             const listModal = document.getElementById('speciesListModal');
             if (listModal && (listModal.style.display === 'block' || listModal.style.display === 'flex')) {
                 listModal.style.display = 'none';
                 console.log('✅ Lista de Espécies fechada automaticamente ao abrir "Nova Espécie"');
             }
-            // Resetar modo de edição
             editingSpeciesId = null;
             
-            // Criar ou obter modal
             const modal = criarOuObterModal();
-            
-            // Configurar para nova espécie
             configurarModalNovaEspecie(modal);
-            
             aprimorarModalEspecie(modal);
+            
             if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.showModal === 'function') {
                 window.SiswebSpeciesModal.showModal(modal);
             } else {
@@ -153,7 +157,6 @@ window.GerenciarEspecies = (function() {
                 modal.setAttribute('aria-hidden', 'false');
             }
             
-            // Focar no primeiro campo
             setTimeout(() => {
                 const nomeInput = document.getElementById('speciesName');
                 if (nomeInput) nomeInput.focus();
@@ -170,30 +173,24 @@ window.GerenciarEspecies = (function() {
     /**
      * ✅ ABRIR MODAL DE EDIÇÃO DE ESPÉCIE
      */
-    async function openEditSpeciesModal(speciesId) {
+    async function openEditSpeciesModal(speciesId, options = {}) {
         console.log(`✏️ Abrindo modal de edição para espécie: ${speciesId}`);
+        returnToSpeciesListModal = Boolean(options && options.returnToList);
         
         try {
-            // Definir modo de edição
             editingSpeciesId = normalizeSpeciesId(speciesId);
-            
-            // Criar ou obter modal
             const modal = criarOuObterModal();
-            
-            // Configurar para edição
             configurarModalEdicaoEspecie(modal);
             
-            // Carregar dados da espécie
             const especie = await carregarDadosEspecie(editingSpeciesId);
             if (!especie) {
                 mostrarErro('Espécie não encontrada');
                 return;
             }
             
-            // Preencher campos
             preencherCamposModal(modal, especie);
-            
             aprimorarModalEspecie(modal);
+            
             if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.showModal === 'function') {
                 window.SiswebSpeciesModal.showModal(modal);
             } else {
@@ -222,8 +219,6 @@ window.GerenciarEspecies = (function() {
             modal.setAttribute('aria-hidden', 'true');
             modal.innerHTML = criarHtmlModal();
             document.body.appendChild(modal);
-            
-            // Configurar eventos
             configurarEventosModal(modal);
         }
         
@@ -242,27 +237,26 @@ window.GerenciarEspecies = (function() {
                 </div>
                 <div class="modal-body">
                     <form id="speciesForm" class="species-standard-form">
+                        <input type="hidden" id="speciesId" name="speciesId">
                         <div class="form-group species-standard-field">
                             <label for="speciesName" class="species-standard-label">Nome da Espécie:</label>
-                            <input type="text" id="speciesName" class="species-standard-input" placeholder="Ex.: Ipê, Cedro, Tauari" required>
+                            <input type="text" id="speciesName" name="speciesName" class="species-standard-input" placeholder="Ex.: Ipê, Cedro, Tauari" required autocomplete="off">
                             <div id="speciesNameSuggestionsReserve" class="species-name-suggestions-reserve" aria-hidden="true"></div>
                             <div id="speciesNameDuplicateHint" class="species-duplicate-hint" aria-live="polite"></div>
                         </div>
 
                         <div class="form-group species-standard-field">
                             <label for="speciesDescription" class="species-standard-label">Nome Científico:</label>
-                            <textarea id="speciesDescription" class="species-standard-textarea" rows="3" placeholder="Ex.: Handroanthus albus"></textarea>
+                            <textarea id="speciesDescription" name="speciesDescription" class="species-standard-textarea" rows="3" placeholder="Ex.: Handroanthus albus"></textarea>
                         </div>
-                        
-                        <input type="hidden" id="speciesId">
                     </form>
                 </div>
                 <div class="modal-footer species-standard-actions">
                     <button type="button" class="back-button close-modal-btn" onclick="window.GerenciarEspecies.closeModal()">
-                        Cancelar
+                        <i class="fas fa-times"></i> Cancelar
                     </button>
                     <button type="button" class="btn-save" onclick="window.GerenciarEspecies.saveSpecies()">
-                        <span id="saveButtonText">Salvar Espécie</span>
+                        <i class="fas fa-save"></i> <span id="btnSaveText">Salvar Espécie</span>
                     </button>
                 </div>
             </div>
@@ -270,58 +264,47 @@ window.GerenciarEspecies = (function() {
     }
 
     /**
-     * ✅ CONFIGURAR MODAL PARA NOVA ESPÉCIE
+     * ✅ CONFIGURAR PARA NOVA ESPÉCIE
      */
     function configurarModalNovaEspecie(modal) {
         const title = modal.querySelector('#modalTitle');
-        const saveButtonText = modal.querySelector('#saveButtonText');
+        const btnSaveText = modal.querySelector('#btnSaveText');
         
         if (title) title.textContent = 'Nova Espécie';
-        if (saveButtonText) saveButtonText.textContent = 'Salvar Espécie';
+        if (btnSaveText) btnSaveText.textContent = 'Salvar Espécie';
         
-        // Limpar campos
         limparCamposModal(modal);
     }
 
     /**
-     * ✅ CONFIGURAR MODAL PARA EDIÇÃO
+     * ✅ CONFIGURAR PARA EDIÇÃO
      */
     function configurarModalEdicaoEspecie(modal) {
         const title = modal.querySelector('#modalTitle');
-        const saveButtonText = modal.querySelector('#saveButtonText');
+        const btnSaveText = modal.querySelector('#btnSaveText');
         
         if (title) title.textContent = 'Editar Espécie';
-        if (saveButtonText) saveButtonText.textContent = 'Atualizar Espécie';
+        if (btnSaveText) btnSaveText.textContent = 'Atualizar Espécie';
     }
 
     /**
      * ✅ CARREGAR DADOS DA ESPÉCIE
      */
     async function carregarDadosEspecie(speciesId) {
-        console.log(`📂 Carregando dados da espécie: ${speciesId}`);
+        console.log(`🔍 Carregando dados da espécie: ${speciesId}`);
         
         try {
             let especie = null;
             
-            // Tentar carregar do Firebase primeiro
+            // Prioridade Firebase
             const svc = window.FirebaseService || window.firebaseService || window.firebaseServiceTL;
-            if (svc || window.databaseAdapter) {
+            if (svc && typeof svc.loadFromFirebase === 'function') {
                 try {
-                    let firebaseSpecies = {};
-                    if (svc && typeof svc.loadData === 'function') {
-                        firebaseSpecies = await svc.loadData('especies') || {};
-                    } else if (svc && typeof svc.loadFromFirebase === 'function') {
-                        const result = await svc.loadFromFirebase('especies');
-                        firebaseSpecies = result && result.success ? (result.data || {}) : {};
-                    } else if (svc && typeof svc.getFromFirebase === 'function') {
-                        const result = await svc.getFromFirebase('especies');
-                        firebaseSpecies = result && result.success ? (result.data || {}) : {};
-                    } else if (window.databaseAdapter && typeof window.databaseAdapter.loadData === 'function') {
-                        firebaseSpecies = await window.databaseAdapter.loadData('especies') || {};
-                    }
-
+                    const result = await svc.loadFromFirebase('especies', { forceRefresh: true });
+                    const firebaseSpecies = (result && result.success && result.data) ? result.data : result;
+                    
                     const normalizeArrayItem = (item, index) => {
-                        const value = item && typeof item === 'object' ? item : {};
+                        const value = item || {};
                         const key = String(index);
                         return {
                             ...value,
@@ -362,10 +345,6 @@ window.GerenciarEspecies = (function() {
                         especie = speciesArray.find(s => matchesSpeciesId(s, speciesId));
                     }
                     
-                    if (especie) {
-                        console.log(`✅ Espécie encontrada no Firebase:`, especie);
-                    }
-                    
                 } catch (firebaseError) {
                     console.warn('⚠️ Erro ao carregar do Firebase:', firebaseError);
                 }
@@ -376,10 +355,6 @@ window.GerenciarEspecies = (function() {
                 try {
                     const localSpecies = readLocalArray('especies');
                     especie = localSpecies.find(s => matchesSpeciesId(s, speciesId));
-                    
-                    if (especie) {
-                        console.log(`✅ Espécie encontrada no localStorage:`, especie);
-                    }
                 } catch (localError) {
                     console.error('❌ Erro ao buscar no localStorage:', localError);
                 }
@@ -409,7 +384,6 @@ window.GerenciarEspecies = (function() {
             const field = modal.querySelector(`#${fieldId}`);
             if (field) {
                 field.value = mapeamento[fieldId];
-                console.log(`✅ Campo ${fieldId} preenchido com: "${mapeamento[fieldId]}"`);
             }
         });
     }
@@ -422,7 +396,6 @@ window.GerenciarEspecies = (function() {
         if (form) {
             form.reset();
         }
-        
         editingSpeciesId = null;
     }
 
@@ -430,21 +403,18 @@ window.GerenciarEspecies = (function() {
      * ✅ CONFIGURAR EVENTOS DO MODAL
      */
     function configurarEventosModal(modal) {
-        // Fechar ao clicar fora
         window.onclick = (event) => {
             if (event.target === modal) {
                 fecharModal();
             }
         };
         
-        // Enter para salvar
         modal.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
+            if (event.key === 'Enter' && !event.shiftKey && event.target && event.target.tagName !== 'TEXTAREA') {
                 event.preventDefault();
                 salvarEspecie();
             }
         });
-        
     }
 
     /**
@@ -460,41 +430,41 @@ window.GerenciarEspecies = (function() {
         isProcessing = true;
         
         try {
-            // Coletar dados do formulário
             const dadosEspecie = coletarDadosFormulario();
-            
             if (!dadosEspecie) {
                 isProcessing = false;
                 return;
             }
             
-            // Preparar dados para salvamento
             const especieCompleta = prepararDadosSalvamento(dadosEspecie);
-            
-            // Executar salvamento
             const resultado = await executarSalvamento(especieCompleta);
             
-            if (resultado.success) {
+            if (resultado && resultado.success) {
                 notificarSucesso(especieCompleta, editingSpeciesId !== null);
-                // ✅ Preencher automaticamente o campo especieInput se existir
+                
                 const especieInput = document.getElementById('especieInput');
                 if (especieInput) {
                     especieInput.value = getSpeciesName(especieCompleta);
                     especieInput.dispatchEvent(new Event('input', { bubbles: true }));
                     especieInput.dispatchEvent(new Event('change', { bubbles: true }));
-                    console.log(`✅ Campo especieInput preenchido com "${getSpeciesName(especieCompleta)}"`);
                 }
-                // ✅ Disparar evento global para atualização das listas com throttle
-                try { window.dispatchEvent(new CustomEvent('species:updated', { detail: { id: especieCompleta.id, nome: getSpeciesName(especieCompleta) } })); } catch {}
+                
+                try {
+                    window.dispatchEvent(new CustomEvent('species:updated', { detail: { id: especieCompleta.id, nome: getSpeciesName(especieCompleta) } }));
+                } catch (_) {}
+                
                 fecharModal();
                 
-                // Recarregar lista de espécies se estiver aberta
-                if (window.ModalEspecies && window.ModalEspecies.refresh) {
+                if (returnToSpeciesListModal && window.ModalEspecies && typeof window.ModalEspecies.openModal === 'function') {
+                    returnToSpeciesListModal = false;
+                    console.log('🔄 Reabrindo lista de espécies após salvar edição...');
+                    await window.ModalEspecies.openModal();
+                } else if (window.ModalEspecies && typeof window.ModalEspecies.refresh === 'function') {
                     console.log('🔄 Recarregando lista de espécies...');
                     await window.ModalEspecies.refresh();
                 }
             } else {
-                mostrarErro(resultado.error || 'Erro desconhecido ao salvar espécie');
+                mostrarErro(resultado?.error || 'Erro desconhecido ao salvar espécie');
             }
             
         } catch (error) {
@@ -510,14 +480,19 @@ window.GerenciarEspecies = (function() {
      */
     function coletarDadosFormulario() {
         const campos = {
-            id: document.getElementById('speciesId')?.value || '',
+            id: document.getElementById('speciesId')?.value || editingSpeciesId || '',
             nome: document.getElementById('speciesName')?.value?.trim() || '',
             nomeCientifico: document.getElementById('speciesDescription')?.value?.trim() || ''
         };
         
         console.log(`📝 Dados coletados do formulário:`, campos);
         
-         if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
+        if (!campos.nome) {
+            mostrarErro('Nome da espécie é obrigatório');
+            return null;
+        }
+
+        if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
             const currentId = campos.id || editingSpeciesId;
             const duplicate = window.SiswebSpeciesModal.getExactDuplicate(campos.nome, currentId);
             if (duplicate) {
@@ -536,7 +511,6 @@ window.GerenciarEspecies = (function() {
         const agora = new Date().toISOString();
         const companyId = resolveCompanyId();
         
-        // Determinar ID da espécie
         let especieId;
         if (editingSpeciesId) {
             especieId = normalizeSpeciesId(editingSpeciesId);
@@ -563,7 +537,6 @@ window.GerenciarEspecies = (function() {
             ? speciesTools.toCanonicalRecord(base, 0, { id: especieId, updatedAt: agora })
             : base;
         
-        console.log(`📦 Espécie preparada para salvamento:`, especie);
         return especie;
     }
 
@@ -575,9 +548,8 @@ window.GerenciarEspecies = (function() {
         
         try {
             let resultado = null;
-            
-            // Tentar salvar no Firebase primeiro
             const svc = window.FirebaseService || window.firebaseService || window.firebaseServiceTL;
+            
             if (svc || window.databaseAdapter) {
                 try {
                     console.log(`🔥 Salvando no Firebase: especies/${especie.id}`);
@@ -600,31 +572,26 @@ window.GerenciarEspecies = (function() {
                             window.SiswebSpeciesStore.invalidate();
                         }
                     } else {
-                        console.warn(`⚠️ Firebase retornou resultado inesperado:`, firebaseResult);
                         throw new Error(firebaseResult?.error || 'Resposta inválida do Firebase');
                     }
                 } catch (firebaseError) {
                     console.error('❌ Erro ao salvar no Firebase:', firebaseError);
                     throw firebaseError;
                 }
-            } else {
-                console.warn('⚠️ FirebaseService não disponível, usando localStorage');
             }
             
-            // Fallback para localStorage se Firebase falhar
             if (!resultado || !resultado.success) {
                 console.log(`📦 Salvando no localStorage como fallback...`);
-                
                 const especiesLocal = readLocalArray('especies');
                 const indiceExistente = especiesLocal.findIndex(e => matchesSpeciesId(e, especie.id));
                 
                 if (indiceExistente >= 0) {
                     especiesLocal[indiceExistente] = especie;
-                    console.log(`🔄 Espécie atualizada no localStorage`);
                 } else {
                     especiesLocal.push(especie);
+                }
+                
                 writeLocalArray('especies', especiesLocal);
-                console.log(`📦 Espécie salva no localStorage com sucesso:`, especie);
                 resultado = { success: true };
             }
             
@@ -636,16 +603,10 @@ window.GerenciarEspecies = (function() {
         }
     }
 
-    /**
-     * ✅ GERAR ID DA ESPÉCIE
-     */
     function gerarIdEspecie() {
         return Date.now().toString();
     }
 
-    /**
-     * ✅ NOTIFICAR SUCESSO
-     */
     function notificarSucesso(especie, isEdicao) {
         const acao = isEdicao ? 'atualizada' : 'cadastrada';
         const mensagem = `Espécie "${getSpeciesName(especie)}" ${acao} com sucesso!`;
@@ -655,26 +616,17 @@ window.GerenciarEspecies = (function() {
         } else {
             alert(mensagem);
         }
-        
-        console.log(`✅ ${mensagem}`);
     }
 
-    /**
-     * ✅ MOSTRAR ERRO
-     */
     function mostrarErro(mensagem) {
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(mensagem, 'error');
         } else {
             alert('Erro: ' + mensagem);
         }
-        
         console.error(`❌ ${mensagem}`);
     }
 
-    /**
-     * ✅ FECHAR MODAL
-     */
     function fecharModal() {
         const modal = document.getElementById(MODAL_ID);
         if (modal) {
@@ -689,7 +641,6 @@ window.GerenciarEspecies = (function() {
         
         isProcessing = false;
         editingSpeciesId = null;
-        console.log('✅ Modal de espécie fechado');
     }
 
     // ✅ INTERFACE PÚBLICA

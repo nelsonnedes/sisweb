@@ -3897,8 +3897,9 @@
         }
         
         // ✅ FUNÇÃO PARA ABRIR MODAL DE EDIÇÃO DE ESPÉCIE (PADRONIZADO)
-        function openSpeciesEditModal(speciesId, speciesData) {
+        function openSpeciesEditModal(speciesId, speciesData, options = {}) {
             console.log('✏️ openSpeciesEditModal chamado - MODAL PADRONIZADO', speciesId);
+            window.returnToSpeciesListPCT = Boolean(options && options.returnToList);
             
             const modal = document.getElementById('speciesModal');
             const title = document.getElementById('speciesModalTitle');
@@ -3927,7 +3928,7 @@
             
             window.editingSpeciesIdPCT = speciesRecordId;
             if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.enhance === 'function') {
-                window.SiswebSpeciesModal.enhance({ modal });
+                window.SiswebSpeciesModal.enhance({ modal, idInput: '#speciesId' });
             }
             
             showSpeciesModalCentered(modal);
@@ -3955,7 +3956,6 @@
                 // Limpar formulário
                 const form = document.getElementById('speciesForm');
                 if (form) form.reset();
-                if (form) form.reset();
                 
                 window.editingSpeciesIdPCT = null;
                 console.log('✅ Modal de espécie fechado e limpo');
@@ -3964,7 +3964,7 @@
         
         // ✅ FUNÇÃO PARA SALVAR ESPÉCIE (NOVA/EDIÇÃO)
         async function saveSpeciesPCT(event) {
-            event.preventDefault();
+            if (event) event.preventDefault();
             console.log('💾 saveSpeciesPCT chamado');
             
             const form = document.getElementById('speciesForm');
@@ -3997,10 +3997,12 @@
             
             try {
                 const companyId = resolveCompanyId();
+                const now = new Date().toISOString();
                 const especieData = toCanonicalSpeciesRecord({
                     especie: nome,
                     nomeCientifico,
-                    companyId: companyId || undefined
+                    companyId: companyId || undefined,
+                    updatedAt: now
                 });
                 
                 if (currentSpeciesId) {
@@ -4011,10 +4013,17 @@
                     
                     // Salvar via Firebase
                     if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-                        // CORREÇÃO: Passar ID como chave (segundo argumento) e dados como terceiro
                         const result = await window.firebaseService.saveToFirebase('especies', especieData.id, especieData);
                         if (result && result.success) {
                             console.log('✅ Espécie editada no Firebase');
+                            alert(`✅ Espécie "${nome}" atualizada com sucesso!`);
+                        } else {
+                            throw new Error('Falha ao salvar no Firebase');
+                        }
+                    } else if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
+                        const result = await window.firebaseService.saveData(`especies/${especieData.id}`, especieData);
+                        if (result && result.success) {
+                            console.log('✅ Espécie editada via saveData no Firebase');
                             alert(`✅ Espécie "${nome}" atualizada com sucesso!`);
                         } else {
                             throw new Error('Falha ao salvar no Firebase');
@@ -4040,10 +4049,10 @@
                     // CRIAR nova espécie
                     console.log('🆕 Criando nova espécie:', nome);
                     especieData.id = `ESP_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    especieData.createdAt = now;
                     
                     // Salvar via Firebase
                     if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-                        // CORREÇÃO: Passar ID como chave (segundo argumento) e dados como terceiro
                         const result = await window.firebaseService.saveToFirebase('especies', especieData.id, especieData);
                         if (result && result.success) {
                             console.log('✅ Nova espécie salva no Firebase');
@@ -4078,12 +4087,16 @@
                 // Fechar modal
                 closeSpeciesModal();
                 
-                // Atualizar lista se modal estiver aberto
-                if (window.ModalEspeciesPCT && typeof window.ModalEspeciesPCT.refresh === 'function') {
-                    window.ModalEspeciesPCT.refresh();
-                }
                 // Disparar evento global para atualização com throttle nas listas
-                try { window.dispatchEvent(new CustomEvent('species:updated', { detail: { name: nome } })); } catch {}
+                try { window.dispatchEvent(new CustomEvent('species:updated', { detail: { id: especieData.id, nome: nome } })); } catch {}
+
+                // Atualizar ou reabrir lista se solicitado
+                if (window.returnToSpeciesListPCT && window.ModalEspeciesPCT && typeof window.ModalEspeciesPCT.openModal === 'function') {
+                    window.returnToSpeciesListPCT = false;
+                    await window.ModalEspeciesPCT.openModal();
+                } else if (window.ModalEspeciesPCT && typeof window.ModalEspeciesPCT.refresh === 'function') {
+                    await window.ModalEspeciesPCT.refresh();
+                }
                 
                 return false; // Prevenir submit padrão
                 
