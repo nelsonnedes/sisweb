@@ -2380,14 +2380,24 @@
                     if (ok) {
                         modal.style.display = 'none';
                         
-                        // Se estiver editando o cliente selecionado, atualizar o campo de entrada
-                        if (selectedClient && selectedClient.id === editingClientId) {
-                            document.getElementById('clienteInput').value = clientData.name;
-                            selectedClient = { ...selectedClient, ...clientData };
+                        const finalClient = (typeof ok === 'object' && ok !== null) ? ok : clientData;
+                        const clientName = finalClient.name || finalClient.nome || clientData.name || '';
+
+                        // Atualizar o campo de entrada do cliente na tela principal
+                        const clienteInput = document.getElementById('clienteInput');
+                        if (clienteInput) {
+                            clienteInput.value = clientName;
+                            clienteInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            clienteInput.dispatchEvent(new Event('change', { bubbles: true }));
                         }
                         
+                        selectedClient = { ...finalClient, name: clientName };
+                        window.selectedClient = selectedClient;
+                        window.selectedFornecedor = selectedClient;
+                        window.clienteSelecionado = selectedClient;
+                        
                         // Atualizar lista de clientes se necessário
-                        carregarClientes();
+                        await carregarClientes();
                     }
                 } catch (error) {
                     console.error('Erro ao salvar cliente:', error);

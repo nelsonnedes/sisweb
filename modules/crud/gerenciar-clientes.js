@@ -604,6 +604,24 @@ window.GerenciarClientes = (function() {
                 notificarSucesso(clienteCompleto, editingClientId !== null);
                 fecharModal();
                 
+                // Preencher e selecionar automaticamente o cliente na tela principal
+                try {
+                    const clienteInput = document.getElementById('clienteInput') || document.getElementById('clientInput');
+                    if (clienteInput) {
+                        let nome = clienteCompleto.nome || clienteCompleto.name || '';
+                        if (window.isAllCaps && window.toTitleCasePt && window.isAllCaps(nome)) {
+                            nome = window.toTitleCasePt(nome);
+                        }
+                        clienteInput.value = nome;
+                        clienteInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        clienteInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                    window.selectedClient = clienteCompleto;
+                    window.clienteSelecionado = clienteCompleto;
+                } catch (selErr) {
+                    console.warn('⚠️ Erro ao selecionar cliente após salvar:', selErr);
+                }
+
                 // Forçar limpeza do cache para garantir dados atualizados
                 if (window.FirebaseService && window.FirebaseService.cache) {
                     window.FirebaseService.cache.delete('clients');

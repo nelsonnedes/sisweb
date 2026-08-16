@@ -520,9 +520,8 @@ if (clientForm) {
                     cachedClients.sort((a, b) => (a.name || a.nome || '').localeCompare(b.name || b.nome || ''));
                     renderClientList();
                     alert('Cliente atualizado com sucesso!');
-                } else {
-                    selectPreRomaneioClient(id, dataToSave.name);
                 }
+                selectPreRomaneioClient(id, dataToSave.name);
                 closeNewClientModal();
             } else {
                 throw new Error('Erro ao salvar');
