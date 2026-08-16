@@ -93,6 +93,7 @@
 ## 10. Histórico recente (mini-log por data)
 
 - **2026-08-16:**
+  - Correção de edição/salvamento de espécies nos modais de Romaneio TL, PCT, PES e Tora (`romaneiotl.html`, `romaneiopct.html`, `romaneiopes.html`, `romaneiotora.html`): implementado `saveToFirebase(path, key, data)` com invalidação de cache no `firebase-service.js`, adicionado suporte a `invalidate()` e recarga forçada no `species-store.js` (`SiswebSpeciesStore`), e corrigida a validação de duplicidade e recarga da tabela de espécies em `modules/crud/gerenciar-especies.js`;
   - Correção de sincronização instantânea em Espécies (`species.html` / `js/species.js`): atualização otimista local + invalidação profunda de cache multi-alias (`especies`, `species`, etc.) no `firebase-service.js`, garantindo que a lista atualize na hora ao salvar/editar sem depender de F5;
   - Correção de verificação de duplicidade (`species-modal-standard.js`): `getSpeciesList` e `getExactDuplicate` agora priorizam a lista autoritativa em memória (`extraSource`), evitando falsos positivos de duplicidade gerados por chaves legadas e permitindo renomear e editar normalmente;
   - Correção de `RangeError: Maximum call stack size exceeded` (`modules/core/firebase-service.js`): removida reatribuição circular/auto-referencial que sobrescrevia `invalidateCache` na instância;
