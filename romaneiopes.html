@@ -301,6 +301,26 @@
             background-color: #f5f5f5;
         }
 
+        .btn-editar {
+            padding: 4px 8px;
+            margin: 0 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            font-size: 12px;
+            height: 24px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-editar:hover {
+            background-color: #2980b9;
+        }
+
         .btn-excluir {
             padding: 4px 8px;
             margin: 0 2px;
@@ -312,10 +332,21 @@
             font-size: 12px;
             height: 24px;
             line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .btn-excluir:hover {
             background-color: #c0392b;
+        }
+
+        .btn-atualizar-item {
+            background-color: #f39c12 !important;
+        }
+
+        .btn-atualizar-item:hover {
+            background-color: #d68910 !important;
         }
 
         .total-row {
@@ -1339,6 +1370,7 @@
     <script src="modules/core/client-list-columns.js?v=0b5067a17aeb" data-page="pes" data-target="clientListBody"></script>
     <script>
         let itens = [];
+        let itemEmEdicaoIndex = -1; // Para controlar edição de itens
         let preco = 0;
         const legacyKey = ['b','i','t','o','l','a'].join('');
         let clients = []; // Para armazenar a lista de clientes
@@ -1349,6 +1381,7 @@
         let editingSpeciesId = null; // Para controlar edição de espécies
         let romaneioEmEdicao = null; // Para controlar edição de romaneios
         let clientListFilterTerm = '';
+        let clientListLoading = false;
         let speciesListFilterTerm = '';
         let speciesListLoading = false;
         let speciesLoadPromise = null;
@@ -1410,7 +1443,8 @@
             const start = (itensTablePage - 1) * itensTablePerPage;
             const end = start + itensTablePerPage;
             const pageItems = itens.slice(start, end);
-            pageItems.forEach(item => {
+            pageItems.forEach((item, pageIdx) => {
+                const indexReal = start + pageIdx;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${item.especie || ''}</td>
@@ -1423,8 +1457,11 @@
                     <td>${formatarArea(toNumberValue(item.areaM2 || 0))}</td>
                     <td>${formatarMetrosLineares(toNumberValue(item.metrosLineares || 0))}</td>
                     <td>${formatarMoeda(item.valor)}</td>
-                    <td>
-                        <button onclick="excluirItem(${item.id})" class="btn-excluir">
+                    <td style="text-align: center; white-space: nowrap;">
+                        <button onclick="editarItem(${indexReal})" class="btn-editar" title="Editar item">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="excluirItem(${item.id})" class="btn-excluir" title="Excluir item">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
@@ -2148,8 +2185,20 @@
                 preco
             };
             
-            // Adicionar à lista de itens
-            itens.push(item);
+            // Se estiver em modo de edição de item
+            if (itemEmEdicaoIndex >= 0 && itemEmEdicaoIndex < itens.length) {
+                item.id = itens[itemEmEdicaoIndex].id || Date.now();
+                itens[itemEmEdicaoIndex] = item;
+                itemEmEdicaoIndex = -1;
+                const btnAdicionar = document.getElementById('btnAdicionar');
+                if (btnAdicionar) {
+                    btnAdicionar.innerHTML = '<i class="fas fa-plus"></i> Adicionar';
+                    btnAdicionar.classList.remove('btn-atualizar-item');
+                }
+            } else {
+                // Adicionar à lista de itens
+                itens.push(item);
+            }
             
             // Atualizar a tabela
             atualizarTabela();
@@ -2162,8 +2211,68 @@
             document.getElementById('espessura').focus();
         }
 
+        // Função para editar item
+        function editarItem(index) {
+            if (index < 0 || index >= itens.length) return;
+            const item = itens[index];
+            if (!item) return;
+
+            itemEmEdicaoIndex = index;
+
+            // Preencher espécie
+            if (item.especie) {
+                const especieInput = document.getElementById('especieInput');
+                if (especieInput) especieInput.value = item.especie;
+                selectedSpecies = { name: item.especie, nome: item.especie };
+            }
+
+            const espessura = toNumberValue(item.espessura || item[legacyKey] || 0);
+            const largura = toNumberValue(item.largura || 0);
+            const comprimento = toNumberValue(item.comprimento || 0);
+            const quantidade = parseInt(item.quantidade || item.quantidadePecas || 1, 10) || 1;
+            const pecasPorPacote = parseInt(item.pecasPorPacote || 1, 10) || 1;
+
+            const espInput = document.getElementById('espessura');
+            const largInput = document.getElementById('largura');
+            const compInput = document.getElementById('comprimento');
+            const qtdInput = document.getElementById('quantidade');
+            const pcpInput = document.getElementById('pecasPorPacote');
+
+            if (espInput) espInput.value = formatarMilimetros(espessura);
+            if (largInput) largInput.value = formatarMilimetros(largura);
+            if (compInput) compInput.value = formatarMilimetros(comprimento);
+            if (qtdInput) qtdInput.value = String(quantidade);
+            if (pcpInput) pcpInput.value = String(pecasPorPacote);
+
+            if (item.preco !== undefined && item.preco !== null && parseFloat(item.preco) > 0) {
+                preco = parseFloat(item.preco);
+                const precoInput = document.getElementById('preco');
+                if (precoInput) precoInput.value = formatarNumero(preco, 2).replace('.', ',');
+            }
+
+            const btnAdicionar = document.getElementById('btnAdicionar');
+            if (btnAdicionar) {
+                btnAdicionar.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar Item';
+                btnAdicionar.classList.add('btn-atualizar-item');
+            }
+
+            if (espInput) espInput.focus();
+            try {
+                const formSection = document.querySelector('.campos-grid, .dimensoes-container');
+                if (formSection) formSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch (_) {}
+        }
+
         // Função para excluir item
         function excluirItem(id) {
+            if (itemEmEdicaoIndex >= 0 && itens[itemEmEdicaoIndex] && itens[itemEmEdicaoIndex].id === id) {
+                itemEmEdicaoIndex = -1;
+                const btnAdicionar = document.getElementById('btnAdicionar');
+                if (btnAdicionar) {
+                    btnAdicionar.innerHTML = '<i class="fas fa-plus"></i> Adicionar';
+                    btnAdicionar.classList.remove('btn-atualizar-item');
+                }
+            }
             itens = itens.filter(item => item.id !== id);
             renderizarTabelaPes();
         }
@@ -2538,6 +2647,12 @@
             if (quantidadeInput) quantidadeInput.value = '';
             const pecasPorPacoteInput = document.getElementById('pecasPorPacote');
             if (pecasPorPacoteInput) pecasPorPacoteInput.value = '1';
+            itemEmEdicaoIndex = -1;
+            const btnAdicionar = document.getElementById('btnAdicionar');
+            if (btnAdicionar) {
+                btnAdicionar.innerHTML = '<i class="fas fa-plus"></i> Adicionar';
+                btnAdicionar.classList.remove('btn-atualizar-item');
+            }
             const btnSalvar = document.getElementById('btnSalvar');
             if (btnSalvar) btnSalvar.innerHTML = '<i class="fas fa-save"></i> Salvar';
             renderizarTabelaPes();
@@ -2810,6 +2925,23 @@
         function renderClientListModal() {
             const clientListBody = document.getElementById('clientListBody');
             if (!clientListBody) return;
+            const pagination = document.getElementById('clientListPagination');
+            const info = document.getElementById('clientModalInfo');
+
+            if (clientListLoading) {
+                clientListBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 24px; color: #475569;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 20px; margin-bottom: 8px; display: block; color: #3498db;"></i>
+                            Carregando clientes...
+                        </td>
+                    </tr>
+                `;
+                if (pagination) pagination.style.display = 'none';
+                if (info) info.textContent = 'Carregando clientes...';
+                return;
+            }
+
             const filtered = clientListFilterTerm
                 ? clients.filter(client => {
                     const name = (client.name || '').toLowerCase();
@@ -2992,7 +3124,7 @@
         }
 
         // Nova função para abrir modal com lista de clientes
-        function openClientListModal() {
+        async function openClientListModal() {
             // Verificar se o modal já existe, senão criar
             let clientListModal = document.getElementById('clientListModal');
             
@@ -3019,7 +3151,7 @@
                 modalBody.innerHTML = `
                     <div style="margin-bottom: 15px;">
                         <input type="text" id="clientListFilter" placeholder="🔍 Filtrar por nome, cidade, estado, telefone ou email..." 
-                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
                     </div>
                     <div class="table-container" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
                         <table class="table">
@@ -3090,13 +3222,27 @@
             const filterInput = clientListModal.querySelector('#clientListFilter');
             if (filterInput) filterInput.value = '';
             clientListPage = 1;
+            
+            const needsReload = !Array.isArray(clients) || clients.length === 0;
+            clientListLoading = needsReload;
             renderClientListModal();
             
-            // Exibir o modal
+            // Exibir o modal imediatamente
             clientListModal.style.display = 'block';
 
+            if (needsReload) {
+                try {
+                    await carregarClientes();
+                } catch (error) {
+                    console.warn('⚠️ Falha ao atualizar lista de clientes ao abrir modal PES:', error && error.message ? error.message : error);
+                } finally {
+                    clientListLoading = false;
+                    renderClientListModal();
+                }
+            }
+
             const focusFilter = clientListModal.querySelector('#clientListFilter');
-            setTimeout(() => focusFilter.focus(), 300);
+            if (focusFilter) setTimeout(() => focusFilter.focus(), 300);
         }
         
         // Função para selecionar cliente da lista
@@ -3756,7 +3902,24 @@
             
             // Popular a tabela com romaneios
             const romaneioListBody = document.getElementById('romaneioListBody');
-            romaneioListBody.innerHTML = '';
+            if (romaneioListBody && (!Array.isArray(romaneiosPesModalList) || romaneiosPesModalList.length === 0)) {
+                romaneioListBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 24px; color: #475569;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 20px; margin-bottom: 8px; display: block; color: #3498db;"></i>
+                            Carregando romaneios...
+                        </td>
+                    </tr>
+                `;
+                const info = document.getElementById('romaneioModalInfo');
+                if (info) info.textContent = 'Carregando romaneios...';
+                const pag = document.getElementById('romaneioListPagination');
+                if (pag) pag.style.display = 'none';
+            }
+            
+            // Exibir o modal imediatamente
+            romaneioListModal.style.display = 'block';
+            
             const romaneioListFilter = document.getElementById('romaneioListFilter');
             const filtroTermo = String((romaneioListFilter && romaneioListFilter.value) || '').trim().toLowerCase();
             
@@ -3766,6 +3929,8 @@
             } catch (e) {
                 console.warn('⚠️ Falha ao carregar romaneios do Firebase:', e);
             }
+            
+            if (romaneioListBody) romaneioListBody.innerHTML = '';
             
             let romaneiosFiltrados = romaneios.filter(romaneio => {
                 const tipo = String(romaneio && romaneio.tipo || '').toLowerCase();

@@ -71,6 +71,11 @@ test('Fluxo de Edição e Salvamento de Romaneios em todas as 5 abas', async (t)
     assert.match(html, /editRomaneio\(\$\{index\}\)/, 'Botão editar deve chamar editRomaneio com index');
     // editRomaneio seta romaneioEmEdicao
     assert.match(html, /romaneioEmEdicao = String\(alvo\.id\)/, 'editRomaneio deve setar romaneioEmEdicao com alvo.id');
+    // Tabela de itens tem botão e função de editar item
+    assert.match(html, /editarItem\(\$\{indexReal\}\)/, 'Tabela de itens deve renderizar botão de editar item');
+    assert.match(html, /function editarItem\(index\)/, 'Função editarItem deve existir para carregar o item no formulário');
+    // Modais de listagem têm loading reativo
+    assert.match(html, /clientListLoading/, 'openClientListModal deve ter controle de carregamento reativo');
     // salvarRomaneio usa id de registroEmEdicao se existir
     assert.match(html, /id: \(registroEmEdicao && registroEmEdicao\.id\) \? String\(registroEmEdicao\.id\)/, 'salvarRomaneio deve manter o id existente');
   });
