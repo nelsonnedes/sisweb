@@ -1646,7 +1646,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 <span class="close-modal" onclick="document.getElementById('fornecedorModal').style.display='none'" style="cursor:pointer;">&times;</span>
             </div>
             <form id="fornecedorForm" onsubmit="saveFornecedor(event); return false;" style="display:flex; flex:1 1 auto; flex-direction:column; min-height:0;">
-            <div class="modal-body">
+                <div class="modal-body">
                     <input type="hidden" id="fornecedorId">
                     <div class="form-group">
                         <label for="fornecedorName">Nome / Razão Social *</label>
@@ -1654,187 +1654,151 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     </div>
 
                     <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorCnpj">CNPJ / CPF</label>
-                                <input type="text" id="fornecedorCnpj" placeholder="00.000.000/0000-00">
-                            </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="fornecedorCnpj">CPF / CNPJ</label>
+                            <input type="text" id="fornecedorCnpj" placeholder="000.000.000-00">
                         </div>
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorPhone">Telefone / Celular</label>
-                                <input type="text" id="fornecedorPhone" oninput="formatarTelefone(this)" placeholder="(00) 00000-0000">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorEmail">Email</label>
-                                <input type="email" id="fornecedorEmail" placeholder="contato@empresa.com">
-                            </div>
-                        </div>
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorPersonType">Tipo de pessoa</label>
-                                <select id="fornecedorPersonType">
-                                    <option value="">Não informado</option>
-                                    <option value="juridica">Pessoa jurídica</option>
-                                    <option value="fisica">Pessoa física</option>
-                                    <option value="estrangeiro">Estrangeiro</option>
-                                </select>
-                            </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="fornecedorPersonType">Tipo de pessoa</label>
+                            <select id="fornecedorPersonType">
+                                <option value="">Não informado</option>
+                                <option value="juridica">Pessoa jurídica</option>
+                                <option value="fisica">Pessoa física</option>
+                                <option value="estrangeiro">Estrangeiro</option>
+                            </select>
                         </div>
                     </div>
 
                     <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorIndIEDest">Indicador IE</label>
-                                <select id="fornecedorIndIEDest">
-                                    <option value="">Não informado</option>
-                                    <option value="1">Contribuinte ICMS</option>
-                                    <option value="2">Contribuinte isento</option>
-                                    <option value="9">Não contribuinte</option>
-                                </select>
-                            </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="fornecedorIndIEDest">Indicador IE</label>
+                            <select id="fornecedorIndIEDest">
+                                <option value="">Não informado</option>
+                                <option value="1">Contribuinte ICMS</option>
+                                <option value="2">Contribuinte isento</option>
+                                <option value="9">Não contribuinte</option>
+                            </select>
                         </div>
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorStateRegistration">Inscrição Estadual</label>
-                                <input type="text" id="fornecedorStateRegistration" placeholder="IE / ISENTO">
-                            </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="fornecedorStateRegistration">Inscrição Estadual</label>
+                            <input type="text" id="fornecedorStateRegistration" placeholder="IE / ISENTO">
                         </div>
                     </div>
 
                     <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorMunicipalRegistration">Inscrição Municipal</label>
-                                <input type="text" id="fornecedorMunicipalRegistration" placeholder="Opcional">
-                            </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="fornecedorMunicipalRegistration">Inscrição Municipal</label>
+                            <input type="text" id="fornecedorMunicipalRegistration" placeholder="Opcional">
                         </div>
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorSuframa">SUFRAMA</label>
-                                <input type="text" id="fornecedorSuframa" placeholder="Opcional">
-                            </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="fornecedorSuframa">SUFRAMA</label>
+                            <input type="text" id="fornecedorSuframa" placeholder="Opcional">
                         </div>
                     </div>
 
                     <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorCep">CEP</label>
-                                <input type="text" id="fornecedorCep" placeholder="00000-000">
-                            </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="fornecedorPhone">Telefone</label>
+                            <input type="text" id="fornecedorPhone" oninput="formatarTelefone(this)" placeholder="(00) 00000-0000">
                         </div>
-                        <div class="form-col" style="flex: 2;">
-                            <div class="form-group">
-                                <label for="fornecedorAddress">Endereço</label>
-                                <input type="text" id="fornecedorAddress" placeholder="Rua, Avenida">
-                            </div>
-                        </div>
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorNumber">Número</label>
-                                <input type="text" id="fornecedorNumber" placeholder="Nº">
-                            </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="fornecedorEmail">Email</label>
+                            <input type="email" id="fornecedorEmail" placeholder="contato@empresa.com">
                         </div>
                     </div>
 
                     <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorNeighborhood">Bairro</label>
-                                <input type="text" id="fornecedorNeighborhood" placeholder="Bairro">
-                            </div>
+                        <div class="form-group" style="flex: 0.8;">
+                            <label for="fornecedorCep">CEP</label>
+                            <input type="text" id="fornecedorCep" placeholder="00000-000">
                         </div>
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorComplement">Complemento</label>
-                                <input type="text" id="fornecedorComplement" placeholder="Sala, lote, referência">
-                            </div>
+                        <div class="form-group" style="flex: 1.2;">
+                            <label for="fornecedorAddress">Endereço</label>
+                            <input type="text" id="fornecedorAddress" placeholder="Rua, Avenida, etc">
                         </div>
                     </div>
 
                     <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorState">Estado</label>
-                                <select id="fornecedorState" onchange="carregarCidadesPorEstado(this.value)">
-                                    <option value="">Selecione</option>
-                                    <option value="AC">Acre</option>
-                                    <option value="AL">Alagoas</option>
-                                    <option value="AP">Amapá</option>
-                                    <option value="AM">Amazonas</option>
-                                    <option value="BA">Bahia</option>
-                                    <option value="CE">Ceará</option>
-                                    <option value="DF">Distrito Federal</option>
-                                    <option value="ES">Espírito Santo</option>
-                                    <option value="GO">Goiás</option>
-                                    <option value="MA">Maranhão</option>
-                                    <option value="MT">Mato Grosso</option>
-                                    <option value="MS">Mato Grosso do Sul</option>
-                                    <option value="MG">Minas Gerais</option>
-                                    <option value="PA">Pará</option>
-                                    <option value="PB">Paraíba</option>
-                                    <option value="PR">Paraná</option>
-                                    <option value="PE">Pernambuco</option>
-                                    <option value="PI">Piauí</option>
-                                    <option value="RJ">Rio de Janeiro</option>
-                                    <option value="RN">Rio Grande do Norte</option>
-                                    <option value="RS">Rio Grande do Sul</option>
-                                    <option value="RO">Rondônia</option>
-                                    <option value="RR">Roraima</option>
-                                    <option value="SC">Santa Catarina</option>
-                                    <option value="SP">São Paulo</option>
-                                    <option value="SE">Sergipe</option>
-                                    <option value="TO">Tocantins</option>
-                                </select>
-                            </div>
+                        <div class="form-group" style="flex: 0.6;">
+                            <label for="fornecedorNumber">Número</label>
+                            <input type="text" id="fornecedorNumber" placeholder="Nº">
                         </div>
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorCity">Cidade</label>
-                                <select id="fornecedorCity">
-                                    <option value="">Selecione primeiro o estado</option>
-                                </select>
-                            </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="fornecedorNeighborhood">Bairro</label>
+                            <input type="text" id="fornecedorNeighborhood" placeholder="Bairro">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="fornecedorComplement">Complemento</label>
+                            <input type="text" id="fornecedorComplement" placeholder="Sala, lote, referência">
                         </div>
                     </div>
 
                     <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorMunicipalityCode">Código IBGE do município</label>
-                                <input type="text" id="fornecedorMunicipalityCode" placeholder="Ex: 1501402">
-                            </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="fornecedorState">Estado</label>
+                            <select id="fornecedorState" onchange="carregarCidadesPorEstado(this.value)">
+                                <option value="">Selecione o estado</option>
+                                <option value="AC">Acre</option>
+                                <option value="AL">Alagoas</option>
+                                <option value="AP">Amapá</option>
+                                <option value="AM">Amazonas</option>
+                                <option value="BA">Bahia</option>
+                                <option value="CE">Ceará</option>
+                                <option value="DF">Distrito Federal</option>
+                                <option value="ES">Espírito Santo</option>
+                                <option value="GO">Goiás</option>
+                                <option value="MA">Maranhão</option>
+                                <option value="MT">Mato Grosso</option>
+                                <option value="MS">Mato Grosso do Sul</option>
+                                <option value="MG">Minas Gerais</option>
+                                <option value="PA">Pará</option>
+                                <option value="PB">Paraíba</option>
+                                <option value="PR">Paraná</option>
+                                <option value="PE">Pernambuco</option>
+                                <option value="PI">Piauí</option>
+                                <option value="RJ">Rio de Janeiro</option>
+                                <option value="RN">Rio Grande do Norte</option>
+                                <option value="RS">Rio Grande do Sul</option>
+                                <option value="RO">Rondônia</option>
+                                <option value="RR">Roraima</option>
+                                <option value="SC">Santa Catarina</option>
+                                <option value="SP">São Paulo</option>
+                                <option value="SE">Sergipe</option>
+                                <option value="TO">Tocantins</option>
+                            </select>
                         </div>
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorCountryCode">Código do país</label>
-                                <input type="text" id="fornecedorCountryCode" value="1058" placeholder="1058">
-                            </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="fornecedorCity">Cidade</label>
+                            <select id="fornecedorCity">
+                                <option value="">Selecione primeiro o estado</option>
+                            </select>
                         </div>
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="fornecedorCountryName">País</label>
-                                <input type="text" id="fornecedorCountryName" value="Brasil" placeholder="Brasil">
-                            </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="fornecedorMunicipalityCode">Código IBGE do município</label>
+                            <input type="text" id="fornecedorMunicipalityCode" placeholder="Ex: 1501402">
+                        </div>
+                        <div class="form-group" style="flex: 0.6;">
+                            <label for="fornecedorCountryCode">Código do país</label>
+                            <input type="text" id="fornecedorCountryCode" value="1058" placeholder="1058">
+                        </div>
+                        <div class="form-group" style="flex: 0.8;">
+                            <label for="fornecedorCountryName">País</label>
+                            <input type="text" id="fornecedorCountryName" value="Brasil" placeholder="Brasil">
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="fornecedorObs">Observações</label>
-                        <textarea id="fornecedorObs" rows="2" placeholder="Informações adicionais..."></textarea>
+                        <textarea id="fornecedorObs" rows="3" placeholder="Observações adicionais"></textarea>
                     </div>
-            </div>
-            <div class="modal-footer" style="align-items:center; background:#fafafa; border-top:1px solid #e5e7eb; display:flex; flex:0 0 auto; gap:10px; justify-content:flex-end; margin:0; padding:14px 24px;">
-                <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('fornecedorModal').style.display='none';" style="cursor:pointer;">Cancelar</button>
-                <button type="button" class="btn-save" id="saveFornecedorBtn" onclick="saveFornecedor()" style="cursor:pointer;">Salvar</button>
-            </div>
+                </div>
+                <div class="modal-footer" style="align-items:center; background:#fafafa; border-top:1px solid #e5e7eb; display:flex; flex:0 0 auto; gap:10px; justify-content:flex-end; margin:0; padding:14px 24px;">
+                    <button type="button" class="back-button close-modal-btn" onclick="document.getElementById('fornecedorModal').style.display='none'">Cancelar</button>
+                    <button type="submit" class="btn-save" id="saveFornecedorBtn"><i class="fas fa-save"></i> Salvar</button>
+                </div>
             </form>
         </div>
     </div>

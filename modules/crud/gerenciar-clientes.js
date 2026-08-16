@@ -188,23 +188,17 @@ window.GerenciarClientes = (function() {
                 </div>
                 <div class="modal-body">
                     <form id="clientForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="clientName">Nome/Razão Social *</label>
-                                <input type="text" id="clientName" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="clientPhone">Telefone</label>
-                                <input type="tel" id="clientPhone">
-                            </div>
+                        <div class="form-group">
+                            <label for="clientName">Nome / Razão Social *</label>
+                            <input type="text" id="clientName" required>
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group">
+                            <div class="form-group" style="flex: 1;">
                                 <label for="clientCnpj">CPF / CNPJ</label>
-                                <input type="text" id="clientCnpj">
+                                <input type="text" id="clientCnpj" placeholder="000.000.000-00">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="flex: 1;">
                                 <label for="clientPersonType">Tipo de pessoa</label>
                                 <select id="clientPersonType">
                                     <option value="">Não informado</option>
@@ -216,7 +210,7 @@ window.GerenciarClientes = (function() {
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group">
+                            <div class="form-group" style="flex: 1;">
                                 <label for="clientIndIEDest">Indicador IE</label>
                                 <select id="clientIndIEDest">
                                     <option value="">Não informado</option>
@@ -225,64 +219,68 @@ window.GerenciarClientes = (function() {
                                     <option value="9">Não contribuinte</option>
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="flex: 1;">
                                 <label for="clientStateRegistration">Inscrição Estadual</label>
-                                <input type="text" id="clientStateRegistration">
+                                <input type="text" id="clientStateRegistration" placeholder="IE / ISENTO">
                             </div>
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group">
+                            <div class="form-group" style="flex: 1;">
                                 <label for="clientMunicipalRegistration">Inscrição Municipal</label>
-                                <input type="text" id="clientMunicipalRegistration">
+                                <input type="text" id="clientMunicipalRegistration" placeholder="Opcional">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="flex: 1;">
                                 <label for="clientSuframa">SUFRAMA</label>
-                                <input type="text" id="clientSuframa">
+                                <input type="text" id="clientSuframa" placeholder="Opcional">
                             </div>
                         </div>
-                        
+
                         <div class="form-row">
-                            <div class="form-group">
+                            <div class="form-group" style="flex: 1;">
+                                <label for="clientPhone">Telefone</label>
+                                <input type="tel" id="clientPhone" placeholder="(00) 00000-0000">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
                                 <label for="clientEmail">Email</label>
-                                <input type="email" id="clientEmail">
+                                <input type="email" id="clientEmail" placeholder="email@exemplo.com">
                             </div>
-                            <div class="form-group">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 0.8;">
                                 <label for="clientCep">CEP</label>
-                                <input type="text" id="clientCep">
+                                <input type="text" id="clientCep" placeholder="00000-000">
                             </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
+                            <div class="form-group" style="flex: 1.2;">
                                 <label for="clientAddress">Endereço</label>
-                                <input type="text" id="clientAddress">
-                            </div>
-                            <div class="form-group">
-                                <label for="clientNumber">Número</label>
-                                <input type="text" id="clientNumber">
+                                <input type="text" id="clientAddress" placeholder="Rua, Avenida, etc">
                             </div>
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group">
-                                <label for="clientNeighborhood">Bairro</label>
-                                <input type="text" id="clientNeighborhood">
+                            <div class="form-group" style="flex: 0.6;">
+                                <label for="clientNumber">Número</label>
+                                <input type="text" id="clientNumber" placeholder="Nº">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="flex: 1;">
+                                <label for="clientNeighborhood">Bairro</label>
+                                <input type="text" id="clientNeighborhood" placeholder="Bairro">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
                                 <label for="clientComplement">Complemento</label>
-                                <input type="text" id="clientComplement">
+                                <input type="text" id="clientComplement" placeholder="Sala, lote, referência">
                             </div>
                         </div>
-                        
+
                         <div class="form-row">
-                            <div class="form-group">
+                            <div class="form-group" style="flex: 1;">
                                 <label for="clientState">Estado</label>
                                 <select id="clientState" onchange="carregarCidadesPorEstado(this.value)">
                                     <option value="">Selecione o estado</option>
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="flex: 1;">
                                 <label for="clientCity">Cidade</label>
                                 <select id="clientCity">
                                     <option value="">Selecione primeiro o estado</option>
@@ -291,25 +289,25 @@ window.GerenciarClientes = (function() {
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group">
+                            <div class="form-group" style="flex: 1;">
                                 <label for="clientMunicipalityCode">Código IBGE do município</label>
-                                <input type="text" id="clientMunicipalityCode">
+                                <input type="text" id="clientMunicipalityCode" placeholder="Ex: 1501402">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="flex: 0.6;">
                                 <label for="clientCountryCode">Código do país</label>
-                                <input type="text" id="clientCountryCode" value="1058">
+                                <input type="text" id="clientCountryCode" value="1058" placeholder="1058">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="flex: 0.8;">
                                 <label for="clientCountryName">País</label>
-                                <input type="text" id="clientCountryName" value="Brasil">
+                                <input type="text" id="clientCountryName" value="Brasil" placeholder="Brasil">
                             </div>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="clientObservations">Observações</label>
-                            <textarea id="clientObservations" rows="3"></textarea>
+                            <textarea id="clientObservations" rows="3" placeholder="Observações adicionais"></textarea>
                         </div>
-                        
+
                         <input type="hidden" id="clientId">
                     </form>
                 </div>
