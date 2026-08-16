@@ -12,19 +12,15 @@
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     
     <!-- Firebase SDK -->
-    <!-- Firebase via módulo compartilhado (singleton) -->
-
     <script type="module">
-
         import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=e4f56badf571';
-import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
-
-    </script><!-- Menu Component -->
+        import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
+    </script>
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
     <script src="sentry-init.js?v=279872380246"></script>
-<script src="menu-component.js?v=ac491560b4db"></script>
+    <script src="menu-component.js?v=ac491560b4db"></script>
     
     <style>
         * {
@@ -53,14 +49,13 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             gap: 15px;
             margin-bottom: 20px;
             flex-wrap: wrap;
-            align-items: center; /* Ensure vertical alignment */
+            align-items: center;
         }
 
         .search-box {
             flex: 1;
             position: relative;
             min-width: 250px;
-            /* Remove height restriction if any */
         }
 
         .search-box input {
@@ -69,7 +64,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 14px;
-            height: 42px; /* Fixed height for alignment */
+            height: 42px;
         }
         
         .search-box i {
@@ -80,7 +75,6 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             color: #999;
         }
         
-        /* Ensure buttons match search input height */
         .actions-bar .btn {
             height: 42px !important;
             white-space: nowrap;
@@ -362,11 +356,11 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     <!-- Scripts -->
     <script src="species-utils.js?v=ac1a2bae7bea"></script>
-    <script src="species-modal-standard.js?v=99c2cf53cc3e"></script>
+    <script src="species-modal-standard.js?v=20260816b"></script>
     <script type="module">
         import * as svc from './modules/core/firebase-service.js';
         if (!window.firebaseService) window.firebaseService = svc;
     </script>
-    <script type="module" src="js/species.js?v=20260816a"></script>
+    <script type="module" src="js/species.js?v=20260816b"></script>
 </body>
 </html>

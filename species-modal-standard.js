@@ -173,6 +173,15 @@
     }
 
     function getSpeciesList(extraSource) {
+        if (typeof extraSource === 'function') {
+            try {
+                const list = extraSource();
+                if (Array.isArray(list) && list.length) return normalizeList(list);
+            } catch (_) {}
+        } else if (Array.isArray(extraSource) && extraSource.length) {
+            return normalizeList(extraSource);
+        }
+
         const sources = [];
         const tenantId = resolveTenantId();
 
@@ -321,7 +330,7 @@
 
     function updateDuplicateHint(context) {
         if (!context || !context.nameInput || !context.hint) return null;
-        const currentId = context.idInput ? context.idInput.value : '';
+        const currentId = (context.idInput && context.idInput.value) || context.currentId || '';
         const duplicate = getExactDuplicate(context.nameInput.value, currentId, context.getSpeciesList);
         if (duplicate) {
             context.hint.textContent = `Espécie já cadastrada: ${getDisplayName(duplicate)}. Selecione a opção existente para evitar duplicidade.`;

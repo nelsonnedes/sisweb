@@ -188,6 +188,8 @@ function enhanceSpeciesModal() {
             modal: elements.modal,
             nameInput: elements.nameInput,
             scientificInput: elements.scientificNameInput,
+            idInput: elements.speciesIdInput,
+            currentId: editingId,
             getSpeciesList: () => currentSpecies
         });
     }
