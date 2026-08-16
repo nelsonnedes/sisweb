@@ -455,5 +455,7 @@
   "vendas.js",
   "verificacao-final-sistema.js",
   "sentry/sentry.browser.min.js",
-  "sentry-init.js"
+  "sentry-init.js",
+  "robots.txt",
+  "sitemap.xml"
 ]

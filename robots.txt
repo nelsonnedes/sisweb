@@ -1,0 +1,29 @@
+# robots.txt para SisWeb (sisweb-7ce82.web.app)
+User-agent: *
+
+# Bloqueio de áreas administrativas, internas e autenticadas
+Disallow: /admin.html
+Disallow: /admin-*.html
+Disallow: /user-profile.html
+Disallow: /central-suporte.html
+Disallow: /subscription-status.html
+Disallow: /subscription.html
+Disallow: /financas.html
+Disallow: /vendas.html
+Disallow: /compras.html
+Disallow: /estoque.html
+Disallow: /notas-fiscais.html
+Disallow: /mdf-e.html
+Disallow: /folha_pagamento/
+Disallow: /modules/
+Disallow: /src/
+
+# Permitir páginas públicas essenciais
+Allow: /
+Allow: /index.html
+Allow: /login.html
+Allow: /favicon.ico
+Allow: /manifest.json
+
+# Localização do Sitemap
+Sitemap: https://sisweb-7ce82.web.app/sitemap.xml
