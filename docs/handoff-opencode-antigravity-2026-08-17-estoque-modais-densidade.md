@@ -67,8 +67,12 @@
 
 | Arquivo | Principais Modificações |
 | :--- | :--- |
-| [`estoque.js`](file:///C:/Sisweb/estoque.js) | `toraEstaAtivaNoEstoque`, `encontrarToraPorPlaqueta` restrito a toras ativas, `getEntradaColumnsDefs` com alinhamentos canônicos. |
-| [`estoque.html`](file:///C:/Sisweb/estoque.html) | CSS `.table col.medida { width: 85px; }`, calibração de larguras `.table col.*`, `<colgroup>` com `col.medida` em 4 tabelas de toras. |
+| [`estoque.js`](file:///C:/Sisweb/estoque.js) | `toraEstaAtivaNoEstoque`, `encontrarToraPorPlaqueta` restrito a toras ativas, botões de ação `stock-btn-action`, relatórios modernizados com `stock-summary-grid` e `stock-summary-card`. |
+| [`estoque.html`](file:///C:/Sisweb/estoque.html) | CSS `.table col.medida { width: 80px; }`, calibração de larguras `.table col.*`, `<colgroup>` em 4 tabelas de toras, inclusão de `modules/core/stock-table-columns.js`. |
+| [`estoque_produtos.js`](file:///C:/Sisweb/estoque_produtos.js) | Botões de ação da tabela de produtos padronizados com `stock-btn-action stock-btn-edit` e `stock-btn-action stock-btn-down`. |
+| [`modules/core/stock-table-columns.js`](file:///C:/Sisweb/modules/core/stock-table-columns.js) | Módulo novo de redimensionamento e persistência de colunas em `localStorage` para as 6 tabelas de estoque. |
+| [`hosting-files.json`](file:///C:/Sisweb/hosting-files.json) | Registro de `modules/core/stock-table-columns.js` no manifesto do Hosting. |
+| [`tests/stock-table-columns.test.mjs`](file:///C:/Sisweb/tests/stock-table-columns.test.mjs) | Suíte de testes unitários para o módulo `StockTableColumns` (**3/3 PASS**). |
 | [`modules/core/romaneio-list-columns.js`](file:///C:/Sisweb/modules/core/romaneio-list-columns.js) | Overlay com `overflow: hidden !important; padding: 0 !important;`, `.modal-content` com `margin: 0 auto !important`, injeção global de classes de densidade no `document.body`. |
 | [`romaneiopes.html`](file:///C:/Sisweb/romaneiopes.html) | Limpeza de `#romaneioListModal` (`padding: 0; overflow: hidden;`). |
 | [`romaneio-manager.js`](file:///C:/Sisweb/romaneio-manager.js) | `modal.style.cssText` com `overflow: hidden;` e `modal.style.display = 'flex'`. |
@@ -78,11 +82,12 @@
 
 ## 3. Quality Gates e Validações Realizadas
 
-- **Testes Unitários**: `tests/estoque-edicao-tora.test.mjs` (4/4 PASS).
-- **Testes com Puppeteer**:
-  - Teste de scroll em modais nas 5 telas (`romaneiopes.html`, `romaneiotora.html`, `romaneiotl.html`, `romaneiopct.html`, `preromaneio.html`): `modalScrollTop === 0` em todas as páginas.
-  - Teste de troca de densidade (Compacta, Normal, Confortável) ativo.
+- **Testes Unitários**: `tests/estoque-edicao-tora.test.mjs` (4/4 PASS), `tests/stock-table-columns.test.mjs` (3/3 PASS). Suíte completa com **457 testes (456 PASS / 1 skip / 0 fail)**.
+- **Testes E2E com Puppeteer em Produção**:
+  - Login real com credenciais de produção (`jnmadeirasm@hotmail.com` / `20292029`).
+  - Módulo `StockTableColumns` ativo com 98 manipuladores de redimensionamento e persistência no `localStorage`.
+  - Relatórios de Posição do Estoque, Espécies e Movimentações renderizando com cards métricos (`stock-summary-card`) e zero erros no console.
 - **Validação Pré-Merge (`npm run validate:pr`)**: **6/6 etapas APROVADAS (PASS)**.
-- **Cachebusters Injetados**: `node tools/inject-cachebusters.mjs` atualizado nos 28 HTMLs.
+- **Cachebusters Injetados**: `node tools/inject-cachebusters.mjs` atualizado nos HTMLs.
 - **Deploy em Produção**: Firebase Hosting (`https://sisweb-7ce82.web.app`).
 - **Post-Deploy Security Check (`npm run security:postdeploy`)**: **37/37 checks aprovados**.

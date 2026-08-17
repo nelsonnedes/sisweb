@@ -1168,12 +1168,12 @@ function renderizarTabelaProdutos(lista) {
             <td class="text-center"><input type="checkbox" class="check-produto" value="${prod.id}" ${isChecked} onchange="toggleProduto('${prod.id}', this.checked)"></td>
             ${produtoDefs.map(def => renderProdutoTd(def, prod)).join('')}
             <td class="text-center actions-cell sticky-actions">
-                <div class="actions-cell-inner">
-                    <button class="btn btn-secondary btn-small" onclick="abrirEditarProdutoAlmoxarifado('${String(prod.id || '').replace(/'/g, "\\'")}')" title="Editar">
-                        <i class="fas fa-pen"></i>
+                <div class="actions-cell-inner stock-actions-cell">
+                    <button class="stock-btn-action stock-btn-edit" onclick="abrirEditarProdutoAlmoxarifado('${String(prod.id || '').replace(/'/g, "\\'")}')" title="Editar Produto">
+                        <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-warning btn-small" onclick="prepararBaixaProdutoInline('${String(prod.id || '').replace(/'/g, "\\'")}')" title="Baixa/Consumo">
-                        <i class="fas fa-box-open"></i>
+                    <button class="stock-btn-action stock-btn-down" onclick="prepararBaixaProdutoInline('${String(prod.id || '').replace(/'/g, "\\'")}')" title="Baixa / Consumo">
+                        <i class="fas fa-arrow-down"></i>
                     </button>
                 </div>
             </td>

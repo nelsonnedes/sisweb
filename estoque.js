@@ -3222,8 +3222,8 @@ function renderizarTabelaEntrada() {
                 <td data-col="preco" data-label="Preço" class="text-right">${formatCurrency(item.preco || item.precoCusto)}</td>
                 <td data-col="valor" data-label="Valor" class="text-right">${formatCurrency(item.valor)}</td>
                 <td class="text-center actions-cell sticky-actions" data-label="Ações">
-                    <div class="actions-cell-inner">
-                        <button onclick="removerItemEntrada(${realIndex})" class="btn-danger btn-small"><i class="fas fa-trash"></i></button>
+                    <div class="actions-cell-inner stock-actions-cell">
+                        <button onclick="removerItemEntrada(${realIndex})" class="stock-btn-action stock-btn-delete" title="Remover item"><i class="fas fa-trash"></i></button>
                     </div>
                 </td>
             </tr>
@@ -4939,11 +4939,11 @@ function carregarTabelaEstoque(filtro = {}) {
             <td class="text-center"><input type="checkbox" class="check-estoque" value="${tora.id}" ${isChecked} onchange="toggleEstoque('${tora.id}', this.checked)"></td>
             ${consultaDefs.map(def => renderConsultaEstoqueTd(def, tora)).join('')}
             <td class="text-center actions-cell sticky-actions">
-                <div class="actions-cell-inner">
-                    <button onclick="editarTora('${tora.id}')" class="btn-primary btn-small">
+                <div class="actions-cell-inner stock-actions-cell">
+                    <button onclick="editarTora('${tora.id}')" class="stock-btn-action stock-btn-edit" title="Editar Tora">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button onclick="excluirTora('${tora.id}')" class="btn-danger btn-small">
+                    <button onclick="excluirTora('${tora.id}')" class="stock-btn-action stock-btn-delete" title="Excluir Tora">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -7937,11 +7937,35 @@ function gerarRelatorioPosicao(onlySelected = false) {
     const volumeGeoTotal = torasDisponiveis.reduce((total, tora) => total + (normalizarCamposGeoEstoque(tora).volumeGeo || 0), 0);
     const valorTotal = torasDisponiveis.reduce((total, tora) => total + ((tora.volumeLiquido || 0) * (tora.precoCusto || 0)), 0);
     return `
-        <div class="summary-box">
-            <div class="summary-row"><span>Total de Toras:</span><span>${torasDisponiveis.length}</span></div>
-            <div class="summary-row"><span>Volume Total:</span><span>${formatNumber(volumeTotal, 3)} m³</span></div>
-            <div class="summary-row"><span>Volume Geométrico:</span><span>${formatNumber(volumeGeoTotal, 3)} m³</span></div>
-            <div class="summary-row"><span>Valor Total:</span><span>${formatCurrency(valorTotal)}</span></div>
+        <div class="stock-summary-grid">
+            <div class="stock-summary-card">
+                <div class="stock-summary-icon blue"><i class="fas fa-tree"></i></div>
+                <div class="stock-summary-content">
+                    <span class="stock-summary-title">Total de Toras</span>
+                    <span class="stock-summary-value">${torasDisponiveis.length}</span>
+                </div>
+            </div>
+            <div class="stock-summary-card">
+                <div class="stock-summary-icon green"><i class="fas fa-cube"></i></div>
+                <div class="stock-summary-content">
+                    <span class="stock-summary-title">Volume Total</span>
+                    <span class="stock-summary-value">${formatNumber(volumeTotal, 3)} m³</span>
+                </div>
+            </div>
+            <div class="stock-summary-card">
+                <div class="stock-summary-icon purple"><i class="fas fa-shapes"></i></div>
+                <div class="stock-summary-content">
+                    <span class="stock-summary-title">Volume Geométrico</span>
+                    <span class="stock-summary-value">${formatNumber(volumeGeoTotal, 3)} m³</span>
+                </div>
+            </div>
+            <div class="stock-summary-card">
+                <div class="stock-summary-icon amber"><i class="fas fa-dollar-sign"></i></div>
+                <div class="stock-summary-content">
+                    <span class="stock-summary-title">Valor Total</span>
+                    <span class="stock-summary-value">${formatCurrency(valorTotal)}</span>
+                </div>
+            </div>
         </div>
         ${montarTabelaRelatorioEstoque('posicao', torasDisponiveis, 'posicao', t => t.id || t.plaqueta || '', onlySelected, 'Nenhuma tora disponível')}
     `;
@@ -7971,11 +7995,35 @@ function gerarRelatorioMovimentacao(dataInicio, dataFim, onlySelected = false) {
     }
 
     return `
-        <div class="summary-box">
-            <div class="summary-row"><span>Entradas:</span><span>${entradas.length} movimentações - ${formatNumber(volumeEntradas, 3)} m³</span></div>
-            <div class="summary-row"><span>Saídas:</span><span>${saidas.length} movimentações - ${formatNumber(volumeSaidas, 3)} m³</span></div>
-            <div class="summary-row"><span>Volume Geométrico:</span><span>${formatNumber(volumeGeo, 3)} m³</span></div>
-            <div class="summary-row"><span>Saldo:</span><span>${formatNumber(volumeEntradas - volumeSaidas, 3)} m³</span></div>
+        <div class="stock-summary-grid">
+            <div class="stock-summary-card">
+                <div class="stock-summary-icon green"><i class="fas fa-arrow-up"></i></div>
+                <div class="stock-summary-content">
+                    <span class="stock-summary-title">Entradas</span>
+                    <span class="stock-summary-value">${entradas.length} mov (${formatNumber(volumeEntradas, 3)} m³)</span>
+                </div>
+            </div>
+            <div class="stock-summary-card">
+                <div class="stock-summary-icon amber"><i class="fas fa-arrow-down"></i></div>
+                <div class="stock-summary-content">
+                    <span class="stock-summary-title">Saídas</span>
+                    <span class="stock-summary-value">${saidas.length} mov (${formatNumber(volumeSaidas, 3)} m³)</span>
+                </div>
+            </div>
+            <div class="stock-summary-card">
+                <div class="stock-summary-icon purple"><i class="fas fa-shapes"></i></div>
+                <div class="stock-summary-content">
+                    <span class="stock-summary-title">Volume Geométrico</span>
+                    <span class="stock-summary-value">${formatNumber(volumeGeo, 3)} m³</span>
+                </div>
+            </div>
+            <div class="stock-summary-card">
+                <div class="stock-summary-icon blue"><i class="fas fa-balance-scale"></i></div>
+                <div class="stock-summary-content">
+                    <span class="stock-summary-title">Saldo Líquido</span>
+                    <span class="stock-summary-value">${formatNumber(volumeEntradas - volumeSaidas, 3)} m³</span>
+                </div>
+            </div>
         </div>
         ${montarTabelaRelatorioEstoque('movimentacao', movPeriodo, 'movimentacao', getRelatorioMovimentacaoKey, onlySelected, 'Nenhuma movimentação')}
     `;
@@ -8010,14 +8058,35 @@ function gerarRelatorioRastreabilidade(dataInicio, dataFim, onlySelected = false
     const rendimento = volumeBase > 0 ? (volumeProduzido / volumeBase) * 100 : 0;
 
     return `
-        <div class="summary-box">
-            <div class="summary-row"><span>Registros:</span><span>${registros.length}</span></div>
-            <div class="summary-row"><span>Toras:</span><span>${toras}</span></div>
-            <div class="summary-row"><span>Remessas:</span><span>${remessas}</span></div>
-            <div class="summary-row"><span>Romaneios:</span><span>${romaneios}</span></div>
-            <div class="summary-row"><span>Volume das Toras:</span><span>${formatNumber(volumeToras, 3)} m³</span></div>
-            <div class="summary-row"><span>Volume Produzido:</span><span>${formatNumber(volumeProduzido, 3)} m³</span></div>
-            <div class="summary-row"><span>Rendimento:</span><span>${formatNumber(rendimento, 2)}%</span></div>
+        <div class="stock-summary-grid">
+            <div class="stock-summary-card">
+                <div class="stock-summary-icon blue"><i class="fas fa-tree"></i></div>
+                <div class="stock-summary-content">
+                    <span class="stock-summary-title">Toras / Registros</span>
+                    <span class="stock-summary-value">${toras} toras (${registros.length} reg)</span>
+                </div>
+            </div>
+            <div class="stock-summary-card">
+                <div class="stock-summary-icon purple"><i class="fas fa-file-invoice"></i></div>
+                <div class="stock-summary-content">
+                    <span class="stock-summary-title">Remessas / Romaneios</span>
+                    <span class="stock-summary-value">${remessas} rem / ${romaneios} rom</span>
+                </div>
+            </div>
+            <div class="stock-summary-card">
+                <div class="stock-summary-icon amber"><i class="fas fa-cube"></i></div>
+                <div class="stock-summary-content">
+                    <span class="stock-summary-title">Volume Toras / Prod.</span>
+                    <span class="stock-summary-value">${formatNumber(volumeToras, 3)} / ${formatNumber(volumeProduzido, 3)} m³</span>
+                </div>
+            </div>
+            <div class="stock-summary-card">
+                <div class="stock-summary-icon green"><i class="fas fa-chart-line"></i></div>
+                <div class="stock-summary-content">
+                    <span class="stock-summary-title">Rendimento Médio</span>
+                    <span class="stock-summary-value">${formatNumber(rendimento, 2)}%</span>
+                </div>
+            </div>
         </div>
         ${montarTabelaRelatorioEstoque('rastreabilidade', registros, 'rastreabilidade', getRelatorioRastreabilidadeKey, onlySelected, 'Nenhuma rastreabilidade encontrada')}
     `;

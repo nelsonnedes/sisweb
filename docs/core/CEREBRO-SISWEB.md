@@ -163,6 +163,18 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
   - **Densidade em Tempo Real**: `setRowHeight` propaga classes (`rlc-density-compact`, `rlc-density-normal`, `rlc-density-comfortable`) diretamente no `document.body` e em todos os modais da tela.
 - **Quality Gates e Deploy**: `npm run validate:pr` (6/6 PASS), cachebusters injetados dinamicamente via `inject-cachebusters.mjs`, deploy no Firebase Hosting e post-deploy security check (37/37 checks aprovados).
 
+## 16. Modernização do Estoque e Módulo StockTableColumns (2026-08-17)
+
+- **Módulo `modules/core/stock-table-columns.js` (Novo):**
+  - Gerencia o redimensionamento interativo de colunas (`.stock-resizer`) com persistência em `localStorage` (`sisweb_stock_cols_*`) para as 6 tabelas do estoque (`tabelaEntrada`, `tabelaSaidaToras`, `tabelaEstoque`, `tabelaMovimentacoes`, `tabelaProdutos`, `tabelaTorasDisponiveis`).
+  - Cabeçalhos `sticky` com gradiente escuro canônico (`#2c3e50` a `#34495e`), texto em alto contraste, `box-shadow` e `scrollbar-gutter: stable`.
+  - Registrado em `hosting-files.json` e importado com cachebuster dinâmico em `estoque.html`.
+- **Botões de Ação Canônicos no Estoque:**
+  - Padronizados com `stock-btn-action` (28px × 28px, bordas arredondadas, ícones centralizados): `stock-btn-edit` (`#3498db`), `stock-btn-delete` (`#e74c3c`), `stock-btn-down` (`#e67e22`), `stock-btn-history` (`#6f42c1`).
+- **Relatórios de Estoque com Cards Métricos (`stock-summary-grid` / `stock-summary-card`):**
+  - Substituído o antigo `summary-box` por grid responsivo de cards com ícones temáticos (`blue`, `green`, `purple`, `amber`) para Total de Toras, Volume Total, Volume Geométrico, Valor Total, Entradas, Saídas, Saldo e Rendimento Médio.
+- **Validação e Deploy**: Testes unitários `tests/stock-table-columns.test.mjs` (3/3 PASS), validação E2E com Puppeteer em produção com credenciais reais, `npm run validate:pr` (6/6 PASS) e deploy no Firebase Hosting.
+
 ## 12. Como manter este cérebro
 
 - Atualizar após QUALQUER mudança de arquitetura, decisão, fix ou descoberta de armadilha.
