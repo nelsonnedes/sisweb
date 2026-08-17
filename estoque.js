@@ -2049,7 +2049,7 @@ async function adicionarItemEntrada() {
         alert('Informe a plaqueta.');
         return;
     }
-    const ignorarId = romaneioSelecionadoId || (toraEmEdicao ? null : '');
+    const ignorarId = romaneioSelecionadoId || (toraEmEdicao ? toraEmEdicao.id : '');
     const toraExistente = encontrarToraPorPlaqueta(plaqueta, ignorarId);
     if (toraExistente || itemEntradaTemPlaqueta(plaqueta, ignorarId)) {
         alert('Já existe uma tora com esta plaqueta no estoque ou na lista de entrada. Verifique antes de adicionar.');
