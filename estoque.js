@@ -7928,14 +7928,14 @@ window.getSortIconRelatorio = (col, tipo) => {
 };
 
 function gerarRelatorioPosicao(onlySelected = false) {
-    let torasDisponiveis = estoqueAtual.filter(t => t.status === 'disponivel');
+    let torasDisponiveis = estoqueAtual.filter(toraEstaAtivaNoEstoque);
     torasDisponiveis = filtrarItensSelecionadosRelatorio('posicao', torasDisponiveis, t => t.id || t.plaqueta || '', onlySelected);
 
     ordenarListaRelatorioEstoque('posicao', torasDisponiveis);
 
-    const volumeTotal = torasDisponiveis.reduce((total, tora) => total + tora.volumeLiquido, 0);
+    const volumeTotal = torasDisponiveis.reduce((total, tora) => total + (tora.volumeLiquido || 0), 0);
     const volumeGeoTotal = torasDisponiveis.reduce((total, tora) => total + (normalizarCamposGeoEstoque(tora).volumeGeo || 0), 0);
-    const valorTotal = torasDisponiveis.reduce((total, tora) => total + (tora.volumeLiquido * (tora.precoCusto || 0)), 0);
+    const valorTotal = torasDisponiveis.reduce((total, tora) => total + ((tora.volumeLiquido || 0) * (tora.precoCusto || 0)), 0);
     return `
         <div class="summary-box">
             <div class="summary-row"><span>Total de Toras:</span><span>${torasDisponiveis.length}</span></div>
@@ -7961,8 +7961,8 @@ function gerarRelatorioMovimentacao(dataInicio, dataFim, onlySelected = false) {
     const entradas = movPeriodo.filter(m => m.tipo === 'entrada');
     const saidas = movPeriodo.filter(m => m.tipo === 'saida');
 
-    const volumeEntradas = entradas.reduce((total, m) => total + m.volume, 0);
-    const volumeSaidas = saidas.reduce((total, m) => total + m.volume, 0);
+    const volumeEntradas = entradas.reduce((total, m) => total + (m.volume || 0), 0);
+    const volumeSaidas = saidas.reduce((total, m) => total + (m.volume || 0), 0);
     const volumeGeo = movPeriodo.reduce((total, m) => total + (normalizarCamposGeoEstoque(m).volumeGeo || 0), 0);
     if (ordemRelatorio.tipo === 'movimentacao' && ordemRelatorio.coluna) {
         ordenarListaRelatorioEstoque('movimentacao', movPeriodo);
@@ -8024,7 +8024,7 @@ function gerarRelatorioRastreabilidade(dataInicio, dataFim, onlySelected = false
 }
 
 function gerarRelatorioPorEspecies(onlySelected = false) {
-    const torasDisponiveis = estoqueAtual.filter(t => t.status === 'disponivel');
+    const torasDisponiveis = estoqueAtual.filter(toraEstaAtivaNoEstoque);
     const especiesMap = {};
 
     torasDisponiveis.forEach(tora => {
@@ -8085,7 +8085,7 @@ function gerarRelatorioPorEspecies(onlySelected = false) {
 }
 
 function gerarRelatorioPorLocalizacao(onlySelected = false) {
-    const torasDisponiveis = estoqueAtual.filter(t => t.status === 'disponivel');
+    const torasDisponiveis = estoqueAtual.filter(toraEstaAtivaNoEstoque);
     const localizacaoMap = {};
 
     torasDisponiveis.forEach(tora => {

@@ -1409,18 +1409,60 @@
             background: #f8fafc;
         }
 
-        .table col.codigo { width: 110px; }
-        .table col.data { width: 110px; }
-        .table col.numero { width: 110px; }
-        .table col.nome { width: 220px; }
-        .table col.unidade { width: 80px; }
-        .table col.quantidade { width: 110px; }
-        .table col.medida { width: 85px; }
-        .table col.volume { width: 125px; }
-        .table col.valor { width: 140px; }
-        .table col.preco { width: 125px; }
-        .table col.local { width: 140px; }
-        .table col.acoes { width: 110px; }
+        /* === PADRONIZAÇÃO DE COLUNAS DAS TABELAS DE ESTOQUE === */
+        .table col.codigo { width: 100px; }
+        .table col.data { width: 105px; }
+        .table col.numero { width: 100px; }
+        .table col.nome { width: 200px; }
+        .table col.unidade { width: 75px; }
+        .table col.quantidade { width: 100px; }
+        .table col.medida { width: 80px; }
+        .table col.volume { width: 115px; }
+        .table col.valor { width: 130px; }
+        .table col.preco { width: 115px; }
+        .table col.local { width: 130px; }
+        .table col.acoes { width: 105px; }
+
+        /* === PADRONIZAÇÃO ESTÁTICA DOS MODAIS DE ESTOQUE === */
+        .modal {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            overflow: hidden !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+            z-index: 9999990 !important;
+        }
+
+        .modal[style*="display: block"],
+        .modal[style*="display: flex"],
+        .modal.active {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        #selecaoTorasModal .modal-content,
+        #rastreabilidadeModal .modal-content {
+            width: 95% !important;
+            max-width: 1240px !important;
+            height: calc(100vh - 48px) !important;
+            max-height: 760px !important;
+            min-height: 380px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            margin: 0 auto !important;
+            border-radius: 8px !important;
+            background: #ffffff !important;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28) !important;
+            overflow: hidden !important;
+            box-sizing: border-box !important;
+        }
 
         .summary-box {
             background-color: #f8f9fa;
@@ -3040,7 +3082,7 @@
     </script>
     <script src="commerce-pdf-share.js?v=db7850889254"></script>
     <script src="estoque_produtos.js?v=b3bbb6bff2e0"></script>
-        <script src="estoque.js?v=44280dbef0d1"></script>
+        <script src="estoque.js?v=54c5f2e3e686"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });
