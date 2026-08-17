@@ -811,7 +811,6 @@
         }
 
         .modal-body {
-            max-height: 350px;
             overflow-y: auto;
         }
 
@@ -878,51 +877,48 @@
             }
         }
 
-        /* Estilos para o menu de impressão */
-        .print-dropdown {
+        /* ✅ DROPDOWN DE IMPRESSÃO PADRONIZADO (mesmo padrão dos demais Listas de Romaneios) */
+        .dropdown {
             position: relative;
             display: inline-block;
         }
 
-        .print-menu {
+        #romaneioListModal .dropdown-content,
+        .print-dropdown .dropdown-content,
+        #listaModal .dropdown-content {
             display: none;
             position: absolute;
-            right: 0;
-            top: 100%;
-            background-color: #fff;
-            min-width: 160px;
-            width: 160px;
-            max-width: 160px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-            z-index: 999999;
-            border-radius: 4px;
-            margin-top: 5px;
-            overflow: hidden;
+            background-color: #ffffff;
+            min-width: 200px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 2px solid #3498db;
+            border-radius: 6px;
+            z-index: 9999999 !important;
+            pointer-events: auto;
         }
 
-        .print-menu.show {
-            display: block;
+        .dropdown-content.show {
+            display: block !important;
         }
 
-        .print-menu button {
-            width: 100%;
+        .dropdown-content a {
+            color: #2c3e50;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            transition: background-color 0.2s;
             text-align: left;
-            padding: 8px 15px;
-            border: none;
-            background-color: transparent;
-            color: #333;
-            font-size: 14px;
             cursor: pointer;
-            display: block;
-            transition: all 0.2s;
         }
 
-        .print-menu button:hover {
-            background-color: #f1f1f1;
+        .dropdown-content a:hover {
+            background-color: #f1f5f9;
             color: #3498db;
         }
 
-        .print-menu button i {
+        .dropdown-content a i {
             margin-right: 8px;
             width: 16px;
             text-align: center;
@@ -1332,7 +1328,7 @@
     <script src="species-utils.js?v=ac1a2bae7bea"></script>
     <script src="species-store.js?v=1c274b02dd71"></script>
     <script src="species-modal-standard.js?v=aabe6d5f2ce4"></script>
-    <script src="auth.js?v=4fa226ae91ed"></script>
+    <script src="auth.js?v=9edf7c63fdab"></script>
     <script type="module">
         import {
             authService,
@@ -1348,7 +1344,7 @@
             db,
             auth,
             app
-        } from './firebaseService.js?v=0e56b7c5b276';
+        } from './firebaseService.js?v=ef210997ebea';
         const tenantFromContext = (() => {
             try {
                 if (window.appTenantId) return String(window.appTenantId);
@@ -1390,6 +1386,7 @@
     <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
     <script src="romaneio-print-config.js?v=24205aca3d2d"></script>
     <script src="modules/core/client-list-columns.js?v=2caabf5273d4" data-page="pes" data-target="clientListBody"></script>
+    <script src="modules/core/romaneio-list-columns.js?v=1fc2f1ef1fe7" data-page="pes" data-target="romaneioListBody"></script>
     <script>
         let itens = [];
         let itemEmEdicaoIndex = -1; // Para controlar edição de itens
@@ -2443,7 +2440,7 @@
         }
         
         // Função para abrir o modal de cliente
-        function openClientModal(mode, client = null) {
+        function openClientModal(mode = 'new', client = null) {
             const listModal = document.getElementById('clientListModal');
             if (listModal) listModal.style.display = 'none';
 
@@ -2799,7 +2796,7 @@
                         await showRomaneiosList();
                     } catch (error) {
                         console.error('❌ Erro ao abrir modal de listagem PES:', error);
-                        alert('Não foi possível abrir a lista de romaneios PES. Recarregue a página e tente novamente.');
+                        if (!window.__skipAuthRedirect) alert('Não foi possível abrir a lista de romaneios PES. Recarregue a página e tente novamente.');
                     }
                 });
             }
@@ -2890,6 +2887,12 @@
         let romaneiosPesModalList = [];
         const listItemsPerPage = 4;
 
+        function getListItemsPerPage(pageKey) {
+            return (window.RomaneioListColumns && typeof window.RomaneioListColumns.getPageSize === 'function')
+                ? window.RomaneioListColumns.getPageSize(pageKey, listItemsPerPage)
+                : listItemsPerPage;
+        }
+
         function getRomaneioRecencyTimestampPes(romaneio) {
             if (!romaneio || typeof romaneio !== 'object') return 0;
             const candidates = [
@@ -2922,8 +2925,29 @@
             return isNaN(dt.getTime()) ? String(raw) : dt.toLocaleDateString('pt-BR');
         }
 
-        function renderPaginationControls(totalItems, currentPage, container, onPageChange) {
+        function renderPaginationControls(totalItems, currentPage, container, onPageChange, pageKey = null) {
             if (!container) return;
+
+            // ✅ PADRONIZAÇÃO: Usar a barra centralizada de RomaneioListColumns (Exibir/Densidade/paginação)
+            if (pageKey && window.RomaneioListColumns && typeof window.RomaneioListColumns.renderPaginationBar === 'function') {
+                const pageSize = window.RomaneioListColumns.getPageSize(pageKey, listItemsPerPage);
+                container.style.display = 'flex';
+                window.RomaneioListColumns.renderPaginationBar(container, {
+                    totalItems,
+                    currentPage,
+                    pageSize,
+                    pageKey,
+                    onPageChange: (newPage) => onPageChange(newPage),
+                    onPageSizeChange: (newSize) => {
+                        if (pageKey === 'pes-clientes') clientListPage = 1;
+                        if (pageKey === 'pes-especies') speciesListPage = 1;
+                        onPageChange(1);
+                    },
+                    onDensityChange: () => {}
+                });
+                return;
+            }
+
             const totalPages = Math.ceil(totalItems / listItemsPerPage);
             container.innerHTML = '';
             if (totalPages <= 1) {
@@ -2999,11 +3023,12 @@
                 })
                 : clients;
             const totalItems = filtered.length;
-            const totalPages = Math.max(1, Math.ceil(totalItems / listItemsPerPage));
+            const itemsPerPage = getListItemsPerPage('pes-clientes');
+            const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
             if (clientListPage > totalPages) clientListPage = totalPages;
             if (clientListPage < 1) clientListPage = 1;
-            const start = (clientListPage - 1) * listItemsPerPage;
-            const end = start + listItemsPerPage;
+            const start = (clientListPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
             const pageItems = filtered.slice(start, end);
             clientListBody.innerHTML = '';
             if (pageItems.length === 0) {
@@ -3055,7 +3080,7 @@
             renderPaginationControls(totalItems, clientListPage, pagination, (page) => {
                 clientListPage = page;
                 renderClientListModal();
-            });
+            }, 'pes-clientes');
             if (info) {
                 const from = totalItems === 0 ? 0 : start + 1;
                 const to = Math.min(end, totalItems);
@@ -3092,11 +3117,12 @@
                 })
                 : currentSpecies;
             const totalItems = filtered.length;
-            const totalPages = Math.max(1, Math.ceil(totalItems / listItemsPerPage));
+            const itemsPerPage = getListItemsPerPage('pes-especies');
+            const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
             if (speciesListPage > totalPages) speciesListPage = totalPages;
             if (speciesListPage < 1) speciesListPage = 1;
-            const start = (speciesListPage - 1) * listItemsPerPage;
-            const end = start + listItemsPerPage;
+            const start = (speciesListPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
             const pageItems = filtered.slice(start, end);
             speciesListBody.innerHTML = '';
             if (pageItems.length === 0) {
@@ -3148,7 +3174,7 @@
             renderPaginationControls(totalItems, speciesListPage, pagination, (page) => {
                 speciesListPage = page;
                 renderSpeciesListModal();
-            });
+            }, 'pes-especies');
             if (info) {
                 const from = totalItems === 0 ? 0 : start + 1;
                 const to = Math.min(end, totalItems);
@@ -3862,10 +3888,10 @@
                     <tr>
                         <th style="text-align: left;">Data</th>
                         <th style="text-align: left;">Cliente</th>
-                        <th style="text-align: left;">Espécie</th>
-                        <th style="text-align: right;">Volume Total</th>
+                        <th style="text-align: left;">Espécies</th>
+                        <th style="text-align: right;">Volume (m³)</th>
                         <th style="text-align: right;">Valor Total</th>
-                        <th style="text-align: center; width: 120px;">Ações</th>
+                        <th style="text-align: center; width: 140px;">Ações</th>
                     </tr>
                 `;
                 
@@ -3880,39 +3906,48 @@
                 modalBody.appendChild(tableContainer);
                 const pagDiv = document.createElement('div');
                 pagDiv.id = 'romaneioListPagination';
-                pagDiv.className = 'pagination-controls';
-                pagDiv.style.display = 'none';
+                pagDiv.style.marginTop = '15px';
                 modalBody.appendChild(pagDiv);
                 
-                // Rodapé do modal com botão fechar
+                // Rodapé do modal
                 const modalFooter = document.createElement('div');
                 modalFooter.className = 'modal-footer';
                 const modalInfo = document.createElement('div');
+                modalInfo.className = 'modal-info-text';
                 modalInfo.style.color = '#666';
                 modalInfo.style.fontSize = '14px';
+                modalInfo.style.textAlign = 'left';
                 modalInfo.innerHTML = '<i class="fas fa-info-circle"></i> <span id="romaneioModalInfo">Carregando...</span>';
                 
-                const closeModalBtn = document.createElement('button');
-                closeModalBtn.className = 'close-modal-btn';
-                closeModalBtn.textContent = 'Fechar';
-                closeModalBtn.onclick = function() {
-                    romaneioListModal.style.display = 'none';
-                };
+                const footerButtons = document.createElement('div');
+                footerButtons.className = 'modal-footer-buttons';
+                footerButtons.style.display = 'flex';
+                footerButtons.style.gap = '8px';
+                footerButtons.style.alignItems = 'center';
 
                 const printConfigBtn = document.createElement('button');
                 printConfigBtn.type = 'button';
                 printConfigBtn.className = 'romaneio-print-config-trigger';
-                printConfigBtn.innerHTML = '<i class="fas fa-print"></i> Configurar Impressão';
+                printConfigBtn.innerHTML = '<i class="fas fa-cog"></i> Configurar Impressão';
                 printConfigBtn.title = 'Configurar colunas impressas';
                 printConfigBtn.onclick = function() {
                     if (window.RomaneioPrintConfig && typeof window.RomaneioPrintConfig.openModal === 'function') {
                         window.RomaneioPrintConfig.openModal('PES');
                     }
                 };
+
+                const closeModalBtn = document.createElement('button');
+                closeModalBtn.type = 'button';
+                closeModalBtn.className = 'back-button close-modal-btn';
+                closeModalBtn.innerHTML = '<i class="fas fa-times"></i> Fechar';
+                closeModalBtn.onclick = function() {
+                    romaneioListModal.style.display = 'none';
+                };
                 
+                footerButtons.appendChild(printConfigBtn);
+                footerButtons.appendChild(closeModalBtn);
                 modalFooter.appendChild(modalInfo);
-                modalFooter.appendChild(printConfigBtn);
-                modalFooter.appendChild(closeModalBtn);
+                modalFooter.appendChild(footerButtons);
                 
                 // Adicionar elementos ao modal
                 modalContent.appendChild(modalHeader);
@@ -3941,6 +3976,12 @@
                     }
                 });
             }
+
+            // Inicializar colunas e redimensionamento na tabela
+            const tableEl = romaneioListModal.querySelector('table');
+            if (tableEl && window.RomaneioListColumns && typeof window.RomaneioListColumns.initTable === 'function') {
+                window.RomaneioListColumns.initTable(tableEl, 'pes');
+            }
             
             // Popular a tabela com romaneios
             const romaneioListBody = document.getElementById('romaneioListBody');
@@ -3956,7 +3997,15 @@
                 const info = document.getElementById('romaneioModalInfo');
                 if (info) info.textContent = 'Carregando romaneios...';
                 const pag = document.getElementById('romaneioListPagination');
-                if (pag) pag.style.display = 'none';
+                if (pag && window.RomaneioListColumns && typeof window.RomaneioListColumns.renderPaginationBar === 'function') {
+                    pag.style.display = 'flex';
+                    window.RomaneioListColumns.renderPaginationBar(pag, {
+                        totalItems: 0,
+                        currentPage: 1,
+                        pageSize: 10,
+                        pageKey: 'pes'
+                    });
+                }
             }
             
             // Exibir o modal imediatamente
@@ -3994,16 +4043,29 @@
             }
             romaneiosFiltrados.sort((a, b) => getRomaneioRecencyTimestampPes(b) - getRomaneioRecencyTimestampPes(a));
             romaneiosPesModalList = romaneiosFiltrados;
+            const pageSize = (window.RomaneioListColumns && typeof window.RomaneioListColumns.getPageSize === 'function')
+                ? window.RomaneioListColumns.getPageSize('pes', 10)
+                : 10;
             const totalItems = romaneiosFiltrados.length;
-            const totalPages = Math.max(1, Math.ceil(totalItems / listItemsPerPage));
+            const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
             if (romaneioListPage > totalPages) romaneioListPage = totalPages;
             if (romaneioListPage < 1) romaneioListPage = 1;
-            const start = (romaneioListPage - 1) * listItemsPerPage;
-            const end = start + listItemsPerPage;
-            const pageItems = romaneiosFiltrados.slice(start, end);
+            const start = (romaneioListPage - 1) * pageSize;
+            const end = Math.min(start + pageSize, totalItems);
+            const pageItems = romaneiosFiltrados.slice(start, start + pageSize);
             const romaneioModalInfo = document.getElementById('romaneioModalInfo');
             if (romaneioModalInfo) {
-                romaneioModalInfo.textContent = `Mostrando ${romaneiosFiltrados.length} de ${romaneios.length} romaneios`;
+                romaneioModalInfo.textContent = `Mostrando ${totalItems === 0 ? 0 : ((start + 1) + '-' + end)} de ${totalItems} romaneio${totalItems !== 1 ? 's' : ''}`;
+            }
+
+            if (pageItems.length === 0) {
+                romaneioListBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 24px; color: #475569;">
+                            Nenhum romaneio encontrado
+                        </td>
+                    </tr>
+                `;
             }
 
             pageItems.forEach((romaneio, pageIndex) => {
@@ -4042,14 +4104,14 @@
                         <button class="action-button clone-button" onclick="clonarRomaneio(${index})" title="Clonar Romaneio">
                             <i class="fas fa-copy"></i>
                         </button>
-                        <div class="print-dropdown">
+                        <div class="dropdown">
                             <button class="action-button print-button" onclick="togglePrintMenu(this, event)" title="Imprimir">
                                 <i class="fas fa-print"></i>
                             </button>
-                            <div class="print-menu">
-                                <button onclick="printRomaneio(${index}, 'completo')"><i class="fas fa-file-alt"></i> Completo</button>
-                                <button onclick="printRomaneio(${index}, 'sem-preco-unitario')"><i class="fas fa-file-minus"></i> Sem Preço Unitário</button>
-                                <button onclick="printRomaneio(${index}, 'sem-preco')"><i class="fas fa-file-times"></i> Sem Preço</button>
+                            <div class="dropdown-content">
+                                <a href="#" onclick="event.preventDefault(); event.stopPropagation(); printRomaneio(${index}, 'completo'); return false;"><i class="fas fa-file-alt"></i> Completo</a>
+                                <a href="#" onclick="event.preventDefault(); event.stopPropagation(); printRomaneio(${index}, 'sem_preco_unitario'); return false;"><i class="fas fa-file-minus"></i> Sem Preço Unitário</a>
+                                <a href="#" onclick="event.preventDefault(); event.stopPropagation(); printRomaneio(${index}, 'sem_preco'); return false;"><i class="fas fa-file-times"></i> Sem Preços</a>
                             </div>
                         </div>
                         <button class="action-button delete-button" onclick="deleteRomaneio(${index})" title="Excluir">
@@ -4061,10 +4123,29 @@
                 romaneioListBody.appendChild(row);
             });
             const pagEl = document.getElementById('romaneioListPagination');
-            renderPaginationControls(totalItems, romaneioListPage, pagEl, (page) => {
-                romaneioListPage = page;
-                showRomaneiosList();
-            });
+            if (pagEl && window.RomaneioListColumns && typeof window.RomaneioListColumns.renderPaginationBar === 'function') {
+                pagEl.style.display = 'flex';
+                window.RomaneioListColumns.renderPaginationBar(pagEl, {
+                    totalItems: totalItems,
+                    currentPage: romaneioListPage,
+                    pageSize: pageSize,
+                    pageKey: 'pes',
+                    onPageChange: (page) => {
+                        romaneioListPage = page;
+                        showRomaneiosList();
+                    },
+                    onPageSizeChange: () => {
+                        romaneioListPage = 1;
+                        showRomaneiosList();
+                    },
+                    onDensityChange: () => {}
+                });
+            } else if (pagEl) {
+                renderPaginationControls(totalItems, romaneioListPage, pagEl, (page) => {
+                    romaneioListPage = page;
+                    showRomaneiosList();
+                });
+            }
             
             // Exibir o modal
             romaneioListModal.style.display = 'block';
@@ -4124,7 +4205,7 @@
                 || romaneiosPesModalList[index]
                 || romaneios[index];
             if (!alvo) {
-                alert('Romaneio não encontrado para clonagem.');
+                if (!window.__skipAuthRedirect) alert('Romaneio não encontrado para clonagem.');
                 return;
             }
             // Limpar identificadores para salvar como novo registro
@@ -4198,46 +4279,55 @@
             if (evt && typeof evt.stopPropagation === 'function') {
                 evt.stopPropagation();
             }
-            const menu = button && button.nextElementSibling;
-            if (!menu) return;
-            const allMenus = document.querySelectorAll('.print-menu');
-            const wasOpen = menu.classList.contains('show');
+            const dropdown = button && button.nextElementSibling;
+            if (!dropdown) return;
+            const allMenus = document.querySelectorAll('#romaneioListModal .dropdown-content');
+            const wasOpen = dropdown.classList.contains('show');
             allMenus.forEach(m => {
-                m.classList.remove('show');
-                m.style.position = '';
-                m.style.left = '';
-                m.style.top = '';
-                m.style.right = '';
-                m.style.bottom = '';
-                m.style.zIndex = '';
-                m.style.transform = '';
+                if (m !== dropdown) {
+                    m.classList.remove('show');
+                    m.style.position = '';
+                    m.style.left = '';
+                    m.style.top = '';
+                    m.style.right = '';
+                    m.style.bottom = '';
+                    m.style.zIndex = '';
+                }
             });
-            if (wasOpen) return;
-            menu.classList.add('show');
-            menu.style.position = 'fixed';
-            menu.style.zIndex = '1000001';
+            if (wasOpen) {
+                dropdown.classList.remove('show');
+                dropdown.style.position = '';
+                dropdown.style.left = '';
+                dropdown.style.top = '';
+                dropdown.style.right = '';
+                dropdown.style.bottom = '';
+                dropdown.style.zIndex = '';
+                return;
+            }
+            dropdown.classList.add('show');
+            dropdown.style.position = 'fixed';
+            dropdown.style.zIndex = '1000001';
             const rect = button.getBoundingClientRect();
             const vw = window.innerWidth || document.documentElement.clientWidth || 0;
             const vh = window.innerHeight || document.documentElement.clientHeight || 0;
-            const menuWidth = menu.offsetWidth || 180;
-            const menuHeight = menu.offsetHeight || 120;
+            const menuWidth = dropdown.offsetWidth || 200;
+            const menuHeight = dropdown.offsetHeight || 120;
             let left = rect.right - menuWidth;
             if (left < 8) left = 8;
             if (left + menuWidth > vw - 8) left = Math.max(8, vw - menuWidth - 8);
             let top = rect.bottom + 6;
             if (top + menuHeight > vh - 8) top = Math.max(8, rect.top - menuHeight - 6);
-            menu.style.left = `${left}px`;
-            menu.style.top = `${top}px`;
+            dropdown.style.left = `${left}px`;
+            dropdown.style.top = `${top}px`;
             document.addEventListener('click', function closeMenu(e) {
-                if (!button.contains(e.target) && !menu.contains(e.target)) {
-                    menu.classList.remove('show');
-                    menu.style.position = '';
-                    menu.style.left = '';
-                    menu.style.top = '';
-                    menu.style.right = '';
-                    menu.style.bottom = '';
-                    menu.style.zIndex = '';
-                    menu.style.transform = '';
+                if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.remove('show');
+                    dropdown.style.position = '';
+                    dropdown.style.left = '';
+                    dropdown.style.top = '';
+                    dropdown.style.right = '';
+                    dropdown.style.bottom = '';
+                    dropdown.style.zIndex = '';
                     document.removeEventListener('click', closeMenu);
                 }
             }, { once: true });

@@ -20,8 +20,19 @@ window.ModalEspecies = (function() {
         tableId: 'speciesListTable',
         filterId: 'speciesListFilter',
         paginationId: 'speciesListPagination',
-        itemsPerPage: 5
+        itemsPerPage: 5,
+        pageKey: 'especies'
     };
+
+    /**
+     * ✅ ITENS POR PÁGINA - sincronizado com RomaneioListColumns (persistência por tenant/usuário)
+     */
+    function getItemsPerPage() {
+        if (window.RomaneioListColumns && typeof window.RomaneioListColumns.getPageSize === 'function') {
+            return window.RomaneioListColumns.getPageSize(CONFIG.pageKey, CONFIG.itemsPerPage);
+        }
+        return CONFIG.itemsPerPage;
+    }
 
     // ✅ ESTADO DO MODAL
     let state = {
@@ -441,8 +452,9 @@ window.ModalEspecies = (function() {
         }
 
         // Calcular itens da página atual
-        const startIndex = (state.currentPage - 1) * CONFIG.itemsPerPage;
-        const endIndex = startIndex + CONFIG.itemsPerPage;
+        const itemsPerPage = getItemsPerPage();
+        const startIndex = (state.currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
         const speciesToShow = state.filteredSpecies.slice(startIndex, endIndex);
 
         if (state.isLoading) {
@@ -496,7 +508,27 @@ window.ModalEspecies = (function() {
         const container = document.getElementById(CONFIG.paginationId);
         if (!container) return;
 
-        const totalPages = Math.ceil(state.filteredSpecies.length / CONFIG.itemsPerPage);
+        // ✅ PADRONIZAÇÃO: Usar a barra centralizada de RomaneioListColumns (Exibir/Densidade/paginação)
+        if (window.RomaneioListColumns && typeof window.RomaneioListColumns.renderPaginationBar === 'function') {
+            container.style.display = 'flex';
+            window.RomaneioListColumns.renderPaginationBar(container, {
+                totalItems: state.filteredSpecies.length,
+                currentPage: state.currentPage,
+                pageSize: getItemsPerPage(),
+                pageKey: CONFIG.pageKey,
+                onPageChange: (newPage) => goToPage(newPage),
+                onPageSizeChange: (newSize) => {
+                    CONFIG.itemsPerPage = newSize;
+                    state.currentPage = 1;
+                    renderSpeciesList();
+                    renderPagination();
+                },
+                onDensityChange: () => {}
+            });
+            return;
+        }
+
+        const totalPages = Math.ceil(state.filteredSpecies.length / getItemsPerPage());
 
         if (totalPages <= 1) {
             container.style.display = 'none';

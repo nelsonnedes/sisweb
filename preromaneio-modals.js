@@ -65,10 +65,31 @@ function getRomaneioDisplayDate(item) {
 }
 
 // Helper: Render Pagination Controls
-function renderPagination(totalItems, currentPage, containerId, onPageChange) {
-    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+function renderPagination(totalItems, currentPage, containerId, onPageChange, pageKey = null) {
     const container = document.getElementById(containerId);
     if (!container) return;
+
+    // ✅ PADRONIZAÇÃO: Usar a barra centralizada de RomaneioListColumns (Exibir/Densidade/paginação)
+    if (pageKey && window.RomaneioListColumns && typeof window.RomaneioListColumns.renderPaginationBar === 'function') {
+        const pageSize = window.RomaneioListColumns.getPageSize(pageKey, ITEMS_PER_PAGE);
+        container.style.display = 'flex';
+        window.RomaneioListColumns.renderPaginationBar(container, {
+            totalItems,
+            currentPage,
+            pageSize,
+            pageKey,
+            onPageChange: (newPage) => onPageChange(newPage),
+            onPageSizeChange: (newSize) => {
+                if (pageKey === 'preromaneio-clientes') currentPageClient = 1;
+                if (pageKey === 'preromaneio-especies') currentPageSpecies = 1;
+                onPageChange(1);
+            },
+            onDensityChange: () => {}
+        });
+        return;
+    }
+
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
     container.innerHTML = '';
     if (totalPages <= 1) {
@@ -200,8 +221,11 @@ function renderClientList(list = null) {
     }
 
     // Pagination Logic
-    const start = (currentPageClient - 1) * ITEMS_PER_PAGE;
-    const end = start + ITEMS_PER_PAGE;
+    const itemsPerPage = (window.RomaneioListColumns && typeof window.RomaneioListColumns.getPageSize === 'function')
+        ? window.RomaneioListColumns.getPageSize('preromaneio-clientes', ITEMS_PER_PAGE)
+        : ITEMS_PER_PAGE;
+    const start = (currentPageClient - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
     const paginatedItems = dataToRender.slice(start, end);
 
     const clientValue = (...values) => values.find(value => String(value || '').trim()) || 'Não informado';
@@ -244,7 +268,7 @@ function renderClientList(list = null) {
     renderPagination(dataToRender.length, currentPageClient, 'clientListPagination', (newPage) => {
         currentPageClient = newPage;
         renderClientList(dataToRender);
-    });
+    }, 'preromaneio-clientes');
 }
 
 function filterClientList() {
@@ -613,8 +637,11 @@ function renderSpeciesList(list = null) {
         return;
     }
 
-    const start = (currentPageSpecies - 1) * ITEMS_PER_PAGE;
-    const end = start + ITEMS_PER_PAGE;
+    const itemsPerPage = (window.RomaneioListColumns && typeof window.RomaneioListColumns.getPageSize === 'function')
+        ? window.RomaneioListColumns.getPageSize('preromaneio-especies', ITEMS_PER_PAGE)
+        : ITEMS_PER_PAGE;
+    const start = (currentPageSpecies - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
     const paginatedItems = dataToRender.slice(start, end);
 
     paginatedItems.forEach(item => {
@@ -641,7 +668,7 @@ function renderSpeciesList(list = null) {
     renderPagination(dataToRender.length, currentPageSpecies, 'speciesListPagination', (newPage) => {
         currentPageSpecies = newPage;
         renderSpeciesList(dataToRender);
-    });
+    }, 'preromaneio-especies');
 }
 
 function filterSpeciesList() {
@@ -759,7 +786,45 @@ async function abrirLista() {
     if (!modal || !tbody) return;
 
     modal.style.display = 'block';
+
+    // Inicializar tabela com RomaneioListColumns
+    const table = modal.querySelector('table');
+    if (table && window.RomaneioListColumns && typeof window.RomaneioListColumns.initTable === 'function') {
+        window.RomaneioListColumns.initTable(table, 'preromaneio');
+    }
+
+    // Configurar campo de filtro
+    const filterInput = document.getElementById('preRomaneioListFilter');
+    if (filterInput) {
+        filterInput.value = '';
+        filterInput.oninput = function () {
+            const term = (this.value || '').trim().toLowerCase();
+            currentPageRomaneios = 1;
+            if (!term) {
+                renderRomaneiosList(cachedRomaneios);
+            } else {
+                const filtered = cachedRomaneios.filter(r => {
+                    const c = (r.clienteNome || (r.cliente ? r.cliente.nome : '') || r.fornecedorNome || '').toLowerCase();
+                    const d = String(getRomaneioDisplayDate(r) || '').toLowerCase();
+                    const t = String(r.tipo || '').toLowerCase();
+                    return c.includes(term) || d.includes(term) || t.includes(term);
+                });
+                renderRomaneiosList(filtered);
+            }
+        };
+    }
+
     tbody.innerHTML = '<tr><td colspan="6" class="text-center">Carregando...</td></tr>';
+    const pagContainer = document.getElementById('listaRomaneiosPagination');
+    if (pagContainer && window.RomaneioListColumns && typeof window.RomaneioListColumns.renderPaginationBar === 'function') {
+        pagContainer.style.display = 'flex';
+        window.RomaneioListColumns.renderPaginationBar(pagContainer, {
+            totalItems: 0,
+            currentPage: 1,
+            pageSize: 10,
+            pageKey: 'preromaneio'
+        });
+    }
 
     try {
         let activeTenant = null;
@@ -914,15 +979,28 @@ function renderRomaneiosList(list = null) {
     const dataToRender = list || cachedRomaneios;
     tbody.innerHTML = '';
 
+    const pageSize = (window.RomaneioListColumns && typeof window.RomaneioListColumns.getPageSize === 'function')
+        ? window.RomaneioListColumns.getPageSize('preromaneio', 10)
+        : 10;
+    const total = dataToRender.length;
+    const start = total === 0 ? 0 : (currentPageRomaneios - 1) * pageSize + 1;
+    const end = Math.min(currentPageRomaneios * pageSize, total);
+
+    const infoSpan = document.getElementById('preromaneioModalInfo') || document.getElementById('romaneioModalInfo');
+    if (infoSpan) {
+        infoSpan.textContent = `Mostrando ${start > 0 ? (start + '-' + end) : 0} de ${total} romaneio${total !== 1 ? 's' : ''}`;
+    }
+
     if (dataToRender.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhum registro encontrado.</td></tr>';
-        document.getElementById('listaRomaneiosPagination').innerHTML = '';
+        const pag = document.getElementById('listaRomaneiosPagination');
+        if (pag) pag.innerHTML = '';
         return;
     }
 
-    const start = (currentPageRomaneios - 1) * ITEMS_PER_PAGE;
-    const end = start + ITEMS_PER_PAGE;
-    const paginatedItems = dataToRender.slice(start, end);
+    const startIdx = (currentPageRomaneios - 1) * pageSize;
+    const endIdx = startIdx + pageSize;
+    const paginatedItems = dataToRender.slice(startIdx, endIdx);
 
     paginatedItems.forEach(item => {
         const tr = document.createElement('tr');
@@ -950,9 +1028,9 @@ function renderRomaneiosList(list = null) {
             <td>${date}</td>
             <td>${client}</td>
             <td>${type}</td>
-            <td class="text-right">${volume} ${type === 'PES' ? 'pés³' : 'm³'}</td>
-            <td class="text-right">${value}</td>
-            <td class="text-center">
+            <td style="text-align: right;">${volume} ${type === 'PES' ? 'pés³' : 'm³'}</td>
+            <td style="text-align: right;">${value}</td>
+            <td style="text-align: center;">
                 <div class="btn-group">
                     <button class="action-button edit-button" onclick="carregarPreRomaneio('${item.id}')" title="Editar Romaneio">
                         <i class="fas fa-edit"></i>
@@ -966,10 +1044,30 @@ function renderRomaneiosList(list = null) {
         tbody.appendChild(tr);
     });
 
-    renderPagination(dataToRender.length, currentPageRomaneios, 'listaRomaneiosPagination', (newPage) => {
-        currentPageRomaneios = newPage;
-        renderRomaneiosList(dataToRender);
-    });
+    const pagContainer = document.getElementById('listaRomaneiosPagination');
+    if (pagContainer && window.RomaneioListColumns && typeof window.RomaneioListColumns.renderPaginationBar === 'function') {
+        pagContainer.style.display = 'flex';
+        window.RomaneioListColumns.renderPaginationBar(pagContainer, {
+            totalItems: dataToRender.length,
+            currentPage: currentPageRomaneios,
+            pageSize: pageSize,
+            pageKey: 'preromaneio',
+            onPageChange: (newPage) => {
+                currentPageRomaneios = newPage;
+                renderRomaneiosList(dataToRender);
+            },
+            onPageSizeChange: () => {
+                currentPageRomaneios = 1;
+                renderRomaneiosList(dataToRender);
+            },
+            onDensityChange: () => {}
+        });
+    } else if (pagContainer) {
+        renderPagination(dataToRender.length, currentPageRomaneios, 'listaRomaneiosPagination', (newPage) => {
+            currentPageRomaneios = newPage;
+            renderRomaneiosList(dataToRender);
+        });
+    }
 }
 
 async function carregarPreRomaneio(id, dadosPreCarregados = null) {

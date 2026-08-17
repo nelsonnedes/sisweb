@@ -20,7 +20,12 @@ window.ModalListaRomaneios = (function() {
         tableId: 'listaRomaneios',
         filterId: 'romaneioListFilter',
         paginationId: 'romaneioListPagination',
-        itemsPerPage: 5,  // ✅ REDUZIDO: 5 romaneios por página
+        pageKey: 'tl',
+        get itemsPerPage() {
+            return (window.RomaneioListColumns && typeof window.RomaneioListColumns.getPageSize === 'function')
+                ? window.RomaneioListColumns.getPageSize('tl', 10)
+                : 10;
+        },
         debug: false
     };
 
@@ -388,6 +393,8 @@ window.ModalListaRomaneios = (function() {
                     </td>
                 </tr>
             `;
+            updateModalInfo();
+            renderPagination();
             return;
         }
 
@@ -400,6 +407,8 @@ window.ModalListaRomaneios = (function() {
                     </td>
                 </tr>
             `;
+            updateModalInfo();
+            renderPagination();
             return;
         }
 
@@ -464,58 +473,76 @@ window.ModalListaRomaneios = (function() {
     /**
      * ✅ RENDERIZAR PAGINAÇÃO
      */
-    function renderPagination() {
-        const container = document.getElementById(CONFIG.paginationId);
-        if (!container) return;
+     function renderPagination() {
+         const container = document.getElementById(CONFIG.paginationId);
+         if (!container) return;
 
-        const totalPages = Math.ceil(state.filteredRomaneios.length / CONFIG.itemsPerPage);
+         if (window.RomaneioListColumns && typeof window.RomaneioListColumns.renderPaginationBar === 'function') {
+             container.style.display = 'flex';
+             window.RomaneioListColumns.renderPaginationBar(container, {
+                 totalItems: state.filteredRomaneios.length,
+                 currentPage: state.currentPage,
+                 pageSize: CONFIG.itemsPerPage,
+                 pageKey: 'tl',
+                 onPageChange: (newPage) => goToPage(newPage),
+                 onPageSizeChange: () => {
+                     state.currentPage = 1;
+                     renderRomaneiosList();
+                     renderPagination();
+                 },
+                 onDensityChange: () => {}
+             });
+             return;
+         }
 
-        if (totalPages <= 1) {
-            container.style.display = 'none';
-            container.innerHTML = '';
-            return;
-        }
-        if (state.currentPage > totalPages) state.currentPage = totalPages;
-        if (state.currentPage < 1) state.currentPage = 1;
+         const totalPages = Math.ceil(state.filteredRomaneios.length / CONFIG.itemsPerPage);
 
-        container.style.display = 'flex';
-        container.innerHTML = '';
+         if (totalPages <= 1) {
+             container.style.display = 'none';
+             container.innerHTML = '';
+             return;
+         }
+         if (state.currentPage > totalPages) state.currentPage = totalPages;
+         if (state.currentPage < 1) state.currentPage = 1;
 
-        const addBtn = (label, page, disabled = false, active = false) => {
-            const btn = document.createElement('button');
-            btn.textContent = label;
-            if (active) btn.classList.add('active');
-            btn.disabled = disabled;
-            btn.onclick = () => goToPage(page);
-            container.appendChild(btn);
-        };
+         container.style.display = 'flex';
+         container.innerHTML = '';
 
-        addBtn('<<<', 1, state.currentPage === 1);
-        addBtn('<', state.currentPage - 1, state.currentPage === 1);
-        const startPage = Math.max(1, state.currentPage - 2);
-        const endPage = Math.min(totalPages, state.currentPage + 2);
-        if (startPage > 1) {
-            addBtn('1', 1, false, state.currentPage === 1);
-            if (startPage > 2) {
-                const span = document.createElement('span');
-                span.textContent = '...';
-                container.appendChild(span);
-            }
-        }
-        for (let i = startPage; i <= endPage; i++) {
-            addBtn(String(i), i, false, i === state.currentPage);
-        }
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) {
-                const span = document.createElement('span');
-                span.textContent = '...';
-                container.appendChild(span);
-            }
-            addBtn(String(totalPages), totalPages, false, state.currentPage === totalPages);
-        }
-        addBtn('>', state.currentPage + 1, state.currentPage === totalPages);
-        addBtn('>>>', totalPages, state.currentPage === totalPages);
-    }
+         const addBtn = (label, page, disabled = false, active = false) => {
+             const btn = document.createElement('button');
+             btn.textContent = label;
+             if (active) btn.classList.add('active');
+             btn.disabled = disabled;
+             btn.onclick = () => goToPage(page);
+             container.appendChild(btn);
+         };
+
+         addBtn('<<<', 1, state.currentPage === 1);
+         addBtn('<', state.currentPage - 1, state.currentPage === 1);
+         const startPage = Math.max(1, state.currentPage - 2);
+         const endPage = Math.min(totalPages, state.currentPage + 2);
+         if (startPage > 1) {
+             addBtn('1', 1, false, state.currentPage === 1);
+             if (startPage > 2) {
+                 const span = document.createElement('span');
+                 span.textContent = '...';
+                 container.appendChild(span);
+             }
+         }
+         for (let i = startPage; i <= endPage; i++) {
+             addBtn(String(i), i, false, i === state.currentPage);
+         }
+         if (endPage < totalPages) {
+             if (endPage < totalPages - 1) {
+                 const span = document.createElement('span');
+                 span.textContent = '...';
+                 container.appendChild(span);
+             }
+             addBtn(String(totalPages), totalPages, false, state.currentPage === totalPages);
+         }
+         addBtn('>', state.currentPage + 1, state.currentPage === totalPages);
+         addBtn('>>>', totalPages, state.currentPage === totalPages);
+     }
 
     /**
      * ✅ NAVEGAR PARA PÁGINA
@@ -900,13 +927,55 @@ window.ModalListaRomaneios = (function() {
     }
 
     /**
+     * ✅ ABRIR MODAL
+     */
+    function openModal() {
+        dbg('🔄 Abrindo modal de lista de romaneios...');
+        
+        const modal = document.getElementById(CONFIG.modalId);
+        if (!modal) {
+            console.error('❌ Modal não encontrado:', CONFIG.modalId);
+            return;
+        }
+
+        // Exibir modal
+        modal.style.display = 'block';
+
+        // Inicializar redimensionamento e altura de linhas da tabela
+        const table = modal.querySelector('table');
+        if (table && window.RomaneioListColumns && typeof window.RomaneioListColumns.initTable === 'function') {
+            window.RomaneioListColumns.initTable(table, 'tl');
+        }
+
+        // Resetar estado
+        state.currentPage = 1;
+        state.searchTerm = '';
+        state.filteredRomaneios = [];
+
+        // Limpar campo de busca
+        const filterInput = document.getElementById(CONFIG.filterId);
+        if (filterInput) {
+            filterInput.value = '';
+        }
+
+        // Configurar event listeners
+        setupEventListeners();
+
+        // Carregar dados
+        loadRomaneios();
+    }
+
+    /**
      * ✅ ATUALIZAR INFORMAÇÕES DO MODAL
      */
     function updateModalInfo() {
         const info = document.getElementById('romaneioModalInfo');
         if (info) {
             const total = state.filteredRomaneios.length;
-            info.textContent = `${total} romaneio${total !== 1 ? 's' : ''} encontrado${total !== 1 ? 's' : ''}`;
+            const pageSize = CONFIG.itemsPerPage;
+            const start = total === 0 ? 0 : (state.currentPage - 1) * pageSize + 1;
+            const end = Math.min(state.currentPage * pageSize, total);
+            info.textContent = `Mostrando ${start > 0 ? (start + '-' + end) : 0} de ${total} romaneio${total !== 1 ? 's' : ''}`;
         }
     }
 

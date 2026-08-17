@@ -20,8 +20,19 @@ window.ModalClientes = (function() {
         tableId: 'clientListTable',
         filterId: 'clientListFilter',
         paginationId: 'clientListPagination',
-        itemsPerPage: 4
+        itemsPerPage: 4,
+        pageKey: 'clientes'
     };
+
+    /**
+     * ✅ ITENS POR PÁGINA - sincronizado com RomaneioListColumns (persistência por tenant/usuário)
+     */
+    function getItemsPerPage() {
+        if (window.RomaneioListColumns && typeof window.RomaneioListColumns.getPageSize === 'function') {
+            return window.RomaneioListColumns.getPageSize(CONFIG.pageKey, CONFIG.itemsPerPage);
+        }
+        return CONFIG.itemsPerPage;
+    }
 
     // ✅ ESTADO DO MODAL
     let state = {
@@ -271,8 +282,9 @@ window.ModalClientes = (function() {
         }
 
         // Calcular itens da página atual
-        const startIndex = (state.currentPage - 1) * CONFIG.itemsPerPage;
-        const endIndex = startIndex + CONFIG.itemsPerPage;
+        const itemsPerPage = getItemsPerPage();
+        const startIndex = (state.currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
         const clientsToShow = state.filteredClients.slice(startIndex, endIndex);
 
         if (state.isLoading) {
@@ -332,7 +344,28 @@ window.ModalClientes = (function() {
         const container = document.getElementById(CONFIG.paginationId);
         if (!container) return;
 
-        const totalPages = Math.ceil(state.filteredClients.length / CONFIG.itemsPerPage);
+        // ✅ PADRONIZAÇÃO: Usar a barra centralizada de RomaneioListColumns (Exibir/Densidade/paginação)
+        if (window.RomaneioListColumns && typeof window.RomaneioListColumns.renderPaginationBar === 'function') {
+            container.style.display = 'flex';
+            window.RomaneioListColumns.renderPaginationBar(container, {
+                totalItems: state.filteredClients.length,
+                currentPage: state.currentPage,
+                pageSize: getItemsPerPage(),
+                pageKey: CONFIG.pageKey,
+                onPageChange: (newPage) => goToPage(newPage),
+                onPageSizeChange: (newSize) => {
+                    CONFIG.itemsPerPage = newSize;
+                    state.currentPage = 1;
+                    renderClientList();
+                    renderPagination();
+                },
+                onDensityChange: () => {}
+            });
+            return;
+        }
+
+        const itemsPerPage = getItemsPerPage();
+        const totalPages = Math.ceil(state.filteredClients.length / itemsPerPage);
 
         if (totalPages <= 1) {
             container.style.display = 'none';

@@ -70,13 +70,18 @@ class RomaneioManager {
         this.filteredRomaneios = [];
         this.currentFilter = '';
         this.currentPage = 1;
-        this.itemsPerPage = 5;
         this.loadUserPreferences();
         
         this.deletedKey = `${this.collectionKey}_deletedIds`;
         
         console.log(`🏗️ Manager inicializado para: ${this.type.toUpperCase()} (${this.collectionKey})`);
         this.setupRealtimeRomaneios();
+    }
+
+    get itemsPerPage() {
+        return (window.RomaneioListColumns && typeof window.RomaneioListColumns.getPageSize === 'function')
+            ? window.RomaneioListColumns.getPageSize(this.type || 'tora', 10)
+            : 10;
     }
     
     _getCollectionKey(type) {
@@ -335,6 +340,15 @@ class RomaneioManager {
         this.currentPage = 1;
         
         modal.style.display = 'block';
+
+        // Inicializar redimensionamento de colunas e altura de linhas
+        const table = modal.querySelector('table');
+        if (table && window.RomaneioListColumns && typeof window.RomaneioListColumns.initTable === 'function') {
+            window.RomaneioListColumns.initTable(table, this.type || 'tora');
+        }
+
+        this.updatePaginationUI();
+
         await this.getData(true);
         this.applyFilter('');
         this.renderFilteredTable();
@@ -559,7 +573,7 @@ class RomaneioManager {
                         <div class="filter-container mb-3">
                             <input type="text" id="${this.filterId}" class="filter-input" placeholder="🔍 Pesquisar por cliente, data ou observações...">
                         </div>
-                        <div class="table-responsive" style="max-height: 55vh; overflow-y: auto;">
+                        <div class="table-responsive">
                             <table class="table">
                                 <thead>
                                     <tr>
@@ -581,10 +595,14 @@ class RomaneioManager {
                         <div class="modal-info">
                             <i class="fas fa-info-circle me-1"></i> <span id="romaneioModalInfo_${this.modalId}">Carregando...</span>
                         </div>
-                        <button type="button" class="romaneio-print-config-trigger" onclick="window.RomaneioPrintConfig && window.RomaneioPrintConfig.openModal('${String(this.type || 'tora').toUpperCase()}')" title="Configurar colunas impressas">
-                            <i class="fas fa-print"></i> Configurar Impressão
-                        </button>
-                        <button class="close-btn-footer close-modal-btn">Fechar</button>
+                        <div class="modal-footer-buttons" style="display: flex; gap: 8px; align-items: center;">
+                            <button type="button" class="romaneio-print-config-trigger" onclick="window.RomaneioPrintConfig && window.RomaneioPrintConfig.openModal('${String(this.type || 'tora').toUpperCase()}')" title="Configurar colunas impressas">
+                                <i class="fas fa-cog"></i> Configurar Impressão
+                            </button>
+                            <button class="back-button close-modal-btn">
+                                <i class="fas fa-times"></i> Fechar
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -616,12 +634,17 @@ class RomaneioManager {
 
     renderFilteredTable() {
         const tbody = document.getElementById(this.tableId);
-        const infoSpan = document.getElementById(`romaneioModalInfo_${this.modalId}`);
+        const infoSpan = document.getElementById(`romaneioModalInfo_${this.modalId}`) || document.getElementById('romaneioModalInfo');
         
         if (!tbody) return;
         
+        const total = this.filteredRomaneios.length;
+        const pageSize = this.itemsPerPage;
+        const start = total === 0 ? 0 : (this.currentPage - 1) * pageSize + 1;
+        const end = Math.min(this.currentPage * pageSize, total);
+
         if (infoSpan) {
-            infoSpan.textContent = `Mostrando ${this.filteredRomaneios.length} de ${this.allRomaneios.length} romaneios`;
+            infoSpan.textContent = `Mostrando ${start > 0 ? (start + '-' + end) : 0} de ${total} romaneio${total !== 1 ? 's' : ''}`;
         }
 
         if (this.filteredRomaneios.length === 0) {
@@ -630,11 +653,11 @@ class RomaneioManager {
             return;
         }
         
-        const start = (this.currentPage - 1) * this.itemsPerPage;
-        const pageItems = this.filteredRomaneios.slice(start, start + this.itemsPerPage);
+        const startIdx = (this.currentPage - 1) * this.itemsPerPage;
+        const pageItems = this.filteredRomaneios.slice(startIdx, startIdx + this.itemsPerPage);
         
         tbody.innerHTML = pageItems.map((r, idx) => {
-            const globalIdx = start + idx;
+            const globalIdx = startIdx + idx;
             const dataFmt = r.dataHora ? new Date(r.dataHora).toLocaleDateString('pt-BR') : '-';
             const nomeValue = r.fornecedor?.nome || r.cliente?.nome || r.fornecedor || r.cliente || 'Não informado';
             const nome = typeof nomeValue === 'object' ? 'Não informado' : String(nomeValue);
@@ -654,8 +677,6 @@ class RomaneioManager {
             
             // Renderização condicional de botões baseada no tipo
             let actions = '';
-            // ✅ PADRONIZAÇÃO: Botões de ação no padrão canônico (action-button/btn-group)
-            // igual aos modais PCT/TL/PES (print-styles.css cuida do visual)
             
             if (this.type === 'tora') {
                  actions = `
@@ -713,8 +734,29 @@ class RomaneioManager {
     }
     
     updatePaginationUI() {
-        const container = document.getElementById(`paginationControls_${this.modalId}`);
+        const container = document.getElementById(`paginationControls_${this.modalId}`) || document.getElementById('romaneioListPagination') || document.getElementById('paginationControls');
         if (!container) return;
+
+        if (window.RomaneioListColumns && typeof window.RomaneioListColumns.renderPaginationBar === 'function') {
+            container.style.display = 'flex';
+            window.RomaneioListColumns.renderPaginationBar(container, {
+                totalItems: this.filteredRomaneios.length,
+                currentPage: this.currentPage,
+                pageSize: this.itemsPerPage,
+                pageKey: this.type || 'tora',
+                onPageChange: (newPage) => {
+                    this.currentPage = newPage;
+                    this.renderFilteredTable();
+                },
+                onPageSizeChange: () => {
+                    this.currentPage = 1;
+                    this.renderFilteredTable();
+                },
+                onDensityChange: () => {}
+            });
+            return;
+        }
+
         if (this.totalPages <= 1) {
             container.style.display = 'none';
             container.innerHTML = '';

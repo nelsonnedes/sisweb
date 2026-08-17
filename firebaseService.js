@@ -2095,8 +2095,9 @@ async function saveToFirebase(path, key, data, options) {
         const candidates = resolveCandidatePaths(path);
         
         // Namespace candidates for checking existence
-        const tenantId = getTenantId();
-        const checkCandidates = tenantId ? candidates.map(c => `companies/${tenantId}/${c}`) : candidates;
+        // Usar getNamespacedPath() em vez de concatenação fixa para não duplicar
+        // prefixo quando o candidato já começa com "companies/" (ex.: nf-naturezas.js)
+        const checkCandidates = candidates.map(c => getNamespacedPath(c));
         
         console.log('🧭 Caminhos candidatos para escrita Firebase:', checkCandidates);
         let writePath = path;

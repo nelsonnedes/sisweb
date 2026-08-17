@@ -1427,8 +1427,8 @@ function checkAuth() {
             const urlParams = new URLSearchParams(window.location.search);
             const isNoRedirect = urlParams.get('noRedirect') === 'true';
             
-            // Só redirecionar se não estivermos já tratando um redirecionamento
-            if (!isNoRedirect) {
+            // Só redirecionar se não estivermos já tratando um redirecionamento e não estiver em skipAuthRedirect
+            if (!isNoRedirect && !window.__skipAuthRedirect) {
                 // Incrementar contador de redirecionamentos
                 const newRedirectCount = redirectCount + 1;
                 sessionStorage.setItem('redirectCount', newRedirectCount.toString());
@@ -1438,7 +1438,7 @@ function checkAuth() {
                 const target = encodeURIComponent(window.location.pathname + (window.location.hash || ''));
                 window.location.href = `login.html?noRedirect=true&reason=ui_guard&redirect=${target}`;
             } else {
-                console.log("🔄 Já estamos em um fluxo de redirecionamento, não redirecionando novamente");
+                console.log("🔄 Já estamos em um fluxo de redirecionamento ou skipAuthRedirect ativo");
             }
             
             resolve(false);
@@ -1456,7 +1456,7 @@ function checkAuth() {
                 return;
             }
             // Se não tiver usuário no localStorage e não estiver na página de login
-            if (!window.location.pathname.toLowerCase().includes('login.html')) {
+            if (!window.location.pathname.toLowerCase().includes('login.html') && !window.__skipAuthRedirect) {
                 console.log("👤 Nenhuma autenticação encontrada, redirecionando");
                 
                 // Verificar contador de redirecionamentos para evitar loops
@@ -1898,7 +1898,7 @@ function setupAuthListener() {
                     if (isSubscriptionCheckoutTarget(window.location.pathname)) {
                         return;
                     }
-                    if (window.location.pathname !== '/login.html') {
+                    if (window.location.pathname !== '/login.html' && !window.__skipAuthRedirect) {
                         const target = encodeURIComponent(window.location.pathname + (window.location.hash || ''));
                         window.location.href = `login.html?noRedirect=true&reason=auth_listener&redirect=${target}`;
                     }

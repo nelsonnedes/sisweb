@@ -708,7 +708,7 @@ textarea:focus {
 }
 
 #speciesListModal .modal-body {
-    max-height: 350px !important; /* padrão TL */
+    max-height: none !important;
     overflow-y: auto !important;
 }
 
@@ -1140,6 +1140,7 @@ textarea:focus {
     flex-direction: column !important;
     flex: 1 1 auto !important;
     min-height: 0 !important;
+    max-height: none !important;
     overflow: hidden !important;
     padding: 14px 16px !important;
 }
@@ -1163,6 +1164,7 @@ textarea:focus {
     min-height: 0 !important;
     max-height: none !important;
     overflow: auto !important;
+    scrollbar-gutter: stable !important;
 }
 
 #clientListModal .modal-footer,
@@ -1373,9 +1375,12 @@ textarea:focus {
     max-width: 1200px !important;
     display: flex !important;
     flex-direction: column !important;
-    max-height: 90vh !important;
+    height: min(88vh, 720px) !important;
+    min-height: min(560px, calc(100vh - 140px)) !important;
+    max-height: calc(100vh - 110px) !important;
     overflow: hidden !important;
     padding: 0 !important;
+    box-sizing: border-box !important;
 }
 
 #listaModal .modal-body,
@@ -1384,8 +1389,10 @@ textarea:focus {
     flex-direction: column !important;
     flex: 1 1 auto !important;
     min-height: 0 !important;
+    max-height: none !important;
     overflow: hidden !important;
-    padding: 14px 16px !important;
+    padding: 16px 20px 10px !important;
+    box-sizing: border-box !important;
 }
 
 #listaModal .filter-container,
@@ -1402,15 +1409,11 @@ textarea:focus {
     flex: 1 1 auto !important;
     min-height: 0 !important;
     max-height: none !important;
-    overflow: auto !important;
-}
-
-#listaModal .table-responsive {
-    max-height: 58vh !important;
-}
-
-#romaneioListModal .table-responsive {
-    max-height: 58vh !important;
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    background: #ffffff !important;
 }
 
 #listaModal .table,
@@ -1423,18 +1426,18 @@ textarea:focus {
 #listaModal .table td,
 #romaneioListModal .table th,
 #romaneioListModal .table td {
-    padding: 6px 8px !important;
-    line-height: 1.15 !important;
-    font-size: 13px !important;
+    padding: 9px 10px;
+    line-height: 1.35;
+    font-size: 13px;
     vertical-align: middle !important;
     white-space: nowrap !important;
 }
 
 #listaModal .table td,
 #romaneioListModal .table td {
-    max-width: 280px !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 #listaModal .table thead th,
@@ -1460,6 +1463,8 @@ textarea:focus {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 8px 12px !important;
     padding: 12px 16px !important;
     background: #f8fafc !important;
     border-top: 1px solid #e5e7eb !important;
@@ -2121,19 +2126,20 @@ textarea:focus {
 #listaModal .modal-content,
 #romaneioListModal .modal-content {
     background-color: #fefefe !important;
-    margin: 0 auto !important;
+    margin: 2.5vh auto !important;
     padding: 0 !important;
-    border: 1px solid #888 !important;
-    width: min(92vw, 1100px) !important;
-    max-width: 1100px !important;
-    height: auto !important;
+    border: 1px solid #cbd5e1 !important;
+    width: 95% !important;
+    max-width: 1200px !important;
+    height: min(88vh, 720px) !important;
+    min-height: min(560px, calc(100vh - 140px)) !important;
     max-height: calc(100vh - 110px) !important;
     border-radius: 8px !important;
     position: relative !important;
     z-index: 1 !important;
     display: flex !important;
     flex-direction: column !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25) !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28) !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
 }
@@ -2215,6 +2221,7 @@ textarea:focus {
 #romaneioListModal .modal-body {
     flex: 1 1 auto !important;
     min-height: 0 !important;
+    max-height: none !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     padding: 20px !important;
@@ -2252,6 +2259,8 @@ textarea:focus {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 8px 12px !important;
     padding: 14px 20px !important;
     border-top: 1px solid #e5e7eb !important;
     background-color: #fafafa !important;

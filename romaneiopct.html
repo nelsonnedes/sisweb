@@ -1827,53 +1827,6 @@
             text-align: center !important;
         }
 
-        /* ✅ CORREÇÕES CRÍTICAS PARA O CONTAINER DE MODAL (permitir rolagem vertical) */
-        #listaModal {
-            overflow: hidden !important; /* evitar vazamento, rolagem no conteúdo */
-        }
-
-        /* ✅ Estilos específicos para modal de lista de romaneios */
-        #listaModal .modal-content {
-            overflow-y: auto !important; /* habilitar barra de rolagem vertical */
-            max-height: 90vh !important; /* limitar altura para caber na tela */
-            max-width: 1200px !important;
-            width: 95% !important;
-        }
-
-        #listaModal .modal-dialog {
-            overflow: visible !important;
-        }
-
-        #listaModal table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        #listaModal th,
-        #listaModal td {
-            padding: 6px 8px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-
-        #listaModal th {
-            background-color: #2c3e50;
-            color: white;
-            font-size: 13px;
-            line-height: 1.1;
-        }
-
-        #listaModal td {
-            height: 32px;
-            font-size: 13px;
-            line-height: 1.1;
-            vertical-align: middle;
-        }
-
-        #listaModal tr:hover {
-            background-color: #f5f5f5;
-        }
-
         /* ✅ DROPDOWN DE IMPRESSÃO - CORREÇÃO CRÍTICA */
         #listaModal .dropdown {
             position: relative !important;
@@ -2380,7 +2333,7 @@
                 </div>
                 
                 <!-- ✅ TABELA PADRONIZADA CORRIGIDA -->
-                <div class="table-container" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
+                <div class="table-container">
                     <table class="table" style="margin-bottom: 0;">
                         <thead style="position: sticky; top: 0; background-color: #2c3e50; color: white; z-index: 10;">
                             <tr>
@@ -2398,20 +2351,20 @@
                         </tbody>
                     </table>
                 </div>
+                <div id="romaneioListPagination" style="margin-top: 15px;"></div>
+            </div>
                 
-            <div class="modal-footer" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;">
-                <div class="modal-info-text" style="color: #666; font-size: 14px; text-align: left; flex: 1; order: 1;">
+            <div class="modal-footer">
+                <div class="modal-info-text" style="color: #666; font-size: 14px; text-align: left;">
                     <i class="fas fa-info-circle"></i> <span id="romaneioModalInfo">Carregando...</span>
                 </div>
-                <!-- ✅ PAGINAÇÃO PADRONIZADA -->
-                <div id="romaneioListPagination" class="pagination-controls" style="display: flex; justify-content: center; flex: 1; order: 2; margin: 0;">
-                    <!-- Botões de paginação serão inseridos aqui -->
-                </div>
-                <div class="modal-footer-buttons" style="flex: 1; display: flex; justify-content: flex-end; order: 3;">
-                    <button type="button" class="romaneio-print-config-trigger" onclick="window.RomaneioPrintConfig && window.RomaneioPrintConfig.openModal('PCT')" title="Configurar colunas impressas" style="margin-right: 8px;">
-                        <i class="fas fa-print"></i> Configurar Impressão
+                <div class="modal-footer-buttons" style="display: flex; gap: 8px; align-items: center;">
+                    <button type="button" class="romaneio-print-config-trigger" onclick="window.RomaneioPrintConfig && window.RomaneioPrintConfig.openModal('PCT')" title="Configurar colunas impressas">
+                        <i class="fas fa-cog"></i> Configurar Impressão
                     </button>
-                    <button type="button" class="back-button close-modal-btn">Fechar</button>
+                    <button type="button" class="back-button close-modal-btn">
+                        <i class="fas fa-times"></i> Fechar
+                    </button>
                 </div>
             </div>
         </div>
@@ -2730,7 +2683,7 @@
     <script src="species-store.js?v=1c274b02dd71"></script>
     <script src="species-modal-standard.js?v=aabe6d5f2ce4"></script>
     <script src="data-functions.js?v=8dd76c97712b"></script>
-    <script src="auth.js?v=4fa226ae91ed"></script>
+    <script src="auth.js?v=9edf7c63fdab"></script>
     <script src="validation-system.js?v=f70152f1f65e"></script>
     <script src="cache-system.js?v=a307288b87e9"></script>
     <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
@@ -2751,7 +2704,7 @@
             db,
             auth,
             app
-        } from './firebaseService.js?v=0e56b7c5b276';
+        } from './firebaseService.js?v=ef210997ebea';
         
         // Disponibilizar firebaseService COMPLETO globalmente para auth.js e romaneiopct_funcoes.js
         window.firebaseService = { 
@@ -2924,14 +2877,15 @@
     <script src="modules/core/romaneio-messages.js?v=114b5f8a30f6"></script>
     
     <!-- 4. Modal de Lista de Romaneios PCT -->
-    <script src="modules/romaneiopct/modal-lista-romaneios-pct.js?v=18bd77fea720"></script>
+    <script src="modules/core/romaneio-list-columns.js?v=1fc2f1ef1fe7" data-page="pct" data-target="listaRomaneios"></script>
+    <script src="modules/romaneiopct/modal-lista-romaneios-pct.js?v=cabdf4ca3e03"></script>
     
     <!-- 5. Modal de Clientes PCT -->
-    <script src="modules/romaneiopct/modal-clientes-pct.js?v=7a725056f812"></script>
+    <script src="modules/romaneiopct/modal-clientes-pct.js?v=ca3c86af761d"></script>
     <script src="modules/core/client-list-columns.js?v=2caabf5273d4" data-page="pct" data-target="clientListTable"></script>
     
     <!-- 6. Modal de Espécies PCT -->
-    <script src="modules/romaneiopct/modal-especies-pct.js?v=e1358a1d6577"></script>
+    <script src="modules/romaneiopct/modal-especies-pct.js?v=05204971d68a"></script>
     
     <!-- 7. Navegação Enter PCT -->
     <script src="modules/romaneiopct/navegacao-pct.js?v=87ee0b0cd605"></script>

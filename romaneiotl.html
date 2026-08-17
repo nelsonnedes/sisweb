@@ -1210,7 +1210,6 @@
 
         /* Limitar altura do modal-body para ativar paginação */
         .modal-body {
-            max-height: 350px;
             overflow-y: auto;
         }
 
@@ -1801,17 +1800,19 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="romaneioListPagination" style="margin-top: 15px;"></div>
                 </div>
                 <div class="modal-footer">
                     <div class="modal-info-text" style="color: #666; font-size: 14px; text-align: left;">
                         <i class="fas fa-info-circle"></i> <span id="romaneioModalInfo">Carregando...</span>
                     </div>
-                    <div id="romaneioListPagination" class="pagination-controls" style="display: none;"></div>
-                    <div class="modal-footer-buttons">
+                    <div class="modal-footer-buttons" style="display: flex; gap: 8px; align-items: center;">
                         <button type="button" class="romaneio-print-config-trigger" onclick="window.RomaneioPrintConfig && window.RomaneioPrintConfig.openModal('TL')" title="Configurar colunas impressas">
-                            <i class="fas fa-print"></i> Configurar Impressão
+                            <i class="fas fa-cog"></i> Configurar Impressão
                         </button>
-                        <button type="button" class="back-button close-modal-btn">Fechar</button>
+                        <button type="button" class="back-button close-modal-btn">
+                            <i class="fas fa-times"></i> Fechar
+                        </button>
                     </div>
                 </div>
         </div>
@@ -1972,10 +1973,11 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="modules/reports/imprimir-romaneio.js?v=816cf055ebe9"></script>
 
     <!-- Módulos de Modais (dependem dos CRUD) -->
-    <script src="modules/modals/modal-clientes.js?v=79f76ff97975"></script>
+    <script src="modules/modals/modal-clientes.js?v=e9ed6cfc66cd"></script>
     <script src="modules/core/client-list-columns.js?v=2caabf5273d4" data-page="tl" data-target="clientListTable"></script>
-    <script src="modules/modals/modal-especies.js?v=eff5e678d32c"></script>
-    <script src="modules/modals/modal-lista-romaneios.js?v=c74781e40c30"></script>
+    <script src="modules/modals/modal-especies.js?v=1c37e093dd67"></script>
+    <script src="modules/core/romaneio-list-columns.js?v=1fc2f1ef1fe7" data-page="tl" data-target="listaRomaneios"></script>
+    <script src="modules/modals/modal-lista-romaneios.js?v=913c51e91b38"></script>
     <script src="romaneios-client-save-fix.js?v=7b9c0e02d555"></script>
     <script src="schema-migration-contatos.js?v=2e13b2ae3d91"></script>
 

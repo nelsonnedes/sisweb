@@ -204,7 +204,16 @@
           ".write": "auth != null && (auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId) && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')",
           ".indexOn": ["competencia", "status", "funcionarioId"]
         },
+        "cargos": {
+          ".read": "auth != null && (auth.token.superadmin == true || auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())",
+          ".write": "auth != null && (auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId) && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')",
+          ".indexOn": ["nome", "ativo"]
+        },
         "preferences": {
+          ".read": "auth != null && (auth.token.superadmin == true || auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())",
+          ".write": "auth != null && (auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId) && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')"
+        },
+        "configuracoes": {
           ".read": "auth != null && (auth.token.superadmin == true || auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())",
           ".write": "auth != null && (auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId) && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')"
         },
@@ -233,7 +242,8 @@
           ".read": "auth != null && (auth.token.superadmin == true || auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())"
         },
         "fiscal": {
-          ".read": "auth != null && (auth.token.superadmin == true || auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())"
+          ".read": "auth != null && (auth.token.superadmin == true || auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())",
+          ".write": "auth != null && (auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId) && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')"
         },
         "cache": {
           ".write": "auth != null && auth.token.superadmin == true",

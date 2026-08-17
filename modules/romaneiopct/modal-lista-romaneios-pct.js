@@ -7,7 +7,12 @@ window.ModalListaRomaneiosPCT = (function() {
         tableId: "listaRomaneios",
         filterId: "romaneioListFilter",
         paginationId: "romaneioListPagination",
-        itemsPerPage: 5
+        pageKey: "pct",
+        get itemsPerPage() {
+            return (window.RomaneioListColumns && typeof window.RomaneioListColumns.getPageSize === 'function')
+                ? window.RomaneioListColumns.getPageSize('pct', 10)
+                : 10;
+        }
     };
     
     let state = {
@@ -441,13 +446,24 @@ window.ModalListaRomaneiosPCT = (function() {
                 return;
             }
             modal.style.display = "block";
+
+            // Inicializar redimensionamento de colunas e altura de linhas
+            const table = modal.querySelector('table');
+            if (table && window.RomaneioListColumns && typeof window.RomaneioListColumns.initTable === 'function') {
+                window.RomaneioListColumns.initTable(table, 'pct');
+            }
+
+            // Renderizar estrutura inicial imediatamente
+            renderRomaneiosList();
+            renderPagination();
+            setupEventListeners();
+
             // Ativar realtime ao abrir o modal
             setupRealtimeRomaneiosPct();
             // ✅ Preferir dados do Firebase ao abrir (ignorar merge local)
             await loadRomaneios(true);
             renderRomaneiosList();
             renderPagination();
-            setupEventListeners();
             console.log(" PCT: Modal de romaneios aberto com sucesso");
         } catch (error) {
             console.error(" PCT: Erro ao abrir modal de romaneios:", error);
@@ -696,6 +712,8 @@ window.ModalListaRomaneiosPCT = (function() {
             emptyRow.innerHTML = '<td colspan="7" class="text-center">Nenhum romaneio encontrado</td>';
             tableBody.appendChild(emptyRow);
             console.log("🎨 PCT: Linha vazia adicionada");
+            updateModalInfo();
+            renderPagination();
             return;
         }
 
@@ -801,31 +819,49 @@ window.ModalListaRomaneiosPCT = (function() {
                                         <i class="fas fa-print"></i>
                                     </button>
                                     <div class="dropdown-content">
-                                    <a href="#" onclick="event.preventDefault(); event.stopPropagation(); window.ModalListaRomaneiosPCT.printRomaneio('${romaneio.id}', 'completo'); return false;">
-                                        <i class="fas fa-file-alt"></i> Completo
-                                    </a>
-                                    <a href="#" onclick="event.preventDefault(); event.stopPropagation(); window.ModalListaRomaneiosPCT.printRomaneio('${romaneio.id}', 'sem_preco_unitario'); return false;">
-                                        <i class="fas fa-file-minus"></i> Sem Preço Unitário
-                                    </a>
-                                    <a href="#" onclick="event.preventDefault(); event.stopPropagation(); window.ModalListaRomaneiosPCT.printRomaneio('${romaneio.id}', 'sem_preco'); return false;">
-                                        <i class="fas fa-file-times"></i> Sem Preços
+                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); window.ModalListaRomaneiosPCT.printRomaneio('${romaneio.id}', 'completo'); return false;">
+                                            <i class="fas fa-file-alt"></i> Completo
+                                        </a>
+                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); window.ModalListaRomaneiosPCT.printRomaneio('${romaneio.id}', 'sem_preco_unitario'); return false;">
+                                            <i class="fas fa-file-minus"></i> Sem Preço Unitário
+                                        </a>
+                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); window.ModalListaRomaneiosPCT.printRomaneio('${romaneio.id}', 'sem_preco'); return false;">
+                                            <i class="fas fa-file-times"></i> Sem Preços
                                         </a>
                                     </div>
                                 </div>
-                        <button class="action-button delete-button" onclick="window.ModalListaRomaneiosPCT.deleteRomaneio('${romaneio.id}')" title="Excluir Romaneio">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            `;
-            tableBody.appendChild(row);
-            console.log(`🎨 PCT: Linha ${index + 1} adicionada à tabela`);
-        });
-    }
-    
-    function renderPagination() {
-        const paginationContainer = document.getElementById(CONFIG.paginationId);
-        if (!paginationContainer) return;
+                                <button class="action-button delete-button" onclick="window.ModalListaRomaneiosPCT.deleteRomaneio('${romaneio.id}')" title="Excluir Romaneio">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                    console.log(`🎨 PCT: Linha ${index + 1} adicionada à tabela`);
+                });
+            }
+
+            function renderPagination() {
+                const paginationContainer = document.getElementById(CONFIG.paginationId);
+                if (!paginationContainer) return;
+
+                if (window.RomaneioListColumns && typeof window.RomaneioListColumns.renderPaginationBar === 'function') {
+                    paginationContainer.style.display = 'flex';
+                    window.RomaneioListColumns.renderPaginationBar(paginationContainer, {
+                        totalItems: state.filteredRomaneios.length,
+                        currentPage: state.currentPage,
+                        pageSize: CONFIG.itemsPerPage,
+                        pageKey: 'pct',
+                        onPageChange: (newPage) => goToPage(newPage),
+                        onPageSizeChange: () => {
+                            state.currentPage = 1;
+                            renderRomaneiosList();
+                            renderPagination();
+                        },
+                        onDensityChange: () => {}
+                    });
+                    return;
+                }
 
         const totalPages = Math.ceil(state.filteredRomaneios.length / CONFIG.itemsPerPage);
         if (totalPages <= 1) {
@@ -1204,7 +1240,10 @@ window.ModalListaRomaneiosPCT = (function() {
         const info = document.getElementById('romaneioModalInfo');
         if (info) {
             const total = state.filteredRomaneios.length;
-            info.textContent = `${total} romaneio${total !== 1 ? 's' : ''} encontrado${total !== 1 ? 's' : ''}`;
+            const pageSize = CONFIG.itemsPerPage;
+            const start = total === 0 ? 0 : (state.currentPage - 1) * pageSize + 1;
+            const end = Math.min(state.currentPage * pageSize, total);
+            info.textContent = `Mostrando ${start > 0 ? (start + '-' + end) : 0} de ${total} romaneio${total !== 1 ? 's' : ''}`;
         }
     }
 

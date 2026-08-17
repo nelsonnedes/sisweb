@@ -1801,7 +1801,11 @@ async function renderFornecedorListBasic(filter = '') {
                     return nome.includes(termo) || cnpj.includes(termo) || cidade.includes(termo) || estado.includes(termo) || telefone.includes(termo) || email.includes(termo);
                 });
             }
-            const pageSize = window._fornPageSize || 4;
+            const rlc = window.RomaneioListColumns;
+            const pageKey = 'fornecedores';
+            const pageSize = rlc && typeof rlc.getPageSize === 'function'
+                ? rlc.getPageSize(pageKey, 10)
+                : (window._fornPageSize || 4);
             window._fornPageSize = pageSize;
             const pageIndex = typeof window._fornPageIndex === 'number' ? window._fornPageIndex : 0;
             window._fornPageIndex = pageIndex;
@@ -1883,6 +1887,30 @@ async function renderFornecedorListBasic(filter = '') {
             const pag = document.getElementById('fornecedorPagination');
             if (pag) {
                 const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+                // ✅ PADRONIZAÇÃO: Usar a barra centralizada de RomaneioListColumns (Exibir/Densidade/paginação)
+                if (rlc && typeof rlc.renderPaginationBar === 'function') {
+                    pag.style.display = 'flex';
+                    rlc.renderPaginationBar(pag, {
+                        totalItems: total,
+                        currentPage: window._fornPageIndex + 1,
+                        pageSize: pageSize,
+                        pageKey: pageKey,
+                        onPageChange: (newPage) => {
+                            window._fornPageIndex = newPage - 1;
+                            const fi = document.getElementById('fornecedorListFilter');
+                            renderFornecedorListBasic(fi ? fi.value : '');
+                        },
+                        onPageSizeChange: (newSize) => {
+                            window._fornPageIndex = 0;
+                            const fi = document.getElementById('fornecedorListFilter');
+                            renderFornecedorListBasic(fi ? fi.value : '');
+                        },
+                        onDensityChange: () => {}
+                    });
+                    return;
+                }
+
                 pag.replaceChildren();
                 if (totalPages <= 1) {
                     pag.style.display = 'none';

@@ -43,8 +43,19 @@ window.ModalClientesPCT = (function() {
         tableId: 'clientListTable',
         filterId: 'clientListFilter',
         paginationId: 'clientListPagination',
-        itemsPerPage: 4
+        itemsPerPage: 4,
+        pageKey: 'clientes'
     };
+
+    /**
+     * ✅ ITENS POR PÁGINA - sincronizado com RomaneioListColumns (persistência por tenant/usuário)
+     */
+    function getItemsPerPage() {
+        if (window.RomaneioListColumns && typeof window.RomaneioListColumns.getPageSize === 'function') {
+            return window.RomaneioListColumns.getPageSize(CONFIG.pageKey, CONFIG.itemsPerPage);
+        }
+        return CONFIG.itemsPerPage;
+    }
 
     // ✅ ESTADO DO MODAL
     let state = {
@@ -337,8 +348,9 @@ window.ModalClientesPCT = (function() {
         }
 
         // Calcular itens da página atual
-        const startIndex = (state.currentPage - 1) * CONFIG.itemsPerPage;
-        const endIndex = startIndex + CONFIG.itemsPerPage;
+        const itemsPerPage = getItemsPerPage();
+        const startIndex = (state.currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
         const clientsToShow = state.filteredClients.slice(startIndex, endIndex);
 
         // ✅ DEBUG CRÍTICO: Comparar dados de renderização vs seleção
@@ -415,7 +427,29 @@ window.ModalClientesPCT = (function() {
             return;
         }
 
-        const totalPages = Math.ceil(state.filteredClients.length / CONFIG.itemsPerPage);
+        const itemsPerPage = getItemsPerPage();
+
+        // ✅ PADRONIZAÇÃO: Usar a barra centralizada de RomaneioListColumns (Exibir/Densidade/paginação)
+        if (window.RomaneioListColumns && typeof window.RomaneioListColumns.renderPaginationBar === 'function') {
+            container.style.display = 'flex';
+            window.RomaneioListColumns.renderPaginationBar(container, {
+                totalItems: state.filteredClients.length,
+                currentPage: state.currentPage,
+                pageSize: itemsPerPage,
+                pageKey: CONFIG.pageKey,
+                onPageChange: (newPage) => goToPage(newPage),
+                onPageSizeChange: (newSize) => {
+                    CONFIG.itemsPerPage = newSize;
+                    state.currentPage = 1;
+                    renderClientList();
+                    renderPagination();
+                },
+                onDensityChange: () => {}
+            });
+            return;
+        }
+
+        const totalPages = Math.ceil(state.filteredClients.length / itemsPerPage);
         const totalItems = state.filteredClients.length;
         
         console.log(`📄 PCT: Renderizando paginação - Página ${state.currentPage}/${totalPages} (${totalItems} itens)`);
@@ -478,8 +512,8 @@ window.ModalClientesPCT = (function() {
         // ✅ INFORMAÇÕES DA PAGINAÇÃO REMOVIDAS CONFORME SOLICITADO
         
         // Manter variáveis apenas para log de debug
-        const startItem = (state.currentPage - 1) * CONFIG.itemsPerPage + 1;
-        const endItem = Math.min(state.currentPage * CONFIG.itemsPerPage, totalItems);
+        const startItem = (state.currentPage - 1) * itemsPerPage + 1;
+        const endItem = Math.min(state.currentPage * itemsPerPage, totalItems);
         console.log(`✅ PCT: Paginação renderizada - ${startItem}-${endItem} de ${totalItems} clientes`);
     }
 
@@ -490,7 +524,7 @@ window.ModalClientesPCT = (function() {
         console.log(`📄 PCT: Navegando para página ${page}`);
         
         // ✅ VALIDAÇÕES ROBUSTAS
-        const totalPages = Math.ceil(state.filteredClients.length / CONFIG.itemsPerPage);
+        const totalPages = Math.ceil(state.filteredClients.length / getItemsPerPage());
         
         // Validar se página é um número válido
         if (isNaN(page) || !Number.isInteger(page)) {
@@ -1027,7 +1061,7 @@ window.ModalClientesPCT = (function() {
             // Não interferir se estiver digitando no campo de filtro
             if (e.target === filterInput) return;
             
-            const totalPages = Math.ceil(state.filteredClients.length / CONFIG.itemsPerPage);
+            const totalPages = Math.ceil(state.filteredClients.length / getItemsPerPage());
             
             switch(e.key) {
                 case 'ArrowLeft':

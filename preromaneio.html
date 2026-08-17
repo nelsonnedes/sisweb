@@ -764,19 +764,6 @@
             letter-spacing: 0 !important;
         }
 
-        #listaModal .table th:nth-child(1),
-        #listaModal .table td:nth-child(1) { width: 12% !important; min-width: 108px !important; }
-        #listaModal .table th:nth-child(2),
-        #listaModal .table td:nth-child(2) { width: 20% !important; min-width: 180px !important; }
-        #listaModal .table th:nth-child(3),
-        #listaModal .table td:nth-child(3) { width: 25% !important; min-width: 230px !important; }
-        #listaModal .table th:nth-child(4),
-        #listaModal .table td:nth-child(4) { width: 13% !important; min-width: 120px !important; text-align: right !important; }
-        #listaModal .table th:nth-child(5),
-        #listaModal .table td:nth-child(5) { width: 12% !important; min-width: 128px !important; text-align: right !important; }
-        #listaModal .table thead th:nth-child(6),
-        #listaModal .table tbody td:nth-child(6) { width: 18% !important; min-width: 140px !important; text-align: center !important; }
-
         /* Responsividade e Layout da Tabela no Modal */
         .modal table {
             width: 100%;
@@ -855,8 +842,8 @@
         
         /* Lista Romaneios specific */
         #listaModal .modal-content {
-            width: 95%;
-            max-width: 1000px;
+            width: 95% !important;
+            max-width: 1200px !important;
         }
 
         /* Unidades Visuais */
@@ -1238,7 +1225,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     </script><!-- Configuração Firebase e Serviços (Unificados) -->
     <script src="firebaseService.unified.js?v=5255337c2a64"></script>
-    <script src="auth.js?v=4fa226ae91ed"></script>
+    <script src="auth.js?v=9edf7c63fdab"></script>
     <script src="client-service.js?v=3061965a094a"></script> <!-- Para autocompletes -->
     <script src="species-utils.js?v=ac1a2bae7bea"></script>
     <script src="species-store.js?v=1c274b02dd71"></script>
@@ -1736,6 +1723,10 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 <span class="close-modal" onclick="closeListaModal()">&times;</span>
             </div>
             <div class="modal-body">
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="preRomaneioListFilter" placeholder="🔍 Filtrar por cliente, data ou tipo..." 
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                </div>
                 <div class="table-responsive modal-table-scroll">
                     <table class="table">
                         <thead>
@@ -1743,29 +1734,35 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                                 <th>Data</th>
                                 <th>Cliente</th>
                                 <th>Tipo</th>
-                                <th>Volume</th>
-                                <th>Valor</th>
-                                <th>Ações</th>
+                                <th style="text-align: right;">Volume</th>
+                                <th style="text-align: right;">Valor</th>
+                                <th style="text-align: center; width: 140px;">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="listaRomaneiosTable"></tbody>
                     </table>
                 </div>
-                <div id="listaRomaneiosPagination" class="pagination-container"></div>
+                <div id="listaRomaneiosPagination" style="margin-top: 15px;"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="back-button close-modal-btn" onclick="closeListaModal()">
-                    <i class="fas fa-times"></i> Fechar
-                </button>
+                <div class="modal-info-text" style="color: #666; font-size: 14px; text-align: left;">
+                    <i class="fas fa-info-circle"></i> <span id="preromaneioModalInfo">Carregando...</span>
+                </div>
+                <div class="modal-footer-buttons">
+                    <button type="button" class="back-button close-modal-btn" onclick="closeListaModal()">
+                        <i class="fas fa-times"></i> Fechar
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Scripts de Modais e Lógica -->
-    <script src="fornecedor-modals.js?v=99e76c051f9d"></script>
-    <script src="preromaneio-modals.js?v=b178ff9525f4"></script>
+    <script src="fornecedor-modals.js?v=f607eb24925d"></script>
     <script src="modules/core/client-list-columns.js?v=2caabf5273d4" data-page="preromaneio" data-target="clientListTable"></script>
     <script src="modules/core/client-list-columns.js?v=2caabf5273d4" data-page="fornecedores" data-target="fornecedorListTable"></script>
+    <script src="modules/core/romaneio-list-columns.js?v=1fc2f1ef1fe7" data-page="preromaneio" data-target="listaRomaneiosTable"></script>
+    <script src="preromaneio-modals.js?v=b754e4722581"></script>
     <script src="tora-geometry-utils.js?v=a582b726e981"></script>
     <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
     <script src="preromaneio.js?v=f1b9d910cd88"></script>

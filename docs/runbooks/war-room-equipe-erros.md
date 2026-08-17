@@ -41,6 +41,13 @@
 - [ ] Atualizar story, runbook ou cérebro (o que se aplica).
 - [ ] Se deploy: serial em v2 + validação em produção (HTTP/browser).
 
+## Incidentes abertos (triados em 2026-08-16)
+- ~~**BUG-A | Folha cargos `Permission denied`**~~ → **RESOLVIDO 2026-08-16** por opencode: regra `companies/$companyId/cargos` adicionada em `database.rules.json` (espelho de `funcionarios`). Deploy `--only database` pendente.
+- ~~**BUG-B | NF-e seed `fiscal/naturezas-operacao` `PERMISSION_DENIED`**~~ → **RESOLVIDO 2026-08-16** por opencode: `.write` adicionado ao nó `fiscal` em `database.rules.json`. Deploy `--only database` pendente.
+- ~~**BUG-C | Dupla prefixação `companies/{t}/companies/{t}/...`**~~ → **RESOLVIDO 2026-08-16** por opencode: `firebaseService.js` `checkCandidates` agora usa `getNamespacedPath(c)`. Sem deploy de rules; validado pela suíte (449 pass).
+- **BUG-D | `PERMISSION_DENIED` ao salvar "Configurar Impressão" em Lista de Romaneio** → **RESOLVIDO 2026-08-16** por opencode: `romaneio-print-config.js` salva em `companies/{t}/configuracoes/romaneioPrintColumns/{tipo}` mas não havia nó `configuracoes` nas rules (`$companyId` tinha `.write:false`). Adicionado `companies/$companyId/configuracoes` (read/write tenant, padrão `preferences`) em `database.rules.json`. Deploy `--only database` pendente.
+- **Nota:** `firebase-rules-production.json` (usado por `apply-firebase-rules.js prod`) já herda `.read`/`.write` amplos do nó pai `$companyId` — BUGs A/B não ocorrem nesse fluxo; `database.rules.json` é o canônico do `firebase.json`.
+
 ## Nota: erros já conhecidos que NÃO são bugs do app
 - **`ERR_CONNECTION_TIMED_OUT` de gstatic** (login): rede/bloqueio do cliente, não deploy. Ver `CEREBRO §8`.
 - **Sentery `TypeError: r is not a function` (issue 7672938922)**: project `javascript-nextjs` (não é o nosso), sem stack/tags; ruído. Ignorar ou ajustar DSN em `sentry-init.js`.
