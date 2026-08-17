@@ -152,9 +152,16 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 2. **Terminar o trabalho de modais de romaneios** que ficou no working tree: revisar `romaneio-list-columns.js` + integração nos 5 modais, garantir testes `romaneios-modals-customization` e e2e puppeteer verdes, e commitar com mensagem clara.
 3. **Cuidado com cache-busters:** HTMLs já com `?v=` novos no working tree; conferir `inject-cachebusters.mjs` só processa `<script>` (CSS manual).
 4. **Não alterar `database.rules.json`** em paralelo com o Antigravity sem coordenar — mudanças de regras afetam todos os tenants em produção.
-5. Suíte atual: **452 pass / 0 fail** (1 skip). Manter verde ao commitar.
-6. **CSS dos modais de lista agora tem fonte canônica:** `romaneio-comum.css` (seções 1363-1483 e 2085-2263) + `modules/core/romaneio-list-columns.js` (`injectStyles`/`#rlc-styles`). Não adicionar novos blocks `#listaModal .modal-content` inline nos HTMLs — o injetado vence por cascata e duplicações causam regressão (ex.: `overflow-y:auto` no content anula a rolagem interna da tabela).
-7. **Altura dos modais de lista:** o `.modal-body` dos modais canônicos deve ter `max-height: none !important` (para o `flex:1` preencher e a tabela rolar internamente). **Não reintroduzir `.modal-body { max-height: 350px }` inline nos HTMLs** — isso recria o espaço vazio abaixo do footer (bug corrigido nesta sessão).
+## 15. Sincronia opencode × Antigravity (2026-08-17)
+
+- **Edição de Toras no Estoque (`estoque.js` / `estoque.html`):**
+  - **Falso positivo de plaqueta duplicada**: A consulta de estoque filtra toras ativas (`status === 'disponivel'`), mas a validação de plaquetas varria todas as toras históricas. Criada a função `toraEstaAtivaNoEstoque(tora)` para ignorar registros com status `baixado`, `saida`, `consumido`, `estornado`, etc. Toras baixadas no passado não bloqueiam o reuso de plaqueta no saldo ativo.
+  - **Otimização de largura de colunas**: Criada classe `.table col.medida { width: 85px; }` para dimensões técnicas (`diametro`, `comprimento`, `oco1`, `oco2`, `desconto`, `compGeo`, `x1`, `x2`, `x3`, `x4`), reduzindo o tamanho total das 4 tabelas de toras em ~35%. Alinhamentos harmonizados via `getEntradaColumnsDefs`.
+- **Fixação Estática e Eliminação do Scroll do Backdrop nos Modais de Romaneios (`modules/core/romaneio-list-columns.js` / `romaneiopes.html` / `romaneio-manager.js`):**
+  - **Causa raiz do movimento vertical na rolagem do mouse**: Em `romaneiopes.html` e `romaneiotora.js`, o overlay do modal possuía `overflow-y: auto` somado a paddings/margens, fazendo a janela inteira do modal rolar para cima e para baixo.
+  - **Fix canônico**: Todos os overlays de modais de listagem (`#listaModal`, `#romaneioListModal`, `#clientListModal`, `#speciesListModal`, `#fornecedorListModal`, `div[id*="romaneioModal"]`) agora possuem `overflow: hidden !important; padding: 0 !important; margin: 0 !important; position: fixed !important; display: flex !important; align-items: center !important; justify-content: center !important;`. O `.modal-content` tem `margin: 0 auto !important; height: calc(100vh - 48px) !important; max-height: 760px !important; min-height: 380px !important;`. O scroll vertical roda exclusivamente dentro da tabela (`.table-container, .table-responsive { overflow-y: auto !important; }`), mantendo o modal 100% estático no centro da tela.
+  - **Densidade em Tempo Real**: `setRowHeight` propaga classes (`rlc-density-compact`, `rlc-density-normal`, `rlc-density-comfortable`) diretamente no `document.body` e em todos os modais da tela.
+- **Quality Gates e Deploy**: `npm run validate:pr` (6/6 PASS), cachebusters injetados dinamicamente via `inject-cachebusters.mjs`, deploy no Firebase Hosting e post-deploy security check (37/37 checks aprovados).
 
 ## 12. Como manter este cérebro
 

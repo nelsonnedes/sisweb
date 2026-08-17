@@ -189,50 +189,7 @@ function toraCorrespondeBusca(item, termo) {
     return !filtro || obterTextoBuscaTora(item).includes(filtro);
 }
 
-function obterTextoBuscaMovimentacao(mov = {}) {
-    let romaneiosTexto = '';
-    if (mov.romaneiosRelacionados) {
-        const romaneios = normalizarRomaneiosRastreabilidade(mov.romaneiosRelacionados);
-        romaneiosTexto = romaneios.map(r => {
-            const cliente = r.clienteNome || (typeof r.cliente === 'object' ? (r.cliente.nome || r.cliente.name) : r.cliente) || '';
-            return `romaneio ${r.numero || ''} ${cliente}`;
-        }).join(' ');
-    }
-    const toraTexto = obterTextoBuscaTora(mov);
-    return normalizarTextoBuscaEstoque([
-        toraTexto,
-        mov.tipo,
-        mov.documento,
-        mov.observacoes,
-        romaneiosTexto
-    ].filter(Boolean).join(' '));
-}
 
-function formatarRomaneiosVinculadosMovimentacao(mov = {}, options = {}) {
-    const plain = !!options.plain;
-    const roms = mov && mov.romaneiosRelacionados
-        ? normalizarRomaneiosRastreabilidade(mov.romaneiosRelacionados)
-        : [];
-        
-    const observacoesBase = mov && mov.toraManualForaEstoque
-        ? `MANUAL FORA ESTOQUE - ${mov.observacoes || ''}`.trim()
-        : (mov.observacoes || '');
-
-    if (roms.length === 0) {
-        return plain ? observacoesBase : escapeHtml(observacoesBase);
-    }
-
-    const linhas = roms.map(r => {
-        const cliente = r.clienteNome || (typeof r.cliente === 'object' ? (r.cliente.nome || r.cliente.name) : r.cliente) || '';
-        const volVal = r.volume !== undefined ? r.volume : (r.volumeSerraria !== undefined ? r.volumeSerraria : (r.volumeTora !== undefined ? r.volumeTora : (r.volumeGeometrico !== undefined ? r.volumeGeometrico : 0)));
-        const vol = formatNumber(volVal, 3);
-        const numero = r.numero || '';
-        const texto = `Romaneio ${numero} - ${cliente} - ${vol} m³`;
-        return plain ? texto : `<span class="romaneio-vinculado-item">${escapeHtml(texto)}</span>`;
-    });
-
-    return plain ? linhas.join(' | ') : linhas.join('<br>');
-}
 function formatarMedidaGeoEstoque(value) {
     if (window.ToraGeometry && typeof window.ToraGeometry.formatarMedidaCm === 'function') {
         return window.ToraGeometry.formatarMedidaCm(value);
@@ -682,23 +639,57 @@ function normalizarChavePlaqueta(value) {
     return String(value || '').trim().toLowerCase();
 }
 
+function toraEstaAtivaNoEstoque(tora) {
+    if (!tora || typeof tora !== 'object') return false;
+    if (tora.manualForaEstoque) return false;
+    const status = String(tora.status || 'disponivel').trim().toLowerCase();
+    return status === 'disponivel' || status === 'ativo' || status === 'em_estoque' || status === 'pendente';
+}
+
 function encontrarToraPorPlaqueta(plaqueta, ignorarId = '') {
     const chave = normalizarChavePlaqueta(plaqueta);
     if (!chave) return null;
-    return estoqueAtual.find((tora) => {
+    const idsParaIgnorar = new Set();
+    if (ignorarId !== undefined && ignorarId !== null && String(ignorarId).trim() !== '') {
+        idsParaIgnorar.add(String(ignorarId).trim());
+    }
+    if (toraEmEdicao) {
+        if (toraEmEdicao.id) idsParaIgnorar.add(String(toraEmEdicao.id).trim());
+        if (toraEmEdicao.key) idsParaIgnorar.add(String(toraEmEdicao.key).trim());
+        if (toraEmEdicao.firebaseKey) idsParaIgnorar.add(String(toraEmEdicao.firebaseKey).trim());
+    }
+    return (estoqueAtual || []).find((tora) => {
         if (!tora) return false;
-        const mesmoId = ignorarId && String(tora.id) === String(ignorarId);
-        return !mesmoId && normalizarChavePlaqueta(tora.plaqueta) === chave;
+        if (!toraEstaAtivaNoEstoque(tora)) return false;
+        if (toraEmEdicao && (tora === toraEmEdicao || (tora.id && toraEmEdicao.id && String(tora.id) === String(toraEmEdicao.id)))) return false;
+        const tId = String(tora.id || '').trim();
+        const tKey = String(tora.key || '').trim();
+        const tFbKey = String(tora.firebaseKey || '').trim();
+        if (tId && idsParaIgnorar.has(tId)) return false;
+        if (tKey && idsParaIgnorar.has(tKey)) return false;
+        if (tFbKey && idsParaIgnorar.has(tFbKey)) return false;
+        return normalizarChavePlaqueta(tora.plaqueta) === chave;
     }) || null;
 }
 
 function itemEntradaTemPlaqueta(plaqueta, ignorarId = '') {
     const chave = normalizarChavePlaqueta(plaqueta);
     if (!chave) return false;
-    return itensEntrada.some((item) => {
+    const idsParaIgnorar = new Set();
+    if (ignorarId !== undefined && ignorarId !== null && String(ignorarId).trim() !== '') {
+        idsParaIgnorar.add(String(ignorarId).trim());
+    }
+    if (toraEmEdicao) {
+        if (toraEmEdicao.id) idsParaIgnorar.add(String(toraEmEdicao.id).trim());
+        if (toraEmEdicao.key) idsParaIgnorar.add(String(toraEmEdicao.key).trim());
+        if (toraEmEdicao.firebaseKey) idsParaIgnorar.add(String(toraEmEdicao.firebaseKey).trim());
+    }
+    return (itensEntrada || []).some((item) => {
         if (!item) return false;
-        const mesmoId = ignorarId && String(item.id) === String(ignorarId);
-        return !mesmoId && normalizarChavePlaqueta(item.plaqueta) === chave;
+        if (toraEmEdicao && (item === toraEmEdicao || (item.id && toraEmEdicao.id && String(item.id) === String(toraEmEdicao.id)))) return false;
+        const itemId = String(item.id || '').trim();
+        if (itemId && idsParaIgnorar.has(itemId)) return false;
+        return normalizarChavePlaqueta(item.plaqueta) === chave;
     });
 }
 
@@ -1232,12 +1223,11 @@ async function carregarDados() {
         ]);
 
         // Processar Estoque
-        let rawEstoque = estoqueRes ? (estoqueRes.data !== undefined ? estoqueRes.data : estoqueRes) : [];
-        estoqueAtual = rawEstoque ? (Array.isArray(rawEstoque) ? rawEstoque : Object.values(rawEstoque)) : [];
+        estoqueAtual = normalizarListaFirebaseEstoque(estoqueRes);
         estoqueAtual = estoqueAtual.filter(item => item && typeof item === 'object').map(normalizarItemComGeo);
 
         // Processar Movimentações
-        movimentacoes = movRes ? (Array.isArray(movRes) ? movRes : Object.values(movRes)) : [];
+        movimentacoes = normalizarListaFirebaseEstoque(movRes);
         movimentacoes = movimentacoes.filter(item => item && typeof item === 'object').map(normalizarItemComGeo);
 
         // Processar Rastreabilidade
@@ -2127,6 +2117,7 @@ async function atualizarToraEditada() {
     if (!toraEmEdicao) return;
 
     const original = toraEmEdicao;
+    const originalId = original.id || original.firebaseKey || original.key || '';
     const especieValidacao = validarEspecieEntrada(document.getElementById('especieEntrada').value, true);
     if (!especieValidacao.ok) return;
 
@@ -2135,7 +2126,7 @@ async function atualizarToraEditada() {
         alert('Informe a plaqueta.');
         return;
     }
-    const toraDuplicada = encontrarToraPorPlaqueta(plaqueta, original.id);
+    const toraDuplicada = encontrarToraPorPlaqueta(plaqueta, originalId);
     if (toraDuplicada) {
         alert(`Já existe outra tora com a plaqueta "${plaqueta}". Ajuste a plaqueta antes de atualizar.`);
         return;
@@ -2185,8 +2176,10 @@ async function atualizarToraEditada() {
         : (String(original.documento || '').toLowerCase().includes('romaneio') ? 'Entrada Manual' : (original.documento || 'Entrada Manual'));
     const updatedAt = new Date().toISOString();
 
+    const finalId = original.id || originalId || generateUniqueId('EST');
     const atualizado = {
         ...original,
+        id: finalId,
         data: dataEntrada,
         plaqueta,
         ...geo,
@@ -2214,11 +2207,22 @@ async function atualizarToraEditada() {
         atualizado.fornecedor = { id: fornecedorId, nome: fornecedorNome || fornecedorId };
     }
 
-    const idx = estoqueAtual.findIndex(t => String(t.id) === String(original.id));
+    const idx = estoqueAtual.findIndex(t => 
+        String(t.id || t.firebaseKey || t.key) === String(originalId) ||
+        (original.id && String(t.id) === String(original.id)) ||
+        (original.firebaseKey && String(t.firebaseKey) === String(original.firebaseKey))
+    );
     const estoqueAtualizadoLocal = estoqueAtual.slice();
-    if (idx >= 0) estoqueAtualizadoLocal[idx] = atualizado;
+    if (idx >= 0) {
+        estoqueAtualizadoLocal[idx] = atualizado;
+    } else {
+        estoqueAtualizadoLocal.push(atualizado);
+    }
 
-    const movIdx = movimentacoes.findIndex(m => String(m.toraId) === String(original.id) && String(m.tipo || '').toLowerCase() === 'entrada');
+    const movIdx = movimentacoes.findIndex(m => 
+        (String(m.toraId) === String(originalId) || (original.id && String(m.toraId) === String(original.id))) && 
+        String(m.tipo || '').toLowerCase() === 'entrada'
+    );
     const movimentacoesAtualizadasLocal = movimentacoes.slice();
     let movimentacaoAtualizada = null;
     if (movIdx >= 0) {
@@ -2237,7 +2241,7 @@ async function atualizarToraEditada() {
 
     try {
         showLoading('Atualizando tora...');
-        const updates = { [`estoqueTorasAtual/${atualizado.id}`]: atualizado };
+        const updates = { [`estoqueTorasAtual/${finalId}`]: atualizado };
         if (movimentacaoAtualizada && movimentacaoAtualizada.id) {
             updates[`movimentacoesToras/${movimentacaoAtualizada.id}`] = movimentacaoAtualizada;
         }
@@ -2245,7 +2249,7 @@ async function atualizarToraEditada() {
         if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
             await window.firebaseService.updatePaths(updates);
         } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            await window.firebaseService.saveToFirebase('estoqueTorasAtual', String(atualizado.id), atualizado);
+            await window.firebaseService.saveToFirebase('estoqueTorasAtual', String(finalId), atualizado);
             if (movimentacaoAtualizada && movimentacaoAtualizada.id) {
                 await window.firebaseService.saveToFirebase('movimentacoesToras', String(movimentacaoAtualizada.id), movimentacaoAtualizada);
             }
@@ -2449,20 +2453,20 @@ function getEntradaColumnsDefs() {
         { key: 'plaqueta', label: 'Plaqueta' },
         { key: 'custodia', label: 'Custódia' },
         { key: 'especie', label: 'Espécie' },
-        { key: 'diametro', label: 'Rodo' },
-        { key: 'comprimento', label: 'Comprimento' },
-        { key: 'oco1', label: 'Oco 1' },
-        { key: 'oco2', label: 'Oco 2' },
-        { key: 'desconto', label: 'Desconto' },
-        { key: 'volumeLiquido', label: 'M³ Líquido' },
-        { key: 'compGeo', label: 'Comp. Geo.' },
-        { key: 'x1', label: 'X1' },
-        { key: 'x2', label: 'X2' },
-        { key: 'x3', label: 'X3' },
-        { key: 'x4', label: 'X4' },
-        { key: 'volumeGeo', label: 'V. Geo.' },
-        { key: 'preco', label: 'Preço' },
-        { key: 'valor', label: 'Valor' }
+        { key: 'diametro', label: 'Rodo', align: 'text-center' },
+        { key: 'comprimento', label: 'Comprimento', align: 'text-center' },
+        { key: 'oco1', label: 'Oco 1', align: 'text-center' },
+        { key: 'oco2', label: 'Oco 2', align: 'text-center' },
+        { key: 'desconto', label: 'Desconto', align: 'text-center' },
+        { key: 'volumeLiquido', label: 'M³ Líquido', align: 'text-right' },
+        { key: 'compGeo', label: 'Comp. Geo.', align: 'text-center' },
+        { key: 'x1', label: 'X1', align: 'text-center' },
+        { key: 'x2', label: 'X2', align: 'text-center' },
+        { key: 'x3', label: 'X3', align: 'text-center' },
+        { key: 'x4', label: 'X4', align: 'text-center' },
+        { key: 'volumeGeo', label: 'V. Geo.', align: 'text-right' },
+        { key: 'preco', label: 'Preço', align: 'text-right' },
+        { key: 'valor', label: 'Valor', align: 'text-right' }
     ];
 }
 
@@ -3360,7 +3364,12 @@ function ordenarEntrada(coluna) {
 
 // --- Registrar Entrada (Final) ---
 async function registrarEntrada(event) {
-    event.preventDefault();
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+
+    if (toraEmEdicao) {
+        await atualizarToraEditada();
+        return;
+    }
 
     if (itensEntrada.length === 0) {
         alert('Adicione itens à lista antes de salvar.');
@@ -5051,8 +5060,9 @@ function mudarPaginaEstoque(p) {
 }
 
 async function editarTora(toraId) {
-    const tora = estoqueAtual.find(t => String(t.id) === String(toraId));
+    const tora = (estoqueAtual || []).find(t => t && (String(t.id) === String(toraId) || String(t.firebaseKey) === String(toraId) || String(t.key) === String(toraId)));
     if (!tora) return;
+    tora.id = tora.id || tora.firebaseKey || tora.key || toraId;
     if ((!especiesEntradaCarregadas || especiesEntradaCadastradas.length === 0) && !especiesEntradaErroCarga) {
         await carregarEspeciesEntrada();
     }

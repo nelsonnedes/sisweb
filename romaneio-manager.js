@@ -339,7 +339,7 @@ class RomaneioManager {
         this.currentFilter = '';
         this.currentPage = 1;
         
-        modal.style.display = 'block';
+        modal.style.display = 'flex';
 
         // Inicializar redimensionamento de colunas e altura de linhas
         const table = modal.querySelector('table');
@@ -561,7 +561,7 @@ class RomaneioManager {
             modal = document.createElement('div');
             modal.id = this.modalId;
             modal.className = 'modal';
-            modal.style.cssText = 'display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(2px);';
+            modal.style.cssText = 'display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(2px); align-items: center; justify-content: center;';
             
             modal.innerHTML = `
                 <div class="modal-content">

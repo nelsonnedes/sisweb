@@ -314,7 +314,7 @@
             localStorage.setItem(rowHeightStorageKey(p), valid);
         } catch (_) {}
 
-        var targets = [];
+        var targets = [document.body];
         if (tableOrContainer) {
             targets.push(tableOrContainer);
             if (tableOrContainer.closest) {
@@ -330,7 +330,7 @@
         }
         
         // Também buscar os modais ativos no DOM
-        ['listaModal', 'romaneioListModal'].forEach(function(id) {
+        ['listaModal', 'romaneioListModal', 'clientListModal', 'speciesListModal', 'fornecedorListModal'].forEach(function(id) {
             var el = document.getElementById(id);
             if (el) {
                 targets.push(el);
@@ -403,26 +403,68 @@
         style.id = 'rlc-styles';
         style.textContent = `
             /* === PADRONIZAÇÃO DIMENSIONAL DOS 5 MODAIS DE LISTAGEM DE ROMANEIOS === */
+            /* 1. O overlay do modal fica fixo, centralizado e sem scroll na tela externa */
+            #listaModal,
+            #romaneioListModal,
+            #clientListModal,
+            #speciesListModal,
+            #fornecedorListModal,
+            div[id*="romaneioModal"] {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                overflow: hidden !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-sizing: border-box !important;
+                z-index: 9999990 !important;
+            }
+
+            #listaModal[style*="display: block"],
+            #romaneioListModal[style*="display: block"],
+            #clientListModal[style*="display: block"],
+            #speciesListModal[style*="display: block"],
+            #fornecedorListModal[style*="display: block"],
+            div[id*="romaneioModal"][style*="display: block"],
+            #listaModal.active,
+            #romaneioListModal.active {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            /* 2. O conteúdo do modal fica perfeitamente estático e enquadrado */
             #listaModal .modal-content,
             #romaneioListModal .modal-content,
+            #clientListModal .modal-content,
+            #speciesListModal .modal-content,
+            #fornecedorListModal .modal-content,
             div[id*="romaneioModal"] .modal-content {
                 width: 95% !important;
                 max-width: 1200px !important;
-                height: min(88vh, 720px) !important;
-                min-height: min(560px, calc(100vh - 140px)) !important;
-                max-height: calc(100vh - 110px) !important;
+                height: calc(100vh - 48px) !important;
+                max-height: 760px !important;
+                min-height: 380px !important;
                 display: flex !important;
                 flex-direction: column !important;
-                margin: 2.5vh auto !important;
+                margin: 0 auto !important;
                 border-radius: 8px !important;
                 background: #ffffff !important;
                 box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28) !important;
                 overflow: hidden !important;
                 box-sizing: border-box !important;
+                position: relative !important;
             }
 
             #listaModal .modal-header,
             #romaneioListModal .modal-header,
+            #clientListModal .modal-header,
+            #speciesListModal .modal-header,
+            #fornecedorListModal .modal-header,
             div[id*="romaneioModal"] .modal-header {
                 flex: 0 0 auto !important;
                 height: 52px !important;
@@ -545,6 +587,7 @@
             /* === ALTURAS DE LINHA / DENSIDADE (COM FORÇA MÁXIMA !IMPORTANT) === */
             /* 1. COMPACTA */
             body .rlc-density-compact table tbody tr td,
+            body.rlc-density-compact table tbody tr td,
             body table.rlc-density-compact tbody tr td,
             body .modal.rlc-density-compact table tbody tr td,
             body .modal-content.rlc-density-compact table tbody tr td,
@@ -560,6 +603,7 @@
             body #clientListModal.rlc-density-compact .table tbody td,
             body #speciesListModal.rlc-density-compact .table tbody td,
             body #fornecedorListModal.rlc-density-compact .table tbody td,
+            body.rlc-density-compact td,
             body .rlc-density-compact td {
                 padding: 2px 6px !important;
                 font-size: 11.5px !important;
@@ -567,6 +611,7 @@
                 height: 28px !important;
                 max-height: 30px !important;
             }
+            body.rlc-density-compact tr,
             body .rlc-density-compact tr,
             body .rlc-density-compact tbody tr,
             body #listaModal.rlc-density-compact tr,
@@ -704,6 +749,7 @@
 
             /* 3. CONFORTÁVEL */
             body .rlc-density-comfortable table tbody tr td,
+            body.rlc-density-comfortable table tbody tr td,
             body table.rlc-density-comfortable tbody tr td,
             body .modal.rlc-density-comfortable table tbody tr td,
             body .modal-content.rlc-density-comfortable table tbody tr td,
@@ -719,12 +765,14 @@
             body #clientListModal.rlc-density-comfortable .table tbody td,
             body #speciesListModal.rlc-density-comfortable .table tbody td,
             body #fornecedorListModal.rlc-density-comfortable .table tbody td,
+            body.rlc-density-comfortable td,
             body .rlc-density-comfortable td {
                 padding: 16px 12px !important;
                 font-size: 14.5px !important;
                 line-height: 1.55 !important;
                 height: 58px !important;
             }
+            body.rlc-density-comfortable tr,
             body .rlc-density-comfortable tr,
             body .rlc-density-comfortable tbody tr,
             body #listaModal.rlc-density-comfortable tr,
