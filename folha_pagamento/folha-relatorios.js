@@ -2156,9 +2156,15 @@ class FolhaRelatorios {
                         document.head.appendChild(styleTag);
                     }
                     var margin = orient === 'landscape' ? '8mm' : '10mm';
+                    var widthMm = orient === 'landscape' ? '297mm' : '210mm';
+                    var minHeightMm = orient === 'landscape' ? '210mm' : '297mm';
+                    var paddingMm = orient === 'landscape' ? '10mm' : '12mm';
+                    var pageW = orient === 'landscape' ? 1122 : 793;
+                    
                     styleTag.innerHTML = '@page { size: A4 ' + orient + ' !important; margin: ' + margin + ' !important; }' +
-                        'html { --relatorio-page-width-px: ' + (orient === 'landscape' ? 1122 : 793) + '; --relatorio-print-margin: ' + margin + '; }' +
-                        'html, body, .relatorio-container { width: 100% !important; max-width: 100% !important; }';
+                        'html { --relatorio-page-width-px: ' + pageW + '; --relatorio-print-margin: ' + margin + '; }' +
+                        '@media screen { .relatorio-container { width: ' + widthMm + ' !important; min-height: ' + minHeightMm + ' !important; padding: ' + paddingMm + ' !important; } }' +
+                        '@media print { .relatorio-container { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; } }';
                     
                     var btnP = document.getElementById('btnOrientPortrait');
                     var btnL = document.getElementById('btnOrientLandscape');
@@ -2911,7 +2917,49 @@ class FolhaRelatorios {
                 text-align: center;
             }
             
+            @media screen {
+                body {
+                    background-color: #f1f5f9;
+                    margin: 0;
+                    padding: 16px;
+                    box-sizing: border-box;
+                }
+                .print-control-bar {
+                    max-width: 1100px;
+                    margin: 0 auto 16px auto;
+                }
+                html[data-print-orientation="portrait"] .relatorio-container {
+                    width: 210mm;
+                    max-width: 100%;
+                    min-height: 297mm;
+                    margin: 0 auto 24px auto;
+                    background: #ffffff;
+                    padding: 12mm;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+                    border-radius: 4px;
+                    box-sizing: border-box;
+                    transition: width 0.25s ease, min-height 0.25s ease, padding 0.25s ease;
+                }
+                html[data-print-orientation="landscape"] .relatorio-container {
+                    width: 297mm;
+                    max-width: 100%;
+                    min-height: 210mm;
+                    margin: 0 auto 24px auto;
+                    background: #ffffff;
+                    padding: 10mm;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+                    border-radius: 4px;
+                    box-sizing: border-box;
+                    transition: width 0.25s ease, min-height 0.25s ease, padding 0.25s ease;
+                }
+            }
+            
             @media print {
+                html, body {
+                    background: transparent !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
                 .print-control-bar { display: none !important; margin: 0 !important; padding: 0 !important; }
                 * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box !important; }
                 ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
@@ -2926,6 +2974,9 @@ class FolhaRelatorios {
                     margin: 0 !important;
                     width: 100% !important;
                     max-width: 100% !important;
+                    box-shadow: none !important;
+                    border: none !important;
+                    background: transparent !important;
                 }
 
                 .relatorio-container .relatorio-table:not(.bh-extrato-table),
@@ -2950,7 +3001,35 @@ class FolhaRelatorios {
 
                 .relatorio-table tr,
                 .data-table tr,
-                .detalhes-table tr { break-inside: avoid; page-break-inside: avoid; }
+                .detalhes-table tr,
+                tr, tbody { break-inside: avoid !important; page-break-inside: avoid !important; }
+
+                .summary-cards,
+                .summary-grid,
+                .cards-grid {
+                    display: flex !important;
+                    flex-wrap: wrap !important;
+                    gap: 8px !important;
+                    break-inside: avoid !important;
+                    page-break-inside: avoid !important;
+                }
+
+                .summary-card,
+                .summary-item,
+                .info-box,
+                .card,
+                .total-card,
+                .header,
+                .title,
+                .subtitle,
+                .summary-box,
+                .relatorio-footer,
+                .trct-container > div,
+                .relatorio-container > div {
+                    break-inside: avoid !important;
+                    page-break-inside: avoid !important;
+                    -webkit-column-break-inside: avoid !important;
+                }
 
                 .relatorio-table th,
                 .data-table th,
@@ -2991,13 +3070,6 @@ class FolhaRelatorios {
                 .relatorio-container .detalhes-table .total-row td:first-child {
                     white-space: normal;
                 }
-
-                .header,
-                .title,
-                .subtitle,
-                .summary-cards,
-                .summary-box,
-                .relatorio-footer { break-inside: avoid; page-break-inside: avoid; }
 
                 ${pageRule}
             }
