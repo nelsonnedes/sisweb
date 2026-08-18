@@ -2141,12 +2141,37 @@ class FolhaRelatorios {
             function isLandscapeNow() {
                 try {
                     var forced = String(document.documentElement.getAttribute('data-print-orientation') || '').toLowerCase();
-                    if (!emImpressao && forced === 'landscape') return true;
-                    if (!emImpressao && forced === 'portrait') return false;
+                    if (forced === 'landscape') return true;
+                    if (forced === 'portrait') return false;
                     return !!(window.matchMedia && window.matchMedia('(orientation: landscape)').matches);
                 } catch (e) {}
                 return false;
             }
+
+            window.trocarOrientacao = function(nova) {
+                try {
+                    var orient = (String(nova || '').toLowerCase() === 'landscape') ? 'landscape' : 'portrait';
+                    document.documentElement.setAttribute('data-print-orientation', orient);
+                    var styleTag = document.getElementById('dynamic-orientation-override');
+                    if (!styleTag) {
+                        styleTag = document.createElement('style');
+                        styleTag.id = 'dynamic-orientation-override';
+                        document.head.appendChild(styleTag);
+                    }
+                    var margin = orient === 'landscape' ? '8mm' : '10mm';
+                    styleTag.innerHTML = '@page { size: A4 ' + orient + ' !important; margin: ' + margin + ' !important; }' +
+                        'html { --relatorio-page-width-px: ' + (orient === 'landscape' ? 1122 : 793) + '; --relatorio-print-margin: ' + margin + '; }' +
+                        'html, body, .relatorio-container { width: 100% !important; max-width: 100% !important; }';
+                    
+                    var btnP = document.getElementById('btnOrientPortrait');
+                    var btnL = document.getElementById('btnOrientLandscape');
+                    if (btnP) btnP.className = 'btn-print-action btn-orient' + (orient === 'portrait' ? ' active' : '');
+                    if (btnL) btnL.className = 'btn-print-action btn-orient' + (orient === 'landscape' ? ' active' : '');
+                    scheduleFit();
+                } catch (e) {
+                    console.warn('Erro ao trocar orientação:', e);
+                }
+            };
 
             function marginToPx(fallback) {
                 try {
@@ -2185,14 +2210,14 @@ class FolhaRelatorios {
 
             function calcularFonteParaLargura(root, landscape) {
                 var pageW = getPageWidth(landscape);
-                var marginPx = marginToPx(landscape ? 34 : 45);
-                var disponivelW = Math.max(1, pageW - marginPx * 2 - 2);
+                var marginPx = marginToPx(landscape ? 30 : 38);
+                var disponivelW = Math.max(1, pageW - marginPx * 2 - 4);
                 setRootVar('--fs', '1');
                 var width = measureReportWidth(root);
                 if (!width || !disponivelW) return 1;
                 var escalaW = disponivelW / width;
                 if (adaptativo && escalaW < 1) {
-                    return Math.max(0.72, Math.min(1, escalaW - 0.02));
+                    return Math.max(0.68, Math.min(1, escalaW - 0.02));
                 }
                 return 1;
             }
@@ -2201,6 +2226,7 @@ class FolhaRelatorios {
                 try {
                     var root = document.querySelector('.relatorio-container') || document.body;
                     if (!root) return;
+                    var landscape = isLandscapeNow();
                     var portraitFs = calcularFonteParaLargura(root, false);
                     var landscapeFs = calcularFonteParaLargura(root, true);
                     setRootVar('--fs-portrait', portraitFs.toFixed(3));
@@ -2208,7 +2234,7 @@ class FolhaRelatorios {
                     if (emImpressao) {
                         removeRootVar('--fs');
                     } else {
-                        setRootVar('--fs', (isLandscapeNow() ? landscapeFs : portraitFs).toFixed(3));
+                        setRootVar('--fs', (landscape ? landscapeFs : portraitFs).toFixed(3));
                     }
                 } catch (e) {}
             }
@@ -2246,7 +2272,26 @@ class FolhaRelatorios {
                 setRootVar('--fs-landscape', '1');
             }
 
+            function injectControlBar() {
+                try {
+                    if (document.querySelector('.print-control-bar')) return;
+                    var currentOrient = isLandscapeNow() ? 'landscape' : 'portrait';
+                    var bar = document.createElement('div');
+                    bar.className = 'print-control-bar';
+                    bar.innerHTML = '<div class="print-bar-brand"><i class="fas fa-file-invoice"></i> <strong>SisWeb</strong> &bull; Visualização de Impressão</div>' +
+                        '<div class="print-bar-actions">' +
+                        '<button type="button" class="btn-print-action btn-print-primary" onclick="window.focus(); window.print();"><i class="fas fa-print"></i> Imprimir / Salvar PDF</button>' +
+                        '<button type="button" id="btnOrientPortrait" class="btn-print-action btn-orient' + (currentOrient === 'portrait' ? ' active' : '') + '" onclick="window.trocarOrientacao(\\'portrait\\');"><i class="fas fa-file"></i> Retrato</button>' +
+                        '<button type="button" id="btnOrientLandscape" class="btn-print-action btn-orient' + (currentOrient === 'landscape' ? ' active' : '') + '" onclick="window.trocarOrientacao(\\'landscape\\');"><i class="fas fa-file-alt"></i> Paisagem</button>' +
+                        '<button type="button" class="btn-print-action btn-print-close" onclick="window.close();"><i class="fas fa-times"></i> Fechar</button>' +
+                        '</div>';
+                    document.body.insertBefore(bar, document.body.firstChild);
+                } catch (e) {}
+            }
+
             try {
+                window.addEventListener('DOMContentLoaded', injectControlBar);
+                window.addEventListener('load', injectControlBar);
                 window.addEventListener('beforeprint', onBeforePrint);
                 window.addEventListener('afterprint', onAfterPrint);
                 window.addEventListener('resize', function(){ if (emImpressao) scheduleFit(); else ajustarFonteRelatorio(); });
@@ -2257,9 +2302,11 @@ class FolhaRelatorios {
                     printMq.addEventListener('change', function(e){ if (e.matches) onBeforePrint(); else onAfterPrint(); });
                 }
             } catch(e){}
+            setTimeout(injectControlBar, 30);
             setTimeout(ajustarFonteRelatorio, 80);
             ${autoPrint ? `
             window.onload = function() {
+                injectControlBar();
                 setTimeout(function() {
                     try { window.focus(); } catch(e) {}
                     onBeforePrint();
@@ -2770,18 +2817,125 @@ class FolhaRelatorios {
                 text-align: center;
                 color: #666;
                 font-size: 12px;
+            .print-control-bar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: #0d2339;
+                color: #ffffff;
+                padding: 10px 18px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            }
+            .print-bar-brand { font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+            .print-bar-actions { display: flex; align-items: center; gap: 8px; }
+            .btn-print-action {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                font-size: 12px;
+                font-weight: 600;
+                border-radius: 6px;
+                border: 1px solid transparent;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-family: inherit;
+            }
+            .btn-print-primary { background: #10b981; color: #fff; border-color: #059669; }
+            .btn-print-primary:hover { background: #059669; }
+            .btn-orient { background: #1e293b; color: #cbd5e1; border-color: #334155; }
+            .btn-orient:hover { background: #334155; color: #fff; }
+            .btn-orient.active { background: #3b82f6; color: #fff; border-color: #2563eb; font-weight: bold; }
+            .btn-print-close { background: #475569; color: #fff; }
+            .btn-print-close:hover { background: #ef4444; }
+
+            .rescisao-table-wrapper {
+                width: 100%;
+                overflow: visible !important;
+                margin: 0;
+                padding: 0;
+            }
+
+            .rescisao-consolidada-table {
+                width: 100% !important;
+                max-width: 100% !important;
+                table-layout: fixed !important;
+                border-collapse: collapse;
+            }
+
+            .rescisao-consolidada-table th,
+            .rescisao-consolidada-table td {
+                box-sizing: border-box;
+                padding: 4px 5px !important;
+                font-size: 10px !important;
+                line-height: 1.15;
+            }
+
+            .rescisao-consolidada-table th {
+                background: #0d2339 !important;
+                color: #ffffff !important;
+                font-weight: 600;
+                text-align: right;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .rescisao-consolidada-table th:first-child,
+            .rescisao-consolidada-table th:nth-child(2) {
+                text-align: left;
+                white-space: normal;
+            }
+
+            .rescisao-consolidada-table th:nth-child(3) {
+                text-align: center;
+            }
+
+            .rescisao-consolidada-table td {
+                text-align: right;
+                font-variant-numeric: tabular-nums;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .rescisao-consolidada-table td:first-child,
+            .rescisao-consolidada-table td:nth-child(2) {
+                text-align: left;
+                white-space: normal;
+                word-break: break-word;
+            }
+
+            .rescisao-consolidada-table td:nth-child(3) {
+                text-align: center;
             }
             
             @media print {
-                .relatorio-container {
-                    padding: 0;
+                .print-control-bar { display: none !important; margin: 0 !important; padding: 0 !important; }
+                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box !important; }
+                ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+                body, html, .relatorio-container, .relatorio-container div, .relatorio-container table, .rescisao-table-wrapper {
+                    overflow: visible !important;
+                    overflow-x: visible !important;
+                    overflow-y: visible !important;
                 }
-                .relatorio-container { overflow: visible; max-width: 100%; }
+
+                .relatorio-container {
+                    padding: 0 !important;
+                    margin: 0 !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                }
 
                 .relatorio-container .relatorio-table:not(.bh-extrato-table),
                 .relatorio-container .data-table:not(.bh-extrato-table),
                 .relatorio-container .detalhes-table:not(.bh-extrato-table) {
-                    table-layout: auto;
+                    table-layout: fixed;
+                    width: 100% !important;
+                    max-width: 100% !important;
                 }
 
                 .relatorio-table th, .relatorio-table td,
@@ -2804,16 +2958,16 @@ class FolhaRelatorios {
                 .data-table th,
                 .detalhes-table th {
                     position: static;
-                    font-size: clamp(10px, calc(14px * var(--fs, 1)), 14px);
-                    padding: clamp(5px, calc(12px * var(--fs, 1)), 12px);
+                    font-size: clamp(9px, calc(13px * var(--fs, 1)), 13px);
+                    padding: clamp(4px, calc(10px * var(--fs, 1)), 10px);
                     white-space: nowrap;
                 }
 
                 .relatorio-table td,
                 .data-table td,
                 .detalhes-table td {
-                    font-size: clamp(9px, calc(13px * var(--fs, 1)), 13px);
-                    padding: clamp(4px, calc(10px * var(--fs, 1)), 10px) clamp(5px, calc(12px * var(--fs, 1)), 12px);
+                    font-size: clamp(8px, calc(12px * var(--fs, 1)), 12px);
+                    padding: clamp(3px, calc(8px * var(--fs, 1)), 8px) clamp(4px, calc(10px * var(--fs, 1)), 10px);
                     white-space: nowrap;
                 }
 
@@ -2827,8 +2981,8 @@ class FolhaRelatorios {
                     overflow: visible;
                     text-overflow: clip;
                     white-space: nowrap;
-                    font-size: clamp(8px, calc(12px * var(--fs, 1)), 12px);
-                    padding: clamp(4px, calc(8px * var(--fs, 1)), 8px) clamp(5px, calc(10px * var(--fs, 1)), 10px);
+                    font-size: clamp(8px, calc(11px * var(--fs, 1)), 11px);
+                    padding: clamp(3px, calc(7px * var(--fs, 1)), 7px) clamp(4px, calc(8px * var(--fs, 1)), 8px);
                 }
 
                 .relatorio-container .relatorio-table tfoot td:first-child,
@@ -2838,25 +2992,6 @@ class FolhaRelatorios {
                 .relatorio-container .data-table .total-row td:first-child,
                 .relatorio-container .detalhes-table .total-row td:first-child {
                     white-space: normal;
-                }
-
-                .relatorio-container .bh-extrato-table th {
-                    font-size: clamp(8px, calc(11px * var(--fs, 1)), 11px);
-                    padding: clamp(4px, calc(7px * var(--fs, 1)), 7px) clamp(3px, calc(5px * var(--fs, 1)), 5px);
-                    white-space: normal;
-                    line-height: 1.12;
-                }
-
-                .relatorio-container .bh-extrato-table td {
-                    font-size: clamp(8px, calc(10px * var(--fs, 1)), 10px);
-                    padding: clamp(3px, calc(6px * var(--fs, 1)), 6px) clamp(3px, calc(5px * var(--fs, 1)), 5px);
-                }
-
-                .relatorio-container .bh-extrato-table td:nth-child(1),
-                .relatorio-container .bh-extrato-table td:nth-child(2),
-                .relatorio-container .bh-extrato-table td:nth-child(4) {
-                    white-space: normal;
-                    overflow-wrap: anywhere;
                 }
 
                 .header,
@@ -5848,94 +5983,110 @@ class FolhaRelatorios {
         const header = await this.gerarCabecalhoRelatorio('RELATÓRIO CONSOLIDADO DE PROVISÃO DE RESCISÃO DETALHADA', this.formatarPeriodo(dataInicio, dataFim));
 
         const linhasHtml = dadosCalculados.map((d) => `
-            <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
-                <td style="padding: 6px 8px; font-weight: 600; color: #0f172a; white-space: nowrap;">${d.nome}</td>
-                <td style="padding: 6px 8px; color: #475569; white-space: nowrap;">${d.cargo}</td>
-                <td style="padding: 6px 8px; text-align: center; color: #64748b; white-space: nowrap;">${d.admissaoTxt}</td>
-                <td style="padding: 6px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(d.salarioBase)}</td>
-                <td style="padding: 6px 8px; text-align: right; white-space: nowrap;" title="Faltas: ${d.diasFaltas}d">${this._formatCurrency(d.valorSaldoSalario)}</td>
-                <td style="padding: 6px 8px; text-align: right; white-space: nowrap;" title="${d.diasAvisoPrevio} dias">${this._formatCurrency(d.valorAvisoPrevio)}</td>
-                <td style="padding: 6px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(d.total13Salario)}</td>
-                <td style="padding: 6px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(d.totalFerias)}</td>
-                <td style="padding: 6px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(d.totalAdicionais)}</td>
-                <td style="padding: 6px 8px; text-align: right; font-weight: 600; color: #0d2339; white-space: nowrap;">${this._formatCurrency(d.totalProventos)}</td>
-                <td style="padding: 6px 8px; text-align: right; color: #dc2626; white-space: nowrap;" title="INSS, IRRF, Vales, Faltas">-${this._formatCurrency(d.totalDescontos)}</td>
-                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #047857; background: #f0fdf4; white-space: nowrap;">${this._formatCurrency(d.valorLiquido)}</td>
-                <td style="padding: 6px 8px; text-align: right; color: #b45309; white-space: nowrap;">${this._formatCurrency(d.multaFgts)}</td>
-                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #1e293b; white-space: nowrap;">${this._formatCurrency(d.custoTotalEmpresa)}</td>
+            <tr style="border-bottom: 1px solid #e2e8f0; font-size: 10px;">
+                <td style="font-weight: 600; color: #0f172a;">${d.nome}</td>
+                <td style="color: #475569;">${d.cargo}</td>
+                <td style="text-align: center; color: #64748b;">${d.admissaoTxt}</td>
+                <td style="text-align: right;">${this._formatCurrency(d.salarioBase)}</td>
+                <td style="text-align: right;" title="Faltas: ${d.diasFaltas}d">${this._formatCurrency(d.valorSaldoSalario)}</td>
+                <td style="text-align: right;" title="${d.diasAvisoPrevio} dias">${this._formatCurrency(d.valorAvisoPrevio)}</td>
+                <td style="text-align: right;">${this._formatCurrency(d.total13Salario)}</td>
+                <td style="text-align: right;">${this._formatCurrency(d.totalFerias)}</td>
+                <td style="text-align: right;">${this._formatCurrency(d.totalAdicionais)}</td>
+                <td style="text-align: right; font-weight: 600; color: #0d2339;">${this._formatCurrency(d.totalProventos)}</td>
+                <td style="text-align: right; color: #dc2626;" title="INSS, IRRF, Vales, Faltas">-${this._formatCurrency(d.totalDescontos)}</td>
+                <td style="text-align: right; font-weight: 700; color: #047857; background: #f0fdf4;">${this._formatCurrency(d.valorLiquido)}</td>
+                <td style="text-align: right; color: #b45309;">${this._formatCurrency(d.multaFgts)}</td>
+                <td style="text-align: right; font-weight: 700; color: #1e293b;">${this._formatCurrency(d.custoTotalEmpresa)}</td>
             </tr>
         `).join('');
 
         return `
-            <div class="relatorio-container" style="max-width: 100%; font-family: 'Segoe UI', Arial, sans-serif;">
+            <div class="relatorio-container" style="width: 100%; max-width: 100%; font-family: 'Segoe UI', Arial, sans-serif;">
                 ${header}
 
                 <!-- CARDS EXECUTIVOS DE PROVISÃO -->
-                <div class="summary-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 16px 0 20px 0;">
+                <div class="summary-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 14px 0 18px 0;">
                     <div class="summary-card info" style="background: #f8fafc; border-left: 4px solid #0284c7; padding: 10px 14px; border-radius: 6px;">
                         <h4 style="font-size: 11px; color: #475569; margin: 0 0 4px 0; text-transform: uppercase;">Colaboradores</h4>
                         <p style="font-size: 20px; font-weight: bold; margin: 0; color: #0284c7;">${dadosCalculados.length}</p>
                     </div>
                     <div class="summary-card" style="background: #f8fafc; border-left: 4px solid #0d2339; padding: 10px 14px; border-radius: 6px;">
                         <h4 style="font-size: 11px; color: #475569; margin: 0 0 4px 0; text-transform: uppercase;">Provisão Bruta</h4>
-                        <p style="font-size: 18px; font-weight: bold; margin: 0; color: #0d2339;">${this._formatCurrency(totalProventosGeral)}</p>
+                        <p style="font-size: 17px; font-weight: bold; margin: 0; color: #0d2339;">${this._formatCurrency(totalProventosGeral)}</p>
                     </div>
                     <div class="summary-card" style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 10px 14px; border-radius: 6px;">
                         <h4 style="font-size: 11px; color: #991b1b; margin: 0 0 4px 0; text-transform: uppercase;">Total Deduções</h4>
-                        <p style="font-size: 18px; font-weight: bold; margin: 0; color: #dc2626;">-${this._formatCurrency(totalDescontosGeral)}</p>
+                        <p style="font-size: 17px; font-weight: bold; margin: 0; color: #dc2626;">-${this._formatCurrency(totalDescontosGeral)}</p>
                     </div>
                     <div class="summary-card success" style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 10px 14px; border-radius: 6px;">
                         <h4 style="font-size: 11px; color: #065f46; margin: 0 0 4px 0; text-transform: uppercase;">Provisão Líquida (A Pagar)</h4>
-                        <p style="font-size: 18px; font-weight: 800; margin: 0; color: #047857;">${this._formatCurrency(totalLiquidoGeral)}</p>
+                        <p style="font-size: 17px; font-weight: 800; margin: 0; color: #047857;">${this._formatCurrency(totalLiquidoGeral)}</p>
                     </div>
                     <div class="summary-card warning" style="background: #fefce8; border-left: 4px solid #eab308; padding: 10px 14px; border-radius: 6px;">
                         <h4 style="font-size: 11px; color: #854d0e; margin: 0 0 4px 0; text-transform: uppercase;">Multa FGTS 40%</h4>
-                        <p style="font-size: 18px; font-weight: bold; margin: 0; color: #b45309;">${this._formatCurrency(totalMultaFgtsGeral)}</p>
+                        <p style="font-size: 17px; font-weight: bold; margin: 0; color: #b45309;">${this._formatCurrency(totalMultaFgtsGeral)}</p>
                     </div>
                     <div class="summary-card" style="background: #f1f5f9; border-left: 4px solid #334155; padding: 10px 14px; border-radius: 6px;">
                         <h4 style="font-size: 11px; color: #334155; margin: 0 0 4px 0; text-transform: uppercase;">Custo Total Empresa</h4>
-                        <p style="font-size: 18px; font-weight: 800; margin: 0; color: #0f172a;">${this._formatCurrency(totalCustoEmpresaGeral)}</p>
+                        <p style="font-size: 17px; font-weight: 800; margin: 0; color: #0f172a;">${this._formatCurrency(totalCustoEmpresaGeral)}</p>
                     </div>
                 </div>
 
-                <!-- TABELA ANALÍTICA DE PROVISÃO -->
-                <div style="overflow-x: auto; border: 1px solid #cbd5e1; border-radius: 6px;">
-                    <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                <!-- TABELA ANALÍTICA DE PROVISÃO (RESPONSIVA E SEM SCROLLBAR NO PRINT/PDF) -->
+                <div class="rescisao-table-wrapper" style="width: 100%; overflow: visible; border: 1px solid #cbd5e1; border-radius: 6px;">
+                    <table class="data-table rescisao-consolidada-table" style="width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed;">
+                        <colgroup>
+                            <col style="width: 13%;">
+                            <col style="width: 9%;">
+                            <col style="width: 6%;">
+                            <col style="width: 6.5%;">
+                            <col style="width: 6.5%;">
+                            <col style="width: 6.5%;">
+                            <col style="width: 6.5%;">
+                            <col style="width: 7%;">
+                            <col style="width: 6%;">
+                            <col style="width: 7.5%;">
+                            <col style="width: 7%;">
+                            <col style="width: 8%;">
+                            <col style="width: 6.5%;">
+                            <col style="width: 8%;">
+                        </colgroup>
                         <thead>
-                            <tr style="background: #0d2339; color: #ffffff; text-align: left;">
-                                <th style="padding: 8px 8px; white-space: nowrap;">Funcionário</th>
-                                <th style="padding: 8px 8px; white-space: nowrap;">Cargo</th>
-                                <th style="padding: 8px 8px; text-align: center; white-space: nowrap;">Admissão</th>
-                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Salário Base</th>
-                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Saldo Salário</th>
-                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Aviso Prévio</th>
-                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">13º Salário</th>
-                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Férias + 1/3</th>
-                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Adicionais</th>
-                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Total Bruto</th>
-                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Deduções</th>
-                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap; background: #065f46;">Líquido a Pagar</th>
-                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Multa FGTS (40%)</th>
-                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Custo Empresa</th>
+                            <tr style="background: #0d2339; color: #ffffff;">
+                                <th>Funcionário</th>
+                                <th>Cargo</th>
+                                <th>Admissão</th>
+                                <th>Salário Base</th>
+                                <th>Saldo Salário</th>
+                                <th>Aviso Prévio</th>
+                                <th>13º Salário</th>
+                                <th>Férias + 1/3</th>
+                                <th>Adicionais</th>
+                                <th>Total Bruto</th>
+                                <th>Deduções</th>
+                                <th style="background: #065f46 !important;">Líquido a Pagar</th>
+                                <th>Multa FGTS (40%)</th>
+                                <th>Custo Empresa</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${linhasHtml || '<tr><td colspan="14" style="text-align:center; padding: 16px;">Nenhum funcionário encontrado para o período.</td></tr>'}
                         </tbody>
                         <tfoot>
-                            <tr style="background: #0d2339; color: #ffffff; font-weight: bold; font-size: 11px;">
-                                <td colspan="3" style="padding: 8px 8px; text-align: left;">TOTAL GERAL CONSOLIDADO:</td>
-                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(totalSalarioBase)}</td>
-                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(totalSaldoSalario)}</td>
-                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(totalAvisoPrevio)}</td>
-                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(total13Salario)}</td>
-                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(totalFeriasGeral)}</td>
-                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(totalAdicionaisGeral)}</td>
-                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(totalProventosGeral)}</td>
-                                <td style="padding: 8px 8px; text-align: right; color: #fca5a5; white-space: nowrap;">-${this._formatCurrency(totalDescontosGeral)}</td>
-                                <td style="padding: 8px 8px; text-align: right; background: #047857; color: #ffffff; white-space: nowrap; font-size: 12px;">${this._formatCurrency(totalLiquidoGeral)}</td>
-                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(totalMultaFgtsGeral)}</td>
-                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap; font-size: 12px;">${this._formatCurrency(totalCustoEmpresaGeral)}</td>
+                            <tr style="background: #0d2339; color: #ffffff; font-weight: bold; font-size: 10px;">
+                                <td colspan="3" style="text-align: left; padding: 6px 8px;">TOTAL GERAL CONSOLIDADO:</td>
+                                <td>${this._formatCurrency(totalSalarioBase)}</td>
+                                <td>${this._formatCurrency(totalSaldoSalario)}</td>
+                                <td>${this._formatCurrency(totalAvisoPrevio)}</td>
+                                <td>${this._formatCurrency(total13Salario)}</td>
+                                <td>${this._formatCurrency(totalFeriasGeral)}</td>
+                                <td>${this._formatCurrency(totalAdicionaisGeral)}</td>
+                                <td>${this._formatCurrency(totalProventosGeral)}</td>
+                                <td style="color: #fca5a5;">-${this._formatCurrency(totalDescontosGeral)}</td>
+                                <td style="background: #047857 !important; color: #ffffff !important; font-size: 11px;">${this._formatCurrency(totalLiquidoGeral)}</td>
+                                <td>${this._formatCurrency(totalMultaFgtsGeral)}</td>
+                                <td style="font-size: 11px;">${this._formatCurrency(totalCustoEmpresaGeral)}</td>
                             </tr>
                         </tfoot>
                     </table>

@@ -44,4 +44,11 @@ test("provisao de rescisao detalhada implementa modo individual TRCT e modo cons
   // Verifica layout Consolidado
   assert.match(folhaRelatorios, /RELATÓRIO CONSOLIDADO DE PROVISÃO DE RESCISÃO DETALHADA/);
   assert.match(folhaRelatorios, /TOTAL GERAL CONSOLIDADO:/);
+
+  // Verifica layout responsivo sem overflow-x e com supressão de barra de rolagem no print
+  assert.match(folhaRelatorios, /class="data-table rescisao-consolidada-table"/);
+  assert.match(folhaRelatorios, /<colgroup>/);
+  assert.match(folhaRelatorios, /::-webkit-scrollbar \{\s*display:\s*none !important;/);
+  assert.match(folhaRelatorios, /window\.trocarOrientacao = function\(nova\)/);
+  assert.match(folhaRelatorios, /print-control-bar/);
 });
