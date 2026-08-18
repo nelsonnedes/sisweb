@@ -2101,10 +2101,7 @@ class FolhaRelatorios {
             Promise.all([waitForFonts, waitForImages]).finally(() => setTimeout(() => {
                 try { printWindow.focus(); } catch {}
                 try { printWindow.print(); } catch {}
-                if (!isReciboDoc) {
-                    setTimeout(() => { try { printWindow.close(); } catch {} }, 1200);
-                }
-            }, 180));
+            }, 200));
         };
         // Nem todos os navegadores disparam load corretamente após document.write; usar ambos como fallback
         try {
@@ -2354,12 +2351,12 @@ class FolhaRelatorios {
                     ${embeddedStyleBlocks}
                     ${orientationCss}
                     @media print {
-                        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
-                        .relatorio-container { max-width: 100%; }
+                        body { margin: 0 !important; padding: 0 !important; font-family: Arial, sans-serif; }
+                        .relatorio-container { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
                         /* Garantir cores exatas em cabeçalhos e linhas finais */
-                        .detalhes-table th { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-                        .total-final { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-                        @page { size: A4 ${resolvedPrintOptions.orientation}; margin: ${resolvedPrintOptions.margin}; }
+                        .detalhes-table th, .data-table th, .relatorio-table th { print-color-adjust: exact !important; -webkit-print-color-adjust: exact !important; }
+                        .total-final { print-color-adjust: exact !important; -webkit-print-color-adjust: exact !important; }
+                        @page { size: A4 ${resolvedPrintOptions.orientation} !important; margin: ${resolvedPrintOptions.margin} !important; }
                     }
                 </style>
             `;
@@ -2817,6 +2814,7 @@ class FolhaRelatorios {
                 text-align: center;
                 color: #666;
                 font-size: 12px;
+            }
             .print-control-bar {
                 display: flex;
                 align-items: center;
