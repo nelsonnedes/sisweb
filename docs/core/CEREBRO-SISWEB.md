@@ -175,6 +175,46 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
   - Substituído o antigo `summary-box` por grid responsivo de cards com ícones temáticos (`blue`, `green`, `purple`, `amber`) para Total de Toras, Volume Total, Volume Geométrico, Valor Total, Entradas, Saídas, Saldo e Rendimento Médio.
 - **Validação e Deploy**: Testes unitários `tests/stock-table-columns.test.mjs` (3/3 PASS), validação E2E com Puppeteer em produção com credenciais reais, `npm run validate:pr` (6/6 PASS) e deploy no Firebase Hosting.
 
+## 17. Orientação de Impressão, Ajuste de Colunas Flexível, Relatório por Fornecedor e Campo AUTEF (2026-08-17)
+
+- **1. Orientação de Impressão (Retrato / Paisagem) nos Relatórios de Estoque (`estoque.html` / `estoque.js`):**
+  - **Causa raiz**: `@page { size: landscape; margin: 10mm; }` estático ignorava os botões de orientação do navegador na impressão do iframe.
+  - **Correção**: Implementados alternadores Retrato / Paisagem no header do modal de pré-visualização (`#relatorioPreviewModal`). Criada a função `alterarOrientacaoPreviewRelatorio(orientacao)` que injeta dinamicamente `<style id="print-orientation-style">@page { size: ${orientacao} !important; margin: 10mm; }</style>` no documento do iframe e atualiza `pdfOptions.orientation` para o contexto PWA.
+- **2. Redimensionamento de Coluna Flexível (`modules/core/stock-table-columns.js`):**
+  - **Causa raiz**: O tamanho do texto do título da coluna travava a largura mínima ao ajustar com o mouse.
+  - **Correção**: A tabela agora usa `table-layout: fixed !important;` com `th, td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }`, tooltip nativo `title` ao passar o mouse e `Math.max(25, ...)` no manipulador de resize, permitindo encolher livremente a coluna mesmo que o texto do título seja longo.
+- **3. Inclusão Canônica do Campo AUTEF e Novos Relatórios (`estoque.html`, `estoque.js`, `romaneiotora.html`, `romaneiotora.js`, `tora-geometry-utils.js`):**
+  - **Campo AUTEF**: Integrado no formulário de entrada (`autefEntrada`), formulário de saída manual (`manualAutefSaida`), formulário de romaneio de toras (`autef`), navegação por Enter (`configurarNavegacaoEnter` e `camposSequencia`) e persistência geométrica/tora (`normalizarCamposGeoItem`, `normalizarCamposGeoEstoque`, `normalizarCamposGeoTora`).
+  - **Alinhamento do Grid no Formulário**: `#entrada .entrada-tora-grid` ajustado para `grid-template-columns: minmax(110px, 0.65fr) minmax(100px, 0.55fr) minmax(120px, 0.7fr) minmax(280px, 1.8fr);`, permitindo que Plaqueta, Custódia, AUTEF (largura compacta com folga) e Espécies fiquem alinhados na mesma linha.
+  - **Sincronia das Células da Tabela**: Corrigida a renderização de linhas em `renderizarTabelaEntrada` e `torasDisponiveisTable` com a inclusão de `<td data-col="autef">${geo.autef || item.autef || '-'}</td>` após Custódia, eliminando deslocamento de colunas.
+  - **Relatórios Automáticos Reativos**: Filtros (`tipoRelatorio`, `relDataInicio`, `relDataFim`, `relFiltroTipo`, `relAgruparResponsavel`) aplicam o relatório imediatamente ao mudar de valor e na abertura da aba (`showTab('relatorios')`), sem necessidade de botão manual de gerar.
+  - **Resize Dinâmico nos Relatórios**: As tabelas de relatórios agora recebem `StockTableColumns.initTable` dinamicamente em cada renderização com layout fixo e persistência de larguras.
+  - **Novos Tipos de Relatório**:
+    - `fornecedor` ("Estoque por Fornecedor (Toras)"): gerado por `gerarRelatorioPorFornecedor(onlySelected)` com métricas agregadas por fornecedor (quantidade, volume líquido, volume geométrico, médias de rodo/comprimento/volume, preço médio e valor total).
+    - `especies` ("Estoque Agrupado Por Espécies (Toras)"): renomeado e mantido com agregação completa.
+    - `autef` ("Estoque Por AUTEF (Toras)"): gerado por `gerarRelatorioPorAutef(onlySelected)` (mantendo compatibilidade com `localizacao`).
+  - **Padronização da Aba "Consultar Estoque" (`estoque.js`, `estoque.html`):**
+    - **Inclusão de Oco 1 e Oco 2**: Adicionadas as colunas `oco1` ("Oco 1 (cm)") e `oco2` ("Oco 2 (cm)") na tabela `#tabelaEstoque`, na modal de *Configurar Colunas* e no gerador de relatórios/impressão.
+    - **Tabela Adaptativa e Redimensionamento**: Implementado colgroup adaptativo com suporte a `StockTableColumns.initTable(tabelaEstoque, 'consulta_estoque')`, ajustando a largura da tabela fluidamente.
+    - **Posicionamento Canônico dos Totais e Médias por Espécie**: Removidos os blocos redundantes e posicionados os 4 cards consolidados (`Total de Toras`, `Volume Líquido Total`, `Volume Geométrico Total` e `Valor Total`) e o painel de **Médias de Rodo e Volume por Espécie** **abaixo da paginação**, calculados sobre 100% dos registros filtrados.
+    - **Impressão Total vs. Seleção**: Impressão de 100% das toras/páginas do filtro aplicado quando sem seleção (`estoqueSelecionadas.size === 0`); quando há checkboxes marcados, imprime estritamente a seleção. O documento impresso/PDF incorpora os 4 cards de totais e o painel de médias por espécie, com orientação dinâmica (`auto`) e ocultação de controles (`.no-print`, `.actions-col`, `.actions-cell`).
+  - **Paginação e Resumo Estatístico em Relatórios de Estoque (`estoque.js`, `estoque.html`, `estoque_produtos.js`):**
+    - Opção inicial padrão: `<option value="">Selecione o tipo de Relatório</option>`, mantendo a interface limpa até a escolha explícita do usuário.
+    - Opções padronizadas de paginação: `[10, 25, 50, 100]` com persistência em `localStorage` por empresa/usuário.
+    - Seletor "Itens por página" integrado com navegação de páginas (`mudarPaginaRelatorio`).
+    - **Cards de Resumo Estatístico Consolidados**: Posicionados **abaixo da paginação** com os valores totais calculados sobre o conjunto completo de dados filtrados:
+      - **Toras**: `Total de Toras`, `Volume Líquido Total`, `Volume Geométrico Total` e `Valor Total`.
+      - **Saldo Atual de Produtos (Almoxarifado)**: `Itens Cadastrados`, `Quantidade Total`, `Valor Total em Estoque (R$)` e `Estoque Baixo / Crítico`.
+      - **Movimentação de Produtos (Almoxarifado)**: `Total de Movimentações`, `Entradas (Registros / Qtd)`, `Saídas (Registros / Qtd)` e `Ajustes & Devoluções`.
+    - **Médias de Rodo e Volume por Espécie**: Painel consolidado posicionado **logo abaixo dos cards de totalizadores**, apresentando cards individuais por espécie contendo `Média Rodo: X,X cm` e `Média Volu: X,XXX m³`, com a mesma lógica e precisão aplicadas em `romaneiotora.html`.
+    - **Unificação de Totais na Impressão e em Tela**: `gerarRodapeRelatorio` unificado para evitar qualquer duplicação redundante de totais em tela ou no documento impresso/PDF gerado.
+    - **Impressão Total vs. Seleção**: Quando nenhuma linha está selecionada, o sistema repassa `disablePagination: true` para todas as funções de relatório (toras e almoxarifado), imprimindo **100% de todas as páginas/registros do filtro aplicado**. Quando há seleção, imprime estritamente os itens selecionados.
+- **4. Quality Gates e Deploy**:
+  - `node --check` 100% OK em todos os arquivos modificados.
+  - `inject-cachebusters.mjs` atualizado.
+  - `npm run validate:pr` 6/6 PASS (lint, typecheck, 460 testes unitários, PR focus e auditoria de cachebusters).
+  - Deploy em produção realizado com sucesso no Firebase Hosting e 37/37 checks aprovados no post-deploy security check.
+
 ## 12. Como manter este cérebro
 
 - Atualizar após QUALQUER mudança de arquitetura, decisão, fix ou descoberta de armadilha.

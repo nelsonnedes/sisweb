@@ -1210,6 +1210,11 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 <label for="custodia">Custódia:</label>
                 <input type="text" id="custodia" placeholder="Custódia">
             </div>
+
+            <div class="form-group" style="flex: 0.25;">
+                <label for="autef">AUTEF:</label>
+                <input type="text" id="autef" placeholder="AUTEF">
+            </div>
             
             <div class="form-group" style="flex: 0.25;">
                 <label for="rodo">Rodo (cm):</label>
@@ -1304,6 +1309,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     <tr>
                         <th>Plaqueta</th>
                         <th>Custódia</th>
+                        <th>AUTEF</th>
                         <th>Espécie</th>
                         <th>Rodo</th>
                         <th>Comprimento</th>
@@ -1947,13 +1953,13 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     
     <!-- Scripts principais -->
     <script src="romaneio-utils.js?v=e2c32c9889fa"></script>
-    <script src="tora-geometry-utils.js?v=a582b726e981"></script>
+    <script src="tora-geometry-utils.js?v=a1406b3fea84"></script>
     <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
     <script src="romaneio-print-config.js?v=24205aca3d2d"></script>
     <script src="modules/core/romaneio-list-columns.js?v=3282886493bc" data-page="tora" data-target="romaneioListTable"></script>
     <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
     <script src="coordenador-inicializacao.js?v=1344dd426230"></script>
-    <script src="romaneiotora.js?v=8e946f04aa6a"></script>
+    <script src="romaneiotora.js?v=280535606fc8"></script>
     <script src="romaneiotora_tabela.js?v=ada74f3d3337"></script>
     <script src="romaneio-manager.js?v=4543b8689eea"></script>
     <script src="romaneiotora-import-v4.js?v=544705593380"></script>
@@ -2167,6 +2173,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 'preco',        // Preço (R$/m³)
                 'plaqueta',     // Plaqueta
                 'custodia',     // Custódia
+                'autef',        // AUTEF
                 'rodo',         // Rodo (cm)
                 'comprimento',  // Comprimento (cm)
                 'oco1',         // Oco 1 (cm)

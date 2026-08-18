@@ -1620,7 +1620,7 @@ function obterValorOrdenacaoMovimentacaoProduto(m = {}, key = '') {
 
 // --- Funções de Relatórios de Produtos ---
 
-async function gerarRelatorioProdutosSaldo(onlySelected = false) {
+async function gerarRelatorioProdutosSaldo(onlySelected = false, options = {}) {
     try {
         if (typeof window.ensureProdutosColumnsConfigLoaded === 'function') {
             await window.ensureProdutosColumnsConfigLoaded();
@@ -1633,47 +1633,56 @@ async function gerarRelatorioProdutosSaldo(onlySelected = false) {
         }
         if (produtos.length === 0) return '<p>Nenhum produto em estoque.</p>';
 
-    if (window.ordemRelatorio && window.ordemRelatorio.tipo === 'produtos_saldo' && window.ordemRelatorio.coluna) {
-        produtos.sort((a, b) => {
-            let valA = a[window.ordemRelatorio.coluna];
-            let valB = b[window.ordemRelatorio.coluna];
-            if (window.ordemRelatorio.coluna === 'valor' || window.ordemRelatorio.coluna === 'valorTotal') {
-                valA = (a.quantidade || 0) * (a.precoMedio || 0);
-                valB = (b.quantidade || 0) * (b.precoMedio || 0);
-            } else if (window.ordemRelatorio.coluna === 'responsavel') {
-                valA = obterResponsavelProduto(a);
-                valB = obterResponsavelProduto(b);
-            } else if (window.ordemRelatorio.coluna === 'motivoDestino') {
-                valA = obterMotivoDestinoProduto(a);
-                valB = obterMotivoDestinoProduto(b);
-            } else if (window.ordemRelatorio.coluna === 'tipoMovimentacao') {
-                valA = obterTipoMovimentacaoProduto(a);
-                valB = obterTipoMovimentacaoProduto(b);
-            }
-            if (typeof valA === 'string') valA = valA.toLowerCase();
-            if (typeof valB === 'string') valB = valB.toLowerCase();
-            if (valA < valB) return window.ordemRelatorio.direcao === 'asc' ? -1 : 1;
-            if (valA > valB) return window.ordemRelatorio.direcao === 'asc' ? 1 : -1;
-            return 0;
-        });
-    } else {
-        produtos.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
-    }
+        if (window.ordemRelatorio && window.ordemRelatorio.tipo === 'produtos_saldo' && window.ordemRelatorio.coluna) {
+            produtos.sort((a, b) => {
+                let valA = a[window.ordemRelatorio.coluna];
+                let valB = b[window.ordemRelatorio.coluna];
+                if (window.ordemRelatorio.coluna === 'valor' || window.ordemRelatorio.coluna === 'valorTotal') {
+                    valA = (a.quantidade || 0) * (a.precoMedio || 0);
+                    valB = (b.quantidade || 0) * (b.precoMedio || 0);
+                } else if (window.ordemRelatorio.coluna === 'responsavel') {
+                    valA = obterResponsavelProduto(a);
+                    valB = obterResponsavelProduto(b);
+                } else if (window.ordemRelatorio.coluna === 'motivoDestino') {
+                    valA = obterMotivoDestinoProduto(a);
+                    valB = obterMotivoDestinoProduto(b);
+                } else if (window.ordemRelatorio.coluna === 'tipoMovimentacao') {
+                    valA = obterTipoMovimentacaoProduto(a);
+                    valB = obterTipoMovimentacaoProduto(b);
+                }
+                if (typeof valA === 'string') valA = valA.toLowerCase();
+                if (typeof valB === 'string') valB = valB.toLowerCase();
+                if (valA < valB) return window.ordemRelatorio.direcao === 'asc' ? -1 : 1;
+                if (valA > valB) return window.ordemRelatorio.direcao === 'asc' ? 1 : -1;
+                return 0;
+            });
+        } else {
+            produtos.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+        }
 
-    let totalQtd = 0;
-    let totalValor = 0;
+        // Totais consolidados sobre 100% dos dados filtrados
+        const totalItens = produtos.length;
+        const totalQtd = produtos.reduce((acc, p) => acc + (parseFloat(p.quantidade) || 0), 0);
+        const totalValor = produtos.reduce((acc, p) => acc + ((parseFloat(p.quantidade) || 0) * (parseFloat(p.precoMedio || p.preco) || 0)), 0);
+        const itensCriticos = produtos.filter(p => (parseFloat(p.quantidade) || 0) <= (parseFloat(p.estoqueMinimo) || 0)).length;
 
-    const renderSelectTh = typeof window.renderRelatorioSelecionarTodosTh === 'function' ? window.renderRelatorioSelecionarTodosTh : () => '';
-    const renderSelectTd = typeof window.renderRelatorioSelecionarTd === 'function' ? window.renderRelatorioSelecionarTd : () => '';
-    const produtoDefs = typeof window.getVisibleEstoqueReportColumns === 'function'
-        ? window.getVisibleEstoqueReportColumns('produtos_saldo')
-        : (typeof window.getVisibleProdutosColumns === 'function' ? window.getVisibleProdutosColumns() : getProdutosColumnsDefs());
+        window.totalItensRelatorioAtual = totalItens;
 
-    let rows = produtos.map(p => {
-        const val = (p.quantidade || 0) * (p.precoMedio || 0);
-        totalQtd += (p.quantidade || 0);
-        totalValor += val;
-        return `
+        // Paginação de itens
+        const pageSize = typeof window.obterItensPorPaginaTabela === 'function' ? window.obterItensPorPaginaTabela('relatorios') : 10;
+        const totalPaginas = Math.max(1, Math.ceil(totalItens / pageSize));
+        if (window.paginaAtualRelatorio > totalPaginas) window.paginaAtualRelatorio = totalPaginas;
+        if (window.paginaAtualRelatorio < 1) window.paginaAtualRelatorio = 1;
+        const inicio = (window.paginaAtualRelatorio - 1) * pageSize;
+        const itensPagina = (onlySelected || options.disablePagination) ? produtos : produtos.slice(inicio, inicio + pageSize);
+
+        const renderSelectTh = typeof window.renderRelatorioSelecionarTodosTh === 'function' ? window.renderRelatorioSelecionarTodosTh : () => '';
+        const renderSelectTd = typeof window.renderRelatorioSelecionarTd === 'function' ? window.renderRelatorioSelecionarTd : () => '';
+        const produtoDefs = typeof window.getVisibleEstoqueReportColumns === 'function'
+            ? window.getVisibleEstoqueReportColumns('produtos_saldo')
+            : (typeof window.getVisibleProdutosColumns === 'function' ? window.getVisibleProdutosColumns() : getProdutosColumnsDefs());
+
+        const rows = itensPagina.map(p => `
             <tr>
                 ${renderSelectTd('produtos_saldo', p.id || p.nome || '', onlySelected)}
                 ${produtoDefs.map(def => {
@@ -1681,38 +1690,50 @@ async function gerarRelatorioProdutosSaldo(onlySelected = false) {
                     return `<td data-col="${escapeProdutoHtml(def.key)}"${cls}>${obterValorCelulaProduto(p, def.key)}</td>`;
                 }).join('')}
             </tr>
+        `).join('');
+
+        const icon = window.getSortIconRelatorio ? window.getSortIconRelatorio : () => '';
+        const paginacaoHtml = (onlySelected || options.disablePagination) ? '' : '<div id="paginacaoRelatorios" class="pagination-controls"></div>';
+
+        const cardsHtml = `
+            <div class="stats-grid" id="resumoRelatoriosStats" style="margin-top: 16px;">
+                <div class="stat-card">
+                    <div class="stat-value" id="statRelProdTotalItens">${totalItens}</div>
+                    <div class="stat-label">Itens Cadastrados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statRelProdTotalQtd">${formatNumber(totalQtd, 2)}</div>
+                    <div class="stat-label">Quantidade Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statRelProdTotalValor">${formatCurrency(totalValor)}</div>
+                    <div class="stat-label">Valor Total em Estoque</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statRelProdItensCriticos" style="color: ${itensCriticos > 0 ? '#e53e3e' : '#2b6cb0'};">${itensCriticos}</div>
+                    <div class="stat-label">Estoque Baixo / Crítico</div>
+                </div>
+            </div>
         `;
-    }).join('');
 
-    const icon = window.getSortIconRelatorio ? window.getSortIconRelatorio : () => '';
-
-    return `
-        <div class="summary-box">
-            <h4>Saldo Atual de Produtos (Almoxarifado)</h4>
-            <div class="summary-row">
-                <span>Total de Itens Diferentes:</span>
-                <span>${produtos.length}</span>
-            </div>
-            <div class="summary-row">
-                <span>Valor Total em Estoque:</span>
-                <span>${formatCurrency(totalValor)}</span>
-            </div>
-        </div>
-        <div class="table-container">
-            <table class="table table-wide-estoque-compact">
-                <colgroup>
-                    ${onlySelected ? '' : '<col style="width: 42px;">'}
-                    ${produtoDefs.map(def => `<col data-col="${escapeProdutoHtml(def.key)}">`).join('')}
-                </colgroup>
-                <thead>
-                    <tr>
-                        ${renderSelectTh(onlySelected)}
-                        ${produtoDefs.map(def => `<th onclick="window.ordenarRelatorio('${escapeProdutoHtml(def.key)}', 'produtos_saldo')" style="cursor:pointer;">${escapeProdutoHtml(def.label)} ${icon(def.key, 'produtos_saldo')}</th>`).join('')}
-                    </tr>
-                </thead>
-                <tbody>${rows || `<tr><td colspan="${produtoDefs.length + (onlySelected ? 0 : 1)}">Nenhum produto em estoque.</td></tr>`}</tbody>
+        return `
+            <div class="table-container report-table-container">
+                <table class="table table-report-estoque" id="tabelaRelatorioProdutosSaldo">
+                    <colgroup>
+                        ${onlySelected ? '' : '<col style="width: 40px;">'}
+                        ${produtoDefs.map(def => `<col class="${escapeProdutoHtml(def.key)}" data-col="${escapeProdutoHtml(def.key)}">`).join('')}
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            ${renderSelectTh(onlySelected)}
+                            ${produtoDefs.map(def => `<th onclick="window.ordenarRelatorio('${escapeProdutoHtml(def.key)}', 'produtos_saldo')" style="cursor:pointer;">${escapeProdutoHtml(def.label)} ${icon(def.key, 'produtos_saldo')}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>${rows || `<tr><td colspan="${produtoDefs.length + (onlySelected ? 0 : 1)}">Nenhum produto em estoque.</td></tr>`}</tbody>
                 </table>
             </div>
+            ${paginacaoHtml}
+            ${cardsHtml}
         `;
     } catch (e) {
         console.error(e);
@@ -1764,10 +1785,40 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
             filtrados.sort((a, b) => new Date(b.data) - new Date(a.data));
         }
 
+        // Totais consolidados sobre 100% dos dados filtrados
         let entradas = 0;
+        let volumeEntradasQtd = 0;
         let saidas = 0;
+        let volumeSaidasQtd = 0;
         let ajustes = 0;
         let devolucoes = 0;
+
+        filtrados.forEach(m => {
+            const tipoMov = normalizarTipoMovimentacaoProduto(m.tipo || m.tipoMovimentacao);
+            const qtd = parseFloat(m.quantidade) || 0;
+            if (tipoMov === 'entrada') {
+                entradas++;
+                volumeEntradasQtd += qtd;
+            } else if (tipoMov === 'saida') {
+                saidas++;
+                volumeSaidasQtd += qtd;
+            } else if (tipoMov === 'ajuste') {
+                ajustes++;
+            } else if (tipoMov === 'devolucao') {
+                devolucoes++;
+            }
+        });
+
+        const totalMovimentacoes = filtrados.length;
+        window.totalItensRelatorioAtual = totalMovimentacoes;
+
+        // Paginação de itens
+        const pageSize = typeof window.obterItensPorPaginaTabela === 'function' ? window.obterItensPorPaginaTabela('relatorios') : 10;
+        const totalPaginas = Math.max(1, Math.ceil(totalMovimentacoes / pageSize));
+        if (window.paginaAtualRelatorio > totalPaginas) window.paginaAtualRelatorio = totalPaginas;
+        if (window.paginaAtualRelatorio < 1) window.paginaAtualRelatorio = 1;
+        const inicio = (window.paginaAtualRelatorio - 1) * pageSize;
+        const itensPagina = (onlySelected || options.disablePagination) ? filtrados : filtrados.slice(inicio, inicio + pageSize);
         
         const getResponsavel = (m) => getResponsavelMovimentoProduto(m) || '-';
         const getMovKey = typeof window.getRelatorioProdutoMovimentacaoKey === 'function'
@@ -1777,13 +1828,11 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
         const renderSelectTd = typeof window.renderRelatorioSelecionarTd === 'function' ? window.renderRelatorioSelecionarTd : () => '';
 
         const renderTable = (items) => {
-            const movDefs = getVisibleProdutoMovimentacaoColumns();
+            const movDefs = typeof window.getVisibleEstoqueReportColumns === 'function'
+                ? window.getVisibleEstoqueReportColumns('produtos_movimentacao')
+                : (typeof window.getVisibleProdutoMovimentacaoColumns === 'function' ? window.getVisibleProdutoMovimentacaoColumns() : getVisibleProdutoMovimentacaoColumns());
+
             const rows = (items || []).map(m => {
-                const tipoMov = normalizarTipoMovimentacaoProduto(m.tipo || m.tipoMovimentacao);
-                if (tipoMov === 'entrada') entradas++;
-                else if (tipoMov === 'saida') saidas++;
-                else if (tipoMov === 'ajuste') ajustes++;
-                else if (tipoMov === 'devolucao') devolucoes++;
                 const id = String(m.id || '');
                 const estornado = !!(m.estornado || m.estornoId || m.estornadoEm);
                 const estornarDisabled = estornado ? 'disabled' : '';
@@ -1807,12 +1856,12 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
 
             const icon = window.getSortIconRelatorio ? window.getSortIconRelatorio : () => '';
             return `
-                <div class="table-container">
-                    <table class="table table-wide-estoque">
+                <div class="table-container report-table-container">
+                    <table class="table table-report-estoque" id="tabelaRelatorioProdutosMovimentacao">
                         <colgroup>
-                            ${onlySelected ? '' : '<col style="width: 42px;">'}
-                            ${movDefs.map(def => `<col data-col="${escapeProdutoHtml(def.key)}">`).join('')}
-                            <col class="acoes">
+                            ${onlySelected ? '' : '<col style="width: 40px;">'}
+                            ${movDefs.map(def => `<col class="${escapeProdutoHtml(def.key)}" data-col="${escapeProdutoHtml(def.key)}">`).join('')}
+                            <col class="acoes no-print" style="width: 80px;">
                         </colgroup>
                         <thead>
                             <tr>
@@ -1821,7 +1870,7 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
                                 <th class="no-print actions-col sticky-actions">Ações</th>
                             </tr>
                         </thead>
-                        <tbody>${rows}</tbody>
+                        <tbody>${rows || `<tr><td colspan="${movDefs.length + (onlySelected ? 0 : 2)}">Nenhuma movimentação encontrada.</td></tr>`}</tbody>
                     </table>
                 </div>
             `;
@@ -1831,7 +1880,7 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
         let tablesHtml = '';
         if (agruparPorResponsavel) {
             const groups = new Map();
-            filtrados.forEach(m => {
+            itensPagina.forEach(m => {
                 const key = getResponsavel(m);
                 if (!groups.has(key)) groups.set(key, []);
                 groups.get(key).push(m);
@@ -1840,42 +1889,43 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
             tablesHtml = groupKeys.map((k) => {
                 const items = groups.get(k) || [];
                 return `
-                    <div class="summary-box" style="margin-top: 12px;">
-                        <h4 style="margin:0;">Responsável: ${k}</h4>
-                        <div class="summary-row"><span>Total:</span><span>${items.length}</span></div>
+                    <div class="relatorios-grupo-header" style="margin: 16px 0 8px 0; font-size: 13.5px; font-weight: 700; color: #2c3e50; border-left: 4px solid #3b82f6; padding-left: 10px;">
+                        Responsável: ${escapeProdutoHtml(k)} <span style="font-size: 12px; color: #718096; font-weight: normal;">(${items.length} itens nesta página)</span>
                     </div>
                     ${renderTable(items)}
                 `;
             }).join('');
         } else {
-            tablesHtml = renderTable(filtrados);
+            tablesHtml = renderTable(itensPagina);
         }
 
-        return `
-            <div class="summary-box">
-                <h4>Movimentação de Produtos (${new Date(`${dataInicio}T12:00:00`).toLocaleDateString('pt-BR')} a ${new Date(`${dataFim}T12:00:00`).toLocaleDateString('pt-BR')})</h4>
-                <div class="summary-row">
-                    <span>Total de Movimentações:</span>
-                    <span>${filtrados.length}</span>
+        const paginacaoHtml = (onlySelected || options.disablePagination) ? '' : '<div id="paginacaoRelatorios" class="pagination-controls"></div>';
+
+        const cardsHtml = `
+            <div class="stats-grid" id="resumoRelatoriosStats" style="margin-top: 16px;">
+                <div class="stat-card">
+                    <div class="stat-value" id="statRelProdMovTotal">${totalMovimentacoes}</div>
+                    <div class="stat-label">Total de Movimentações</div>
                 </div>
-                <div class="summary-row">
-                    <span>Entradas:</span>
-                    <span>${entradas}</span>
+                <div class="stat-card">
+                    <div class="stat-value" id="statRelProdMovEntradas">${entradas} (${formatNumber(volumeEntradasQtd, 2)})</div>
+                    <div class="stat-label">Entradas (Registros / Qtd)</div>
                 </div>
-                <div class="summary-row">
-                    <span>Saídas:</span>
-                    <span>${saidas}</span>
+                <div class="stat-card">
+                    <div class="stat-value" id="statRelProdMovSaidas">${saidas} (${formatNumber(volumeSaidasQtd, 2)})</div>
+                    <div class="stat-label">Saídas (Registros / Qtd)</div>
                 </div>
-                <div class="summary-row">
-                    <span>Ajustes:</span>
-                    <span>${ajustes}</span>
-                </div>
-                <div class="summary-row">
-                    <span>Devoluções:</span>
-                    <span>${devolucoes}</span>
+                <div class="stat-card">
+                    <div class="stat-value" id="statRelProdMovAjustes">${ajustes + devolucoes}</div>
+                    <div class="stat-label">Ajustes & Devoluções</div>
                 </div>
             </div>
+        `;
+
+        return `
             ${tablesHtml}
+            ${paginacaoHtml}
+            ${cardsHtml}
         `;
 
     } catch (e) {

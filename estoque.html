@@ -355,8 +355,22 @@
             margin-top: 6px;
         }
 
-        #relatorioContent .table-container {
+        #relatorioContent .table-container,
+        .report-table-container {
             overflow-x: auto;
+            width: 100%;
+            scrollbar-gutter: stable;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+        }
+
+        #relatorioContent table,
+        .table-report-estoque {
+            min-width: 0 !important;
+            width: 100% !important;
+            table-layout: fixed !important;
+            border-collapse: collapse;
         }
 
         #relatorioContent .check-relatorio,
@@ -367,9 +381,7 @@
 
         #relatorioResult .table th:last-child:not(.sticky-actions),
         #relatorioResult .table td:last-child:not(.sticky-actions) {
-            width: auto;
             text-align: inherit;
-            white-space: normal;
         }
 
         #relatorioResultHeader {
@@ -1092,7 +1104,7 @@
         }
 
         #entrada .entrada-tora-grid {
-            grid-template-columns: minmax(140px, 0.8fr) minmax(120px, 0.65fr) minmax(420px, 2fr);
+            grid-template-columns: minmax(110px, 0.65fr) minmax(100px, 0.55fr) minmax(120px, 0.7fr) minmax(280px, 1.8fr);
         }
 
         #entrada .entrada-medidas-grid {
@@ -1956,6 +1968,10 @@
                         <label for="custodiaEntrada">Custódia:</label>
                         <input type="text" id="custodiaEntrada" placeholder="Custódia">
                     </div>
+                    <div class="form-group form-group-small">
+                        <label for="autefEntrada">AUTEF:</label>
+                        <input type="text" id="autefEntrada" placeholder="AUTEF">
+                    </div>
                     <div class="form-group">
                         <label for="especieEntrada">Espécies:</label>
                         <div class="species-combobox-inline">
@@ -2063,6 +2079,7 @@
                         <col style="width: 40px;">
                         <col class="codigo" data-col="plaqueta">
                         <col class="codigo" data-col="custodia">
+                        <col class="codigo" data-col="autef">
                         <col class="nome" data-col="especie">
                         <col class="medida" data-col="diametro">
                         <col class="medida" data-col="comprimento">
@@ -2085,6 +2102,7 @@
                             <th style="width: 40px;"><input type="checkbox" id="checkTodosEntrada" onchange="toggleTodosEntrada()"></th>
                             <th data-col="plaqueta" onclick="ordenarEntrada('plaqueta')" style="cursor: pointer;">Plaqueta <i class="fas fa-sort sort-icon" id="sort-entrada-plaqueta"></i></th>
                             <th data-col="custodia" onclick="ordenarEntrada('custodia')" style="cursor: pointer;">Custódia <i class="fas fa-sort sort-icon" id="sort-entrada-custodia"></i></th>
+                            <th data-col="autef" onclick="ordenarEntrada('autef')" style="cursor: pointer;">AUTEF <i class="fas fa-sort sort-icon" id="sort-entrada-autef"></i></th>
                             <th data-col="especie" onclick="ordenarEntrada('especie')" style="cursor: pointer;">Espécie <i class="fas fa-sort sort-icon" id="sort-entrada-especie"></i></th>
                             <th data-col="diametro" onclick="ordenarEntrada('diametro')" style="cursor: pointer;">Rodo <i class="fas fa-sort sort-icon" id="sort-entrada-diametro"></i></th>
                             <th data-col="comprimento" onclick="ordenarEntrada('comprimento')" style="cursor: pointer;">Comprimento <i class="fas fa-sort sort-icon" id="sort-entrada-comprimento"></i></th>
@@ -2222,9 +2240,10 @@
                     <div class="form-group">
                         <label>Adicionar Tora Manual (fora do estoque):</label>
                         <div style="overflow-x:auto;">
-                            <div class="manual-saida-grid" style="display:flex; gap:8px; flex-wrap:nowrap; align-items:flex-end; min-width:1780px;">
+                            <div class="manual-saida-grid" style="display:flex; gap:8px; flex-wrap:nowrap; align-items:flex-end; min-width:1880px;">
                                 <input type="text" id="manualPlaquetaSaida" placeholder="Plaqueta" onkeydown="onManualSaidaKeydown(event, 'manualCustodiaSaida')" style="width:140px; min-width:140px; height:36px; box-sizing:border-box;">
-                                <input type="text" id="manualCustodiaSaida" placeholder="Custódia" onkeydown="onManualSaidaKeydown(event, 'manualEspecieSaida')" style="width:130px; min-width:130px; height:36px; box-sizing:border-box;">
+                                <input type="text" id="manualCustodiaSaida" placeholder="Custódia" onkeydown="onManualSaidaKeydown(event, 'manualAutefSaida')" style="width:130px; min-width:130px; height:36px; box-sizing:border-box;">
+                                <input type="text" id="manualAutefSaida" placeholder="AUTEF" onkeydown="onManualSaidaKeydown(event, 'manualEspecieSaida')" style="width:130px; min-width:130px; height:36px; box-sizing:border-box;">
                                 <div class="species-combobox-inline" style="width:270px; min-width:270px;">
                                     <input type="text" id="manualEspecieSaida" class="autocomplete-input" data-species-autocomplete="true" data-species-validate="true" placeholder="Espécie" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="especieSuggestions" role="combobox" onkeydown="onManualSaidaKeydown(event, 'manualRodoSaida')">
                                     <button type="button" onclick="abrirListaEspeciesEntrada('manualEspecieSaida')" class="btn btn-secondary species-icon-btn" title="Lista de Espécies">
@@ -2267,6 +2286,7 @@
                                     <col style="width: 40px;">
                                     <col class="codigo" data-col="plaqueta">
                                     <col class="codigo" data-col="custodia">
+                                    <col class="codigo" data-col="autef">
                                     <col class="nome" data-col="especie">
                                     <col class="medida" data-col="diametro">
                                     <col class="medida" data-col="comprimento">
@@ -2290,6 +2310,7 @@
                                         <th style="width: 40px;"><input type="checkbox" id="checkTodasSaida" onchange="toggleTodasSaida()"></th>
                                         <th data-col="plaqueta" onclick="ordenarSaida('plaqueta')" style="cursor: pointer;">Plaqueta <i class="fas fa-sort sort-icon" id="sort-saida-plaqueta"></i></th>
                                         <th data-col="custodia" onclick="ordenarSaida('custodia')" style="cursor: pointer;">Custódia <i class="fas fa-sort sort-icon" id="sort-saida-custodia"></i></th>
+                                        <th data-col="autef" onclick="ordenarSaida('autef')" style="cursor: pointer;">AUTEF <i class="fas fa-sort sort-icon" id="sort-saida-autef"></i></th>
                                         <th data-col="especie" onclick="ordenarSaida('especie')" style="cursor: pointer;">Espécie <i class="fas fa-sort sort-icon" id="sort-saida-especie"></i></th>
                                         <th data-col="diametro" onclick="ordenarSaida('diametro')" style="cursor: pointer;">Rodo <i class="fas fa-sort sort-icon" id="sort-saida-diametro"></i></th>
                                         <th data-col="comprimento" onclick="ordenarSaida('comprimento')" style="cursor: pointer;">Comprimento <i class="fas fa-sort sort-icon" id="sort-saida-comprimento"></i></th>
@@ -2361,25 +2382,6 @@
                 </div>
             </div>
             
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="totalToras">0</div>
-                    <div class="stat-label">Total de Toras</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="volumeTotal">0,000 m³</div>
-                    <div class="stat-label">Volume Total</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="valorEstoque">R$ 0,00</div>
-                    <div class="stat-label">Valor do Estoque</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="especiesUnicas">0</div>
-                    <div class="stat-label">Espécies Diferentes</div>
-                </div>
-            </div>
-
             <div id="filtrosEstoqueDrawer" class="offcanvas-drawer" style="display: none;">
                 <div class="offcanvas-header">
                     <h3>Filtros de Consulta</h3>
@@ -2408,55 +2410,36 @@
                 </div>
             </div>
 
-            <div class="table-responsive">
-                <table class="table table-wide-estoque-lg" id="tabelaEstoque">
-                    <colgroup>
-                        <col style="width: 40px;">
-                        <col class="codigo" data-col="plaqueta">
-                        <col class="codigo" data-col="custodia">
-                        <col class="nome" data-col="especie">
-                        <col class="medida" data-col="diametro">
-                        <col class="medida" data-col="comprimento">
-                        <col class="volume" data-col="volumeBruto">
-                        <col class="volume" data-col="volumeLiquido">
-                        <col class="medida" data-col="compGeo">
-                        <col class="medida" data-col="x1">
-                        <col class="medida" data-col="x2">
-                        <col class="medida" data-col="x3">
-                        <col class="medida" data-col="x4">
-                        <col class="volume" data-col="volumeGeo">
-                        <col class="preco" data-col="precoCusto">
-                        <col class="local" data-col="localizacao">
-                        <col class="data" data-col="data">
-                        <col class="acoes">
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th style="width: 40px;"><input type="checkbox" id="checkTodoEstoque" onchange="toggleTodoEstoque()"></th>
-                            <th data-col="plaqueta" onclick="ordenarEstoque('plaqueta')" style="cursor: pointer;">Plaqueta <i class="fas fa-sort sort-icon" id="sort-estoque-plaqueta"></i></th>
-                            <th data-col="custodia" onclick="ordenarEstoque('custodia')" style="cursor: pointer;">Custódia <i class="fas fa-sort sort-icon" id="sort-estoque-custodia"></i></th>
-                            <th data-col="especie" onclick="ordenarEstoque('especie')" style="cursor: pointer;">Espécie <i class="fas fa-sort sort-icon" id="sort-estoque-especie"></i></th>
-                            <th data-col="diametro" onclick="ordenarEstoque('diametro')" style="cursor: pointer;">Rodo (cm) <i class="fas fa-sort sort-icon" id="sort-estoque-diametro"></i></th>
-                            <th data-col="comprimento" onclick="ordenarEstoque('comprimento')" style="cursor: pointer;">Comprimento (cm) <i class="fas fa-sort sort-icon" id="sort-estoque-comprimento"></i></th>
-                            <th data-col="volumeBruto" onclick="ordenarEstoque('volumeBruto')" style="cursor: pointer;">Volume Bruto (m³) <i class="fas fa-sort sort-icon" id="sort-estoque-volumeBruto"></i></th>
-                            <th data-col="volumeLiquido" onclick="ordenarEstoque('volumeLiquido')" style="cursor: pointer;">Volume Líquido (m³) <i class="fas fa-sort sort-icon" id="sort-estoque-volumeLiquido"></i></th>
-                            <th data-col="compGeo" onclick="ordenarEstoque('compGeo')" style="cursor: pointer;">Comp. Geo. <i class="fas fa-sort sort-icon" id="sort-estoque-compGeo"></i></th>
-                            <th data-col="x1" onclick="ordenarEstoque('x1')" style="cursor: pointer;">X1 <i class="fas fa-sort sort-icon" id="sort-estoque-x1"></i></th>
-                            <th data-col="x2" onclick="ordenarEstoque('x2')" style="cursor: pointer;">X2 <i class="fas fa-sort sort-icon" id="sort-estoque-x2"></i></th>
-                            <th data-col="x3" onclick="ordenarEstoque('x3')" style="cursor: pointer;">X3 <i class="fas fa-sort sort-icon" id="sort-estoque-x3"></i></th>
-                            <th data-col="x4" onclick="ordenarEstoque('x4')" style="cursor: pointer;">X4 <i class="fas fa-sort sort-icon" id="sort-estoque-x4"></i></th>
-                            <th data-col="volumeGeo" onclick="ordenarEstoque('volumeGeo')" style="cursor: pointer;">V. Geo. <i class="fas fa-sort sort-icon" id="sort-estoque-volumeGeo"></i></th>
-                            <th data-col="precoCusto" onclick="ordenarEstoque('precoCusto')" style="cursor: pointer;">Preço Custo <i class="fas fa-sort sort-icon" id="sort-estoque-precoCusto"></i></th>
-                            <th data-col="localizacao" onclick="ordenarEstoque('localizacao')" style="cursor: pointer;">Localização <i class="fas fa-sort sort-icon" id="sort-estoque-localizacao"></i></th>
-                            <th data-col="data" onclick="ordenarEstoque('data')" style="cursor: pointer;">Data Entrada <i class="fas fa-sort sort-icon" id="sort-estoque-data"></i></th>
-                            <th class="actions-col sticky-actions">Ações</th>
-                        </tr>
-                    </thead>
+            <div class="table-container report-table-container">
+                <table class="table table-report-estoque" id="tabelaEstoque">
+                    <colgroup id="tabelaEstoqueColgroup"></colgroup>
+                    <thead id="tabelaEstoqueThead"></thead>
                     <tbody id="estoqueTable"></tbody>
                 </table>
             </div>
-            <div id="resumoEstoque" class="summary-box" style="margin-top: 12px;"></div>
+
             <div id="paginacaoEstoque" class="pagination-controls"></div>
+
+            <div class="stats-grid" id="resumoEstoqueStats" style="margin-top: 16px;">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalToras">0</div>
+                    <div class="stat-label">Total de Toras</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="volumeTotal">0,000 m³</div>
+                    <div class="stat-label">Volume Líquido Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="volumeGeoTotal">0,000 m³</div>
+                    <div class="stat-label">Volume Geométrico Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="valorEstoque">R$ 0,00</div>
+                    <div class="stat-label">Valor Total</div>
+                </div>
+            </div>
+
+            <div id="mediasEspecieEstoque" style="margin-top: 14px;"></div>
         </div>
 
         <!-- Tab Movimentações -->
@@ -2554,6 +2537,7 @@
                         <col class="codigo" data-col="tipo">
                         <col class="codigo" data-col="plaqueta">
                         <col class="codigo" data-col="custodia">
+                        <col class="codigo" data-col="autef">
                         <col class="nome" data-col="especie">
                         <col class="volume" data-col="volume">
                         <col class="volume" data-col="volumeGeo">
@@ -2568,6 +2552,7 @@
                             <th data-col="tipo" onclick="ordenarMovimentacoes('tipo')" style="cursor: pointer;">Tipo <i class="fas fa-sort sort-icon" id="sort-tipo"></i></th>
                             <th data-col="plaqueta" onclick="ordenarMovimentacoes('plaqueta')" style="cursor: pointer;">Plaqueta <i class="fas fa-sort sort-icon" id="sort-plaqueta"></i></th>
                             <th data-col="custodia" onclick="ordenarMovimentacoes('custodia')" style="cursor: pointer;">Custódia <i class="fas fa-sort sort-icon" id="sort-custodia"></i></th>
+                            <th data-col="autef" onclick="ordenarMovimentacoes('autef')" style="cursor: pointer;">AUTEF <i class="fas fa-sort sort-icon" id="sort-autef"></i></th>
                             <th data-col="especie" onclick="ordenarMovimentacoes('especie')" style="cursor: pointer;">Espécie <i class="fas fa-sort sort-icon" id="sort-especie"></i></th>
                             <th data-col="volume" onclick="ordenarMovimentacoes('volume')" style="cursor: pointer;">Volume <i class="fas fa-sort sort-icon" id="sort-volume"></i></th>
                             <th data-col="volumeGeo" onclick="ordenarMovimentacoes('volumeGeo')" style="cursor: pointer;">V. Geo. <i class="fas fa-sort sort-icon" id="sort-volumeGeo"></i></th>
@@ -2591,11 +2576,13 @@
                 <div class="form-group">
                     <label for="tipoRelatorio">Tipo de Relatório:</label>
                     <select id="tipoRelatorio">
+                        <option value="">Selecione o tipo de Relatório</option>
                         <option value="posicao">Posição do Estoque</option>
+                        <option value="fornecedor">Estoque por Fornecedor</option>
+                        <option value="especies">Estoque Agrupado Por Espécies</option>
+                        <option value="autef">Estoque Por AUTEF</option>
                         <option value="movimentacao">Movimentação por Período</option>
                         <option value="rastreabilidade">Rastreabilidade de Toras</option>
-                        <option value="especies">Estoque por Espécie</option>
-                        <option value="localizacao">Estoque por Localização</option>
                         <option value="produtos_saldo">Saldo Atual de Produtos (Almoxarifado)</option>
                         <option value="produtos_movimentacao">Movimentação de Produtos (Almoxarifado)</option>
                     </select>
@@ -2621,10 +2608,7 @@
                 <div class="form-group relatorios-actions-group">
                     <label>&nbsp;</label>
                     <div class="relatorios-actions">
-                        <button onclick="gerarRelatorio()" class="btn btn-primary">
-                            <i class="fas fa-chart-bar"></i> Gerar Relatório
-                        </button>
-                        <button onclick="imprimirRelatorioEstoque()" class="btn btn-secondary">
+                        <button type="button" onclick="imprimirRelatorioEstoque()" class="btn btn-secondary">
                             <i class="fas fa-print"></i> Imprimir
                         </button>
                         <button type="button" onclick="abrirConfiguracaoColunasRelatorio()" id="btnConfigColunasRelatorio" class="btn btn-secondary report-columns-btn" title="Configurar colunas deste relatório">
@@ -2756,6 +2740,7 @@
                             <col style="width: 40px;">
                             <col class="codigo">
                             <col class="codigo">
+                            <col class="codigo">
                             <col class="nome">
                             <col class="medida">
                             <col class="medida">
@@ -2780,6 +2765,7 @@
                                 </th>
                                 <th>Plaqueta</th>
                                 <th>Custódia</th>
+                                <th>AUTEF</th>
                                 <th>Espécie</th>
                                 <th>Rodo</th>
                                 <th>Comprimento</th>
@@ -2978,14 +2964,22 @@
 
     <!-- Modal Preview de Relatório -->
     <div id="relatorioPreviewModal" class="modal" style="z-index: 1050;">
-        <div class="modal-content" style="max-width: 900px; width: 95%; height: 90vh; display: flex; flex-direction: column; padding: 0;">
-            <div class="modal-header" style="background-color: #2c3e50; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="color: #fff; margin: 0; font-size: 1.25rem;">Pré-visualização de Relatório</h2>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <button type="button" onclick="imprimirDoIframe()" class="btn btn-primary" style="background-color: #3498db; border: none; padding: 8px 16px;">
+        <div class="modal-content" style="max-width: 960px; width: 95%; height: 90vh; display: flex; flex-direction: column; padding: 0;">
+            <div class="modal-header" style="background-color: #2c3e50; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="color: #fff; margin: 0; font-size: 1.2rem;">Pré-visualização de Relatório</h2>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <div class="print-orientation-toggle" style="display: flex; gap: 4px; background: rgba(255,255,255,0.15); padding: 3px 6px; border-radius: 4px;">
+                        <button type="button" id="btnPreviewPortrait" onclick="alterarOrientacaoPreviewRelatorio('portrait')" class="btn btn-small" style="color: #fff; background: transparent; border: none; padding: 4px 10px; font-size: 12px; cursor: pointer; border-radius: 3px;">
+                            <i class="fas fa-file"></i> Retrato
+                        </button>
+                        <button type="button" id="btnPreviewLandscape" onclick="alterarOrientacaoPreviewRelatorio('landscape')" class="btn btn-small active" style="color: #fff; background: #3498db; border: none; padding: 4px 10px; font-size: 12px; cursor: pointer; border-radius: 3px;">
+                            <i class="fas fa-file-alt"></i> Paisagem
+                        </button>
+                    </div>
+                    <button type="button" onclick="imprimirDoIframe()" class="btn btn-primary" style="background-color: #27ae60; border: none; padding: 8px 16px; font-weight: 600;">
                         <i class="fas fa-print"></i> Imprimir
                     </button>
-                    <span class="close" onclick="fecharRelatorioPreview()" style="color: #fff; opacity: 0.8; font-size: 28px; line-height: 1;">&times;</span>
+                    <span class="close" onclick="fecharRelatorioPreview()" style="color: #fff; opacity: 0.8; font-size: 28px; line-height: 1; cursor: pointer;">&times;</span>
                 </div>
             </div>
             <div class="modal-body" style="flex: 1; padding: 0; overflow: hidden; background-color: #f5f6fa;">
@@ -3006,9 +3000,9 @@
     <script src="auth.js?v=9edf7c63fdab"></script>
     <script src="species-utils.js?v=ac1a2bae7bea"></script>
     <script src="species-manager.js?v=14f755b5358c"></script>
-    <script src="tora-geometry-utils.js?v=a582b726e981"></script>
+    <script src="tora-geometry-utils.js?v=a1406b3fea84"></script>
     <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
-    <script src="modules/core/stock-table-columns.js?v=3c60c65b6526"></script>
+    <script src="modules/core/stock-table-columns.js?v=d91399655c68"></script>
     
     <script type="module">
         // Importar todo o firebaseService para garantir que todos os métodos estejam disponíveis
@@ -3082,8 +3076,8 @@
         console.log("✅ firebaseService carregado no estoque.html completo");
     </script>
     <script src="commerce-pdf-share.js?v=db7850889254"></script>
-    <script src="estoque_produtos.js?v=461cbe233549"></script>
-        <script src="estoque.js?v=6fb51088200d"></script>
+    <script src="estoque_produtos.js?v=97c2837b6b6d"></script>
+        <script src="estoque.js?v=1cccc0de86f1"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

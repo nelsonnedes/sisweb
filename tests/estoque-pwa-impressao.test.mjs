@@ -20,7 +20,7 @@ test('estoque e financas evitam cards/filtros quebrados no PWA mobile', () => {
   const financasHtml = read('financas.html');
 
   assert.match(estoqueHtml, /\.table-responsive\.mobile-cards \.table-wide-estoque,[\s\S]*min-width: 0;[\s\S]*width: 100%;/);
-  assert.match(estoqueHtml, /class="manual-saida-grid" style="display:flex; gap:8px; flex-wrap:nowrap; align-items:flex-end; min-width:1780px;"/);
+  assert.match(estoqueHtml, /class="manual-saida-grid" style="display:flex; gap:8px; flex-wrap:nowrap; align-items:flex-end; min-width:1880px;"/);
   assert.match(estoqueHtml, /class="filtro-toras-modal-grid" style="display:flex; gap:8px; flex-wrap:nowrap; align-items:center; min-width:1090px;"/);
   assert.match(estoqueHtml, /\.manual-saida-grid,[\s\S]*\.filtro-toras-modal-grid \{[\s\S]*min-width: 0 !important;[\s\S]*flex-wrap: wrap !important;/);
 
@@ -50,8 +50,10 @@ test('botoes de impressao do estoque separam PWA PDF de desktop HTML', () => {
   assert.match(js, /async function imprimirConsultaEstoque\(\)[\s\S]*await entregarRelatorioEstoque\(\{[\s\S]*title: 'Consulta de Estoque'/);
   assert.match(js, /async function imprimirEstoqueProdutos\(\)[\s\S]*await entregarRelatorioEstoque\(\{[\s\S]*title: 'Estoque de Almoxarifado'/);
   assert.match(js, /async function imprimirMovimentacoesEstoque\(\)[\s\S]*await entregarRelatorioEstoque\(\{[\s\S]*title: 'Histórico de Movimentações'/);
-  assert.match(js, /async function imprimirRelatorioEstoque\(\)[\s\S]*const pdfData = extrairTabelasRelatorioEstoquePdf/);
-  assert.match(js, /async function imprimirRastreabilidadeEstoque\(\)[\s\S]*await entregarRelatorioEstoque\(\{[\s\S]*title: 'Rastreabilidade de Toras'/);
+  assert.match(js, /async function imprimirRelatorioEstoque\(\)[\s\S]*disablePagination: true[\s\S]*const pdfData = extrairTabelasRelatorioEstoquePdf/);
+  assert.match(js, /async function obterConteudoRelatorio\(tipoRelatorio, dataInicio, dataFim, options = \{\}, onlySelected = false\)[\s\S]*case 'posicao':[\s\S]*return gerarRelatorioPosicao\(onlySelected, options\);/);
+  assert.match(js, /function gerarRelatorioPosicao\(onlySelected = false, options = \{\}\)[\s\S]*return montarTabelaRelatorioEstoque\('posicao', torasDisponiveis, 'posicao', t => t\.id \|\| t\.plaqueta \|\| '', onlySelected, 'Nenhuma tora disponível', options\);/);
+  assert.match(js, /function obterRelatorioStylesImpressao\(orientacao = 'auto'\)/);
 
   assert.match(js, /return await prepararLogoEmpresaRelatorio\(\{ \.\.\.centralData/);
   assert.match(js, /return await prepararLogoEmpresaRelatorio\(empresaFinal\)/);

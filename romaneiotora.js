@@ -115,6 +115,7 @@ window.romaneioToraInitialized = window.romaneioToraInitialized || false;
 const TORA_TABLE_SORT_COLUMNS = [
     { key: 'plaqueta', accessor: (item) => item.plaqueta || item.placa || '' },
     { key: 'custodia', accessor: (item) => normalizarCamposGeoTora(item).custodia || '' },
+    { key: 'autef', accessor: (item) => normalizarCamposGeoTora(item).autef || '' },
     { key: 'especie' },
     { key: 'rodo', type: 'number', accessor: (item) => item.rodo || item.diametro || 0 },
     { key: 'comprimento', type: 'number' },
@@ -1208,6 +1209,7 @@ function normalizarCamposGeoTora(item = {}) {
     }
     return {
         custodia: item.custodia || '',
+        autef: item.autef || '',
         compGeo: parseFloat(item.compGeo || 0) || 0,
         x1: parseFloat(item.x1 || 0) || 0,
         x2: parseFloat(item.x2 || 0) || 0,
@@ -1220,6 +1222,7 @@ function normalizarCamposGeoTora(item = {}) {
 function lerCamposGeoFormulario() {
     return normalizarCamposGeoTora({
         custodia: document.getElementById('custodia')?.value || '',
+        autef: document.getElementById('autef')?.value || '',
         compGeo: document.getElementById('compGeo')?.value || 0,
         x1: document.getElementById('x1')?.value || 0,
         x2: document.getElementById('x2')?.value || 0,
@@ -1236,6 +1239,7 @@ function aplicarCamposGeoFormulario(item = {}) {
         if (el) el.value = value || '';
     };
     set('custodia', geo.custodia);
+    set('autef', geo.autef);
     set('compGeo', geo.compGeo);
     set('x1', geo.x1);
     set('x2', geo.x2);
@@ -1784,7 +1788,7 @@ function adicionarItemFallback() {
  * Limpar campos do formulário de item
  */
 function limparCamposItemFallback() {
-    const campos = ['especieInput', 'plaqueta', 'custodia', 'comprimento', 'rodo', 'oco1', 'oco2', 'preco', 'compGeo', 'x1', 'x2', 'x3', 'x4', 'volumeGeo'];
+    const campos = ['especieInput', 'plaqueta', 'custodia', 'autef', 'comprimento', 'rodo', 'oco1', 'oco2', 'preco', 'compGeo', 'x1', 'x2', 'x3', 'x4', 'volumeGeo'];
     campos.forEach(campoId => {
         const campo = document.getElementById(campoId);
         if (campo) campo.value = campoId === 'volumeGeo' ? '0.000' : '';
@@ -2140,10 +2144,11 @@ function updateTableBody(tbody) {
                 'R$ 0,00';
             
             // Ordem das colunas conforme cabeçalho (sem M³ Bruto):
-            // Plaqueta | Custódia | Espécie | Rodo | Comprimento | Oco 1 | Oco 2 | Desconto | M³ Líquido | Geo | Preço | Valor | Ações
+            // Plaqueta | Custódia | AUTEF | Espécie | Rodo | Comprimento | Oco 1 | Oco 2 | Desconto | M³ Líquido | Geo | Preço | Valor | Ações
             row.innerHTML = `
                 <td>${item.plaqueta || '-'}</td>
                 <td>${geo.custodia || '-'}</td>
+                <td>${geo.autef || item.autef || '-'}</td>
                 <td>${item.especie || '-'}</td>
                 <td>${(item.rodo || item.diametro) ? (item.rodo || item.diametro) + ' cm' : '-'}</td>
                 <td>${item.comprimento ? item.comprimento + ' cm' : '-'}</td>

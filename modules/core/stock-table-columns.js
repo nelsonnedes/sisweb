@@ -21,36 +21,38 @@
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             }
 
+            /* === TABELAS COM LAYOUT FIXO E CORTE ELEGANTE DE TEXTO === */
+            .table-responsive table,
+            .table-container table,
+            #relatorioContent table {
+                table-layout: fixed !important;
+            }
+
             .table thead th {
                 background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
                 color: #ffffff !important;
                 font-size: 13px !important;
                 font-weight: 600 !important;
-                padding: 10px 12px !important;
+                padding: 10px 8px !important;
                 border-bottom: 2px solid #1a252f !important;
                 position: sticky !important;
                 top: 0 !important;
                 z-index: 10 !important;
                 user-select: none;
-                white-space: nowrap;
-            }
-
-            .table thead th .sort-icon {
-                margin-left: 6px;
-                opacity: 0.7;
-                font-size: 11px;
-            }
-
-            .table tbody tr:hover td {
-                background-color: #f1f7fd !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
             }
 
             .table tbody td {
                 vertical-align: middle !important;
-                padding: 6px 10px !important;
+                padding: 6px 8px !important;
                 border-bottom: 1px solid #edf2f7 !important;
                 font-size: 13px !important;
                 color: #2d3748 !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
             }
 
             /* === BOTÕES DE AÇÃO PADRONIZADOS === */
@@ -199,27 +201,77 @@
     function initTableResize(table, tableKey) {
         if (!table) return;
         injectStyles();
+        table.style.tableLayout = 'fixed';
 
         var cols = table.querySelectorAll('colgroup col');
         var ths = table.querySelectorAll('thead th');
         if (!ths.length) return;
 
-        // Recuperar larguras salvas
+        var isReport = table.classList.contains('table-report-estoque') || !!table.closest('#relatorioContent');
+        if (isReport) {
+            table.style.minWidth = '0';
+        }
+
+        // Atribuir tooltip com o título completo
+        ths.forEach(function(th) {
+            if (!th.title) {
+                th.title = th.textContent.trim();
+            }
+        });
+
+        // Recuperar larguras salvas (suporta objeto por data-col ou array posicional)
         var savedWidths = null;
         try {
             var raw = localStorage.getItem(STORAGE_PREFIX + tableKey);
             if (raw) savedWidths = JSON.parse(raw);
         } catch (_) {}
 
-        if (savedWidths && Array.isArray(savedWidths) && savedWidths.length === ths.length) {
-            ths.forEach(function(th, index) {
-                if (savedWidths[index]) {
-                    th.style.width = savedWidths[index] + 'px';
-                    th.style.minWidth = savedWidths[index] + 'px';
-                    if (cols[index]) cols[index].style.width = savedWidths[index] + 'px';
+        var hasCustomWidths = false;
+        if (savedWidths && typeof savedWidths === 'object') {
+            if (Array.isArray(savedWidths)) {
+                if (savedWidths.length === ths.length) {
+                    ths.forEach(function(th, index) {
+                        if (savedWidths[index]) {
+                            th.style.width = savedWidths[index] + 'px';
+                            if (cols[index]) cols[index].style.width = savedWidths[index] + 'px';
+                            hasCustomWidths = true;
+                        }
+                    });
                 }
-            });
+            } else {
+                ths.forEach(function(th, index) {
+                    var key = th.getAttribute('data-col') || ('col_' + index);
+                    if (savedWidths[key]) {
+                        th.style.width = savedWidths[key] + 'px';
+                        if (cols[index]) cols[index].style.width = savedWidths[key] + 'px';
+                        hasCustomWidths = true;
+                    }
+                });
+            }
         }
+
+        function updateTableTotalWidth() {
+            if (!hasCustomWidths) {
+                if (isReport) {
+                    table.style.width = '100%';
+                }
+                return;
+            }
+            var containerWidth = (table.parentElement && table.parentElement.clientWidth) || 0;
+            var total = 0;
+            ths.forEach(function(h) {
+                total += h.offsetWidth;
+            });
+            if (total > 0) {
+                if (isReport && total <= containerWidth) {
+                    table.style.width = '100%';
+                } else {
+                    table.style.width = total + 'px';
+                }
+            }
+        }
+
+        updateTableTotalWidth();
 
         // Instalar manipuladores de resize
         ths.forEach(function(th, index) {
@@ -233,10 +285,11 @@
             var startX, startWidth;
 
             function onMouseMove(e) {
-                var width = Math.max(40, startWidth + (e.pageX - startX));
+                var width = Math.max(25, startWidth + (e.pageX - startX));
                 th.style.width = width + 'px';
-                th.style.minWidth = width + 'px';
                 if (cols[index]) cols[index].style.width = width + 'px';
+                hasCustomWidths = true;
+                updateTableTotalWidth();
             }
 
             function onMouseUp() {
@@ -244,15 +297,42 @@
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
 
-                // Salvar todas as larguras atuais
-                var currentWidths = [];
-                ths.forEach(function(h) {
-                    currentWidths.push(Math.round(h.getBoundingClientRect().width));
+                // Salvar mapa de larguras por coluna
+                var widthsMap = {};
+                var widthsArray = [];
+                ths.forEach(function(h, idx) {
+                    var colKey = h.getAttribute('data-col') || ('col_' + idx);
+                    var w = Math.round(h.getBoundingClientRect().width);
+                    widthsMap[colKey] = w;
+                    widthsArray.push(w);
                 });
                 try {
-                    localStorage.setItem(STORAGE_PREFIX + tableKey, JSON.stringify(currentWidths));
+                    localStorage.setItem(STORAGE_PREFIX + tableKey, JSON.stringify(widthsMap));
                 } catch (_) {}
+                updateTableTotalWidth();
             }
+
+            resizer.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+
+            resizer.addEventListener('dblclick', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                th.style.width = '';
+                if (cols[index]) cols[index].style.width = '';
+                try {
+                    var raw = localStorage.getItem(STORAGE_PREFIX + tableKey);
+                    if (raw) {
+                        var map = JSON.parse(raw);
+                        var colKey = th.getAttribute('data-col') || ('col_' + index);
+                        delete map[colKey];
+                        localStorage.setItem(STORAGE_PREFIX + tableKey, JSON.stringify(map));
+                    }
+                } catch (_) {}
+                updateTableTotalWidth();
+            });
 
             resizer.addEventListener('mousedown', function(e) {
                 e.preventDefault();

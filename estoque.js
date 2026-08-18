@@ -28,17 +28,20 @@ let romaneiosSaidaSelecionados = [];
 let rastreabilidadeRegistros = [];
 let paginaAtualEntrada = 1;
 const ESTOQUE_PAGE_SIZE_DEFAULT = 10;
-const ESTOQUE_PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
+const ESTOQUE_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const estoqueItensPorPagina = {
     entrada: ESTOQUE_PAGE_SIZE_DEFAULT,
     saida: ESTOQUE_PAGE_SIZE_DEFAULT,
     consulta: ESTOQUE_PAGE_SIZE_DEFAULT,
     movimentacoes: ESTOQUE_PAGE_SIZE_DEFAULT,
-    produtos: ESTOQUE_PAGE_SIZE_DEFAULT
+    produtos: ESTOQUE_PAGE_SIZE_DEFAULT,
+    relatorios: ESTOQUE_PAGE_SIZE_DEFAULT
 };
 let paginaAtualSaida = 1;
 let paginaAtualEstoque = 1;
 let paginaAtualMovimentacoes = 1;
+let paginaAtualRelatorio = 1;
+let totalItensRelatorioAtual = 0;
 let estoqueFiltrado = [];
 let movimentacoesFiltradas = [];
 let filtroEstoqueAtual = {};
@@ -153,6 +156,7 @@ function normalizarCamposGeoEstoque(item = {}) {
     }
     return {
         custodia: String(source.custodia || source.custody || source.Custodia || source['Custódia'] || '').trim(),
+        autef: String(source.autef || source.AUTEF || source.Autef || source.documentoFlorestal || source.docFlorestal || '').trim(),
         compGeo,
         x1,
         x2,
@@ -180,6 +184,8 @@ function obterTextoBuscaTora(item = {}) {
         item.description,
         item.especie,
         geo.custodia,
+        geo.autef || item.autef,
+        item.fornecedor,
         item.localizacao
     ].filter(Boolean).join(' '));
 }
@@ -209,6 +215,7 @@ function formatarVolumeGeoEstoque(value) {
 function obterCamposGeoEntrada() {
     const geo = normalizarCamposGeoEstoque({
         custodia: document.getElementById('custodiaEntrada')?.value || '',
+        autef: document.getElementById('autefEntrada')?.value || '',
         compGeo: document.getElementById('compGeoEntrada')?.value || 0,
         x1: document.getElementById('x1Entrada')?.value || 0,
         x2: document.getElementById('x2Entrada')?.value || 0,
@@ -228,6 +235,7 @@ function aplicarCamposGeoEntrada(item = {}) {
         if (el) el.value = value || '';
     };
     set('custodiaEntrada', geo.custodia);
+    set('autefEntrada', geo.autef || item.autef || '');
     set('compGeoEntrada', geo.compGeo || '');
     set('x1Entrada', geo.x1 || '');
     set('x2Entrada', geo.x2 || '');
@@ -240,6 +248,7 @@ function aplicarCamposGeoEntrada(item = {}) {
 function obterCamposGeoManualSaida() {
     const geo = normalizarCamposGeoEstoque({
         custodia: document.getElementById('manualCustodiaSaida')?.value || '',
+        autef: document.getElementById('manualAutefSaida')?.value || '',
         compGeo: document.getElementById('manualCompGeoSaida')?.value || 0,
         x1: document.getElementById('manualX1Saida')?.value || 0,
         x2: document.getElementById('manualX2Saida')?.value || 0,
@@ -253,7 +262,7 @@ function obterCamposGeoManualSaida() {
 }
 
 function limparCamposGeoManualSaida() {
-    ['manualCustodiaSaida', 'manualCompGeoSaida', 'manualX1Saida', 'manualX2Saida', 'manualX3Saida', 'manualX4Saida'].forEach((id) => {
+    ['manualCustodiaSaida', 'manualAutefSaida', 'manualCompGeoSaida', 'manualX1Saida', 'manualX2Saida', 'manualX3Saida', 'manualX4Saida'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -283,7 +292,7 @@ function configurarCamposGeoEstoque() {
 }
 
 function obterValorOrdenacaoEstoque(item, coluna) {
-    const geoKeys = ['custodia', 'compGeo', 'x1', 'x2', 'x3', 'x4', 'volumeGeo'];
+    const geoKeys = ['custodia', 'autef', 'compGeo', 'x1', 'x2', 'x3', 'x4', 'volumeGeo'];
     if (geoKeys.includes(coluna)) {
         return normalizarCamposGeoEstoque(item)[coluna];
     }
@@ -1002,7 +1011,42 @@ async function entregarRelatorioEstoque(options = {}) {
     abrirPreviewRelatorio(options.htmlCompleto || '', pdfOptions);
 }
 
+function alterarOrientacaoPreviewRelatorio(orientacao) {
+    const validOrientacao = orientacao === 'portrait' ? 'portrait' : 'landscape';
+    window.__estoqueRelatorioOrientacao = validOrientacao;
+    
+    const btnPortrait = document.getElementById('btnPreviewPortrait');
+    const btnLandscape = document.getElementById('btnPreviewLandscape');
+    if (btnPortrait && btnLandscape) {
+        if (validOrientacao === 'portrait') {
+            btnPortrait.style.background = '#3498db';
+            btnLandscape.style.background = 'transparent';
+        } else {
+            btnPortrait.style.background = 'transparent';
+            btnLandscape.style.background = '#3498db';
+        }
+    }
+
+    const payload = window.__estoquePreviewPrintPayload || {};
+    if (payload.pdfOptions) {
+        payload.pdfOptions.orientation = validOrientacao;
+    }
+
+    const iframe = document.getElementById('relatorioPreviewIframe');
+    if (iframe && iframe.contentDocument) {
+        let styleTag = iframe.contentDocument.getElementById('print-orientation-style');
+        if (!styleTag) {
+            styleTag = iframe.contentDocument.createElement('style');
+            styleTag.id = 'print-orientation-style';
+            iframe.contentDocument.head.appendChild(styleTag);
+        }
+        styleTag.textContent = `@page { size: ${validOrientacao} !important; margin: 10mm; }`;
+    }
+}
+window.alterarOrientacaoPreviewRelatorio = alterarOrientacaoPreviewRelatorio;
+
 function abrirPreviewRelatorio(htmlCompleto, pdfOptions = null) {
+    const orientacao = window.__estoqueRelatorioOrientacao || 'landscape';
     window.__estoquePreviewPrintPayload = {
         html: htmlCompleto,
         pdfOptions
@@ -1015,6 +1059,9 @@ function abrirPreviewRelatorio(htmlCompleto, pdfOptions = null) {
     }
     iframe.srcdoc = htmlCompleto;
     modal.style.display = 'block';
+    
+    // Sincronizar estado inicial da orientação nos botões
+    alterarOrientacaoPreviewRelatorio(orientacao);
 }
 
 function fecharRelatorioPreview() {
@@ -1026,13 +1073,25 @@ function fecharRelatorioPreview() {
 
 async function imprimirDoIframe() {
     const payload = window.__estoquePreviewPrintPayload || {};
+    const orientacao = window.__estoqueRelatorioOrientacao || 'landscape';
     if (isEstoquePwaPrintContext() && payload.pdfOptions) {
+        payload.pdfOptions.orientation = orientacao;
         await exportarTabelaEstoquePdf(payload.pdfOptions);
         return;
     }
 
     const iframe = document.getElementById('relatorioPreviewIframe');
     if (iframe && iframe.contentWindow) {
+        if (iframe.contentDocument) {
+            let styleTag = iframe.contentDocument.getElementById('print-orientation-style');
+            if (!styleTag) {
+                styleTag = iframe.contentDocument.createElement('style');
+                styleTag.id = 'print-orientation-style';
+                iframe.contentDocument.head.appendChild(styleTag);
+            }
+            styleTag.textContent = `@page { size: ${orientacao} !important; margin: 10mm; }`;
+        }
+        iframe.contentWindow.focus();
         iframe.contentWindow.print();
     }
 }
@@ -1371,7 +1430,7 @@ function calcularVolumesAutomatico() {
 function configurarNavegacaoEnter() {
     const campos = [
         'entradaData', 'fornecedorSelect', 'romaneioEntradaSelect',
-        'plaquetaEntrada', 'custodiaEntrada', 'especieEntrada', 'diametroEntrada', 'comprimentoEntrada',
+        'plaquetaEntrada', 'custodiaEntrada', 'autefEntrada', 'especieEntrada', 'diametroEntrada', 'comprimentoEntrada',
         'oco1Entrada', 'oco2Entrada', 'precoEntrada', 'm3BrutoEntrada', 'm3LiquidoEntrada',
         'compGeoEntrada', 'x1Entrada', 'x2Entrada', 'x3Entrada', 'x4Entrada'
     ];
@@ -1498,6 +1557,8 @@ function showTab(tabName) {
         carregarTabelaMovimentacoes();
     } else if (tabName === 'produtos' || tabName === 'entradaAlmoxarifado') {
         carregarEstoqueProdutos();
+    } else if (tabName === 'relatorios') {
+        gerarRelatorio();
     }
 }
 
@@ -2286,6 +2347,7 @@ function limparCamposEntrada(resetPersisted = false) {
     // Manter persistência temporária de Data, Fornecedor e Espécie
     safeClear('plaquetaEntrada');
     safeClear('custodiaEntrada');
+    safeClear('autefEntrada');
     if (resetPersisted) {
         safeClear('especieEntrada');
         safeClear('precoEntrada');
@@ -2377,6 +2439,9 @@ function atualizarItensPorPaginaTabela(scope, value) {
     } else if (scope === 'produtos') {
         if (typeof paginaAtualProdutos !== 'undefined') paginaAtualProdutos = 1;
         if (typeof renderizarTabelaProdutos === 'function') renderizarTabelaProdutos();
+    } else if (scope === 'relatorios') {
+        paginaAtualRelatorio = 1;
+        gerarRelatorio(true);
     }
 }
 
@@ -2452,6 +2517,7 @@ function getEntradaColumnsDefs() {
     return [
         { key: 'plaqueta', label: 'Plaqueta' },
         { key: 'custodia', label: 'Custódia' },
+        { key: 'autef', label: 'AUTEF' },
         { key: 'especie', label: 'Espécie' },
         { key: 'diametro', label: 'Rodo', align: 'text-center' },
         { key: 'comprimento', label: 'Comprimento', align: 'text-center' },
@@ -2662,6 +2728,7 @@ function getSaidaColumnsDefs() {
     return [
         { key: 'plaqueta', label: 'Plaqueta' },
         { key: 'custodia', label: 'Custódia' },
+        { key: 'autef', label: 'AUTEF' },
         { key: 'especie', label: 'Espécie' },
         { key: 'diametro', label: 'Rodo', align: 'text-center' },
         { key: 'comprimento', label: 'Comprimento', align: 'text-center' },
@@ -2879,6 +2946,7 @@ function obterValorCelulaSaida(tora = {}, key = '') {
     const map = {
         plaqueta: `${escapeHtml(tora.plaqueta || '-')}${manualBadge}`,
         custodia: escapeHtml(geo.custodia || '-'),
+        autef: escapeHtml(geo.autef || tora.autef || '-'),
         especie: escapeHtml(tora.especie || '-'),
         diametro: `${formatNumber(tora.diametro || tora.rodo || 0, 1)} cm`,
         comprimento: `${formatNumber(tora.comprimento || 0, 1)} cm`,
@@ -2914,9 +2982,12 @@ function getConsultaColumnsDefs() {
     return [
         { key: 'plaqueta', label: 'Plaqueta' },
         { key: 'custodia', label: 'Custódia' },
+        { key: 'autef', label: 'AUTEF' },
         { key: 'especie', label: 'Espécie' },
         { key: 'diametro', label: 'Rodo (cm)', align: 'text-center' },
         { key: 'comprimento', label: 'Comprimento (cm)', align: 'text-center' },
+        { key: 'oco1', label: 'Oco 1 (cm)', align: 'text-center' },
+        { key: 'oco2', label: 'Oco 2 (cm)', align: 'text-center' },
         { key: 'volumeBruto', label: 'Volume Bruto (m³)', align: 'text-right' },
         { key: 'volumeLiquido', label: 'Volume Líquido (m³)', align: 'text-right' },
         { key: 'compGeo', label: 'Comp. Geo.', align: 'text-center' },
@@ -2996,15 +3067,12 @@ function getVisibleConsultaColumnsCount() {
 }
 
 function applyConsultaColumnsConfig() {
-    const table = document.getElementById('tabelaEstoque');
-    if (!table) return;
-    const cfg = getConsultaColumnsConfigSync();
-    getConsultaColumnsDefs().forEach(d => {
-        const visible = cfg[d.key] !== false;
-        table.querySelectorAll(`[data-col="${d.key}"]`).forEach(el => {
-            el.style.display = visible ? '' : 'none';
-        });
-    });
+    // A renderização dinâmica em carregarTabelaEstoque reconstrói o colgroup, thead e tbody
+    // apenas com as colunas ativas, ajustando a largura fluidamente no escopo da tela.
+    const consultarTab = document.getElementById('consultar');
+    if (consultarTab && consultarTab.classList.contains('active')) {
+        carregarTabelaEstoque(filtroEstoqueAtual);
+    }
 }
 
 async function saveConsultaColumnsConfig(config = {}) {
@@ -3125,9 +3193,12 @@ function obterValorCelulaConsultaEstoque(tora = {}, key = '') {
     const map = {
         plaqueta: escapeHtml(tora.plaqueta || '-'),
         custodia: escapeHtml(geo.custodia || '-'),
+        autef: escapeHtml(geo.autef || tora.autef || '-'),
         especie: escapeHtml(tora.especie || '-'),
         diametro: formatNumber(tora.diametro || tora.rodo || 0, 1),
         comprimento: formatNumber(tora.comprimento || 0, 1),
+        oco1: (tora.oco1 || tora.oco1Cm || tora.oco) ? `${formatNumber(tora.oco1 || tora.oco1Cm || tora.oco, 1)} cm` : '-',
+        oco2: (tora.oco2 || tora.oco2Cm) ? `${formatNumber(tora.oco2 || tora.oco2Cm, 1)} cm` : '-',
         volumeBruto: formatNumber(tora.volumeBruto || 0, 3),
         volumeLiquido: formatNumber(tora.volumeLiquido || 0, 3),
         compGeo: formatarMedidaGeoEstoque(geo.compGeo),
@@ -3206,6 +3277,7 @@ function renderizarTabelaEntrada() {
                 <td class="text-center" data-label="Selecionar"><input type="checkbox" class="check-item-entrada" value="${item.id}" ${isChecked} onchange="toggleEntrada('${item.id}', this.checked)"></td>
                 <td data-col="plaqueta" data-label="Plaqueta">${escapeHtml(item.plaqueta || '-')}</td>
                 <td data-col="custodia" data-label="Custódia">${escapeHtml(geo.custodia || '-')}</td>
+                <td data-col="autef" data-label="AUTEF">${escapeHtml(geo.autef || item.autef || '-')}</td>
                 <td data-col="especie" data-label="Espécie">${escapeHtml(item.especie || '-')}</td>
                 <td data-col="diametro" data-label="Rodo" class="text-center">${formatNumber(item.diametro || item.rodo, 1)}</td>
                 <td data-col="comprimento" data-label="Comprimento" class="text-center">${formatNumber(item.comprimento, 1)}</td>
@@ -3630,6 +3702,7 @@ function carregarTorasDisponiveis() {
             </td>
             <td>${escapeHtml(tora.plaqueta || '-')}</td>
             <td>${escapeHtml(geo.custodia || '-')}</td>
+            <td>${escapeHtml(geo.autef || tora.autef || '-')}</td>
             <td>${escapeHtml(tora.especie || '-')}</td>
             <td style="text-align: center;">${formatNumber(tora.diametro, 1)} cm</td>
             <td style="text-align: center;">${formatNumber(tora.comprimento, 1)} cm</td>
@@ -4892,35 +4965,61 @@ function carregarTabelaEstoque(filtro = {}) {
     torasDisponiveis.sort((a, b) => compararValoresEstoque(a, b, ordemEstoque.coluna, ordemEstoque.direcao));
 
     estoqueFiltrado = torasDisponiveis.slice();
-    const resumoEl = document.getElementById('resumoEstoque');
     const totalVol = estoqueFiltrado.reduce((acc, t) => acc + (t.volumeLiquido || 0), 0);
     const totalGeo = estoqueFiltrado.reduce((acc, t) => acc + (normalizarCamposGeoEstoque(t).volumeGeo || 0), 0);
     const totalVal = estoqueFiltrado.reduce((acc, t) => acc + ((t.volumeLiquido || 0) * (t.precoCusto || 0)), 0);
-    if (resumoEl) {
-        resumoEl.innerHTML = `
-            <div class="summary-row">
-                <span>Total de Toras:</span>
-                <span>${estoqueFiltrado.length}</span>
-            </div>
-            <div class="summary-row">
-                <span>Volume Líquido Total:</span>
-                <span>${formatNumber(totalVol, 3)} m³</span>
-            </div>
-            <div class="summary-row">
-                <span>Volume Geométrico Total:</span>
-                <span>${formatNumber(totalGeo, 3)} m³</span>
-            </div>
-            <div class="summary-row">
-                <span>Valor Total:</span>
-                <span>${formatCurrency(totalVal)}</span>
-            </div>
+
+    const totalTorasEl = document.getElementById('totalToras');
+    const volumeTotalEl = document.getElementById('volumeTotal');
+    const volumeGeoTotalEl = document.getElementById('volumeGeoTotal');
+    const valorEstoqueEl = document.getElementById('valorEstoque');
+    if (totalTorasEl) totalTorasEl.textContent = estoqueFiltrado.length;
+    if (volumeTotalEl) volumeTotalEl.textContent = `${formatNumber(totalVol, 3)} m³`;
+    if (volumeGeoTotalEl) volumeGeoTotalEl.textContent = `${formatNumber(totalGeo, 3)} m³`;
+    if (valorEstoqueEl) valorEstoqueEl.textContent = formatCurrency(totalVal);
+
+    // Painel consolidado de médias por espécie
+    const mediasEl = document.getElementById('mediasEspecieEstoque');
+    if (mediasEl) {
+        if (typeof calcularMediasPorEspecie === 'function' && typeof renderizarHtmlMediasEspecies === 'function') {
+            const medias = calcularMediasPorEspecie(estoqueFiltrado);
+            mediasEl.innerHTML = renderizarHtmlMediasEspecies(medias);
+        } else {
+            mediasEl.innerHTML = '';
+        }
+    }
+
+    const defs = getVisibleConsultaColumns();
+
+    // Renderizar colgroup e thead dinâmicos com base nas colunas ativas
+    const colgroupEl = document.getElementById('tabelaEstoqueColgroup');
+    if (colgroupEl) {
+        colgroupEl.innerHTML = `
+            <col style="width: 40px;">
+            ${defs.map(def => `<col class="${escapeHtml(def.key)}" data-col="${escapeHtml(def.key)}">`).join('')}
+            <col class="acoes" style="width: 80px;">
+        `;
+    }
+
+    const theadEl = document.getElementById('tabelaEstoqueThead');
+    if (theadEl) {
+        theadEl.innerHTML = `
+            <tr>
+                <th style="width: 40px;"><input type="checkbox" id="checkTodoEstoque" onchange="toggleTodoEstoque()"></th>
+                ${defs.map(def => {
+                    const sortIcon = (ordemEstoque.coluna === def.key)
+                        ? `<i class="fas fa-sort-${ordemEstoque.direcao === 'asc' ? 'up' : 'down'} sort-icon" style="color:#2b6cb0; margin-left:4px;"></i>`
+                        : '<i class="fas fa-sort sort-icon" style="opacity:0.35; margin-left:4px;"></i>';
+                    return `<th data-col="${escapeHtml(def.key)}" onclick="ordenarEstoque('${escapeHtml(def.key)}')" style="cursor: pointer;">${escapeHtml(def.label)} ${sortIcon}</th>`;
+                }).join('')}
+                <th class="actions-col sticky-actions">Ações</th>
+            </tr>
         `;
     }
 
     if (torasDisponiveis.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${getVisibleConsultaColumnsCount() + 2}" style="text-align: center;">Nenhuma tora encontrada no estoque</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${defs.length + 2}" style="text-align: center;">Nenhuma tora encontrada no estoque</td></tr>`;
         renderizarPaginacaoPadrao('paginacaoEstoque', 0, 1, obterItensPorPaginaTabela('consulta'), 'mudarPaginaEstoque', { sizeScope: 'consulta' });
-        applyConsultaColumnsConfig();
         return;
     }
 
@@ -4931,13 +5030,12 @@ function carregarTabelaEstoque(filtro = {}) {
     const inicio = (paginaAtualEstoque - 1) * itensPorPaginaEstoque;
     const pagina = torasDisponiveis.slice(inicio, inicio + itensPorPaginaEstoque);
 
-    const consultaDefs = getConsultaColumnsDefs();
     tbody.innerHTML = pagina.map(tora => {
         const isChecked = estoqueSelecionadas.has(String(tora.id)) ? 'checked' : '';
         return `
         <tr>
             <td class="text-center"><input type="checkbox" class="check-estoque" value="${tora.id}" ${isChecked} onchange="toggleEstoque('${tora.id}', this.checked)"></td>
-            ${consultaDefs.map(def => renderConsultaEstoqueTd(def, tora)).join('')}
+            ${defs.map(def => renderConsultaEstoqueTd(def, tora)).join('')}
             <td class="text-center actions-cell sticky-actions">
                 <div class="actions-cell-inner stock-actions-cell">
                     <button onclick="editarTora('${tora.id}')" class="stock-btn-action stock-btn-edit" title="Editar Tora">
@@ -4952,8 +5050,12 @@ function carregarTabelaEstoque(filtro = {}) {
         `;
     }).join('');
     renderizarPaginacaoPadrao('paginacaoEstoque', torasDisponiveis.length, paginaAtualEstoque, itensPorPaginaEstoque, 'mudarPaginaEstoque', { sizeScope: 'consulta' });
-    applyConsultaColumnsConfig();
     atualizarCheckTodoEstoqueVisivel();
+
+    if (window.StockTableColumns && typeof window.StockTableColumns.initTable === 'function') {
+        const table = document.getElementById('tabelaEstoque');
+        if (table) window.StockTableColumns.initTable(table, 'consulta_estoque');
+    }
 }
 
 function toggleTodoEstoque() {
@@ -5503,6 +5605,7 @@ function getMovimentacoesColumnsDefs() {
         { key: 'tipo', label: 'Tipo' },
         { key: 'plaqueta', label: 'Plaqueta' },
         { key: 'custodia', label: 'Custódia' },
+        { key: 'autef', label: 'AUTEF' },
         { key: 'especie', label: 'Espécie' },
         { key: 'volume', label: 'Volume', align: 'text-right' },
         { key: 'volumeGeo', label: 'V. Geo.', align: 'text-right' },
@@ -5736,6 +5839,7 @@ function obterValorCelulaMovimentacao(mov = {}, key = '', options = {}) {
         tipo: tipoHtml,
         plaqueta: `${escapeHtml(mov.plaqueta || '-')}${manualBadge}`,
         custodia: escapeHtml(geo.custodia || '-'),
+        autef: escapeHtml(geo.autef || mov.autef || '-'),
         especie: escapeHtml(mov.especie || '-'),
         volume: `${formatNumber(mov.volume, 3)} m³`,
         volumeGeo: `${formatarVolumeGeoEstoque(geo.volumeGeo)} m³`,
@@ -6485,6 +6589,7 @@ function getEstoqueReportColumnsDefs(tipoRelatorio) {
         return [
             { key: 'plaqueta', label: 'Plaqueta' },
             { key: 'custodia', label: 'Custódia' },
+            { key: 'autef', label: 'AUTEF' },
             { key: 'especie', label: 'Espécie' },
             { key: 'diametro', label: 'Rodo', align: 'text-center' },
             { key: 'comprimento', label: 'Comprimento', align: 'text-center' },
@@ -6515,6 +6620,7 @@ function getEstoqueReportColumnsDefs(tipoRelatorio) {
             { key: 'tipo', label: 'Tipo' },
             { key: 'plaqueta', label: 'Plaqueta' },
             { key: 'custodia', label: 'Custódia' },
+            { key: 'autef', label: 'AUTEF' },
             { key: 'especie', label: 'Espécie' },
             { key: 'volume', label: 'Volume', align: 'text-right' },
             { key: 'compGeo', label: 'Comp. Geo.', align: 'text-center' },
@@ -6538,6 +6644,7 @@ function getEstoqueReportColumnsDefs(tipoRelatorio) {
             { key: 'toraId', label: 'ID Tora' },
             { key: 'plaqueta', label: 'Plaqueta' },
             { key: 'custodia', label: 'Custódia' },
+            { key: 'autef', label: 'AUTEF' },
             { key: 'especie', label: 'Espécie' },
             { key: 'numeroRomaneio', label: 'Romaneio' },
             { key: 'tipoRomaneio', label: 'Tipo Rom.' },
@@ -6551,6 +6658,21 @@ function getEstoqueReportColumnsDefs(tipoRelatorio) {
             { key: 'status', label: 'Status' },
             { key: 'origem', label: 'Origem' },
             { key: 'confiabilidade', label: 'Confiança' }
+        ];
+    }
+    if (tipo === 'fornecedor') {
+        return [
+            { key: 'fornecedor', label: 'Fornecedor' },
+            { key: 'especies', label: 'Espécies' },
+            { key: 'quantidade', label: 'Quantidade', align: 'text-right' },
+            { key: 'volume', label: 'Volume', align: 'text-right' },
+            { key: 'volumeGeo', label: 'V. Geo.', align: 'text-right' },
+            { key: 'mediaRodo', label: 'Média Rodo', align: 'text-right' },
+            { key: 'mediaComprimento', label: 'Média Comprimento', align: 'text-right' },
+            { key: 'mediaVolume', label: 'Média Volume', align: 'text-right' },
+            { key: 'mediaVolumeGeo', label: 'Média V. Geo.', align: 'text-right' },
+            { key: 'precoMedio', label: 'Preço Médio', align: 'text-right' },
+            { key: 'valor', label: 'Valor', align: 'text-right' }
         ];
     }
     if (tipo === 'especies') {
@@ -6567,9 +6689,9 @@ function getEstoqueReportColumnsDefs(tipoRelatorio) {
             { key: 'valor', label: 'Valor', align: 'text-right' }
         ];
     }
-    if (tipo === 'localizacao') {
+    if (tipo === 'autef' || tipo === 'localizacao') {
         return [
-            { key: 'localizacao', label: 'Localização' },
+            { key: 'autef', label: 'AUTEF' },
             { key: 'especies', label: 'Espécies' },
             { key: 'quantidade', label: 'Quantidade', align: 'text-right' },
             { key: 'volume', label: 'Volume', align: 'text-right' },
@@ -6813,6 +6935,7 @@ function obterValorCelulaRelatorioEstoque(tipo, key, item) {
         const map = {
             plaqueta: escapeHtml(item.plaqueta || '-'),
             custodia: escapeHtml(geo.custodia || '-'),
+            autef: escapeHtml(geo.autef || item.autef || '-'),
             especie: escapeHtml(item.especie || '-'),
             diametro: item.diametro || item.rodo ? `${formatNumber(item.diametro || item.rodo, 1)} cm` : '-',
             comprimento: item.comprimento ? `${formatNumber(item.comprimento, 1)} cm` : '-',
@@ -6844,6 +6967,7 @@ function obterValorCelulaRelatorioEstoque(tipo, key, item) {
             tipo: escapeHtml(String(item.tipo || '').toUpperCase()),
             plaqueta: escapeHtml(item.plaqueta || '-'),
             custodia: escapeHtml(geo.custodia || '-'),
+            autef: escapeHtml(geo.autef || item.autef || '-'),
             especie: escapeHtml(item.especie || '-'),
             volume: `${formatNumber(item.volume || 0, 3)} m³`,
             compGeo: formatarMedidaGeoEstoque(geo.compGeo),
@@ -6868,6 +6992,7 @@ function obterValorCelulaRelatorioEstoque(tipo, key, item) {
             toraId: escapeHtml(item.toraId || '-'),
             plaqueta: escapeHtml(item.plaqueta || '-'),
             custodia: escapeHtml(geo.custodia || item.custodia || '-'),
+            autef: escapeHtml(geo.autef || item.autef || '-'),
             especie: escapeHtml(item.especie || '-'),
             numeroRomaneio: escapeHtml(item.numeroRomaneio || item.romaneioId || '-'),
             tipoRomaneio: escapeHtml(item.tipoRomaneio || '-'),
@@ -6884,8 +7009,10 @@ function obterValorCelulaRelatorioEstoque(tipo, key, item) {
         };
         return map[key] ?? '';
     }
-    if (tipo === 'especies' || tipo === 'localizacao') {
+    if (tipo === 'especies' || tipo === 'localizacao' || tipo === 'fornecedor' || tipo === 'autef') {
         const map = {
+            fornecedor: escapeHtml(item.fornecedor || 'Não informado'),
+            autef: escapeHtml(item.autef || 'Sem AUTEF'),
             especie: escapeHtml(item.especie || 'Sem espécie'),
             localizacao: escapeHtml(item.localizacao || 'Sem localização'),
             especies: escapeHtml(item.especiesTexto || item.especies || '-'),
@@ -6915,18 +7042,161 @@ function ordenarListaRelatorioEstoque(tipo, lista) {
     return lista.sort((a, b) => compararValoresEstoque(a, b, coluna, ordemRelatorio.direcao));
 }
 
-function montarTabelaRelatorioEstoque(tipo, items, selectionTipo, getKey, onlySelected, emptyText) {
+function mudarPaginaRelatorio(novaPagina) {
+    paginaAtualRelatorio = novaPagina;
+    gerarRelatorio(true);
+}
+window.mudarPaginaRelatorio = mudarPaginaRelatorio;
+
+function montarTabelaRelatorioEstoque(tipo, items, selectionTipo, getKey, onlySelected, emptyText, options = {}) {
     const defs = getVisibleEstoqueReportColumns(tipo);
-    const linhas = items.map(item => `
+    const totalItens = items.length;
+    totalItensRelatorioAtual = totalItens;
+
+    // Calcular Totais Gerais Consolidados (exatamente como na consulta de toras)
+    let totalToras = 0;
+    let volumeTotal = 0;
+    let volumeGeoTotal = 0;
+    let valorTotal = 0;
+
+    if (tipo === 'posicao') {
+        totalToras = items.length;
+        volumeTotal = items.reduce((acc, t) => acc + (t.volumeLiquido || 0), 0);
+        volumeGeoTotal = items.reduce((acc, t) => acc + (normalizarCamposGeoEstoque(t).volumeGeo || 0), 0);
+        valorTotal = items.reduce((acc, t) => acc + ((t.volumeLiquido || 0) * (t.precoCusto || 0)), 0);
+    } else if (tipo === 'fornecedor' || tipo === 'especies' || tipo === 'autef' || tipo === 'localizacao') {
+        totalToras = items.reduce((acc, item) => acc + (parseInt(item.quantidade || 0, 10) || 0), 0);
+        volumeTotal = items.reduce((acc, item) => acc + (parseNumeroEstoque(item.volume) || 0), 0);
+        volumeGeoTotal = items.reduce((acc, item) => acc + (parseNumeroEstoque(item.volumeGeo) || 0), 0);
+        valorTotal = items.reduce((acc, item) => acc + (parseNumeroEstoque(item.valor) || 0), 0);
+    } else if (tipo === 'movimentacao') {
+        totalToras = items.length;
+        volumeTotal = items.reduce((acc, m) => acc + (m.volume || 0), 0);
+        volumeGeoTotal = items.reduce((acc, m) => acc + (normalizarCamposGeoEstoque(m).volumeGeo || 0), 0);
+        valorTotal = items.reduce((acc, m) => acc + (m.valor || ((m.volume || 0) * (m.preco || m.precoCusto || 0))), 0);
+    } else if (tipo === 'rastreabilidade') {
+        totalToras = items.length;
+        volumeTotal = items.reduce((acc, r) => acc + (parseNumeroEstoque(r.volumeTora) || 0), 0);
+        volumeGeoTotal = items.reduce((acc, r) => acc + (normalizarCamposGeoEstoque(r).volumeGeo || r.volumeGeo || 0), 0);
+        valorTotal = items.reduce((acc, r) => acc + (parseNumeroEstoque(r.valor) || 0), 0);
+    } else {
+        totalToras = items.length;
+        volumeTotal = items.reduce((acc, i) => acc + (i.volume || i.volumeLiquido || i.saldo || 0), 0);
+        volumeGeoTotal = items.reduce((acc, i) => acc + (normalizarCamposGeoEstoque(i).volumeGeo || i.volumeGeo || 0), 0);
+        valorTotal = items.reduce((acc, i) => acc + (i.valor || i.valorTotal || 0), 0);
+    }
+
+    // Paginação de itens
+    const pageSize = obterItensPorPaginaTabela('relatorios');
+    const totalPaginas = Math.max(1, Math.ceil(totalItens / pageSize));
+    if (paginaAtualRelatorio > totalPaginas) paginaAtualRelatorio = totalPaginas;
+    if (paginaAtualRelatorio < 1) paginaAtualRelatorio = 1;
+    const inicio = (paginaAtualRelatorio - 1) * pageSize;
+    const itensPagina = (onlySelected || options.disablePagination) ? items : items.slice(inicio, inicio + pageSize);
+
+    const linhas = itensPagina.map(item => `
         <tr>
             ${renderRelatorioSelecionarTd(selectionTipo, getKey(item), onlySelected)}
             ${defs.map(def => renderRelatorioEstoqueTd(tipo, def, item)).join('')}
         </tr>
     `).join('');
     const colspan = defs.length + (onlySelected ? 0 : 1);
+    const colgroupHtml = `
+        <colgroup>
+            ${onlySelected ? '' : '<col style="width: 40px;">'}
+            ${defs.map(def => `<col class="${escapeHtml(def.key)}" data-col="${escapeHtml(def.key)}">`).join('')}
+        </colgroup>
+    `;
+
+    const paginacaoHtml = (onlySelected || options.disablePagination) ? '' : '<div id="paginacaoRelatorios" class="pagination-controls"></div>';
+
+    const cardsHtml = `
+        <div class="stats-grid" id="resumoRelatoriosStats" style="margin-top: 16px;">
+            <div class="stat-card">
+                <div class="stat-value" id="statRelTotalToras">${totalToras}</div>
+                <div class="stat-label">Total de Toras</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statRelVolumeLiquido">${formatNumber(volumeTotal, 3)} m³</div>
+                <div class="stat-label">Volume Líquido Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statRelVolumeGeo">${formatNumber(volumeGeoTotal, 3)} m³</div>
+                <div class="stat-label">Volume Geométrico Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statRelValorTotal">${formatCurrency(valorTotal)}</div>
+                <div class="stat-label">Valor Total</div>
+            </div>
+        </div>
+    `;
+
+    // Calcular Médias por Espécie
+    const speciesStats = {};
+    if (tipo === 'especies') {
+        items.forEach(item => {
+            const esp = item.especie || 'Sem espécie';
+            const qtd = parseInt(item.quantidade || 0, 10) || 1;
+            const avgRodo = parseNumeroEstoque(item.mediaRodo);
+            const avgVol = parseNumeroEstoque(item.mediaVolume || (item.volume / qtd));
+            speciesStats[esp] = {
+                totalRodo: avgRodo * qtd,
+                countRodo: avgRodo > 0 ? qtd : 0,
+                totalVolume: avgVol * qtd,
+                countVolume: avgVol > 0 ? qtd : 0,
+                count: qtd
+            };
+        });
+    } else {
+        items.forEach(item => {
+            const esp = item.especie;
+            if (!esp) return;
+            const rodo = parseNumeroEstoque(item.diametro || item.rodo || item.rodoTora || item.mediaRodo);
+            const vol = parseNumeroEstoque(item.volumeLiquido || item.volume || item.volumeTora || item.volumeSerraria || item.mediaVolume);
+
+            if (!speciesStats[esp]) {
+                speciesStats[esp] = { totalRodo: 0, countRodo: 0, totalVolume: 0, countVolume: 0, count: 0 };
+            }
+            speciesStats[esp].count++;
+            if (rodo > 0) {
+                speciesStats[esp].totalRodo += rodo;
+                speciesStats[esp].countRodo++;
+            }
+            if (vol > 0) {
+                speciesStats[esp].totalVolume += vol;
+                speciesStats[esp].countVolume++;
+            }
+        });
+    }
+
+    let speciesCardsHtml = '';
+    Object.keys(speciesStats).sort((a, b) => String(a).localeCompare(String(b), 'pt-BR')).forEach(esp => {
+        const stats = speciesStats[esp];
+        const avgRodo = stats.countRodo > 0 ? (stats.totalRodo / stats.countRodo) : 0;
+        const avgVol = stats.countVolume > 0 ? (stats.totalVolume / stats.countVolume) : 0;
+
+        speciesCardsHtml += `
+            <div class="stat-species-card" style="background: #ffffff; padding: 12px 14px; border-radius: 6px; border: 1px solid #e2e8f0; text-align: center; min-width: 140px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex: 0 0 auto;">
+                <div style="font-weight: 700; color: #1e293b; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; font-size: 13px;">${escapeHtml(esp)}</div>
+                <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Média Rodo: <strong style="color: #0f172a;">${formatNumber(avgRodo, 1)} cm</strong></div>
+                <div style="font-size: 12px; color: #64748b;">Média Volu: <strong style="color: #0f172a;">${formatNumber(avgVol, 3)} m³</strong></div>
+            </div>
+        `;
+    });
+
+    const speciesBlockHtml = speciesCardsHtml ? `
+        <div class="stats-species-container" style="margin-top: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 12px 0; font-size: 13px; font-weight: 700; color: #334155; border-left: 4px solid #3b82f6; padding-left: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Médias de Rodo e Volume por Espécie</h4>
+            <div style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; flex-wrap: wrap;">
+                ${speciesCardsHtml}
+            </div>
+        </div>
+    ` : '';
+
     return `
-        <div class="table-container">
-            <table class="table table-wide-estoque">
+        <div class="table-container report-table-container">
+            <table class="table table-report-estoque" id="tabelaRelatorioEstoque">
+                ${colgroupHtml}
                 <thead>
                     <tr>
                         ${renderRelatorioSelecionarTodosTh(onlySelected)}
@@ -6936,6 +7206,9 @@ function montarTabelaRelatorioEstoque(tipo, items, selectionTipo, getKey, onlySe
                 <tbody>${linhas || `<tr><td colspan="${colspan}">${emptyText}</td></tr>`}</tbody>
             </table>
         </div>
+        ${paginacaoHtml}
+        ${cardsHtml}
+        ${speciesBlockHtml}
     `;
 }
 
@@ -6949,9 +7222,17 @@ window.getEstoqueReportColumnsDefs = getEstoqueReportColumnsDefs;
 window.getVisibleEstoqueReportColumns = getVisibleEstoqueReportColumns;
 
 async function gerarRelatorio(isSort = false) {
-    const tipoRelatorio = document.getElementById('tipoRelatorio').value;
-    const dataInicio = document.getElementById('relDataInicio').value;
-    const dataFim = document.getElementById('relDataFim').value;
+    const tipoRelatorio = document.getElementById('tipoRelatorio')?.value || '';
+    if (!tipoRelatorio) {
+        const contentEl = document.getElementById('relatorioContent');
+        const resultEl = document.getElementById('relatorioResult');
+        if (contentEl) contentEl.innerHTML = '';
+        if (resultEl) resultEl.style.display = 'none';
+        atualizarBotaoColunasRelatorio();
+        return;
+    }
+    const dataInicio = document.getElementById('relDataInicio')?.value || '';
+    const dataFim = document.getElementById('relDataFim')?.value || '';
     await ensureEstoqueReportColumnsConfigLoaded(tipoRelatorio);
 
     const options = {
@@ -6962,13 +7243,28 @@ async function gerarRelatorio(isSort = false) {
     if (!isSort) {
         window.relatorioSelecionados.clear();
         window.ordemRelatorio = { coluna: '', direcao: 'asc', tipo: tipoRelatorio };
+        paginaAtualRelatorio = 1;
     }
 
     const conteudo = await obterConteudoRelatorio(tipoRelatorio, dataInicio, dataFim, options, false);
     window.__ultimoRelatorioEstoque = { tipoRelatorio, dataInicio, dataFim, conteudo, options };
-    document.getElementById('relatorioContent').innerHTML = conteudo;
-    document.getElementById('relatorioResult').style.display = 'block';
+    const contentEl = document.getElementById('relatorioContent');
+    const resultEl = document.getElementById('relatorioResult');
+    if (contentEl) contentEl.innerHTML = conteudo;
+    if (resultEl) resultEl.style.display = 'block';
     atualizarBotaoColunasRelatorio();
+
+    // Renderizar controles de paginação
+    const pageSize = obterItensPorPaginaTabela('relatorios');
+    renderizarPaginacaoPadrao('paginacaoRelatorios', totalItensRelatorioAtual, paginaAtualRelatorio, pageSize, 'mudarPaginaRelatorio', { sizeScope: 'relatorios' });
+
+    // Inicializar redimensionamento interativo de colunas na tabela do relatório
+    if (window.StockTableColumns && typeof window.StockTableColumns.initTable === 'function') {
+        const tableRel = document.querySelector('#relatorioContent table');
+        if (tableRel) {
+            window.StockTableColumns.initTable(tableRel, 'report_' + tipoRelatorio);
+        }
+    }
 
     const masters = document.querySelectorAll('.check-todo-relatorio');
     if (masters.length > 0) {
@@ -6981,18 +7277,21 @@ async function gerarRelatorio(isSort = false) {
 async function obterConteudoRelatorio(tipoRelatorio, dataInicio, dataFim, options = {}, onlySelected = false) {
     switch (tipoRelatorio) {
         case 'posicao':
-            return gerarRelatorioPosicao(onlySelected);
-        case 'movimentacao':
-            return gerarRelatorioMovimentacao(dataInicio, dataFim, onlySelected);
-        case 'rastreabilidade':
-            return gerarRelatorioRastreabilidade(dataInicio, dataFim, onlySelected);
+            return gerarRelatorioPosicao(onlySelected, options);
+        case 'fornecedor':
+            return gerarRelatorioPorFornecedor(onlySelected, options);
         case 'especies':
-            return gerarRelatorioPorEspecies(onlySelected);
+            return gerarRelatorioPorEspecies(onlySelected, options);
+        case 'autef':
         case 'localizacao':
-            return gerarRelatorioPorLocalizacao(onlySelected);
+            return gerarRelatorioPorAutef(onlySelected, options);
+        case 'movimentacao':
+            return gerarRelatorioMovimentacao(dataInicio, dataFim, onlySelected, options);
+        case 'rastreabilidade':
+            return gerarRelatorioRastreabilidade(dataInicio, dataFim, onlySelected, options);
         case 'produtos_saldo':
             if (typeof window.gerarRelatorioProdutosSaldo === 'function') {
-                return await window.gerarRelatorioProdutosSaldo(onlySelected);
+                return await window.gerarRelatorioProdutosSaldo(onlySelected, options);
             }
             return '<p class="text-danger">Módulo de produtos não carregado.</p>';
         case 'produtos_movimentacao':
@@ -7007,38 +7306,52 @@ async function obterConteudoRelatorio(tipoRelatorio, dataInicio, dataFim, option
 
 try {
     document.addEventListener('DOMContentLoaded', () => {
+        let debounceTimer = null;
+        const triggerRelatorioAutomatico = () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const relatoriosTab = document.getElementById('relatorios');
+                if (relatoriosTab && relatoriosTab.classList.contains('active')) {
+                    gerarRelatorio();
+                }
+            }, 120);
+        };
+
         const el = document.getElementById('tipoRelatorio');
         if (el) {
             el.addEventListener('change', () => {
                 updateRelatoriosProdutosFiltersUI();
                 atualizarBotaoColunasRelatorio();
+                gerarRelatorio();
             });
             updateRelatoriosProdutosFiltersUI();
             atualizarBotaoColunasRelatorio();
         }
 
+        const dataInicioEl = document.getElementById('relDataInicio');
+        if (dataInicioEl) {
+            dataInicioEl.addEventListener('change', triggerRelatorioAutomatico);
+            dataInicioEl.addEventListener('input', triggerRelatorioAutomatico);
+        }
+
+        const dataFimEl = document.getElementById('relDataFim');
+        if (dataFimEl) {
+            dataFimEl.addEventListener('change', triggerRelatorioAutomatico);
+            dataFimEl.addEventListener('input', triggerRelatorioAutomatico);
+        }
+
         const tipoFiltro = document.getElementById('relFiltroTipo');
-        if (tipoFiltro && !tipoFiltro._listenerConfigured) {
+        if (tipoFiltro) {
             tipoFiltro.addEventListener('change', () => {
-                const tipoRelatorio = document.getElementById('tipoRelatorio')?.value || '';
-                const result = document.getElementById('relatorioResult');
-                if (tipoRelatorio === 'produtos_movimentacao' && result && result.style.display !== 'none') {
-                    gerarRelatorio();
-                }
+                gerarRelatorio();
             });
-            tipoFiltro._listenerConfigured = true;
         }
 
         const agruparChk = document.getElementById('relAgruparResponsavel');
-        if (agruparChk && !agruparChk._listenerConfigured) {
+        if (agruparChk) {
             agruparChk.addEventListener('change', () => {
-                const tipoRelatorio = document.getElementById('tipoRelatorio')?.value || '';
-                const result = document.getElementById('relatorioResult');
-                if (tipoRelatorio === 'produtos_movimentacao' && result && result.style.display !== 'none') {
-                    gerarRelatorio();
-                }
+                gerarRelatorio();
             });
-            agruparChk._listenerConfigured = true;
         }
     });
 } catch (_) {}
@@ -7061,10 +7374,12 @@ function updateRelatoriosProdutosFiltersUI() {
 function obterTituloRelatorioEstoque(tipo) {
     const map = {
         posicao: 'Posição do Estoque de Toras',
+        fornecedor: 'Estoque por Fornecedor (Toras)',
+        especies: 'Estoque Agrupado Por Espécies (Toras)',
+        autef: 'Estoque Por AUTEF (Toras)',
+        localizacao: 'Estoque Por AUTEF (Toras)',
         movimentacao: 'Movimentação de Toras',
         rastreabilidade: 'Rastreabilidade de Toras',
-        especies: 'Estoque por Espécie (Toras)',
-        localizacao: 'Estoque por Localização (Toras)',
         produtos_saldo: 'Saldo de Produtos (Almoxarifado)',
         produtos_movimentacao: 'Movimentação de Produtos (Almoxarifado)'
     };
@@ -7364,11 +7679,18 @@ function montarRelatorioHtml(empresa, titulo, periodo, corpo, rodape) {
     `;
 }
 
-function obterRelatorioStylesImpressao() {
+function obterRelatorioStylesImpressao(orientacao = 'auto') {
+    let pageCss = '@page { margin: 10mm; }';
+    if (orientacao === 'portrait') {
+        pageCss = '@page { size: portrait; margin: 10mm; }';
+    } else if (orientacao === 'landscape') {
+        pageCss = '@page { size: landscape; margin: 10mm; }';
+    }
+
     return `
-        @page { size: landscape; margin: 10mm; }
-        body { font-family: Arial, sans-serif; color: #111827; padding: 20px; }
-        .no-print { display: none !important; }
+        ${pageCss}
+        body { font-family: Arial, sans-serif; color: #111827; padding: 15px; margin: 0; }
+        .no-print, .relatorio-check-col, .check-relatorio, .check-todo-relatorio, th.relatorio-check-col, td.relatorio-check-col { display: none !important; }
         .relatorio-profissional { border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px; }
         .relatorio-header { display: grid; grid-template-columns: 120px 1fr 1fr; gap: 12px; align-items: center; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 12px; }
         .relatorio-logo img { max-width: 120px; max-height: 80px; object-fit: contain; }
@@ -7376,15 +7698,28 @@ function obterRelatorioStylesImpressao() {
         .relatorio-meta { text-align: right; font-size: 13px; }
         .relatorio-meta .titulo { font-size: 16px; font-weight: bold; }
         .table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        .table-wide-estoque, .table-wide-estoque-lg, .table-wide-estoque-compact { min-width: 0 !important; }
+        .table-wide-estoque, .table-wide-estoque-lg, .table-wide-estoque-compact, .table-report-estoque { min-width: 0 !important; }
         .table th, .table td { border: 1px solid #e5e7eb; padding: 5px 6px; font-size: 10.5px; }
         .table th { background: #f3f4f6; text-align: left; }
         .table-container { max-height: none; overflow: visible; border: none; padding: 0; }
-        .summary-box { background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px; border-radius: 6px; margin-top: 12px; }
+        .stock-summary-grid, .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 12px 0; }
+        .stock-summary-card, .stat-card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+        .stock-summary-icon { width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .stock-summary-icon.blue { background-color: #ebf8ff; color: #3182ce; }
+        .stock-summary-icon.green { background-color: #f0fff4; color: #38a169; }
+        .stock-summary-icon.purple { background-color: #faf5ff; color: #805ad5; }
+        .stock-summary-icon.amber { background-color: #fffaf0; color: #dd6b20; }
+        .stock-summary-content { display: flex; flex-direction: column; }
+        .stock-summary-title, .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: #718096; }
+        .stock-summary-value, .stat-value { font-size: 15px; font-weight: bold; color: #1a202c; }
         .summary-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         .relatorio-rodape { margin-top: 12px; border-top: 2px solid #e5e7eb; padding-top: 10px; }
+        .stats-species-container { margin-top: 14px; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; background: #f9fafb; page-break-inside: avoid; }
+        .stats-species-container h4 { margin: 0 0 10px 0; font-size: 12px; font-weight: bold; color: #374151; border-left: 3px solid #3b82f6; padding-left: 8px; }
+        .stat-species-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 4px; padding: 8px 10px; min-width: 120px; text-align: center; }
+        .pagination-controls, #paginacaoRelatorios { display: none !important; }
     `;
 }
 
@@ -7404,43 +7739,39 @@ function deveIgnorarCelulaPdfEstoque(cell) {
     ) {
         return true;
     }
-    if (String(cell.getAttribute('data-col') || '').toLowerCase() === 'acoes') return true;
-    if (cell.querySelector('input, button')) return true;
-    const text = obterTextoNoPdfEstoque(cell).toLowerCase();
-    return text === 'ações' || text === 'acoes';
+    return false;
 }
 
-function extrairTabelasRelatorioEstoquePdf(html) {
-    const host = document.createElement('div');
-    host.innerHTML = html || '';
+function extrairTabelasRelatorioEstoquePdf(htmlContent) {
+    if (!htmlContent) return { summaryRows: [], tables: [] };
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(`<div>${htmlContent}</div>`, 'text/html');
 
-    const summaryRows = Array.from(host.querySelectorAll('.summary-row'))
-        .map((row) => {
-            const parts = Array.from(row.children).map(obterTextoNoPdfEstoque).filter(Boolean);
-            if (parts.length >= 2) return [parts[0].replace(/:$/, ''), parts.slice(1).join(' ')];
-            const text = obterTextoNoPdfEstoque(row);
-            return text ? [text, ''] : null;
-        })
-        .filter(Boolean);
+    const summaryRows = [];
+    doc.querySelectorAll('.summary-row').forEach((row) => {
+        const spans = row.querySelectorAll('span');
+        if (spans.length >= 2) {
+            summaryRows.push({
+                label: obterTextoNoPdfEstoque(spans[0]),
+                value: obterTextoNoPdfEstoque(spans[1])
+            });
+        }
+    });
 
-    const tables = Array.from(host.querySelectorAll('table'))
-        .map((table, index) => {
-            const headerCells = Array.from(table.querySelectorAll('thead tr:last-child th'));
-            const keep = headerCells
-                .map((th, headerIndex) => ({ th, headerIndex }))
-                .filter(({ th }) => !deveIgnorarCelulaPdfEstoque(th) && obterTextoNoPdfEstoque(th));
-            const columns = keep.map(({ th }) => ({
-                label: obterTextoNoPdfEstoque(th).replace(/[↕↑↓]/g, '').trim(),
-                align: th.classList.contains('text-right')
-                    ? 'right'
-                    : (th.classList.contains('text-center') ? 'center' : 'left')
-            }));
-            const rows = Array.from(table.querySelectorAll('tbody tr'))
-                .map((tr) => {
-                    const cells = Array.from(tr.children);
-                    return keep.map(({ headerIndex }) => obterTextoNoPdfEstoque(cells[headerIndex]));
-                })
-                .filter((row) => row.some(Boolean));
+    const tables = Array.from(doc.querySelectorAll('table'))
+        .map((tableEl, index) => {
+            const columns = Array.from(tableEl.querySelectorAll('thead th'))
+                .filter((th) => !deveIgnorarCelulaPdfEstoque(th))
+                .map((th) => obterTextoNoPdfEstoque(th));
+
+            const rows = Array.from(tableEl.querySelectorAll('tbody tr'))
+                .map((tr) =>
+                    Array.from(tr.querySelectorAll('td'))
+                        .filter((td) => !deveIgnorarCelulaPdfEstoque(td))
+                        .map((td) => obterTextoNoPdfEstoque(td))
+                )
+                .filter((row) => row.length > 0 && row.some((cell) => cell.length > 0));
+
             return {
                 title: index > 0 ? `Tabela ${index + 1}` : '',
                 columns,
@@ -7454,15 +7785,21 @@ function extrairTabelasRelatorioEstoquePdf(html) {
 }
 
 async function imprimirRelatorioEstoque() {
+    const data = window.__ultimoRelatorioEstoque || {};
+    const tipoRelatorio = data.tipoRelatorio || document.getElementById('tipoRelatorio')?.value || '';
+    if (!tipoRelatorio) {
+        alert('Por favor, selecione um tipo de relatório antes de imprimir.');
+        return;
+    }
     const content = document.getElementById('relatorioContent');
     if (!content) return;
-    const data = window.__ultimoRelatorioEstoque || {};
-    const tipoRelatorio = data.tipoRelatorio || document.getElementById('tipoRelatorio').value;
-    const dataInicio = data.dataInicio || document.getElementById('relDataInicio').value;
-    const dataFim = data.dataFim || document.getElementById('relDataFim').value;
-    const options = data.options || {
+    const dataInicio = data.dataInicio || document.getElementById('relDataInicio')?.value || '';
+    const dataFim = data.dataFim || document.getElementById('relDataFim')?.value || '';
+    const options = {
+        ...(data.options || {}),
         tipo: (document.getElementById('relFiltroTipo')?.value || '').trim(),
-        agruparPorResponsavel: !!document.getElementById('relAgruparResponsavel')?.checked
+        agruparPorResponsavel: !!document.getElementById('relAgruparResponsavel')?.checked,
+        disablePagination: true
     };
     await ensureEstoqueReportColumnsConfigLoaded(tipoRelatorio);
     const onlySelected = !!(window.relatorioSelecionados && window.relatorioSelecionados.size > 0);
@@ -7472,12 +7809,13 @@ async function imprimirRelatorioEstoque() {
     const periodo = dataInicio && dataFim ? `${formatDate(dataInicio)} a ${formatDate(dataFim)}` : '';
     const rodape = await gerarRodapeRelatorio(tipoRelatorio, dataInicio, dataFim, options, onlySelected);
     const html = montarRelatorioHtml(empresa, titulo, periodo, conteudo, rodape);
+    const orientacao = window.__estoqueRelatorioOrientacao || 'auto';
     const htmlCompleto = `
         <html>
         <head>
             <meta charset="UTF-8">
             <title>${titulo}</title>
-            <style>${obterRelatorioStylesImpressao()}</style>
+            <style>${obterRelatorioStylesImpressao(orientacao)}</style>
         </head>
         <body>${html}</body>
         </html>
@@ -7494,6 +7832,7 @@ async function imprimirRelatorioEstoque() {
             title: titulo,
             company: empresa,
             subtitle: periodo ? `Período: ${periodo}` : '',
+            orientation: orientacao === 'portrait' ? 'portrait' : 'landscape',
             summaryRows: pdfData.summaryRows,
             tables: pdfData.tables
         }
@@ -7509,53 +7848,100 @@ function montarTabelaHtml(colunas, linhas) {
 async function imprimirConsultaEstoque() {
     await ensureConsultaColumnsConfigLoaded();
     let lista = [];
-    if (typeof estoqueSelecionadas !== 'undefined' && estoqueSelecionadas.size > 0) {
+    const onlySelected = typeof estoqueSelecionadas !== 'undefined' && estoqueSelecionadas.size > 0;
+    if (onlySelected) {
         lista = estoqueAtual.filter(t => estoqueSelecionadas.has(String(t.id)));
     } else {
         lista = estoqueFiltrado.length ? estoqueFiltrado : estoqueAtual.filter(t => t.status === 'disponivel');
     }
     const consultaDefs = getVisibleConsultaColumns();
-    const colunas = consultaDefs.map(def => def.label);
-    const linhas = lista.map(t => consultaDefs.map(def => obterValorCelulaConsultaEstoque(t, def.key)));
     const totalVol = lista.reduce((acc, t) => acc + (t.volumeLiquido || 0), 0);
     const totalGeo = lista.reduce((acc, t) => acc + (normalizarCamposGeoEstoque(t).volumeGeo || 0), 0);
     const totalVal = lista.reduce((acc, t) => acc + ((t.volumeLiquido || 0) * (t.precoCusto || 0)), 0);
-    const rodape = `
-        <div class="relatorio-rodape summary-box">
-            <div class="summary-row"><span>Total de Toras:</span><span>${lista.length}</span></div>
-            <div class="summary-row"><span>Volume Líquido Total:</span><span>${formatNumber(totalVol, 3)} m³</span></div>
-            <div class="summary-row"><span>Volume Geométrico Total:</span><span>${formatNumber(totalGeo, 3)} m³</span></div>
-            <div class="summary-row"><span>Valor Total:</span><span>${formatCurrency(totalVal)}</span></div>
+
+    const linhasHtml = lista.map(tora => `
+        <tr>
+            ${consultaDefs.map(def => {
+                const cls = def.align ? ` class="${def.align}"` : '';
+                return `<td${cls}>${obterValorCelulaConsultaEstoque(tora, def.key)}</td>`;
+            }).join('')}
+        </tr>
+    `).join('');
+
+    const tabelaHtml = `
+        <div class="table-container report-table-container">
+            <table class="table table-report-estoque">
+                <thead>
+                    <tr>
+                        ${consultaDefs.map(def => {
+                            const cls = def.align ? ` class="${def.align}"` : '';
+                            return `<th${cls}>${escapeHtml(def.label)}</th>`;
+                        }).join('')}
+                    </tr>
+                </thead>
+                <tbody>${linhasHtml || `<tr><td colspan="${consultaDefs.length}">Nenhuma tora encontrada</td></tr>`}</tbody>
+            </table>
         </div>
     `;
+
+    const cardsHtml = `
+        <div class="stats-grid" id="resumoRelatoriosStats" style="margin-top: 16px;">
+            <div class="stat-card">
+                <div class="stat-value">${lista.length}</div>
+                <div class="stat-label">Total de Toras</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${formatNumber(totalVol, 3)} m³</div>
+                <div class="stat-label">Volume Líquido Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${formatNumber(totalGeo, 3)} m³</div>
+                <div class="stat-label">Volume Geométrico Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${formatCurrency(totalVal)}</div>
+                <div class="stat-label">Valor Total</div>
+            </div>
+        </div>
+    `;
+
+    const mediasEspecies = typeof calcularMediasPorEspecie === 'function' ? calcularMediasPorEspecie(lista) : null;
+    const mediasHtml = mediasEspecies && typeof renderizarHtmlMediasEspecies === 'function' ? renderizarHtmlMediasEspecies(mediasEspecies) : '';
+
+    const conteudoCompleto = `${tabelaHtml} ${cardsHtml} ${mediasHtml}`;
     const empresa = await obterDadosEmpresaRelatorio();
-    const html = montarRelatorioHtml(empresa, 'Consulta de Estoque', '', montarTabelaHtml(colunas, linhas), rodape);
+    const titulo = 'Consulta de Estoque';
+    const html = montarRelatorioHtml(empresa, titulo, '', conteudoCompleto, '');
+    const orientacao = window.__estoqueRelatorioOrientacao || 'auto';
     const htmlCompleto = `
         <html>
         <head>
             <meta charset="UTF-8">
-            <title>Consulta de Estoque</title>
-            <style>${obterRelatorioStylesImpressao()}</style>
+            <title>${titulo}</title>
+            <style>${obterRelatorioStylesImpressao(orientacao)}</style>
         </head>
         <body>${html}</body>
         </html>
     `;
+
+    const pdfData = extrairTabelasRelatorioEstoquePdf(conteudoCompleto);
     await entregarRelatorioEstoque({
         title: 'Consulta de Estoque',
         company: empresa,
         htmlCompleto,
-        preview: true,
+        preview: false,
+        windowFeatures: 'width=900,height=700',
         pdfOptions: {
             title: 'Consulta de Estoque',
             company: empresa,
-            columns: consultaDefs,
-            rows: linhas,
+            orientation: orientacao === 'portrait' ? 'portrait' : 'landscape',
             summaryRows: [
                 ['Total de Toras', lista.length],
                 ['Volume Líquido Total', `${formatNumber(totalVol, 3)} m³`],
                 ['Volume Geométrico Total', `${formatNumber(totalGeo, 3)} m³`],
                 ['Valor Total', formatCurrency(totalVal)]
-            ]
+            ],
+            tables: pdfData.tables
         }
     });
 }
@@ -7763,149 +8149,8 @@ async function imprimirMovimentacoesEstoque() {
 }
 
 async function gerarRodapeRelatorio(tipoRelatorio, dataInicio, dataFim, options = {}, onlySelected = false) {
-    if (tipoRelatorio === 'posicao') {
-        const torasDisponiveis = filtrarItensSelecionadosRelatorio('posicao', estoqueAtual.filter(t => t.status === 'disponivel'), t => t.id || t.plaqueta || '', onlySelected);
-        const volumeTotal = torasDisponiveis.reduce((total, tora) => total + (tora.volumeLiquido || 0), 0);
-        const volumeGeoTotal = torasDisponiveis.reduce((total, tora) => total + (normalizarCamposGeoEstoque(tora).volumeGeo || 0), 0);
-        const valorTotal = torasDisponiveis.reduce((total, tora) => total + ((tora.volumeLiquido || 0) * (tora.precoCusto || 0)), 0);
-        return `
-            <div class="relatorio-rodape summary-box">
-                <div class="summary-row"><span>Total de Toras:</span><span>${torasDisponiveis.length}</span></div>
-                <div class="summary-row"><span>Volume Total:</span><span>${formatNumber(volumeTotal, 3)} m³</span></div>
-                <div class="summary-row"><span>Volume Geométrico:</span><span>${formatNumber(volumeGeoTotal, 3)} m³</span></div>
-                <div class="summary-row"><span>Valor Total:</span><span>${formatCurrency(valorTotal)}</span></div>
-            </div>
-        `;
-    }
-    if (tipoRelatorio === 'movimentacao') {
-        const movPeriodo = filtrarItensSelecionadosRelatorio('movimentacao', movimentacoes.filter(m => {
-            if (!dataInicio && !dataFim) return true;
-            const d = m.data ? parseDateLocalSafe(m.data) : null;
-            if (!d) return false;
-            if (dataInicio && d < parseDateLocalSafe(dataInicio)) return false;
-            if (dataFim && d > parseDateLocalSafe(dataFim + 'T23:59:59')) return false;
-            return true;
-        }), getRelatorioMovimentacaoKey, onlySelected);
-        const entradas = movPeriodo.filter(m => m.tipo === 'entrada');
-        const saidas = movPeriodo.filter(m => m.tipo === 'saida');
-        const volumeEntradas = entradas.reduce((total, m) => total + (m.volume || 0), 0);
-        const volumeSaidas = saidas.reduce((total, m) => total + (m.volume || 0), 0);
-        const volumeGeo = movPeriodo.reduce((total, m) => total + (normalizarCamposGeoEstoque(m).volumeGeo || 0), 0);
-        return `
-            <div class="relatorio-rodape summary-box">
-                <div class="summary-row"><span>Entradas:</span><span>${entradas.length} movimentações - ${formatNumber(volumeEntradas, 3)} m³</span></div>
-                <div class="summary-row"><span>Saídas:</span><span>${saidas.length} movimentações - ${formatNumber(volumeSaidas, 3)} m³</span></div>
-                <div class="summary-row"><span>Volume Geométrico:</span><span>${formatNumber(volumeGeo, 3)} m³</span></div>
-                <div class="summary-row"><span>Saldo:</span><span>${formatNumber(volumeEntradas - volumeSaidas, 3)} m³</span></div>
-            </div>
-        `;
-    }
-    if (tipoRelatorio === 'rastreabilidade') {
-        const registros = filtrarItensSelecionadosRelatorio(
-            'rastreabilidade',
-            filtrarRegistrosRastreabilidade({ dataInicio, dataFim }),
-            getRelatorioRastreabilidadeKey,
-            onlySelected
-        );
-        const remessas = new Map();
-        registros.forEach(reg => {
-            const key = reg.remessaId || reg.id;
-            if (!remessas.has(key)) {
-                remessas.set(key, {
-                    volumeToras: parseNumeroEstoque(reg.volumeTorasRemessa || reg.volumeTora) || 0,
-                    volumeProduzido: parseNumeroEstoque(reg.volumeProduzido) || 0
-                });
-            }
-        });
-        const volumeToras = registros.reduce((acc, reg) => acc + (parseNumeroEstoque(reg.volumeTora) || 0), 0);
-        const volumeProduzido = Array.from(remessas.values()).reduce((acc, item) => acc + item.volumeProduzido, 0);
-        const volumeBase = Array.from(remessas.values()).reduce((acc, item) => acc + item.volumeToras, 0);
-        const rendimento = volumeBase > 0 ? (volumeProduzido / volumeBase) * 100 : 0;
-        return `
-            <div class="relatorio-rodape summary-box">
-                <div class="summary-row"><span>Registros:</span><span>${registros.length}</span></div>
-                <div class="summary-row"><span>Remessas:</span><span>${remessas.size}</span></div>
-                <div class="summary-row"><span>Volume das Toras:</span><span>${formatNumber(volumeToras, 3)} m³</span></div>
-                <div class="summary-row"><span>Volume Produzido:</span><span>${formatNumber(volumeProduzido, 3)} m³</span></div>
-                <div class="summary-row"><span>Rendimento:</span><span>${formatNumber(rendimento, 2)}%</span></div>
-            </div>
-        `;
-    }
-    if (tipoRelatorio === 'especies' || tipoRelatorio === 'localizacao') {
-        let torasDisponiveis = estoqueAtual.filter(t => t.status === 'disponivel');
-        if (onlySelected && window.relatorioSelecionados && window.relatorioSelecionados.size > 0) {
-            const tipoSelecao = tipoRelatorio === 'especies' ? 'especies' : 'localizacao';
-            torasDisponiveis = torasDisponiveis.filter(t => {
-                const key = tipoRelatorio === 'especies' ? (t.especie || 'Sem espécie') : (t.localizacao || 'Sem localização');
-                return window.relatorioSelecionados.has(criarRelatorioSelectionId(tipoSelecao, key));
-            });
-        }
-        const totalQtd = torasDisponiveis.length;
-        const totalVolume = torasDisponiveis.reduce((acc, t) => acc + (t.volumeLiquido || 0), 0);
-        const totalVolumeGeo = torasDisponiveis.reduce((acc, t) => acc + (normalizarCamposGeoEstoque(t).volumeGeo || 0), 0);
-        const totalValor = torasDisponiveis.reduce((acc, t) => acc + ((t.volumeLiquido || 0) * (t.precoCusto || 0)), 0);
-        return `
-            <div class="relatorio-rodape summary-box">
-                <div class="summary-row"><span>Total:</span><span>${totalQtd} toras</span></div>
-                <div class="summary-row"><span>Volume:</span><span>${formatNumber(totalVolume, 3)} m³</span></div>
-                <div class="summary-row"><span>Volume Geométrico:</span><span>${formatNumber(totalVolumeGeo, 3)} m³</span></div>
-                <div class="summary-row"><span>Valor:</span><span>${formatCurrency(totalValor)}</span></div>
-            </div>
-        `;
-    }
-    if (tipoRelatorio === 'produtos_saldo') {
-        const produtosRaw = await getData('estoqueProdutos') || [];
-        const produtosArr = Array.isArray(produtosRaw) ? produtosRaw : Object.values(produtosRaw || {});
-        const produtos = filtrarItensSelecionadosRelatorio('produtos_saldo', produtosArr, p => p.id || p.nome || '', onlySelected);
-        const totalItens = produtos.length;
-        const totalQtd = produtos.reduce((acc, p) => acc + (p.quantidade || 0), 0);
-        const totalValor = produtos.reduce((acc, p) => acc + ((p.quantidade || 0) * (p.precoMedio || 0)), 0);
-        return `
-            <div class="relatorio-rodape summary-box">
-                <div class="summary-row"><span>Itens diferentes:</span><span>${totalItens}</span></div>
-                <div class="summary-row"><span>Quantidade total:</span><span>${formatNumber(totalQtd, 2)}</span></div>
-                <div class="summary-row"><span>Valor total:</span><span>${formatCurrency(totalValor)}</span></div>
-            </div>
-        `;
-    }
-    if (tipoRelatorio === 'produtos_movimentacao') {
-        const movimentosRaw = await getData('movimentacoesProdutos') || [];
-        const movimentos = Array.isArray(movimentosRaw) ? movimentosRaw : Object.values(movimentosRaw || {});
-        const filtrados = movimentos.filter(m => {
-            if (!dataInicio && !dataFim) return true;
-            const d = m.data ? parseDateLocalSafe(m.data) : null;
-            if (!d) return false;
-            if (dataInicio && d < parseDateLocalSafe(dataInicio)) return false;
-            if (dataFim && d > parseDateLocalSafe(dataFim + 'T23:59:59')) return false;
-            return true;
-        });
-        const tipoFiltro = (options && options.tipo) ? String(options.tipo).trim() : '';
-        const normalizarTipo = typeof window.normalizarTipoMovimentacaoProduto === 'function'
-            ? window.normalizarTipoMovimentacaoProduto
-            : (tipo) => String(tipo || 'entrada').toLowerCase().trim();
-        const filtradosTipoBase = tipoFiltro ? filtrados.filter(m => normalizarTipo(m.tipo || m.tipoMovimentacao) === normalizarTipo(tipoFiltro)) : filtrados;
-        const filtradosTipo = filtrarItensSelecionadosRelatorio('produtos_movimentacao', filtradosTipoBase, getRelatorioProdutoMovimentacaoKey, onlySelected);
-        let entradas = 0;
-        let saidas = 0;
-        let ajustes = 0;
-        let devolucoes = 0;
-        filtradosTipo.forEach(m => {
-            const tipo = normalizarTipo(m.tipo || m.tipoMovimentacao);
-            if (tipo === 'entrada') entradas++;
-            else if (tipo === 'saida') saidas++;
-            else if (tipo === 'ajuste') ajustes++;
-            else if (tipo === 'devolucao') devolucoes++;
-        });
-        return `
-            <div class="relatorio-rodape summary-box">
-                <div class="summary-row"><span>Total de Movimentações:</span><span>${filtradosTipo.length}</span></div>
-                <div class="summary-row"><span>Entradas:</span><span>${entradas}</span></div>
-                <div class="summary-row"><span>Saídas:</span><span>${saidas}</span></div>
-                <div class="summary-row"><span>Ajustes:</span><span>${ajustes}</span></div>
-                <div class="summary-row"><span>Devoluções:</span><span>${devolucoes}</span></div>
-            </div>
-        `;
-    }
+    // Todos os relatórios de estoque de toras e produtos (almoxarifado) já geram
+    // os cards de totais consolidados diretamente no corpo do relatório (abaixo da tabela/paginação).
     return '';
 }
 
@@ -7927,51 +8172,14 @@ window.getSortIconRelatorio = (col, tipo) => {
     return `<i class="fas fa-sort-${window.ordemRelatorio.direcao === 'asc' ? 'up' : 'down'} sort-icon" style="margin-left:5px; color:#333;"></i>`;
 };
 
-function gerarRelatorioPosicao(onlySelected = false) {
+function gerarRelatorioPosicao(onlySelected = false, options = {}) {
     let torasDisponiveis = estoqueAtual.filter(toraEstaAtivaNoEstoque);
     torasDisponiveis = filtrarItensSelecionadosRelatorio('posicao', torasDisponiveis, t => t.id || t.plaqueta || '', onlySelected);
-
     ordenarListaRelatorioEstoque('posicao', torasDisponiveis);
-
-    const volumeTotal = torasDisponiveis.reduce((total, tora) => total + (tora.volumeLiquido || 0), 0);
-    const volumeGeoTotal = torasDisponiveis.reduce((total, tora) => total + (normalizarCamposGeoEstoque(tora).volumeGeo || 0), 0);
-    const valorTotal = torasDisponiveis.reduce((total, tora) => total + ((tora.volumeLiquido || 0) * (tora.precoCusto || 0)), 0);
-    return `
-        <div class="stock-summary-grid">
-            <div class="stock-summary-card">
-                <div class="stock-summary-icon blue"><i class="fas fa-tree"></i></div>
-                <div class="stock-summary-content">
-                    <span class="stock-summary-title">Total de Toras</span>
-                    <span class="stock-summary-value">${torasDisponiveis.length}</span>
-                </div>
-            </div>
-            <div class="stock-summary-card">
-                <div class="stock-summary-icon green"><i class="fas fa-cube"></i></div>
-                <div class="stock-summary-content">
-                    <span class="stock-summary-title">Volume Total</span>
-                    <span class="stock-summary-value">${formatNumber(volumeTotal, 3)} m³</span>
-                </div>
-            </div>
-            <div class="stock-summary-card">
-                <div class="stock-summary-icon purple"><i class="fas fa-shapes"></i></div>
-                <div class="stock-summary-content">
-                    <span class="stock-summary-title">Volume Geométrico</span>
-                    <span class="stock-summary-value">${formatNumber(volumeGeoTotal, 3)} m³</span>
-                </div>
-            </div>
-            <div class="stock-summary-card">
-                <div class="stock-summary-icon amber"><i class="fas fa-dollar-sign"></i></div>
-                <div class="stock-summary-content">
-                    <span class="stock-summary-title">Valor Total</span>
-                    <span class="stock-summary-value">${formatCurrency(valorTotal)}</span>
-                </div>
-            </div>
-        </div>
-        ${montarTabelaRelatorioEstoque('posicao', torasDisponiveis, 'posicao', t => t.id || t.plaqueta || '', onlySelected, 'Nenhuma tora disponível')}
-    `;
+    return montarTabelaRelatorioEstoque('posicao', torasDisponiveis, 'posicao', t => t.id || t.plaqueta || '', onlySelected, 'Nenhuma tora disponível', options);
 }
 
-function gerarRelatorioMovimentacao(dataInicio, dataFim, onlySelected = false) {
+function gerarRelatorioMovimentacao(dataInicio, dataFim, onlySelected = false, options = {}) {
     if (!dataInicio || !dataFim) {
         return '<p>Informe o período para o relatório de movimentação.</p>';
     }
@@ -7982,54 +8190,16 @@ function gerarRelatorioMovimentacao(dataInicio, dataFim, onlySelected = false) {
         getRelatorioMovimentacaoKey,
         onlySelected
     );
-    const entradas = movPeriodo.filter(m => m.tipo === 'entrada');
-    const saidas = movPeriodo.filter(m => m.tipo === 'saida');
-
-    const volumeEntradas = entradas.reduce((total, m) => total + (m.volume || 0), 0);
-    const volumeSaidas = saidas.reduce((total, m) => total + (m.volume || 0), 0);
-    const volumeGeo = movPeriodo.reduce((total, m) => total + (normalizarCamposGeoEstoque(m).volumeGeo || 0), 0);
     if (ordemRelatorio.tipo === 'movimentacao' && ordemRelatorio.coluna) {
         ordenarListaRelatorioEstoque('movimentacao', movPeriodo);
     } else {
         movPeriodo.sort((a,b)=> new Date(b.data) - new Date(a.data));
     }
 
-    return `
-        <div class="stock-summary-grid">
-            <div class="stock-summary-card">
-                <div class="stock-summary-icon green"><i class="fas fa-arrow-up"></i></div>
-                <div class="stock-summary-content">
-                    <span class="stock-summary-title">Entradas</span>
-                    <span class="stock-summary-value">${entradas.length} mov (${formatNumber(volumeEntradas, 3)} m³)</span>
-                </div>
-            </div>
-            <div class="stock-summary-card">
-                <div class="stock-summary-icon amber"><i class="fas fa-arrow-down"></i></div>
-                <div class="stock-summary-content">
-                    <span class="stock-summary-title">Saídas</span>
-                    <span class="stock-summary-value">${saidas.length} mov (${formatNumber(volumeSaidas, 3)} m³)</span>
-                </div>
-            </div>
-            <div class="stock-summary-card">
-                <div class="stock-summary-icon purple"><i class="fas fa-shapes"></i></div>
-                <div class="stock-summary-content">
-                    <span class="stock-summary-title">Volume Geométrico</span>
-                    <span class="stock-summary-value">${formatNumber(volumeGeo, 3)} m³</span>
-                </div>
-            </div>
-            <div class="stock-summary-card">
-                <div class="stock-summary-icon blue"><i class="fas fa-balance-scale"></i></div>
-                <div class="stock-summary-content">
-                    <span class="stock-summary-title">Saldo Líquido</span>
-                    <span class="stock-summary-value">${formatNumber(volumeEntradas - volumeSaidas, 3)} m³</span>
-                </div>
-            </div>
-        </div>
-        ${montarTabelaRelatorioEstoque('movimentacao', movPeriodo, 'movimentacao', getRelatorioMovimentacaoKey, onlySelected, 'Nenhuma movimentação')}
-    `;
+    return montarTabelaRelatorioEstoque('movimentacao', movPeriodo, 'movimentacao', getRelatorioMovimentacaoKey, onlySelected, 'Nenhuma movimentação', options);
 }
 
-function gerarRelatorioRastreabilidade(dataInicio, dataFim, onlySelected = false) {
+function gerarRelatorioRastreabilidade(dataInicio, dataFim, onlySelected = false, options = {}) {
     const registros = filtrarItensSelecionadosRelatorio(
         'rastreabilidade',
         filtrarRegistrosRastreabilidade({ dataInicio, dataFim }),
@@ -8039,60 +8209,76 @@ function gerarRelatorioRastreabilidade(dataInicio, dataFim, onlySelected = false
     if (ordemRelatorio.tipo === 'rastreabilidade' && ordemRelatorio.coluna) {
         ordenarListaRelatorioEstoque('rastreabilidade', registros);
     }
-    const toras = new Set(registros.map(r => r.toraId || r.plaqueta).filter(Boolean)).size;
-    const remessas = new Set(registros.map(r => r.remessaId).filter(Boolean)).size;
-    const romaneios = new Set(registros.flatMap(r => (r.romaneios || []).map(rom => rom.id || rom.numero).filter(Boolean))).size;
-    const volumeToras = registros.reduce((acc, reg) => acc + (parseNumeroEstoque(reg.volumeTora) || 0), 0);
-    const remessasResumo = new Map();
-    registros.forEach(reg => {
-        const key = reg.remessaId || reg.id;
-        if (!remessasResumo.has(key)) {
-            remessasResumo.set(key, {
-                volumeToras: parseNumeroEstoque(reg.volumeTorasRemessa || reg.volumeTora) || 0,
-                volumeProduzido: parseNumeroEstoque(reg.volumeProduzido) || 0
-            });
+
+    return montarTabelaRelatorioEstoque('rastreabilidade', registros, 'rastreabilidade', getRelatorioRastreabilidadeKey, onlySelected, 'Nenhuma rastreabilidade encontrada', options);
+}
+
+function gerarRelatorioPorFornecedor(onlySelected = false, options = {}) {
+    const torasDisponiveis = estoqueAtual.filter(toraEstaAtivaNoEstoque);
+    const fornecedorMap = {};
+
+    torasDisponiveis.forEach(tora => {
+        const fornecedor = obterFornecedorDisplayTora(tora) || 'Não informado';
+
+        if (!fornecedorMap[fornecedor]) {
+            fornecedorMap[fornecedor] = {
+                quantidade: 0,
+                volume: 0,
+                volumeGeo: 0,
+                valor: 0,
+                especies: new Set(),
+                totalRodo: 0,
+                totalComprimento: 0,
+                countRodo: 0,
+                countComprimento: 0
+            };
+        }
+
+        const rodo = parseNumeroEstoque(tora.diametro || tora.rodo);
+        const comprimento = parseNumeroEstoque(tora.comprimento);
+        const volumeLiquido = parseNumeroEstoque(tora.volumeLiquido);
+        const precoCusto = parseNumeroEstoque(tora.precoCusto || tora.preco);
+
+        fornecedorMap[fornecedor].quantidade++;
+        fornecedorMap[fornecedor].volume += volumeLiquido;
+        fornecedorMap[fornecedor].volumeGeo += normalizarCamposGeoEstoque(tora).volumeGeo || 0;
+        fornecedorMap[fornecedor].valor += volumeLiquido * precoCusto;
+        fornecedorMap[fornecedor].especies.add(tora.especie || 'Sem espécie');
+        if (rodo) {
+            fornecedorMap[fornecedor].totalRodo += rodo;
+            fornecedorMap[fornecedor].countRodo++;
+        }
+        if (comprimento) {
+            fornecedorMap[fornecedor].totalComprimento += comprimento;
+            fornecedorMap[fornecedor].countComprimento++;
         }
     });
-    const volumeProduzido = Array.from(remessasResumo.values()).reduce((acc, item) => acc + item.volumeProduzido, 0);
-    const volumeBase = Array.from(remessasResumo.values()).reduce((acc, item) => acc + item.volumeToras, 0);
-    const rendimento = volumeBase > 0 ? (volumeProduzido / volumeBase) * 100 : 0;
+
+    let fornArr = Object.entries(fornecedorMap).map(([fornecedor, dados]) => ({
+        fornecedor,
+        especiesTexto: Array.from(dados.especies).sort((a, b) => String(a).localeCompare(String(b), 'pt-BR')).join(', '),
+        quantidade: dados.quantidade,
+        volume: dados.volume,
+        volumeGeo: dados.volumeGeo,
+        mediaRodo: dados.countRodo ? dados.totalRodo / dados.countRodo : 0,
+        mediaComprimento: dados.countComprimento ? dados.totalComprimento / dados.countComprimento : 0,
+        mediaVolume: dados.quantidade ? dados.volume / dados.quantidade : 0,
+        mediaVolumeGeo: dados.quantidade ? dados.volumeGeo / dados.quantidade : 0,
+        precoMedio: dados.volume ? dados.valor / dados.volume : 0,
+        valor: dados.valor
+    }));
+    fornArr = filtrarItensSelecionadosRelatorio('fornecedor', fornArr, item => item.fornecedor || 'Não informado', onlySelected);
+    
+    if (ordemRelatorio.tipo === 'fornecedor' && ordemRelatorio.coluna) {
+        ordenarListaRelatorioEstoque('fornecedor', fornArr);
+    }
 
     return `
-        <div class="stock-summary-grid">
-            <div class="stock-summary-card">
-                <div class="stock-summary-icon blue"><i class="fas fa-tree"></i></div>
-                <div class="stock-summary-content">
-                    <span class="stock-summary-title">Toras / Registros</span>
-                    <span class="stock-summary-value">${toras} toras (${registros.length} reg)</span>
-                </div>
-            </div>
-            <div class="stock-summary-card">
-                <div class="stock-summary-icon purple"><i class="fas fa-file-invoice"></i></div>
-                <div class="stock-summary-content">
-                    <span class="stock-summary-title">Remessas / Romaneios</span>
-                    <span class="stock-summary-value">${remessas} rem / ${romaneios} rom</span>
-                </div>
-            </div>
-            <div class="stock-summary-card">
-                <div class="stock-summary-icon amber"><i class="fas fa-cube"></i></div>
-                <div class="stock-summary-content">
-                    <span class="stock-summary-title">Volume Toras / Prod.</span>
-                    <span class="stock-summary-value">${formatNumber(volumeToras, 3)} / ${formatNumber(volumeProduzido, 3)} m³</span>
-                </div>
-            </div>
-            <div class="stock-summary-card">
-                <div class="stock-summary-icon green"><i class="fas fa-chart-line"></i></div>
-                <div class="stock-summary-content">
-                    <span class="stock-summary-title">Rendimento Médio</span>
-                    <span class="stock-summary-value">${formatNumber(rendimento, 2)}%</span>
-                </div>
-            </div>
-        </div>
-        ${montarTabelaRelatorioEstoque('rastreabilidade', registros, 'rastreabilidade', getRelatorioRastreabilidadeKey, onlySelected, 'Nenhuma rastreabilidade encontrada')}
+        ${montarTabelaRelatorioEstoque('fornecedor', fornArr, 'fornecedor', item => item.fornecedor || 'Não informado', onlySelected, 'Nenhum registro', options)}
     `;
 }
 
-function gerarRelatorioPorEspecies(onlySelected = false) {
+function gerarRelatorioPorEspecies(onlySelected = false, options = {}) {
     const torasDisponiveis = estoqueAtual.filter(toraEstaAtivaNoEstoque);
     const especiesMap = {};
 
@@ -8149,19 +8335,20 @@ function gerarRelatorioPorEspecies(onlySelected = false) {
     }
 
     return `
-        ${montarTabelaRelatorioEstoque('especies', entradasArr, 'especies', item => item.especie || 'Sem espécie', onlySelected, 'Nenhum registro')}
+        ${montarTabelaRelatorioEstoque('especies', entradasArr, 'especies', item => item.especie || 'Sem espécie', onlySelected, 'Nenhum registro', options)}
     `;
 }
 
-function gerarRelatorioPorLocalizacao(onlySelected = false) {
+function gerarRelatorioPorAutef(onlySelected = false, options = {}) {
     const torasDisponiveis = estoqueAtual.filter(toraEstaAtivaNoEstoque);
-    const localizacaoMap = {};
+    const autefMap = {};
 
     torasDisponiveis.forEach(tora => {
-        const loc = tora.localizacao || 'Sem localização';
+        const geo = normalizarCamposGeoEstoque(tora);
+        const autef = geo.autef || tora.autef || tora.localizacao || 'Sem AUTEF';
 
-        if (!localizacaoMap[loc]) {
-            localizacaoMap[loc] = {
+        if (!autefMap[autef]) {
+            autefMap[autef] = {
                 quantidade: 0,
                 volume: 0,
                 volumeGeo: 0,
@@ -8179,23 +8366,24 @@ function gerarRelatorioPorLocalizacao(onlySelected = false) {
         const volumeLiquido = parseNumeroEstoque(tora.volumeLiquido);
         const precoCusto = parseNumeroEstoque(tora.precoCusto || tora.preco);
 
-        localizacaoMap[loc].quantidade++;
-        localizacaoMap[loc].volume += volumeLiquido;
-        localizacaoMap[loc].volumeGeo += normalizarCamposGeoEstoque(tora).volumeGeo || 0;
-        localizacaoMap[loc].valor += volumeLiquido * precoCusto;
-        localizacaoMap[loc].especies.add(tora.especie || 'Sem espécie');
+        autefMap[autef].quantidade++;
+        autefMap[autef].volume += volumeLiquido;
+        autefMap[autef].volumeGeo += geo.volumeGeo || 0;
+        autefMap[autef].valor += volumeLiquido * precoCusto;
+        autefMap[autef].especies.add(tora.especie || 'Sem espécie');
         if (rodo) {
-            localizacaoMap[loc].totalRodo += rodo;
-            localizacaoMap[loc].countRodo++;
+            autefMap[autef].totalRodo += rodo;
+            autefMap[autef].countRodo++;
         }
         if (comprimento) {
-            localizacaoMap[loc].totalComprimento += comprimento;
-            localizacaoMap[loc].countComprimento++;
+            autefMap[autef].totalComprimento += comprimento;
+            autefMap[autef].countComprimento++;
         }
     });
 
-    let locaisArr = Object.entries(localizacaoMap).map(([localizacao, dados]) => ({
-        localizacao,
+    let autefArr = Object.entries(autefMap).map(([autef, dados]) => ({
+        autef,
+        localizacao: autef,
         especiesTexto: Array.from(dados.especies).sort((a, b) => String(a).localeCompare(String(b), 'pt-BR')).join(', '),
         quantidade: dados.quantidade,
         volume: dados.volume,
@@ -8207,15 +8395,19 @@ function gerarRelatorioPorLocalizacao(onlySelected = false) {
         precoMedio: dados.volume ? dados.valor / dados.volume : 0,
         valor: dados.valor
     }));
-    locaisArr = filtrarItensSelecionadosRelatorio('localizacao', locaisArr, item => item.localizacao || 'Sem localização', onlySelected);
+    autefArr = filtrarItensSelecionadosRelatorio('autef', autefArr, item => item.autef || 'Sem AUTEF', onlySelected);
     
-    if (ordemRelatorio.tipo === 'localizacao' && ordemRelatorio.coluna) {
-        ordenarListaRelatorioEstoque('localizacao', locaisArr);
+    if ((ordemRelatorio.tipo === 'autef' || ordemRelatorio.tipo === 'localizacao') && ordemRelatorio.coluna) {
+        ordenarListaRelatorioEstoque(ordemRelatorio.tipo, autefArr);
     }
 
     return `
-        ${montarTabelaRelatorioEstoque('localizacao', locaisArr, 'localizacao', item => item.localizacao || 'Sem localização', onlySelected, 'Nenhum registro')}
+        ${montarTabelaRelatorioEstoque('autef', autefArr, 'autef', item => item.autef || 'Sem AUTEF', onlySelected, 'Nenhum registro', options)}
     `;
+}
+
+function gerarRelatorioPorLocalizacao(onlySelected = false) {
+    return gerarRelatorioPorAutef(onlySelected);
 }
 
 // Funções auxiliares

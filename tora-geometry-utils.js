@@ -43,6 +43,7 @@
     function normalizarCamposGeoItem(item) {
         const source = item || {};
         const custodia = String(pick(source, ['custodia', 'custody', 'Custodia', 'Custódia']) || '').trim();
+        const autef = String(pick(source, ['autef', 'AUTEF', 'Autef', 'documentoFlorestal', 'docFlorestal']) || '').trim();
         const compGeo = toNumber(pick(source, ['compGeo', 'comprimentoGeo', 'comprimentoGeometrico', 'compGeometrico', 'Comp. Geo.', 'Comp Geo']));
         const x1 = toNumber(pick(source, ['x1', 'X1']));
         const x2 = toNumber(pick(source, ['x2', 'X2']));
@@ -52,7 +53,7 @@
         if (!volumeGeo) {
             volumeGeo = calcularVolumeGeoSmalian(compGeo, x1, x2, x3, x4);
         }
-        return { custodia, compGeo, x1, x2, x3, x4, volumeGeo };
+        return { custodia, autef, compGeo, x1, x2, x3, x4, volumeGeo };
     }
 
     function formatarMedidaCm(value) {
