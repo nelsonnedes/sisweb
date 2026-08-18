@@ -2144,64 +2144,94 @@ async function salvarPedido(event) {
         }
         
         let multiUpdateDone = false;
-        if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
-            const contasFin = shouldGenerateFinance ? (pedidoData.contasReceber || []).map((conta, idx) => {
-                const crId = `CR_${pedidoData.id}_${String(idx + 1).padStart(3, '0')}`;
-                try { if (conta && typeof conta === 'object') conta.id = crId; } catch (_) {}
-                return ({
+        
+        // Preparar contas a criar e remover
+        const contasRemover = (removiveis || []).map(c => ({
+            mes: toMonthKey(c.dataVencimento || c.vencimento),
+            contaId: String(c.id)
+        })).filter(r => r.mes && r.contaId);
+
+        const contasParaCriarPayload = shouldGenerateFinance ? (pedidoData.contasReceber || []).map((conta, idx) => {
+            const crId = conta.id || `CR_${pedidoData.id}_${String(idx + 1).padStart(3, '0')}`;
+            conta.id = crId;
+            const valorNum = typeof conta.valor === 'number' ? conta.valor : (typeof parseCurrency === 'function' ? parseCurrency(conta.valor) : parseFloat(conta.valor) || 0);
+            return {
                 id: crId,
                 tipo: conta.tipo || 'receber',
                 categoria: 'vendas',
                 origem: 'pedido_venda',
                 origemId: pedidoData.id,
                 pedidoNumero: pedidoData.numero,
-                clienteId: pedidoData.clienteId,
+                clienteId: pedidoData.clienteId || (pedidoData.cliente && pedidoData.cliente.id) || '',
                 cliente: {
-                    id: pedidoData.cliente.id,
-                    nome: pedidoData.cliente.nome,
-                    email: pedidoData.cliente.email || '',
-                    telefone: pedidoData.cliente.telefone || '',
-                    endereco: pedidoData.cliente.endereco || ''
+                    id: (pedidoData.cliente && pedidoData.cliente.id) || pedidoData.clienteId || '',
+                    nome: (pedidoData.cliente && pedidoData.cliente.nome) || '',
+                    email: (pedidoData.cliente && pedidoData.cliente.email) || '',
+                    telefone: (pedidoData.cliente && pedidoData.cliente.telefone) || '',
+                    endereco: (pedidoData.cliente && pedidoData.cliente.endereco) || ''
                 },
                 descricao: `Venda - Pedido ${pedidoData.numero} - ${conta.observacao || getTipoContaLabel(conta.tipo)}`,
-                valor: conta.valor,
-                valorOriginal: conta.valor,
-                valorRestante: conta.valor,
-                dataVencimento: conta.vencimento,
-                vencimento: conta.vencimento, // redundância para compatibilidade
+                valor: valorNum,
+                valorOriginal: valorNum,
+                valorRestante: valorNum,
+                dataVencimento: conta.vencimento || conta.dataVencimento,
+                vencimento: conta.vencimento || conta.dataVencimento,
                 dataEmissao: conta.dataEmissao || pedidoData.data || '',
                 status: 'pendente',
-                tipoPagamento: conta.tipo,
-                tipo_pagamento: conta.tipo, // redundância para compatibilidade
+                tipoPagamento: conta.tipo || '',
+                tipo_pagamento: conta.tipo || '',
                 observacoes: conta.observacao || '',
                 created: new Date().toISOString()
-            });
-            }) : [];
+            };
+        }) : [];
 
-            // Executar remoções primeiro (evitar colisão de ID), depois adições
+        const hasFinanceMutation = contasParaCriarPayload.length > 0 || contasRemover.length > 0;
+
+        // 1. Tentar Callable segura no servidor (financeSyncVenda)
+        if (hasFinanceMutation && window.firebaseService && typeof window.firebaseService.callFunction === 'function') {
+            console.log('📦 Chamando financeSyncVenda (pedido + financeiro atômico):', {
+                pedido: pedidoData.id,
+                criar: contasParaCriarPayload.length,
+                remover: contasRemover.length
+            });
+            try {
+                const res = await window.firebaseService.callFunction('financeSyncVenda', {
+                    operationId: `venda-sync-${pedidoData.id}-${Date.now()}`,
+                    pedido: pedidoData,
+                    contasCriar: contasParaCriarPayload,
+                    contasRemover: contasRemover
+                });
+                if (res && res.success) {
+                    multiUpdateDone = true;
+                    console.log('✅ Pedido e financeiro salvos com sucesso via financeSyncVenda');
+                } else {
+                    console.warn('⚠️ financeSyncVenda retornou erro:', res && res.error);
+                }
+            } catch (callableError) {
+                console.error('❌ financeSyncVenda lançou erro:', callableError);
+            }
+        }
+
+        // 2. Fallback: updatePaths direto (caso callable falhe ou não tenha mutação financeira)
+        if (!multiUpdateDone && window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
             const updatesRem = montarUpdatesRemocaoContasReceberVenda(removiveis, { includeLegacy: false });
-            
-            // Não chamar updatePaths apenas para remoções se vamos fazer adições logo depois
-            // Melhor combinar tudo num único updatePaths atômico se possível, mas aqui estamos separando logicamente
-            
             const updatesAdd = {};
-            // Mesclar remoções no objeto final se a API suportar null
             Object.assign(updatesAdd, updatesRem);
 
-            contasFin.forEach(c => {
+            contasParaCriarPayload.forEach(c => {
                 const mk = toMonthKey(c.dataVencimento || c.vencimento);
                 updatesAdd[`financas/receber/${mk}/${String(c.id)}`] = c;
             });
             updatesAdd[`vendas/pedidos/${String(pedidoData.id)}`] = pedidoData;
-            
-            console.log('📦 Enviando updatePaths para Firebase:', Object.keys(updatesAdd).length, 'caminhos');
+            updatesAdd[`pedidosVenda/${String(pedidoData.id)}`] = pedidoData;
+
+            console.log('📦 Tentando updatePaths direto:', Object.keys(updatesAdd).length, 'caminhos');
             const res = await window.firebaseService.updatePaths(updatesAdd);
-            
             if (res && res.success) {
                 multiUpdateDone = true;
                 console.log('✅ Pedido e contas salvos com sucesso via updatePaths');
             } else {
-                console.warn('⚠️ updatePaths falhou, tentando salvamento individual...', res?.error);
+                console.warn('⚠️ updatePaths direto falhou:', res?.error);
             }
         }
         

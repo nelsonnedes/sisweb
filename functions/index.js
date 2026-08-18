@@ -6662,6 +6662,7 @@ exports.financeUpdatePaymentReceipt = financeFunctions.financeUpdatePaymentRecei
 exports.financeRegisterPayment = financeFunctions.financeRegisterPayment;
 exports.financeDeletePayment = financeFunctions.financeDeletePayment;
 exports.financeSyncCompra = financeFunctions.financeSyncCompra;
+exports.financeSyncVenda = financeFunctions.financeSyncVenda;
 
 const sentryFunctions = require('./sentry-functions');
 sentryFunctions.configure({ isCallerSuperAdmin });

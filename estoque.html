@@ -1791,50 +1791,74 @@
         <!-- Tab Almoxarifado / Produtos -->
         <div id="produtos" class="tab-content">
             <h2>Estoque de Almoxarifado (Produtos)</h2>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="totalProdutos">0</div>
-                    <div class="stat-label">Itens Cadastrados</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="valorTotalAlmoxarifado">R$ 0,00</div>
-                    <div class="stat-label">Valor Total em Estoque</div>
-                </div>
-            </div>
 
-            <div class="form-row produtos-filters-row">
-                <div class="form-group">
-                    <label for="produtosDataInicio">Data Inicial:</label>
-                    <input type="date" id="produtosDataInicio" onchange="filtrarProdutos()">
+            <div class="filters-card" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px; align-items: end;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="produtosDataInicio" style="font-size: 12px; font-weight: 600; color: #475569;">Data Inicial:</label>
+                        <input type="date" id="produtosDataInicio" onchange="filtrarProdutos()">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="produtosDataFim" style="font-size: 12px; font-weight: 600; color: #475569;">Data Final:</label>
+                        <input type="date" id="produtosDataFim" onchange="filtrarProdutos()">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="produtosFiltroCategoria" style="font-size: 12px; font-weight: 600; color: #475569;">Categoria:</label>
+                        <select id="produtosFiltroCategoria" onchange="filtrarProdutos()">
+                            <option value="">Todas as categorias</option>
+                            <option value="Geral">Geral</option>
+                            <option value="EPI">EPI</option>
+                            <option value="Peças / Mecânica">Peças / Mecânica</option>
+                            <option value="Óleos & Lubrificantes">Óleos & Lubrificantes</option>
+                            <option value="Elétrica">Elétrica</option>
+                            <option value="Ferramentas">Ferramentas</option>
+                            <option value="Combustíveis">Combustíveis</option>
+                            <option value="Material de Escritório">Material de Escritório</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="produtosFiltroLocalizacao" style="font-size: 12px; font-weight: 600; color: #475569;">Localização:</label>
+                        <select id="produtosFiltroLocalizacao" onchange="filtrarProdutos()">
+                            <option value="">Todas as localizações</option>
+                            <option value="Galpão">Galpão</option>
+                            <option value="Escritório">Escritório</option>
+                            <option value="Oficina">Oficina</option>
+                            <option value="Serraria">Serraria</option>
+                            <option value="Refeitório">Refeitório</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="produtosResponsavelFiltro" style="font-size: 12px; font-weight: 600; color: #475569;">Responsável:</label>
+                        <input type="text" id="produtosResponsavelFiltro" placeholder="Nome do responsável" oninput="filtrarProdutos()">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="searchProdutos" style="font-size: 12px; font-weight: 600; color: #475569;">Produto / Busca:</label>
+                        <input type="text" id="searchProdutos" placeholder="Nome, código, NF..." oninput="filtrarProdutos()">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="produtosFiltroSaldo" style="font-size: 12px; font-weight: 600; color: #475569;">Estoque / Status:</label>
+                        <select id="produtosFiltroSaldo" onchange="filtrarProdutos()">
+                            <option value="">Todos</option>
+                            <option value="positivo">Com estoque</option>
+                            <option value="ponto_pedido">Ponto de Pedido</option>
+                            <option value="zero">Sem estoque / Crítico</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="produtosDataFim">Data Final:</label>
-                    <input type="date" id="produtosDataFim" onchange="filtrarProdutos()">
-                </div>
-                <div class="form-group">
-                    <label for="produtosResponsavelFiltro">Responsável:</label>
-                    <input type="text" id="produtosResponsavelFiltro" placeholder="Nome do responsável" oninput="filtrarProdutos()">
-                </div>
-                <div class="form-group">
-                    <label for="searchProdutos">Produto:</label>
-                    <input type="text" id="searchProdutos" placeholder="Nome, código..." oninput="filtrarProdutos()">
-                </div>
-                <div class="form-group">
-                    <label for="produtosFiltroSaldo">Estoque:</label>
-                    <select id="produtosFiltroSaldo" onchange="filtrarProdutos()">
-                        <option value="">Todos</option>
-                        <option value="positivo">Com estoque</option>
-                        <option value="zero">Sem estoque</option>
-                    </select>
-                </div>
-                <div class="form-group produtos-actions-group">
-                    <div class="produtos-actions" aria-label="Ações do almoxarifado">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f1f5f9; flex-wrap: wrap; gap: 10px;">
+                    <button type="button" onclick="limparFiltrosProdutosAlmoxarifado()" class="btn btn-secondary btn-small">
+                        <i class="fas fa-eraser"></i> Limpar Filtros
+                    </button>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                         <button type="button" onclick="imprimirEstoqueProdutos()" class="btn btn-secondary">
                             <i class="fas fa-print"></i> Imprimir
                         </button>
                         <button type="button" onclick="abrirConfiguracaoColunasProdutos()" class="btn btn-secondary" title="Configurar colunas do almoxarifado">
                             <i class="fas fa-list"></i> Configurar Colunas
+                        </button>
+                        <button type="button" onclick="showTab('entradaAlmoxarifado'); limparEntradaProdutoForm();" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Novo Produto / Entrada
                         </button>
                     </div>
                 </div>
@@ -1887,43 +1911,36 @@
                 </div>
             </form>
 
-            <div class="table-responsive">
-                <table class="table" id="tabelaProdutos">
-                    <colgroup>
-                        <col style="width: 40px;">
-                        <col class="nome" data-col="nome">
-                        <col class="nome" data-col="responsavel">
-                        <col class="nome" data-col="motivoDestino">
-                        <col class="codigo" data-col="tipoMovimentacao">
-                        <col class="unidade" data-col="unidade">
-                        <col class="quantidade" data-col="quantidade">
-                        <col class="preco" data-col="precoMedio">
-                        <col class="valor" data-col="valorTotal">
-                        <col class="data" data-col="ultimaAtualizacao">
-                        <col class="acoes">
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th style="width: 40px;"><input type="checkbox" id="checkTodosProdutos" onchange="toggleTodosProdutos()"></th>
-                            <th data-col="nome" onclick="ordenarProdutos('nome')" style="cursor: pointer;">Produto <i class="fas fa-sort sort-icon" id="sort-produtos-nome"></i></th>
-                            <th data-col="responsavel" onclick="ordenarProdutos('responsavel')" style="cursor: pointer;">Responsável <i class="fas fa-sort sort-icon" id="sort-produtos-responsavel"></i></th>
-                            <th data-col="motivoDestino" onclick="ordenarProdutos('motivoDestino')" style="cursor: pointer;">Motivo / Destino <i class="fas fa-sort sort-icon" id="sort-produtos-motivoDestino"></i></th>
-                            <th data-col="tipoMovimentacao" onclick="ordenarProdutos('tipoMovimentacao')" style="cursor: pointer;">Última Mov. <i class="fas fa-sort sort-icon" id="sort-produtos-tipoMovimentacao"></i></th>
-                            <th data-col="unidade" onclick="ordenarProdutos('unidade')" style="cursor: pointer;">Unidade <i class="fas fa-sort sort-icon" id="sort-produtos-unidade"></i></th>
-                            <th data-col="quantidade" onclick="ordenarProdutos('quantidade')" class="text-center" style="cursor: pointer;">Quantidade <i class="fas fa-sort sort-icon" id="sort-produtos-quantidade"></i></th>
-                            <th data-col="precoMedio" onclick="ordenarProdutos('precoMedio')" class="text-right" style="cursor: pointer;">Preço Médio <i class="fas fa-sort sort-icon" id="sort-produtos-precoMedio"></i></th>
-                            <th data-col="valorTotal" onclick="ordenarProdutos('valorTotal')" class="text-right" style="cursor: pointer;">Total <i class="fas fa-sort sort-icon" id="sort-produtos-valorTotal"></i></th>
-                            <th data-col="ultimaAtualizacao" onclick="ordenarProdutos('ultimaAtualizacao')" style="cursor: pointer;">Última Atualização <i class="fas fa-sort sort-icon" id="sort-produtos-ultimaAtualizacao"></i></th>
-                            <th class="text-center actions-col sticky-actions">Ações</th>
-                        </tr>
-                    </thead>
+            <div class="table-container report-table-container">
+                <table class="table table-report-estoque" id="tabelaProdutos">
+                    <colgroup id="tabelaProdutosColgroup"></colgroup>
+                    <thead id="tabelaProdutosThead"></thead>
                     <tbody id="produtosTable">
                         <tr><td colspan="11" class="text-center">Carregando...</td></tr>
                     </tbody>
                 </table>
             </div>
-            <div id="resumoProdutos" class="summary-box" style="margin-top: 12px;"></div>
+
             <div id="paginacaoProdutos" class="pagination-controls"></div>
+
+            <div class="stats-grid" id="resumoProdutosStats" style="margin-top: 16px;">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalProdutos">0</div>
+                    <div class="stat-label">Itens Cadastrados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="quantidadeTotalProdutos">0,00</div>
+                    <div class="stat-label">Quantidade Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="valorTotalAlmoxarifado">R$ 0,00</div>
+                    <div class="stat-label">Valor Total em Estoque</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="produtosEstoqueBaixo">0</div>
+                    <div class="stat-label">Estoque Baixo / Crítico</div>
+                </div>
+            </div>
         </div>
 
         <!-- Tab Entrada de Estoque -->
@@ -2619,16 +2636,14 @@
                 </div>
             </div>
 
-            <div id="relAgruparResponsavelGroup" class="relatorios-subrow" style="display:none;">
-                <label class="inline-checkbox">
-                    <input type="checkbox" id="relAgruparResponsavel">
-                    Agrupar por Responsável
-                </label>
-            </div>
-
-            <div id="relatorioResult" style="display: none;">
-                <div id="relatorioResultHeader">
-                    <h3>Resultado do Relatório</h3>
+            <div id="relatorioResult" style="display: none; margin-top: 16px;">
+                <div id="relatorioResultHeader" style="display: flex; align-items: center; min-height: 28px; margin-bottom: 8px;">
+                    <div id="relAgruparResponsavelGroup" style="display:none; margin: 0;">
+                        <label class="inline-checkbox" style="font-size: 13px; font-weight: 700; color: #1e293b; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; margin: 0; user-select: none;">
+                            <input type="checkbox" id="relAgruparResponsavel" style="width: 16px; height: 16px; cursor: pointer; margin: 0;">
+                            <span>Agrupar por Responsável</span>
+                        </label>
+                    </div>
                 </div>
                 <div id="relatorioContent"></div>
             </div>
@@ -2640,7 +2655,7 @@
             <form id="entradaProdutoForm" class="entrada-almox-form">
                 <h3 class="almox-section-title" id="entradaProdutoTitulo">Registrar Entrada de Produto</h3>
                 <div id="entradaProdutoEditAviso" class="alert alert-warning" style="display: none;">
-                    Modo edição: os dados do produto selecionado foram carregados no formulário. Alterações cadastrais atualizam o produto; se a quantidade for alterada, será registrada uma movimentação de Ajuste no histórico.
+                    Modo edição: todos os dados do produto selecionado foram carregados no formulário e podem ser livremente alterados. Caso a quantidade seja modificada, um registro de Ajuste será lançado no histórico.
                 </div>
                 <div class="form-row entrada-produto-grid-primary">
                     <div class="form-group">
@@ -2663,17 +2678,45 @@
                     </div>
                     <div class="form-group form-group-large">
                         <label for="entradaProdutoNome">Nome do Produto:</label>
-                        <input type="text" id="entradaProdutoNome" placeholder="Ex: Parafuso 6mm">
+                        <input type="text" id="entradaProdutoNome" placeholder="Ex: Parafuso 6mm" required>
                     </div>
-                    <div class="form-group form-group-small">
-                        <label for="entradaProdutoUnidade">Unidade:</label>
-                        <input type="text" id="entradaProdutoUnidade" placeholder="un, kg, cx">
+                    <div class="form-group">
+                        <label for="entradaProdutoCategoria">Categoria:</label>
+                        <select id="entradaProdutoCategoria">
+                            <option value="Geral">Geral</option>
+                            <option value="EPI">EPI</option>
+                            <option value="Peças / Mecânica">Peças / Mecânica</option>
+                            <option value="Óleos & Lubrificantes">Óleos & Lubrificantes</option>
+                            <option value="Elétrica">Elétrica</option>
+                            <option value="Ferramentas">Ferramentas</option>
+                            <option value="Combustíveis">Combustíveis</option>
+                            <option value="Material de Escritório">Material de Escritório</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="entradaProdutoLocalizacao">Localização:</label>
+                        <select id="entradaProdutoLocalizacao">
+                            <option value="Galpão">Galpão</option>
+                            <option value="Escritório">Escritório</option>
+                            <option value="Oficina">Oficina</option>
+                            <option value="Serraria">Serraria</option>
+                            <option value="Refeitório">Refeitório</option>
+                        </select>
                     </div>
                 </div>
                 <div class="form-row entrada-produto-grid-secondary">
                     <div class="form-group form-group-small">
+                        <label for="entradaProdutoUnidade">Unidade:</label>
+                        <input type="text" id="entradaProdutoUnidade" placeholder="un, kg, cx" value="un">
+                    </div>
+                    <div class="form-group form-group-small">
                         <label for="entradaProdutoQtd">Quantidade:</label>
                         <input type="number" id="entradaProdutoQtd" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group form-group-small">
+                        <label for="entradaProdutoEstoqueMinimo">Estoque Mínimo:</label>
+                        <input type="number" id="entradaProdutoEstoqueMinimo" step="0.01" min="0" placeholder="0.00" value="0">
                     </div>
                     <div class="form-group form-group-small">
                         <label for="entradaProdutoPreco">Preço Unitário:</label>
@@ -2700,6 +2743,106 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Editar Produto Almoxarifado -->
+    <div id="modalEditarProdutoAlmoxarifado" class="modal" style="z-index: 2200;">
+        <div class="modal-content" style="max-width: 780px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Editar Produto do Almoxarifado</h2>
+                <span class="close" onclick="fecharModal('modalEditarProdutoAlmoxarifado')">&times;</span>
+            </div>
+            <div class="modal-body" style="padding: 20px; overflow-y: auto;">
+                <form id="formEditarProdutoAlmoxarifado" onsubmit="salvarEdicaoModalProdutoAlmoxarifado(event)">
+                    <input type="hidden" id="editModalProdutoId">
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #475569;">
+                        <strong>Modo de Edição Direta:</strong> Altere livremente qualquer campo cadastral, financeiro ou parâmetro de reposição. Se a quantidade for modificada, o sistema registrará uma movimentação de Ajuste no histórico.
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group form-group-large" style="flex: 2;">
+                            <label for="editModalProdutoNome"><strong>Nome do Produto:</strong></label>
+                            <input type="text" id="editModalProdutoNome" required placeholder="Ex: Parafuso Sextavado 6mm">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="editModalProdutoCategoria">Categoria:</label>
+                            <select id="editModalProdutoCategoria">
+                                <option value="Geral">Geral</option>
+                                <option value="EPI">EPI</option>
+                                <option value="Peças / Mecânica">Peças / Mecânica</option>
+                                <option value="Óleos & Lubrificantes">Óleos & Lubrificantes</option>
+                                <option value="Elétrica">Elétrica</option>
+                                <option value="Ferramentas">Ferramentas</option>
+                                <option value="Combustíveis">Combustíveis</option>
+                                <option value="Material de Escritório">Material de Escritório</option>
+                                <option value="Outros">Outros</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editModalProdutoLocalizacao">Localização Física:</label>
+                            <select id="editModalProdutoLocalizacao">
+                                <option value="Galpão">Galpão</option>
+                                <option value="Escritório">Escritório</option>
+                                <option value="Oficina">Oficina</option>
+                                <option value="Serraria">Serraria</option>
+                                <option value="Refeitório">Refeitório</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label for="editModalProdutoUnidade">Unidade:</label>
+                            <input type="text" id="editModalProdutoUnidade" placeholder="un, kg, cx" required>
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label for="editModalProdutoQtd">Quantidade (Saldo):</label>
+                            <input type="number" id="editModalProdutoQtd" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label for="editModalProdutoEstoqueMinimo">Estoque Mínimo:</label>
+                            <input type="number" id="editModalProdutoEstoqueMinimo" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group form-group-small">
+                            <label for="editModalProdutoPreco">Preço Médio Unitário:</label>
+                            <input type="text" id="editModalProdutoPreco" placeholder="R$ 0,00">
+                        </div>
+                        <div class="form-group">
+                            <label for="editModalProdutoDocumento">Documento / NF:</label>
+                            <input type="text" id="editModalProdutoDocumento" placeholder="NF, pedido, ajuste">
+                        </div>
+                        <div class="form-group">
+                            <label for="editModalProdutoResponsavel">Responsável / Usuário:</label>
+                            <input type="text" id="editModalProdutoResponsavel" list="responsaveisProdutoDatalist" placeholder="Responsável">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="editModalProdutoData">Data da Alteração:</label>
+                            <input type="date" id="editModalProdutoData" required>
+                        </div>
+                        <div class="form-group form-group-large" style="flex: 2;">
+                            <label for="editModalProdutoObs">Motivo / Observações:</label>
+                            <input type="text" id="editModalProdutoObs" placeholder="Motivo da alteração cadastral ou ajuste">
+                        </div>
+                    </div>
+
+                    <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 14px; border-top: 1px solid #e2e8f0;">
+                        <button type="button" class="btn btn-secondary" onclick="fecharModal('modalEditarProdutoAlmoxarifado')">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -3076,8 +3219,8 @@
         console.log("✅ firebaseService carregado no estoque.html completo");
     </script>
     <script src="commerce-pdf-share.js?v=db7850889254"></script>
-    <script src="estoque_produtos.js?v=97c2837b6b6d"></script>
-        <script src="estoque.js?v=1cccc0de86f1"></script>
+    <script src="estoque_produtos.js?v=b6d1594cf56c"></script>
+        <script src="estoque.js?v=0a1c8d2898a3"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

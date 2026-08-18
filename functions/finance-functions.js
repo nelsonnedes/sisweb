@@ -1086,6 +1086,151 @@ function buildCanonicalPurchaseAccount(source, request, nowIso) {
     return { month, account };
 }
 
+
+function normalizeSaleSyncRequest(data) {
+    const payload = isPlainObject(data) ? data : {};
+    const pedido = payload.pedido;
+    if (!isPlainObject(pedido)) {
+        throw new FinanceValidationError("Pedido de venda é obrigatório.");
+    }
+    const serialized = stableStringify(payload);
+    if (serialized.length > 1000000) {
+        throw new FinanceValidationError("Requisição excede o tamanho permitido.");
+    }
+    const pedidoId = normalizePathSegment(pedido.id, "pedido.id");
+    const numero = normalizeNullableText(String(pedido.numero || ""), "pedido.numero", 160);
+    if (!numero) {
+        throw new FinanceValidationError("pedido.numero é obrigatório.");
+    }
+    const cliente = isPlainObject(pedido.cliente) ? pedido.cliente : {};
+    const clienteId = normalizeNullableText(String(pedido.clienteId || cliente.id || ""), "pedido.clienteId", 160);
+    const contasCriar = (Array.isArray(payload.contasCriar) ? payload.contasCriar : [])
+        .map((source, index) => {
+            if (!isPlainObject(source)) {
+                throw new FinanceValidationError(`contasCriar[${index}] é inválida.`);
+            }
+            return {
+                index,
+                accountId: normalizePathSegment(source.id, `contasCriar[${index}].id`),
+                source,
+            };
+        });
+    if (contasCriar.length > MAX_CREATE_ACCOUNTS) {
+        throw new FinanceValidationError(`O lote não pode exceder ${MAX_CREATE_ACCOUNTS} contas.`);
+    }
+    const contasRemover = (Array.isArray(payload.contasRemover) ? payload.contasRemover : [])
+        .map((item, index) => {
+            if (!isPlainObject(item)) {
+                throw new FinanceValidationError(`contasRemover[${index}] é inválida.`);
+            }
+            return {
+                month: normalizeMonth(item.mes || item.month),
+                accountId: normalizePathSegment(
+                    item.contaId || item.accountId || item.id,
+                    `contasRemover[${index}].contaId`,
+                ),
+            };
+        });
+    const ids = new Set();
+    for (const item of [...contasCriar, ...contasRemover]) {
+        const key = `${item.month || ""}/${item.accountId}`;
+        if (ids.has(key)) {
+            throw new FinanceValidationError("IDs de conta duplicados na sincronização de venda.");
+        }
+        ids.add(key);
+    }
+    return {
+        operationId: normalizeOperationId(payload.operationId),
+        pedido,
+        pedidoId,
+        numero,
+        clienteId,
+        contasCriar,
+        contasRemover,
+    };
+}
+
+function buildCanonicalSaleAccount(source, request, nowIso) {
+    const valorCents = moneyToCents(source.valor, "valor");
+    if (valorCents <= 0) {
+        throw new FinanceValidationError("valor da conta de venda deve ser positivo.");
+    }
+    if (moneyToCents(source.valorOriginal, "valorOriginal") !== valorCents) {
+        throw new FinanceValidationError("valor e valorOriginal devem ser iguais na criação de venda.");
+    }
+    if (
+        hasOwn(source, "valorRestante")
+        && moneyToCents(source.valorRestante, "valorRestante") !== valorCents
+    ) {
+        throw new FinanceValidationError("valorRestante deve corresponder ao valor original.");
+    }
+    const dueDate = normalizeDate(
+        source.dataVencimento ?? source.vencimento,
+        "dataVencimento",
+        false,
+    );
+    const month = dateToMonthKey(dueDate);
+    if (month === null) {
+        throw new FinanceValidationError("dataVencimento não corresponde a um mês válido.");
+    }
+    const status = normalizeStatus(source.status || "pendente", "status");
+    if (status === "pago" || status === "parcial") {
+        throw new FinanceValidationError("Conta de venda nova não pode iniciar paga ou parcial.");
+    }
+    const valor = valorCents / 100;
+    const clienteObj = isPlainObject(source.cliente) ? source.cliente : (isPlainObject(request.pedido.cliente) ? request.pedido.cliente : {});
+    const account = {
+        id: request.accountId,
+        tipo: "receber",
+        categoria: "vendas",
+        origem: "pedido_venda",
+        origemId: request.pedidoId,
+        pedidoNumero: request.numero,
+        clienteId: request.clienteId || normalizeNullableText(String(clienteObj.id || ""), "cliente.id", 160),
+        cliente: {
+            id: normalizeNullableText(String(clienteObj.id || ""), "cliente.id", 160),
+            nome: normalizeNullableText(String(clienteObj.nome || ""), "cliente.nome", 300),
+            email: normalizeNullableText(String(clienteObj.email || ""), "cliente.email", 300),
+            telefone: normalizeNullableText(String(clienteObj.telefone || ""), "cliente.telefone", 100),
+            endereco: normalizeNullableText(String(clienteObj.endereco || ""), "cliente.endereco", 500)
+        },
+        descricao: normalizeNullableText(
+            String(source.descricao || `Venda - Pedido ${request.numero}`),
+            "descricao",
+            2000,
+        ),
+        valor,
+        valorOriginal: valor,
+        valorRestante: valor,
+        valorPago: 0,
+        dataVencimento: dueDate,
+        vencimento: dueDate,
+        status,
+        tipoPagamento: normalizeNullableText(
+            String(source.tipoPagamento || source.tipo || ""),
+            "tipoPagamento",
+            160,
+        ),
+        tipo_pagamento: normalizeNullableText(
+            String(source.tipo_pagamento || source.tipoPagamento || source.tipo || ""),
+            "tipo_pagamento",
+            160,
+        ),
+        observacoes: normalizeNullableText(
+            String(source.observacoes || source.observacao || ""),
+            "observacoes",
+            5000,
+        ),
+        created: nowIso,
+        updatedAt: nowIso,
+        revision: 0,
+    };
+    if (source.dataEmissao || request.pedido.data) {
+        account.dataEmissao = String(source.dataEmissao || request.pedido.data).trim();
+    }
+    return { month, account };
+}
+
 function createAccountsFingerprint(request, canonicalEntries) {
     return crypto.createHash('sha256').update(stableStringify({
         kind: 'create',
@@ -2307,6 +2452,47 @@ function createHandlers(options = {}) {
         });
     }
 
+    
+    async function financeSyncVenda(data, context) {
+        return runAuthorized(context, async (db, access) => {
+            let request;
+            try {
+                request = normalizeSaleSyncRequest(data);
+            } catch (error) {
+                throwInputAsHttps(error);
+            }
+            const nowIso = now();
+            const canonicalEntries = request.contasCriar.map((item) => {
+                const built = buildCanonicalSaleAccount(
+                    item.source,
+                    { ...request, accountId: item.accountId },
+                    nowIso,
+                );
+                return { month: built.month, account: built.account };
+            });
+            const updates = {};
+            updates[`vendas/pedidos/${request.pedidoId}`] = request.pedido;
+            updates[`pedidosVenda/${request.pedidoId}`] = request.pedido;
+            for (const removal of request.contasRemover) {
+                updates[`financas/receber/${removal.month}/${removal.accountId}`] = null;
+            }
+            for (const entry of canonicalEntries) {
+                updates[`financas/receber/${entry.month}/${entry.account.id}`] = entry.account;
+            }
+            const reference = db.ref(`companies/${access.companyId}`);
+            await reference.update(updates);
+            return {
+                success: true,
+                idempotent: false,
+                pedidoId: request.pedidoId,
+                accounts: canonicalEntries.map((entry) => ({
+                    month: entry.month,
+                    account: entry.account,
+                })),
+            };
+        });
+    }
+
     async function financeSyncCompra(data, context) {
         return runAuthorized(context, async (db, access) => {
             let request;
@@ -2584,6 +2770,7 @@ function createHandlers(options = {}) {
         financeNextSequence,
         financeCreateAccounts,
         financeSyncCompra,
+        financeSyncVenda,
         financeUpdateAccount,
         financeDeleteAccount,
         financeUpdatePaymentReceipt,
@@ -2598,6 +2785,7 @@ exports.configure = configure;
 exports.financeNextSequence = functionsV1.https.onCall(handlers.financeNextSequence);
 exports.financeCreateAccounts = functionsV1.https.onCall(handlers.financeCreateAccounts);
 exports.financeSyncCompra = functionsV1.https.onCall(handlers.financeSyncCompra);
+exports.financeSyncVenda = functionsV1.https.onCall(handlers.financeSyncVenda);
 exports.financeUpdateAccount = functionsV1.https.onCall(handlers.financeUpdateAccount);
 exports.financeDeleteAccount = functionsV1.https.onCall(handlers.financeDeleteAccount);
 exports.financeUpdatePaymentReceipt = functionsV1.https.onCall(handlers.financeUpdatePaymentReceipt);
@@ -2634,6 +2822,8 @@ exports.__test = {
     normalizeAccountEditRequest,
     normalizeAccountDeleteRequest,
     normalizePurchaseSyncRequest,
+    normalizeSaleSyncRequest,
+    buildCanonicalSaleAccount,
     normalizeReceiptUpdateRequest,
     normalizeSequenceRequest,
     pruneOperationRecords,

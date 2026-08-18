@@ -42,6 +42,19 @@ let paginaAtualEstoque = 1;
 let paginaAtualMovimentacoes = 1;
 let paginaAtualRelatorio = 1;
 let totalItensRelatorioAtual = 0;
+
+try {
+    Object.defineProperty(window, 'paginaAtualRelatorio', {
+        get() { return paginaAtualRelatorio; },
+        set(v) { paginaAtualRelatorio = Number(v) || 1; },
+        configurable: true
+    });
+    Object.defineProperty(window, 'totalItensRelatorioAtual', {
+        get() { return totalItensRelatorioAtual; },
+        set(v) { totalItensRelatorioAtual = Number(v) || 0; },
+        configurable: true
+    });
+} catch (_) {}
 let estoqueFiltrado = [];
 let movimentacoesFiltradas = [];
 let filtroEstoqueAtual = {};
@@ -4924,22 +4937,26 @@ function onManualSaidaKeydown(event, nextFieldId = '') {
 
 // Funções de consulta de estoque
 function atualizarEstatisticas() {
-    const torasDisponiveis = estoqueAtual.filter(t => t.status === 'disponivel');
+    const torasDisponiveis = (estoqueAtual || []).filter(t => t.status === 'disponivel');
 
     // Total de toras
-    document.getElementById('totalToras').textContent = torasDisponiveis.length;
+    const totalTorasEl = document.getElementById('totalToras') || document.getElementById('statTotalToras');
+    if (totalTorasEl) totalTorasEl.textContent = torasDisponiveis.length;
 
     // Volume total
     const volumeTotal = torasDisponiveis.reduce((total, tora) => total + (tora.volumeLiquido || 0), 0);
-    document.getElementById('volumeTotal').textContent = formatNumber(volumeTotal, 3) + ' m³';
+    const volumeTotalEl = document.getElementById('volumeTotal') || document.getElementById('statVolumeLiquidoTotal');
+    if (volumeTotalEl) volumeTotalEl.textContent = formatNumber(volumeTotal, 3) + ' m³';
 
     // Valor do estoque
     const valorTotal = torasDisponiveis.reduce((total, tora) => total + ((tora.volumeLiquido || 0) * (tora.precoCusto || 0)), 0);
-    document.getElementById('valorEstoque').textContent = formatCurrency(valorTotal);
+    const valorEstoqueEl = document.getElementById('valorEstoque') || document.getElementById('statValorTotal');
+    if (valorEstoqueEl) valorEstoqueEl.textContent = formatCurrency(valorTotal);
 
     // Espécies únicas
     const especies = [...new Set(torasDisponiveis.map(tora => tora.especie))];
-    document.getElementById('especiesUnicas').textContent = especies.length;
+    const especiesUnicasEl = document.getElementById('especiesUnicas');
+    if (especiesUnicasEl) especiesUnicasEl.textContent = especies.length;
 }
 
 function carregarTabelaEstoque(filtro = {}) {
@@ -6487,11 +6504,40 @@ window.toggleRelatorio = function(id, isChecked) {
         const allChecked = Array.from(checks).every(c => c.checked);
         masters.forEach(master => { master.checked = allChecked; });
     }
+
+    const groupMasters = document.querySelectorAll('.check-grupo-responsavel');
+    groupMasters.forEach(gm => {
+        const resp = gm.getAttribute('data-resp');
+        if (resp) {
+            const respChecks = document.querySelectorAll(`.check-relatorio[data-resp="${escapeRelatorioAttr(resp)}"]`);
+            if (respChecks.length > 0) {
+                gm.checked = Array.from(respChecks).every(c => c.checked);
+            }
+        }
+    });
+};
+
+window.toggleRelatorioGrupoResponsavel = function(masterCheckbox, respName) {
+    const shouldCheck = !!(masterCheckbox && masterCheckbox.checked);
+    const checks = document.querySelectorAll(`.check-relatorio[data-resp="${escapeRelatorioAttr(respName)}"]`);
+    checks.forEach(c => {
+        c.checked = shouldCheck;
+        if (shouldCheck) window.relatorioSelecionados.add(c.value);
+        else window.relatorioSelecionados.delete(c.value);
+    });
+
+    const allChecks = document.querySelectorAll('.check-relatorio');
+    const allMasters = document.querySelectorAll('.check-todo-relatorio');
+    if (allMasters.length > 0 && allChecks.length > 0) {
+        const allChecked = Array.from(allChecks).every(c => c.checked);
+        allMasters.forEach(master => { master.checked = allChecked; });
+    }
 };
 
 window.toggleTodoRelatorio = function(checked = null) {
     const masters = document.querySelectorAll('.check-todo-relatorio');
     const checks = document.querySelectorAll('.check-relatorio');
+    const groupMasters = document.querySelectorAll('.check-grupo-responsavel');
     const shouldCheck = checked === null ? !!(masters[0] && masters[0].checked) : !!checked;
     checks.forEach(c => {
         c.checked = shouldCheck;
@@ -6499,6 +6545,7 @@ window.toggleTodoRelatorio = function(checked = null) {
         else window.relatorioSelecionados.delete(c.value);
     });
     masters.forEach(master => { master.checked = shouldCheck; });
+    groupMasters.forEach(gm => { gm.checked = shouldCheck; });
 };
 
 function escapeRelatorioAttr(value) {
@@ -6537,11 +6584,12 @@ function renderRelatorioSelecionarTodosTh(onlySelected = false) {
     return '<th class="text-center no-print relatorio-check-col"><input type="checkbox" class="check-todo-relatorio" onchange="toggleTodoRelatorio(this.checked)" aria-label="Selecionar todos os itens do relatório"></th>';
 }
 
-function renderRelatorioSelecionarTd(tipo, raw, onlySelected = false) {
+function renderRelatorioSelecionarTd(tipo, raw, onlySelected = false, extraAttr = '') {
     if (onlySelected) return '';
     const id = criarRelatorioSelectionId(tipo, raw);
     const checked = window.relatorioSelecionados && window.relatorioSelecionados.has(id) ? 'checked' : '';
-    return `<td class="text-center no-print relatorio-check-col"><input type="checkbox" class="check-relatorio" value="${escapeRelatorioAttr(id)}" ${checked} onchange="toggleRelatorio(this.value, this.checked)" aria-label="Selecionar item do relatório"></td>`;
+    const extra = extraAttr ? ` ${extraAttr}` : '';
+    return `<td class="text-center no-print relatorio-check-col"><input type="checkbox" class="check-relatorio" value="${escapeRelatorioAttr(id)}" ${checked}${extra} onchange="toggleRelatorio(this.value, this.checked)" aria-label="Selecionar item do relatório"></td>`;
 }
 
 function isEstoqueReportColumnsSupported(tipoRelatorio) {
@@ -7951,7 +7999,8 @@ async function imprimirEstoqueProdutos() {
         await window.ensureProdutosColumnsConfigLoaded();
     }
     let lista = [];
-    if (typeof produtosSelecionados !== 'undefined' && produtosSelecionados.size > 0) {
+    const onlySelected = typeof produtosSelecionados !== 'undefined' && produtosSelecionados.size > 0;
+    if (onlySelected) {
         lista = (typeof estoqueProdutos !== 'undefined' ? estoqueProdutos : []).filter(p => produtosSelecionados.has(String(p.id)));
     } else {
         lista = (typeof produtosFiltrados !== 'undefined' && Array.isArray(produtosFiltrados) && produtosFiltrados.length > 0)
@@ -7965,68 +8014,100 @@ async function imprimirEstoqueProdutos() {
             { key: 'responsavel', label: 'Responsável' },
             { key: 'motivoDestino', label: 'Motivo / Destino' },
             { key: 'tipoMovimentacao', label: 'Última Mov.' },
-            { key: 'unidade', label: 'Unidade' },
-            { key: 'quantidade', label: 'Quantidade' },
-            { key: 'precoMedio', label: 'Preço Médio' },
-            { key: 'valorTotal', label: 'Total' },
-            { key: 'ultimaAtualizacao', label: 'Última Atualização' }
+            { key: 'unidade', label: 'Unidade', align: 'text-center' },
+            { key: 'quantidade', label: 'Quantidade', align: 'text-center' },
+            { key: 'precoMedio', label: 'Preço Médio', align: 'text-right' },
+            { key: 'valorTotal', label: 'Total', align: 'text-right' },
+            { key: 'ultimaAtualizacao', label: 'Última Atualização', align: 'text-center' }
         ];
-    const colunas = produtoDefs.map(def => def.label);
-    const linhas = lista.map(p => produtoDefs.map(def => {
-        if (typeof window.obterValorCelulaProduto === 'function') {
-            return window.obterValorCelulaProduto(p, def.key);
-        }
-        const total = (p.quantidade || 0) * (p.precoMedio || 0);
-        const dataFmt = p.ultimaAtualizacao ? new Date(p.ultimaAtualizacao).toLocaleDateString('pt-BR') : '-';
-        const map = {
-            nome: p.nome || '',
-            responsavel: p.responsavel || p.ultimoResponsavel || p.responsavelUltimaMovimentacao || '',
-            motivoDestino: p.motivoDestino || p.ultimoMotivo || p.motivoUltimaMovimentacao || p.destino || '',
-            tipoMovimentacao: p.ultimaMovimentacaoLabel || p.ultimaMovimentacaoTipo || p.tipoUltimaMovimentacao || '',
-            unidade: p.unidade || 'un',
-            quantidade: formatNumber(p.quantidade, 2),
-            precoMedio: formatCurrency(p.precoMedio),
-            valorTotal: formatCurrency(total),
-            ultimaAtualizacao: dataFmt
-        };
-        return map[def.key] ?? '';
-    }));
+
     const totalQtd = lista.reduce((acc, p) => acc + (p.quantidade || 0), 0);
     const totalVal = lista.reduce((acc, p) => acc + ((p.quantidade || 0) * (p.precoMedio || 0)), 0);
-    const rodape = `
-        <div class="relatorio-rodape summary-box">
-            <div class="summary-row"><span>Total de Itens:</span><span>${lista.length}</span></div>
-            <div class="summary-row"><span>Quantidade Total:</span><span>${formatNumber(totalQtd, 2)}</span></div>
-            <div class="summary-row"><span>Valor Total:</span><span>${formatCurrency(totalVal)}</span></div>
+    const criticosCount = lista.filter(p => Number(p.quantidade || 0) <= 0).length;
+
+    const linhasHtml = lista.map(p => `
+        <tr>
+            ${produtoDefs.map(def => {
+                const cls = def.align ? ` class="${def.align}"` : '';
+                const val = typeof window.obterValorCelulaProduto === 'function'
+                    ? window.obterValorCelulaProduto(p, def.key)
+                    : (p[def.key] ?? '');
+                return `<td${cls}>${val}</td>`;
+            }).join('')}
+        </tr>
+    `).join('');
+
+    const tabelaHtml = `
+        <div class="table-container report-table-container">
+            <table class="table table-report-estoque">
+                <thead>
+                    <tr>
+                        ${produtoDefs.map(def => {
+                            const cls = def.align ? ` class="${def.align}"` : '';
+                            return `<th${cls}>${escapeHtml(def.label)}</th>`;
+                        }).join('')}
+                    </tr>
+                </thead>
+                <tbody>${linhasHtml || `<tr><td colspan="${produtoDefs.length}">Nenhum produto em estoque</td></tr>`}</tbody>
+            </table>
         </div>
     `;
+
+    const cardsHtml = `
+        <div class="stats-grid" id="resumoRelatoriosStats" style="margin-top: 16px;">
+            <div class="stat-card">
+                <div class="stat-value">${lista.length}</div>
+                <div class="stat-label">Itens Cadastrados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${formatNumber(totalQtd, 2)}</div>
+                <div class="stat-label">Quantidade Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${formatCurrency(totalVal)}</div>
+                <div class="stat-label">Valor Total em Estoque</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${criticosCount}</div>
+                <div class="stat-label">Estoque Baixo / Crítico</div>
+            </div>
+        </div>
+    `;
+
+    const conteudoCompleto = `${tabelaHtml} ${cardsHtml}`;
     const empresa = await obterDadosEmpresaRelatorio();
-    const html = montarRelatorioHtml(empresa, 'Estoque de Almoxarifado', '', montarTabelaHtml(colunas, linhas), rodape);
+    const titulo = 'Estoque de Almoxarifado';
+    const html = montarRelatorioHtml(empresa, titulo, '', conteudoCompleto, '');
+    const orientacao = window.__estoqueRelatorioOrientacao || 'auto';
     const htmlCompleto = `
         <html>
         <head>
             <meta charset="UTF-8">
-            <title>Estoque de Almoxarifado</title>
-            <style>${obterRelatorioStylesImpressao()}</style>
+            <title>${titulo}</title>
+            <style>${obterRelatorioStylesImpressao(orientacao)}</style>
         </head>
         <body>${html}</body>
         </html>
     `;
+
+    const pdfData = extrairTabelasRelatorioEstoquePdf(conteudoCompleto);
     await entregarRelatorioEstoque({
         title: 'Estoque de Almoxarifado',
         company: empresa,
         htmlCompleto,
-        preview: true,
+        preview: false,
+        windowFeatures: 'width=900,height=700',
         pdfOptions: {
             title: 'Estoque de Almoxarifado',
             company: empresa,
-            columns: produtoDefs,
-            rows: linhas,
+            orientation: orientacao === 'portrait' ? 'portrait' : 'landscape',
             summaryRows: [
                 ['Total de Itens', lista.length],
                 ['Quantidade Total', formatNumber(totalQtd, 2)],
-                ['Valor Total', formatCurrency(totalVal)]
-            ]
+                ['Valor Total em Estoque', formatCurrency(totalVal)],
+                ['Estoque Baixo / Crítico', criticosCount]
+            ],
+            tables: pdfData.tables
         }
     });
 }

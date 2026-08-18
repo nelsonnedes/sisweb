@@ -409,8 +409,11 @@ function preencherFormularioEdicaoProdutoAlmoxarifado(prod = {}) {
     const tipoEl = document.getElementById('entradaProdutoTipoMov');
     const select = document.getElementById('entradaProdutoSelect');
     const nomeEl = document.getElementById('entradaProdutoNome');
+    const categoriaEl = document.getElementById('entradaProdutoCategoria');
+    const localizacaoEl = document.getElementById('entradaProdutoLocalizacao');
     const unidadeEl = document.getElementById('entradaProdutoUnidade');
     const qtdEl = document.getElementById('entradaProdutoQtd');
+    const estMinEl = document.getElementById('entradaProdutoEstoqueMinimo');
     const precoEl = document.getElementById('entradaProdutoPreco');
     const docEl = document.getElementById('entradaProdutoDocumento');
     const obsEl = document.getElementById('entradaProdutoObs');
@@ -419,9 +422,15 @@ function preencherFormularioEdicaoProdutoAlmoxarifado(prod = {}) {
     if (dataEl) dataEl.value = obterDataProdutoParaFormulario(prod);
     if (tipoEl) tipoEl.value = normalizarTipoMovimentacaoProduto(prod.ultimaMovimentacaoTipo || prod.tipoUltimaMovimentacao || 'entrada') === 'ajuste' ? 'ajuste' : 'entrada';
     if (select) select.value = String(prod.id);
-    if (nomeEl) nomeEl.value = String(prod.nome || '').trim();
+    if (nomeEl) {
+        nomeEl.value = String(prod.nome || '').trim();
+        nomeEl.disabled = false;
+    }
+    if (categoriaEl) categoriaEl.value = prod.categoria || 'Geral';
+    if (localizacaoEl) localizacaoEl.value = prod.localizacao || 'Galpão';
     if (unidadeEl) unidadeEl.value = String(prod.unidade || 'un').trim();
     if (qtdEl) qtdEl.value = Number(prod.quantidade || 0);
+    if (estMinEl) estMinEl.value = Number(prod.estoqueMinimo || 0);
     if (precoEl) precoEl.value = formatCurrency(prod.precoMedio || 0);
     if (docEl) docEl.value = obterDocumentoProdutoParaFormulario(prod);
     if (obsEl) obsEl.value = obterObservacaoProdutoParaFormulario(prod);
@@ -434,8 +443,11 @@ function configurarNavegacaoEnterEntradaProdutos() {
         'entradaProdutoTipoMov',
         'entradaProdutoSelect',
         'entradaProdutoNome',
+        'entradaProdutoCategoria',
+        'entradaProdutoLocalizacao',
         'entradaProdutoUnidade',
         'entradaProdutoQtd',
+        'entradaProdutoEstoqueMinimo',
         'entradaProdutoPreco',
         'entradaProdutoDocumento',
         'entradaProdutoObs'
@@ -489,14 +501,20 @@ function onEntradaProdutoSelectChange() {
     if (produtoAlmoxarifadoEmEdicao) return;
     const select = document.getElementById('entradaProdutoSelect');
     const nomeEl = document.getElementById('entradaProdutoNome');
+    const categoriaEl = document.getElementById('entradaProdutoCategoria');
+    const localizacaoEl = document.getElementById('entradaProdutoLocalizacao');
     const unidadeEl = document.getElementById('entradaProdutoUnidade');
+    const estMinEl = document.getElementById('entradaProdutoEstoqueMinimo');
     const precoEl = document.getElementById('entradaProdutoPreco');
     const saldoEl = document.getElementById('entradaProdutoSaldo');
     if (!select) return;
     const prodId = select.value;
     if (!prodId) {
         if (nomeEl) { nomeEl.value = ''; nomeEl.disabled = false; }
-        if (unidadeEl) unidadeEl.value = '';
+        if (categoriaEl) categoriaEl.value = 'Geral';
+        if (localizacaoEl) localizacaoEl.value = 'Galpão';
+        if (unidadeEl) unidadeEl.value = 'un';
+        if (estMinEl) estMinEl.value = '0';
         if (precoEl) precoEl.value = '';
         if (saldoEl) saldoEl.textContent = '';
         return;
@@ -504,7 +522,10 @@ function onEntradaProdutoSelectChange() {
     const prod = estoqueProdutos.find(p => String(p.id) === String(prodId));
     if (prod) {
         if (nomeEl) { nomeEl.value = prod.nome || ''; nomeEl.disabled = true; }
+        if (categoriaEl) categoriaEl.value = prod.categoria || 'Geral';
+        if (localizacaoEl) localizacaoEl.value = prod.localizacao || 'Galpão';
         if (unidadeEl) unidadeEl.value = prod.unidade || 'un';
+        if (estMinEl) estMinEl.value = Number(prod.estoqueMinimo || 0);
         if (precoEl) precoEl.value = formatCurrency(prod.precoMedio || 0);
         if (saldoEl) {
             const qtd = formatNumber(prod.quantidade || 0, 2);
@@ -531,6 +552,12 @@ function limparEntradaProdutoForm() {
     const nomeEl = document.getElementById('entradaProdutoNome');
     if (nomeEl) nomeEl.disabled = false;
     if (select) select.disabled = false;
+    const categoriaEl = document.getElementById('entradaProdutoCategoria');
+    if (categoriaEl) categoriaEl.value = 'Geral';
+    const localizacaoEl = document.getElementById('entradaProdutoLocalizacao');
+    if (localizacaoEl) localizacaoEl.value = 'Galpão';
+    const estMinEl = document.getElementById('entradaProdutoEstoqueMinimo');
+    if (estMinEl) estMinEl.value = '0';
     const saldoEl = document.getElementById('entradaProdutoSaldo');
     if (saldoEl) saldoEl.textContent = '';
     atualizarModoFormularioProduto(false);
@@ -543,16 +570,22 @@ async function salvarProdutoAlmoxarifadoPeloFormulario(e) {
 
     const dataEl = document.getElementById('entradaProdutoData');
     const nomeEl = document.getElementById('entradaProdutoNome');
+    const categoriaEl = document.getElementById('entradaProdutoCategoria');
+    const localizacaoEl = document.getElementById('entradaProdutoLocalizacao');
     const unidadeEl = document.getElementById('entradaProdutoUnidade');
     const qtdEl = document.getElementById('entradaProdutoQtd');
+    const estMinEl = document.getElementById('entradaProdutoEstoqueMinimo');
     const precoEl = document.getElementById('entradaProdutoPreco');
     const docEl = document.getElementById('entradaProdutoDocumento');
     const obsEl = document.getElementById('entradaProdutoObs');
 
     const data = dataEl ? dataEl.value : '';
     const nome = String((nomeEl ? nomeEl.value : '') || '').trim();
+    const categoria = String((categoriaEl ? categoriaEl.value : '') || 'Geral').trim();
+    const localizacao = String((localizacaoEl ? localizacaoEl.value : '') || 'Galpão').trim();
     const unidade = String((unidadeEl ? unidadeEl.value : '') || '').trim() || 'un';
     const qtd = parseFloat(qtdEl ? qtdEl.value : 0);
+    const estoqueMinimo = parseFloat(estMinEl ? estMinEl.value : 0) || 0;
     const precoMedio = parseCurrencyValue(precoEl ? precoEl.value : 0) || 0;
     const documento = String((docEl ? docEl.value : '') || '').trim();
     const obs = String((obsEl ? obsEl.value : '') || '').trim();
@@ -585,8 +618,11 @@ async function salvarProdutoAlmoxarifadoPeloFormulario(e) {
     estoqueProdutos[idx] = {
         ...atual,
         nome,
+        categoria,
+        localizacao,
         unidade,
         quantidade: qtd,
+        estoqueMinimo,
         precoMedio,
         ultimoDocumento: documento || atual.ultimoDocumento || '',
         documentoUltimaMovimentacao: documento || atual.documentoUltimaMovimentacao || '',
@@ -656,8 +692,11 @@ async function registrarEntradaProduto(e) {
     const tipoEl = document.getElementById('entradaProdutoTipoMov');
     const select = document.getElementById('entradaProdutoSelect');
     const nomeEl = document.getElementById('entradaProdutoNome');
+    const categoriaEl = document.getElementById('entradaProdutoCategoria');
+    const localizacaoEl = document.getElementById('entradaProdutoLocalizacao');
     const unidadeEl = document.getElementById('entradaProdutoUnidade');
     const qtdEl = document.getElementById('entradaProdutoQtd');
+    const estMinEl = document.getElementById('entradaProdutoEstoqueMinimo');
     const precoEl = document.getElementById('entradaProdutoPreco');
     const docEl = document.getElementById('entradaProdutoDocumento');
     const obsEl = document.getElementById('entradaProdutoObs');
@@ -669,8 +708,11 @@ async function registrarEntradaProduto(e) {
     const direcaoEstoque = 'entrada';
     const prodId = select ? select.value : '';
     const nome = (nomeEl ? nomeEl.value : '').trim();
+    const categoria = (categoriaEl ? categoriaEl.value : '') || 'Geral';
+    const localizacao = (localizacaoEl ? localizacaoEl.value : '') || 'Galpão';
     const unidade = (unidadeEl ? unidadeEl.value : '').trim() || 'un';
     const qtd = parseFloat(qtdEl ? qtdEl.value : 0) || 0;
+    const estoqueMinimo = parseFloat(estMinEl ? estMinEl.value : 0) || 0;
     const precoUnit = parseCurrencyValue(precoEl ? precoEl.value : 0) || 0;
     const documento = (docEl ? docEl.value : '').trim();
     const obs = (obsEl ? obsEl.value : '').trim();
@@ -698,12 +740,19 @@ async function registrarEntradaProduto(e) {
         produto = {
             id: generateUniqueId('PROD'),
             nome: nome,
+            categoria: categoria,
+            localizacao: localizacao,
             unidade: unidade,
             quantidade: 0,
+            estoqueMinimo: estoqueMinimo,
             precoMedio: 0,
             ultimaAtualizacao: nowIso
         };
         estoqueProdutos.push(produto);
+    } else {
+        if (categoria) produto.categoria = categoria;
+        if (localizacao) produto.localizacao = localizacao;
+        if (Number.isFinite(estoqueMinimo)) produto.estoqueMinimo = estoqueMinimo;
     }
 
     const oldQtd = parseFloat(produto.quantidade || 0) || 0;
@@ -772,17 +821,30 @@ function escapeProdutoHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+function escapeProdutoAttr(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
 function getProdutosColumnsDefs() {
     return [
         { key: 'nome', label: 'Produto' },
+        { key: 'categoria', label: 'Categoria' },
+        { key: 'localizacao', label: 'Localização' },
+        { key: 'status', label: 'Status', align: 'text-center' },
         { key: 'responsavel', label: 'Responsável' },
         { key: 'motivoDestino', label: 'Motivo / Destino' },
         { key: 'tipoMovimentacao', label: 'Última Mov.' },
-        { key: 'unidade', label: 'Unidade' },
+        { key: 'unidade', label: 'Unidade', align: 'text-center' },
         { key: 'quantidade', label: 'Quantidade', align: 'text-center' },
+        { key: 'estoqueMinimo', label: 'Est. Mínimo', align: 'text-center' },
         { key: 'precoMedio', label: 'Preço Médio', align: 'text-right' },
         { key: 'valorTotal', label: 'Total', align: 'text-right' },
-        { key: 'ultimaAtualizacao', label: 'Última Atualização' }
+        { key: 'ultimaAtualizacao', label: 'Última Atualização', align: 'text-center' }
     ];
 }
 
@@ -882,15 +944,10 @@ function getVisibleProdutosColumnsCount() {
 }
 
 function applyProdutosColumnsConfig() {
-    const table = document.getElementById('tabelaProdutos');
-    if (!table) return;
-    const cfg = getProdutosColumnsConfigSync();
-    getProdutosColumnsDefs().forEach(d => {
-        const visible = cfg[d.key] !== false;
-        table.querySelectorAll(`[data-col="${d.key}"]`).forEach(el => {
-            el.style.display = visible ? '' : 'none';
-        });
-    });
+    const tab = document.getElementById('produtos');
+    if (tab && tab.classList.contains('active')) {
+        renderizarTabelaProdutos();
+    }
 }
 
 async function saveProdutosColumnsConfig(config = {}) {
@@ -1066,13 +1123,27 @@ function obterTipoMovimentacaoProduto(prod = {}) {
 function obterValorCelulaProduto(prod = {}, key = '') {
     const total = (prod.quantidade || 0) * (prod.precoMedio || 0);
     const dataFmt = prod.ultimaAtualizacao ? new Date(prod.ultimaAtualizacao).toLocaleDateString('pt-BR') : '-';
+    const qtd = Number(prod.quantidade || 0);
+    const estMin = Number(prod.estoqueMinimo || 0);
+
+    let statusHtml = '<span style="display:inline-block; padding:2px 8px; border-radius:12px; font-weight:600; font-size:11px; background:#dcfce7; color:#166534;">Normal</span>';
+    if (qtd <= 0) {
+        statusHtml = '<span style="display:inline-block; padding:2px 8px; border-radius:12px; font-weight:600; font-size:11px; background:#fee2e2; color:#991b1b;">Crítico</span>';
+    } else if (estMin > 0 && qtd <= estMin) {
+        statusHtml = '<span style="display:inline-block; padding:2px 8px; border-radius:12px; font-weight:600; font-size:11px; background:#fef3c7; color:#92400e;">Ponto Pedido</span>';
+    }
+
     const map = {
         nome: escapeProdutoHtml(prod.nome || ''),
+        categoria: escapeProdutoHtml(prod.categoria || 'Geral'),
+        localizacao: escapeProdutoHtml(prod.localizacao || 'Galpão'),
+        status: statusHtml,
         responsavel: escapeProdutoHtml(obterResponsavelProduto(prod) || '-'),
         motivoDestino: escapeProdutoHtml(obterMotivoDestinoProduto(prod) || '-'),
         tipoMovimentacao: escapeProdutoHtml(obterTipoMovimentacaoProduto(prod) || '-'),
         unidade: escapeProdutoHtml(prod.unidade || 'un'),
         quantidade: formatNumber(prod.quantidade, 2),
+        estoqueMinimo: formatNumber(prod.estoqueMinimo || 0, 2),
         precoMedio: formatCurrency(prod.precoMedio),
         valorTotal: formatCurrency(total),
         ultimaAtualizacao: dataFmt
@@ -1095,33 +1166,55 @@ function renderizarTabelaProdutos(lista) {
     tbody.innerHTML = '';
     produtosFiltrados = listaRender.slice();
     produtosUltimaListaRenderizada = listaRender.slice();
-    const resumoEl = document.getElementById('resumoProdutos');
+
     const totalQtd = produtosFiltrados.reduce((acc, p) => acc + (p.quantidade || 0), 0);
     const totalVal = produtosFiltrados.reduce((acc, p) => acc + ((p.quantidade || 0) * (p.precoMedio || 0)), 0);
-    if (resumoEl) {
-        resumoEl.innerHTML = `
-            <div class="summary-row">
-                <span>Total de Itens:</span>
-                <span>${produtosFiltrados.length}</span>
-            </div>
-            <div class="summary-row">
-                <span>Quantidade Total:</span>
-                <span>${formatNumber(totalQtd, 2)}</span>
-            </div>
-            <div class="summary-row">
-                <span>Valor Total:</span>
-                <span>${formatCurrency(totalVal)}</span>
-            </div>
+    const criticosCount = produtosFiltrados.filter(p => Number(p.quantidade || 0) <= 0).length;
+
+    const totalProdutosEl = document.getElementById('totalProdutos');
+    const quantidadeTotalProdutosEl = document.getElementById('quantidadeTotalProdutos');
+    const valorTotalAlmoxarifadoEl = document.getElementById('valorTotalAlmoxarifado');
+    const produtosEstoqueBaixoEl = document.getElementById('produtosEstoqueBaixo');
+    if (totalProdutosEl) totalProdutosEl.textContent = produtosFiltrados.length;
+    if (quantidadeTotalProdutosEl) quantidadeTotalProdutosEl.textContent = formatNumber(totalQtd, 2);
+    if (valorTotalAlmoxarifadoEl) valorTotalAlmoxarifadoEl.textContent = formatCurrency(totalVal);
+    if (produtosEstoqueBaixoEl) produtosEstoqueBaixoEl.textContent = criticosCount;
+
+    const defs = getVisibleProdutosColumns();
+
+    // Renderizar colgroup e thead dinâmicos com base nas colunas ativas
+    const colgroupEl = document.getElementById('tabelaProdutosColgroup');
+    if (colgroupEl) {
+        colgroupEl.innerHTML = `
+            <col style="width: 40px;">
+            ${defs.map(def => `<col class="${escapeProdutoHtml(def.key)}" data-col="${escapeProdutoHtml(def.key)}">`).join('')}
+            <col class="acoes" style="width: 80px;">
+        `;
+    }
+
+    const theadEl = document.getElementById('tabelaProdutosThead');
+    if (theadEl) {
+        theadEl.innerHTML = `
+            <tr>
+                <th style="width: 40px;"><input type="checkbox" id="checkTodosProdutos" onchange="toggleTodosProdutos()"></th>
+                ${defs.map(def => {
+                    const sortIcon = (ordemProdutos.coluna === def.key)
+                        ? `<i class="fas fa-sort-${ordemProdutos.direcao === 'asc' ? 'up' : 'down'} sort-icon" style="color:#2b6cb0; margin-left:4px;"></i>`
+                        : '<i class="fas fa-sort sort-icon" style="opacity:0.35; margin-left:4px;"></i>';
+                    const cls = def.align ? ` class="${def.align}"` : '';
+                    return `<th data-col="${escapeProdutoHtml(def.key)}"${cls} onclick="ordenarProdutos('${escapeProdutoHtml(def.key)}')" style="cursor: pointer;">${escapeProdutoHtml(def.label)} ${sortIcon}</th>`;
+                }).join('')}
+                <th class="text-center actions-col sticky-actions">Ações</th>
+            </tr>
         `;
     }
 
     if (listaRender.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${getVisibleProdutosColumnsCount() + 2}" class="text-center">Nenhum produto em estoque.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${defs.length + 2}" class="text-center">Nenhum produto em estoque.</td></tr>`;
         if (typeof renderizarPaginacaoPadrao === 'function') {
             const pageSize = typeof window.obterItensPorPaginaTabela === 'function' ? window.obterItensPorPaginaTabela('produtos') : 10;
             renderizarPaginacaoPadrao('paginacaoProdutos', 0, 1, pageSize, 'mudarPaginaProdutos', { sizeScope: 'produtos' });
         }
-        applyProdutosColumnsConfig();
         return;
     }
 
@@ -1159,31 +1252,35 @@ function renderizarTabelaProdutos(lista) {
     if (paginaAtualProdutos < 1) paginaAtualProdutos = 1;
     const inicio = (paginaAtualProdutos - 1) * itensPorPaginaProdutos;
     const pagina = listaRender.slice(inicio, inicio + itensPorPaginaProdutos);
-    const produtoDefs = getProdutosColumnsDefs();
 
-    pagina.forEach(prod => {
-        const tr = document.createElement('tr');
+    tbody.innerHTML = pagina.map(prod => {
         const isChecked = produtosSelecionados.has(String(prod.id)) ? 'checked' : '';
-        tr.innerHTML = `
-            <td class="text-center"><input type="checkbox" class="check-produto" value="${prod.id}" ${isChecked} onchange="toggleProduto('${prod.id}', this.checked)"></td>
-            ${produtoDefs.map(def => renderProdutoTd(def, prod)).join('')}
-            <td class="text-center actions-cell sticky-actions">
-                <div class="actions-cell-inner stock-actions-cell">
-                    <button class="stock-btn-action stock-btn-edit" onclick="abrirEditarProdutoAlmoxarifado('${String(prod.id || '').replace(/'/g, "\\'")}')" title="Editar Produto">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="stock-btn-action stock-btn-down" onclick="prepararBaixaProdutoInline('${String(prod.id || '').replace(/'/g, "\\'")}')" title="Baixa / Consumo">
-                        <i class="fas fa-arrow-down"></i>
-                    </button>
-                </div>
-            </td>
+        return `
+            <tr>
+                <td class="text-center"><input type="checkbox" class="check-produto" value="${prod.id}" ${isChecked} onchange="toggleProduto('${prod.id}', this.checked)"></td>
+                ${defs.map(def => renderProdutoTd(def, prod)).join('')}
+                <td class="text-center actions-cell sticky-actions">
+                    <div class="actions-cell-inner stock-actions-cell">
+                        <button class="stock-btn-action stock-btn-edit" onclick="abrirEditarProdutoAlmoxarifado('${String(prod.id || '').replace(/'/g, "\\'")}')" title="Editar Produto">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="stock-btn-action stock-btn-down" onclick="prepararBaixaProdutoInline('${String(prod.id || '').replace(/'/g, "\\'")}')" title="Baixa / Consumo">
+                            <i class="fas fa-arrow-down"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
         `;
-        tbody.appendChild(tr);
-    });
+    }).join('');
+
     if (typeof renderizarPaginacaoPadrao === 'function') {
         renderizarPaginacaoPadrao('paginacaoProdutos', listaRender.length, paginaAtualProdutos, itensPorPaginaProdutos, 'mudarPaginaProdutos', { sizeScope: 'produtos' });
     }
-    applyProdutosColumnsConfig();
+
+    if (window.StockTableColumns && typeof window.StockTableColumns.initTable === 'function') {
+        const table = document.getElementById('tabelaProdutos');
+        if (table) window.StockTableColumns.initTable(table, 'produtos_saldo');
+    }
 }
 
 function abrirEditarProdutoAlmoxarifado(prodId) {
@@ -1194,19 +1291,160 @@ function abrirEditarProdutoAlmoxarifado(prodId) {
         alert('Produto não encontrado.');
         return;
     }
-    produtoAlmoxarifadoEmEdicao = id;
-    if (typeof showTab === 'function') showTab('entradaAlmoxarifado');
-    prepararEntradaProdutos();
-    preencherFormularioEdicaoProdutoAlmoxarifado(prod);
-    const form = document.getElementById('entradaProdutoForm');
-    if (form && typeof form.scrollIntoView === 'function') {
-        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    const setVal = (elementId, value) => {
+        const el = document.getElementById(elementId);
+        if (el) el.value = value;
+    };
+
+    setVal('editModalProdutoId', String(prod.id));
+    setVal('editModalProdutoNome', String(prod.nome || '').trim());
+    setVal('editModalProdutoCategoria', String(prod.categoria || 'Geral').trim());
+    setVal('editModalProdutoLocalizacao', String(prod.localizacao || 'Galpão').trim());
+    setVal('editModalProdutoUnidade', String(prod.unidade || 'un').trim());
+    setVal('editModalProdutoQtd', Number(prod.quantidade || 0));
+    setVal('editModalProdutoEstoqueMinimo', Number(prod.estoqueMinimo || 0));
+    setVal('editModalProdutoPreco', formatCurrency(prod.precoMedio || 0));
+    setVal('editModalProdutoDocumento', obterDocumentoProdutoParaFormulario(prod));
+    setVal('editModalProdutoResponsavel', obterResponsavelProduto(prod));
+    setVal('editModalProdutoData', obterDataProdutoParaFormulario(prod) || new Date().toISOString().split('T')[0]);
+    setVal('editModalProdutoObs', obterObservacaoProdutoParaFormulario(prod));
+
+    if (typeof abrirModal === 'function') {
+        abrirModal('modalEditarProdutoAlmoxarifado');
+    } else {
+        const m = document.getElementById('modalEditarProdutoAlmoxarifado');
+        if (m) m.style.display = 'block';
     }
-    const nomeEl = document.getElementById('entradaProdutoNome');
+    const nomeEl = document.getElementById('editModalProdutoNome');
     if (nomeEl) {
-        nomeEl.focus();
-        if (typeof nomeEl.select === 'function') nomeEl.select();
+        setTimeout(() => { nomeEl.focus(); if (typeof nomeEl.select === 'function') nomeEl.select(); }, 80);
     }
+}
+
+async function salvarEdicaoModalProdutoAlmoxarifado(e) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    const id = String(document.getElementById('editModalProdutoId')?.value || '').trim();
+    if (!id) return false;
+
+    const nome = String(document.getElementById('editModalProdutoNome')?.value || '').trim();
+    const categoria = String(document.getElementById('editModalProdutoCategoria')?.value || 'Geral').trim();
+    const localizacao = String(document.getElementById('editModalProdutoLocalizacao')?.value || 'Galpão').trim();
+    const unidade = String(document.getElementById('editModalProdutoUnidade')?.value || 'un').trim();
+    const qtd = parseFloat(document.getElementById('editModalProdutoQtd')?.value || 0);
+    const estoqueMinimo = parseFloat(document.getElementById('editModalProdutoEstoqueMinimo')?.value || 0) || 0;
+    const precoMedio = parseCurrencyValue(document.getElementById('editModalProdutoPreco')?.value || 0) || 0;
+    const documento = String(document.getElementById('editModalProdutoDocumento')?.value || '').trim();
+    const responsavel = String(document.getElementById('editModalProdutoResponsavel')?.value || '').trim();
+    const data = document.getElementById('editModalProdutoData')?.value || '';
+    const obs = String(document.getElementById('editModalProdutoObs')?.value || '').trim();
+
+    if (!nome) {
+        alert('Informe o nome do produto.');
+        document.getElementById('editModalProdutoNome')?.focus();
+        return false;
+    }
+    if (!Number.isFinite(qtd) || qtd < 0) {
+        alert('Informe uma quantidade válida maior ou igual a zero.');
+        document.getElementById('editModalProdutoQtd')?.focus();
+        return false;
+    }
+
+    const idx = (estoqueProdutos || []).findIndex(p => String(p.id) === id);
+    if (idx < 0) {
+        alert('Produto não encontrado.');
+        return false;
+    }
+
+    const dataIso = data ? new Date(`${data}T12:00:00`).toISOString() : new Date().toISOString();
+    const atual = estoqueProdutos[idx] || {};
+    const quantidadeAnterior = Number(atual.quantidade || 0);
+    const quantidadeAlterada = Math.abs(qtd - quantidadeAnterior) > 0.000001;
+    const direcaoAjuste = qtd >= quantidadeAnterior ? 'entrada' : 'saida';
+    const quantidadeAjuste = Math.abs(qtd - quantidadeAnterior);
+
+    estoqueProdutos[idx] = {
+        ...atual,
+        nome,
+        categoria,
+        localizacao,
+        unidade,
+        quantidade: qtd,
+        estoqueMinimo,
+        precoMedio,
+        responsavel: responsavel || atual.responsavel || '',
+        ultimoResponsavel: responsavel || atual.ultimoResponsavel || '',
+        responsavelUltimaMovimentacao: responsavel || atual.responsavelUltimaMovimentacao || '',
+        ultimoDocumento: documento || atual.ultimoDocumento || '',
+        documentoUltimaMovimentacao: documento || atual.documentoUltimaMovimentacao || '',
+        motivoDestino: obs || atual.motivoDestino || '',
+        ultimoMotivo: obs || atual.ultimoMotivo || '',
+        motivoUltimaMovimentacao: obs || atual.motivoUltimaMovimentacao || '',
+        ultimaAtualizacao: dataIso
+    };
+
+    if (quantidadeAlterada) {
+        atualizarProdutoUltimaMovimentacao(estoqueProdutos[idx], {
+            tipo: 'ajuste',
+            direcaoEstoque: direcaoAjuste,
+            dataIso,
+            documento,
+            motivo: obs || 'Ajuste de estoque via edição de produto',
+            responsavel
+        });
+    }
+
+    try {
+        await saveDataProdutos('estoqueProdutos', estoqueProdutos);
+        if (quantidadeAlterada) {
+            const movsAntigas = normalizarListaProdutosFirebase(await getData('movimentacoesProdutos') || []);
+            const mov = {
+                id: generateUniqueId(obterPrefixoMovimentacaoProduto('ajuste', direcaoAjuste)),
+                data: dataIso,
+                tipo: 'ajuste',
+                tipoLabel: obterLabelTipoMovimentacaoProduto('ajuste', direcaoAjuste),
+                direcaoEstoque: direcaoAjuste,
+                origem: 'edicao',
+                produtoId: estoqueProdutos[idx].id,
+                produtoNome: estoqueProdutos[idx].nome,
+                quantidade: quantidadeAjuste,
+                documento: documento || '',
+                motivo: obs || 'Ajuste de estoque via edição de produto',
+                usuario: responsavel || 'sistema',
+                responsavel: responsavel || '',
+                saldoAnterior: quantidadeAnterior,
+                saldoAtual: qtd,
+                precoUnitario: precoMedio
+            };
+            const movsAtualizadas = [...movsAntigas, mov];
+            await saveDataProdutos('movimentacoesProdutos', movsAtualizadas);
+            movimentacoesProdutosCache = movsAtualizadas.slice();
+        }
+
+        if (typeof fecharModal === 'function') {
+            fecharModal('modalEditarProdutoAlmoxarifado');
+        } else {
+            const m = document.getElementById('modalEditarProdutoAlmoxarifado');
+            if (m) m.style.display = 'none';
+        }
+
+        alert('Produto atualizado com sucesso!');
+        try { filtrarProdutos(); } catch (_) { renderizarTabelaProdutos(estoqueProdutos); }
+        return true;
+    } catch (err) {
+        console.error('Erro ao atualizar produto:', err);
+        alert('Erro ao atualizar produto: ' + (err.message || err));
+        return false;
+    }
+}
+
+function limparFiltrosProdutosAlmoxarifado() {
+    const ids = ['produtosDataInicio', 'produtosDataFim', 'produtosFiltroCategoria', 'produtosFiltroLocalizacao', 'produtosResponsavelFiltro', 'searchProdutos', 'produtosFiltroSaldo'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    filtrarProdutos();
 }
 
 function getResponsavelMovimentoProduto(mov = {}) {
@@ -1255,18 +1493,24 @@ function produtoTemMovimentacaoCompativel(prod, filtros) {
 function filtrarProdutos() {
     const termo = (document.getElementById('searchProdutos')?.value || '').toLowerCase().trim();
     const filtroSaldo = (document.getElementById('produtosFiltroSaldo')?.value || '').trim();
+    const filtroCategoria = (document.getElementById('produtosFiltroCategoria')?.value || '').toLowerCase().trim();
+    const filtroLocalizacao = (document.getElementById('produtosFiltroLocalizacao')?.value || '').toLowerCase().trim();
     const filtros = {
         dataInicio: parseProdutoFiltroDate(document.getElementById('produtosDataInicio')?.value || ''),
         dataFim: parseProdutoFiltroDate(document.getElementById('produtosDataFim')?.value || '', true),
         responsavel: (document.getElementById('produtosResponsavelFiltro')?.value || '').toLowerCase().trim()
     };
     const filtrados = estoqueProdutos.filter(p => {
-        const matchText = !termo || (p.nome || '').toLowerCase().includes(termo) || (p.id || '').toLowerCase().includes(termo);
+        const matchText = !termo || (p.nome || '').toLowerCase().includes(termo) || (p.id || '').toLowerCase().includes(termo) || (p.ultimoDocumento || '').toLowerCase().includes(termo);
         if (!matchText) return false;
+        if (filtroCategoria && (p.categoria || 'geral').toLowerCase() !== filtroCategoria) return false;
+        if (filtroLocalizacao && (p.localizacao || 'galpão').toLowerCase() !== filtroLocalizacao) return false;
         if (!produtoTemMovimentacaoCompativel(p, filtros)) return false;
         const qtd = Number(p.quantidade || 0);
+        const estMin = Number(p.estoqueMinimo || 0);
         if (filtroSaldo === 'positivo') return qtd > 0;
         if (filtroSaldo === 'zero') return qtd <= 0;
+        if (filtroSaldo === 'ponto_pedido') return qtd > 0 && estMin > 0 && qtd <= estMin;
         return true;
     });
     paginaAtualProdutos = 1;
@@ -1627,7 +1871,10 @@ async function gerarRelatorioProdutosSaldo(onlySelected = false, options = {}) {
         }
         await carregarMovimentacoesProdutosCache();
         await carregarResponsaveisProdutosCache();
-        let produtos = normalizarListaProdutosFirebase(await getData('estoqueProdutos') || []);
+        let produtos = (Array.isArray(estoqueProdutos) && estoqueProdutos.length > 0)
+            ? estoqueProdutos.slice()
+            : normalizarListaProdutosFirebase(await getData('estoqueProdutos') || []);
+            
         if (typeof window.filtrarItensSelecionadosRelatorio === 'function') {
             produtos = window.filtrarItensSelecionadosRelatorio('produtos_saldo', produtos, p => p.id || p.nome || '', onlySelected);
         }
@@ -1649,6 +1896,9 @@ async function gerarRelatorioProdutosSaldo(onlySelected = false, options = {}) {
                 } else if (window.ordemRelatorio.coluna === 'tipoMovimentacao') {
                     valA = obterTipoMovimentacaoProduto(a);
                     valB = obterTipoMovimentacaoProduto(b);
+                } else if (window.ordemRelatorio.coluna === 'status') {
+                    valA = (a.quantidade || 0) <= 0 ? 0 : ((a.quantidade || 0) <= (a.estoqueMinimo || 0) ? 1 : 2);
+                    valB = (b.quantidade || 0) <= 0 ? 0 : ((b.quantidade || 0) <= (b.estoqueMinimo || 0) ? 1 : 2);
                 }
                 if (typeof valA === 'string') valA = valA.toLowerCase();
                 if (typeof valB === 'string') valB = valB.toLowerCase();
@@ -1671,9 +1921,11 @@ async function gerarRelatorioProdutosSaldo(onlySelected = false, options = {}) {
         // Paginação de itens
         const pageSize = typeof window.obterItensPorPaginaTabela === 'function' ? window.obterItensPorPaginaTabela('relatorios') : 10;
         const totalPaginas = Math.max(1, Math.ceil(totalItens / pageSize));
-        if (window.paginaAtualRelatorio > totalPaginas) window.paginaAtualRelatorio = totalPaginas;
-        if (window.paginaAtualRelatorio < 1) window.paginaAtualRelatorio = 1;
-        const inicio = (window.paginaAtualRelatorio - 1) * pageSize;
+        let pagAtual = Number(window.paginaAtualRelatorio) || 1;
+        if (pagAtual > totalPaginas) pagAtual = totalPaginas;
+        if (pagAtual < 1) pagAtual = 1;
+        window.paginaAtualRelatorio = pagAtual;
+        const inicio = (pagAtual - 1) * pageSize;
         const itensPagina = (onlySelected || options.disablePagination) ? produtos : produtos.slice(inicio, inicio + pageSize);
 
         const renderSelectTh = typeof window.renderRelatorioSelecionarTodosTh === 'function' ? window.renderRelatorioSelecionarTodosTh : () => '';
@@ -1742,19 +1994,22 @@ async function gerarRelatorioProdutosSaldo(onlySelected = false, options = {}) {
 }
 
 async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options = {}, onlySelected = false) {
-    if (!dataInicio || !dataFim) {
-        return '<p>Informe o período para o relatório de movimentação.</p>';
-    }
-
     try {
-        const movimentos = normalizarListaProdutosFirebase(await getData('movimentacoesProdutos') || []);
-        const di = new Date(`${dataInicio}T00:00:00`);
-        const df = new Date(`${dataFim}T23:59:59`);
+        await carregarMovimentacoesProdutosCache();
+        await carregarResponsaveisProdutosCache();
+        const movimentos = (Array.isArray(movimentacoesProdutosCache) && movimentacoesProdutosCache.length > 0)
+            ? movimentacoesProdutosCache.slice()
+            : normalizarListaProdutosFirebase(await getData('movimentacoesProdutos') || []);
 
-        let filtrados = movimentos.filter(m => {
-            const d = new Date(m.data);
-            return d >= di && d <= df;
-        });
+        let filtrados = movimentos.slice();
+        if (dataInicio && dataFim) {
+            const di = new Date(`${dataInicio}T00:00:00`);
+            const df = new Date(`${dataFim}T23:59:59`);
+            filtrados = movimentos.filter(m => {
+                const d = new Date(m.data);
+                return d >= di && d <= df;
+            });
+        }
 
         const tipoFiltro = (options && options.tipo) ? String(options.tipo).trim() : '';
         if (tipoFiltro) {
@@ -1815,19 +2070,21 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
         // Paginação de itens
         const pageSize = typeof window.obterItensPorPaginaTabela === 'function' ? window.obterItensPorPaginaTabela('relatorios') : 10;
         const totalPaginas = Math.max(1, Math.ceil(totalMovimentacoes / pageSize));
-        if (window.paginaAtualRelatorio > totalPaginas) window.paginaAtualRelatorio = totalPaginas;
-        if (window.paginaAtualRelatorio < 1) window.paginaAtualRelatorio = 1;
-        const inicio = (window.paginaAtualRelatorio - 1) * pageSize;
+        let pagAtual = Number(window.paginaAtualRelatorio) || 1;
+        if (pagAtual > totalPaginas) pagAtual = totalPaginas;
+        if (pagAtual < 1) pagAtual = 1;
+        window.paginaAtualRelatorio = pagAtual;
+        const inicio = (pagAtual - 1) * pageSize;
         const itensPagina = (onlySelected || options.disablePagination) ? filtrados : filtrados.slice(inicio, inicio + pageSize);
         
-        const getResponsavel = (m) => getResponsavelMovimentoProduto(m) || '-';
+        const getResponsavel = (m) => getResponsavelMovimentoProduto(m) || 'Não Informado';
         const getMovKey = typeof window.getRelatorioProdutoMovimentacaoKey === 'function'
             ? window.getRelatorioProdutoMovimentacaoKey
             : (m) => m.id || `${m.data || ''}|${m.tipo || ''}|${m.produtoId || ''}|${m.produtoNome || ''}|${m.quantidade || ''}|${m.motivo || ''}|${m.origem || ''}`;
         const renderSelectTh = typeof window.renderRelatorioSelecionarTodosTh === 'function' ? window.renderRelatorioSelecionarTodosTh : () => '';
         const renderSelectTd = typeof window.renderRelatorioSelecionarTd === 'function' ? window.renderRelatorioSelecionarTd : () => '';
 
-        const renderTable = (items) => {
+        const renderTable = (items, respGroupKey = '') => {
             const movDefs = typeof window.getVisibleEstoqueReportColumns === 'function'
                 ? window.getVisibleEstoqueReportColumns('produtos_movimentacao')
                 : (typeof window.getVisibleProdutoMovimentacaoColumns === 'function' ? window.getVisibleProdutoMovimentacaoColumns() : getVisibleProdutoMovimentacaoColumns());
@@ -1837,9 +2094,10 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
                 const estornado = !!(m.estornado || m.estornoId || m.estornadoEm);
                 const estornarDisabled = estornado ? 'disabled' : '';
                 const estornarTitle = estornado ? 'Já estornado' : 'Estornar';
+                const extraAttr = respGroupKey ? `data-resp="${escapeProdutoAttr(respGroupKey)}"` : '';
                 return `
                     <tr>
-                        ${renderSelectTd('produtos_movimentacao', getMovKey(m), onlySelected)}
+                        ${renderSelectTd('produtos_movimentacao', getMovKey(m), onlySelected, extraAttr)}
                         ${movDefs.map(def => {
                             const cls = def.align ? ` class="${def.align}"` : '';
                             return `<td data-col="${escapeProdutoHtml(def.key)}"${cls}>${obterValorCelulaMovimentacaoProduto(m, def.key)}</td>`;
@@ -1855,9 +2113,16 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
             }).join('');
 
             const icon = window.getSortIconRelatorio ? window.getSortIconRelatorio : () => '';
+            
+            let thCheckboxHtml = renderSelectTh(onlySelected);
+            if (respGroupKey && !onlySelected) {
+                const allGroupChecked = items.length > 0 && items.every(m => window.relatorioSelecionados && window.relatorioSelecionados.has('produtos_movimentacao:' + getMovKey(m)));
+                thCheckboxHtml = `<th class="text-center no-print relatorio-check-col"><input type="checkbox" class="check-grupo-responsavel" data-resp="${escapeProdutoAttr(respGroupKey)}" ${allGroupChecked ? 'checked' : ''} onchange="window.toggleRelatorioGrupoResponsavel(this, '${escapeProdutoAttr(respGroupKey)}')" title="Selecionar todos de ${escapeProdutoAttr(respGroupKey)}" aria-label="Selecionar todos de ${escapeProdutoAttr(respGroupKey)}"></th>`;
+            }
+
             return `
                 <div class="table-container report-table-container">
-                    <table class="table table-report-estoque" id="tabelaRelatorioProdutosMovimentacao">
+                    <table class="table table-report-estoque" id="tabelaRelatorioProdutosMovimentacao${respGroupKey ? '_' + escapeProdutoAttr(respGroupKey).replace(/[^a-zA-Z0-9_-]/g, '_') : ''}">
                         <colgroup>
                             ${onlySelected ? '' : '<col style="width: 40px;">'}
                             ${movDefs.map(def => `<col class="${escapeProdutoHtml(def.key)}" data-col="${escapeProdutoHtml(def.key)}">`).join('')}
@@ -1865,7 +2130,7 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
                         </colgroup>
                         <thead>
                             <tr>
-                                ${renderSelectTh(onlySelected)}
+                                ${thCheckboxHtml}
                                 ${movDefs.map(def => `<th onclick="window.ordenarRelatorio('${escapeProdutoHtml(def.key)}', 'produtos_movimentacao')" style="cursor:pointer;">${escapeProdutoHtml(def.label)} ${icon(def.key, 'produtos_movimentacao')}</th>`).join('')}
                                 <th class="no-print actions-col sticky-actions">Ações</th>
                             </tr>
@@ -1888,11 +2153,111 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
             const groupKeys = Array.from(groups.keys()).sort((a,b) => a.localeCompare(b, 'pt-BR'));
             tablesHtml = groupKeys.map((k) => {
                 const items = groups.get(k) || [];
-                return `
-                    <div class="relatorios-grupo-header" style="margin: 16px 0 8px 0; font-size: 13.5px; font-weight: 700; color: #2c3e50; border-left: 4px solid #3b82f6; padding-left: 10px;">
-                        Responsável: ${escapeProdutoHtml(k)} <span style="font-size: 12px; color: #718096; font-weight: normal;">(${items.length} itens nesta página)</span>
+                const allGroupChecked = items.length > 0 && items.every(m => window.relatorioSelecionados && window.relatorioSelecionados.has('produtos_movimentacao:' + getMovKey(m)));
+
+                // Calcular totais por produto do responsável
+                const produtosDoResp = new Map();
+                items.forEach(m => {
+                    const prodNome = m.produtoNome || m.produtoId || 'Sem Nome';
+                    if (!produtosDoResp.has(prodNome)) {
+                        produtosDoResp.set(prodNome, {
+                            nome: prodNome,
+                            entradasQtd: 0,
+                            saidasQtd: 0,
+                            ajustesQtd: 0,
+                            devolucoesQtd: 0,
+                            precoMedio: 0,
+                            precoSoma: 0,
+                            precoCount: 0
+                        });
+                    }
+                    const pInfo = produtosDoResp.get(prodNome);
+                    const tipoMov = normalizarTipoMovimentacaoProduto(m.tipo || m.tipoMovimentacao);
+                    const qtd = parseFloat(m.quantidade) || 0;
+                    const preco = parseFloat(m.precoUnitario) || 0;
+                    if (preco > 0) {
+                        pInfo.precoSoma += (preco * qtd);
+                        pInfo.precoCount += qtd;
+                        pInfo.precoMedio = pInfo.precoSoma / pInfo.precoCount;
+                    }
+
+                    if (tipoMov === 'entrada') pInfo.entradasQtd += qtd;
+                    else if (tipoMov === 'saida') pInfo.saidasQtd += qtd;
+                    else if (tipoMov === 'ajuste') pInfo.ajustesQtd += qtd;
+                    else if (tipoMov === 'devolucao') pInfo.devolucoesQtd += qtd;
+                });
+
+                let respTotalSaidasQtd = 0;
+                let respTotalValorSaidas = 0;
+                let respTotalEntradasQtd = 0;
+                let respTotalAjustesQtd = 0;
+
+                const resumoProdutosRows = Array.from(produtosDoResp.values()).map(p => {
+                    const valorSaidas = p.saidasQtd * (p.precoMedio || 0);
+                    const valorTotalMov = (p.entradasQtd + p.saidasQtd + p.ajustesQtd + p.devolucoesQtd) * (p.precoMedio || 0);
+                    respTotalSaidasQtd += p.saidasQtd;
+                    respTotalValorSaidas += valorSaidas;
+                    respTotalEntradasQtd += p.entradasQtd;
+                    respTotalAjustesQtd += (p.ajustesQtd + p.devolucoesQtd);
+
+                    return `
+                        <tr>
+                            <td><strong>${escapeProdutoHtml(p.nome)}</strong></td>
+                            <td class="text-right" style="color: #16a34a; font-weight: 600;">${p.entradasQtd > 0 ? formatNumber(p.entradasQtd, 2) : '-'}</td>
+                            <td class="text-right" style="color: #dc2626; font-weight: 600;">${p.saidasQtd > 0 ? formatNumber(p.saidasQtd, 2) : '-'}</td>
+                            <td class="text-right">${(p.ajustesQtd + p.devolucoesQtd) > 0 ? formatNumber(p.ajustesQtd + p.devolucoesQtd, 2) : '-'}</td>
+                            <td class="text-right">${p.precoMedio > 0 ? formatCurrency(p.precoMedio) : '-'}</td>
+                            <td class="text-right" style="font-weight: 700; color: #1e293b;">${formatCurrency(valorSaidas || valorTotalMov)}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                const totaisPorProdutoCard = `
+                    <div class="resp-totais-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 14px; margin: 10px 0 24px 0;">
+                        <div style="font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <span><i class="fas fa-layer-group" style="color: #3b82f6;"></i> Totais por Produto & Valor Consumido — <strong>${escapeProdutoHtml(k)}</strong></span>
+                            <span style="font-size: 12.5px; color: #475569;">Valor Consumido / Saídas: <strong style="color: #b91c1c; font-size: 13px;">${formatCurrency(respTotalValorSaidas)}</strong></span>
+                        </div>
+                        <div class="table-container" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px; overflow-x: auto;">
+                            <table class="table table-small" style="margin: 0; font-size: 12px; width: 100%;">
+                                <thead>
+                                    <tr style="background: #f1f5f9;">
+                                        <th>Produto</th>
+                                        <th class="text-right">Entradas (Qtd)</th>
+                                        <th class="text-right">Saídas / Consumo (Qtd)</th>
+                                        <th class="text-right">Ajustes / Devol. (Qtd)</th>
+                                        <th class="text-right">Preço Médio</th>
+                                        <th class="text-right">Valor Total (R$)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${resumoProdutosRows}
+                                </tbody>
+                                <tfoot>
+                                    <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
+                                        <td>TOTAL (${escapeProdutoHtml(k)}):</td>
+                                        <td class="text-right" style="color: #16a34a;">${formatNumber(respTotalEntradasQtd, 2)}</td>
+                                        <td class="text-right" style="color: #dc2626;">${formatNumber(respTotalSaidasQtd, 2)}</td>
+                                        <td class="text-right">${formatNumber(respTotalAjustesQtd, 2)}</td>
+                                        <td class="text-right">-</td>
+                                        <td class="text-right" style="color: #b91c1c; font-size: 13px;">${formatCurrency(respTotalValorSaidas)}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                     </div>
-                    ${renderTable(items)}
+                `;
+
+                return `
+                    <div class="relatorios-grupo-header" style="margin: 20px 0 8px 0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 4px; padding: 10px 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                        <span style="font-size: 14px; font-weight: 700; color: #1e293b; display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-user-circle" style="color: #3b82f6; font-size: 16px;"></i>
+                            Responsável: <strong>${escapeProdutoHtml(k)}</strong>
+                        </span>
+                        <span style="font-size: 12.5px; color: #64748b; font-weight: 500;">(${items.length} movimentações nesta página)</span>
+                    </div>
+                    ${renderTable(items, k)}
+                    ${totaisPorProdutoCard}
                 `;
             }).join('');
         } else {
@@ -1901,7 +2266,7 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
 
         const paginacaoHtml = (onlySelected || options.disablePagination) ? '' : '<div id="paginacaoRelatorios" class="pagination-controls"></div>';
 
-        const cardsHtml = `
+        const cardsHtml = agruparPorResponsavel ? '' : `
             <div class="stats-grid" id="resumoRelatoriosStats" style="margin-top: 16px;">
                 <div class="stat-card">
                     <div class="stat-value" id="statRelProdMovTotal">${totalMovimentacoes}</div>
@@ -1954,6 +2319,8 @@ window.gerarRelatorioProdutosSaldo = gerarRelatorioProdutosSaldo;
 window.gerarRelatorioProdutosMovimentacao = gerarRelatorioProdutosMovimentacao;
 window.mudarPaginaProdutos = mudarPaginaProdutos;
 window.abrirEditarProdutoAlmoxarifado = abrirEditarProdutoAlmoxarifado;
+window.salvarEdicaoModalProdutoAlmoxarifado = salvarEdicaoModalProdutoAlmoxarifado;
+window.limparFiltrosProdutosAlmoxarifado = limparFiltrosProdutosAlmoxarifado;
 window.abrirConfiguracaoColunasProdutos = abrirConfiguracaoColunasProdutos;
 window.fecharConfiguracaoColunasProdutos = fecharConfiguracaoColunasProdutos;
 window.salvarConfiguracaoColunasProdutos = salvarConfiguracaoColunasProdutos;

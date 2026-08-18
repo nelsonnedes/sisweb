@@ -1587,3 +1587,86 @@ test('callable financeSyncCompra rejeita dataVencimento fora do formato esperado
     (error) => error.code === 'invalid-argument' && /YYYY-MM-DD/.test(error.message),
   );
 });
+
+test('callable financeSyncVenda salva pedido e conta a receber atomicamente', async () => {
+  const { handlers, persisted, context } = createPurchaseSyncHarness();
+  const payload = {
+    operationId: 'sale-sync-0001',
+    pedido: {
+      id: 'PV-1776259657669',
+      numero: 'PV-2001',
+      data: '2026-06-15',
+      status: 'aprovado',
+      cliente: { id: 'client-a', nome: 'Cliente A' },
+      clienteId: 'client-a',
+      total: 250,
+    },
+    contasCriar: [{
+      id: 'CR_PV-1776259657669_001',
+      cliente: { id: 'client-a', nome: 'Cliente A' },
+      descricao: 'Venda - Pedido PV-2001',
+      valor: 250,
+      valorOriginal: 250,
+      valorRestante: 250,
+      dataVencimento: '2026-06-25',
+      status: 'pendente',
+      tipoPagamento: 'boleto',
+    }],
+    contasRemover: [],
+  };
+
+  const result = await handlers.financeSyncVenda(payload, context);
+  assert.equal(result.success, true);
+  assert.equal(result.pedidoId, 'PV-1776259657669');
+  assert.ok(persisted['vendas/pedidos/PV-1776259657669']);
+  assert.ok(persisted['pedidosVenda/PV-1776259657669']);
+  assert.equal(persisted['vendas/pedidos/PV-1776259657669'].numero, 'PV-2001');
+  const conta = persisted['financas/receber/2026-06/CR_PV-1776259657669_001'];
+  assert.ok(conta);
+  assert.equal(conta.valor, 250);
+  assert.equal(conta.tipo, 'receber');
+  assert.equal(conta.origemId, 'PV-1776259657669');
+  assert.equal(conta.clienteId, 'client-a');
+});
+
+test('callable financeSyncVenda remove contas vinculadas e substitui em edicao', async () => {
+  const { handlers, persisted, context } = createPurchaseSyncHarness();
+  persisted['financas/receber/2026-06/CR_PV-1776259657669_001'] = {
+    id: 'CR_PV-1776259657669_001',
+    valor: 250,
+    origemId: 'PV-1776259657669',
+  };
+
+  const payload = {
+    operationId: 'sale-sync-edit-0001',
+    pedido: {
+      id: 'PV-1776259657669',
+      numero: 'PV-2001',
+      data: '2026-07-10',
+      status: 'aprovado',
+      cliente: { id: 'client-a', nome: 'Cliente A' },
+      clienteId: 'client-a',
+      total: 300,
+    },
+    contasCriar: [{
+      id: 'CR_PV-1776259657669_001',
+      cliente: { id: 'client-a', nome: 'Cliente A' },
+      descricao: 'Venda - Pedido PV-2001 - Parcela 1/1',
+      valor: 300,
+      valorOriginal: 300,
+      valorRestante: 300,
+      dataVencimento: '2026-07-20',
+      status: 'pendente',
+      tipoPagamento: 'pix',
+    }],
+    contasRemover: [{
+      mes: '2026-06',
+      contaId: 'CR_PV-1776259657669_001',
+    }],
+  };
+
+  const result = await handlers.financeSyncVenda(payload, context);
+  assert.equal(result.success, true);
+  assert.equal(persisted['financas/receber/2026-06/CR_PV-1776259657669_001'], undefined);
+  assert.equal(persisted['financas/receber/2026-07/CR_PV-1776259657669_001'].valor, 300);
+});
