@@ -1900,13 +1900,16 @@ class FolhaRelatorios {
 
     getRelatorioDefaultOrientation(tipoRelatorio = '') {
         const tipo = String(tipoRelatorio || '').toLowerCase();
+        if (tipo === 'provisao_rescisao_detalhada') {
+            const todosAtivos = !!(document.getElementById('todosFuncionariosAtivos') && document.getElementById('todosFuncionariosAtivos').checked);
+            return todosAtivos ? 'landscape' : 'portrait';
+        }
         const relatoriosLargos = new Set([
             'completo',
             'quinzena',
             'mensal',
             'anual',
             'fechamento',
-            'provisao_rescisao_detalhada',
             'extrato_bh'
         ]);
         return relatoriosLargos.has(tipo) ? 'landscape' : 'portrait';
@@ -5407,77 +5410,536 @@ class FolhaRelatorios {
 
     async gerarRelatorioProvisaoRescisaoDetalhada(dataInicio, dataFim, filtroFuncionario = {}) {
         const funcionarios = this._resolveFuncionariosRelatorio(filtroFuncionario);
+        const isIndividual = !filtroFuncionario.todosFuncionarios && funcionarios.length === 1;
+        const dadosEmpresa = await this.obterDadosEmpresa();
         const referencia = this._parseISODate(`${dataFim}-01`) || new Date();
         const anoRef = referencia.getFullYear();
-        const linhas = funcionarios.map((func) => {
-            const admissao = this._parseISODate(func.dataAdmissional);
-            const salarioBase = Number(func.salarioBase || func.salario || 0);
+        const mesRef = referencia.getMonth() + 1;
+        const mesAnoStr = `${anoRef}-${String(mesRef).padStart(2, '0')}`;
+
+        // Obter pool de lançamentos para capturar faltas, atestados, vales e adicionais
+        const lancamentosPool = (window.folhaLancamentos && Array.isArray(window.folhaLancamentos.lancamentos) && window.folhaLancamentos.lancamentos.length > 0)
+            ? window.folhaLancamentos.lancamentos
+            : ((Array.isArray(this.lancamentos) && this.lancamentos.length > 0) ? this.lancamentos : ((window.folhaSystem && Array.isArray(window.folhaSystem.folhas)) ? window.folhaSystem.folhas : []));
+
+        const calcularDadosRescisaoFuncionario = (func) => {
+            const funcId = String(func.id || '').trim();
+            const funcNome = String(func.nome || '').trim();
+
+            // Localizar lançamento do colaborador
+            const lancamento = lancamentosPool.find(l => {
+                const lid = String((l && l.funcionario && l.funcionario.id) || l.funcionarioId || '').trim();
+                const lnome = String((l && l.funcionario && l.funcionario.nome) || '').trim();
+                const lmes = String(l.mesAno || l.mes || '').trim();
+                const matchId = (funcId && lid === funcId) || (funcNome && lnome.toLowerCase() === funcNome.toLowerCase());
+                return matchId && (!lmes || lmes === mesAnoStr || lmes.startsWith(dataFim));
+            }) || lancamentosPool.find(l => {
+                const lid = String((l && l.funcionario && l.funcionario.id) || l.funcionarioId || '').trim();
+                const lnome = String((l && l.funcionario && l.funcionario.nome) || '').trim();
+                return (funcId && lid === funcId) || (funcNome && lnome.toLowerCase() === funcNome.toLowerCase());
+            }) || {};
+
+            const admissao = this._parseISODate(func.dataAdmissional || func.dataAdmissao || func.admissao);
+            const salarioBase = Number(func.salarioBase || func.salario || (lancamento && lancamento.salarioBase) || 0);
+
+            // Data projetada de rescisão (último dia do mês de referência)
+            const ultimoDiaDoMes = new Date(anoRef, mesRef, 0).getDate();
+            const dataAfastamento = new Date(anoRef, mesRef - 1, ultimoDiaDoMes);
+
+            // Tempo de Serviço
+            let tempoAnos = 0, tempoMeses = 0;
+            let totalMesesTrabalhados = 0;
+            if (admissao) {
+                totalMesesTrabalhados = Math.max(1, this._diffMonths(admissao, dataAfastamento) + 1);
+                tempoAnos = Math.floor(totalMesesTrabalhados / 12);
+                tempoMeses = totalMesesTrabalhados % 12;
+            }
+
+            // 1. AVISO PRÉVIO INDENIZADO (Lei nº 12.506/2011: 30 dias + 3 dias por ano completo, máx 90)
+            const anosCompletos = admissao ? Math.max(0, Math.floor((dataAfastamento - admissao) / (1000 * 60 * 60 * 24 * 365.25))) : 0;
+            const diasAvisoPrevio = Math.min(90, 30 + (anosCompletos * 3));
+            const valorDia = salarioBase > 0 ? (salarioBase / 30) : 0;
+            const valorAvisoPrevio = valorDia * diasAvisoPrevio;
+
+            // 2. SALDO DE SALÁRIO (considerando faltas e atestados)
+            const diasFaltas = Number(lancamento.faltas || 0);
+            const diasAtestados = Number(lancamento.atestados || 0);
+            const descontoRepousoRemunerado = Number(lancamento.descontoRepousoRemunerado || 0);
+            const diasTrabalhados = Math.max(0, Math.min(30, 30 - diasFaltas));
+            const valorSaldoSalario = valorDia * diasTrabalhados;
+            const valorDescontoFaltas = valorDia * diasFaltas;
+
+            // 3. 13º SALÁRIO PROPORCIONAL & SOBRE AVISO PRÉVIO
             const inicioAno = new Date(anoRef, 0, 1);
             const base13 = admissao && admissao > inicioAno ? admissao : inicioAno;
-            const meses13 = Math.min(12, this._diffMonths(base13, referencia) + 1);
-            const decimoTerceiro = salarioBase * (meses13 / 12);
-            const mesesFerias = admissao ? Math.min(12, (this._diffMonths(admissao, referencia) % 12) + 1) : 0;
-            const feriasProporcionais = salarioBase * (mesesFerias / 12);
-            const tercoConstitucional = feriasProporcionais / 3;
-            const avisoPrevio = salarioBase;
-            const fgtsBase = salarioBase * meses13 * 0.08;
-            const multaFgts = fgtsBase * 0.4;
-            const total = decimoTerceiro + feriasProporcionais + tercoConstitucional + avisoPrevio + fgtsBase + multaFgts;
+            const avos13Prop = Math.min(12, Math.max(1, this._diffMonths(base13, dataAfastamento) + 1));
+            const valor13Proporcional = (salarioBase / 12) * avos13Prop;
+            const avos13Aviso = Math.min(3, Math.max(0, Math.round(diasAvisoPrevio / 30)));
+            const valor13Aviso = (salarioBase / 12) * avos13Aviso;
+            const total13Salario = valor13Proporcional + valor13Aviso;
+
+            // 4. FÉRIAS PROPORCIONAIS (+1/3), VENCIDAS (+1/3) E SOBRE AVISO (+1/3)
+            const mesesFeriasAquisitivo = admissao ? Math.min(12, (this._diffMonths(admissao, dataAfastamento) % 12) + 1) : 0;
+            const avosFeriasProp = mesesFeriasAquisitivo;
+            const valorFeriasProporcionais = (salarioBase / 12) * avosFeriasProp;
+            const tercoFeriasProp = valorFeriasProporcionais / 3;
+
+            const temFeriasVencidas = (func.temFeriasVencidas === true || func.feriasVencidas === true);
+            const valorFeriasVencidas = temFeriasVencidas ? salarioBase : 0;
+            const tercoFeriasVencidas = valorFeriasVencidas / 3;
+
+            const avosFeriasAviso = Math.min(3, Math.max(0, Math.round(diasAvisoPrevio / 30)));
+            const valorFeriasAviso = (salarioBase / 12) * avosFeriasAviso;
+            const tercoFeriasAviso = valorFeriasAviso / 3;
+
+            const totalFerias = valorFeriasProporcionais + tercoFeriasProp + valorFeriasVencidas + tercoFeriasVencidas + valorFeriasAviso + tercoFeriasAviso;
+
+            // 5. ADICIONAIS
+            const hasPericulosidade = func.periculosidade || (lancamento && lancamento.periculosidade);
+            const valorPericulosidade = hasPericulosidade ? (salarioBase * 0.30) : 0;
+            const hasInsalubridade = func.insalubridade || (lancamento && lancamento.insalubridade);
+            const valorInsalubridade = hasInsalubridade && window.FolhaCalculos ? (window.FolhaCalculos.calcularInsalubridade(hasInsalubridade) || 0) : 0;
+            const valorAdicionalNoturno = Number(lancamento.adicionalNoturno || 0);
+            const valorHorasExtras = Number((lancamento.calculos && lancamento.calculos.valorHorasExtras) || lancamento.horasExtras || 0);
+            const valorBonificacoes = Number(lancamento.bonificacoes || 0);
+            const totalAdicionais = valorPericulosidade + valorInsalubridade + valorAdicionalNoturno + valorHorasExtras + valorBonificacoes;
+
+            // TOTAL PROVENTOS (BRUTO RESCISÓRIO)
+            const totalProventos = valorSaldoSalario + valorAvisoPrevio + total13Salario + totalFerias + totalAdicionais;
+
+            // 6. DEDUÇÕES / DESCONTOS
+            const baseInssSaldo = valorSaldoSalario + valorPericulosidade + valorInsalubridade + valorAdicionalNoturno + valorHorasExtras;
+            const calcInssSaldo = (window.FolhaCalculos && typeof window.FolhaCalculos.calcularINSS === 'function')
+                ? window.FolhaCalculos.calcularINSS(baseInssSaldo)
+                : { valor: baseInssSaldo * 0.09 };
+            const inssSaldo = Number(calcInssSaldo.valor || 0);
+
+            const calcInss13 = (window.FolhaCalculos && typeof window.FolhaCalculos.calcularINSS === 'function')
+                ? window.FolhaCalculos.calcularINSS(valor13Proporcional)
+                : { valor: valor13Proporcional * 0.09 };
+            const inss13 = Number(calcInss13.valor || 0);
+
+            const dependentes = Number(func.dependentes || func.filhos || 0);
+            const calcIrrf = (window.FolhaCalculos && typeof window.FolhaCalculos.calcularIRRF === 'function')
+                ? window.FolhaCalculos.calcularIRRF(baseInssSaldo, inssSaldo, dependentes, 0)
+                : { valor: 0 };
+            const irrf = Number(calcIrrf.valor || 0);
+
+            const vales = this.calcularTotalValesLancamento(lancamento) || 0;
+            const outrosDescontos = Number(lancamento.outrosDescontos || 0);
+            const descontoDsr = descontoRepousoRemunerado;
+
+            const totalDescontos = inssSaldo + inss13 + irrf + valorDescontoFaltas + descontoDsr + vales + outrosDescontos;
+
+            // 7. VALOR LÍQUIDO
+            const valorLiquido = Math.max(0, totalProventos - totalDescontos);
+
+            // 8. FGTS & MULTA RESCISÓRIA (40%)
+            const fgtsHistoricoBase = salarioBase * 0.08 * (totalMesesTrabalhados || 1);
+            const fgtsRescisorioMes = (valorSaldoSalario + total13Salario) * 0.08;
+            const fgtsBaseTotal = fgtsHistoricoBase + fgtsRescisorioMes;
+            const multaFgts = fgtsBaseTotal * 0.40;
+            const custoTotalEmpresa = totalProventos + fgtsRescisorioMes + multaFgts;
+
             return {
+                funcionario: func,
                 nome: func.nome || 'N/A',
                 cargo: func.cargo || 'N/A',
+                cpf: func.cpf || 'Não informado',
+                rg: func.rg || '-',
+                tipoContrato: func.tipoContrato || 'CLT',
+                admissao,
                 admissaoTxt: admissao ? admissao.toLocaleDateString('pt-BR') : '-',
-                decimoTerceiro,
-                feriasProporcionais,
-                tercoConstitucional,
-                avisoPrevio,
-                fgtsBase,
+                afastamentoTxt: dataAfastamento.toLocaleDateString('pt-BR'),
+                tempoServicoTxt: `${tempoAnos} ano(s) e ${tempoMeses} mês(es)`,
+                salarioBase,
+                diasAvisoPrevio,
+                valorAvisoPrevio,
+                diasTrabalhados,
+                diasFaltas,
+                diasAtestados,
+                valorSaldoSalario,
+                valorDescontoFaltas,
+                descontoDsr,
+                avos13Prop,
+                valor13Proporcional,
+                avos13Aviso,
+                valor13Aviso,
+                total13Salario,
+                avosFeriasProp,
+                valorFeriasProporcionais,
+                tercoFeriasProp,
+                temFeriasVencidas,
+                valorFeriasVencidas,
+                tercoFeriasVencidas,
+                avosFeriasAviso,
+                valorFeriasAviso,
+                tercoFeriasAviso,
+                totalFerias,
+                valorPericulosidade,
+                valorInsalubridade,
+                valorAdicionalNoturno,
+                valorHorasExtras,
+                valorBonificacoes,
+                totalAdicionais,
+                totalProventos,
+                inssSaldo,
+                inss13,
+                irrf,
+                vales,
+                outrosDescontos,
+                totalDescontos,
+                valorLiquido,
+                fgtsHistoricoBase,
+                fgtsRescisorioMes,
+                fgtsBaseTotal,
                 multaFgts,
-                total
+                custoTotalEmpresa
             };
-        });
-        const totalGeral = linhas.reduce((acc, l) => acc + Number(l.total || 0), 0);
-        const header = await this.gerarCabecalhoRelatorio('PROVISÃO DE RESCISÃO DETALHADA', this.formatarPeriodo(dataInicio, dataFim));
-        const linhasHtml = linhas.map((l) => `
-            <tr>
-                <td>${l.nome}</td>
-                <td>${l.cargo}</td>
-                <td style="text-align:center;">${l.admissaoTxt}</td>
-                <td style="text-align:right;">${this._formatCurrency(l.decimoTerceiro)}</td>
-                <td style="text-align:right;">${this._formatCurrency(l.feriasProporcionais)}</td>
-                <td style="text-align:right;">${this._formatCurrency(l.tercoConstitucional)}</td>
-                <td style="text-align:right;">${this._formatCurrency(l.avisoPrevio)}</td>
-                <td style="text-align:right;">${this._formatCurrency(l.fgtsBase)}</td>
-                <td style="text-align:right;">${this._formatCurrency(l.multaFgts)}</td>
-                <td style="text-align:right; font-weight:bold;">${this._formatCurrency(l.total)}</td>
+        };
+
+        const dadosCalculados = funcionarios.map(calcularDadosRescisaoFuncionario);
+
+        // =========================================================================
+        // CASO 1: RELATÓRIO INDIVIDUAL (TERMO DE RESCISÃO DE CONTRATO DE TRABALHO - TRCT)
+        // =========================================================================
+        if (isIndividual && dadosCalculados.length === 1) {
+            const d = dadosCalculados[0];
+            const header = await this.gerarCabecalhoRelatorio('DEMONSTRATIVO DE PROVISÃO DE RESCISÃO CONTRATUAL', this.formatarPeriodo(dataInicio, dataFim));
+            return `
+                <div class="relatorio-container trct-container" style="max-width: 960px; margin: 0 auto; font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b;">
+                    ${header}
+
+                    <!-- IDENTIFICAÇÃO DO EMPREGADOR E DO EMPREGADO -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 18px 0;">
+                        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px;">
+                            <div style="font-weight: 700; color: #0d2339; font-size: 13px; text-transform: uppercase; border-bottom: 2px solid #0d2339; padding-bottom: 4px; margin-bottom: 8px;">
+                                <i class="fas fa-building" style="margin-right: 6px;"></i> Identificação do Empregador
+                            </div>
+                            <div style="font-size: 12px; line-height: 1.6;">
+                                <strong>Razão Social:</strong> ${dadosEmpresa.razaoSocial || dadosEmpresa.nome || 'SisWeb Agro Florestal'}<br>
+                                <strong>CNPJ:</strong> ${dadosEmpresa.cnpj || 'Não informado'}<br>
+                                <strong>Endereço:</strong> ${dadosEmpresa.endereco || 'Endereço da Empresa'}
+                            </div>
+                        </div>
+
+                        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px;">
+                            <div style="font-weight: 700; color: #0d2339; font-size: 13px; text-transform: uppercase; border-bottom: 2px solid #0d2339; padding-bottom: 4px; margin-bottom: 8px;">
+                                <i class="fas fa-user-tie" style="margin-right: 6px;"></i> Identificação do Trabalhador
+                            </div>
+                            <div style="font-size: 12px; line-height: 1.6;">
+                                <strong>Nome:</strong> ${d.nome}<br>
+                                <strong>Cargo:</strong> ${d.cargo} | <strong>Tipo:</strong> ${d.tipoContrato}<br>
+                                <strong>CPF:</strong> ${d.cpf} | <strong>Admissão:</strong> ${d.admissaoTxt}<br>
+                                <strong>Projeção de Rescisão:</strong> ${d.afastamentoTxt} (${d.tempoServicoTxt})
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PARÂMETROS E OBSERVAÇÕES DO PERÍODO -->
+                    <div style="background: #eff6ff; border-left: 4px solid #1976d2; padding: 10px 14px; border-radius: 4px; margin-bottom: 18px; font-size: 12px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between;">
+                        <div><strong>Salário Base:</strong> ${this._formatCurrency(d.salarioBase)}</div>
+                        <div><strong>Aviso Prévio (Lei 12.506):</strong> ${d.diasAvisoPrevio} dias (${this._formatCurrency(d.valorAvisoPrevio)})</div>
+                        <div><strong>Faltas no Período:</strong> ${d.diasFaltas} dia(s)</div>
+                        <div><strong>Atestados Médicos:</strong> ${d.diasAtestados} dia(s)</div>
+                        <div><strong>Motivo:</strong> Dispensa sem justa causa (Provisão)</div>
+                    </div>
+
+                    <!-- TABELA DE VERBAS RESCISÓRIAS (PROVENTOS) -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="background: #0d2339; color: #ffffff; padding: 8px 12px; font-weight: bold; font-size: 13px; border-radius: 6px 6px 0 0; display: flex; justify-content: space-between;">
+                            <span>1. VERBAS RESCISÓRIAS (PROVENTOS)</span>
+                            <span>VALOR (R$)</span>
+                        </div>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #cbd5e1;">
+                            <tbody>
+                                <tr style="background: #ffffff; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; width: 80px; color: #64748b; font-family: monospace;">RUB-01</td>
+                                    <td style="padding: 7px 12px;">Saldo de Salário (${d.diasTrabalhados} dias trabalhados no mês)</td>
+                                    <td style="padding: 7px 12px; text-align: right; font-weight: 500;">${this._formatCurrency(d.valorSaldoSalario)}</td>
+                                </tr>
+                                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; color: #64748b; font-family: monospace;">RUB-02</td>
+                                    <td style="padding: 7px 12px;">Aviso Prévio Indenizado (${d.diasAvisoPrevio} dias - Lei nº 12.506/2011)</td>
+                                    <td style="padding: 7px 12px; text-align: right; font-weight: 500;">${this._formatCurrency(d.valorAvisoPrevio)}</td>
+                                </tr>
+                                <tr style="background: #ffffff; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; color: #64748b; font-family: monospace;">RUB-03</td>
+                                    <td style="padding: 7px 12px;">13º Salário Proporcional (${d.avos13Prop}/12 avos)</td>
+                                    <td style="padding: 7px 12px; text-align: right; font-weight: 500;">${this._formatCurrency(d.valor13Proporcional)}</td>
+                                </tr>
+                                ${d.valor13Aviso > 0 ? `
+                                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; color: #64748b; font-family: monospace;">RUB-04</td>
+                                    <td style="padding: 7px 12px;">13º Salário Indenizado sobre Aviso Prévio (${d.avos13Aviso}/12 avos)</td>
+                                    <td style="padding: 7px 12px; text-align: right; font-weight: 500;">${this._formatCurrency(d.valor13Aviso)}</td>
+                                </tr>` : ''}
+                                <tr style="background: #ffffff; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; color: #64748b; font-family: monospace;">RUB-05</td>
+                                    <td style="padding: 7px 12px;">Férias Proporcionais (${d.avosFeriasProp}/12 avos)</td>
+                                    <td style="padding: 7px 12px; text-align: right; font-weight: 500;">${this._formatCurrency(d.valorFeriasProporcionais)}</td>
+                                </tr>
+                                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; color: #64748b; font-family: monospace;">RUB-06</td>
+                                    <td style="padding: 7px 12px;">Terço Constitucional de Férias Proporcionais (1/3)</td>
+                                    <td style="padding: 7px 12px; text-align: right; font-weight: 500;">${this._formatCurrency(d.tercoFeriasProp)}</td>
+                                </tr>
+                                ${d.valorFeriasVencidas > 0 ? `
+                                <tr style="background: #ffffff; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; color: #64748b; font-family: monospace;">RUB-07</td>
+                                    <td style="padding: 7px 12px;">Férias Vencidas Integrais</td>
+                                    <td style="padding: 7px 12px; text-align: right; font-weight: 500;">${this._formatCurrency(d.valorFeriasVencidas)}</td>
+                                </tr>
+                                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; color: #64748b; font-family: monospace;">RUB-08</td>
+                                    <td style="padding: 7px 12px;">Terço Constitucional de Férias Vencidas (1/3)</td>
+                                    <td style="padding: 7px 12px; text-align: right; font-weight: 500;">${this._formatCurrency(d.tercoFeriasVencidas)}</td>
+                                </tr>` : ''}
+                                ${d.valorFeriasAviso > 0 ? `
+                                <tr style="background: #ffffff; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; color: #64748b; font-family: monospace;">RUB-09</td>
+                                    <td style="padding: 7px 12px;">Férias Indenizadas sobre Aviso Prévio (${d.avosFeriasAviso}/12 avos) + 1/3</td>
+                                    <td style="padding: 7px 12px; text-align: right; font-weight: 500;">${this._formatCurrency(d.valorFeriasAviso + d.tercoFeriasAviso)}</td>
+                                </tr>` : ''}
+                                ${d.totalAdicionais > 0 ? `
+                                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; color: #64748b; font-family: monospace;">RUB-10</td>
+                                    <td style="padding: 7px 12px;">Adicionais / Horas Extras / Gratificações</td>
+                                    <td style="padding: 7px 12px; text-align: right; font-weight: 500;">${this._formatCurrency(d.totalAdicionais)}</td>
+                                </tr>` : ''}
+                                <tr style="background: #f1f5f9; font-weight: bold; border-top: 2px solid #cbd5e1;">
+                                    <td colspan="2" style="padding: 8px 12px; text-align: right; color: #0d2339;">TOTAL DE PROVENTOS (BRUTO):</td>
+                                    <td style="padding: 8px 12px; text-align: right; color: #0d2339; font-size: 13px;">${this._formatCurrency(d.totalProventos)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- TABELA DE DEDUÇÕES / DESCONTOS -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="background: #475569; color: #ffffff; padding: 8px 12px; font-weight: bold; font-size: 13px; border-radius: 6px 6px 0 0; display: flex; justify-content: space-between;">
+                            <span>2. DEDUÇÕES E DESCONTOS</span>
+                            <span>VALOR (R$)</span>
+                        </div>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #cbd5e1;">
+                            <tbody>
+                                <tr style="background: #ffffff; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; width: 80px; color: #64748b; font-family: monospace;">DESC-01</td>
+                                    <td style="padding: 7px 12px;">INSS sobre Saldo de Salário</td>
+                                    <td style="padding: 7px 12px; text-align: right; color: #dc2626;">-${this._formatCurrency(d.inssSaldo)}</td>
+                                </tr>
+                                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; color: #64748b; font-family: monospace;">DESC-02</td>
+                                    <td style="padding: 7px 12px;">INSS sobre 13º Salário Rescisório</td>
+                                    <td style="padding: 7px 12px; text-align: right; color: #dc2626;">-${this._formatCurrency(d.inss13)}</td>
+                                </tr>
+                                ${d.irrf > 0 ? `
+                                <tr style="background: #ffffff; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; color: #64748b; font-family: monospace;">DESC-03</td>
+                                    <td style="padding: 7px 12px;">IRRF Retido na Fonte</td>
+                                    <td style="padding: 7px 12px; text-align: right; color: #dc2626;">-${this._formatCurrency(d.irrf)}</td>
+                                </tr>` : ''}
+                                ${d.valorDescontoFaltas > 0 ? `
+                                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; color: #64748b; font-family: monospace;">DESC-04</td>
+                                    <td style="padding: 7px 12px;">Desconto de Faltas Não Justificadas (${d.diasFaltas} dias)</td>
+                                    <td style="padding: 7px 12px; text-align: right; color: #dc2626;">-${this._formatCurrency(d.valorDescontoFaltas)}</td>
+                                </tr>` : ''}
+                                ${d.descontoDsr > 0 ? `
+                                <tr style="background: #ffffff; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; color: #64748b; font-family: monospace;">DESC-05</td>
+                                    <td style="padding: 7px 12px;">Desconto de Repouso Semanal Remunerado (DSR)</td>
+                                    <td style="padding: 7px 12px; text-align: right; color: #dc2626;">-${this._formatCurrency(d.descontoDsr)}</td>
+                                </tr>` : ''}
+                                ${d.vales > 0 ? `
+                                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; color: #64748b; font-family: monospace;">DESC-06</td>
+                                    <td style="padding: 7px 12px;">Vales / Adiantamentos / Empréstimos no Mês</td>
+                                    <td style="padding: 7px 12px; text-align: right; color: #dc2626;">-${this._formatCurrency(d.vales)}</td>
+                                </tr>` : ''}
+                                ${d.outrosDescontos > 0 ? `
+                                <tr style="background: #ffffff; border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 7px 12px; color: #64748b; font-family: monospace;">DESC-07</td>
+                                    <td style="padding: 7px 12px;">Outros Descontos Autorizados</td>
+                                    <td style="padding: 7px 12px; text-align: right; color: #dc2626;">-${this._formatCurrency(d.outrosDescontos)}</td>
+                                </tr>` : ''}
+                                <tr style="background: #f1f5f9; font-weight: bold; border-top: 2px solid #cbd5e1;">
+                                    <td colspan="2" style="padding: 8px 12px; text-align: right; color: #475569;">TOTAL DE DEDUÇÕES:</td>
+                                    <td style="padding: 8px 12px; text-align: right; color: #dc2626; font-size: 13px;">-${this._formatCurrency(d.totalDescontos)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- QUADRO DE RESUMO FINANCEIRO & FGTS -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                        <!-- Resumo Líquido -->
+                        <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="font-size: 12px; font-weight: 700; color: #065f46; text-transform: uppercase; margin-bottom: 4px;">
+                                <i class="fas fa-hand-holding-usd" style="margin-right: 6px;"></i> Valor Líquido a Receber na Rescisão
+                            </div>
+                            <div style="font-size: 26px; font-weight: 800; color: #047857;">
+                                ${this._formatCurrency(d.valorLiquido)}
+                            </div>
+                            <div style="font-size: 11px; color: #065f46; margin-top: 4px;">
+                                Proventos (${this._formatCurrency(d.totalProventos)}) - Deduções (${this._formatCurrency(d.totalDescontos)})
+                            </div>
+                        </div>
+
+                        <!-- Demonstrativo FGTS e Multa -->
+                        <div style="background: #fefce8; border: 1px solid #ca8a04; border-radius: 8px; padding: 14px; font-size: 12px;">
+                            <div style="font-weight: 700; color: #854d0e; font-size: 12px; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #eab308; padding-bottom: 4px;">
+                                <i class="fas fa-piggy-bank" style="margin-right: 6px;"></i> Provisão de FGTS & Multa Rescisória (40%)
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                                <span>Saldo FGTS Base (Histórico + Mês):</span>
+                                <strong>${this._formatCurrency(d.fgtsBaseTotal)}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 3px; color: #b45309; font-weight: bold;">
+                                <span>Multa Rescisória 40% (GRRF):</span>
+                                <span>${this._formatCurrency(d.multaFgts)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-top: 4px; border-top: 1px dashed #ca8a04; padding-top: 4px; font-weight: 700; color: #0f172a;">
+                                <span>Custo Global para a Empresa:</span>
+                                <span>${this._formatCurrency(d.custoTotalEmpresa)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DECLARAÇÃO E ASSINATURAS -->
+                    <div style="margin-top: 36px; padding-top: 16px; border-top: 1px solid #cbd5e1; font-size: 11px; color: #475569;">
+                        <p style="text-align: justify; margin-bottom: 36px; line-height: 1.5;">
+                            Declaro para os devidos fins de direito que este demonstrativo representa a provisão e simulação dos valores rescisórios devidos conforme os registros contratuais, folhas de pagamento e legislação trabalhista vigente (CLT).
+                        </p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; text-align: center;">
+                            <div>
+                                <div style="border-top: 1px solid #64748b; margin-top: 30px; padding-top: 6px; font-weight: bold; color: #0f172a;">
+                                    ${dadosEmpresa.razaoSocial || dadosEmpresa.nome || 'EMPREGADOR'}
+                                </div>
+                                <div style="font-size: 10px; color: #64748b;">Assinatura do Responsável / Empresa</div>
+                            </div>
+                            <div>
+                                <div style="border-top: 1px solid #64748b; margin-top: 30px; padding-top: 6px; font-weight: bold; color: #0f172a;">
+                                    ${d.nome}
+                                </div>
+                                <div style="font-size: 10px; color: #64748b;">Assinatura do Trabalhador / Colaborador</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // =========================================================================
+        // CASO 2: RELATÓRIO CONSOLIDADO (TODOS OS FUNCIONÁRIOS ATIVOS - TABELA ANALÍTICA)
+        // =========================================================================
+        const totalSalarioBase = dadosCalculados.reduce((acc, d) => acc + d.salarioBase, 0);
+        const totalSaldoSalario = dadosCalculados.reduce((acc, d) => acc + d.valorSaldoSalario, 0);
+        const totalAvisoPrevio = dadosCalculados.reduce((acc, d) => acc + d.valorAvisoPrevio, 0);
+        const total13Salario = dadosCalculados.reduce((acc, d) => acc + d.total13Salario, 0);
+        const totalFeriasGeral = dadosCalculados.reduce((acc, d) => acc + d.totalFerias, 0);
+        const totalAdicionaisGeral = dadosCalculados.reduce((acc, d) => acc + d.totalAdicionais, 0);
+        const totalProventosGeral = dadosCalculados.reduce((acc, d) => acc + d.totalProventos, 0);
+        const totalDescontosGeral = dadosCalculados.reduce((acc, d) => acc + d.totalDescontos, 0);
+        const totalLiquidoGeral = dadosCalculados.reduce((acc, d) => acc + d.valorLiquido, 0);
+        const totalMultaFgtsGeral = dadosCalculados.reduce((acc, d) => acc + d.multaFgts, 0);
+        const totalCustoEmpresaGeral = dadosCalculados.reduce((acc, d) => acc + d.custoTotalEmpresa, 0);
+
+        const header = await this.gerarCabecalhoRelatorio('RELATÓRIO CONSOLIDADO DE PROVISÃO DE RESCISÃO DETALHADA', this.formatarPeriodo(dataInicio, dataFim));
+
+        const linhasHtml = dadosCalculados.map((d) => `
+            <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+                <td style="padding: 6px 8px; font-weight: 600; color: #0f172a; white-space: nowrap;">${d.nome}</td>
+                <td style="padding: 6px 8px; color: #475569; white-space: nowrap;">${d.cargo}</td>
+                <td style="padding: 6px 8px; text-align: center; color: #64748b; white-space: nowrap;">${d.admissaoTxt}</td>
+                <td style="padding: 6px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(d.salarioBase)}</td>
+                <td style="padding: 6px 8px; text-align: right; white-space: nowrap;" title="Faltas: ${d.diasFaltas}d">${this._formatCurrency(d.valorSaldoSalario)}</td>
+                <td style="padding: 6px 8px; text-align: right; white-space: nowrap;" title="${d.diasAvisoPrevio} dias">${this._formatCurrency(d.valorAvisoPrevio)}</td>
+                <td style="padding: 6px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(d.total13Salario)}</td>
+                <td style="padding: 6px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(d.totalFerias)}</td>
+                <td style="padding: 6px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(d.totalAdicionais)}</td>
+                <td style="padding: 6px 8px; text-align: right; font-weight: 600; color: #0d2339; white-space: nowrap;">${this._formatCurrency(d.totalProventos)}</td>
+                <td style="padding: 6px 8px; text-align: right; color: #dc2626; white-space: nowrap;" title="INSS, IRRF, Vales, Faltas">-${this._formatCurrency(d.totalDescontos)}</td>
+                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #047857; background: #f0fdf4; white-space: nowrap;">${this._formatCurrency(d.valorLiquido)}</td>
+                <td style="padding: 6px 8px; text-align: right; color: #b45309; white-space: nowrap;">${this._formatCurrency(d.multaFgts)}</td>
+                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #1e293b; white-space: nowrap;">${this._formatCurrency(d.custoTotalEmpresa)}</td>
             </tr>
         `).join('');
+
         return `
-            <div class="relatorio-container">
+            <div class="relatorio-container" style="max-width: 100%; font-family: 'Segoe UI', Arial, sans-serif;">
                 ${header}
-                <div class="summary-cards">
-                    <div class="summary-card info"><h4>Funcionários Considerados</h4><p>${linhas.length}</p></div>
-                    <div class="summary-card warning"><h4>Provisão Total de Rescisão</h4><p>${this._formatCurrency(totalGeral)}</p></div>
+
+                <!-- CARDS EXECUTIVOS DE PROVISÃO -->
+                <div class="summary-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 16px 0 20px 0;">
+                    <div class="summary-card info" style="background: #f8fafc; border-left: 4px solid #0284c7; padding: 10px 14px; border-radius: 6px;">
+                        <h4 style="font-size: 11px; color: #475569; margin: 0 0 4px 0; text-transform: uppercase;">Colaboradores</h4>
+                        <p style="font-size: 20px; font-weight: bold; margin: 0; color: #0284c7;">${dadosCalculados.length}</p>
+                    </div>
+                    <div class="summary-card" style="background: #f8fafc; border-left: 4px solid #0d2339; padding: 10px 14px; border-radius: 6px;">
+                        <h4 style="font-size: 11px; color: #475569; margin: 0 0 4px 0; text-transform: uppercase;">Provisão Bruta</h4>
+                        <p style="font-size: 18px; font-weight: bold; margin: 0; color: #0d2339;">${this._formatCurrency(totalProventosGeral)}</p>
+                    </div>
+                    <div class="summary-card" style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 10px 14px; border-radius: 6px;">
+                        <h4 style="font-size: 11px; color: #991b1b; margin: 0 0 4px 0; text-transform: uppercase;">Total Deduções</h4>
+                        <p style="font-size: 18px; font-weight: bold; margin: 0; color: #dc2626;">-${this._formatCurrency(totalDescontosGeral)}</p>
+                    </div>
+                    <div class="summary-card success" style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 10px 14px; border-radius: 6px;">
+                        <h4 style="font-size: 11px; color: #065f46; margin: 0 0 4px 0; text-transform: uppercase;">Provisão Líquida (A Pagar)</h4>
+                        <p style="font-size: 18px; font-weight: 800; margin: 0; color: #047857;">${this._formatCurrency(totalLiquidoGeral)}</p>
+                    </div>
+                    <div class="summary-card warning" style="background: #fefce8; border-left: 4px solid #eab308; padding: 10px 14px; border-radius: 6px;">
+                        <h4 style="font-size: 11px; color: #854d0e; margin: 0 0 4px 0; text-transform: uppercase;">Multa FGTS 40%</h4>
+                        <p style="font-size: 18px; font-weight: bold; margin: 0; color: #b45309;">${this._formatCurrency(totalMultaFgtsGeral)}</p>
+                    </div>
+                    <div class="summary-card" style="background: #f1f5f9; border-left: 4px solid #334155; padding: 10px 14px; border-radius: 6px;">
+                        <h4 style="font-size: 11px; color: #334155; margin: 0 0 4px 0; text-transform: uppercase;">Custo Total Empresa</h4>
+                        <p style="font-size: 18px; font-weight: 800; margin: 0; color: #0f172a;">${this._formatCurrency(totalCustoEmpresaGeral)}</p>
+                    </div>
                 </div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Funcionário</th>
-                            <th>Cargo</th>
-                            <th>Admissão</th>
-                            <th>13º Proporcional</th>
-                            <th>Férias Proporcionais</th>
-                            <th>1/3 Férias</th>
-                            <th>Aviso Prévio</th>
-                            <th>FGTS</th>
-                            <th>Multa FGTS</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${linhasHtml || '<tr><td colspan="10" style="text-align:center;">Sem dados para o período</td></tr>'}
-                    </tbody>
-                </table>
+
+                <!-- TABELA ANALÍTICA DE PROVISÃO -->
+                <div style="overflow-x: auto; border: 1px solid #cbd5e1; border-radius: 6px;">
+                    <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background: #0d2339; color: #ffffff; text-align: left;">
+                                <th style="padding: 8px 8px; white-space: nowrap;">Funcionário</th>
+                                <th style="padding: 8px 8px; white-space: nowrap;">Cargo</th>
+                                <th style="padding: 8px 8px; text-align: center; white-space: nowrap;">Admissão</th>
+                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Salário Base</th>
+                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Saldo Salário</th>
+                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Aviso Prévio</th>
+                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">13º Salário</th>
+                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Férias + 1/3</th>
+                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Adicionais</th>
+                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Total Bruto</th>
+                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Deduções</th>
+                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap; background: #065f46;">Líquido a Pagar</th>
+                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Multa FGTS (40%)</th>
+                                <th style="padding: 8px 8px; text-align: right; white-space: nowrap;">Custo Empresa</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${linhasHtml || '<tr><td colspan="14" style="text-align:center; padding: 16px;">Nenhum funcionário encontrado para o período.</td></tr>'}
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: #0d2339; color: #ffffff; font-weight: bold; font-size: 11px;">
+                                <td colspan="3" style="padding: 8px 8px; text-align: left;">TOTAL GERAL CONSOLIDADO:</td>
+                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(totalSalarioBase)}</td>
+                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(totalSaldoSalario)}</td>
+                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(totalAvisoPrevio)}</td>
+                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(total13Salario)}</td>
+                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(totalFeriasGeral)}</td>
+                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(totalAdicionaisGeral)}</td>
+                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(totalProventosGeral)}</td>
+                                <td style="padding: 8px 8px; text-align: right; color: #fca5a5; white-space: nowrap;">-${this._formatCurrency(totalDescontosGeral)}</td>
+                                <td style="padding: 8px 8px; text-align: right; background: #047857; color: #ffffff; white-space: nowrap; font-size: 12px;">${this._formatCurrency(totalLiquidoGeral)}</td>
+                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap;">${this._formatCurrency(totalMultaFgtsGeral)}</td>
+                                <td style="padding: 8px 8px; text-align: right; white-space: nowrap; font-size: 12px;">${this._formatCurrency(totalCustoEmpresaGeral)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
         `;
     }
