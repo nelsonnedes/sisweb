@@ -1597,6 +1597,7 @@ class FolhaPagamentoSystem {
                     window.clonarFolha(folhaId);
                 }
             } else if (button.classList.contains('print-button')) {
+                if (button.getAttribute('onclick')) return;
                 if (debugAll) console.log(`🖨️ Imprimir Folha: ${folhaId}`);
                 if (typeof window.printFolha === 'function') {
                     window.printFolha(folhaId);

@@ -105,11 +105,11 @@ class FolhaRelatorios {
             document.addEventListener('click', (e) => {
                 const btn = e.target.closest('.print-button, .mini-print');
                 if (btn) {
+                    // Se o botão já possui manipulador inline onclick, evitar duplicação
+                    if (btn.getAttribute('onclick')) return;
                     // Preferir data-folha-id; fallback para data-id, tr[data-id] e onclick legacy
-                    const onclickAttr = btn.getAttribute('onclick');
-                    const onclickMatch = onclickAttr && onclickAttr.match(/'([^']+)'/);
                     const tr = btn.closest('tr');
-                    const folhaId = btn.getAttribute('data-folha-id') || btn.dataset.folhaId || btn.dataset.id || btn.getAttribute('data-id') || (tr && tr.getAttribute('data-id')) || (onclickMatch && onclickMatch[1]);
+                    const folhaId = btn.getAttribute('data-folha-id') || btn.dataset.folhaId || btn.dataset.id || btn.getAttribute('data-id') || (tr && tr.getAttribute('data-id'));
                     if (folhaId) {
                         // Recibo detalhado específico do lançamento clicado
                         this.gerarReciboIndividualDetalhado(folhaId);
@@ -3045,15 +3045,21 @@ class FolhaRelatorios {
      * 🧾 GERAR RECIBO INDIVIDUAL DETALHADO (NOVO)
      */
     async gerarReciboIndividualDetalhado(folhaId) {
-        console.log('🧾 Gerando recibo para folhaId:', folhaId);
-
-        // Evitar reload desnecessário: usar cache se disponível; recarregar só se vazio ou não encontrado
-        const hasCache = (window.folhaSystem && Array.isArray(window.folhaSystem.folhas) && window.folhaSystem.folhas.length > 0)
-            || (Array.isArray(this.lancamentos) && this.lancamentos.length > 0);
-        if (!hasCache) {
-            console.log('🔄 Cache vazio, recarregando dados...');
-            await this.loadData();
+        if (this._gerandoReciboLock) {
+            console.warn('⏳ Geração de recibo já em andamento, ignorando chamada duplicada.');
+            return;
         }
+        this._gerandoReciboLock = true;
+        try {
+            console.log('🧾 Gerando recibo para folhaId:', folhaId);
+
+            // Evitar reload desnecessário: usar cache se disponível; recarregar só se vazio ou não encontrado
+            const hasCache = (window.folhaSystem && Array.isArray(window.folhaSystem.folhas) && window.folhaSystem.folhas.length > 0)
+                || (Array.isArray(this.lancamentos) && this.lancamentos.length > 0);
+            if (!hasCache) {
+                console.log('🔄 Cache vazio, recarregando dados...');
+                await this.loadData();
+            }
 
         // Preferir dataset normalizado do sistema
         let datasetSistema = (window.folhaSystem && Array.isArray(window.folhaSystem.folhas)) ? window.folhaSystem.folhas : [];
@@ -3206,6 +3212,11 @@ class FolhaRelatorios {
         // CORREÇÃO: Usar nome do funcionário no título
         const tituloPersonalizado = `Recibo de Pagamento - ${funcionario.nome}`;
         this.imprimirRelatorio(reciboHTML, tituloPersonalizado, 'recibo');
+        } finally {
+            setTimeout(() => {
+                this._gerandoReciboLock = false;
+            }, 800);
+        }
     }
 
     _resolveFuncionarioForLancamento(lancamento) {
@@ -6452,6 +6463,13 @@ window.closeRelatorioModal = function() {
 };
 
 window.printFolha = function(folhaId) {
+    if (window._printFolhaLock) {
+        console.warn('⏳ Impressão de folha já em andamento, ignorando clique duplicado.');
+        return;
+    }
+    window._printFolhaLock = true;
+    setTimeout(() => { window._printFolhaLock = false; }, 800);
+
     if (window.folhaRelatorios) {
         // NOVO: Usar recibo detalhado em vez do demonstrativo simples
         window.folhaRelatorios.gerarReciboIndividualDetalhado(folhaId);
