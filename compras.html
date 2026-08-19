@@ -17,7 +17,7 @@
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
     <script src="sentry-init.js?v=279872380246"></script>
-<script src="menu-component.js?v=ac491560b4db"></script>
+<script src="menu-component.js?v=1aef3d0fabd7"></script>
     <style>
         * {
             margin: 0;
@@ -2033,7 +2033,7 @@
     <script src="auth.js?v=9edf7c63fdab"></script>
     <script>
         window.__siswebFirebaseServiceReady = (async function () {
-            const firebaseSvc = await import('./firebaseService.js?v=ef210997ebea');
+            const firebaseSvc = await import('./firebaseService.js?v=25b8131395fb');
             const existingFirebaseService = window.firebaseService || {};
             window.firebaseService = {
                 ...existingFirebaseService,

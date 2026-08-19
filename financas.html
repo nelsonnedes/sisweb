@@ -67,7 +67,7 @@
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
     <script src="sentry-init.js?v=279872380246"></script>
-<script src="menu-component.js?v=ac491560b4db"></script>
+<script src="menu-component.js?v=1aef3d0fabd7"></script>
     <style>
         /* Note: Container styles are now in layout-comum.css */
 
@@ -1731,7 +1731,7 @@
     
     <!-- ✅ Firebase via módulo compartilhado (firebase-init.js) -->
     <script type="module">
-        import { app, auth, db, storage, ref, set, get, remove, child, onValue, off, update, serverTimestamp, push, onAuthStateChanged, signOut, storageRef, uploadBytes, getDownloadURL, deleteObject, getStorage, getBlob } from './firebase-init.js?v=e4f56badf571';
+        import { app, auth, db, storage, ref, set, get, remove, child, onValue, off, update, serverTimestamp, push, onAuthStateChanged, signOut, storageRef, uploadBytes, getDownloadURL, deleteObject, getStorage, getBlob } from './firebase-init.js?v=0662e102e114';
         
         window.database = db;
         window.firebaseRef = ref;
@@ -1970,7 +1970,7 @@
                 ...financeFirebaseLocalService
             };
             window.__siswebFirebaseServiceReady = (async function () {
-                const firebaseSvc = await import('./firebaseService.js?v=ef210997ebea');
+                const firebaseSvc = await import('./firebaseService.js?v=25b8131395fb');
                 const existingFirebaseService = window.firebaseService || {};
                 window.firebaseService = {
                     ...existingFirebaseService,

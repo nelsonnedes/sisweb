@@ -10,7 +10,7 @@
 
     <script type="module">
 
-        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=e4f56badf571';
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=0662e102e114';
 import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     </script><!-- compat shim do singleton (window.firebase para módulos antigos) --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -1916,7 +1916,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     
     <script src="estados-cidades.js?v=e634a7c28536"></script>
     <!-- removido: handler de modais de clientes (não utilizado em fornecedores) -->
-    <script src="menu-component.js?v=ac491560b4db"></script>
+    <script src="menu-component.js?v=1aef3d0fabd7"></script>
     
     <!-- Scripts de Correção - ORDEM REORGANIZADA -->
     <script src="correcao-interface-database.js?v=44e2d6290888"></script>
@@ -1924,7 +1924,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <!-- Serviço Firebase canônico: uma única instância compartilhada por toda a página. -->
     <script>
         window.__siswebFirebaseServiceReady = (async function () {
-            const firebaseSvc = await import('./firebaseService.js?v=ef210997ebea');
+            const firebaseSvc = await import('./firebaseService.js?v=25b8131395fb');
             window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
             window.FirebaseService = window.firebaseService;
             return window.firebaseService;
