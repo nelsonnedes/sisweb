@@ -17,6 +17,40 @@ test("Controle de Estoque de Toras - CSS responsivo de Cards Mobile em estoque.h
     assert.match(html, /data-label\]::before/, "Deve conter pseudo-elemento ::before para exibir rótulos");
 });
 
+test("Controle de Estoque de Toras - labels de cards mobile neutralizam position/width absolutos herdados de .mobile-cards", () => {
+    const htmlPath = path.resolve("estoque.html");
+    const html = fs.readFileSync(htmlPath, "utf8");
+
+    const beforeBlock = html.match(/td\[data-label\]::before[\s\S]*?\}/);
+    assert.ok(beforeBlock, "Deve existir regra para td[data-label]::before no mobile");
+    assert.match(beforeBlock[0], /position:\s*static\s*!important/, "Label deve ter position static para nao sobrepor o valor");
+    assert.match(beforeBlock[0], /width:\s*auto\s*!important/, "Label deve ter width auto para fluir com flex e empurrar o valor para a direita");
+    assert.match(beforeBlock[0], /top:\s*auto\s*!important/, "Label nao deve herdar top da regra .mobile-cards");
+    assert.match(beforeBlock[0], /left:\s*auto\s*!important/, "Label nao deve herdar left da regra .mobile-cards");
+    assert.match(beforeBlock[0], /transform:\s*none\s*!important/, "Label nao deve herdar transform de .mobile-cards");
+    assert.match(beforeBlock[0], /padding-right:\s*0\s*!important/, "Label nao deve herdar padding-right de .mobile-cards");
+});
+
+test("Controle de Estoque de Toras - formularios de registro manual colapsados no mobile com opcao de expandir", () => {
+    const htmlPath = path.resolve("estoque.html");
+    const html = fs.readFileSync(htmlPath, "utf8");
+    const jsPath = path.resolve("estoque.js");
+    const js = fs.readFileSync(jsPath, "utf8");
+
+    assert.match(html, /class="mobile-collapse-header"/, "Deve existir header de colapso");
+    assert.match(html, /class="mobile-collapse-body"/, "Deve existir body de colapso");
+    assert.match(html, /id="entradaDadosToraBody"/, "Form 'Dados da Tora' deve ser colapsavel");
+    assert.match(html, /id="baixaProdutoInlineBody"/, "Form 'Baixa de Produto' deve ser colapsavel");
+    assert.match(html, /id="entradaProdutoBody"/, "Form 'Registrar Entrada de Produto' deve ser colapsavel");
+    assert.match(html, /id="saidaToraManualBody"/, "Bloco 'Adicionar Tora Manual' da Saida deve ser colapsavel");
+    assert.match(html, /\.mobile-collapse-body\s*\{\s*display:\s*none;\s*\}/s, "No mobile o body deve vir recolhido por padrao");
+    assert.match(html, /\.mobile-collapse-body\.open\s*\{\s*display:\s*block;\s*\}/s, "No mobile .open deve expandir");
+    assert.match(html, /@media\s*\(min-width:\s*769px\)[\s\S]*?\.mobile-collapse-body\s*\{\s*display:\s*block\s*!important;\s*\}/s, "No desktop o body deve ficar sempre expandido");
+    assert.match(js, /function inicializarMobileCollapses/, "estoque.js deve ter inicializacao do colapso");
+    assert.match(js, /function expandirFormSection/, "estoque.js deve ter funcao para expandir seccao");
+    assert.match(js, /inicializarMobileCollapses\(\)/, "inicializarMobileCollapses deve ser chamado na inicializacao");
+});
+
 test("Controle de Estoque de Toras - Renderizadores em estoque.js injetam atributos data-label para cards mobile", () => {
     const jsPath = path.resolve("estoque.js");
     const js = fs.readFileSync(jsPath, "utf8");

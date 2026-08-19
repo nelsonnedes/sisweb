@@ -235,6 +235,12 @@
                 margin-right: 12px !important;
                 flex: 1 1 auto !important;
                 white-space: normal !important;
+                position: static !important;
+                width: auto !important;
+                top: auto !important;
+                left: auto !important;
+                transform: none !important;
+                padding-right: 0 !important;
             }
 
             .saida-plaqueta-results-table .saida-plaqueta-check-col,
@@ -2044,6 +2050,65 @@
             }
         }
 
+        /* ===== Colapso de formularios no mobile ===== */
+        .mobile-collapse-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .mobile-collapse-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #7f8c8d;
+            transition: transform 0.2s ease;
+            font-size: 14px;
+        }
+        .mobile-collapse-body {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-collapse-body {
+                display: none;
+            }
+            .mobile-collapse-body.open {
+                display: block;
+            }
+            .mobile-collapse-header[aria-expanded="true"] .mobile-collapse-icon {
+                transform: rotate(180deg);
+            }
+            #entrada #entradaDadosToraTitulo {
+                margin: 10px 0;
+                padding-top: 8px;
+            }
+            #produtos .almox-section-title,
+            #entradaAlmoxarifado .almox-section-title {
+                margin-bottom: 0;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-collapse-body {
+                display: block !important;
+            }
+            .mobile-collapse-header {
+                cursor: default;
+            }
+            .mobile-collapse-icon {
+                display: none;
+            }
+        }
+
+        @media print {
+            .mobile-collapse-body {
+                display: block !important;
+            }
+        }
+
         /* Loading Spinner */
         .loader {
             border: 8px solid #f3f3f3;
@@ -2168,7 +2233,11 @@
             </div>
 
             <form id="baixaProdutoInlineForm" class="almox-baixa-form">
-                <h3 class="almox-section-title">Baixa de Produto / Consumo</h3>
+                <div class="mobile-collapse-header" role="button" tabindex="0" aria-expanded="false" aria-controls="baixaProdutoInlineBody">
+                    <h3 class="almox-section-title">Baixa de Produto / Consumo</h3>
+                    <span class="mobile-collapse-icon" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="mobile-collapse-body" id="baixaProdutoInlineBody">
                 <div class="almox-baixa-grid">
                     <div class="form-group">
                         <label for="baixaProdutoDataInline">Data:</label>
@@ -2211,6 +2280,7 @@
                     <button type="button" class="btn btn-secondary" onclick="limparBaixaProdutoInlineForm()">
                         <i class="fas fa-times"></i> Limpar
                     </button>
+                </div>
                 </div>
             </form>
 
@@ -2275,7 +2345,11 @@
                     </div>
                 </div>
 
-                <h3 id="entradaDadosToraTitulo">Dados da Tora (Adicionar Manualmente)</h3>
+                <div class="mobile-collapse-header" role="button" tabindex="0" aria-expanded="false" aria-controls="entradaDadosToraBody">
+                    <h3 id="entradaDadosToraTitulo">Dados da Tora (Adicionar Manualmente)</h3>
+                    <span class="mobile-collapse-icon" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="mobile-collapse-body" id="entradaDadosToraBody">
                 <div id="editToraAviso" class="alert alert-warning" style="display: none;">
                     Modo edição: revise os dados e clique em Atualizar Item para gravar as alterações nesta tora do estoque. Esta ação não cria nova entrada nem duplica a plaqueta.
                 </div>
@@ -2371,6 +2445,7 @@
                     <button type="button" onclick="limparCamposEntrada()" class="btn btn-warning">
                         <i class="fas fa-eraser"></i> Limpar Campos
                     </button>
+                </div>
                 </div>
 
                 <hr class="entrada-section-divider">
@@ -2557,8 +2632,12 @@
                         <textarea id="motivoSaida" rows="2" placeholder="Descreva o motivo da saída"></textarea>
                     </div>
 
-                    <div class="form-group">
+                    <div class="mobile-collapse-header" role="button" tabindex="0" aria-expanded="false" aria-controls="saidaToraManualBody">
                         <label>Adicionar Tora Manual (fora do estoque):</label>
+                        <span class="mobile-collapse-icon" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>
+                    </div>
+                    <div class="mobile-collapse-body" id="saidaToraManualBody">
+                    <div class="form-group">
                         <div style="overflow-x:auto;">
                             <div class="manual-saida-grid" style="display:flex; gap:8px; flex-wrap:nowrap; align-items:flex-end; min-width:1880px;">
                                 <input type="text" id="manualPlaquetaSaida" placeholder="Plaqueta" onkeydown="onManualSaidaKeydown(event, 'manualCustodiaSaida')" style="width:140px; min-width:140px; height:36px; box-sizing:border-box;">
@@ -2591,6 +2670,7 @@
                         <div style="font-size:12px; color:#666; margin-top:6px;">
                             Tora manual entra no Histórico de Movimentações e no rendimento, sem baixar saldo do estoque.
                         </div>
+                    </div>
                     </div>
 
                     <div id="torasSelecionadas">
@@ -2956,7 +3036,11 @@
         <div id="entradaAlmoxarifado" class="tab-content">
             <h2>Entrada Almoxarifado</h2>
             <form id="entradaProdutoForm" class="entrada-almox-form">
-                <h3 class="almox-section-title" id="entradaProdutoTitulo">Registrar Entrada de Produto</h3>
+                <div class="mobile-collapse-header" role="button" tabindex="0" aria-expanded="false" aria-controls="entradaProdutoBody">
+                    <h3 class="almox-section-title" id="entradaProdutoTitulo">Registrar Entrada de Produto</h3>
+                    <span class="mobile-collapse-icon" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="mobile-collapse-body" id="entradaProdutoBody">
                 <div id="entradaProdutoEditAviso" class="alert alert-warning" style="display: none;">
                     Modo edição: todos os dados do produto selecionado foram carregados no formulário e podem ser livremente alterados. Caso a quantidade seja modificada, um registro de Ajuste será lançado no histórico.
                 </div>
@@ -3044,6 +3128,7 @@
                     <button type="button" class="btn btn-secondary" onclick="showTab('produtos')">
                         <i class="fas fa-boxes"></i> Ver Almoxarifado
                     </button>
+                </div>
                 </div>
             </form>
         </div>

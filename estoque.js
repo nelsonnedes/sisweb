@@ -870,6 +870,10 @@ function setModoEdicaoEntrada(tora = null) {
             aviso.append(prefixo, document.createTextNode(' revise os dados e clique em '), acao, document.createTextNode(' para gravar as alterações nesta tora do estoque. Esta ação não cria nova entrada nem duplica a plaqueta.'));
         }
     }
+    if (isEditing && titulo) {
+        const header = titulo.closest('.mobile-collapse-header');
+        expandirFormSection(header);
+    }
 }
 
 // Inicialização
@@ -890,6 +894,53 @@ function toggleOffcanvas(id) {
         el.style.display = 'block';
     } else {
         el.style.display = 'none';
+    }
+}
+
+function inicializarMobileCollapses() {
+    const mqMobile = window.matchMedia ? window.matchMedia('(max-width: 768px)') : null;
+    document.querySelectorAll('.mobile-collapse-header').forEach((header) => {
+        const body = header.nextElementSibling;
+        if (!body || !body.classList.contains('mobile-collapse-body')) return;
+
+        const aplicarEstado = () => {
+            const isMobile = !mqMobile || mqMobile.matches;
+            if (!isMobile) {
+                body.classList.add('open');
+                header.setAttribute('aria-expanded', 'true');
+            } else if (header.dataset.userOpened !== 'true') {
+                body.classList.remove('open');
+                header.setAttribute('aria-expanded', 'false');
+            } else {
+                header.setAttribute('aria-expanded', body.classList.contains('open') ? 'true' : 'false');
+            }
+        };
+        const alternar = () => {
+            if (mqMobile && !mqMobile.matches) return;
+            header.dataset.userOpened = body.classList.contains('open') ? 'false' : 'true';
+            body.classList.toggle('open');
+            header.setAttribute('aria-expanded', body.classList.contains('open') ? 'true' : 'false');
+        };
+        header.addEventListener('click', alternar);
+        header.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                alternar();
+            }
+        });
+        if (mqMobile && typeof mqMobile.addEventListener === 'function') {
+            mqMobile.addEventListener('change', aplicarEstado);
+        }
+        aplicarEstado();
+    });
+}
+
+function expandirFormSection(header) {
+    const body = header && header.nextElementSibling;
+    if (body && body.classList.contains('mobile-collapse-body')) {
+        body.classList.add('open');
+        header.dataset.userOpened = 'true';
+        header.setAttribute('aria-expanded', 'true');
     }
 }
 
@@ -1125,6 +1176,9 @@ function inicializarSistema() {
 
     // Configurar eventos
     configurarEventos();
+
+    // Configurar colapso de formulários no mobile
+    inicializarMobileCollapses();
 
     // Atualizar estatísticas
     atualizarEstatisticas();
@@ -2394,6 +2448,12 @@ function limparCamposEntrada(resetPersisted = false) {
     if (aviso) aviso.style.display = 'none';
     toraEmEdicao = null;
     setModoEdicaoEntrada(null);
+
+    const titulo = document.getElementById('entradaDadosToraTitulo');
+    if (titulo) {
+        const header = titulo.closest('.mobile-collapse-header');
+        expandirFormSection(header);
+    }
 }
 
 function abrirHistoricoEstoque() {
@@ -3629,6 +3689,11 @@ function limparFormularioEntrada() {
     if (aviso) aviso.style.display = 'none';
     toraEmEdicao = null;
     setModoEdicaoEntrada(null);
+    const titulo = document.getElementById('entradaDadosToraTitulo');
+    if (titulo) {
+        const header = titulo.closest('.mobile-collapse-header');
+        expandirFormSection(header);
+    }
 }
 
 // Funções de saída de estoque

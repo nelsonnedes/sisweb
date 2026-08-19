@@ -398,6 +398,10 @@ function atualizarModoFormularioProduto(isEditing = false) {
     if (tipoEl) tipoEl.disabled = !!isEditing;
     if (select) select.disabled = !!isEditing;
     if (nomeEl) nomeEl.disabled = false;
+    if (isEditing && titulo) {
+        const header = titulo.closest('.mobile-collapse-header');
+        if (typeof expandirFormSection === 'function') expandirFormSection(header);
+    }
 }
 
 function preencherFormularioEdicaoProdutoAlmoxarifado(prod = {}) {
@@ -561,6 +565,11 @@ function limparEntradaProdutoForm() {
     const saldoEl = document.getElementById('entradaProdutoSaldo');
     if (saldoEl) saldoEl.textContent = '';
     atualizarModoFormularioProduto(false);
+    const titulo = document.getElementById('entradaProdutoTitulo');
+    if (titulo) {
+        const header = titulo.closest('.mobile-collapse-header');
+        if (typeof expandirFormSection === 'function') expandirFormSection(header);
+    }
 }
 
 async function salvarProdutoAlmoxarifadoPeloFormulario(e) {
