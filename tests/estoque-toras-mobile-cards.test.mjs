@@ -13,6 +13,7 @@ test("Controle de Estoque de Toras - CSS responsivo de Cards Mobile em estoque.h
     assert.match(html, /#tabelaEstoque\s*tbody\s*tr/, "Deve conter card para linhas da tabela de consulta");
     assert.match(html, /#tabelaMovimentacoes\s*tbody\s*tr/, "Deve conter card para linhas da tabela de movimentações");
     assert.match(html, /#tabelaTorasDisponiveis\s*tbody\s*tr/, "Deve conter card para linhas do modal de toras");
+    assert.match(html, /#tabelaProdutos\s*tbody\s*tr/, "Deve conter card para linhas da tabela de produtos/almoxarifado");
     assert.match(html, /data-label\]::before/, "Deve conter pseudo-elemento ::before para exibir rótulos");
 });
 
@@ -28,3 +29,13 @@ test("Controle de Estoque de Toras - Renderizadores em estoque.js injetam atribu
     assert.match(js, /function renderizarTabelaRastreabilidade[\s\S]*?data-label="Plaqueta"/, "renderizarTabelaRastreabilidade deve injetar data-label=\"Plaqueta\"");
     assert.match(js, /function renderizarTabelaEntrada[\s\S]*?data-label="Plaqueta"/, "renderizarTabelaEntrada deve injetar data-label=\"Plaqueta\"");
 });
+
+test("Controle de Estoque - Almoxarifado renderiza data-label em estoque_produtos.js", () => {
+    const prodJsPath = path.resolve("estoque_produtos.js");
+    const prodJs = fs.readFileSync(prodJsPath, "utf8");
+
+    assert.match(prodJs, /function renderProdutoTd[\s\S]*?data-label=/, "renderProdutoTd deve injetar data-label");
+    assert.match(prodJs, /data-label="Selecionar"/, "renderizarTabelaProdutos deve ter data-label Selecionar");
+    assert.match(prodJs, /data-label="Ações"/, "renderizarTabelaProdutos deve ter data-label Ações");
+});
+

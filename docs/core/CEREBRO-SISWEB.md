@@ -211,6 +211,9 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
         5. **Movimentações / Histórico** (`#tabelaMovimentacoes`): Cards em formato de timeline com badges coloridos por tipo de movimentação (Entrada/Saída/Ajuste).
         6. **Modal de Seleção de Toras em Lote** (`#tabelaTorasDisponiveis`): Cards de seleção com checkbox amplo para uso em campo/pátio.
         7. **Modal de Rastreabilidade da Tora** (`#rastreabilidadeModal`): Linhas da tabela de eventos de produção transformadas em cartões informativos.
+        8. **Almoxarifado / Produtos** (`#tabelaProdutos`, `estoque_produtos.js`): Cards responsivos completos com todos os atributos `data-label`, status com badge, valores calculados e botões de ação ("Editar" e "Baixa") no rodapé.
+      - **Ajuste de Baixa Individual / Busca de Plaqueta (`.saida-plaqueta-results-table`)**: Eliminada a largura forçada de 1060px em mobile e corrigida a célula de seleção (`.saida-plaqueta-check-col`) para largura 100% com `display: flex; justify-content: space-between;`, eliminando a quebra de texto vertical no rótulo "Selecionar".
+      - **Isolamento de Estilos Desktop (`#movimentacao .table` e `#produtos .table`)**: As regras de altura fixa de linha (`height: 28px`) e `white-space: nowrap` foram isoladas em `@media (min-width: 769px)`, garantindo que os cards mobile em Movimentações e Almoxarifado expandam perfeitamente na vertical.
       - Preservação de 100% da visualização e comportamento tabular rico no Desktop (`> 768px`), sem duplicação de dados no DOM e com sincronismo automático de seleções e eventos.
     - **Tratamento de Ciclo de Vida do Navegador e Back-Forward Cache (bfcache) no Estoque / RTDB**:
       - Implementado listener de ciclo de vida (`pageshow` e `visibilitychange`) no `firebaseService.js` e em `estoque.js`, chamando `goOnline(db)` proativamente quando a página é restaurada do bfcache ou quando a aba ganha foco.

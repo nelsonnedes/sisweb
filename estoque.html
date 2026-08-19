@@ -51,14 +51,18 @@
             min-width: 1320px;
         }
         @media (max-width: 768px) {
-            .table-responsive.mobile-cards {
-                overflow-x: visible;
+            .table-responsive.mobile-cards,
+            #produtos .table-responsive,
+            #movimentacao .table-responsive {
+                overflow-x: visible !important;
+                overflow-y: visible !important;
             }
             .table-responsive.mobile-cards .table-wide-estoque,
             .table-responsive.mobile-cards .table-wide-estoque-lg,
-            .table-responsive.mobile-cards .table-wide-estoque-compact {
-                min-width: 0;
-                width: 100%;
+            .table-responsive.mobile-cards .table-wide-estoque-compact,
+            .table-report-estoque {
+                min-width: 0 !important;
+                width: 100% !important;
             }
 
             .table-responsive,
@@ -66,6 +70,7 @@
             #saida .table-responsive,
             #consulta .table-responsive,
             #movimentacao .table-responsive,
+            #produtos .table-responsive,
             #selecaoTorasModal .table-container,
             #rastreabilidadeModal .table-responsive {
                 overflow-x: visible !important;
@@ -79,10 +84,12 @@
             .table-wide-estoque,
             .table-wide-estoque-lg,
             .table-wide-estoque-compact,
+            .table-report-estoque,
             #tabelaEntrada,
             #tabelaSaidaToras,
             #tabelaEstoque,
             #tabelaMovimentacoes,
+            #tabelaProdutos,
             #tabelaTorasDisponiveis,
             .saida-plaqueta-results-table {
                 min-width: 0 !important;
@@ -96,6 +103,7 @@
             #tabelaSaidaToras thead,
             #tabelaEstoque thead,
             #tabelaMovimentacoes thead,
+            #tabelaProdutos thead,
             #tabelaTorasDisponiveis thead,
             #rastreabilidadeModal thead,
             .saida-plaqueta-results-table thead,
@@ -103,6 +111,8 @@
             #tabelaSaidaToras colgroup,
             #tabelaEstoque colgroup,
             #tabelaMovimentacoes colgroup,
+            #tabelaProdutos colgroup,
+            #tabelaProdutosColgroup,
             #tabelaTorasDisponiveis colgroup,
             .saida-plaqueta-results-table colgroup {
                 display: none !important;
@@ -112,6 +122,8 @@
             #tabelaSaidaToras tbody,
             #tabelaEstoque tbody,
             #tabelaMovimentacoes tbody,
+            #tabelaProdutos tbody,
+            #produtosTable,
             #tabelaTorasDisponiveis tbody,
             #rastreabilidadeModal tbody,
             .saida-plaqueta-results-table tbody {
@@ -125,9 +137,12 @@
             #tabelaSaidaToras tbody tr,
             #tabelaEstoque tbody tr,
             #tabelaMovimentacoes tbody tr,
+            #tabelaProdutos tbody tr,
             #tabelaTorasDisponiveis tbody tr,
             #rastreabilidadeModal tbody tr,
-            .saida-plaqueta-results-table tbody tr {
+            .saida-plaqueta-results-table tbody tr,
+            #movimentacao .table tbody tr,
+            #produtos .table tbody tr {
                 display: block !important;
                 background: #ffffff !important;
                 border: 1px solid #e2e8f0 !important;
@@ -137,12 +152,16 @@
                 margin-bottom: 0 !important;
                 position: relative !important;
                 box-sizing: border-box !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
             }
 
             #tabelaEntrada tbody tr:active,
             #tabelaSaidaToras tbody tr:active,
             #tabelaEstoque tbody tr:active,
             #tabelaMovimentacoes tbody tr:active,
+            #tabelaProdutos tbody tr:active,
             #tabelaTorasDisponiveis tbody tr:active {
                 background: #f8fafc !important;
             }
@@ -151,9 +170,12 @@
             #tabelaSaidaToras tbody tr td,
             #tabelaEstoque tbody tr td,
             #tabelaMovimentacoes tbody tr td,
+            #tabelaProdutos tbody tr td,
             #tabelaTorasDisponiveis tbody tr td,
             #rastreabilidadeModal tbody tr td,
-            .saida-plaqueta-results-table tbody tr td {
+            .saida-plaqueta-results-table tbody tr td,
+            #movimentacao .table tbody tr td,
+            #produtos .table tbody tr td {
                 display: flex !important;
                 justify-content: space-between !important;
                 align-items: center !important;
@@ -163,16 +185,21 @@
                 font-size: 13px !important;
                 text-align: right !important;
                 min-height: 28px !important;
+                height: auto !important;
                 width: 100% !important;
+                min-width: 0 !important;
+                max-width: none !important;
                 box-sizing: border-box !important;
                 white-space: normal !important;
                 word-break: break-word !important;
+                line-height: 1.3 !important;
             }
 
             #tabelaEntrada tbody tr td:last-child,
             #tabelaSaidaToras tbody tr td:last-child,
             #tabelaEstoque tbody tr td:last-child,
             #tabelaMovimentacoes tbody tr td:last-child,
+            #tabelaProdutos tbody tr td:last-child,
             #tabelaTorasDisponiveis tbody tr td:last-child,
             #rastreabilidadeModal tbody tr td:last-child,
             .saida-plaqueta-results-table tbody tr td:last-child {
@@ -184,6 +211,7 @@
             #tabelaSaidaToras tbody tr td[data-label]::before,
             #tabelaEstoque tbody tr td[data-label]::before,
             #tabelaMovimentacoes tbody tr td[data-label]::before,
+            #tabelaProdutos tbody tr td[data-label]::before,
             #tabelaTorasDisponiveis tbody tr td[data-label]::before,
             #rastreabilidadeModal tbody tr td[data-label]::before,
             .saida-plaqueta-results-table tbody tr td[data-label]::before {
@@ -196,30 +224,67 @@
                 text-align: left !important;
                 margin-right: 12px !important;
                 flex: 1 1 auto !important;
+                white-space: normal !important;
             }
 
+            .saida-plaqueta-results-table .saida-plaqueta-check-col,
             #tabelaEntrada tbody tr td[data-label="Selecionar"],
             #tabelaSaidaToras tbody tr td[data-label="Selecionar"],
             #tabelaEstoque tbody tr td[data-label="Selecionar"],
             #tabelaMovimentacoes tbody tr td[data-label="Selecionar"],
+            #tabelaProdutos tbody tr td[data-label="Selecionar"],
             #tabelaTorasDisponiveis tbody tr td[data-label="Selecionar"],
             .saida-plaqueta-results-table tbody tr td[data-label="Selecionar"] {
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: none !important;
                 background: #f8fafc !important;
                 border-radius: 6px !important;
                 padding: 6px 10px !important;
                 margin-bottom: 6px !important;
                 border-bottom: none !important;
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                box-sizing: border-box !important;
+            }
+
+            .saida-plaqueta-results-table .saida-plaqueta-check-col::before,
+            #tabelaEntrada tbody tr td[data-label="Selecionar"]::before,
+            #tabelaSaidaToras tbody tr td[data-label="Selecionar"]::before,
+            #tabelaEstoque tbody tr td[data-label="Selecionar"]::before,
+            #tabelaMovimentacoes tbody tr td[data-label="Selecionar"]::before,
+            #tabelaProdutos tbody tr td[data-label="Selecionar"]::before,
+            #tabelaTorasDisponiveis tbody tr td[data-label="Selecionar"]::before,
+            .saida-plaqueta-results-table tbody tr td[data-label="Selecionar"]::before {
+                content: "Selecionar" !important;
+                display: inline-block !important;
+                width: auto !important;
+                min-width: 0 !important;
+                max-width: none !important;
+                white-space: nowrap !important;
+                font-weight: 700 !important;
+                color: #64748b !important;
+                font-size: 11px !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.4px !important;
+                text-align: left !important;
+                margin-right: 12px !important;
             }
 
             #tabelaEntrada tbody tr td.actions-cell,
             #tabelaSaidaToras tbody tr td.actions-cell,
             #tabelaEstoque tbody tr td.actions-cell,
+            #tabelaProdutos tbody tr td.actions-cell,
             .saida-plaqueta-actions-col {
                 position: static !important;
                 background: transparent !important;
                 box-shadow: none !important;
                 justify-content: flex-end !important;
                 width: 100% !important;
+                min-width: 0 !important;
+                max-width: none !important;
                 padding-top: 10px !important;
                 margin-top: 4px !important;
                 border-top: 1px solid #e2e8f0 !important;
@@ -238,7 +303,12 @@
             .stock-btn-action {
                 min-width: 36px !important;
                 min-height: 36px !important;
-                font-size: 13px !important;
+                width: 36px !important;
+                height: 36px !important;
+                font-size: 14px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
             }
 
             .manual-saida-grid,
@@ -1084,10 +1154,6 @@
                 width: 100%;
                 justify-content: space-between;
             }
-
-            .saida-plaqueta-results-table {
-                min-width: 1060px;
-            }
         }
 
         .action-buttons {
@@ -1435,129 +1501,97 @@
             }
         }
 
-        #produtos .table-responsive {
-            max-height: none;
-            overflow-x: auto;
-            overflow-y: visible;
-        }
+        @media (min-width: 769px) {
+            #produtos .table-responsive {
+                max-height: none;
+                overflow-x: auto;
+                overflow-y: visible;
+            }
 
-        #produtos .table thead th {
-            position: sticky;
-            top: 0;
-            z-index: 2;
-        }
+            #produtos .table thead th {
+                position: sticky;
+                top: 0;
+                z-index: 2;
+            }
 
-        #produtos .table tbody tr:nth-child(even) {
-            background: #fafcff;
-        }
+            #produtos .table tbody tr:nth-child(even) {
+                background: #fafcff;
+            }
 
-        #produtos .table tbody tr:hover {
-            background: #eef6ff;
-        }
+            #produtos .table tbody tr:hover {
+                background: #eef6ff;
+            }
 
-        #produtos .table th,
-        #produtos .table td {
-            padding: 2px 6px;
-            line-height: 1.1;
-            font-size: 13px;
-            vertical-align: middle;
-            white-space: nowrap;
-        }
+            #produtos .table th,
+            #produtos .table td {
+                padding: 2px 6px;
+                line-height: 1.1;
+                font-size: 13px;
+                vertical-align: middle;
+                white-space: nowrap;
+            }
 
-        #produtos .table td:first-child {
-            max-width: 380px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+            #produtos .table td:first-child {
+                max-width: 380px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
 
-        #produtos .table tr {
-            height: 28px;
-        }
+            #produtos .table tr {
+                height: 28px;
+            }
 
-        table td.actions-cell {
-            text-align: center;
-        }
+            #produtos .actions-cell .btn-small {
+                width: 24px !important;
+                min-width: 24px !important;
+                padding: 2px 5px !important;
+                min-height: 24px !important;
+                height: 24px !important;
+                line-height: 1;
+                font-size: 11px;
+                border-radius: 8px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
 
-        table .actions-cell-inner {
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            gap: 6px;
-        }
+            #produtos .actions-cell .btn-small i {
+                margin: 0;
+            }
 
-        table td.actions-cell .btn-small,
-        table td .actions-cell .btn-small {
-            width: 30px !important;
-            min-width: 30px !important;
-            height: 30px !important;
-            min-height: 30px !important;
-            padding: 0 !important;
-            line-height: 1 !important;
-            border-radius: 8px !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            box-sizing: border-box !important;
-            aspect-ratio: 1 / 1;
-        }
+            #movimentacao .actions-inline {
+                display: flex;
+                gap: 6px;
+            }
 
-        table td.actions-cell .btn-small i,
-        table td .actions-cell .btn-small i {
-            margin: 0 !important;
-            font-size: 13px !important;
-            line-height: 1 !important;
-        }
+            #movimentacao .actions-inline button {
+                padding: 6px 10px;
+                min-height: 28px;
+                height: 28px;
+                line-height: 1;
+                border-radius: 8px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
 
-        #produtos .actions-cell .btn-small {
-            width: 24px !important;
-            min-width: 24px !important;
-            padding: 2px 5px !important;
-            min-height: 24px !important;
-            height: 24px !important;
-            line-height: 1;
-            font-size: 11px;
-            border-radius: 8px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
+            #movimentacao .table-responsive {
+                max-height: none;
+                overflow-x: auto;
+                overflow-y: visible;
+            }
 
-        #produtos .actions-cell .btn-small i {
-            margin: 0;
-        }
+            #movimentacao .table th,
+            #movimentacao .table td {
+                padding: 2px 6px;
+                line-height: 1.1;
+                font-size: 13px;
+                vertical-align: middle;
+            }
 
-        #movimentacao .actions-inline {
-            display: flex;
-            gap: 6px;
-        }
-
-        #movimentacao .actions-inline button {
-            padding: 6px 10px;
-            min-height: 28px;
-            height: 28px;
-            line-height: 1;
-            border-radius: 8px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #movimentacao .table-responsive {
-            max-height: none;
-            overflow-x: auto;
-            overflow-y: visible;
-        }
-
-        #movimentacao .table th,
-        #movimentacao .table td {
-            padding: 2px 6px;
-            line-height: 1.1;
-            font-size: 13px;
-            vertical-align: middle;
-        }
-
-        #movimentacao .table tr {
-            height: 28px;
+            #movimentacao .table tr {
+                height: 28px;
+            }
         }
 
         #modalBaixaProduto .modal-content {
@@ -3400,7 +3434,7 @@
         console.log("✅ firebaseService carregado no estoque.html completo");
     </script>
     <script src="commerce-pdf-share.js?v=db7850889254"></script>
-    <script src="estoque_produtos.js?v=b6d1594cf56c"></script>
+    <script src="estoque_produtos.js?v=2a4b0cddc8b7"></script>
         <script src="estoque.js?v=2b48b1fab23d"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {

@@ -1153,9 +1153,10 @@ function obterValorCelulaProduto(prod = {}, key = '') {
 
 function renderProdutoTd(def, prod) {
     const cls = def.align ? ` class="${def.align}"` : '';
+    const label = def.label || def.key || '';
     const strongOpen = def.key === 'nome' ? '<strong>' : '';
     const strongClose = def.key === 'nome' ? '</strong>' : '';
-    return `<td data-col="${escapeProdutoHtml(def.key)}"${cls}>${strongOpen}${obterValorCelulaProduto(prod, def.key)}${strongClose}</td>`;
+    return `<td data-col="${escapeProdutoHtml(def.key)}" data-label="${escapeProdutoHtml(label)}"${cls}>${strongOpen}${obterValorCelulaProduto(prod, def.key)}${strongClose}</td>`;
 }
 
 function renderizarTabelaProdutos(lista) {
@@ -1257,9 +1258,9 @@ function renderizarTabelaProdutos(lista) {
         const isChecked = produtosSelecionados.has(String(prod.id)) ? 'checked' : '';
         return `
             <tr>
-                <td class="text-center"><input type="checkbox" class="check-produto" value="${prod.id}" ${isChecked} onchange="toggleProduto('${prod.id}', this.checked)"></td>
+                <td class="text-center" data-label="Selecionar"><input type="checkbox" class="check-produto" value="${prod.id}" ${isChecked} onchange="toggleProduto('${prod.id}', this.checked)"></td>
                 ${defs.map(def => renderProdutoTd(def, prod)).join('')}
-                <td class="text-center actions-cell sticky-actions">
+                <td class="text-center actions-cell sticky-actions" data-label="Ações">
                     <div class="actions-cell-inner stock-actions-cell">
                         <button class="stock-btn-action stock-btn-edit" onclick="abrirEditarProdutoAlmoxarifado('${String(prod.id || '').replace(/'/g, "\\'")}')" title="Editar Produto">
                             <i class="fas fa-edit"></i>
