@@ -9,6 +9,7 @@ import {
     app, auth, db, storage, functions,
     ref, set, get, remove, child, onValue, off, push, update,
     serverTimestamp, query, orderByChild, limitToLast,
+    goOnline, goOffline,
     signOut, onAuthStateChanged, setPersistence,
     browserSessionPersistence, browserLocalPersistence,
     signInWithEmailAndPassword, createUserWithEmailAndPassword,
@@ -210,6 +211,37 @@ function setupConnectionMonitoring() {
     } catch (err) {
         console.error('❌ Erro configurando connectedRef:', err && err.code ? err.code : 'unknown');
     }
+}
+
+// ─── Reconexão automática em ciclo de vida de página (Back-Forward Cache / Visibilidade) ─────
+if (typeof window !== 'undefined') {
+    window.addEventListener('pageshow', (event) => {
+        try {
+            if (event && event.persisted) {
+                console.log('🔄 [FirebaseService] Página restaurada do Back-Forward Cache (bfcache), reconectando RTDB...');
+                if (db) goOnline(db);
+            }
+        } catch (_) {}
+    });
+    document.addEventListener('visibilitychange', () => {
+        try {
+            if (document.visibilityState === 'visible' && db) {
+                goOnline(db);
+            }
+        } catch (_) {}
+    });
+}
+
+export function reconnectDatabase() {
+    try {
+        if (db) {
+            goOnline(db);
+            return true;
+        }
+    } catch (e) {
+        console.warn('⚠️ Falha ao reconectar database:', e);
+    }
+    return false;
 }
 
 const RESERVED_TENANT_CONTEXT_KEYS = new Set([

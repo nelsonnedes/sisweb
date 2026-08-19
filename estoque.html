@@ -2128,7 +2128,7 @@
         <div id="entrada" class="tab-content active">
             <h2>Entrada de Toras no Estoque</h2>
             
-            <form id="entradaForm">
+            <form id="entradaForm" onsubmit="registrarEntrada(event); return false;">
                 <div class="form-row entrada-meta-grid">
                     <div class="form-group">
                         <label for="entradaData">Data:</label>
@@ -2262,7 +2262,7 @@
                         <button type="button" onclick="abrirConfiguracaoColunasEntrada()" class="btn btn-secondary entrada-action-compact" title="Configurar colunas da tabela de entrada">
                             <i class="fas fa-list"></i> Configurar Colunas
                         </button>
-                        <button type="submit" class="btn btn-success">
+                        <button type="submit" id="btnDarEntrada" onclick="registrarEntrada(event)" class="btn btn-success">
                             <i class="fas fa-save"></i> Dar Entrada
                         </button>
                         <button type="button" onclick="limparTabelaEntrada()" class="btn btn-danger">
@@ -3401,7 +3401,7 @@
     </script>
     <script src="commerce-pdf-share.js?v=db7850889254"></script>
     <script src="estoque_produtos.js?v=b6d1594cf56c"></script>
-        <script src="estoque.js?v=32060c151539"></script>
+        <script src="estoque.js?v=2b48b1fab23d"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

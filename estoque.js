@@ -3452,11 +3452,11 @@ function ordenarEntrada(coluna) {
 // --- Registrar Entrada (Final) ---
 async function registrarEntrada(event) {
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
-
     if (toraEmEdicao) {
         await atualizarToraEditada();
         return;
     }
+    try { window.firebaseService?.reconnectDatabase?.(); } catch (_) {}
 
     if (itensEntrada.length === 0) {
         alert('Adicione itens à lista antes de salvar.');

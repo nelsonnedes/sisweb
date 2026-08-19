@@ -11,7 +11,7 @@
 
 // ─── SDK Imports ──────────────────────────────────────────────────────────────
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import {
     getAuth,
     createUserWithEmailAndPassword,
@@ -117,6 +117,7 @@ export {
     // Re-exporta utilitários do Firebase
     ref, set, get, remove, child, onValue, off, push, update,
     serverTimestamp, query, orderByChild, limitToLast,
+    goOnline, goOffline,
     signOut, onAuthStateChanged, setPersistence,
     browserSessionPersistence, browserLocalPersistence,
     signInWithEmailAndPassword, createUserWithEmailAndPassword,
