@@ -213,6 +213,14 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
         7. **Modal de Rastreabilidade da Tora** (`#rastreabilidadeModal`): Linhas da tabela de eventos de produção transformadas em cartões informativos.
         8. **Almoxarifado / Produtos** (`#tabelaProdutos`, `estoque_produtos.js`): Cards responsivos completos com todos os atributos `data-label`, status com badge, valores calculados e botões de ação ("Editar" e "Baixa") no rodapé.
       - **Ajuste de Baixa Individual / Busca de Plaqueta (`.saida-plaqueta-results-table`)**: Eliminada a largura forçada de 1060px em mobile e corrigida a célula de seleção (`.saida-plaqueta-check-col`) para largura 100% com `display: flex; justify-content: space-between;`, eliminando a quebra de texto vertical no rótulo "Selecionar".
+      - **Eliminação de Sobreposição de Checkboxes e Alinhamento de Ações**:
+        - Células `td[data-label="Selecionar"]` e `.saida-plaqueta-check-col` estruturadas em linha horizontal com `display: flex; justify-content: space-between;` e checkbox ancorado com `margin-left: auto`, eliminando qualquer sobreposição do rótulo com o checkbox.
+        - Células `td.actions-cell` / `td[data-label="Ações"]` formatadas com rótulo "AÇÕES" à esquerda e botões de ação agrupados à direita (`display: inline-flex; gap: 8px; margin-left: auto;`), acabando com quebras de linha desalinhadas.
+      - **Carregamento Fluido de Romaneios na Entrada de Toras**:
+        - Adicionada regra `td[style*="display: none"] { display: none !important; }` no CSS mobile, garantindo que colunas desmarcadas ou ocultadas pela configuração de colunas não sejam renderizadas nos cards, eliminando sobreposições ao carregar listas de romaneios.
+        - Painel de resumo de romaneio (`#resumoEntradaContainer .summary-box`) e barra de botões da tabela de entrada (`.entrada-table-actions`) convertidos para grid responsivo de 2 colunas no mobile.
+      - **Painel de Notificações / Alertas do Sininho no Mobile (`menu-component.js`)**:
+        - Dropdown `.alerts-panel` convertido em modal flutuante fixo no topo (`position: fixed; top: 56px; left: 10px; right: 10px; width: calc(100vw - 20px); max-height: calc(100vh - 72px); z-index: 9999999;`), com lista de alertas rolável com toque suave e botões de ação expandidos.
       - **Isolamento de Estilos Desktop (`#movimentacao .table` e `#produtos .table`)**: As regras de altura fixa de linha (`height: 28px`) e `white-space: nowrap` foram isoladas em `@media (min-width: 769px)`, garantindo que os cards mobile em Movimentações e Almoxarifado expandam perfeitamente na vertical.
       - Preservação de 100% da visualização e comportamento tabular rico no Desktop (`> 768px`), sem duplicação de dados no DOM e com sincronismo automático de seleções e eventos.
     - **Tratamento de Ciclo de Vida do Navegador e Back-Forward Cache (bfcache) no Estoque / RTDB**:

@@ -1075,16 +1075,44 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             top: calc(100% + 8px);
                             right: 0;
                             left: auto;
-                            width: min(360px, calc(100vw - 20px));
-                            max-width: min(360px, calc(100vw - 20px));
+                            width: min(380px, calc(100vw - 20px));
+                            max-width: min(380px, calc(100vw - 20px));
                             background: #ffffff;
                             color: #1f2937;
                             box-shadow: 0 16px 32px rgba(15, 23, 42, 0.22);
                             border: 1px solid #e5e7eb;
+                            border-radius: 12px;
+                            z-index: 9999999 !important;
                         }
                         .menu-quick-actions .alerts-dropdown .alerts-panel {
-                            max-height: min(400px, calc(100vh - 100px));
+                            position: fixed !important;
+                            top: 56px !important;
+                            left: 10px !important;
+                            right: 10px !important;
+                            width: calc(100vw - 20px) !important;
+                            max-width: calc(100vw - 20px) !important;
+                            max-height: min(460px, calc(100vh - 72px)) !important;
                             overflow: hidden;
+                            margin: 0 !important;
+                            z-index: 9999999 !important;
+                        }
+                        .menu-quick-actions .alerts-dropdown .alerts-panel .alerts-list {
+                            max-height: min(320px, calc(100vh - 190px)) !important;
+                            overflow-y: auto !important;
+                            -webkit-overflow-scrolling: touch !important;
+                        }
+                        .menu-quick-actions .alerts-dropdown .alerts-actions {
+                            display: flex !important;
+                            gap: 8px !important;
+                            padding: 0 12px 10px !important;
+                            flex-wrap: wrap !important;
+                        }
+                        .menu-quick-actions .alerts-dropdown .alerts-actions .btn {
+                            flex: 1 1 auto !important;
+                            justify-content: center !important;
+                            padding: 8px 12px !important;
+                            font-size: 12px !important;
+                            min-height: 36px !important;
                         }
                         .menu-quick-actions .dropdown-content a {
                             color: #2c3e50;
