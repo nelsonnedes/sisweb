@@ -60,6 +60,187 @@
                 min-width: 0;
                 width: 100%;
             }
+
+            .table-responsive,
+            #entrada .table-responsive,
+            #saida .table-responsive,
+            #consulta .table-responsive,
+            #movimentacao .table-responsive,
+            #selecaoTorasModal .table-container,
+            #rastreabilidadeModal .table-responsive {
+                overflow-x: visible !important;
+                overflow-y: visible !important;
+                max-height: none !important;
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+            }
+
+            .table-wide-estoque,
+            .table-wide-estoque-lg,
+            .table-wide-estoque-compact,
+            #tabelaEntrada,
+            #tabelaSaidaToras,
+            #tabelaEstoque,
+            #tabelaMovimentacoes,
+            #tabelaTorasDisponiveis,
+            .saida-plaqueta-results-table {
+                min-width: 0 !important;
+                width: 100% !important;
+                display: block !important;
+                border: none !important;
+                background: transparent !important;
+            }
+
+            #tabelaEntrada thead,
+            #tabelaSaidaToras thead,
+            #tabelaEstoque thead,
+            #tabelaMovimentacoes thead,
+            #tabelaTorasDisponiveis thead,
+            #rastreabilidadeModal thead,
+            .saida-plaqueta-results-table thead,
+            #tabelaEntrada colgroup,
+            #tabelaSaidaToras colgroup,
+            #tabelaEstoque colgroup,
+            #tabelaMovimentacoes colgroup,
+            #tabelaTorasDisponiveis colgroup,
+            .saida-plaqueta-results-table colgroup {
+                display: none !important;
+            }
+
+            #tabelaEntrada tbody,
+            #tabelaSaidaToras tbody,
+            #tabelaEstoque tbody,
+            #tabelaMovimentacoes tbody,
+            #tabelaTorasDisponiveis tbody,
+            #rastreabilidadeModal tbody,
+            .saida-plaqueta-results-table tbody {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 12px !important;
+                width: 100% !important;
+            }
+
+            #tabelaEntrada tbody tr,
+            #tabelaSaidaToras tbody tr,
+            #tabelaEstoque tbody tr,
+            #tabelaMovimentacoes tbody tr,
+            #tabelaTorasDisponiveis tbody tr,
+            #rastreabilidadeModal tbody tr,
+            .saida-plaqueta-results-table tbody tr {
+                display: block !important;
+                background: #ffffff !important;
+                border: 1px solid #e2e8f0 !important;
+                border-radius: 10px !important;
+                box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05) !important;
+                padding: 12px 14px !important;
+                margin-bottom: 0 !important;
+                position: relative !important;
+                box-sizing: border-box !important;
+            }
+
+            #tabelaEntrada tbody tr:active,
+            #tabelaSaidaToras tbody tr:active,
+            #tabelaEstoque tbody tr:active,
+            #tabelaMovimentacoes tbody tr:active,
+            #tabelaTorasDisponiveis tbody tr:active {
+                background: #f8fafc !important;
+            }
+
+            #tabelaEntrada tbody tr td,
+            #tabelaSaidaToras tbody tr td,
+            #tabelaEstoque tbody tr td,
+            #tabelaMovimentacoes tbody tr td,
+            #tabelaTorasDisponiveis tbody tr td,
+            #rastreabilidadeModal tbody tr td,
+            .saida-plaqueta-results-table tbody tr td {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                padding: 6px 0 !important;
+                border: none !important;
+                border-bottom: 1px dashed #f1f5f9 !important;
+                font-size: 13px !important;
+                text-align: right !important;
+                min-height: 28px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                white-space: normal !important;
+                word-break: break-word !important;
+            }
+
+            #tabelaEntrada tbody tr td:last-child,
+            #tabelaSaidaToras tbody tr td:last-child,
+            #tabelaEstoque tbody tr td:last-child,
+            #tabelaMovimentacoes tbody tr td:last-child,
+            #tabelaTorasDisponiveis tbody tr td:last-child,
+            #rastreabilidadeModal tbody tr td:last-child,
+            .saida-plaqueta-results-table tbody tr td:last-child {
+                border-bottom: none !important;
+                padding-bottom: 0 !important;
+            }
+
+            #tabelaEntrada tbody tr td[data-label]::before,
+            #tabelaSaidaToras tbody tr td[data-label]::before,
+            #tabelaEstoque tbody tr td[data-label]::before,
+            #tabelaMovimentacoes tbody tr td[data-label]::before,
+            #tabelaTorasDisponiveis tbody tr td[data-label]::before,
+            #rastreabilidadeModal tbody tr td[data-label]::before,
+            .saida-plaqueta-results-table tbody tr td[data-label]::before {
+                content: attr(data-label);
+                font-weight: 700 !important;
+                color: #64748b !important;
+                font-size: 11px !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.4px !important;
+                text-align: left !important;
+                margin-right: 12px !important;
+                flex: 1 1 auto !important;
+            }
+
+            #tabelaEntrada tbody tr td[data-label="Selecionar"],
+            #tabelaSaidaToras tbody tr td[data-label="Selecionar"],
+            #tabelaEstoque tbody tr td[data-label="Selecionar"],
+            #tabelaMovimentacoes tbody tr td[data-label="Selecionar"],
+            #tabelaTorasDisponiveis tbody tr td[data-label="Selecionar"],
+            .saida-plaqueta-results-table tbody tr td[data-label="Selecionar"] {
+                background: #f8fafc !important;
+                border-radius: 6px !important;
+                padding: 6px 10px !important;
+                margin-bottom: 6px !important;
+                border-bottom: none !important;
+            }
+
+            #tabelaEntrada tbody tr td.actions-cell,
+            #tabelaSaidaToras tbody tr td.actions-cell,
+            #tabelaEstoque tbody tr td.actions-cell,
+            .saida-plaqueta-actions-col {
+                position: static !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                justify-content: flex-end !important;
+                width: 100% !important;
+                padding-top: 10px !important;
+                margin-top: 4px !important;
+                border-top: 1px solid #e2e8f0 !important;
+                border-bottom: none !important;
+            }
+
+            .table td.actions-cell .actions-cell-inner,
+            .table td.sticky-actions .actions-cell-inner {
+                width: 100% !important;
+                justify-content: flex-end !important;
+                gap: 8px !important;
+            }
+
+            .table td.actions-cell .btn-small,
+            .table td.sticky-actions .btn-small,
+            .stock-btn-action {
+                min-width: 36px !important;
+                min-height: 36px !important;
+                font-size: 13px !important;
+            }
+
             .manual-saida-grid,
             .filtro-toras-modal-grid {
                 min-width: 0 !important;
@@ -3220,7 +3401,7 @@
     </script>
     <script src="commerce-pdf-share.js?v=db7850889254"></script>
     <script src="estoque_produtos.js?v=b6d1594cf56c"></script>
-        <script src="estoque.js?v=0a1c8d2898a3"></script>
+        <script src="estoque.js?v=32060c151539"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

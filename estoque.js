@@ -2982,7 +2982,8 @@ function obterValorCelulaSaida(tora = {}, key = '') {
 
 function renderSaidaToraTd(def, tora) {
     const cls = def.align ? ` class="${def.align}"` : '';
-    return `<td data-col="${escapeHtml(def.key)}"${cls}>${obterValorCelulaSaida(tora, def.key)}</td>`;
+    const label = def.label || def.key || '';
+    return `<td data-col="${escapeHtml(def.key)}" data-label="${escapeHtml(label)}"${cls}>${obterValorCelulaSaida(tora, def.key)}</td>`;
 }
 
 window.abrirConfiguracaoColunasSaida = abrirConfiguracaoColunasSaida;
@@ -3229,7 +3230,8 @@ function obterValorCelulaConsultaEstoque(tora = {}, key = '') {
 
 function renderConsultaEstoqueTd(def, tora) {
     const cls = def.align ? ` class="${def.align}"` : '';
-    return `<td data-col="${escapeHtml(def.key)}"${cls}>${obterValorCelulaConsultaEstoque(tora, def.key)}</td>`;
+    const label = def.label || def.key || '';
+    return `<td data-col="${escapeHtml(def.key)}" data-label="${escapeHtml(label)}"${cls}>${obterValorCelulaConsultaEstoque(tora, def.key)}</td>`;
 }
 
 window.abrirConfiguracaoColunasConsulta = abrirConfiguracaoColunasConsulta;
@@ -3710,28 +3712,28 @@ function carregarTorasDisponiveis() {
         const geo = normalizarCamposGeoEstoque(tora);
         return `
         <tr>
-            <td>
+            <td data-label="Selecionar" class="text-center">
                 <input type="checkbox" value="${tora.id}" ${checked} onchange="toggleToraSelecao('${tora.id}', this.checked)">
             </td>
-            <td>${escapeHtml(tora.plaqueta || '-')}</td>
-            <td>${escapeHtml(geo.custodia || '-')}</td>
-            <td>${escapeHtml(geo.autef || tora.autef || '-')}</td>
-            <td>${escapeHtml(tora.especie || '-')}</td>
-            <td style="text-align: center;">${formatNumber(tora.diametro, 1)} cm</td>
-            <td style="text-align: center;">${formatNumber(tora.comprimento, 1)} cm</td>
-            <td style="text-align: center;">${tora.oco1 ? formatNumber(tora.oco1, 1) + ' cm' : '-'}</td>
-            <td style="text-align: center;">${tora.oco2 ? formatNumber(tora.oco2, 1) + ' cm' : '-'}</td>
-            <td style="text-align: center;">${tora.volumeDesconto ? formatNumber(tora.volumeDesconto, 3) : '-'}</td>
-            <td style="text-align: right;">${formatNumber(tora.volumeLiquido, 3)} m³</td>
-            <td style="text-align: center;">${formatarMedidaGeoEstoque(geo.compGeo)}</td>
-            <td style="text-align: center;">${formatarMedidaGeoEstoque(geo.x1)}</td>
-            <td style="text-align: center;">${formatarMedidaGeoEstoque(geo.x2)}</td>
-            <td style="text-align: center;">${formatarMedidaGeoEstoque(geo.x3)}</td>
-            <td style="text-align: center;">${formatarMedidaGeoEstoque(geo.x4)}</td>
-            <td style="text-align: right;">${formatarVolumeGeoEstoque(geo.volumeGeo)} m³</td>
-            <td style="text-align: right;">${formatCurrency(tora.precoCusto)}</td>
-            <td style="text-align: right;">${formatCurrency((tora.volumeLiquido || 0) * (tora.precoCusto || 0))}</td>
-            <td>${escapeHtml(tora.localizacao || '')}</td>
+            <td data-col="plaqueta" data-label="Plaqueta">${escapeHtml(tora.plaqueta || '-')}</td>
+            <td data-col="custodia" data-label="Custódia">${escapeHtml(geo.custodia || '-')}</td>
+            <td data-col="autef" data-label="AUTEF">${escapeHtml(geo.autef || tora.autef || '-')}</td>
+            <td data-col="especie" data-label="Espécie">${escapeHtml(tora.especie || '-')}</td>
+            <td data-col="diametro" data-label="Rodo" style="text-align: center;">${formatNumber(tora.diametro, 1)} cm</td>
+            <td data-col="comprimento" data-label="Comprimento" style="text-align: center;">${formatNumber(tora.comprimento, 1)} cm</td>
+            <td data-col="oco1" data-label="Oco 1" style="text-align: center;">${tora.oco1 ? formatNumber(tora.oco1, 1) + ' cm' : '-'}</td>
+            <td data-col="oco2" data-label="Oco 2" style="text-align: center;">${tora.oco2 ? formatNumber(tora.oco2, 1) + ' cm' : '-'}</td>
+            <td data-col="desconto" data-label="Desconto" style="text-align: center;">${tora.volumeDesconto ? formatNumber(tora.volumeDesconto, 3) : '-'}</td>
+            <td data-col="volumeLiquido" data-label="Volume Líquido" style="text-align: right;">${formatNumber(tora.volumeLiquido, 3)} m³</td>
+            <td data-col="compGeo" data-label="Comp. Geo." style="text-align: center;">${formatarMedidaGeoEstoque(geo.compGeo)}</td>
+            <td data-col="x1" data-label="X1" style="text-align: center;">${formatarMedidaGeoEstoque(geo.x1)}</td>
+            <td data-col="x2" data-label="X2" style="text-align: center;">${formatarMedidaGeoEstoque(geo.x2)}</td>
+            <td data-col="x3" data-label="X3" style="text-align: center;">${formatarMedidaGeoEstoque(geo.x3)}</td>
+            <td data-col="x4" data-label="X4" style="text-align: center;">${formatarMedidaGeoEstoque(geo.x4)}</td>
+            <td data-col="volumeGeo" data-label="Volume Geo." style="text-align: right;">${formatarVolumeGeoEstoque(geo.volumeGeo)} m³</td>
+            <td data-col="preco" data-label="Preço" style="text-align: right;">${formatCurrency(tora.precoCusto)}</td>
+            <td data-col="valor" data-label="Valor" style="text-align: right;">${formatCurrency((tora.volumeLiquido || 0) * (tora.precoCusto || 0))}</td>
+            <td data-col="localizacao" data-label="Localização">${escapeHtml(tora.localizacao || '')}</td>
         </tr>
     `;
     }).join('');
@@ -3977,11 +3979,11 @@ function atualizarTabelaTorasSaida() {
         const isChecked = saidaSelecionadas.has(String(tora.id)) ? 'checked' : '';
         return `
         <tr>
-            <td class="text-center"><input type="checkbox" class="check-saida" value="${tora.id}" ${isChecked} onchange="toggleSaida('${tora.id}', this.checked)"></td>
+            <td class="text-center" data-label="Selecionar"><input type="checkbox" class="check-saida" value="${tora.id}" ${isChecked} onchange="toggleSaida('${tora.id}', this.checked)"></td>
             ${saidaDefs.map(def => renderSaidaToraTd(def, tora)).join('')}
-            <td class="text-center actions-cell sticky-actions">
+            <td class="text-center actions-cell sticky-actions" data-label="Ações">
                 <div class="actions-cell-inner">
-                    <button type="button" onclick="removerToraSaida('${String(tora.id).replace(/'/g, "\\'")}')" class="btn-danger btn-small">
+                    <button type="button" onclick="removerToraSaida('${String(tora.id).replace(/'/g, "\\'")}')" class="btn-danger btn-small" title="Remover da saída">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -4747,18 +4749,18 @@ function renderizarResultadosPlaquetaSaida(candidatos = [], termo = '') {
         const geo = normalizarCamposGeoEstoque(tora);
         return `
             <tr class="${selected || checked ? 'is-selected' : ''}" data-tora-baixa-id="${idAttr}" tabindex="0">
-                <td class="saida-plaqueta-check-col">
+                <td class="saida-plaqueta-check-col" data-label="Selecionar">
                     <input type="checkbox" class="check-plaqueta-saida" value="${idAttr}" ${checked} onchange="toggleToraPlaquetaSaida('${idJs}', this.checked)">
                 </td>
-                <td><strong>${escapeHtml(tora.plaqueta || '-')}</strong></td>
-                <td>${escapeHtml(geo.custodia || '-')}</td>
-                <td>${escapeHtml(tora.especie || '-')}</td>
-                <td>${formatNumber(tora.diametro || 0, 1)} cm</td>
-                <td>${formatNumber(tora.comprimento || 0, 1)} cm</td>
-                <td class="text-right">${formatNumber(tora.volumeLiquido || 0, 3)} m³</td>
-                <td class="text-right">${formatarVolumeGeoEstoque(geo.volumeGeo)} m³</td>
-                <td>${escapeHtml(tora.localizacao || '-')}</td>
-                <td class="saida-plaqueta-actions-col">
+                <td data-label="Plaqueta"><strong>${escapeHtml(tora.plaqueta || '-')}</strong></td>
+                <td data-label="Custódia">${escapeHtml(geo.custodia || '-')}</td>
+                <td data-label="Espécie">${escapeHtml(tora.especie || '-')}</td>
+                <td data-label="Rodo">${formatNumber(tora.diametro || 0, 1)} cm</td>
+                <td data-label="Comprimento">${formatNumber(tora.comprimento || 0, 1)} cm</td>
+                <td data-label="Volume Líquido" class="text-right">${formatNumber(tora.volumeLiquido || 0, 3)} m³</td>
+                <td data-label="Volume Geo." class="text-right">${formatarVolumeGeoEstoque(geo.volumeGeo)} m³</td>
+                <td data-label="Localização">${escapeHtml(tora.localizacao || '-')}</td>
+                <td class="saida-plaqueta-actions-col" data-label="Ação">
                     <button type="button" class="btn btn-primary btn-small saida-plaqueta-add-btn" data-tora-baixa-action="add" data-tora-baixa-id="${idAttr}">
                         <i class="fas fa-plus"></i> Adicionar
                     </button>
@@ -5051,9 +5053,9 @@ function carregarTabelaEstoque(filtro = {}) {
         const isChecked = estoqueSelecionadas.has(String(tora.id)) ? 'checked' : '';
         return `
         <tr>
-            <td class="text-center"><input type="checkbox" class="check-estoque" value="${tora.id}" ${isChecked} onchange="toggleEstoque('${tora.id}', this.checked)"></td>
+            <td class="text-center" data-label="Selecionar"><input type="checkbox" class="check-estoque" value="${tora.id}" ${isChecked} onchange="toggleEstoque('${tora.id}', this.checked)"></td>
             ${defs.map(def => renderConsultaEstoqueTd(def, tora)).join('')}
-            <td class="text-center actions-cell sticky-actions">
+            <td class="text-center actions-cell sticky-actions" data-label="Ações">
                 <div class="actions-cell-inner stock-actions-cell">
                     <button onclick="editarTora('${tora.id}')" class="stock-btn-action stock-btn-edit" title="Editar Tora">
                         <i class="fas fa-edit"></i>
@@ -5870,10 +5872,11 @@ function obterValorCelulaMovimentacao(mov = {}, key = '', options = {}) {
 function renderMovimentacaoTd(def, mov) {
     const cls = `${def.align || ''}${def.key === 'observacoes' ? ' obs-col' : ''}`.trim();
     const clsAttr = cls ? ` class="${cls}"` : '';
+    const label = def.label || def.key || '';
     const titleAttr = def.key === 'observacoes'
         ? ` title="${escapeHtml(obterValorCelulaMovimentacao(mov, def.key, { plain: true }))}"`
         : '';
-    return `<td data-col="${escapeHtml(def.key)}"${clsAttr}${titleAttr}>${obterValorCelulaMovimentacao(mov, def.key)}</td>`;
+    return `<td data-col="${escapeHtml(def.key)}" data-label="${escapeHtml(label)}"${clsAttr}${titleAttr}>${obterValorCelulaMovimentacao(mov, def.key)}</td>`;
 }
 
 function obterTextoBuscaMovimentacao(mov = {}) {
@@ -5989,7 +5992,7 @@ async function carregarTabelaMovimentacoes(filtro = {}) {
         const movDefs = getMovimentacoesColumnsDefs();
         return `
         <tr>
-            <td style="text-align: center;"><input type="checkbox" class="check-movimentacao" value="${mov.id}" ${isChecked} onchange="toggleMovimentacao('${mov.id}', this.checked)"></td>
+            <td style="text-align: center;" data-label="Selecionar"><input type="checkbox" class="check-movimentacao" value="${mov.id}" ${isChecked} onchange="toggleMovimentacao('${mov.id}', this.checked)"></td>
             ${movDefs.map(def => renderMovimentacaoTd(def, mov)).join('')}
         </tr>
     `;
@@ -6374,16 +6377,16 @@ function renderizarTabelaRastreabilidade(lista = []) {
     }
     tbody.innerHTML = lista.map(reg => `
         <tr>
-            <td>${formatDate(reg.data)}</td>
-            <td>${escapeHtml(reg.remessaId || '-')}</td>
-            <td>${escapeHtml(reg.plaqueta || '-')}</td>
-            <td>${escapeHtml(reg.especie || '-')}</td>
-            <td>${escapeHtml(reg.numeroRomaneio || reg.romaneioId || '-')}</td>
-            <td>${escapeHtml(reg.clienteNome || '-')}</td>
-            <td class="text-right">${formatNumber(reg.volumeTora || 0, 3)} m³</td>
-            <td class="text-right">${formatNumber(reg.volumeProduzido || 0, 3)} m³</td>
-            <td class="text-right">${formatNumber(reg.rendimento || 0, 2)}%</td>
-            <td>${escapeHtml(reg.status || 'ativo')}</td>
+            <td data-label="Data">${formatDate(reg.data)}</td>
+            <td data-label="Remessa">${escapeHtml(reg.remessaId || '-')}</td>
+            <td data-label="Plaqueta">${escapeHtml(reg.plaqueta || '-')}</td>
+            <td data-label="Espécie">${escapeHtml(reg.especie || '-')}</td>
+            <td data-label="Romaneio">${escapeHtml(reg.numeroRomaneio || reg.romaneioId || '-')}</td>
+            <td data-label="Cliente/Fornecedor">${escapeHtml(reg.clienteNome || '-')}</td>
+            <td data-label="Vol. Tora" class="text-right">${formatNumber(reg.volumeTora || 0, 3)} m³</td>
+            <td data-label="Vol. Produzido" class="text-right">${formatNumber(reg.volumeProduzido || 0, 3)} m³</td>
+            <td data-label="Rendimento" class="text-right">${formatNumber(reg.rendimento || 0, 2)}%</td>
+            <td data-label="Status">${escapeHtml(reg.status || 'ativo')}</td>
         </tr>
     `).join('');
 }
