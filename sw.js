@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-08-19-financas-mobile-v1';
+const APP_VERSION = '2026-08-19-financas-mobile-v2';
 const CACHE_NAME = `sisweb-runtime-${APP_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',

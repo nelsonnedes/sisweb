@@ -1950,7 +1950,11 @@
         .table th, .table td { padding:5px; }
     }
     @media (max-width: 768px){
-        .filters-row{ display:grid; grid-template-columns:1fr; gap:12px; }
+        .filters-row,
+        .filters-row.filters-row-receber,
+        .filters-row.filters-row-pagar{ display:grid; grid-template-columns:1fr !important; grid-template-areas:none !important; grid-template-rows:none !important; gap:12px; }
+        .filters-row.filters-row-receber .form-group,
+        .filters-row.filters-row-pagar .form-group{ grid-area:auto !important; grid-row:auto !important; grid-column:auto !important; }
         .filters-row .form-group,
         .filters-row #filtroReceberNumeroPedido,
         .filters-row #filtroPagarNumeroPedido,

@@ -30,7 +30,8 @@ test('estoque e financas evitam cards/filtros quebrados no PWA mobile', () => {
   assert.doesNotMatch(estoqueJs, /<td data-col="plaqueta">/);
 
   assert.match(financasHtml, /\.filters-row\{ display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; width:100%; \}/);
-  assert.match(financasHtml, /@media \(max-width: 768px\)\{[\s\S]*\.filters-row\{ display:grid; grid-template-columns:1fr; gap:12px; \}/);
+  assert.match(financasHtml, /@media \(max-width: 768px\)\{[\s\S]*\.filters-row,\s*\.filters-row\.filters-row-receber,\s*\.filters-row\.filters-row-pagar\{ display:grid; grid-template-columns:1fr !important; grid-template-areas:none !important; grid-template-rows:none !important; gap:12px; \}/);
+  assert.match(financasHtml, /\.filters-row\.filters-row-receber \.form-group,[\s\S]*\.filters-row\.filters-row-pagar \.form-group\{ grid-area:auto !important; grid-row:auto !important; grid-column:auto !important; \}/);
   assert.doesNotMatch(financasHtml, /\.filters-row\{ display:flex; flex-wrap:nowrap;/);
 });
 
