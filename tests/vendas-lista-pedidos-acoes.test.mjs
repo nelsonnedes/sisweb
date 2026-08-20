@@ -81,3 +81,22 @@ test('relatorios desktop reserva e espaca botoes da coluna acoes', () => {
   assert.match(actionButtons, /width\s*:\s*32px/);
   assert.match(vendasHtml, /#relatoriosTable td\[data-col="acoes"\] \.acoes-buttons \.btn-small/);
 });
+
+test('relatorios mobile esconde linhas sem carrego disponivel com !important (Mostrar s o disponivel)', () => {
+  const vendasHtml = read('vendas.html');
+  const vendasJs = read('vendas.js');
+  const crmCss = read('commerce-responsive.css');
+
+  // Checkbox "Mostrar só disponível" no Relatório de Vendas esta ligado ao filtro
+  assert.match(vendasHtml, /id="relFiltroDisponivel"[^>]*onchange="toggleFiltroCarregoDisponivel\(this\.checked\)"/);
+  assert.match(vendasJs, /function toggleFiltroCarregoDisponivel\(/);
+
+  // Root cause: em mobile o container .mobile-cards força .tr { display: block !important },
+  // que vence um simples style="display:none" inline (important de folha vence normal inline).
+  assert.match(crmCss, /\.table-responsive\.mobile-cards tr \{[\s\S]*display:\s*block\s*!important/);
+
+  // Fix: o filtro usa setProperty('display', 'none', 'important') para vencer o !important acima
+  // e garantir r.style.display === 'none' (lido por toggleSelecionarTodos e pelo footer do próprio filtro).
+  assert.match(vendasJs, /\br\.style\.setProperty\('display',\s*\(checked\s*&&\s*\(pago\s*\|\|\s*\!has\s*\|\|\s*vol\s*<=\s*0\)\)\s*\?\s*'none'\s*:\s*''\s*,\s*'important'\)/);
+  assert.doesNotMatch(vendasJs, /r\.style\.display\s*=\s*\(checked\s*&&\s*\(pago\s*\|\|\s*\!has\s*\|\|\s*vol\s*<=\s*0\)\)\s*\?\s*'none'\s*:\s*''/);
+});

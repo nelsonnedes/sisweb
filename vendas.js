@@ -7086,7 +7086,7 @@ function toggleFiltroCarregoDisponivel(checked) {
         const vol = parseFloat(r.getAttribute('data-carrego-vol') || '0');
         const pago = r.getAttribute('data-carrego-pago') === '1';
         const has = r.getAttribute('data-has-carrego') === '1';
-        r.style.display = (checked && (pago || !has || vol <= 0)) ? 'none' : '';
+        r.style.setProperty('display', (checked && (pago || !has || vol <= 0)) ? 'none' : '', 'important');
         const cb = r.querySelector('.sel-carrego');
         // não desabilitar, permitir seleção para impressão
         const badge = r.querySelector('.badge-no-carrego');
