@@ -923,6 +923,243 @@
                 white-space: normal;
             }
         }
+
+        /* ===== Cards mobile (tabelas financeiras) ===== */
+        @media (max-width: 768px) {
+            #receber thead,
+            #receber colgroup,
+            #pagar thead,
+            #pagar colgroup,
+            #fluxo thead,
+            #fluxo colgroup {
+                position: absolute !important;
+                top: -9999px !important;
+                left: -9999px !important;
+                width: 1px !important;
+                height: 1px !important;
+                overflow: hidden !important;
+            }
+
+            #receberTable > tr,
+            #pagarTable > tr,
+            #fluxoTable > tr {
+                display: block !important;
+                background: #ffffff !important;
+                border: 1px solid #e2e8f0 !important;
+                border-radius: 10px !important;
+                box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05) !important;
+                padding: 12px 14px !important;
+                margin-bottom: 12px !important;
+            }
+
+            #receberTable > tr td,
+            #pagarTable > tr td,
+            #fluxoTable > tr td {
+                display: flex !important;
+                align-items: center;
+                justify-content: space-between;
+                border: none !important;
+                border-bottom: 1px solid #f1f5f9 !important;
+                padding: 7px 0 !important;
+                min-height: 34px;
+                text-align: right !important;
+                white-space: normal !important;
+            }
+            #receberTable > tr td:last-child,
+            #pagarTable > tr td:last-child,
+            #fluxoTable > tr td:last-child {
+                border-bottom: none !important;
+            }
+
+            #receberTable > tr td[data-label]::before,
+            #pagarTable > tr td[data-label]::before,
+            #fluxoTable > tr td[data-label]::before {
+                content: attr(data-label);
+                font-weight: 700 !important;
+                color: #64748b !important;
+                font-size: 11px !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.4px !important;
+                text-align: left !important;
+                margin-right: 12px !important;
+                flex: 1 1 auto !important;
+                white-space: normal !important;
+                position: static !important;
+                width: auto !important;
+                top: auto !important;
+                left: auto !important;
+                transform: none !important;
+                padding-right: 0 !important;
+            }
+            #receberTable > tr td[data-label] > *,
+            #pagarTable > tr td[data-label] > *,
+            #fluxoTable > tr td[data-label] > * {
+                flex: 0 0 auto !important;
+            }
+
+            /* Coluna de selecao (checkbox) em faixa full-width */
+            #receberTable > tr td[data-label="Selecionar"],
+            #pagarTable > tr td[data-label="Selecionar"] {
+                width: 100% !important;
+                background: #f8fafc !important;
+                border-radius: 8px !important;
+                border: none !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                margin-bottom: 8px !important;
+                padding: 6px 10px !important;
+                min-height: 32px !important;
+            }
+            #receberTable > tr td[data-label="Selecionar"] input[type="checkbox"],
+            #pagarTable > tr td[data-label="Selecionar"] input[type="checkbox"] {
+                width: 20px !important;
+                height: 20px !important;
+                margin-left: auto !important;
+            }
+
+            /* Coluna de acoes em faixa full-width */
+            #receberTable > tr td.actions-cell,
+            #pagarTable > tr td.actions-cell {
+                width: 100% !important;
+                border-top: 1px solid #e2e8f0 !important;
+                margin-top: 8px !important;
+                padding-top: 10px !important;
+                min-height: 0 !important;
+            }
+            #receberTable > tr td.actions-cell .actions-inline,
+            #pagarTable > tr td.actions-cell .actions-inline {
+                width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+                gap: 8px;
+            }
+            #receberTable > tr td.actions-cell .btn,
+            #pagarTable > tr td.actions-cell .btn {
+                min-width: 36px !important;
+                min-height: 36px !important;
+                width: 36px !important;
+                height: 36px !important;
+            }
+
+            /* Formularios: botoes de acao quebram linha no mobile */
+            #receber .form-section .btn-group,
+            #pagar .form-section .btn-group {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            #receber .form-section .btn-group .btn,
+            #pagar .form-section .btn-group .btn {
+                flex: 1 1 auto;
+                white-space: normal;
+            }
+        }
+
+        /* ===== Colapso de formularios no mobile ===== */
+        .mobile-collapse-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .mobile-collapse-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #7f8c8d;
+            transition: transform 0.2s ease;
+            font-size: 14px;
+        }
+        .mobile-collapse-body {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-collapse-body {
+                display: none;
+            }
+            .mobile-collapse-body.open {
+                display: block;
+            }
+            .mobile-collapse-header[aria-expanded="true"] .mobile-collapse-icon {
+                transform: rotate(180deg);
+            }
+            #receber .form-section h3,
+            #pagar .form-section h3 {
+                margin: 10px 0;
+                padding-top: 8px;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-collapse-body {
+                display: block !important;
+            }
+            .mobile-collapse-header {
+                cursor: default;
+            }
+            .mobile-collapse-icon {
+                display: none;
+            }
+        }
+
+        @media print {
+            .mobile-collapse-body {
+                display: block !important;
+            }
+        }
+
+        /* ===== Offcanvas / Drawer (filtros) ===== */
+        .offcanvas-drawer {
+            background: #fff;
+            border: 1px solid #e1e4e8;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            animation: slideDown 0.3s ease-out;
+        }
+        .offcanvas-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .offcanvas-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+        .offcanvas-header .btn-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #7f8c8d;
+            cursor: pointer;
+        }
+        .offcanvas-header .btn-close:hover {
+            color: #e74c3c;
+        }
+        .filtros-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media (min-width: 769px) {
+            .filtros-toggle-btn {
+                display: none !important;
+            }
+        }
     </style>
     </head>
 <body>
@@ -1007,7 +1244,11 @@
         <!-- Contas a Receber Tab -->
         <div id="receber" class="tab-content">
             <div class="form-section">
-                <h3>Nova Conta a Receber</h3>
+                <div class="mobile-collapse-header" role="button" tabindex="0" aria-expanded="false" aria-controls="finReceberBody">
+                    <h3>Nova Conta a Receber</h3>
+                    <span class="mobile-collapse-icon" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="mobile-collapse-body" id="finReceberBody">
                 <form id="receberForm">
                     <input type="hidden" id="receberNumero">
                     <div class="form-row form-row-main">
@@ -1130,9 +1371,21 @@
                         <span id="receberSelCount" class="sel-count-badge">0 selecionados</span>
                     </div>
                 </form>
+                </div>
             </div>
 
-            <div class="filters-section">
+            <div class="btn-group" style="margin-bottom: 10px;">
+                <button type="button" class="btn btn-info filtros-toggle-btn" onclick="toggleOffcanvas('finFiltrosReceberDrawer')" title="Filtros">
+                    <i class="fas fa-filter"></i> Filtros
+                </button>
+            </div>
+
+            <div id="finFiltrosReceberDrawer" class="offcanvas-drawer" style="display: none;">
+                <div class="offcanvas-header">
+                    <h3>Filtros de Contas a Receber</h3>
+                    <button type="button" onclick="toggleOffcanvas('finFiltrosReceberDrawer')" class="btn-close"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="filters-section" style="margin-bottom: 0;">
                     <div class="filters-row filters-row-receber">
                     <div class="form-group fg-status">
                         <label for="filtroReceberStatus">Status:</label>
@@ -1186,6 +1439,7 @@
                     </div>
                     
                 </div>
+                </div>
             </div>
 
             <div class="table-container">
@@ -1219,7 +1473,11 @@
         <!-- Contas a Pagar Tab -->
         <div id="pagar" class="tab-content">
             <div class="form-section">
-                <h3>Nova Conta a Pagar</h3>
+                <div class="mobile-collapse-header" role="button" tabindex="0" aria-expanded="false" aria-controls="finPagarBody">
+                    <h3>Nova Conta a Pagar</h3>
+                    <span class="mobile-collapse-icon" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="mobile-collapse-body" id="finPagarBody">
                 <form id="pagarForm">
                     <input type="hidden" id="pagarNumero">
                     <div class="form-row form-row-main">
@@ -1338,9 +1596,21 @@
                         <span id="pagarSelCount" class="sel-count-badge">0 selecionados</span>
                     </div>
                 </form>
+                </div>
             </div>
 
-            <div class="filters-section">
+            <div class="btn-group" style="margin-bottom: 10px;">
+                <button type="button" class="btn btn-info filtros-toggle-btn" onclick="toggleOffcanvas('finFiltrosPagarDrawer')" title="Filtros">
+                    <i class="fas fa-filter"></i> Filtros
+                </button>
+            </div>
+
+            <div id="finFiltrosPagarDrawer" class="offcanvas-drawer" style="display: none;">
+                <div class="offcanvas-header">
+                    <h3>Filtros de Contas a Pagar</h3>
+                    <button type="button" onclick="toggleOffcanvas('finFiltrosPagarDrawer')" class="btn-close"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="filters-section" style="margin-bottom: 0;">
                 <div class="filters-row filters-row-pagar">
                     <div class="form-group fg-status">
                         <label for="filtroPagarStatus">Status:</label>
@@ -1393,6 +1663,7 @@
                         <input type="date" id="filtroPagarDataFim">
                     </div>
                     
+                </div>
                 </div>
             </div>
 

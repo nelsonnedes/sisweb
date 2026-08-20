@@ -1046,6 +1046,66 @@ async function inicializarSistema() {
             window.financeCleanupTimer = setInterval(function(){ try { cleanupTombstones(); } catch(_) {} }, getCleanupIntervalMs()); 
         } 
     } catch(_) {}
+    
+    // ✅ NOVO: Configurar colapso de formulários no mobile (padrão estoque)
+    try { inicializarMobileCollapses(); } catch(_) {}
+}
+
+function inicializarMobileCollapses() {
+    const mqMobile = window.matchMedia ? window.matchMedia('(max-width: 768px)') : null;
+    document.querySelectorAll('.mobile-collapse-header').forEach((header) => {
+        const body = header.nextElementSibling;
+        if (!body || !body.classList.contains('mobile-collapse-body')) return;
+
+        const aplicarEstado = () => {
+            const isMobile = !mqMobile || mqMobile.matches;
+            if (!isMobile) {
+                body.classList.add('open');
+                header.setAttribute('aria-expanded', 'true');
+            } else if (header.dataset.userOpened !== 'true') {
+                body.classList.remove('open');
+                header.setAttribute('aria-expanded', 'false');
+            } else {
+                header.setAttribute('aria-expanded', body.classList.contains('open') ? 'true' : 'false');
+            }
+        };
+        const alternar = () => {
+            if (mqMobile && !mqMobile.matches) return;
+            header.dataset.userOpened = body.classList.contains('open') ? 'false' : 'true';
+            body.classList.toggle('open');
+            header.setAttribute('aria-expanded', body.classList.contains('open') ? 'true' : 'false');
+        };
+        header.addEventListener('click', alternar);
+        header.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                alternar();
+            }
+        });
+        if (mqMobile && typeof mqMobile.addEventListener === 'function') {
+            mqMobile.addEventListener('change', aplicarEstado);
+        }
+        aplicarEstado();
+    });
+}
+
+function expandirFormSection(header) {
+    const body = header && header.nextElementSibling;
+    if (body && body.classList.contains('mobile-collapse-body')) {
+        body.classList.add('open');
+        header.dataset.userOpened = 'true';
+        header.setAttribute('aria-expanded', 'true');
+    }
+}
+
+function toggleOffcanvas(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.style.display === 'none') {
+        el.style.display = 'block';
+    } else {
+        el.style.display = 'none';
+    }
 }
 
 function ensureFinanceAttachmentInput() {
@@ -4594,17 +4654,18 @@ async function carregarTabelaReceber(filtro = {}) {
         const rowCells = [];
         orderRow.forEach(colKey => {
             if (!visibleRow[colKey]) return;
+            const cellLabel = labelMap[colKey] || colKey;
             switch (colKey) {
-                case 'pedidoNumero': rowCells.push(`<td style="text-align:center;">${escapeFinanceHtml(conta.pedidoNumero || conta.numero || '-')}</td>`); break;
-                case 'cliente': rowCells.push(`<td>${escapeFinanceHtml(nomeCliente)}</td>`); break;
-                case 'descricao': rowCells.push(`<td>${escapeFinanceHtml(conta.descricao || '-')}</td>`); break;
-                case 'valor': rowCells.push(`<td style="text-align: right;" ${tooltipValor}>${formatCurrency(valorExibir)}</td>`); break;
-                case 'juros': rowCells.push(`<td style="text-align: right;" ${jurosInfo.tooltip}>${formatCurrency(jurosInfo.juros)}</td>`); break;
-                case 'vencimento': rowCells.push(`<td style="text-align: center;">${formatDate(conta.dataVencimento || conta.vencimento)}</td>`); break;
-                case 'dataEmissao': rowCells.push(`<td style="text-align: center;">${conta.dataEmissao ? formatDate(conta.dataEmissao) : '-'}</td>`); break;
-                case 'status': rowCells.push(`<td style="text-align: center;"><span class="status-indicator status-${statusNorm}">${escapeFinanceHtml(statusExibir)}</span></td>`); break;
-                case 'categoria': rowCells.push(`<td>${escapeFinanceHtml(getCategoriaLabel(conta.categoria))}</td>`); break;
-                case 'tipo': rowCells.push(`<td>${escapeFinanceHtml(getTipoLabel(resolveFinanceTipoOperacional(conta)))}</td>`); break;
+                case 'pedidoNumero': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}" style="text-align:center;">${escapeFinanceHtml(conta.pedidoNumero || conta.numero || '-')}</td>`); break;
+                case 'cliente': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}">${escapeFinanceHtml(nomeCliente)}</td>`); break;
+                case 'descricao': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}">${escapeFinanceHtml(conta.descricao || '-')}</td>`); break;
+                case 'valor': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}" style="text-align: right;" ${tooltipValor}>${formatCurrency(valorExibir)}</td>`); break;
+                case 'juros': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}" style="text-align: right;" ${jurosInfo.tooltip}>${formatCurrency(jurosInfo.juros)}</td>`); break;
+                case 'vencimento': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}" style="text-align: center;">${formatDate(conta.dataVencimento || conta.vencimento)}</td>`); break;
+                case 'dataEmissao': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}" style="text-align: center;">${conta.dataEmissao ? formatDate(conta.dataEmissao) : '-'}</td>`); break;
+                case 'status': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}" style="text-align: center;"><span class="status-indicator status-${statusNorm}">${escapeFinanceHtml(statusExibir)}</span></td>`); break;
+                case 'categoria': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}">${escapeFinanceHtml(getCategoriaLabel(conta.categoria))}</td>`); break;
+                case 'tipo': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}">${escapeFinanceHtml(getTipoLabel(resolveFinanceTipoOperacional(conta)))}</td>`); break;
             }
         });
 
@@ -4616,9 +4677,9 @@ async function carregarTabelaReceber(filtro = {}) {
         const accountIdAttr = escapeFinanceHtml(conta.id);
         return `
         <tr data-conta-id="${accountIdAttr}" data-status="${statusNorm}">
-            <td style="text-align:center;"><input type="checkbox" class="sel-receber" onchange="onReceberSelectChange(this)" ${disabledSel} ${isSelected?'checked':''} aria-label="Selecionar conta"></td>
+            <td data-label="Selecionar" style="text-align:center;"><input type="checkbox" class="sel-receber" onchange="onReceberSelectChange(this)" ${disabledSel} ${isSelected?'checked':''} aria-label="Selecionar conta"></td>
             ${rowCells.join('')}
-            <td class="actions-cell" style="text-align: left; white-space: nowrap;">
+            <td class="actions-cell" data-label="Ações" style="text-align: left; white-space: nowrap;">
                 <div class="actions-inline">
                     ${statusNorm === 'pendente' || statusNorm === 'parcial' || statusNorm === 'vencido' ? `
                         <button onclick="abrirModalPagamento(${accountIdArg}, 'receber')" class="btn btn-success btn-small" style="min-width: 28px;" title="${statusNorm === 'parcial' ? 'Completar Recebimento' : 'Registrar Recebimento'}">
@@ -4857,17 +4918,18 @@ async function carregarTabelaPagar(filtro = {}) {
         const rowCells = [];
         orderRow.forEach(colKey => {
             if (!visibleRow[colKey]) return;
+            const cellLabel = labelMap[colKey] || colKey;
             switch (colKey) {
-                case 'pedidoNumero': rowCells.push(`<td style="text-align:center;">${escapeFinanceHtml(conta.pedidoNumero || conta.numero || '-')}</td>`); break;
-                case 'fornecedor': rowCells.push(`<td>${escapeFinanceHtml(nomeFornecedor)}</td>`); break;
-                case 'descricao': rowCells.push(`<td>${escapeFinanceHtml(conta.descricao || '-')}</td>`); break;
-                case 'valor': rowCells.push(`<td style="text-align: right;" ${tooltipValor}>${formatCurrency(valorExibir)}</td>`); break;
-                case 'juros': rowCells.push(`<td style="text-align: right;" ${jurosInfo.tooltip}>${formatCurrency(jurosInfo.juros)}</td>`); break;
-                case 'vencimento': rowCells.push(`<td style="text-align: center;">${formatDate(conta.dataVencimento || conta.vencimento)}</td>`); break;
-                case 'dataEmissao': rowCells.push(`<td style="text-align: center;">${conta.dataEmissao ? formatDate(conta.dataEmissao) : '-'}</td>`); break;
-                case 'status': rowCells.push(`<td style="text-align: center;"><span class="status-indicator status-${statusNorm}">${escapeFinanceHtml(statusExibir)}</span></td>`); break;
-                case 'categoria': rowCells.push(`<td>${escapeFinanceHtml(getCategoriaLabel(conta.categoria))}</td>`); break;
-                case 'tipo': rowCells.push(`<td>${escapeFinanceHtml(getTipoLabel(resolveFinanceTipoOperacional(conta)))}</td>`); break;
+                case 'pedidoNumero': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}" style="text-align:center;">${escapeFinanceHtml(conta.pedidoNumero || conta.numero || '-')}</td>`); break;
+                case 'fornecedor': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}">${escapeFinanceHtml(nomeFornecedor)}</td>`); break;
+                case 'descricao': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}">${escapeFinanceHtml(conta.descricao || '-')}</td>`); break;
+                case 'valor': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}" style="text-align: right;" ${tooltipValor}>${formatCurrency(valorExibir)}</td>`); break;
+                case 'juros': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}" style="text-align: right;" ${jurosInfo.tooltip}>${formatCurrency(jurosInfo.juros)}</td>`); break;
+                case 'vencimento': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}" style="text-align: center;">${formatDate(conta.dataVencimento || conta.vencimento)}</td>`); break;
+                case 'dataEmissao': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}" style="text-align: center;">${conta.dataEmissao ? formatDate(conta.dataEmissao) : '-'}</td>`); break;
+                case 'status': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}" style="text-align: center;"><span class="status-indicator status-${statusNorm}">${escapeFinanceHtml(statusExibir)}</span></td>`); break;
+                case 'categoria': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}">${escapeFinanceHtml(getCategoriaLabel(conta.categoria))}</td>`); break;
+                case 'tipo': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}">${escapeFinanceHtml(getTipoLabel(resolveFinanceTipoOperacional(conta)))}</td>`); break;
             }
         });
     const disabledSel = '';
@@ -4878,9 +4940,9 @@ async function carregarTabelaPagar(filtro = {}) {
     const accountIdAttr = escapeFinanceHtml(conta.id);
     return `
     <tr data-conta-id="${accountIdAttr}" data-status="${statusNorm}">
-        <td style="text-align:center;"><input type="checkbox" class="sel-pagar" onchange="onPagarSelectChange(this)" ${disabledSel} ${isSelected?'checked':''} aria-label="Selecionar conta"></td>
+        <td data-label="Selecionar" style="text-align:center;"><input type="checkbox" class="sel-pagar" onchange="onPagarSelectChange(this)" ${disabledSel} ${isSelected?'checked':''} aria-label="Selecionar conta"></td>
         ${rowCells.join('')}
-        <td class="actions-cell" style="text-align: left; white-space: nowrap;">
+        <td class="actions-cell" data-label="Ações" style="text-align: left; white-space: nowrap;">
             <div class="actions-inline">
                 ${statusNorm === 'pendente' || statusNorm === 'parcial' || statusNorm === 'vencido' ? `
                     <button onclick="abrirModalPagamento(${accountIdArg}, 'pagar')" class="btn btn-success btn-small" style="min-width: 28px;" title="${statusNorm === 'parcial' ? 'Completar Pagamento' : 'Registrar Pagamento'}">
@@ -6329,6 +6391,8 @@ async function editarConta(id, tipo) {
             }, 50); // Pequeno delay para garantir renderização da aba
             updateManualAttachmentButtonState('receber');
             scrollToForm('receberForm');
+            const receberHeader = document.querySelector('#receber .mobile-collapse-header');
+            if (receberHeader) expandirFormSection(receberHeader);
         } else {
             const tabPagar = document.querySelector('[data-tab="pagar"]');
             if (tabPagar) {
@@ -6493,6 +6557,8 @@ async function editarConta(id, tipo) {
                 } catch(_) {}
             updateManualAttachmentButtonState('pagar');
             scrollToForm('pagarForm');
+            const pagarHeader = document.querySelector('#pagar .mobile-collapse-header');
+            if (pagarHeader) expandirFormSection(pagarHeader);
         }
 
         // ✅ CORREÇÃO: NÃO remover a conta aqui - apenas carregar para edição
@@ -7222,13 +7288,13 @@ function gerarTabelaFluxo(dataInicio, dataFim) {
         
         return `
             <tr>
-                <td>${label}</td>
-                <td style="text-align: right; color: #28a745;">${formatCurrency(entradas)}</td>
-                <td style="text-align: right; color: #dc3545;">${formatCurrency(saidas)}</td>
-                <td style="text-align: right; color: ${saldoDia >= 0 ? '#28a745' : '#dc3545'};">
+                <td data-label="Data">${label}</td>
+                <td data-label="Entradas" style="text-align: right; color: #28a745;">${formatCurrency(entradas)}</td>
+                <td data-label="Saídas" style="text-align: right; color: #dc3545;">${formatCurrency(saidas)}</td>
+                <td data-label="Saldo do Dia" style="text-align: right; color: ${saldoDia >= 0 ? '#28a745' : '#dc3545'};">
                     ${formatCurrency(saldoDia)}
                 </td>
-                <td style="text-align: right; color: ${saldoAcumulado >= 0 ? '#28a745' : '#dc3545'};">
+                <td data-label="Saldo Acumulado" style="text-align: right; color: ${saldoAcumulado >= 0 ? '#28a745' : '#dc3545'};">
                     ${formatCurrency(saldoAcumulado)}
                 </td>
             </tr>
@@ -8214,6 +8280,8 @@ function limparFormulario(formId) {
         const gerarBtnR = document.getElementById('receberGerarParcelasBtn');
         if (gerarBtnR) gerarBtnR.style.display = 'inline-block';
         updateManualAttachmentButtonState('receber');
+        const receberHeaderLimp = document.querySelector('#receber .mobile-collapse-header');
+        if (receberHeaderLimp) expandirFormSection(receberHeaderLimp);
     } else if (formId === 'pagarForm') {
         document.getElementById('pagarParcelasContainer').style.display = 'none';
         const listPag = document.getElementById('pagarParcelasList');
@@ -8235,6 +8303,8 @@ function limparFormulario(formId) {
         const gerarBtn = document.getElementById('pagarGerarParcelasBtn');
         if (gerarBtn) gerarBtn.style.display = 'inline-block';
         updateManualAttachmentButtonState('pagar');
+        const pagarHeaderLimp = document.querySelector('#pagar .mobile-collapse-header');
+        if (pagarHeaderLimp) expandirFormSection(pagarHeaderLimp);
     }
     
     // ✅ Resetar botão de submit para "Salvar"
