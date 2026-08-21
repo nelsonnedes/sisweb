@@ -2484,7 +2484,7 @@ textarea:focus {
     resize: vertical !important;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
     #clientModal .form-row,
     #fornecedorModal .form-row,
     #speciesModal .form-row,
@@ -2492,7 +2492,11 @@ textarea:focus {
     #clientForm .form-row,
     #fornecedorForm .form-row,
     #speciesForm .form-row,
-    .modal-body .form-row {
+    .modal-body .form-row,
+    .modal-body .campos-grid,
+    #clientModal .campos-grid,
+    #fornecedorModal .campos-grid,
+    .modal .campos-grid {
         flex-direction: column !important;
         gap: 0 !important;
     }
@@ -2504,8 +2508,20 @@ textarea:focus {
     #clientForm .form-row > .form-group,
     #fornecedorForm .form-row > .form-group,
     #speciesForm .form-row > .form-group,
-    .modal-body .form-row > .form-group {
+    .modal-body .form-row > .form-group,
+    .modal-body .campos-grid > .form-group,
+    #clientModal .campos-grid > .form-group,
+    #fornecedorModal .campos-grid > .form-group,
+    .modal .campos-grid > .form-group {
         margin-bottom: 10px !important;
+        min-width: 0 !important;
+        width: 100% !important;
+        flex: 1 1 auto !important;
+    }
+    .modal-body .form-group,
+    .modal .form-group {
+        min-width: 0 !important;
+        width: 100% !important;
     }
 }
 
