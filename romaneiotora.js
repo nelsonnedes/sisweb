@@ -2146,25 +2146,25 @@ function updateTableBody(tbody) {
             // Ordem das colunas conforme cabeçalho (sem M³ Bruto):
             // Plaqueta | Custódia | AUTEF | Espécie | Rodo | Comprimento | Oco 1 | Oco 2 | Desconto | M³ Líquido | Geo | Preço | Valor | Ações
             row.innerHTML = `
-                <td>${item.plaqueta || '-'}</td>
-                <td>${geo.custodia || '-'}</td>
-                <td>${geo.autef || item.autef || '-'}</td>
-                <td>${item.especie || '-'}</td>
-                <td>${(item.rodo || item.diametro) ? (item.rodo || item.diametro) + ' cm' : '-'}</td>
-                <td>${item.comprimento ? item.comprimento + ' cm' : '-'}</td>
-                <td>${item.oco1 ? item.oco1 + ' cm' : '-'}</td>
-                <td>${item.oco2 ? item.oco2 + ' cm' : '-'}</td>
-                <td>${descontoFormatted}</td>
-                <td>${volumeSerrariaFormatted}</td>
-                <td>${formatarMedidaGeo(geo.compGeo)}</td>
-                <td>${formatarMedidaGeo(geo.x1)}</td>
-                <td>${formatarMedidaGeo(geo.x2)}</td>
-                <td>${formatarMedidaGeo(geo.x3)}</td>
-                <td>${formatarMedidaGeo(geo.x4)}</td>
-                <td>${formatarVolumeGeo(geo.volumeGeo)}</td>
-                <td>${precoFormatted}</td>
-                <td>${valorTotalFormatted}</td>
-                <td style="text-align: center; white-space: nowrap; min-width: 140px;">
+                <td data-label="Plaqueta">${item.plaqueta || '-'}</td>
+                <td data-label="Custódia">${geo.custodia || '-'}</td>
+                <td data-label="AUTEF">${geo.autef || item.autef || '-'}</td>
+                <td data-label="Espécie">${item.especie || '-'}</td>
+                <td data-label="Rodo">${(item.rodo || item.diametro) ? (item.rodo || item.diametro) + ' cm' : '-'}</td>
+                <td data-label="Comprimento">${item.comprimento ? item.comprimento + ' cm' : '-'}</td>
+                <td data-label="Oco 1">${item.oco1 ? item.oco1 + ' cm' : '-'}</td>
+                <td data-label="Oco 2">${item.oco2 ? item.oco2 + ' cm' : '-'}</td>
+                <td data-label="Desconto">${descontoFormatted}</td>
+                <td data-label="M³ Líquido">${volumeSerrariaFormatted}</td>
+                <td data-label="Comp. Geo.">${formatarMedidaGeo(geo.compGeo)}</td>
+                <td data-label="X1">${formatarMedidaGeo(geo.x1)}</td>
+                <td data-label="X2">${formatarMedidaGeo(geo.x2)}</td>
+                <td data-label="X3">${formatarMedidaGeo(geo.x3)}</td>
+                <td data-label="X4">${formatarMedidaGeo(geo.x4)}</td>
+                <td data-label="V. Geo.">${formatarVolumeGeo(geo.volumeGeo)}</td>
+                <td data-label="Preço">${precoFormatted}</td>
+                <td data-label="Valor">${valorTotalFormatted}</td>
+                <td data-label="Ações" style="text-align: center; white-space: nowrap; min-width: 140px;">
                     <button type="button" class="btn btn-sm btn-warning me-1" onclick="editarItem(${globalIndex})" title="Editar item" style="margin-right: 5px;">
                         <i class="fas fa-edit"></i>
                     </button>
