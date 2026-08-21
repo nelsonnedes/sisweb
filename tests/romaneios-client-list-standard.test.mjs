@@ -50,8 +50,9 @@ test('preromaneio html: cabeçalho segue o contrato de seis colunas do PCT', () 
 
 test('preromaneio js: renderizador usa textContent, fallback Não informado e três ações', () => {
   assert.match(preJs, /const clientValue = .*N\u00e3o informado/);
-  assert.match(preJs, /const appendCell = \(row, value\) => \{[\s\S]*?createElement\('td'\)/);
+  assert.match(preJs, /const appendCell = \(row, value, label\) => \{[\s\S]*?createElement\('td'\)/);
   assert.match(preJs, /cell\.textContent = value/);
+  assert.match(preJs, /if \(label\) cell\.setAttribute\('data-label', label\)/);
   for (const cls of ['select-button', 'edit-button', 'delete-button']) {
     assert.match(preJs, new RegExp(`createClientAction\\('${cls}'`));
   }

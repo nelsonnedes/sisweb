@@ -229,9 +229,10 @@ function renderClientList(list = null) {
     const paginatedItems = dataToRender.slice(start, end);
 
     const clientValue = (...values) => values.find(value => String(value || '').trim()) || 'Não informado';
-    const appendCell = (row, value) => {
+    const appendCell = (row, value, label) => {
         const cell = document.createElement('td');
         cell.textContent = value;
+        if (label) cell.setAttribute('data-label', label);
         row.appendChild(cell);
     };
     const createClientAction = (className, title, icon, onClick) => {
@@ -247,14 +248,15 @@ function renderClientList(list = null) {
 
     paginatedItems.forEach(client => {
         const tr = document.createElement('tr');
-        appendCell(tr, clientValue(client.name, client.nome));
-        appendCell(tr, clientValue(client.city, client.cidade));
-        appendCell(tr, clientValue(client.state, client.estado));
-        appendCell(tr, clientValue(client.phone, client.telefone, client.celular));
-        appendCell(tr, clientValue(client.email));
+        appendCell(tr, clientValue(client.name, client.nome), 'Nome');
+        appendCell(tr, clientValue(client.city, client.cidade), 'Cidade');
+        appendCell(tr, clientValue(client.state, client.estado), 'Estado');
+        appendCell(tr, clientValue(client.phone, client.telefone, client.celular), 'Telefone');
+        appendCell(tr, clientValue(client.email), 'Email');
 
         const actionsCell = document.createElement('td');
         actionsCell.className = 'text-center actions-cell';
+        actionsCell.setAttribute('data-label', 'Ações');
         const actionGroup = document.createElement('div');
         actionGroup.className = 'btn-group';
         actionGroup.appendChild(createClientAction('select-button', 'Selecionar Cliente', 'fa-check', () => selectPreRomaneioClient(client.id, clientValue(client.name, client.nome))));
@@ -652,9 +654,9 @@ function renderSpeciesList(list = null) {
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${displayName}</td>
-            <td>${displayDesc}</td>
-            <td class="text-center">
+            <td data-label="Espécie">${displayName}</td>
+            <td data-label="Nome Científico">${displayDesc}</td>
+            <td class="text-center" data-label="Ações">
                 <div class="btn-group">
                     <button class="action-button select-button" onclick="selectSpecies('${displayName}', '${price}')" title="Selecionar Espécie">
                         <i class="fas fa-check"></i>

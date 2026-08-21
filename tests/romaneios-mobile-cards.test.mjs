@@ -78,3 +78,18 @@ test('Romaneios Mobile: ajudabitolas (F6) usa scroll horizontal (tabelas estáti
     assert.match(html, /@media\s*\(max-width:\s*768px\)/, 'ajudabitolas deve ter media query mobile');
     assert.match(html, /table\s*\{[^}]*overflow-x:\s*auto/, 'ajudabitolas: tabela com scroll horizontal no mobile');
 });
+
+test('Romaneios Mobile: romaneiotora oculta Oco/X no card (plano F1) e mantém 12 colunas essenciais', () => {
+    const html = read('romaneiotora.html');
+    const block = html.match(/@media\s*\(max-width:\s*768px\)[\s\S]*?@media\s*\(min-width:\s*769px\)/)[0];
+    assert.match(block, /td:nth-child\(7\),[\s\S]*?td:nth-child\(8\),[\s\S]*?td:nth-child\(11\),[\s\S]*?td:nth-child\(15\)[\s\S]*?display:\s*none\s*!important/, 'oculta Oco1/Oco2/CompGeo/X1-X4 no card');
+    assert.match(block, /td:nth-child\(1\),[\s\S]*?td:nth-child\(19\)[\s\S]*?display:\s*flex\s*!important/, 'exibe as 12 colunas essenciais no card');
+});
+
+test('Romaneios Mobile: modais de lista do preromaneio injetam data-label nas células', () => {
+    const js = read('preromaneio-modals.js');
+    assert.match(js, /appendCell\(tr, clientValue\(client\.name, client\.nome\), 'Nome'\)/, 'lista de clientes injeta data-label Nome');
+    assert.match(js, /setAttribute\('data-label', 'Ações'\)/, 'célula de ações injeta data-label Ações');
+    assert.match(js, /<td data-label="Espécie">/, 'lista de espécies injeta data-label Espécie');
+    assert.match(js, /<td data-label="Nome Científico">/, 'lista de espécies injeta data-label Nome Científico');
+});

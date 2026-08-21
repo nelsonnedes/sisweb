@@ -1127,18 +1127,28 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             #romaneioTable tbody tr td { display: flex !important; justify-content: space-between !important; gap: 8px !important; border: none !important; border-bottom: 1px solid #f0f0f0 !important; padding: 10px 12px !important; min-height: 42px !important; text-align: right !important; align-items: center !important; }
             #romaneioTable tbody tr td:last-child { border-bottom: none !important; justify-content: center !important; border-top: 1px solid #e2e8f0 !important; margin-top: 6px !important; padding-top: 10px !important; }
             #romaneioTable tbody tr td[data-label]::before { content: attr(data-label) !important; font-weight: 700 !important; color: #64748b !important; font-size: 11px !important; text-transform: uppercase !important; letter-spacing: .4px !important; text-align: left !important; margin-right: 12px !important; flex: 1 1 auto !important; white-space: normal !important; position: static !important; width: auto !important; top: auto !important; left: auto !important; transform: none !important; padding-right: 0 !important; }
-            #romaneioTable tbody tr td[style*="display: none"] { display: none !important; }
             .table-responsive { overflow: visible !important; }
             #romaneioTable { min-width: 0 !important; width: 100% !important; }
-            #romaneioTable th:nth-child(1), #romaneioTable td:nth-child(1),
-            #romaneioTable th:nth-child(2), #romaneioTable td:nth-child(2),
-            #romaneioTable th:nth-child(6), #romaneioTable td:nth-child(6),
-            #romaneioTable th:nth-child(7), #romaneioTable td:nth-child(7),
-            #romaneioTable th:nth-child(10), #romaneioTable td:nth-child(10),
-            #romaneioTable th:nth-child(11), #romaneioTable td:nth-child(11),
-            #romaneioTable th:nth-child(12), #romaneioTable td:nth-child(12),
-            #romaneioTable th:nth-child(13), #romaneioTable td:nth-child(13),
-            #romaneioTable th:nth-child(14), #romaneioTable td:nth-child(14) { display: flex !important; }
+            #romaneioTable tbody tr td:nth-child(1),
+            #romaneioTable tbody tr td:nth-child(2),
+            #romaneioTable tbody tr td:nth-child(3),
+            #romaneioTable tbody tr td:nth-child(4),
+            #romaneioTable tbody tr td:nth-child(5),
+            #romaneioTable tbody tr td:nth-child(6),
+            #romaneioTable tbody tr td:nth-child(9),
+            #romaneioTable tbody tr td:nth-child(10),
+            #romaneioTable tbody tr td:nth-child(16),
+            #romaneioTable tbody tr td:nth-child(17),
+            #romaneioTable tbody tr td:nth-child(18),
+            #romaneioTable tbody tr td:nth-child(19) { display: flex !important; }
+            #romaneioTable tbody tr td:nth-child(7),
+            #romaneioTable tbody tr td:nth-child(8),
+            #romaneioTable tbody tr td:nth-child(11),
+            #romaneioTable tbody tr td:nth-child(12),
+            #romaneioTable tbody tr td:nth-child(13),
+            #romaneioTable tbody tr td:nth-child(14),
+            #romaneioTable tbody tr td:nth-child(15) { display: none !important; }
+            #romaneioTable tbody tr td[style*="display: none"] { display: none !important; }
             .form-row { flex-direction: column !important; }
             .form-row .form-group { min-width: 0 !important; flex: 1 1 auto !important; width: 100% !important; }
             .form-buttons { flex-wrap: wrap !important; gap: 8px !important; }
