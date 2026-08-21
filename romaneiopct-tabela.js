@@ -831,17 +831,17 @@ function reconstruirTabela() {
         const realIndex = window.romaneioItems.indexOf(item);
         
         row.innerHTML = `
-            <td>${item.especie || 'N/A'}</td>
-            <td>${formatarNumeroDecimal(item.comprimento || 0, 0)}</td>
-            <td>${formatarNumeroDecimal(item.espessura || 0, 2)}</td>
-            <td>${formatarNumeroDecimal(item.largura || 0, 2)}</td>
-            <td>${item.quantidade || 0}</td>
-            <td>${formatarPecasPorPacote(item.pecasPorPacote)}</td>
-            <td>${item.totalPecas || (item.quantidade * item.pecasPorPacote) || 0}</td>
-            <td>${(item.volume || 0).toFixed(4).replace('.', ',')} m³</td>
-            <td>${formatarMoedaBrasileira(item.valorUnitario || 0)}</td>
-            <td>${formatarMoedaBrasileira(item.valorTotal || 0)}</td>
-            <td>
+            <td data-label="Espécie">${item.especie || 'N/A'}</td>
+            <td data-label="Comprimento">${formatarNumeroDecimal(item.comprimento || 0, 0)}</td>
+            <td data-label="Espessura">${formatarNumeroDecimal(item.espessura || 0, 2)}</td>
+            <td data-label="Largura">${formatarNumeroDecimal(item.largura || 0, 2)}</td>
+            <td data-label="Qtd.">${item.quantidade || 0}</td>
+            <td data-label="Pç/Pac.">${formatarPecasPorPacote(item.pecasPorPacote)}</td>
+            <td data-label="Total Peças">${item.totalPecas || (item.quantidade * item.pecasPorPacote) || 0}</td>
+            <td data-label="Vol. (m³)">${(item.volume || 0).toFixed(4).replace('.', ',')} m³</td>
+            <td data-label="Preço Unit.">${formatarMoedaBrasileira(item.valorUnitario || 0)}</td>
+            <td data-label="Valor Total">${formatarMoedaBrasileira(item.valorTotal || 0)}</td>
+            <td data-label="Ações">
                 <button onclick="editarItem(${realIndex})" class="btn-editar" title="Editar item">
                     <i class="fas fa-edit"></i>
                 </button>

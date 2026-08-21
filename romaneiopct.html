@@ -2077,6 +2077,25 @@
             transform: translateY(-1px) !important;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
         }
+        @media (max-width: 768px) {
+            #romaneioTable thead, #romaneioTable colgroup { display: none !important; }
+            #romaneioTable tbody { display: flex !important; flex-direction: column !important; gap: 12px !important; width: 100% !important; }
+            #romaneioTable tbody tr { display: block !important; background: #fff !important; border: 1px solid #e2e8f0 !important; border-radius: 10px !important; box-shadow: 0 2px 8px rgba(15,23,42,.05) !important; padding: 12px 14px !important; }
+            #romaneioTable tbody tr td { display: flex !important; justify-content: space-between !important; gap: 8px !important; border: none !important; border-bottom: 1px solid #f0f0f0 !important; padding: 10px 12px !important; min-height: 42px !important; text-align: right !important; align-items: center !important; }
+            #romaneioTable tbody tr td:last-child { border-bottom: none !important; justify-content: center !important; border-top: 1px solid #e2e8f0 !important; margin-top: 6px !important; padding-top: 10px !important; }
+            #romaneioTable tbody tr td[data-label]::before { content: attr(data-label) !important; font-weight: 700 !important; color: #64748b !important; font-size: 11px !important; text-transform: uppercase !important; letter-spacing: .4px !important; text-align: left !important; margin-right: 12px !important; flex: 1 1 auto !important; white-space: normal !important; position: static !important; width: auto !important; top: auto !important; left: auto !important; transform: none !important; padding-right: 0 !important; }
+            #romaneioTable tbody tr td[style*="display: none"] { display: none !important; }
+            .table-responsive { overflow: visible !important; }
+            #romaneioTable { min-width: 0 !important; width: 100% !important; table-layout: auto !important; }
+            .campos-grid, .dimensoes-container, .romaneio-header-fields, .form-buttons { flex-direction: column !important; }
+            .campos-grid .form-group, .dimensoes-container .form-group, .romaneio-header-fields .form-group { min-width: 0 !important; flex: 1 1 auto !important; width: 100% !important; }
+        }
+        @media (min-width: 769px) {
+            #romaneioTable thead { display: table-header-group !important; }
+            #romaneioTable tbody { display: table-row-group !important; }
+            #romaneioTable tbody tr { display: table-row !important; }
+            #romaneioTable tbody tr td { display: table-cell !important; }
+        }
     </style>
 </head>
 <body>
