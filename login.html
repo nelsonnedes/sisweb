@@ -662,6 +662,25 @@
                 Ambiente protegido por autenticação e regras de segurança por empresa.
             </div>
         </form>
+
+        <!-- MFA (2FA) Super Admin — exibido somente quando o login exige verificação TOTP -->
+        <div id="mfaSection" style="display:none;text-align:center;">
+            <div style="font-size:40px;color:#1d4ed8;margin-bottom:10px;" aria-hidden="true"><i class="fas fa-shield-alt"></i></div>
+            <h3 style="color:#2c3e50;margin:0 0 8px;">Verificação em duas etapas</h3>
+            <p style="color:#64748b;font-size:14px;margin:0 0 16px;">Digite o código de 6 dígitos do seu aplicativo autenticador.</p>
+            <div class="input-group" style="max-width:220px;margin:0 auto 12px;">
+                <input type="text" id="mfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" aria-label="Código de 6 dígitos" style="text-align:center;letter-spacing:6px;font-size:22px;">
+            </div>
+            <div id="mfaError" class="error-message" role="alert" style="display:none;"></div>
+            <button type="button" id="mfaVerifyBtn" onclick="handleMfaVerify()">
+                <i class="fas fa-check" aria-hidden="true"></i> Verificar
+            </button>
+            <div style="margin-top:12px;">
+                <button type="button" class="forgot-password" onclick="cancelMfa()" style="background:none;box-shadow:none;padding:0;width:auto;">
+                    <i class="fas fa-arrow-left" aria-hidden="true"></i> Voltar ao login
+                </button>
+            </div>
+        </div>
     </div>
 
     <div class="global-system-footer">
@@ -775,6 +794,7 @@
 
     <script src="js/deep-clean.js?v=26495e9d74f4"></script>
     <script src="auth.js?v=9edf7c63fdab"></script>
+    <script src="superadmin-mfa.js?v=20260821"></script>
     <script>
         // ═══════════════════════════════════════════════════════════════════════
         // CONTROLADOR ÚNICO DO PORTAL DE ACESSO (Fase 6)
@@ -997,6 +1017,91 @@
         }
 
         // ═══════════════ LOGIN — único handler ═══════════════
+        // Helpers de MFA (2FA) para Super Admin — isolados, sem tocar no fluxo comum.
+        function showMfaError(message) {
+            const err = document.getElementById('mfaError');
+            if (!err) return;
+            err.textContent = message;
+            err.style.display = 'block';
+        }
+
+        function cancelMfa() {
+            const section = document.getElementById('mfaSection');
+            const form = document.getElementById('loginForm');
+            if (section) section.style.display = 'none';
+            if (form) form.style.display = '';
+            const input = document.getElementById('mfaCode');
+            if (input) input.value = '';
+            if (typeof window.__mfaResolve === 'function') {
+                const resolve = window.__mfaResolve;
+                window.__mfaResolve = null;
+                resolve(false);
+            }
+        }
+
+        window.handleMfaVerify = async function() {
+            const input = document.getElementById('mfaCode');
+            const code = (input && input.value ? input.value : '').trim();
+            if (!/^\d{6}$/.test(code)) {
+                showMfaError('Digite o código de 6 dígitos do seu aplicativo autenticador.');
+                if (input) input.focus();
+                return;
+            }
+            const verifyBtn = document.getElementById('mfaVerifyBtn');
+            if (verifyBtn) verifyBtn.disabled = true;
+            try {
+                const res = await window.SuperAdminMfa.verify(code);
+                if (res && res.ok) {
+                    if (typeof window.__mfaResolve === 'function') {
+                        const resolve = window.__mfaResolve;
+                        window.__mfaResolve = null;
+                        resolve(true);
+                    }
+                } else {
+                    showMfaError('Código inválido ou expirado. Tente novamente.');
+                    if (input) { input.value = ''; input.focus(); }
+                }
+            } catch (e) {
+                showMfaError('Falha na verificação. Tente novamente.');
+            } finally {
+                if (verifyBtn) verifyBtn.disabled = false;
+            }
+        };
+
+        function promptMfaCode() {
+            return new Promise(function(resolve) {
+                const section = document.getElementById('mfaSection');
+                const form = document.getElementById('loginForm');
+                const input = document.getElementById('mfaCode');
+                const err = document.getElementById('mfaError');
+                if (!section) { resolve(true); return; }
+                window.__mfaResolve = resolve;
+                if (form) form.style.display = 'none';
+                section.style.display = 'block';
+                if (err) { err.textContent = ''; err.style.display = 'none'; }
+                if (input) { input.value = ''; setTimeout(function() { input.focus(); }, 50); }
+            });
+        }
+
+        async function gateSuperAdminMfa(result) {
+            try {
+                const user = result && (result.user || result.currentUser) ? (result.user || result.currentUser) : null;
+                const uid = user && (user.uid || user.id || user.userId);
+                let isSuper = uid ? (typeof window.isSuperAdminUid === 'function' ? window.isSuperAdminUid(uid) : false) : false;
+                if (!isSuper && typeof window.isSuperAdminSession === 'function') {
+                    try { isSuper = await window.isSuperAdminSession(); } catch (_) {}
+                }
+                if (!isSuper) return true;
+                if (!window.SuperAdminMfa) return true;
+                const status = await window.SuperAdminMfa.status();
+                if (!status || status.enabled !== true) return true;
+                return await promptMfaCode();
+            } catch (e) {
+                try { console.warn('[MFA] verificação de status falhou, login prossegue:', e && e.message); } catch (_) {}
+                return true;
+            }
+        }
+
         window.handleLogin = async function(event) {
             event.preventDefault();
             const form = document.getElementById('loginForm');
@@ -1035,6 +1140,10 @@
                         if (typeof window.markSiswebSessionAuthenticated === 'function') {
                             window.markSiswebSessionAuthenticated(result.user || result.currentUser || { email }, { source: 'login_page' });
                         }
+                    } catch (_) {}
+                    try {
+                        const mfaOk = await gateSuperAdminMfa(result);
+                        if (!mfaOk) return;
                     } catch (_) {}
                     setSystemHealth('ok', 'Login realizado', 'Redirecionando para o sistema...');
                     window.location.href = await getRedirectTarget(result);

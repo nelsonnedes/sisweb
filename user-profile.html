@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <script src="auth.js?v=9edf7c63fdab"></script>
+    <script src="superadmin-mfa.js?v=20260821"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
@@ -718,6 +720,48 @@
                     <div id="passwordMessage" class="message"></div>
                     </form>
             </div>
+
+            <!-- MFA (2FA) Card — visível apenas para SuperAdmin -->
+            <div class="profile-card full-width-card" id="mfaCard" style="display:none;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-shield-alt"></i>
+                        Autenticação em Duas Etapas (2FA)
+                    </div>
+                </div>
+
+                <div id="mfaStatusRow">
+                    <p id="mfaStatusText" style="margin:0 0 12px;color:#475569;">Verificando status...</p>
+                    <div class="action-buttons">
+                        <button type="button" class="btn-primary" id="mfaEnableBtn" onclick="startMfaSetup()" style="display:none;">
+                            <i class="fas fa-shield-alt"></i> Ativar 2FA
+                        </button>
+                        <button type="button" class="btn-secondary" id="mfaDisableBtn" onclick="disableMfa()" style="display:none; background:#fef2f2; color:#991b1b;">
+                            <i class="fas fa-shield"></i> Desativar 2FA
+                        </button>
+                    </div>
+                </div>
+
+                <div id="mfaSetupPanel" style="display:none;">
+                    <p style="color:#475569;margin:0 0 10px;">1. Escaneie o QR code abaixo ou digite a chave manualmente no seu app autenticador (Google Authenticator, Authy, etc.).</p>
+                    <div id="mfaQrContainer" style="display:flex;justify-content:center;padding:10px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;max-width:220px;margin:0 auto 10px;"></div>
+                    <p style="color:#475569;font-size:13px;margin:0 0 6px;word-break:break-all;">Chave manual: <strong id="mfaSecretText" style="font-family:monospace;">—</strong></p>
+                    <div class="form-group" style="max-width:220px;margin:0 auto;">
+                        <label for="mfaConfirmCode">2. Código de confirmação (6 dígitos)</label>
+                        <input type="text" id="mfaConfirmCode" class="form-input" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code" style="text-align:center;letter-spacing:6px;font-size:20px;">
+                    </div>
+                    <div class="action-buttons">
+                        <button type="button" class="btn-secondary" onclick="cancelMfaSetup()">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="button" class="btn-primary" id="mfaConfirmBtn" onclick="confirmMfaSetup()">
+                            <i class="fas fa-check"></i> Confirmar e Ativar
+                            <div class="loading-spinner" id="mfa-loading-spinner"></div>
+                        </button>
+                    </div>
+                    <div id="mfaMessage" class="message"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -914,6 +958,7 @@
             await loadUserProfile(true);
             setupEventListeners();
             loadUserPhoto();
+            initMfaCard();
         });
 
         async function loadUserProfile(showFeedback = false) {
@@ -1481,6 +1526,132 @@
             setTimeout(() => {
                 globalMessage.style.display = 'none';
             }, 4000);
+        }
+
+        // ═══════════════ MFA (2FA) Super Admin — isolado, sem tocar no resto do perfil ═══════════════
+        let mfaPendingSecret = '';
+
+        function setMfaMessage(type, text) {
+            const el = document.getElementById('mfaMessage');
+            if (!el) return;
+            el.textContent = text;
+            el.style.display = text ? 'block' : 'none';
+            el.style.color = type === 'error' ? '#991b1b' : '#065f46';
+        }
+
+        function renderMfaQr(otpauthUri) {
+            const container = document.getElementById('mfaQrContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            if (typeof window.QRCode === 'function') {
+                try {
+                    new window.QRCode(container, { text: otpauthUri, width: 200, height: 200 });
+                } catch (_) {
+                    container.textContent = 'QR indisponível — use a chave manual.';
+                }
+            } else {
+                container.textContent = 'QR indisponível — use a chave manual.';
+            }
+        }
+
+        async function initMfaCard() {
+            const card = document.getElementById('mfaCard');
+            if (!card || !window.SuperAdminMfa) return;
+            const isSuper = isCurrentProfileSuperAdmin(currentUserData || {});
+            if (!isSuper) return;
+            card.style.display = '';
+            try {
+                const status = await window.SuperAdminMfa.status();
+                renderMfaStatus(status);
+            } catch (e) {
+                document.getElementById('mfaStatusText').textContent = 'Não foi possível consultar o status do 2FA.';
+            }
+        }
+
+        function renderMfaStatus(status) {
+            const text = document.getElementById('mfaStatusText');
+            const enableBtn = document.getElementById('mfaEnableBtn');
+            const disableBtn = document.getElementById('mfaDisableBtn');
+            const enabled = !!(status && status.enabled === true);
+            if (text) text.textContent = enabled
+                ? '2FA está ATIVO. O login de Super Admin exige o código do aplicativo autenticador.'
+                : '2FA está DESATIVADO. Ative para adicionar uma camada extra de segurança ao Super Admin.';
+            if (enableBtn) enableBtn.style.display = enabled ? 'none' : '';
+            if (disableBtn) disableBtn.style.display = enabled ? '' : 'none';
+        }
+
+        async function startMfaSetup() {
+            setMfaMessage('', '');
+            const setupBtn = document.getElementById('mfaEnableBtn');
+            const spinner = document.getElementById('mfa-loading-spinner');
+            if (setupBtn) setupBtn.disabled = true;
+            if (spinner) spinner.style.display = 'block';
+            try {
+                const res = await window.SuperAdminMfa.setup();
+                mfaPendingSecret = (res && res.secret) || '';
+                document.getElementById('mfaSecretText').textContent = mfaPendingSecret || '—';
+                renderMfaQr((res && res.otpauthUri) || '');
+                document.getElementById('mfaStatusRow').style.display = 'none';
+                document.getElementById('mfaSetupPanel').style.display = '';
+                document.getElementById('mfaConfirmCode').value = '';
+                setTimeout(function() { document.getElementById('mfaConfirmCode').focus(); }, 50);
+            } catch (e) {
+                setMfaMessage('error', 'Falha ao gerar o código. Tente novamente.');
+            } finally {
+                if (setupBtn) setupBtn.disabled = false;
+                if (spinner) spinner.style.display = 'none';
+            }
+        }
+
+        async function confirmMfaSetup() {
+            const code = (document.getElementById('mfaConfirmCode').value || '').trim();
+            if (!/^\d{6}$/.test(code)) {
+                setMfaMessage('error', 'Digite o código de 6 dígitos do aplicativo.');
+                return;
+            }
+            const confirmBtn = document.getElementById('mfaConfirmBtn');
+            const spinner = document.getElementById('mfa-loading-spinner');
+            if (confirmBtn) confirmBtn.disabled = true;
+            if (spinner) spinner.style.display = 'block';
+            try {
+                const res = await window.SuperAdminMfa.confirm(code);
+                if (res && res.ok) {
+                    mfaPendingSecret = '';
+                    document.getElementById('mfaSetupPanel').style.display = 'none';
+                    document.getElementById('mfaStatusRow').style.display = '';
+                    const status = await window.SuperAdminMfa.status();
+                    renderMfaStatus(status);
+                } else {
+                    setMfaMessage('error', 'Código inválido ou expirado. Tente novamente.');
+                }
+            } catch (e) {
+                setMfaMessage('error', 'Falha na confirmação. Tente novamente.');
+            } finally {
+                if (confirmBtn) confirmBtn.disabled = false;
+                if (spinner) spinner.style.display = 'none';
+            }
+        }
+
+        function cancelMfaSetup() {
+            mfaPendingSecret = '';
+            setMfaMessage('', '');
+            document.getElementById('mfaSetupPanel').style.display = 'none';
+            document.getElementById('mfaStatusRow').style.display = '';
+        }
+
+        async function disableMfa() {
+            if (!window.confirm('Desativar a autenticação em duas etapas? O login voltará a exigir apenas senha.')) return;
+            const disableBtn = document.getElementById('mfaDisableBtn');
+            if (disableBtn) disableBtn.disabled = true;
+            try {
+                await window.SuperAdminMfa.disable();
+                const status = await window.SuperAdminMfa.status();
+                renderMfaStatus(status);
+            } catch (e) {
+                document.getElementById('mfaStatusText').textContent = 'Falha ao desativar o 2FA. Tente novamente.';
+            } finally {
+                if (disableBtn) disableBtn.disabled = false;
+            }
         }
     </script>
 </body>

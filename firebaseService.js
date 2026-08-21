@@ -865,7 +865,7 @@ function unwrapCallableResult(result) {
 }
 
 function requiresAuthenticatedCallable(functionName) {
-    return /^(nf_|finance(?:[A-Z_]|$))/.test(String(functionName || '').trim());
+    return /^(nf_|finance(?:[A-Z_]|$)|superAdminMfa)/.test(String(functionName || '').trim());
 }
 
 async function getCallableIdToken(user, forceRefresh = false) {

@@ -6670,3 +6670,11 @@ exports.sentrySyncIssues = sentryFunctions.sentrySyncIssues;
 exports.sentryGetIssueDetail = sentryFunctions.sentryGetIssueDetail;
 exports.sentryResolveIssue = sentryFunctions.sentryResolveIssue;
 exports.sentryWebhook = sentryFunctions.sentryWebhook;
+
+const mfaFunctions = require('./mfa-functions');
+mfaFunctions.configure({ isCallerSuperAdmin });
+exports.superAdminMfaStatus = mfaFunctions.superAdminMfaStatus;
+exports.superAdminMfaSetup = mfaFunctions.superAdminMfaSetup;
+exports.superAdminMfaConfirm = mfaFunctions.superAdminMfaConfirm;
+exports.superAdminMfaVerify = mfaFunctions.superAdminMfaVerify;
+exports.superAdminMfaDisable = mfaFunctions.superAdminMfaDisable;
