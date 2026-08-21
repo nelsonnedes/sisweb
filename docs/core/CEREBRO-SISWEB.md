@@ -308,13 +308,9 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 
 ## 15. Pendências ativas (não resolvidas — requerem ação)
 
-1. **🔴 `firebase deploy --only database`** — regras RTDB já no arquivo `database.rules.json` mas **NÃO deployadas**:
-   - `cargos` top-level `.read`/`.write` (BUG-A folha) — §10.
-   - `fiscal` `.write` (BUG-B notas naturezas-operacao) — §10.
-   - `configuracoes` read/write tenant (Configurar Impressão romaneios) — §13 (2026-08-16).
-   - Validar depois em produção: folha (cargos), NF-e (seed naturezas), configurar impressão romaneios.
+1. ~~**🔴 `firebase deploy --only database`**~~ → **✅ RESOLVIDO 2026-08-21.** Regras deployadas com sucesso (`cargos` .read/.write BUG-A, `fiscal` .write BUG-B, `configuracoes` Configurar Impressão). **Validar em produção:** folha (cargos), NF-e (seed naturezas), configurar impressão romaneios.
 2. **🟡 Vendor dos SDKs Firebase locais** (mitigação `ERR_CONNECTION_TIMED_OUT` gstatic) — §8, opcional.
-3. **🟡 Merge** `codex/recovery-p0-freebuff-regressions` → `main` (17 commits de mobile romaneios/finanças/estoque já pushados).
+3. **🟡 Merge** `codex/recovery-p0-freebuff-regressions` → `main` (commits de mobile romaneios/finanças/estoque já pushados).
 
 ## 16. Como manter este cérebro
 
