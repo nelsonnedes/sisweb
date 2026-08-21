@@ -693,23 +693,23 @@ function renderizarTabela() {
             const descontoValor = parseFloat(item.desconto) || 0;
             const geo = normalizarCamposGeoTora(item);
             tr.innerHTML = `
-                <td>${item.placa || item.plaqueta || '-'}</td>
-                <td>${geo.custodia || '-'}</td>
-                <td>${item.especie}</td>
-                <td class="text-center">${item.rodo}</td>
-                <td class="text-center">${item.comprimento}</td>
-                <td class="text-center">${item.oco1}/${item.oco2}</td>
-                <td class="text-center">${descontoValor.toFixed(volDec).replace('.', ',')}</td>
-                <td class="text-right">${item.volume.toFixed(volDec)}</td>
-                <td class="text-center">${formatGeoCm(geo.compGeo)}</td>
-                <td class="text-center">${formatGeoCm(geo.x1)}</td>
-                <td class="text-center">${formatGeoCm(geo.x2)}</td>
-                <td class="text-center">${formatGeoCm(geo.x3)}</td>
-                <td class="text-center">${formatGeoCm(geo.x4)}</td>
-                <td class="text-right">${formatGeoVolume(geo.volumeGeo)}</td>
-                <td class="text-right">${formatMoney(item.preco)}</td>
-                <td class="text-right">${formatMoney(item.total)}</td>
-                <td class="text-center">
+                <td data-label="Plaqueta">${item.placa || item.plaqueta || '-'}</td>
+                <td data-label="Custódia">${geo.custodia || '-'}</td>
+                <td data-label="Espécie">${item.especie}</td>
+                <td data-label="Rodo" class="text-center">${item.rodo}</td>
+                <td data-label="Comp." class="text-center">${item.comprimento}</td>
+                <td data-label="Ocos" class="text-center">${item.oco1}/${item.oco2}</td>
+                <td data-label="Desc." class="text-center">${descontoValor.toFixed(volDec).replace('.', ',')}</td>
+                <td data-label="Vol. Líq" class="text-right">${item.volume.toFixed(volDec)}</td>
+                <td data-label="Comp. Geo." class="text-center">${formatGeoCm(geo.compGeo)}</td>
+                <td data-label="X1" class="text-center">${formatGeoCm(geo.x1)}</td>
+                <td data-label="X2" class="text-center">${formatGeoCm(geo.x2)}</td>
+                <td data-label="X3" class="text-center">${formatGeoCm(geo.x3)}</td>
+                <td data-label="X4" class="text-center">${formatGeoCm(geo.x4)}</td>
+                <td data-label="V. Geo." class="text-right">${formatGeoVolume(geo.volumeGeo)}</td>
+                <td data-label="Preço" class="text-right">${formatMoney(item.preco)}</td>
+                <td data-label="Total" class="text-right">${formatMoney(item.total)}</td>
+                <td data-label="Ações" class="text-center">
                     <div class="btn-group">
                         <button class="action-button edit-button" onclick="editarItem(${indexReal})" title="Editar"><i class="fas fa-edit"></i></button>
                         <button class="action-button delete-button" onclick="removerItem(${indexReal})" title="Excluir"><i class="fas fa-trash"></i></button>
@@ -722,16 +722,16 @@ function renderizarTabela() {
             const volDec = (currentTab === 'PCT') ? 4 : 3;
             const isPes = currentTab === 'PES';
             tr.innerHTML = `
-                <td>${item.especie}</td>
-                <td class="text-center">${isPes ? formatDecimalBR(item.comprimento, 2, 'mm') : item.comprimento}</td>
-                <td class="text-center">${isPes ? formatDecimalBR((item.espessura ?? 0), 2, 'mm') : (item.espessura ?? 0)}</td>
-                <td class="text-center">${isPes ? formatDecimalBR(item.largura, 2, 'mm') : item.largura}</td>
-                <td class="text-center">${item.quantidade}</td>
-                <td class="text-center col-pecas" style="${displayPecas}">${item.pecas}</td>
-                <td class="text-right">${formatDecimalBR(item.volume, volDec)}</td>
-                <td class="text-right">${formatMoney(item.preco)}</td>
-                <td class="text-right">${formatMoney(item.total)}</td>
-                <td class="text-center">
+                <td data-label="Espécie">${item.especie}</td>
+                <td data-label="Comp." class="text-center">${isPes ? formatDecimalBR(item.comprimento, 2, 'mm') : item.comprimento}</td>
+                <td data-label="Espessura" class="text-center">${isPes ? formatDecimalBR((item.espessura ?? 0), 2, 'mm') : (item.espessura ?? 0)}</td>
+                <td data-label="Larg." class="text-center">${isPes ? formatDecimalBR(item.largura, 2, 'mm') : item.largura}</td>
+                <td data-label="Qtd." class="text-center">${item.quantidade}</td>
+                <td data-label="Pçs/Pct" class="text-center col-pecas" style="${displayPecas}">${item.pecas}</td>
+                <td data-label="Vol." class="text-right">${formatDecimalBR(item.volume, volDec)}</td>
+                <td data-label="Preço" class="text-right">${formatMoney(item.preco)}</td>
+                <td data-label="Total" class="text-right">${formatMoney(item.total)}</td>
+                <td data-label="Ações" class="text-center">
                     <div class="btn-group">
                         <button class="action-button edit-button" onclick="editarItem(${indexReal})" title="Editar"><i class="fas fa-edit"></i></button>
                         <button class="action-button delete-button" onclick="removerItem(${indexReal})" title="Excluir"><i class="fas fa-trash"></i></button>
