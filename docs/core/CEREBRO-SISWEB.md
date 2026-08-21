@@ -4,7 +4,7 @@
 > sessão (Codex, opencode, deepseek) retomar contexto sem regressões e sem perder
 > o "porquê" das decisões já tomadas. SEMPRE consultar antes de implementar.
 >
-> Atualizado em: 2026-08-14 (sessão de correção UTC financeiro + modais + deploy v2)
+> Atualizado em: 2026-08-21 (Romaneios Mobile F1-F6 implementado + modais; pendência: deploy de regras RTDB)
 
 ---
 
@@ -72,7 +72,7 @@
 ## 7. Qualidade / testes
 
 - Comandos: `npm run lint` (eslint folha_pagamento), `npm run typecheck` (tsc allowJs), `npm test` (node:test), `npm run build:hosting` (para `hosting-dist`, 457+ arquivos), `firebase deploy --only hosting`.
-- Estado da suíte em 2026-08-14: **416 testes / 415 pass / 0 fail**; financeiros 56/56.
+- Estado da suíte em 2026-08-21: **476 testes / 475 pass / 0 fail / 1 skip** (skip = RBAC emulator indisponível).
 - Diretório de testes: `tests/*.test.mjs` (node:test, lê arquivos e asserts via regex/funcional). Novos testes devem seguir esse padrão.
 
 ## 8. Incidente login `ERR_CONNECTION_TIMED_OUT` (gstatic) — 2026-08-14
@@ -292,13 +292,31 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Validação browser (local e produção, 390x844 e 1280x800):** cards com todos os labels (Selecionar→Ações), células dentro do card (tdR≤cardRight), `::before` position static, docSW==clientW (sem overflow) mesmo com form expandido; collapse abre/fecha com aria correto; offcanvas abre/fecha; desktop reverte para `table-row`/`table-cell`, chevron e botão Filtros ocultos (`min-width:769px`), forms sempre `block`. Impressão não regride (imprimirTabela gera documento próprio). Screenshot: `C:\Users\Nelson\AppData\Local\Temp\opencode\financas-producao-mobile-receber.png`.
 - **FIX — "Mostrar só disponível" no Relatório de Vendas não esconde linhas no mobile (2026-08-19, `vendas.js`):** usuário reportou que em mobile o checkbox "Mostrar só disponível" não ocultava as linhas sem carrego em aberto, funcionando apenas no PC. Causa raiz: `commerce-responsive.css:514-515` (dentro de `@media (max-width:768px)`) força `.table-responsive.mobile-cards tr { display:block !important }` (especificidade 0-3-0 + important). `toggleFiltroCarregoDisponivel` (`vendas.js:7089`) usava `r.style.display = 'none'` (inline normal), que perde para o `!important` de folha → `computed display` continuava `block` e a linha permanecia visível. No PC a regra `.mobile-cards` é inerte (media mobile) e o inline `none` funciona, daí a diferença de comportamento. Fix: trocar para `r.style.setProperty('display', ..., 'important')` — o important inline vence o important de folha (specificidade 1-0-0-0 > 0-3-0) e `r.style.display` continua retornando `'none'`, mantendo compatíveis os consumidores `toggleSelecionarTodos` (`r.style.display === 'none'`) e o footer do próprio filtro (`r.style.display !== 'none'`). Validado em produção (SW desregistrado, `?fresh=v3verify`, linhas injetadas): ao ligar, P-002 (sem carrego) e P-003 (pago) passam para `computed display:none`; P-001 (carrego aberto) permanece `block`; ao desligar, todas voltam a `block`. Cachebuster `vendas.js` bumpado (`6515ce7b`→`aa7d37091239`); teste adicionado em `tests/vendas-lista-pedidos-acoes.test.mjs`. Screenshot: `C:\Users\Nelson\AppData\Local\Temp\opencode\vendas-mobile-mostrar-so-disponivel-fixed.png`.
 
-## 14. Sessão 2026-08-20 — Plano mobile romaneios (preromaneio, TL, PCT, PES, Tora, ajudabitolas)
+## 14. Sessão 2026-08-20 → 2026-08-21 — Mobile dos Romaneios (F1-F6) — **IMPLEMENTADO**
 
 - **Baseline:** estoque mobile validado (estoque.html:53-298, CEREBRO §12) — cards por ID (`thead display:none`, `tbody flex column gap12`, `tr block card`), `data-label` injetado no JS + `td[data-label]::before{position:static!important}` antídoto a `ui-components.css:433-445`, seleção/ações full-width, `td[style*="display:none"]{display:none!important}`, collapse/offcanvas com `matchMedia`.
-- **Auditoria 6 módulos:** preromaneio (sem mobile-cards, sticky 1024px), romaneiotl (mobile-cards estático sem data-label → QUEBRADO), romaneiopct (sem mobile-cards, min-width:1200, sem data-label), romaneiopes (monolítico inline, sem data-label), romaneiotora (mobile-cards estático, 18 cols min-width:1350, sem data-label + @media 900px oculta cols), ajudabitolas (estático sem wrapper/@media). Todos sem `commerce-responsive` (correto).
-- **Plano:** `docs/superpowers/specs/2026-08-20-romaneios-mobile-adaptacao-plano.md` — overrides locais por ID (não tocar `ui-components.css`/`romaneio-comum.css` global), injeção `data-label` nos renderizadores existentes, forms com `mobile-collapse`, ordem F1 Tora → F2 TL → F3 PCT → F4 PES → F5 Pré → F6 Ajuda, equipe Aria/Dex/Quinn/Dara, gates `lint/typecheck/test` + browser 390x844/1280x800.
+- **Plano:** `docs/superpowers/specs/2026-08-20-romaneios-mobile-adaptacao-plano.md` — overrides locais por ID (não tocar `ui-components.css`/`romaneio-comum.css` global), injeção `data-label` nos renderizadores existentes, forms com `mobile-collapse`, ordem F1 Tora → F2 TL → F3 PCT → F4 PES → F5 Pré → F6 Ajuda.
+- **STATUS (2026-08-21): TODAS as fases IMPLEMENTADAS e commitadas** na branch `codex/recovery-p0-freebuff-regressions` (17 commits à frente de origin, **já pushados**):
+  - F1 romaneiotora: `60aeb3b` — data-label nas 18 cols (`romaneiotora.js:2149-2167`) + override mobile-cards no `<style>`.
+  - F2 romaneiotl: `5cb0335` — `renderizar-tabela.js:140-156` data-label + override local.
+  - F3 romaneiopct: `c2b7d86` — `romaneiopct-tabela.js:834-851` data-label + override local.
+  - F4-F6 PES/preromaneio/ajudabitolas: `b5a5e8e` — cards + responsivo.
+  - Modais listas (client/fornecedor/espécies/romaneios): `578c8ba` + `e07da9f`.
+  - Modais form stack 768px: `65b38ef` (`.form-row`/`.campos-grid` empilham; cache-buster `romaneio-comum.css?v=20260820_mobile04`).
+- **Quality gates:** `npm test` → **475 pass / 0 fail / 1 skip**; lint/typecheck OK.
+- **⚠️ NOTA ANTI-REGRESSÃO:** os overrides mobile-cards já existem dentro dos `<style>` de cada HTML (não duplicar). `romaneiotl.html:1501-1519`, `romaneiopct.html:2081-2097`, `romaneiotora.html:1123-1152`. O antídoto `td[data-label]::before{position:static!important}` está em todos.
 
-## 15. Como manter este cérebro
+## 15. Pendências ativas (não resolvidas — requerem ação)
+
+1. **🔴 `firebase deploy --only database`** — regras RTDB já no arquivo `database.rules.json` mas **NÃO deployadas**:
+   - `cargos` top-level `.read`/`.write` (BUG-A folha) — §10.
+   - `fiscal` `.write` (BUG-B notas naturezas-operacao) — §10.
+   - `configuracoes` read/write tenant (Configurar Impressão romaneios) — §13 (2026-08-16).
+   - Validar depois em produção: folha (cargos), NF-e (seed naturezas), configurar impressão romaneios.
+2. **🟡 Vendor dos SDKs Firebase locais** (mitigação `ERR_CONNECTION_TIMED_OUT` gstatic) — §8, opcional.
+3. **🟡 Merge** `codex/recovery-p0-freebuff-regressions` → `main` (17 commits de mobile romaneios/finanças/estoque já pushados).
+
+## 16. Como manter este cérebro
 
 - Atualizar após QUALQUER mudança de arquitetura, decisão, fix ou descoberta de armadilha.
 - Referenciar story/plano com data para aprofundamento (documents em `docs/stories/`, `docs/superpowers/plans/`, `docs/runbooks/`).
