@@ -383,8 +383,8 @@ test('exclusao de conta localiza particao movida e nao finge sucesso ausente', (
   });
   const committed = buildAccountDeleteTreeMutation({
     '2026-08': { [account.id]: account },
-  }, request);
-  const absent = buildAccountDeleteTreeMutation({}, request);
+  }, request, FIXED_NOW);
+  const absent = buildAccountDeleteTreeMutation({}, request, FIXED_NOW);
 
   assert.equal(committed.outcome, 'commit');
   assert.equal(committed.deletedMonth, '2026-08');
