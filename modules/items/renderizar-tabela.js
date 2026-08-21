@@ -137,15 +137,15 @@ window.RenderizarTabela = (function() {
             
             return `
                 <tr>
-                    <td>${item.especie || 'N/A'}</td>
-                    <td>${item.comprimento ? item.comprimento.toFixed(2) : '0.00'}</td>
-                    <td>${(item.espessura || item[legacyKey]) ? (item.espessura || item[legacyKey]).toFixed(1) : '0.0'}</td>
-                    <td>${item.largura ? item.largura.toFixed(1) : '0.0'}</td>
-                    <td>${item.quantidade || 0}</td>
-                    <td>${volumeTotal.toFixed(6)}</td>
-                    <td>${formatarMoedaBrasileira(item.preco || 0)}</td>
-                    <td>${formatarMoedaBrasileira(valorTotal)}</td>
-                    <td>
+                    <td data-label="Espécie">${item.especie || 'N/A'}</td>
+                    <td data-label="Comprimento">${item.comprimento ? item.comprimento.toFixed(2) : '0.00'}</td>
+                    <td data-label="Espessura">${(item.espessura || item[legacyKey]) ? (item.espessura || item[legacyKey]).toFixed(1) : '0.0'}</td>
+                    <td data-label="Largura">${item.largura ? item.largura.toFixed(1) : '0.0'}</td>
+                    <td data-label="Qtd.">${item.quantidade || 0}</td>
+                    <td data-label="Vol. (m³)">${volumeTotal.toFixed(6)}</td>
+                    <td data-label="Preço Unit.">${formatarMoedaBrasileira(item.preco || 0)}</td>
+                    <td data-label="Valor Total">${formatarMoedaBrasileira(valorTotal)}</td>
+                    <td data-label="Ações">
                         <button class="btn-editar" onclick="editarItem(${indiceGlobal - 1})" title="Editar item">
                             <i class="fas fa-edit"></i>
                         </button>
