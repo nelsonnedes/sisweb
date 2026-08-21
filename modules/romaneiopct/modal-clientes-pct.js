@@ -392,12 +392,12 @@ window.ModalClientesPCT = (function() {
 
         tbody.innerHTML = clientsToShow.map(client => `
             <tr>
-                <td>${client.nome}</td>
-                <td>${client.cidade}</td>
-                <td>${client.estado}</td>
-                <td>${client.telefone}</td>
-                <td>${client.email}</td>
-                <td style="text-align: center;">
+                <td data-label="Nome">${client.nome}</td>
+                <td data-label="Cidade">${client.cidade}</td>
+                <td data-label="Estado">${client.estado}</td>
+                <td data-label="Telefone">${client.telefone}</td>
+                <td data-label="Email">${client.email}</td>
+                <td data-label="Ações" style="text-align: center;">
                     <div class="btn-group">
                         <button class="action-button select-button" onclick="selectClientPCT('${client.id}')" title="Selecionar Cliente">
                             <i class="fas fa-check"></i>

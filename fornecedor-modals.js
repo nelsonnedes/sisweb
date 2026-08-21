@@ -1833,20 +1833,22 @@ async function renderFornecedorListBasic(filter = '') {
 
                         // Colunas de dados (textContent, sem HTML de dados)
                         const cols = [
-                            f.nome || f.name || '-',
-                            f.cnpj || f.cpf || '-',
-                            f.cidade || '-',
-                            f.estado || f.uf || '-',
-                            f.telefone || f.phone || '-'
+                            {label:'Nome', text: f.nome || f.name || '-'},
+                            {label:'CNPJ', text: f.cnpj || f.cpf || '-'},
+                            {label:'Cidade', text: f.cidade || '-'},
+                            {label:'Estado', text: f.estado || f.uf || '-'},
+                            {label:'Telefone', text: f.telefone || f.phone || '-'}
                         ];
-                        cols.forEach((text) => {
+                        cols.forEach(({label, text}) => {
                             const td = document.createElement('td');
+                            td.setAttribute('data-label', label);
                             td.textContent = (text == null ? '' : String(text));
                             tr.appendChild(td);
                         });
 
                         // Coluna de Ações
                         const actionsTd = document.createElement('td');
+                        actionsTd.setAttribute('data-label', 'Ações');
                         actionsTd.className = 'text-center';
 
                         const btnGroup = document.createElement('div');

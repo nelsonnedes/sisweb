@@ -715,13 +715,13 @@ class RomaneioManager {
 
             return `
                 <tr>
-                    <td class="fw-bold text-dark">${escapeRomaneioHtml(dataFmt)}</td>
-                    <td>${escapeRomaneioHtml(nome)}</td>
-                    <td><small class="text-muted">${escapeRomaneioHtml(resumo.substring(0, 30))}${resumo.length > 30 ? '...' : ''}</small></td>
-                    <td class="text-center"><span class="badge bg-light text-dark border">${qtd}</span></td>
-                    <td class="text-end fw-bold">${vol.toFixed(3)} m³</td>
-                    <td class="text-end text-success fw-bold">R$ ${val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                    <td class="actions-col text-center">${actions}</td>
+                    <td data-label="Data" class="fw-bold text-dark">${escapeRomaneioHtml(dataFmt)}</td>
+                    <td data-label="Fornecedor">${escapeRomaneioHtml(nome)}</td>
+                    <td data-label="Resumo"><small class="text-muted">${escapeRomaneioHtml(resumo.substring(0, 30))}${resumo.length > 30 ? '...' : ''}</small></td>
+                    <td data-label="Itens" class="text-center"><span class="badge bg-light text-dark border">${qtd}</span></td>
+                    <td data-label="Volume" class="text-end fw-bold">${vol.toFixed(3)} m³</td>
+                    <td data-label="Valor" class="text-end text-success fw-bold">R$ ${val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td data-label="Ações" class="actions-col text-center">${actions}</td>
                 </tr>
             `;
         }).join('');

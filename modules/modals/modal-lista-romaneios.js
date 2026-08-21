@@ -427,13 +427,13 @@ window.ModalListaRomaneios = (function() {
             
             return `
                 <tr>
-                    <td title="${escapeHtml(data)}">${escapeHtml(data)}</td>
-                    <td title="${escapeHtml(clienteCompleto)}">${escapeHtml(cliente)}</td>
-                    <td title="${escapeHtml(especiesCompletas || 'N/A')}">${escapeHtml(especies)}</td>
-                    <td style="text-align: center;">${totalItens}</td>
-                    <td style="text-align: right;">${totalVolume} m³</td>
-                    <td title="${escapeHtml(totalValue)}">${escapeHtml(totalValue)}</td>
-                    <td style="text-align: center;">
+                    <td data-label="Data" title="${escapeHtml(data)}">${escapeHtml(data)}</td>
+                    <td data-label="Cliente" title="${escapeHtml(clienteCompleto)}">${escapeHtml(cliente)}</td>
+                    <td data-label="Espécies" title="${escapeHtml(especiesCompletas || 'N/A')}">${escapeHtml(especies)}</td>
+                    <td data-label="Itens" style="text-align: center;">${totalItens}</td>
+                    <td data-label="Volume" style="text-align: right;">${totalVolume} m³</td>
+                    <td data-label="Valor Total" title="${escapeHtml(totalValue)}">${escapeHtml(totalValue)}</td>
+                    <td data-label="Ações" style="text-align: center;">
                         <div class="btn-group">
                             <button class="action-button edit-button" onclick="window.ModalListaRomaneios.editRomaneio('${romaneio.id}')" title="Editar Romaneio">
                                 <i class="fas fa-edit"></i>

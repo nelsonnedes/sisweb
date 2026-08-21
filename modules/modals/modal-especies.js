@@ -482,9 +482,9 @@ window.ModalEspecies = (function() {
 
         tbody.innerHTML = speciesToShow.map(specie => `
             <tr>
-                <td>${escapeHtml(getSpeciesName(specie))}</td>
-                <td>${escapeHtml(getSpeciesScientific(specie) || '-')}</td>
-                <td style="text-align: center;">
+                <td data-label="Nome">${escapeHtml(getSpeciesName(specie))}</td>
+                <td data-label="Nome Científico">${escapeHtml(getSpeciesScientific(specie) || '-')}</td>
+                <td data-label="Ações" style="text-align: center;">
                     <div class="btn-group">
                         <button class="action-button select-button" onclick="window.ModalEspecies.selectSpecie(${jsStringArg(getSpeciesName(specie))})" title="Selecionar Espécie">
                             <i class="fas fa-check"></i>
@@ -841,9 +841,9 @@ window.ModalEspecies = (function() {
         // Mostrar TODAS as espécies filtradas
         tbody.innerHTML = state.filteredSpecies.map(specie => `
             <tr>
-                <td>${escapeHtml(getSpeciesName(specie))}</td>
-                <td>${escapeHtml(getSpeciesScientific(specie) || '-')}</td>
-                <td style="text-align: center;">
+                <td data-label="Nome">${escapeHtml(getSpeciesName(specie))}</td>
+                <td data-label="Nome Científico">${escapeHtml(getSpeciesScientific(specie) || '-')}</td>
+                <td data-label="Ações" style="text-align: center;">
                     <div class="btn-group">
                         <button class="action-button select-button" onclick="window.ModalEspecies.selectSpecie(${jsStringArg(getSpeciesName(specie))})" title="Selecionar Espécie">
                             <i class="fas fa-check"></i>
