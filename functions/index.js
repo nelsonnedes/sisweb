@@ -6677,4 +6677,9 @@ exports.superAdminMfaStatus = mfaFunctions.superAdminMfaStatus;
 exports.superAdminMfaSetup = mfaFunctions.superAdminMfaSetup;
 exports.superAdminMfaConfirm = mfaFunctions.superAdminMfaConfirm;
 exports.superAdminMfaVerify = mfaFunctions.superAdminMfaVerify;
+
+const modulePermissionsFunctions = require('./module-permissions-functions');
+modulePermissionsFunctions.configure({ isCallerSuperAdmin });
+exports.setMemberModulePermissions = modulePermissionsFunctions.setMemberModulePermissions;
+exports.applyDefaultModulePermissions = modulePermissionsFunctions.applyDefaultModulePermissions;
 exports.superAdminMfaDisable = mfaFunctions.superAdminMfaDisable;
