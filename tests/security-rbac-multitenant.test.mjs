@@ -84,6 +84,34 @@ test('rules liberam apenas caminhos operacionais seguros apos bloquear escrita h
   }
 });
 
+test('modulos operacionais exigem membership ao escrever (brecha fechada)', () => {
+  const rules = JSON.parse(read('database.rules.json')).rules;
+  const tenantRules = rules.companies.$companyId;
+
+  const operationalWrites = [
+    'clients',
+    'fornecedores',
+    'produtos',
+    'especies',
+    'estoqueTorasAtual',
+    'movimentacoesToras',
+    'rastreabilidade',
+    'funcionarios',
+    'folhas',
+    'cargos',
+    'configuracoes',
+    'fiscal',
+    'preferences',
+  ];
+
+  for (const name of operationalWrites) {
+    assert.ok(tenantRules[name], `nó ${name} precisa existir`);
+    const w = tenantRules[name]['.write'];
+    assert.match(w, /auth\.token\.superadmin == true/, `${name} deve permitir bypass superadmin`);
+    assert.match(w, /root\.child\('companies\/' \+ \$companyId \+ '\/users\/' \+ auth\.uid\)\.exists\(\)/, `${name} deve exigir membership`);
+  }
+});
+
 test('SuperAdmin em Functions depende de allowlist e nao de marcador em RTDB', () => {
   const source = read('functions/index.js');
   const isCallerBlock = blockBetween(source, 'async function isCallerSuperAdmin', 'async function assertSuperAdmin');

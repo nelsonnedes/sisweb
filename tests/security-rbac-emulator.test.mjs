@@ -575,4 +575,55 @@ if (!EMULATOR_HOST) {
       }),
     );
   });
+
+  test("claim sem membership nao escreve em modulos operacionais (brecha fechada)", async () => {
+    const database = claimedWithoutMembershipDatabase();
+    const targets = [
+      `companies/${TENANT_A}/clients/teste1`,
+      `companies/${TENANT_A}/fornecedores/teste1`,
+      `companies/${TENANT_A}/cargos/teste1`,
+      `companies/${TENANT_A}/estoqueTorasAtual/teste1`,
+      `companies/${TENANT_A}/especies/teste1`,
+      `companies/${TENANT_A}/fiscal/teste1`,
+      `companies/${TENANT_A}/configuracoes/teste1`,
+    ];
+    for (const path of targets) {
+      await assertFails(set(ref(database, path), { nome: "teste" }));
+    }
+  });
+
+  test("membro ativo do tenant escreve em modulos operacionais", async () => {
+    const database = memberDatabase();
+    const targets = [
+      `companies/${TENANT_A}/clients/teste1`,
+      `companies/${TENANT_A}/fornecedores/teste1`,
+      `companies/${TENANT_A}/cargos/teste1`,
+      `companies/${TENANT_A}/estoqueTorasAtual/teste1`,
+      `companies/${TENANT_A}/especies/teste1`,
+      `companies/${TENANT_A}/fiscal/teste1`,
+      `companies/${TENANT_A}/configuracoes/teste1`,
+    ];
+    for (const path of targets) {
+      await assertSucceeds(set(ref(database, path), { nome: "teste" }));
+    }
+  });
+
+  test("membro inativo nao escreve em modulos operacionais", async () => {
+    const database = testEnv
+      .authenticatedContext("inactive-member", {
+        companyId: TENANT_A,
+        subscriptionStatus: "active",
+      })
+      .database();
+    // usuario existe mas com active=false
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await set(ref(context.database(), `companies/${TENANT_A}/users/inactive-member`), {
+        role: "sales",
+        active: false,
+      });
+    });
+    await assertFails(
+      set(ref(database, `companies/${TENANT_A}/clients/teste1`), { nome: "teste" }),
+    );
+  });
 }
