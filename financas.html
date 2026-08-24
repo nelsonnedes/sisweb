@@ -1159,6 +1159,12 @@
             .filtros-toggle-btn {
                 display: none !important;
             }
+            /* Filtros sempre visíveis no desktop (regressão: offcanvas-drawer ficava display:none
+               com botão de abertura escondido -> filtros inacessíveis em >=769px) */
+            .offcanvas-drawer#finFiltrosReceberDrawer,
+            .offcanvas-drawer#finFiltrosPagarDrawer {
+                display: block !important;
+            }
         }
     </style>
     </head>
