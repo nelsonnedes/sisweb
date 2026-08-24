@@ -1,15 +1,16 @@
 # Relatório de análise — Monitoramento de Erros (Sentry)
 
 Data: 2026-08-24
-Fonte: painel "Monitoramento de Erros (Sentry)" do admin (aba Segurança), sincronizado 24/08 17:30.
+Fonte: painel "Monitoramento de Erros (Sentry)" do admin (aba Segurança).
 Contexto: issues reportados pelo SDK Sentry do Sisweb (somente metadados, sem dados de clientes).
 
-## Visão geral (do painel)
-- Total de issues: **23**
-- Erros nas últimas 24h: **2**
-- Issues críticos (error/fatal): **10**
-- Páginas afetadas no período: 0 (o SDK não registra página com segurança em todos os eventos)
-- Último sync: 24/08 17:30
+## Status final (2026-08-24, sync 18:51)
+- Total de issues: **23** — **TODOS marcados como "Resolvido"** no painel.
+- Issues críticos (error/fatal): **0** (antes eram 10).
+- Erros nas últimas 24h: **2** (issues #1/#2, marcados como resolvidos por decisão — sem stack, reabrir se recorrer).
+- Painel 100% limpo com relação aos issues conhecidos.
+
+## Histórico da análise (sincronizado 24/08 17:30)
 
 ---
 
