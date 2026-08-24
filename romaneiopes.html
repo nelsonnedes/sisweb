@@ -979,13 +979,19 @@
             #romaneioTable tbody tr { display: table-row !important; }
             #romaneioTable tbody tr td { display: table-cell !important; }
             /* Coluna Ações sempre visível no desktop (sticky à direita) — padronizado com preromaneio */
-            #romaneioTable th:last-child,
+            #romaneioTable th:last-child {
+                position: sticky !important;
+                position: -webkit-sticky !important;
+                right: 0;
+                z-index: 2;
+                box-shadow: -2px 0 6px rgba(15,23,42,.08);
+            }
             #romaneioTable td:last-child {
                 position: sticky !important;
                 position: -webkit-sticky !important;
                 right: 0;
                 z-index: 2;
-                background: #fff !important;
+                background: inherit;
                 box-shadow: -2px 0 6px rgba(15,23,42,.08);
             }
         }
