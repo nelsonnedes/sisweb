@@ -2956,6 +2956,10 @@ button.btn-importar:hover,
         max-height: none !important;
         text-overflow: clip !important;
     }
+    /* Em mobile, liberar o gesto de rolagem da pagina: o wrapper da tabela de itens
+       (.table-responsive.romaneio-scroll-x) tem overflow-y:auto e captura o gesto
+       do toque sem rolar. Forcamos overflow:visible para a pagina rolar. */
+    body .romaneio-scroll-x { overflow: visible !important; overflow-x: visible !important; overflow-y: visible !important; }
     body #romaneioTable tbody tr td[data-label="Ações"],
     body #tabela-serrados tbody tr td[data-label="Ações"],
     body #tabela-toras tbody tr td[data-label="Ações"] {
