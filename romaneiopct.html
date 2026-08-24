@@ -1656,10 +1656,20 @@
             min-width: 1200px; /* ✅ LARGURA MÍNIMA REDUZIDA COM TÍTULOS ABREVIADOS */
         }
 
-        /* ✅ LARGURAS OTIMIZADAS DAS COLUNAS PCT - NOVA ORDEM */
+        /* ✅ COLUNAS PCT = VISUAL IGUAL AO ROMANEIOTL (9 colunas).
+           Pç/Pac. (6) e Total Peças (7) são OCULTADAS (display:none) apenas
+           visualmente — os DADOS continuam gravados/lidos na lógica (sem perda). */
+        #romaneioTable th:nth-child(6),
+        #romaneioTable td:nth-child(6),
+        #romaneioTable th:nth-child(7),
+        #romaneioTable td:nth-child(7) {
+            display: none !important;
+        }
+
+        /* ✅ LARGURAS OTIMIZADAS DAS COLUNAS PCT — alinhadas com ROMANEIOTL */
         #romaneioTable th:nth-child(1),  /* Espécie */
         #romaneioTable td:nth-child(1) {
-            width: 15%;
+            width: 18%;
             min-width: 120px;
             white-space: normal;
             word-wrap: break-word;
@@ -1668,56 +1678,42 @@
 
         #romaneioTable th:nth-child(2),  /* Comp. */
         #romaneioTable td:nth-child(2) {
-            width: 6%;
+            width: 9%;
             min-width: 60px;
             text-align: center !important;
         }
 
         #romaneioTable th:nth-child(3),  /* Esp. */
         #romaneioTable td:nth-child(3) {
-            width: 6%;
+            width: 8%;
             min-width: 60px;
             text-align: center !important;
         }
 
         #romaneioTable th:nth-child(4),  /* Larg. */
         #romaneioTable td:nth-child(4) {
-            width: 6%;
+            width: 9%;
             min-width: 60px;
             text-align: center !important;
         }
 
         #romaneioTable th:nth-child(5),  /* Qtd. */
         #romaneioTable td:nth-child(5) {
-            width: 6%;
+            width: 7%;
             min-width: 50px;
-            text-align: center !important;
-        }
-
-        #romaneioTable th:nth-child(6),  /* Pç/Pac. */
-        #romaneioTable td:nth-child(6) {
-            width: 7%;
-            min-width: 60px;
-            text-align: center !important;
-        }
-
-        #romaneioTable th:nth-child(7),  /* Total */
-        #romaneioTable td:nth-child(7) {
-            width: 7%;
-            min-width: 60px;
             text-align: center !important;
         }
 
         #romaneioTable th:nth-child(8),  /* Vol. */
         #romaneioTable td:nth-child(8) {
-            width: 9%;
+            width: 10%;
             min-width: 80px;
             text-align: right;
         }
 
         #romaneioTable th:nth-child(9),  /* Preço */
         #romaneioTable td:nth-child(9) {
-            width: 10%;
+            width: 11%;
             min-width: 90px;
             text-align: right;
         }
@@ -1725,13 +1721,13 @@
         #romaneioTable th:nth-child(10), /* V. Total */
         #romaneioTable td:nth-child(10) {
             width: 11%;
-            min-width: 100px;
+            min-width: 90px;
             text-align: right;
         }
 
         #romaneioTable th:nth-child(11), /* Ações */
         #romaneioTable td:nth-child(11) {
-            width: 11%;
+            width: 12%;
             min-width: 100px;
             text-align: center;
         }
@@ -2100,14 +2096,14 @@
                 position: sticky !important;
                 position: -webkit-sticky !important;
                 right: 0;
-                z-index: 2;
+                z-index: 20;
                 box-shadow: -2px 0 6px rgba(15,23,42,.08);
             }
             #romaneioTable td:last-child {
                 position: sticky !important;
                 position: -webkit-sticky !important;
                 right: 0;
-                z-index: 2;
+                z-index: 20;
                 background: inherit;
                 box-shadow: -2px 0 6px rgba(15,23,42,.08);
             }
