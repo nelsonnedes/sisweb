@@ -312,7 +312,9 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 
 1. ~~**🔴 `firebase deploy --only database`**~~ → **✅ RESOLVIDO 2026-08-21.** Regras deployadas com sucesso (`cargos` .read/.write BUG-A, `fiscal` .write BUG-B, `configuracoes` Configurar Impressão). **Validar em produção:** folha (cargos), NF-e (seed naturezas), configurar impressão romaneios.
 2. **🟡 Vendor dos SDKs Firebase locais** (mitigação `ERR_CONNECTION_TIMED_OUT` gstatic) — §8, opcional.
-3. **🟡 Merge** `codex/recovery-p0-freebuff-regressions` → `main` (commits de mobile romaneios/finanças/estoque já pushados).
+3. ~~**🟡 Merge** `codex/recovery-p0-freebuff-regressions` → `main`~~ → **✅ RESOLVIDO 2026-08-24.** Fast-forward com `pre-merge-validation` (6/6 etapas OK: lint, typecheck, unit tests 490 pass, artefatos estáticos, PR focus, cachebusters). `main` tip `9a08b47`; branch `codex/recovery-p0-freebuff-regressions` tip `71bebc7`; ambos `0/0` sync com `origin`.
+4. ~~**💡 `npm run test:security:emulator`**~~ → **✅ RESOLVIDO 2026-08-24.** Antes ficava em **skip** ("RBAC emulator indisponivel") porque a **porta 9000 estava ocupada** por um **processo `java` órfão** do Firebase Emulator (`firebase emulators:exec` deixa um java preso em foreground no Windows). FIX: `Stop-Process -Id <java> -Force` (PIDs 17392/20964/18464) + garantir porta `127.0.0.1:9000` livre. Resultado: `firebase emulators:exec` roda **17/17** testes RBAC, **0 fail / 0 skip**. ⚠️ ARMADILHA: o emulator re-deixa um java órfão após cada execução (reivindica a porta 9000) — se `npm run test:security:emulator` reclamar "port taken", encerrar o processo java pendente (`Get-Process java`) antes de re-tentar.
+5. **🔴 RBAC por módulo** em `companies/{companyId}` — divida estrutural (story consolidação item 3; testes de regras já cobrem cenários financeiros).
 
 ## 16. Como manter este cérebro
 
