@@ -1,0 +1,4 @@
+# Firebase SDKs vendored — artefatos binários/JS baixados 1:1 do CDN.
+# `binary` (-text) impede qualquer conversão de EOL pelo git, preservando
+# integridade byte a byte com https://www.gstatic.com/firebasejs/10.7.1/.
+firebase/sdk/*.js binary

@@ -10,8 +10,8 @@
  */
 
 // ─── SDK Imports ──────────────────────────────────────────────────────────────
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { initializeApp, getApps } from "./firebase/sdk/firebase-app.js";
+import { getDatabase, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, goOnline, goOffline } from "./firebase/sdk/firebase-database.js";
 import {
     getAuth,
     createUserWithEmailAndPassword,
@@ -28,9 +28,9 @@ import {
     updatePassword as firebaseUpdatePassword,
     updateProfile as firebaseUpdateProfile,
     updateCurrentUser
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject, getBlob } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+} from "./firebase/sdk/firebase-auth.js";
+import { getFunctions, httpsCallable } from "./firebase/sdk/firebase-functions.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject, getBlob } from "./firebase/sdk/firebase-storage.js";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const FIREBASE_CONFIG = {
