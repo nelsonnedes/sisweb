@@ -115,3 +115,19 @@ backfill para garantir que todos membros têm permissões. Isso evita a quebra.
 - Funcionalidades existentes intactas (suíte 490+ pass; pre-merge 6/6).
 - Callables novas são aditivas; não alteram o fluxo atual de onboarding/login.
 - Testes novos cobrem o dicionário, default por papel e normalização.
+
+## Status — 2026-08-24
+
+- Fase 1 (infraestrutura): **CONCLUÍDA, DEPLOYADA e VALIDADA.** Dicionário de módulos
+  (`functions/module-permissions.js`), callables superadmin
+  (`setMemberModulePermissions`, `applyDefaultModulePermissions` — v1, us-central1),
+  testes 10/10, pre-merge 6/6, emulator 20/20. Sem mudança em `database.rules.json`.
+- Fase 2 (exigir `permissions.*` nas regras RTDB): **ADIADA.** ⚠️ Requer:
+  1. Mapeamento de negócio **role → módulos** (decisão de produto; ex.: quais módulos
+     um `role:'sales'` ou `role:'viewer'` pode acessar). Hoje `defaultPermissionsForRole`
+     dá piso vazio para papéis não-admin/non-finance, então impor `permissions.*`
+     sem esse mapeamento **restringiria/** quebraria o acesso atual desses papéis.
+  2. Backfill global (`applyDefaultModulePermissions`) com base no mapeamento.
+  3. Implementação incremental por módulo com testes de emulator + validação em produção.
+- **NÃO alterar `database.rules.json` para exigir `permissions.*` enquanto** o
+  mapeamento de negócio não for definido e o backfill não rodar. (Risco de regressão.)
