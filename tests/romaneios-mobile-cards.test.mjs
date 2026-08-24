@@ -83,7 +83,7 @@ test('Romaneios Mobile: romaneiotora oculta Oco/X no card (plano F1) e mantém 1
     const html = read('romaneiotora.html');
     const block = html.match(/@media\s*\(max-width:\s*768px\)[\s\S]*?@media\s*\(min-width:\s*769px\)/)[0];
     assert.match(block, /td:nth-child\(7\),[\s\S]*?td:nth-child\(8\),[\s\S]*?td:nth-child\(11\),[\s\S]*?td:nth-child\(15\)[\s\S]*?display:\s*none\s*!important/, 'oculta Oco1/Oco2/CompGeo/X1-X4 no card');
-    assert.match(block, /td:nth-child\(1\),[\s\S]*?td:nth-child\(19\)[\s\S]*?display:\s*flex\s*!important/, 'exibe as 12 colunas essenciais no card');
+    assert.match(block, /td:nth-child\(1\),[\s\S]*?td:nth-child\(19\)[\s\S]*?display:\s*block\s*!important/, 'exibe as 12 colunas essenciais no card');
 });
 
 test('Romaneios Mobile: modais de lista do preromaneio injetam data-label nas células', () => {

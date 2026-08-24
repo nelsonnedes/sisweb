@@ -2964,6 +2964,9 @@ button.btn-importar:hover,
         height: auto !important;
         min-height: 0 !important;
         max-height: none !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
         padding-bottom: 10px !important;
     }
     body #romaneioTable tbody tr td[data-label="Ações"] .btn-editar,
