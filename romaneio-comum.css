@@ -2940,4 +2940,35 @@ button.btn-importar:hover,
     body #clientListModal.rlc-density-normal .table tbody td, body #clientListModal .table.rlc-density-normal tbody td, body #fornecedorListModal.rlc-density-normal .table tbody td, body #fornecedorListModal .table.rlc-density-normal tbody td, body #speciesListModal.rlc-density-normal .table tbody td, body #speciesListModal .table.rlc-density-normal tbody td, body #listaModal.rlc-density-normal .table tbody td, body #listaModal .table.rlc-density-normal tbody td, body #romaneioListModal.rlc-density-normal .table tbody td, body #romaneioListModal .table.rlc-density-normal tbody td { height:auto !important; min-height:0 !important; max-height:none !important; }
     body #clientListModal.rlc-density-comfortable .table tbody tr, body #clientListModal .table.rlc-density-comfortable tbody tr, body #fornecedorListModal.rlc-density-comfortable .table tbody tr, body #fornecedorListModal .table.rlc-density-comfortable tbody tr, body #speciesListModal.rlc-density-comfortable .table tbody tr, body #speciesListModal .table.rlc-density-comfortable tbody tr, body #listaModal.rlc-density-comfortable .table tbody tr, body #listaModal .table.rlc-density-comfortable tbody tr, body #romaneioListModal.rlc-density-comfortable .table tbody tr, body #romaneioListModal .table.rlc-density-comfortable tbody tr { height:auto !important; min-height:0 !important; max-height:none !important; }
     body #clientListModal.rlc-density-comfortable .table tbody td, body #clientListModal .table.rlc-density-comfortable tbody td, body #fornecedorListModal.rlc-density-comfortable .table tbody td, body #fornecedorListModal .table.rlc-density-comfortable tbody td, body #speciesListModal.rlc-density-comfortable .table tbody td, body #speciesListModal .table.rlc-density-comfortable tbody td, body #listaModal.rlc-density-comfortable .table tbody td, body #listaModal .table.rlc-density-comfortable tbody td, body #romaneioListModal.rlc-density-comfortable .table tbody td, body #romaneioListModal .table.rlc-density-comfortable tbody td { height:auto !important; min-height:0 !important; max-height:none !important; }
+    /* Botões de ação da tabela de itens: garantir alvo de toque visível/legível em mobile */
+    #romaneioTable tbody tr td[data-label="Ações"] .btn-editar,
+    #romaneioTable tbody tr td[data-label="Ações"] .btn-excluir,
+    #romaneioTable tbody tr td[data-label="Ações"] button,
+    #tabela-serrados tbody tr td[data-label="Ações"] button,
+    #tabela-toras tbody tr td[data-label="Ações"] button {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 36px !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        max-width: 36px !important;
+        max-height: none !important;
+        padding: 0 !important;
+        margin: 0 4px 0 0 !important;
+        font-size: 14px !important;
+        line-height: 1 !important;
+        flex: 0 0 auto !important;
+        box-sizing: border-box !important;
+        vertical-align: middle !important;
+    }
+    #romaneioTable tbody tr td[data-label="Ações"] .btn-editar i,
+    #romaneioTable tbody tr td[data-label="Ações"] .btn-excluir i,
+    #romaneioTable tbody tr td[data-label="Ações"] button i,
+    #tabela-serrados tbody tr td[data-label="Ações"] button i,
+    #tabela-toras tbody tr td[data-label="Ações"] button i {
+        font-size: 15px !important;
+        line-height: 1 !important;
+    }
 }
