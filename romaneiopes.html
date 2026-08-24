@@ -6,7 +6,7 @@
     <title>Romaneio PES - Sistema Sisweb</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <link rel="stylesheet" href="romaneio-comum.css?v=20260822_mobile24">
+    <link rel="stylesheet" href="romaneio-comum.css?v=20260822_mobile25">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <script src="menu-component.js?v=1aef3d0fabd7"></script>
     <link rel="stylesheet" href="print-styles.css">
@@ -1364,7 +1364,7 @@
             db,
             auth,
             app
-        } from './firebaseService.js?v=25b8131395fb';
+        } from './firebaseService.js?v=e0acb7d52e36';
         const tenantFromContext = (() => {
             try {
                 if (window.appTenantId) return String(window.appTenantId);
@@ -4111,12 +4111,12 @@
                     : 'N/A';
                 
                 row.innerHTML = `
-                    <td>${formatRomaneioDatePes(romaneio)}</td>
-                    <td>${clienteNome}</td>
-                    <td>${especieNome}</td>
-                    <td style="text-align: right;">${formatarVolume(volumeTotal)}</td>
-                    <td style="text-align: right;">${formatarMoeda(valorTotal)}</td>
-                    <td style="text-align: center;">
+                    <td data-label="Data">${formatRomaneioDatePes(romaneio)}</td>
+                    <td data-label="Cliente">${clienteNome}</td>
+                    <td data-label="Espécie">${especieNome}</td>
+                    <td data-label="Volume" style="text-align: right;">${formatarVolume(volumeTotal)}</td>
+                    <td data-label="Valor Total" style="text-align: right;">${formatarMoeda(valorTotal)}</td>
+                    <td data-label="Ações" style="text-align: center;">
                         <div class="btn-group">
                         <button class="action-button edit-button" onclick="editRomaneio(${index})" title="Editar">
                             <i class="fas fa-edit"></i>

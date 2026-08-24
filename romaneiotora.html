@@ -16,7 +16,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     </script><!-- compat shim do singleton (window.firebase para módulos antigos) --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="layout-comum.css">
-    <link rel="stylesheet" href="romaneio-comum.css?v=20260822_mobile24">
+    <link rel="stylesheet" href="romaneio-comum.css?v=20260822_mobile25">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <link rel="stylesheet" href="print-styles.css">
     <link rel="stylesheet" href="ui-components.css?v=20260724modalv2">
@@ -1965,7 +1965,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <!-- Serviço Firebase canônico: uma única instância compartilhada por toda a página. -->
     <script>
         window.__siswebFirebaseServiceReady = (async function () {
-            const firebaseSvc = await import('./firebaseService.js?v=25b8131395fb');
+            const firebaseSvc = await import('./firebaseService.js?v=e0acb7d52e36');
             window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
             window.FirebaseService = window.firebaseService;
             return window.firebaseService;
@@ -1979,7 +1979,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="species-manager.js?v=14f755b5358c"></script>
     
     <!-- Script de fornecedor modals -->
-    <script src="fornecedor-modals.js?v=f607eb24925d"></script>
+    <script src="fornecedor-modals.js?v=ea27190b352d"></script>
     <script src="modules/core/client-list-columns.js?v=2caabf5273d4" data-page="fornecedores" data-target="fornecedorListTable"></script>
     <script src="schema-migration-contatos.js?v=2e13b2ae3d91"></script>
     <!-- O monolito romaneiotora_modais.js foi substituido pelos modulos canonicos abaixo. -->
@@ -2000,9 +2000,9 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="modules/core/romaneio-list-columns.js?v=3282886493bc" data-page="tora" data-target="romaneioListTable"></script>
     <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
     <script src="coordenador-inicializacao.js?v=1344dd426230"></script>
-    <script src="romaneiotora.js?v=280535606fc8"></script>
+    <script src="romaneiotora.js?v=607245bdf19a"></script>
     <script src="romaneiotora_tabela.js?v=ada74f3d3337"></script>
-    <script src="romaneio-manager.js?v=4543b8689eea"></script>
+    <script src="romaneio-manager.js?v=d41ae7e5dd66"></script>
     <script src="romaneiotora-import-v4.js?v=544705593380"></script>
     
     <!-- Scripts de correções -->
@@ -2408,7 +2408,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     <!-- removido: standardized-client-modal.js (interferia nos modais de fornecedores) -->
     <!-- ✅ Modal de espécies padronizado (igual TL) -->
-    <script src="modules/modals/modal-especies.js?v=1c37e093dd67"></script>
+    <script src="modules/modals/modal-especies.js?v=a280f9cc54cd"></script>
     
     <!-- removido: romaneiotora_modal_fix_final.js e romaneiotora-client-modal-fix.js (evitar duplicidade) -->
     
