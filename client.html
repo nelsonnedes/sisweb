@@ -6,7 +6,7 @@
     <title>Gerenciar Clientes - Sistema Sisweb</title>
     <script>
         if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
-            document.write('<script src="auth-performance-diagnostics.js?v=6ef6e56a8b86"><\/script>');
+            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
         }
     </script>
     
@@ -21,16 +21,16 @@
 
     <script type="module">
 
-        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=0662e102e114';
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=37242a2253a6';
 import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     </script><!-- Menu Component -->
-    <script src="menu-component.js?v=1aef3d0fabd7"></script>
+    <script src="menu-component.js?v=fc5749bbb053"></script>
     <script src="schema-migration-contatos.js?v=2e13b2ae3d91"></script>
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
-    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
-    <script src="sentry-init.js?v=279872380246"></script>
+    <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
+    <script src="sentry-init.js?v=7849a9e5f9c0"></script>
 <script>
         (function () {
             try {
@@ -529,8 +529,8 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         if (!window.firebaseService) window.firebaseService = svc;
     </script>
     <!-- ✅ FIX: Correção Unificada de Clientes (Salvar/Excluir/Multi-tenant) -->
-    <script src="romaneios-client-save-fix.js?v=7b9c0e02d555"></script>
-    <script type="module" src="js/client.js?v=763fe83aa92d"></script>
+    <script src="romaneios-client-save-fix.js?v=da3763e8836a"></script>
+    <script type="module" src="js/client.js?v=edee107a2cea"></script>
     <script src="commerce-responsive.js?v=24c36f6fc7bc"></script>
 
 </body>

@@ -6,7 +6,7 @@
     <title>Finanças - Sistema de Gestão</title>
     <script>
         if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
-            document.write('<script src="auth-performance-diagnostics.js?v=6ef6e56a8b86"><\/script>');
+            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -65,9 +65,9 @@
     <link rel="stylesheet" href="print-styles.css">
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
-    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
-    <script src="sentry-init.js?v=279872380246"></script>
-<script src="menu-component.js?v=1aef3d0fabd7"></script>
+    <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
+    <script src="sentry-init.js?v=7849a9e5f9c0"></script>
+<script src="menu-component.js?v=fc5749bbb053"></script>
     <style>
         /* Note: Container styles are now in layout-comum.css */
 
@@ -2006,7 +2006,7 @@
     
     <!-- ✅ Firebase via módulo compartilhado (firebase-init.js) -->
     <script type="module">
-        import { app, auth, db, storage, ref, set, get, remove, child, onValue, off, update, serverTimestamp, push, onAuthStateChanged, signOut, storageRef, uploadBytes, getDownloadURL, deleteObject, getStorage, getBlob } from './firebase-init.js?v=0662e102e114';
+        import { app, auth, db, storage, ref, set, get, remove, child, onValue, off, update, serverTimestamp, push, onAuthStateChanged, signOut, storageRef, uploadBytes, getDownloadURL, deleteObject, getStorage, getBlob } from './firebase-init.js?v=37242a2253a6';
         
         window.database = db;
         window.firebaseRef = ref;
@@ -2245,7 +2245,7 @@
                 ...financeFirebaseLocalService
             };
             window.__siswebFirebaseServiceReady = (async function () {
-                const firebaseSvc = await import('./firebaseService.js?v=25b8131395fb');
+                const firebaseSvc = await import('./firebaseService.js?v=e0acb7d52e36');
                 const existingFirebaseService = window.firebaseService || {};
                 window.firebaseService = {
                     ...existingFirebaseService,
@@ -2276,7 +2276,7 @@
     <script src="storageService.js?v=26c2875bf32d"></script>
     <script src="client-service.js?v=3061965a094a"></script>
     <script src="schema-migration-contatos.js?v=2e13b2ae3d91"></script>
-    <script src="commerce-pdf-share.js?v=db7850889254"></script>
+    <script src="commerce-pdf-share.js?v=9659e27a66f7"></script>
     <!-- Geração de Lâmina de Cobrança PIX -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="js/pix-brcode.js?v=1714fb7d79ee"></script>

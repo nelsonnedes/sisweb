@@ -13,14 +13,14 @@
     
     <!-- Firebase SDK -->
     <script type="module">
-        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=0662e102e114';
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=37242a2253a6';
         import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     </script>
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
-    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
-    <script src="sentry-init.js?v=279872380246"></script>
-    <script src="menu-component.js?v=1aef3d0fabd7"></script>
+    <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
+    <script src="sentry-init.js?v=7849a9e5f9c0"></script>
+    <script src="menu-component.js?v=fc5749bbb053"></script>
     
     <style>
         * {
@@ -355,12 +355,12 @@
     </div>
 
     <!-- Scripts -->
-    <script src="species-utils.js?v=ac1a2bae7bea"></script>
-    <script src="species-modal-standard.js?v=aabe6d5f2ce4"></script>
+    <script src="species-utils.js?v=1eae09b2ccc7"></script>
+    <script src="species-modal-standard.js?v=791d267e95fa"></script>
     <script type="module">
         import * as svc from './modules/core/firebase-service.js';
         if (!window.firebaseService) window.firebaseService = svc;
     </script>
-    <script type="module" src="js/species.js?v=ec0ff9424d1b"></script>
+    <script type="module" src="js/species.js?v=007085fad60d"></script>
 </body>
 </html>

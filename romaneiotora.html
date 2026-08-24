@@ -10,7 +10,7 @@
 
     <script type="module">
 
-        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=0662e102e114';
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=37242a2253a6';
 import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     </script><!-- compat shim do singleton (window.firebase para módulos antigos) --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -24,8 +24,8 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
-    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
-    <script src="sentry-init.js?v=279872380246"></script>
+    <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
+    <script src="sentry-init.js?v=7849a9e5f9c0"></script>
 <script>
         (function() {
             function isExtErr(m){if(!m)return false;var s=typeof m==='string'?m:(m.message||String(m));s=s.toLowerCase();return s.includes('message channel closed')||s.includes('extension context invalidated')||s.includes('chrome-extension://')||s.includes('moz-extension://')||s.includes('safari-extension://');}
@@ -1957,7 +1957,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     
     <script src="estados-cidades.js?v=e634a7c28536"></script>
     <!-- removido: handler de modais de clientes (não utilizado em fornecedores) -->
-    <script src="menu-component.js?v=1aef3d0fabd7"></script>
+    <script src="menu-component.js?v=fc5749bbb053"></script>
     
     <!-- Scripts de Correção - ORDEM REORGANIZADA -->
     <script src="correcao-interface-database.js?v=44e2d6290888"></script>
@@ -1973,9 +1973,9 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     </script>
     
     <!-- Script de gerenciamento unificado de espécies - PRIORIDADE MÁXIMA -->
-    <script src="species-utils.js?v=ac1a2bae7bea"></script>
-    <script src="species-store.js?v=1c274b02dd71"></script>
-    <script src="species-modal-standard.js?v=aabe6d5f2ce4"></script>
+    <script src="species-utils.js?v=1eae09b2ccc7"></script>
+    <script src="species-store.js?v=f6f5cff9d5aa"></script>
+    <script src="species-modal-standard.js?v=791d267e95fa"></script>
     <script src="species-manager.js?v=14f755b5358c"></script>
     
     <!-- Script de fornecedor modals -->
@@ -1984,7 +1984,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="schema-migration-contatos.js?v=2e13b2ae3d91"></script>
     <!-- O monolito romaneiotora_modais.js foi substituido pelos modulos canonicos abaixo. -->
     
-    <script src="romaneios-client-save-fix.js?v=7b9c0e02d555"></script>
+    <script src="romaneios-client-save-fix.js?v=da3763e8836a"></script>
     
     <!-- Scripts de correção -->
     <script src="correcao-funcoes-ausentes.js?v=c5264b3eec06"></script>
@@ -1994,15 +1994,15 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     
     <!-- Scripts principais -->
     <script src="romaneio-utils.js?v=e2c32c9889fa"></script>
-    <script src="tora-geometry-utils.js?v=a1406b3fea84"></script>
+    <script src="tora-geometry-utils.js?v=6cbd9a42cd32"></script>
     <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
-    <script src="romaneio-print-config.js?v=24205aca3d2d"></script>
-    <script src="modules/core/romaneio-list-columns.js?v=3282886493bc" data-page="tora" data-target="romaneioListTable"></script>
+    <script src="romaneio-print-config.js?v=0c4709b882a7"></script>
+    <script src="modules/core/romaneio-list-columns.js?v=4a678c769887" data-page="tora" data-target="romaneioListTable"></script>
     <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
     <script src="coordenador-inicializacao.js?v=1344dd426230"></script>
     <script src="romaneiotora.js?v=607245bdf19a"></script>
-    <script src="romaneiotora_tabela.js?v=ada74f3d3337"></script>
-    <script src="romaneio-manager.js?v=d41ae7e5dd66"></script>
+    <script src="romaneiotora_tabela.js?v=fbbf258de9f3"></script>
+    <script src="romaneio-manager.js?v=ebf76d27a8b6"></script>
     <script src="romaneiotora-import-v4.js?v=544705593380"></script>
     
     <!-- Scripts de correções -->
@@ -2408,7 +2408,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     <!-- removido: standardized-client-modal.js (interferia nos modais de fornecedores) -->
     <!-- ✅ Modal de espécies padronizado (igual TL) -->
-    <script src="modules/modals/modal-especies.js?v=a280f9cc54cd"></script>
+    <script src="modules/modals/modal-especies.js?v=6ed25fce5fb5"></script>
     
     <!-- removido: romaneiotora_modal_fix_final.js e romaneiotora-client-modal-fix.js (evitar duplicidade) -->
     

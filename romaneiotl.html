@@ -6,7 +6,7 @@
     <title>Romaneio TL - Sistema Sisweb</title>
     <script>
         if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
-            document.write('<script src="auth-performance-diagnostics.js?v=6ef6e56a8b86"><\/script>');
+            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -18,7 +18,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Loading / status styles reutilizáveis -->
     <link rel="stylesheet" href="folha_pagamento/folha-loading-styles.css">
-    <script src="menu-component.js?v=1aef3d0fabd7"></script>
+    <script src="menu-component.js?v=fc5749bbb053"></script>
     
     <!--
     ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -322,8 +322,8 @@
     </script>
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
-    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
-    <script src="sentry-init.js?v=279872380246"></script>
+    <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
+    <script src="sentry-init.js?v=7849a9e5f9c0"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         if (!window.initPreRomaneioSelector) return;
@@ -1846,7 +1846,7 @@
 
     <script type="module">
 
-        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=0662e102e114';
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=37242a2253a6';
 import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
 
@@ -1962,9 +1962,9 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="firebase-connection-manager-compat.js?v=717987254970"></script>
     
     <!-- Módulos Base (carregados primeiro) -->
-    <script src="species-utils.js?v=ac1a2bae7bea"></script>
-    <script src="species-store.js?v=1c274b02dd71"></script>
-    <script src="species-modal-standard.js?v=aabe6d5f2ce4"></script>
+    <script src="species-utils.js?v=1eae09b2ccc7"></script>
+    <script src="species-store.js?v=f6f5cff9d5aa"></script>
+    <script src="species-modal-standard.js?v=791d267e95fa"></script>
     <script src="modules/core/firebase-service.js?v=fea8c01c1977"></script>
     <script src="modules/core/utils.js?v=7ccdca69ee33"></script>
     <script src="modules/core/romaneio-messages.js?v=114b5f8a30f6"></script>
@@ -1974,8 +1974,8 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="estados-cidades.js?v=e634a7c28536"></script>
     
     <!-- Módulos CRUD (dependem de estados-cidades) -->
-    <script src="modules/crud/gerenciar-clientes.js?v=3fa129bc7332"></script>
-    <script src="modules/crud/gerenciar-especies.js?v=d30534480ca9"></script>
+    <script src="modules/crud/gerenciar-clientes.js?v=1728d6a58e79"></script>
+    <script src="modules/crud/gerenciar-especies.js?v=7d6a248af0e5"></script>
     
     <!-- Módulos de Navegação e Formatação -->
     <script src="modules/core/navegacao-enter.js?v=eb76c699775d"></script>
@@ -1984,22 +1984,22 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <!-- Módulos de Itens -->
     <script src="modules/items/adicionar-item.js?v=770a7aee9ea8"></script>
     <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
-    <script src="modules/items/renderizar-tabela.js?v=b69b8ea44d59"></script>
+    <script src="modules/items/renderizar-tabela.js?v=95d13526ca2a"></script>
     <script src="modules/items/editar-item.js?v=1ffca2e95b12"></script>
     <script src="modules/items/excluir-item.js?v=f7d5f45f65f6"></script>
     
     <!-- Módulos de Romaneio -->
     <script src="modules/romaneio/salvar-romaneio.js?v=08eb22ea9ca2"></script>
-    <script src="romaneio-print-config.js?v=24205aca3d2d"></script>
+    <script src="romaneio-print-config.js?v=0c4709b882a7"></script>
     <script src="modules/reports/imprimir-romaneio.js?v=816cf055ebe9"></script>
 
     <!-- Módulos de Modais (dependem dos CRUD) -->
-    <script src="modules/modals/modal-clientes.js?v=5f3d192a699d"></script>
+    <script src="modules/modals/modal-clientes.js?v=f917a24a9902"></script>
     <script src="modules/core/client-list-columns.js?v=2caabf5273d4" data-page="tl" data-target="clientListTable"></script>
-    <script src="modules/modals/modal-especies.js?v=a280f9cc54cd"></script>
-    <script src="modules/core/romaneio-list-columns.js?v=3282886493bc" data-page="tl" data-target="listaRomaneios"></script>
-    <script src="modules/modals/modal-lista-romaneios.js?v=bd3b5846157e"></script>
-    <script src="romaneios-client-save-fix.js?v=7b9c0e02d555"></script>
+    <script src="modules/modals/modal-especies.js?v=6ed25fce5fb5"></script>
+    <script src="modules/core/romaneio-list-columns.js?v=4a678c769887" data-page="tl" data-target="listaRomaneios"></script>
+    <script src="modules/modals/modal-lista-romaneios.js?v=b36d6024cd45"></script>
+    <script src="romaneios-client-save-fix.js?v=da3763e8836a"></script>
     <script src="schema-migration-contatos.js?v=2e13b2ae3d91"></script>
 
     <script>

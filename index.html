@@ -7,7 +7,7 @@
     <title>Dashboard - Sistema Sisweb</title>
     <script>
         if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
-            document.write('<script src="auth-performance-diagnostics.js?v=6ef6e56a8b86"><\/script>');
+            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
         }
     </script>
     <link rel="manifest" href="manifest.json">
@@ -52,13 +52,13 @@
         })();
     </script>
     
-    <script defer src="menu-component.js?v=1aef3d0fabd7"></script>
+    <script defer src="menu-component.js?v=fc5749bbb053"></script>
     <!-- Firebase SDK -->
     <!-- Firebase via módulo compartilhado (singleton) -->
 
     <script type="module">
 
-        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=0662e102e114';
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebase-init.js?v=37242a2253a6';
 import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     </script><!-- Módulos do Dashboard -->
@@ -67,8 +67,8 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script defer src="modules/dashboard/dashboard-core.js?v=eed088ee3f1d"></script>
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
-    <script src="sentry/sentry.browser.min.js?v=05285296b9b9"></script>
-    <script src="sentry-init.js?v=279872380246"></script>
+    <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
+    <script src="sentry-init.js?v=7849a9e5f9c0"></script>
 <script defer src="modules/dashboard/dashboard-widgets.js?v=3f61599d3aeb"></script>
     <!-- Adicionar fontes do Google para melhorar a tipografia -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
