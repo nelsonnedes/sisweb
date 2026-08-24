@@ -283,6 +283,29 @@
             font-size: 13px;
             vertical-align: middle;
         }
+        /* Coluna Ações sempre visível no desktop (sticky à direita) — padronizado */
+        #tabela-serrados th:last-child, #tabela-toras th:last-child,
+        #tabela-serrados td:last-child, #tabela-toras td:last-child {
+            width: 90px;
+            min-width: 90px;
+            text-align: center;
+            white-space: nowrap;
+        }
+        @media (min-width: 1025px) {
+            #tabela-serrados th:last-child, #tabela-toras th:last-child,
+            #tabela-serrados td:last-child, #tabela-toras td:last-child {
+                position: sticky !important;
+                position: -webkit-sticky !important;
+                right: 0;
+                z-index: 2;
+                background: #fff !important;
+                box-shadow: -2px 0 6px rgba(15,23,42,.08);
+            }
+            /* cabeçalho de Ações precisa de fundo para não "vazar" */
+            #tabela-serrados th:last-child, #tabela-toras th:last-child {
+                background: #2c3e50 !important;
+            }
+        }
 
         th {
             background-color: #2c3e50;
