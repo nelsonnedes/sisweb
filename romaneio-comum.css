@@ -2940,12 +2940,37 @@ button.btn-importar:hover,
     body #clientListModal.rlc-density-normal .table tbody td, body #clientListModal .table.rlc-density-normal tbody td, body #fornecedorListModal.rlc-density-normal .table tbody td, body #fornecedorListModal .table.rlc-density-normal tbody td, body #speciesListModal.rlc-density-normal .table tbody td, body #speciesListModal .table.rlc-density-normal tbody td, body #listaModal.rlc-density-normal .table tbody td, body #listaModal .table.rlc-density-normal tbody td, body #romaneioListModal.rlc-density-normal .table tbody td, body #romaneioListModal .table.rlc-density-normal tbody td { height:auto !important; min-height:0 !important; max-height:none !important; }
     body #clientListModal.rlc-density-comfortable .table tbody tr, body #clientListModal .table.rlc-density-comfortable tbody tr, body #fornecedorListModal.rlc-density-comfortable .table tbody tr, body #fornecedorListModal .table.rlc-density-comfortable tbody tr, body #speciesListModal.rlc-density-comfortable .table tbody tr, body #speciesListModal .table.rlc-density-comfortable tbody tr, body #listaModal.rlc-density-comfortable .table tbody tr, body #listaModal .table.rlc-density-comfortable tbody tr, body #romaneioListModal.rlc-density-comfortable .table tbody tr, body #romaneioListModal .table.rlc-density-comfortable tbody tr { height:auto !important; min-height:0 !important; max-height:none !important; }
     body #clientListModal.rlc-density-comfortable .table tbody td, body #clientListModal .table.rlc-density-comfortable tbody td, body #fornecedorListModal.rlc-density-comfortable .table tbody td, body #fornecedorListModal .table.rlc-density-comfortable tbody td, body #speciesListModal.rlc-density-comfortable .table tbody td, body #speciesListModal .table.rlc-density-comfortable tbody td, body #listaModal.rlc-density-comfortable .table tbody td, body #listaModal .table.rlc-density-comfortable tbody td, body #romaneioListModal.rlc-density-comfortable .table tbody td, body #romaneioListModal .table.rlc-density-comfortable tbody td { height:auto !important; min-height:0 !important; max-height:none !important; }
-    /* Botões de ação da tabela de itens: garantir alvo de toque visível/legível em mobile */
-    #romaneioTable tbody tr td[data-label="Ações"] .btn-editar,
-    #romaneioTable tbody tr td[data-label="Ações"] .btn-excluir,
-    #romaneioTable tbody tr td[data-label="Ações"] button,
-    #tabela-serrados tbody tr td[data-label="Ações"] button,
-    #tabela-toras tbody tr td[data-label="Ações"] button {
+    /* Botões de ação da tabela de itens: garantir alvo de toque visível/legível em mobile.
+       A base (#romaneioTable tbody tr td / ui-components .table td) aplica overflow:hidden,
+       white-space:nowrap e height:38px, cortando os botões (estouro inferior invisível).
+       Forçamos overflow:visible, white-space:normal e height:auto nos td das tabelas de itens. */
+    body #romaneioTable tbody tr td,
+    body #tabela-serrados tbody tr td,
+    body #tabela-toras tbody tr td {
+        overflow: visible !important;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
+        white-space: normal !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        text-overflow: clip !important;
+    }
+    body #romaneioTable tbody tr td[data-label="Ações"],
+    body #tabela-serrados tbody tr td[data-label="Ações"],
+    body #tabela-toras tbody tr td[data-label="Ações"] {
+        overflow: visible !important;
+        white-space: normal !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        padding-bottom: 10px !important;
+    }
+    body #romaneioTable tbody tr td[data-label="Ações"] .btn-editar,
+    body #romaneioTable tbody tr td[data-label="Ações"] .btn-excluir,
+    body #romaneioTable tbody tr td[data-label="Ações"] button,
+    body #tabela-serrados tbody tr td[data-label="Ações"] button,
+    body #tabela-toras tbody tr td[data-label="Ações"] button {
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
