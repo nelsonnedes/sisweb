@@ -92,3 +92,6 @@ logs-*.md
 /.claude/skills/subagent-driven-development/
 /skills-lock.json
 /new-session-*.json
+
+# Config local do agente (opencode) — não versional
+/opencode.json
