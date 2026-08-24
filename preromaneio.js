@@ -990,8 +990,10 @@ function atualizarTotais() {
     const ml = romaneioItens.reduce((acc, i) => acc + (parseFloat(i.metrosLineares) || 0), 0);
     const volDec = (currentTab === 'PCT') ? 4 : 3;
     
-    document.getElementById('totalItens').textContent = qtd;
-    document.getElementById('totalVolume').textContent = formatDecimalBR(vol, volDec, ' m³');
+    const _elTotalItens = document.getElementById('totalItens');
+    const _elTotalVolume = document.getElementById('totalVolume');
+    if (_elTotalItens) _elTotalItens.textContent = qtd;
+    if (_elTotalVolume) _elTotalVolume.textContent = formatDecimalBR(vol, volDec, ' m³');
     const totalPesEl = document.getElementById('totalPes');
     const totalAreaEl = document.getElementById('totalAreaM2');
     const totalMlEl = document.getElementById('totalMetrosLineares');

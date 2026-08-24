@@ -3632,7 +3632,8 @@ async function registrarEntrada(event) {
         estoqueAtual.push(...newItems);
         movimentacoes.push(...newMovs);
 
-        document.getElementById('loadingMessage').textContent = `Salvando ${totalItens} itens...`;
+        const _elLoadingMsg = document.getElementById('loadingMessage');
+        if (_elLoadingMsg) _elLoadingMsg.textContent = `Salvando ${totalItens} itens...`;
 
         // Salvar no Firebase
         if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {

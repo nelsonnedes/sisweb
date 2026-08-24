@@ -1536,8 +1536,10 @@ function atualizarEstatisticasProdutos() {
     const totalItens = estoqueProdutos.length;
     const valorTotal = estoqueProdutos.reduce((acc, p) => acc + ((p.quantidade || 0) * (p.precoMedio || 0)), 0);
     
-    document.getElementById('totalProdutos').textContent = totalItens;
-    document.getElementById('valorTotalAlmoxarifado').textContent = formatCurrency(valorTotal);
+    const _elTotalProdutos = document.getElementById('totalProdutos');
+    const _elValorAlmox = document.getElementById('valorTotalAlmoxarifado');
+    if (_elTotalProdutos) _elTotalProdutos.textContent = totalItens;
+    if (_elValorAlmox) _elValorAlmox.textContent = formatCurrency(valorTotal);
 }
 
 // --- Funções de Baixa de Produtos ---

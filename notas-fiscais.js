@@ -501,10 +501,14 @@ function atualizarDashboard() {
     const rascunhos = notasFiscais.filter(nf => nf.status === 'rascunho').length;
     const canceladas = notasFiscais.filter(nf => nf.status === 'cancelada').length;
     
-    document.getElementById('totalNotasEmitidas').textContent = notasEmitidas.length;
-    document.getElementById('valorTotalMes').textContent = formatCurrency(valorTotalMes);
-    document.getElementById('totalRascunhos').textContent = rascunhos;
-    document.getElementById('totalCanceladas').textContent = canceladas;
+    const _elTotalNotas = document.getElementById('totalNotasEmitidas');
+    const _elValorTotalMes = document.getElementById('valorTotalMes');
+    const _elTotalRascunhos = document.getElementById('totalRascunhos');
+    const _elTotalCanceladas = document.getElementById('totalCanceladas');
+    if (_elTotalNotas) _elTotalNotas.textContent = notasEmitidas.length;
+    if (_elValorTotalMes) _elValorTotalMes.textContent = formatCurrency(valorTotalMes);
+    if (_elTotalRascunhos) _elTotalRascunhos.textContent = rascunhos;
+    if (_elTotalCanceladas) _elTotalCanceladas.textContent = canceladas;
 }
 
 function gerarRelatorio() {

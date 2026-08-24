@@ -1134,9 +1134,12 @@ function atualizarTotais() {
     const desconto = parseCurrency(document.getElementById('desconto').value);
     const total = Math.max(0, subtotal - desconto);
     
-    document.getElementById('subtotal').textContent = formatCurrency(subtotal);
-    document.getElementById('totalGeral').textContent = formatCurrency(total);
-    document.getElementById('totalGeralQtd').textContent = formatNumber(itensPedido.reduce((acc, i) => acc + i.quantidade, 0));
+    const _elSubtotal = document.getElementById('subtotal');
+    const _elTotal = document.getElementById('totalGeral');
+    const _elQtd = document.getElementById('totalGeralQtd');
+    if (_elSubtotal) _elSubtotal.textContent = formatCurrency(subtotal);
+    if (_elTotal) _elTotal.textContent = formatCurrency(total);
+    if (_elQtd) _elQtd.textContent = formatNumber(itensPedido.reduce((acc, i) => acc + i.quantidade, 0));
 
     // ✅ Padrão Vendas: redistribuir apenas se habilitado e houver parcelas
     const podeRedistribuir = contasPagar.length > 0 && (

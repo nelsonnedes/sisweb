@@ -789,7 +789,8 @@ window.ModalEspeciesPCT = (function() {
             } else {
                 // Fallback para localStorage
                 console.log('📦 PCT: Salvando no localStorage...');
-                const especies = JSON.parse(readLocalStorageValue('especies') || '[]');
+                const _especiesRaw = JSON.parse(readLocalStorageValue('especies') || '[]');
+                const especies = Array.isArray(_especiesRaw) ? _especiesRaw : [];
                 const index = especies.findIndex(e => matchesSpeciesId(e, specieId));
                 const record = { ...specie, id: specieId };
                 

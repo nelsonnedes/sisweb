@@ -1614,7 +1614,8 @@ async function saveSpecies() {
                     const storageKey = getStorageKey('especies');
                     const localData = readCompanyCache(storageKey);
                     if (localData) {
-                        especies = JSON.parse(localData) || [];
+                        const _parsed = JSON.parse(localData) || [];
+                        especies = Array.isArray(_parsed) ? _parsed : [];
                     }
                     
                     if (isEdit) {

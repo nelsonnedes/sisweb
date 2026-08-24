@@ -204,7 +204,8 @@ function speciesExists(species, name) {
 
 // Função para encontrar o índice de uma espécie existente
 function findSpeciesIndex(species, name) {
-    return species.findIndex(s => 
+    const list = Array.isArray(species) ? species : [];
+    return list.findIndex(s => 
         getSpeciesName(s).toLowerCase() === name.toLowerCase()
     );
 }

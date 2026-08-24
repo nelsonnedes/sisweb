@@ -668,10 +668,14 @@ function atualizarDashboard() {
     const totalEncerrados = mdfes.filter(m => m.status === 'encerrado').length;
     const viagensAtivas = mdfes.filter(m => m.status === 'autorizado').length;
     
-    document.getElementById('totalMdfesEmitidos').textContent = totalEmitidos;
-    document.getElementById('totalMdfesAutorizados').textContent = totalAutorizados;
-    document.getElementById('totalMdfesEncerrados').textContent = totalEncerrados;
-    document.getElementById('totalViagensAtivas').textContent = viagensAtivas;
+    const _elMdfEmitidos = document.getElementById('totalMdfesEmitidos');
+    const _elMdfAutorizados = document.getElementById('totalMdfesAutorizados');
+    const _elMdfEncerrados = document.getElementById('totalMdfesEncerrados');
+    const _elViagensAtivas = document.getElementById('totalViagensAtivas');
+    if (_elMdfEmitidos) _elMdfEmitidos.textContent = totalEmitidos;
+    if (_elMdfAutorizados) _elMdfAutorizados.textContent = totalAutorizados;
+    if (_elMdfEncerrados) _elMdfEncerrados.textContent = totalEncerrados;
+    if (_elViagensAtivas) _elViagensAtivas.textContent = viagensAtivas;
 }
 
 // Gerar relatório

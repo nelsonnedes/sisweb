@@ -1885,8 +1885,10 @@ function atualizarTotais() {
         return total + (isNaN(qtd) ? 0 : qtd);
     }, 0);
     
-    document.getElementById('subtotal').textContent = formatCurrency(subtotal);
-    document.getElementById('totalGeral').textContent = formatCurrency(totalGeral);
+    const _elSubtotal = document.getElementById('subtotal');
+    const _elTotalGeral = document.getElementById('totalGeral');
+    if (_elSubtotal) _elSubtotal.textContent = formatCurrency(subtotal);
+    if (_elTotalGeral) _elTotalGeral.textContent = formatCurrency(totalGeral);
     const totalQtdEl = document.getElementById('totalGeralQtd');
     if (totalQtdEl) {
         totalQtdEl.textContent = formatNumber(totalQuantidade);
