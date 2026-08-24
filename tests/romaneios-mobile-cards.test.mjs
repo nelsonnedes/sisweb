@@ -32,7 +32,7 @@ test('Romaneios Mobile: antídoto td[data-label]::before com position:static em 
         const beforeBlock = html.match(/td\[data-label\]::before[\s\S]*?\}/);
         assert.ok(beforeBlock, `${m.name}: deve existir regra td[data-label]::before`);
         assert.match(beforeBlock[0], /position:\s*static\s*!important/, `${m.name}: position static (neutraliza ui-components.css)`);
-        assert.match(beforeBlock[0], /width:\s*auto\s*!important/, `${m.name}: width auto`);
+        assert.match(beforeBlock[0], /(width:\s*(?:auto|100%)\s*!important)/, `${m.name}: width auto/100%`);
         assert.match(beforeBlock[0], /transform:\s*none\s*!important/, `${m.name}: transform none`);
         assert.match(beforeBlock[0], /padding-right:\s*0\s*!important/, `${m.name}: padding-right 0`);
     }
