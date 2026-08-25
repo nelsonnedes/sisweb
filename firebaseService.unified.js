@@ -469,6 +469,33 @@ class FirebaseService {
         } catch (error) {
             const errDetails = error ? (error.message || error.code || String(error)) : 'desconhecido';
             console.warn('⚠️ Aviso ao carregar dados:', errDetails);
+            // 🛡️ Guarda conhecida: estouro de pilha do SDK Modular em leituras profundas
+            // (mesmo tratamento de modules/core/firebase-service.js — fallback REST API).
+            if (error && error.message && String(error.message).includes('Maximum call stack size exceeded')) {
+                console.warn('⚠️ Erro de recursão no SDK Modular. Tentando REST API como fallback...');
+                try {
+                    const cleanPath = String(this._normalizePath(path)).replace(/^\/+/, '');
+                    const dbUrl = 'https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app';
+                    let url = `${dbUrl}/${cleanPath}.json`;
+                    if (typeof window !== 'undefined' && window.firebase && window.firebase.auth) {
+                        try {
+                            const currentUser = window.firebase.auth().currentUser;
+                            if (currentUser) {
+                                const token = await currentUser.getIdToken();
+                                url += `?auth=${token}`;
+                            }
+                        } catch (_) {}
+                    }
+                    const resp = await fetch(url);
+                    if (resp.ok) {
+                        const rest = await resp.json();
+                        if (rest !== null && rest !== undefined) {
+                            return { success: true, data: rest, isMock: this.isMock, restFallback: true };
+                        }
+                    }
+                } catch (_) {}
+                // REST indisponível -> cai no fallback localStorage abaixo
+            }
             // 🔐 Fallback inteligente em permission_denied
             if (this._isPermissionDenied(error)) {
                 try {
