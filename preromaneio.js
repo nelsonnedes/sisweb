@@ -448,11 +448,11 @@ function mudarAba(tab) {
         
         if (tab === 'TL') {
             if (groupPecas) groupPecas.style.display = 'none';
-            colPecas.forEach(el => el.style.display = 'none');
+            colPecas.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (labelQuantidade) labelQuantidade.textContent = 'Quantidade (peças):';
         } else {
             if (groupPecas) groupPecas.style.display = 'block';
-            colPecas.forEach(el => el.style.display = 'table-cell');
+            colPecas.forEach(el => el.style.setProperty('display', 'table-cell', 'important'));
             if (labelQuantidade) labelQuantidade.textContent = (tab === 'PCT') ? 'Quantidade (pacotes):' : 'Quantidade (peças):';
         }
         
@@ -718,7 +718,7 @@ function renderizarTabela() {
             `;
         } else {
             // Serrados
-            const displayPecas = (currentTab === 'TL') ? 'display:none;' : '';
+            const displayPecas = (currentTab === 'TL') ? 'display:none !important;' : '';
             const volDec = (currentTab === 'PCT') ? 4 : 3;
             const isPes = currentTab === 'PES';
             tr.innerHTML = `
