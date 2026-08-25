@@ -473,10 +473,19 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             text-align: right;
         }
 
-        #romaneioTable th:nth-child(18), /* Ações */
+        #romaneioTable th:nth-child(18), /* Valor */
         #romaneioTable td:nth-child(18) {
-            min-width: 110px;
+            min-width: 85px;
+            text-align: right;
+        }
+
+        #romaneioTable th:last-child, /* Ações (19ª coluna) */
+        #romaneioTable td:last-child {
+            min-width: 110px !important;
+            width: 110px !important;
+            max-width: 130px !important;
             text-align: center;
+            white-space: nowrap;
         }
 
         /* ✅ AJUSTES PARA TELAS MENORES */
@@ -1390,9 +1399,9 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     <!-- Preenchido via JavaScript -->
                 </tbody>
             </table>
-                <div id="romaneioTablePagination" class="pagination-container no-print">
-                <!-- Paginação será adicionada via JavaScript -->
-            </div>
+        </div>
+        <div id="romaneioTablePagination" class="pagination-container no-print" style="margin-top:10px;">
+            <!-- Paginação será adicionada via JavaScript -->
         </div>
         <div id="resumoRomaneioContainer" class="no-print" style="margin-top: 20px;"></div>
     </div>
