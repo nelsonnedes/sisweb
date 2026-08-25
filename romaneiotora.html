@@ -1158,6 +1158,22 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             #romaneioTable tbody { display: table-row-group !important; }
             #romaneioTable tbody tr { display: table-row !important; }
             #romaneioTable tbody tr td { display: table-cell !important; }
+            /* Coluna Ações sempre visível no desktop (sticky à direita) — padronizado com TL/PCT/PES/PREROMANEIO */
+            #romaneioTable th:last-child {
+                position: sticky !important;
+                position: -webkit-sticky !important;
+                right: 0;
+                z-index: 20 !important;
+                box-shadow: -2px 0 6px rgba(15,23,42,.08);
+            }
+            #romaneioTable td:last-child {
+                position: sticky !important;
+                position: -webkit-sticky !important;
+                right: 0;
+                z-index: 20 !important;
+                background: inherit;
+                box-shadow: -2px 0 6px rgba(15,23,42,.08);
+            }
         }
         @media print { #romaneioTable tbody, #romaneioTable tbody tr, #romaneioTable tbody tr td { display: revert !important; } }
 
@@ -1374,11 +1390,11 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     <!-- Preenchido via JavaScript -->
                 </tbody>
             </table>
-            <div id="romaneioTablePagination" class="pagination-container no-print">
+                <div id="romaneioTablePagination" class="pagination-container no-print">
                 <!-- Paginação será adicionada via JavaScript -->
             </div>
-            <div id="resumoRomaneioContainer" class="no-print" style="margin-top: 20px;"></div>
         </div>
+        <div id="resumoRomaneioContainer" class="no-print" style="margin-top: 20px;"></div>
     </div>
 
     <!-- Modais para Sobre e Ajuda -->
