@@ -586,6 +586,7 @@ if (!EMULATOR_HOST) {
       `companies/${TENANT_A}/especies/teste1`,
       `companies/${TENANT_A}/fiscal/teste1`,
       `companies/${TENANT_A}/configuracoes/teste1`,
+      `companies/${TENANT_A}/preromaneios/teste1`,
     ];
     for (const path of targets) {
       await assertFails(set(ref(database, path), { nome: "teste" }));
@@ -602,6 +603,7 @@ if (!EMULATOR_HOST) {
       `companies/${TENANT_A}/especies/teste1`,
       `companies/${TENANT_A}/fiscal/teste1`,
       `companies/${TENANT_A}/configuracoes/teste1`,
+      `companies/${TENANT_A}/preromaneios/teste1`,
     ];
     for (const path of targets) {
       await assertSucceeds(set(ref(database, path), { nome: "teste" }));
