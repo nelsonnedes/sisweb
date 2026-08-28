@@ -85,5 +85,25 @@ test("Sistema Financeiro - service worker com nova APP_VERSION para invalidar ca
     const swPath = path.resolve("sw.js");
     const sw = fs.readFileSync(swPath, "utf8");
 
-    assert.match(sw, /const APP_VERSION = '2026-08-24-romaneios-mobile-v1'/, "APP_VERSION deve refletir a entrega mobile");
+    assert.match(sw, /const APP_VERSION = '2026-08-27-sentry-filters-v1'/, "APP_VERSION deve refletir a entrega mobile");
+});
+
+test("Sistema Financeiro - Histórico de Pagamentos vira card legível no mobile", () => {
+    const htmlPath = path.resolve("financas.html");
+    const html = fs.readFileSync(htmlPath, "utf8");
+    const jsPath = path.resolve("financas.js");
+    const js = fs.readFileSync(jsPath, "utf8");
+
+    assert.match(js, /class="finance-history-table"/, "O histórico deve ter uma classe própria");
+    for (const label of ["Data", "Juros Período", "Pagamento", "Saldo Após", "Método", "Observações", "Anexo", "Ações"]) {
+        assert.match(js, new RegExp(`data-label="${label}"`), `Histórico deve rotular ${label}`);
+    }
+    assert.match(html, /#pagamentoModal \.finance-history-table thead[\s\S]*display:\s*none\s*!important/, "Cabeçalho deve ser ocultado no mobile");
+    assert.match(html, /#pagamentoModal \.finance-history-table tbody > tr[\s\S]*display:\s*block\s*!important/, "Linhas do histórico devem virar cards");
+    assert.match(html, /#pagamentoModal \.finance-history-table[\s\S]*border-collapse:\s*separate\s*!important/, "Tabela em cards não deve manter border-collapse colapsado");
+    assert.match(html, /#pagamentoModal \.finance-history-table tbody > tr[\s\S]*height:\s*auto\s*!important/, "Cards não devem herdar altura fixa dos modais");
+    assert.match(html, /#pagamentoModal \.finance-history-table td\[data-label\][\s\S]*height:\s*auto\s*!important/, "Células não devem herdar altura fixa das tabelas de modal");
+    assert.match(html, /#pagamentoModal \.finance-history-table td\[data-label\]::before[\s\S]*content:\s*attr\(data-label\)/, "Cards devem exibir o rótulo de cada campo");
+    assert.match(html, /finance-history-attachment-cell[\s\S]*min-width:\s*36px\s*!important/, "Ação de anexo deve ser touch-friendly");
+    assert.match(html, /finance-history-summary-table/, "Resumo do histórico deve possuir estilo responsivo próprio");
 });

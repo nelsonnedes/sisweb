@@ -95,6 +95,27 @@ async function carregarCidadesDoIBGE(uf) {
 }
 
 /**
+ * Resolve o codigo IBGE de um municipio sem alterar o contrato legado que
+ * retorna apenas nomes para os selects existentes.
+ */
+async function obterCodigoMunicipioIBGE(uf, nome) {
+    const estado = String(uf || '').trim().toUpperCase();
+    const municipio = String(nome || '').trim();
+    if (!estado || !municipio) return '';
+
+    try {
+        const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estado}/municipios`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const cidades = await response.json();
+        const encontrado = cidades.find((cidade) => cidade.nome === municipio);
+        return encontrado ? String(encontrado.id).padStart(7, '0') : '';
+    } catch (error) {
+        console.error(`Erro ao resolver código IBGE de ${municipio}/${estado}:`, error);
+        return '';
+    }
+}
+
+/**
  * Popula um select com cidades de um estado
  * @param {string} selectId - ID do elemento select
  * @param {string} uf - Sigla do estado
@@ -232,6 +253,7 @@ if (typeof window !== 'undefined') {
     window.criarSelectEstados = criarSelectEstados;
     window.formatarCEP = formatarCEP;
     window.buscarCEP = buscarCEP;
+    window.obterCodigoMunicipioIBGE = obterCodigoMunicipioIBGE;
     window.estadosBrasil = estadosBrasil;
     window.municipiosPorEstado = municipiosPorEstado;
 }

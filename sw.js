@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-08-24-romaneios-mobile-v1';
+const APP_VERSION = '2026-08-27-sentry-filters-v1';
 const CACHE_NAME = `sisweb-runtime-${APP_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',

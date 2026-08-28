@@ -18,7 +18,7 @@
             let supportTickets = [];
             let currentAccessModel = { isSuperAdmin: false, canDashboard: false, canSubscriptions: false, canSettings: false };
             var debugState = {};
-            var ADMIN_ASSET_VERSION = "2026-06-11-profile-admin-v1";
+            var ADMIN_ASSET_VERSION = "10c72c116d87";
             async function resolveAdminFirebaseService(requiredFunction) {
                 var required = String(requiredFunction || "").trim();
                 var current = window.firebaseService;
@@ -287,7 +287,8 @@
                 subscriptions: { page: 0, size: 25 },
                 financial: { page: 0, size: 25 },
                 security: { page: 0, size: 25 },
-                support: { page: 0, size: 25 }
+                support: { page: 0, size: 25 },
+                sentry: { page: 0, size: 10 }
             };
             function paginateAdminList(list, state) {
                 var arr = Array.isArray(list) ? list : [];
@@ -811,9 +812,13 @@
                         localStorage.setItem(key, JSON.stringify(list.slice(0, 80)));
                     } catch (_) {}
                     try {
-                        if (window.firebaseService && typeof window.firebaseService.saveData === "function" && uid) {
-                            var id = String(Date.now()) + "_" + Math.random().toString(36).slice(2, 8);
-                            await window.firebaseService.saveData("users/" + uid + "/securityAudit/adminAccessDenied/" + id, payload);
+                        if (window.firebaseService && typeof window.firebaseService.callFunction === "function" && uid) {
+                            await window.firebaseService.callFunction("recordAdminAccessDenied", {
+                                reason: payload.reason,
+                                path: String(window.location.pathname || ""),
+                                access: payload.access,
+                                userAgent: payload.userAgent
+                            });
                         }
                     } catch (_) {}
                 } catch (_) {}
@@ -2266,6 +2271,11 @@
                         tdProof.textContent = "-";
                     }
                     var tdActions = document.createElement("td");
+                    tdActions.style.display = "flex";
+                    tdActions.style.flexWrap = "wrap";
+                    tdActions.style.gap = "4px";
+                    tdActions.style.alignItems = "center";
+                    tdActions.style.minWidth = "320px";
                     var btnDetails = document.createElement("button");
                     btnDetails.type = "button";
                     btnDetails.className = "btn small";
@@ -2274,6 +2284,18 @@
                         openUserDetails(user);
                     });
                     tdActions.appendChild(btnDetails);
+                    if (canMutateSensitiveData()) {
+                        var btnEdit = document.createElement("button");
+                        btnEdit.type = "button";
+                        btnEdit.className = "btn small";
+                        btnEdit.innerHTML = '<i class="fas fa-pen"></i><span> Editar</span>';
+                        btnEdit.style.marginLeft = "4px";
+                        btnEdit.title = "Editar dados do assinante e empresa (completar dados faltantes)";
+                        btnEdit.addEventListener("click", function() {
+                            openEditSubscriberModal(user);
+                        });
+                        tdActions.appendChild(btnEdit);
+                    }
                     
                     var btnNotify = document.createElement("button");
                     btnNotify.type = "button";
@@ -3065,6 +3087,8 @@
                             uid: item.uid || uid || "",
                             reason: item.reason || "",
                             path: item.path || "",
+                            userAgent: item.userAgent || "",
+                            ip: item.ip || "",
                             source: "firebase"
                         });
                     });
@@ -3081,6 +3105,8 @@
                                 uid: item.uid || "",
                                 reason: item.reason || "",
                                 path: item.path || "",
+                                userAgent: item.userAgent || "",
+                                ip: item.ip || "",
                                 source: "local"
                             });
                         });
@@ -3275,8 +3301,15 @@
                     tdPath.textContent = row.path || "-";
                     tdPath.style.whiteSpace = "normal";
                     var tdDevice = document.createElement("td");
-                    tdDevice.textContent = parseDevice(row.userAgent);
-                    tdDevice.title = row.userAgent || "";
+                    var deviceLabel = parseDevice(row.userAgent);
+                    var ipLabel = String(row.ip || "").trim();
+                    if (ipLabel && ipLabel !== "-") {
+                        tdDevice.textContent = deviceLabel && deviceLabel !== "-" ? deviceLabel + " — " + ipLabel : ipLabel;
+                        tdDevice.title = "UA: " + (row.userAgent || "-") + "\nIP: " + ipLabel;
+                    } else {
+                        tdDevice.textContent = deviceLabel;
+                        tdDevice.title = row.userAgent || "";
+                    }
                     var tdSource = document.createElement("td");
                     var srcBadge = document.createElement("span");
                     srcBadge.className = "status-pill " + (row.source === "firebase" ? "status-active" : "status-blocked");
@@ -3306,7 +3339,7 @@
                     secExportBtn._csvBound = true;
                     secExportBtn.addEventListener("click", function() {
                         try {
-                            var headers = ["Risco","Quando","Usuário","Email","UID","Motivo","Rota","Dispositivo","Origem"];
+                            var headers = ["Risco","Quando","Usuário","Email","UID","Motivo","Rota","Dispositivo","IP","Origem"];
                             var csvRows = [headers.join(";")];
                             filtered.forEach(function(row) {
                                 var score = getRiskScore(row);
@@ -3320,6 +3353,7 @@
                                     '"' + (row.reason || "").replace(/"/g,'""') + '"',
                                     '"' + (row.path || "").replace(/"/g,'""') + '"',
                                     parseDevice(row.userAgent),
+                                    row.ip || "",
                                     row.source || ""
                                 ].join(";"));
                             });
@@ -3409,6 +3443,144 @@
                         lines.push("Pagamento pendente: " + formatCurrencyBRL(user.pendingPayment.amount || 0));
                     }
                     showActionMessage(lines.join(" | "), "info");
+                }
+            }
+            async function openEditSubscriberModal(user) {
+                try {
+                    if (!canMutateSensitiveData()) {
+                        showActionMessage("Acesso restrito: apenas SuperAdmin pode editar dados de assinantes.", "error");
+                        return;
+                    }
+                    var targetUid = String(user && (user.uid || user.id || user.userId) || "").trim();
+                    if (!targetUid) {
+                        showActionMessage("Assinante sem UID válido.", "error");
+                        return;
+                    }
+                    var companyId = String(user.companyId || user.companyID || "").trim();
+                    var profile = getCompanyProfileForUser(user) || {};
+                    var isSuper = isOperationalSuperAdminUser(user);
+                    if (isSuper && !confirm("Este é um usuário SuperAdmin. Deseja realmente editar seus dados?")) return;
+                    var currentName = String(user.username || user.displayName || user.name || "").trim();
+                    var currentEmail = String(user.email || "").trim();
+                    var currentPhone = String(user.phone || user.telefone || "").trim();
+                    var compName = String(profile.name || profile.nome || getCompanyLabel(user) || "").trim();
+                    if (compName === companyId) compName = "";
+                    var cnpj = String(profile.cnpj || profile.cnpjCpf || "").trim();
+                    var compEmail = String(profile.email || "").trim();
+                    var compPhone = String(profile.phone || profile.telefone || "").trim();
+                    var compAddr = String(profile.address || profile.endereco || "").trim();
+                    var compCity = String(profile.city || profile.cidade || profile.municipio || "").trim();
+                    var compState = String(profile.state || profile.estado || profile.uf || "").trim();
+                    var compZip = String(profile.zip || profile.cep || "").trim();
+                    var compResp = String(profile.responsible || profile.responsavel || profile.owner || "").trim();
+                    var compIE = String(profile.stateRegistration || profile.inscricaoEstadual || profile.ie || "").trim();
+                    var esc = function(v){ return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); };
+                    var bodyHtml = '<div style="text-align:left; max-height:60vh; overflow-y:auto; padding-right:4px;">' +
+                        '<h4 style="margin:0 0 8px 0; color:#0f172a; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">Assinante</h4>' +
+                        '<div style="display:grid; gap:10px; margin-bottom:14px;">' +
+                        '<label style="display:block; font-size:0.82rem; color:#334155;">Nome / Username<input id="editSubName" type="text" value="' + esc(currentName) + '" placeholder="Nome completo" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:8px;"></label>' +
+                        '<label style="display:block; font-size:0.82rem; color:#334155;">E-mail<input id="editSubEmail" type="email" value="' + esc(currentEmail) + '" placeholder="email@exemplo.com" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:8px;"></label>' +
+                        '<label style="display:block; font-size:0.82rem; color:#334155;">Telefone<input id="editSubPhone" type="text" value="' + esc(currentPhone) + '" placeholder="(00) 00000-0000" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:8px;"></label>' +
+                        '<div style="font-size:0.75rem; color:#64748b;">UID: ' + esc(targetUid) + '  •  CompanyId: ' + esc(companyId || "(não vinculado)") + '</div>' +
+                        '</div>' +
+                        '<h4 style="margin:12px 0 8px 0; color:#0f172a; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">Empresa</h4>' +
+                        '<div style="display:grid; gap:10px;">' +
+                        '<label style="display:block; font-size:0.82rem; color:#334155;">Razão social / Nome *<input id="editCompName" type="text" value="' + esc(compName) + '" placeholder="Razão social" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:8px;"></label>' +
+                        '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">' +
+                        '<label style="display:block; font-size:0.82rem; color:#334155;">CNPJ<input id="editCompCnpj" type="text" value="' + esc(cnpj) + '" placeholder="00.000.000/0000-00" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:8px;"></label>' +
+                        '<label style="display:block; font-size:0.82rem; color:#334155;">Inscrição Estadual<input id="editCompIE" type="text" value="' + esc(compIE) + '" placeholder="IE" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:8px;"></label>' +
+                        '</div>' +
+                        '<label style="display:block; font-size:0.82rem; color:#334155;">E-mail comercial<input id="editCompEmail" type="email" value="' + esc(compEmail) + '" placeholder="contato@empresa.com" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:8px;"></label>' +
+                        '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">' +
+                        '<label style="display:block; font-size:0.82rem; color:#334155;">Telefone<input id="editCompPhone" type="text" value="' + esc(compPhone) + '" placeholder="(00) 0000-0000" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:8px;"></label>' +
+                        '<label style="display:block; font-size:0.82rem; color:#334155;">Responsável<input id="editCompResp" type="text" value="' + esc(compResp) + '" placeholder="Responsável" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:8px;"></label>' +
+                        '</div>' +
+                        '<div style="display:grid; grid-template-columns:100px 1fr; gap:10px;">' +
+                        '<label style="display:block; font-size:0.82rem; color:#334155;">CEP<input id="editCompZip" type="text" value="' + esc(compZip) + '" placeholder="00000-000" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:8px;"></label>' +
+                        '<label style="display:block; font-size:0.82rem; color:#334155;">Endereço<input id="editCompAddr" type="text" value="' + esc(compAddr) + '" placeholder="Rua, número, bairro" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:8px;"></label>' +
+                        '</div>' +
+                        '<div style="display:grid; grid-template-columns:1fr 100px; gap:10px;">' +
+                        '<label style="display:block; font-size:0.82rem; color:#334155;">Cidade<input id="editCompCity" type="text" value="' + esc(compCity) + '" placeholder="Cidade" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:8px;"></label>' +
+                        '<label style="display:block; font-size:0.82rem; color:#334155;">UF<input id="editCompState" type="text" value="' + esc(compState) + '" placeholder="PA" maxlength="2" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:8px;text-transform:uppercase;"></label>' +
+                        '</div>' +
+                        '<div style="font-size:0.74rem; color:#64748b; margin-top:4px;">* Campos obrigatórios: nome da empresa. CNPJ será validado contra duplicidade.</div>' +
+                        '</div>' +
+                        '</div>';
+                    if (window.AdminUI && typeof window.AdminUI.modal === "function") {
+                        window.AdminUI.modal({
+                            title: "Editar Assinante e Empresa",
+                            body: bodyHtml,
+                            width: "620px",
+                            actions: [
+                                { label: "Cancelar", className: "btn", action: "close" },
+                                { label: '<i class="fas fa-save"></i> Salvar alterações', className: "btn primary", onClick: async function(overlay, resolve){
+                                    var getVal = function(id){ var el=document.getElementById(id); return el? String(el.value||"").trim() : ""; };
+                                    var userPatch = {
+                                        displayName: getVal("editSubName"),
+                                        username: getVal("editSubName"),
+                                        name: getVal("editSubName"),
+                                        email: getVal("editSubEmail"),
+                                        phone: getVal("editSubPhone")
+                                    };
+                                    var companyPatch = {
+                                        companyId: companyId,
+                                        name: getVal("editCompName"),
+                                        cnpj: getVal("editCompCnpj"),
+                                        email: getVal("editCompEmail"),
+                                        phone: getVal("editCompPhone"),
+                                        address: getVal("editCompAddr"),
+                                        city: getVal("editCompCity"),
+                                        state: getVal("editCompState"),
+                                        zip: getVal("editCompZip"),
+                                        responsible: getVal("editCompResp"),
+                                        stateRegistration: getVal("editCompIE")
+                                    };
+                                    if (!companyPatch.name) {
+                                        showActionMessage("Informe o nome da empresa (obrigatório).", "error");
+                                        return;
+                                    }
+                                    var svcEdit = await resolveAdminFirebaseService("adminUpdateSubscriber");
+                                    if (!svcEdit || typeof svcEdit.adminUpdateSubscriber !== "function") {
+                                        showActionMessage("Serviço de edição indisponível. Recarregue a página (F5).", "error");
+                                        return;
+                                    }
+                                    var btn = overlay.querySelector(".btn.primary");
+                                    if (btn) { btn.disabled = true; btn.innerHTML = "Salvando..."; }
+                                    try {
+                                        var res = await svcEdit.adminUpdateSubscriber({ targetUid: targetUid, userPatch: userPatch, companyPatch: companyPatch });
+                                        if (!res || res.success === false) {
+                                            showActionMessage((res && res.error) || "Falha ao salvar alterações.", "error");
+                                            if (btn) { btn.disabled = false; btn.innerHTML = "<i class=\"fas fa-save\"></i> Salvar alterações"; }
+                                            return;
+                                        }
+                                        showActionMessage("Dados do assinante e empresa atualizados com sucesso!", "success");
+                                        if (window.firebaseService && typeof window.firebaseService.invalidateReadCacheForPath === "function") {
+                                            window.firebaseService.invalidateReadCacheForPath("users");
+                                            window.firebaseService.invalidateReadCacheForPath("companies");
+                                        }
+                                        lastLoadedAt = 0;
+                                        await loadUsersAndDashboard();
+                                        try { renderCompanyManagementTable(); } catch(_){}
+                                        try { applySubscriptionsFilter(); } catch(_){}
+                                        resolve("saved");
+                                        var ov=document.querySelector(".modal-overlay");
+                                        if(ov) ov.remove();
+                                    } catch(e){
+                                        showActionMessage((e && e.message) || "Erro ao salvar.", "error");
+                                        if (btn) { btn.disabled = false; btn.innerHTML = "<i class=\"fas fa-save\"></i> Salvar alterações"; }
+                                    }
+                                }}
+                            ]
+                        });
+                    } else {
+                        var newName = prompt("Nome do assinante:", currentName);
+                        if (newName===null) return;
+                        var res2 = await (window.firebaseService && window.firebaseService.adminUpdateSubscriber ? window.firebaseService.adminUpdateSubscriber({ targetUid: targetUid, userPatch: { displayName: newName, username: newName, name: newName }, companyPatch: {} }) : null);
+                        if (res2 && res2.success) { showActionMessage("Atualizado com sucesso.", "success"); lastLoadedAt=0; await loadUsersAndDashboard(); }
+                        else showActionMessage((res2 && res2.error)||"Falha", "error");
+                    }
+                } catch(e){
+                    showActionMessage((e && e.message) || "Erro ao abrir edição.", "error");
                 }
             }
             async function deleteSubscriptionDataFlow(user) {
@@ -3561,58 +3733,82 @@
                 }
             }
             async function sweepOrphanCompaniesFlow() {
+                var sweepBtn = document.getElementById("companiesSweepOrphans");
                 try {
                     if (!canMutateSensitiveData()) {
-                        showActionMessage("Permissão insuficiente: somente super-admin pode executar varredura de empresas órfãs.", "error");
+                        showActionMessage("Acesso restrito: apenas o SuperAdmin (nedes1@hotmail.com) pode executar a Varredura de Órfãs. Seu usuário não possui permissão para esta ação.", "error");
                         return;
                     }
-                    if (!window.firebaseService || typeof window.firebaseService.sweepOrphanCompanies !== "function") {
-                        showActionMessage("Serviço de varredura de empresas órfãs indisponível.", "error");
+                    var svcPre = await resolveAdminFirebaseService("sweepOrphanCompanies");
+                    if (!svcPre) {
+                        showActionMessage("Serviço indisponível no momento. Verifique sua conexão com a internet e tente novamente. Se o problema persistir, recarregue a página (F5).", "error");
                         return;
                     }
+                    if (sweepBtn) { sweepBtn.disabled = true; sweepBtn.style.opacity = "0.6"; }
                     var warning =
-                        "Varredura de empresas órfãs\n\n" +
-                        "Verifica todas as empresas do banco e identifica aquelas sem nenhum usuário vinculado " +
-                        "cujo proprietário (ownerUid) não existe mais na base (empresas órfãs deixadas por exclusões incompletas).\n\n" +
-                        "1º será executada em MODO SIMULAÇÃO (nenhum dado será apagado) e o resultado exibido.\n\n" +
-                        "Deseja continuar?";
+                        "Varredura de Empresas Órfãs — Modo Simulação Seguro\n\n" +
+                        "O que são empresas órfãs?\n" +
+                        "• Empresas que ficaram sem nenhum usuário vinculado\n" +
+                        "• E cujo proprietário (ownerUid) não existe mais no banco\n" +
+                        "• Geralmente resquícios de exclusões incompletas anteriores\n\n" +
+                        "Como funciona:\n" +
+                        "1º Executaremos uma SIMULAÇÃO segura — nenhum dado será apagado agora.\n" +
+                        "2º Você verá a lista exata das empresas órfãs encontradas.\n" +
+                        "3º Só então poderá confirmar a remoção definitiva.\n\n" +
+                        "Deseja iniciar a simulação agora?";
                     var ok = window.AdminUI && typeof window.AdminUI.confirm === "function"
                         ? await window.AdminUI.confirm(warning, "Varredura de Empresas Órfãs")
                         : confirm(warning);
                     if (!ok) return;
 
-                    showActionMessage("Executando varredura (modo simulação)...", "info");
-                    var dryResult = await window.firebaseService.sweepOrphanCompanies({ dryRun: true });
+                    showActionMessage("Iniciando varredura em modo simulação — nenhum dado será apagado. Analisando todas as empresas cadastradas, por favor aguarde...", "info");
+                    var svcDry = await resolveAdminFirebaseService("sweepOrphanCompanies");
+                    if (!svcDry) {
+                        showActionMessage("Serviço indisponível no momento. Verifique sua conexão com a internet e tente novamente. Se o problema persistir, recarregue a página (F5).", "error");
+                        return;
+                    }
+                    var dryResult = await svcDry.sweepOrphanCompanies({ dryRun: true });
                     if (!dryResult || dryResult.success === false) {
-                        showActionMessage((dryResult && dryResult.error) || "Falha na varredura.", "error");
+                        showActionMessage("Não foi possível concluir a varredura: " + ((dryResult && dryResult.error) || "erro desconhecido") + ". Tente novamente em alguns segundos. Se o problema persistir, contate o suporte.", "error");
                         return;
                     }
                     var orphanList = (dryResult.results || []).filter(function(r) { return r.orphan; });
                     if (!orphanList.length) {
-                        showActionMessage("Varredura concluída: nenhuma empresa órfã encontrada.", "success");
+                        showActionMessage("Varredura concluída com sucesso! Nenhuma empresa órfã encontrada. Todas as " + (dryResult.scanned || 0) + " empresa(s) verificada(s) estão corretamente vinculadas a usuários ativos. Nenhuma ação necessária.", "success");
                         return;
                     }
                     var lines = orphanList.map(function(r) {
-                        return "• " + (r.name || r.companyId) + " (" + r.companyId + ")" + (r.ownerUid ? " — owner: " + r.ownerUid : "");
+                        return "• " + (r.name || "Sem nome") + "  |  ID: " + r.companyId + (r.ownerUid ? "  |  proprietário: " + r.ownerUid.slice(0,12) + "..." : "  |  sem proprietário");
                     });
-                    var detail = "Empresas órfãs encontradas: " + orphanList.length + "\n\n" + lines.join("\n") +
-                        "\n\nDeseja REMOVER estas empresas permanentemente?";
+                    var detail = "Encontramos " + orphanList.length + " empresa(s) órfã(s) que podem ser removidas com segurança:\n\n" + lines.join("\n") +
+                        "\n\n⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL.\n" +
+                        "Serão removidos permanentemente os registros em companies/{id} e tenants/{id} dessas empresas.\n\n" +
+                        "Deseja realmente remover " + orphanList.length + " empresa(s) órfã(s) agora?";
                     var confirmRemove = window.AdminUI && typeof window.AdminUI.confirm === "function"
-                        ? await window.AdminUI.confirm(detail, "Remover Empresas Órfãs")
+                        ? await window.AdminUI.confirm(detail, "Confirmar Remoção Definitiva")
                         : confirm(detail);
                     if (!confirmRemove) {
-                        showActionMessage("Varredura concluída em modo simulação — nada foi removido.", "success");
+                        showActionMessage("Varredura finalizada em modo simulação. Nenhuma empresa foi removida. Você pode executar novamente quando desejar.", "success");
                         return;
                     }
-                    showActionMessage("Removendo empresas órfãs...", "info");
-                    var result = await window.firebaseService.sweepOrphanCompanies({ dryRun: false, reviewNote: "Varredura de órfãs via admin (remocao)" });
+                    showActionMessage("Removendo " + orphanList.length + " empresa(s) órfã(s) de forma permanente... Por favor, aguarde, esta operação pode levar alguns segundos.", "info");
+                    var svc2 = await resolveAdminFirebaseService("sweepOrphanCompanies");
+                    if (!svc2) {
+                        showActionMessage("Serviço indisponível no momento. Verifique sua conexão com a internet e tente novamente.", "error");
+                        return;
+                    }
+                    var result = await svc2.sweepOrphanCompanies({ dryRun: false, reviewNote: "Varredura de órfãs via admin (remocao)" });
                     if (!result || result.success === false) {
-                        showActionMessage((result && result.error) || "Falha ao remover empresas órfãs.", "error");
+                        showActionMessage("Falha ao remover empresas órfãs: " + ((result && result.error) || "erro desconhecido") + ". Nenhuma ou apenas parte das empresas foi removida. Verifique sua conexão e tente novamente.", "error");
                         return;
                     }
-                    var msg = "Varredura concluída: " + result.scanned + " verificadas, " + result.removed + " removidas" +
-                        (result.failed > 0 ? ", " + result.failed + " falhas" : "") + ".";
-                    showActionMessage(msg, result.failed > 0 ? "error" : "success");
+                    if (result.removed === 0 && result.failed === 0) {
+                        showActionMessage("Varredura concluída: " + result.scanned + " empresa(s) verificada(s), nenhuma precisou ser removida. Base já está limpa.", "success");
+                    } else if (result.failed > 0) {
+                        showActionMessage("Varredura concluída com ressalvas: " + result.scanned + " verificada(s) | Órfãs encontradas: " + (result.orphaned || orphanList.length) + " | Removidas com sucesso: " + result.removed + " | Falhas: " + result.failed + ". Algumas empresas não puderam ser removidas — verifique o console (F12) para detalhes e tente novamente.", "warning");
+                    } else {
+                        showActionMessage("Varredura concluída com sucesso! Verificadas: " + result.scanned + " | Órfãs encontradas: " + (result.orphaned || orphanList.length) + " | Removidas com sucesso: " + result.removed + ". Todas as empresas órfãs foram removidas e a base foi limpa. A lista de empresas foi atualizada.", "success");
+                    }
                     if (window.firebaseService && typeof window.firebaseService.invalidateReadCacheForPath === "function") {
                         window.firebaseService.invalidateReadCacheForPath("companies");
                         window.firebaseService.invalidateReadCacheForPath("tenants");
@@ -3621,7 +3817,9 @@
                     await loadUsersAndDashboard();
                     try { renderCompanyManagementTable(); } catch (_) {}
                 } catch (err) {
-                    showActionMessage((err && err.message) || "Erro na varredura de empresas órfãs.", "error");
+                    showActionMessage("Ocorreu um erro inesperado durante a varredura: " + ((err && err.message) || "erro desconhecido") + ". Tente novamente. Se o problema persistir, contate o suporte técnico.", "error");
+                } finally {
+                    if (sweepBtn) { sweepBtn.disabled = false; sweepBtn.style.opacity = ""; }
                 }
             }
 
@@ -4361,7 +4559,12 @@
                     });
                     var data = result && result.data ? result.data : result;
                     if (!result || result.success === false || (data && data.success === false)) {
-                        showActionMessage((result && result.error) || (data && data.error) || "Falha ao conceder Trial 30d.", "error");
+                        var rawErr = String((result && result.error) || (data && data.error) || "");
+                        var friendly = rawErr;
+                        if (/auth\/user-not-found|There is no user record/i.test(rawErr)) {
+                            friendly = "Usuário não encontrado no sistema de autenticação (Auth). O assinante existe na base de dados, mas não possui registro no Firebase Auth — possivelmente foi excluído ou é um resquício órfão. Não é possível conceder trial para este UID. Verifique o UID ou recrie o usuário.";
+                        }
+                        showActionMessage(friendly || "Falha ao conceder Trial 30d.", "error");
                         return;
                     }
                     var endLabel = data && data.endDate ? formatAdminDateValue(data.endDate, "-") : "-";
@@ -4377,7 +4580,11 @@
                     if (activeTab === "finance") applyFinancialFilter();
                     if (activeTab === "status") await loadOpenExtensionRequests();
                 } catch (err) {
-                    showActionMessage((err && err.message) || "Erro ao conceder Trial 30d.", "error");
+                    var msgErr = String((err && err.message) || err || "");
+                    if (/auth\/user-not-found|There is no user record/i.test(msgErr)) {
+                        msgErr = "Usuário não encontrado no sistema de autenticação. Não é possível conceder trial para este assinante (UID órfão ou excluído).";
+                    }
+                    showActionMessage(msgErr || "Erro ao conceder Trial 30d.", "error");
                 }
             }
             async function extendSubscriptionDialog(user) {
@@ -5296,6 +5503,9 @@
             var sentryIssuesOrder = [];
             var sentryLevelFilterValue = "all";
             var sentrySearchValue = "";
+            var sentryPeriodFilterValue = "all";
+            var sentryHideResolved = false;
+            var lastSentryFilterSig = "";
             var sentrySubscription = null;
             var sentryMetaSubscription = null;
             var sentrySyncLabel = "—";
@@ -5345,8 +5555,22 @@
                 var body = document.getElementById("sentryIssuesBody");
                 var meta = document.getElementById("sentryMeta");
                 if (!body) return;
+                var now = Date.now();
+                var cutoff = 0;
+                if (sentryPeriodFilterValue === "24h") cutoff = now - 24 * 3600 * 1000;
+                else if (sentryPeriodFilterValue === "7d") cutoff = now - 7 * 24 * 3600 * 1000;
+                else if (sentryPeriodFilterValue === "30d") cutoff = now - 30 * 24 * 3600 * 1000;
                 var list = sentryGetIssuesList().filter(function(it) {
                     if (sentryLevelFilterValue !== "all" && it.level !== sentryLevelFilterValue) return false;
+                    if (sentryHideResolved && String(it.status || "unresolved") === "resolved") return false;
+                    if (cutoff) {
+                        var t = it.lastSeen ? Date.parse(it.lastSeen) : 0;
+                        if (t && t < cutoff) return false;
+                        if (!t && it.firstSeen) {
+                            var t2 = Date.parse(it.firstSeen);
+                            if (t2 && t2 < cutoff) return false;
+                        }
+                    }
                     if (sentrySearchValue) {
                         var hay = (((it.title || "") + " " + ((it.tags && it.tags.page) || "") + " " + ((it.tags && it.tags.company_id) || "") + " " + ((it.tags && it.tags.release) || "") + " " + (it.message || "")).toLowerCase());
                         if (hay.indexOf(sentrySearchValue.toLowerCase()) < 0) return false;
@@ -5355,12 +5579,14 @@
                 });
                 if (!list.length) {
                     body.innerHTML = '<tr><td colspan="9" class="empty-state">' + (sentryIssuesOrder.length ? "Nenhum erro com os filtros atuais." : "Nenhum erro registrado ainda. Clique em Sincronizar para buscar da Sentry.") + '</td></tr>';
-                    if (meta) meta.textContent = "0 issues";
+                    if (meta) meta.textContent = "0 de " + sentryIssuesOrder.length + " issues";
+                    renderAdminPaginationControls("sentryPagination", adminPaginationState.sentry, 0, function() { sentryRenderIssuesTable(); });
                     return;
                 }
+                var paged = paginateAdminList(list, adminPaginationState.sentry);
                 var rows = "";
-                for (var i = 0; i < list.length; i++) {
-                    var it = list[i];
+                for (var i = 0; i < paged.rows.length; i++) {
+                    var it = paged.rows[i];
                     var page = (it.tags && it.tags.page) || "-";
                     var company = (it.tags && (it.tags.company_id || it.tags.companyId)) || "-";
                     var release = (it.tags && it.tags.release) || "-";
@@ -5381,7 +5607,8 @@
                         + '</tr>';
                 }
                 body.innerHTML = rows;
-                if (meta) meta.textContent = list.length + " issue(s)";
+                if (meta) meta.textContent = paged.rows.length + " de " + list.length + " issue(s) — " + paged.total + " filtrados de " + sentryIssuesOrder.length + " total";
+                renderAdminPaginationControls("sentryPagination", adminPaginationState.sentry, list.length, function() { sentryRenderIssuesTable(); });
                 var btns = body.querySelectorAll("button[data-sentry-copy]");
                 for (var j = 0; j < btns.length; j++) {
                     btns[j].addEventListener("click", (function(id) { return function() { sentryCopyIssueReport(id); }; })(btns[j].getAttribute("data-sentry-copy")));
@@ -5436,8 +5663,17 @@
             function sentryApplyFilters() {
                 var lv = document.getElementById("sentryLevelFilter");
                 var sr = document.getElementById("sentrySearch");
+                var pv = document.getElementById("sentryPeriodFilter");
+                var hb = document.getElementById("sentryHideResolved");
                 sentryLevelFilterValue = lv ? lv.value : "all";
                 sentrySearchValue = sr ? sr.value : "";
+                sentryPeriodFilterValue = pv ? pv.value : "all";
+                sentryHideResolved = hb ? !!hb.checked : false;
+                var sig = [sentryPeriodFilterValue, sentryLevelFilterValue, sentryHideResolved ? "1" : "0", sentrySearchValue].join("|");
+                if (sig !== lastSentryFilterSig) {
+                    lastSentryFilterSig = sig;
+                    if (adminPaginationState.sentry) adminPaginationState.sentry.page = 0;
+                }
                 sentryRenderIssuesTable();
             }
             function sentryUpdateBell() {
@@ -5628,11 +5864,17 @@
                 if (copySummaryBtn) copySummaryBtn.addEventListener("click", sentryCopySummary);
                 var levelFilter = document.getElementById("sentryLevelFilter");
                 if (levelFilter) levelFilter.addEventListener("change", sentryApplyFilters);
+                var periodFilter = document.getElementById("sentryPeriodFilter");
+                if (periodFilter) periodFilter.addEventListener("change", sentryApplyFilters);
+                var hideResolved = document.getElementById("sentryHideResolved");
+                if (hideResolved) hideResolved.addEventListener("change", sentryApplyFilters);
                 var search = document.getElementById("sentrySearch");
                 if (search) search.addEventListener("input", sentryApplyFilters);
                 var reloadBtn = document.getElementById("sentryReloadBtn");
                 if (reloadBtn) reloadBtn.addEventListener("click", function() {
                     if (levelFilter) levelFilter.value = "all";
+                    if (periodFilter) periodFilter.value = "all";
+                    if (hideResolved) hideResolved.checked = false;
                     if (search) search.value = "";
                     sentryApplyFilters();
                 });

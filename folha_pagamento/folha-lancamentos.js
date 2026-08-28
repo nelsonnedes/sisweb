@@ -3,6 +3,7 @@ class FolhaLancamentos {
         this.lancamentos = [];
         this.isEditMode = false;
         this.lancamentoAtual = {};
+        this._isHydratingForm = false;
         this._fechadasCache = { items: [], lastUpdated: 0 };
         this._folhasFechadasFiltrosAtivos = { mesAno: '', funcionario: '' };
         this.setupDataListeners(); // Configurar listener para atualizações de dados
@@ -191,7 +192,7 @@ class FolhaLancamentos {
                 }
                 return;
             }
-            const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, get } = await import('../firebase/sdk/firebase-database.js');
             const primaryRef = ref(window.database, this._resolvePath('folhas'));
             const primarySnap = await get(primaryRef);
             const primaryArr = primarySnap.val() ? Object.entries(primarySnap.val()).map(([key, val]) => ({ ...(val || {}), id: key })) : [];
@@ -239,7 +240,7 @@ class FolhaLancamentos {
                 console.warn('⚠️ Firebase database não disponível em buscarTodasFolhas. Retornando cache atual.');
                 return Array.isArray(this.lancamentos) ? this.lancamentos : [];
             }
-            const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, get } = await import('../firebase/sdk/firebase-database.js');
             const primaryRef = ref(window.database, this._resolvePath('folhas'));
             const primarySnap = await get(primaryRef);
             const primaryArr = primarySnap.val() ? Object.entries(primarySnap.val()).map(([key, val]) => ({ id: key, ...(val || {}) })) : [];
@@ -600,7 +601,7 @@ class FolhaLancamentos {
         // Fallback: buscar diretamente do Firebase
         if (!lancamento && window.database) {
             try {
-                const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                const { ref, get } = await import('../firebase/sdk/firebase-database.js');
                 const snap = await get(ref(window.database, this._resolvePath(`folhas/${lancamentoId}`)));
                 if (snap.exists()) {
                     lancamento = { id: lancamentoId, ...(snap.val() || {}) };
@@ -660,11 +661,17 @@ class FolhaLancamentos {
         this.lancamentoAtual = lancamento;
         this._editLancamentoId = lancamento.id || lancamento.key || lancamento.$key || lancamento.recordId || lancamentoId || '';
         
-        // Limpar formulário antes de preencher para evitar estados residuais
-        this.clearFolhaForm();
-        
-        // Preencher formulário
-        this.fillFolhaForm(lancamento);
+        // Evitar cálculos intermediários enquanto o formulário é hidratado.
+        this._isHydratingForm = true;
+        try {
+            // Limpar formulário antes de preencher para evitar estados residuais
+            this.clearFolhaForm();
+
+            // Preencher formulário
+            this.fillFolhaForm(lancamento);
+        } finally {
+            this._isHydratingForm = false;
+        }
         try {
             console.log('🧩 Checagem pós-fill:', {
                 idInput: (document.getElementById('folhaId')||{}).value,
@@ -754,12 +761,19 @@ class FolhaLancamentos {
                 };
                 if (needsRefill()) {
                     const refill = () => {
+                        this._isHydratingForm = true;
                         try {
                             this.fillFolhaForm(this.lancamentoAtual || {});
+                        } catch(e) {
+                            console.warn('⚠️ Refill falhou:', e);
+                        } finally {
+                            this._isHydratingForm = false;
+                        }
+                        try {
                             this.applyEncargoRestrictionsByLancamento();
                             if (typeof this.ensureEncargoFieldsEnabledForCLT === 'function') this.ensureEncargoFieldsEnabledForCLT();
                             this.calcularFolhaRealTime();
-                        } catch(e) { console.warn('⚠️ Refill falhou:', e); }
+                        } catch(e) { console.warn('⚠️ Refill falhou ao recalcular:', e); }
                     };
                     window.addEventListener('folhaDataReady', function onReady() {
                         window.removeEventListener('folhaDataReady', onReady);
@@ -848,7 +862,7 @@ class FolhaLancamentos {
             }
             if (!out && window.database) {
                 try {
-                    const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                    const { ref, get } = await import('../firebase/sdk/firebase-database.js');
                     const primaryPath = this._resolvePath(`folhas/${lancamentoId}`);
                     let snap = await get(ref(window.database, primaryPath));
                     if (!snap.exists() && primaryPath !== `folhas/${lancamentoId}`) {
@@ -1527,6 +1541,15 @@ class FolhaLancamentos {
         let funcionarioNome = valStr('folhaFuncionario') || ((curr.funcionario && curr.funcionario.nome) || '');
         if (window.isAllCaps(funcionarioNome)) funcionarioNome = window.toTitleCasePt(funcionarioNome);
         const funcionarioSalarioBase = valNum('funcionarioSalario');
+        const salarioBasePersistido = this._parseFolhaNumber(
+            curr.salarioBase
+            || (curr.funcionario && curr.funcionario.salarioBase)
+            || (curr.calculos && (curr.calculos.salarioBase || (curr.calculos.calculos && curr.calculos.calculos.salarioBase)))
+            || 0
+        );
+        const salarioBase = funcionarioSalarioBase > 0
+            ? funcionarioSalarioBase
+            : salarioBasePersistido;
         const funcionario = curr.funcionario ? { ...curr.funcionario } : {};
         funcionario.nome = funcionarioNome;
         if (!isNaN(funcionarioSalarioBase) && funcionarioSalarioBase > 0) funcionario.salarioBase = funcionarioSalarioBase;
@@ -1577,6 +1600,7 @@ class FolhaLancamentos {
             tipoFolha: tipo,
             status: statusAtual,
             // Campos numéricos
+            salarioBase,
             diasTrabalhados: valNum('folhaDiasTrabalhados'),
             horasExtras: valNum('folhaHorasExtras'),
             percentualExtra: valNum('folhaPercentualExtra'),
@@ -1626,7 +1650,7 @@ class FolhaLancamentos {
         }
 
         // Lógica de Delta para salvar ajuste corretamente (Unificação Visual vs Lógica Separada)
-        if (!data.removerCalculosAutomaticos && window.FolhaCalculos && typeof window.FolhaCalculos.calcularFolhaCompleta === 'function') {
+        if (!data.removerCalculosAutomaticos && data.salarioBase > 0 && window.FolhaCalculos && typeof window.FolhaCalculos.calcularFolhaCompleta === 'function') {
             try {
                 // Simular cálculo automático puro (sem manuais) para descobrir a base automática
                 const simulacao = window.FolhaCalculos.calcularFolhaCompleta({
@@ -1862,7 +1886,7 @@ class FolhaLancamentos {
                     // Tentar gerar ID compatível com Firebase
                     // Se estiver online ou com SDK carregado
                     if (window.database) {
-                        const { ref, push } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                        const { ref, push } = await import('../firebase/sdk/firebase-database.js');
                         newId = push(ref(window.database, 'folhas')).key;
                     }
                 } catch(e) {}
@@ -2284,6 +2308,7 @@ class FolhaLancamentos {
     }
 
     calcularFolhaRealTime() {
+        if (this._isHydratingForm) return;
         console.log('🧮 Calculando folha em tempo real...');
         const parsePtBrNumber = (raw) => {
             const s = String(raw || '').trim();
@@ -3239,7 +3264,7 @@ async function __findLancamentoById(id) {
     }
     if (!l && window.database) {
         try {
-            const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, get } = await import('../firebase/sdk/firebase-database.js');
             const resolvePath = (p) => {
                 try {
                     if (window.folhaLancamentos && typeof window.folhaLancamentos._resolvePath === 'function') {

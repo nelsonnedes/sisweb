@@ -7,6 +7,8 @@ let veiculos = [];
 let condutores = [];
 let numeroAtualMdfe = 1;
 let mdfeEditando = null;
+let tenantIdMdfe = null;
+let configuracaoFiscalMdfe = {};
 
 // Configurações
 const configuracoesMdfe = {
@@ -70,53 +72,41 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('mdfeDataEmissao').value = dataHoraLocal;
     document.getElementById('dataEncerramento').value = dataHoraLocal;
     
-    // Carregar dados
-    carregarDados();
-    
     // Configurar eventos
     configurarEventos();
-    
-    // Atualizar dashboard
-    atualizarDashboard();
-    
-    // Definir próximo número
-    definirProximoNumeroMdfe();
+
+    // Configurar estados e cidades do percurso
+    configurarLocalizacaoMdfe();
+
+    carregarDados().then(() => {
+        atualizarDashboard();
+        definirProximoNumeroMdfe();
+    });
     
     console.log('✅ Sistema MDF-e inicializado com sucesso');
 });
 
-// Carregar dados do localStorage ou Firebase
-function carregarDados() {
+// Carregar dados do tenant autenticado no Firebase
+async function carregarDados() {
     try {
-        // Carregar MDF-es
-        const mdfesStorage = localStorage.getItem('mdfes');
-        if (mdfesStorage) {
-            mdfes = JSON.parse(mdfesStorage);
+        const svc = window.firebaseService;
+        if (!svc || typeof svc.resolveAuthenticatedTenant !== 'function' || typeof svc.loadFromFirebase !== 'function') {
+            throw new Error('Serviço Firebase do MDF-e indisponível.');
         }
-        
-        // Carregar documentos fiscais
-        const documentosStorage = localStorage.getItem('documentosFiscais');
-        if (documentosStorage) {
-            documentosFiscais = JSON.parse(documentosStorage);
-        }
-        
-        // Carregar veículos
-        const veiculosStorage = localStorage.getItem('veiculos');
-        if (veiculosStorage) {
-            veiculos = JSON.parse(veiculosStorage);
-        }
-        
-        // Carregar condutores
-        const condutoresStorage = localStorage.getItem('condutores');
-        if (condutoresStorage) {
-            condutores = JSON.parse(condutoresStorage);
-        }
-        
-        // Carregar configurações
-        const configStorage = localStorage.getItem('configuracoesMdfe');
-        if (configStorage) {
-            Object.assign(configuracoesMdfe, JSON.parse(configStorage));
-        }
+
+        const context = await svc.resolveAuthenticatedTenant({ timeoutMs: 5000, reason: 'mdfe_init' });
+        tenantIdMdfe = String(context?.companyId || '').trim();
+        if (!tenantIdMdfe) throw new Error('Empresa autenticada não identificada para o MDF-e.');
+
+        const result = await svc.loadFromFirebase(`companies/${tenantIdMdfe}/fiscal/mdfe`);
+        const remoteData = result && result.data && typeof result.data === 'object' ? result.data : {};
+        mdfes = Array.isArray(remoteData) ? remoteData : Object.values(remoteData);
+        documentosFiscais = [];
+
+        const configResult = await svc.loadFromFirebase(`companies/${tenantIdMdfe}/fiscal/config`);
+        configuracaoFiscalMdfe = configResult && configResult.data && typeof configResult.data === 'object'
+            ? configResult.data
+            : {};
         
         console.log('📊 Dados carregados:', {
             mdfes: mdfes.length,
@@ -127,6 +117,7 @@ function carregarDados() {
         
     } catch (error) {
         console.error('❌ Erro ao carregar dados:', error);
+        mdfes = [];
     }
 }
 
@@ -168,8 +159,26 @@ function configurarEventos() {
     }
 }
 
+function configurarLocalizacaoMdfe() {
+    const origemUf = document.getElementById('mdfeUfInicio');
+    const origemCidade = document.getElementById('percursoMunicipioCarregamento');
+    if (origemUf && origemCidade && typeof criarSelectEstados === 'function') {
+        criarSelectEstados(origemUf.id, '', function(uf) {
+            if (typeof popularCidades === 'function') popularCidades(origemCidade.id, uf);
+        });
+    }
+
+    const destinoUf = document.getElementById('percursoUfFim');
+    const destinoCidade = document.getElementById('percursoMunicipioDescarregamento');
+    if (destinoUf && destinoCidade && typeof criarSelectEstados === 'function') {
+        criarSelectEstados(destinoUf.id, '', function(uf) {
+            if (typeof popularCidades === 'function') popularCidades(destinoCidade.id, uf);
+        });
+    }
+}
+
 // Função para mostrar abas
-function showTab(tabName) {
+function showTab(tabName, tabTrigger) {
     // Esconder todas as abas
     const tabContents = document.querySelectorAll('.tab-content');
     tabContents.forEach(tab => tab.classList.remove('active'));
@@ -184,8 +193,10 @@ function showTab(tabName) {
         selectedTab.classList.add('active');
     }
     
-    // Adicionar classe active ao botão clicado
-    event.target.classList.add('active');
+    // Aceitar tanto cliques da interface quanto chamadas programáticas.
+    const trigger = tabTrigger || Array.from(document.querySelectorAll('.tabs .tab'))
+        .find(tab => (tab.getAttribute('onclick') || '').includes(`showTab('${tabName}'`));
+    if (trigger) trigger.classList.add('active');
     
     // Ações específicas por aba
     if (tabName === 'consulta') {
@@ -260,14 +271,14 @@ function atualizarListaDocumentos() {
     
     documentosFiscais.forEach(doc => {
         const row = document.createElement('div');
-        row.className = 'nf-row';
+        row.className = 'nf-row nf-document-row';
         row.innerHTML = `
-            <div title="${doc.chave}">${doc.chave.substring(0, 20)}...</div>
-            <div>R$ ${doc.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
-            <div>${doc.peso.toLocaleString('pt-BR', {minimumFractionDigits: 3})} kg</div>
-            <div><span class="status-badge status-${doc.status.toLowerCase()}">${doc.status}</span></div>
-            <div>
-                <button onclick="removerDocumento('${doc.id}')" class="btn btn-danger btn-small">
+            <div data-label="Chave NF-e" title="${escapeHtmlMdfe(doc.chave)}">${escapeHtmlMdfe(doc.chave.substring(0, 20))}...</div>
+            <div data-label="Valor">R$ ${doc.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+            <div data-label="Peso">${doc.peso.toLocaleString('pt-BR', {minimumFractionDigits: 3})} kg</div>
+            <div data-label="Status"><span class="status-badge status-${escapeHtmlMdfe(doc.status.toLowerCase())}">${escapeHtmlMdfe(doc.status)}</span></div>
+            <div data-label="Ações">
+                <button type="button" onclick="removerDocumento('${escapeHtmlMdfe(doc.id)}')" class="btn btn-danger btn-small" aria-label="Remover documento fiscal">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -292,34 +303,34 @@ function limparCamposDocumento() {
 }
 
 // Salvar rascunho do MDF-e
-function salvarRascunhoMdfe() {
+async function salvarRascunhoMdfe() {
     const dadosMdfe = coletarDadosFormulario();
     if (!dadosMdfe) return;
     
     dadosMdfe.status = 'rascunho';
     dadosMdfe.dataRascunho = new Date().toISOString();
     
-    if (mdfeEditando) {
-        // Atualizar existente
-        const index = mdfes.findIndex(m => m.id === mdfeEditando);
-        if (index !== -1) {
-            mdfes[index] = { ...mdfes[index], ...dadosMdfe };
-        }
-    } else {
-        // Criar novo
-        dadosMdfe.id = gerarId();
-        dadosMdfe.numero = numeroAtualMdfe.toString().padStart(9, '0');
-        mdfes.push(dadosMdfe);
+    const index = mdfeEditando ? mdfes.findIndex(m => m.id === mdfeEditando) : -1;
+    const payload = index !== -1
+        ? { ...mdfes[index], ...dadosMdfe }
+        : { ...dadosMdfe, id: gerarId(), numero: numeroAtualMdfe.toString().padStart(9, '0') };
+
+    try {
+        await salvarDados(payload);
+        if (index !== -1) mdfes[index] = payload;
+        else mdfes.push(payload);
+        alert('Rascunho salvo com sucesso!');
+    } catch (error) {
+        console.error('❌ Erro ao salvar rascunho MDF-e:', error);
+        alert(`Não foi possível salvar o rascunho: ${error.message}`);
+        return;
     }
-    
-    salvarDados();
-    alert('Rascunho salvo com sucesso!');
     
     console.log('💾 Rascunho salvo:', dadosMdfe);
 }
 
 // Emitir MDF-e
-function emitirMdfe() {
+async function emitirMdfe() {
     const dadosMdfe = coletarDadosFormulario();
     if (!dadosMdfe) return;
     
@@ -328,34 +339,78 @@ function emitirMdfe() {
         return;
     }
     
-    // Simular emissão
-    dadosMdfe.status = 'autorizado';
-    dadosMdfe.dataAutorizacao = new Date().toISOString();
-    dadosMdfe.protocolo = gerarProtocolo();
-    dadosMdfe.chaveAcesso = gerarChaveAcesso();
-    
-    if (mdfeEditando) {
-        // Atualizar existente
-        const index = mdfes.findIndex(m => m.id === mdfeEditando);
-        if (index !== -1) {
-            mdfes[index] = { ...mdfes[index], ...dadosMdfe };
+    const index = mdfeEditando ? mdfes.findIndex(m => m.id === mdfeEditando) : -1;
+    const payload = index !== -1
+        ? { ...mdfes[index], ...dadosMdfe }
+        : { ...dadosMdfe, id: gerarId(), numero: numeroAtualMdfe.toString().padStart(9, '0') };
+
+    try {
+        const svc = window.firebaseService;
+        if (!tenantIdMdfe || typeof svc?.callFunction !== 'function') throw new Error('Cloud Functions fiscais indisponíveis.');
+        if (!window.MdfeXmlBuilder?.buildMdfe) throw new Error('Gerador XML MDF-e indisponível.');
+        const senhaA1 = document.getElementById('mdfeSenhaA1')?.value || '';
+        const ambiente = document.getElementById('mdfeAmbiente')?.value || 'homologacao';
+        if (!senhaA1) throw new Error('Informe a senha do certificado A1.');
+
+        const numeroResult = await svc.callFunction('mdfe_reservarNumero', { tenantId: tenantIdMdfe });
+        const numero = Number(numeroResult?.numero || 0);
+        if (!numero) throw new Error('Não foi possível reservar a numeração MDF-e.');
+
+        const emit = configuracaoFiscalMdfe.empresa || {};
+        const codigoCarregamento = await resolverCodigoMunicipio(dadosMdfe.ufInicio, dadosMdfe.municipioCarregamento);
+        const codigoDescarregamento = await resolverCodigoMunicipio(dadosMdfe.ufFim, dadosMdfe.municipioDescarregamento);
+        const xmlData = window.MdfeXmlBuilder.buildMdfe({
+            ...payload,
+            numero,
+            tpAmb: ambiente === 'producao' ? 1 : 2,
+            codigoMunicipioCarregamento: codigoCarregamento,
+            codigoMunicipioDescarregamento: codigoDescarregamento,
+            emit,
+        });
+
+        payload.numero = xmlData.numero;
+        payload.status = 'aguardando';
+        payload.chaveAcesso = xmlData.chave;
+        await salvarDados(payload);
+        const result = await svc.callFunction('mdfe_emitir', {
+            tenantId: tenantIdMdfe,
+            mdfeId: payload.id,
+            xml: xmlData.xml,
+            senhaA1,
+            ambiente,
+        });
+        payload.status = result?.status || (result?.autorizada ? 'autorizado' : 'rejeitado');
+        payload.protocolo = result?.protocolo || '';
+        payload.cStat = result?.cStat || '';
+        payload.xMotivo = result?.xMotivo || '';
+        if (index !== -1) mdfes[index] = payload;
+        else {
+            mdfes.push(payload);
+            numeroAtualMdfe = numero + 1;
         }
-    } else {
-        // Criar novo
-        dadosMdfe.id = gerarId();
-        dadosMdfe.numero = numeroAtualMdfe.toString().padStart(9, '0');
-        mdfes.push(dadosMdfe);
-        numeroAtualMdfe++;
+        if (!result?.autorizada) {
+            alert(`MDF-e rejeitado: ${result?.xMotivo || 'retorno sem autorização'}`);
+            return;
+        }
+        alert('MDF-e autorizado com sucesso!\nProtocolo: ' + (payload.protocolo || 'não informado'));
+    } catch (error) {
+        console.error('❌ Erro ao salvar MDF-e:', error);
+        alert(`Não foi possível salvar o MDF-e: ${error.message}`);
+        return;
     }
-    
-    salvarDados();
-    alert('MDF-e emitido com sucesso!\nProtocolo: ' + dadosMdfe.protocolo);
     
     limparFormularioMdfe();
     definirProximoNumeroMdfe();
     atualizarDashboard();
     
     console.log('✅ MDF-e emitido:', dadosMdfe);
+}
+
+async function resolverCodigoMunicipio(uf, municipio) {
+    if (typeof obterCodigoMunicipioIBGE !== 'function') throw new Error('Consulta de municípios IBGE indisponível.');
+    const codigo = await obterCodigoMunicipioIBGE(uf, municipio);
+    if (!codigo) throw new Error(`Não foi possível resolver o código IBGE de ${municipio}/${uf}.`);
+    return codigo;
 }
 
 // Coletar dados do formulário
@@ -460,33 +515,40 @@ function atualizarTabelaMdfes(mdfesParaExibir) {
     if (!tbody) return;
     
     if (mdfesParaExibir.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Nenhum MDF-e encontrado</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="mdfe-empty">Nenhum MDF-e encontrado</td></tr>';
         return;
     }
     
     tbody.innerHTML = mdfesParaExibir.map(mdfe => `
         <tr>
-            <td>${mdfe.numero}</td>
-            <td>${mdfe.serie}</td>
-            <td>${formatarDataHora(mdfe.dataEmissao)}</td>
-            <td>${mdfe.veiculo.placa}</td>
-            <td>${mdfe.condutor.nome}</td>
-            <td>${mdfe.ufInicio}/${mdfe.ufFim}</td>
-            <td><span class="status-badge status-${mdfe.status}">${mdfe.status.toUpperCase()}</span></td>
-            <td>
-                <button onclick="visualizarMdfe('${mdfe.id}')" class="btn btn-primary btn-small" title="Visualizar">
+            <td data-label="Número">${escapeHtmlMdfe(mdfe.numero)}</td>
+            <td data-label="Série">${escapeHtmlMdfe(mdfe.serie)}</td>
+            <td data-label="Data">${escapeHtmlMdfe(formatarDataHora(mdfe.dataEmissao))}</td>
+            <td data-label="Placa">${escapeHtmlMdfe(mdfe.veiculo?.placa)}</td>
+            <td data-label="Condutor">${escapeHtmlMdfe(mdfe.condutor?.nome)}</td>
+            <td data-label="UF origem/destino">${escapeHtmlMdfe(mdfe.ufInicio)}/${escapeHtmlMdfe(mdfe.ufFim)}</td>
+            <td data-label="Status"><span class="status-badge status-${escapeHtmlMdfe(mdfe.status)}">${escapeHtmlMdfe(String(mdfe.status).toUpperCase())}</span></td>
+            <td data-label="Ações">
+                <div class="mdfe-actions">
+                <button type="button" onclick="visualizarMdfe('${escapeHtmlMdfe(mdfe.id)}')" class="btn btn-primary btn-small" title="Visualizar" aria-label="Visualizar MDF-e">
                     <i class="fas fa-eye"></i>
                 </button>
                 ${mdfe.status === 'autorizado' ? `
-                    <button onclick="encerrarMdfeRapido('${mdfe.id}')" class="btn btn-warning btn-small" title="Encerrar">
+                    <button type="button" onclick="encerrarMdfeRapido('${escapeHtmlMdfe(mdfe.id)}')" class="btn btn-warning btn-small" title="Encerrar" aria-label="Encerrar MDF-e">
                         <i class="fas fa-check"></i>
                     </button>
                 ` : ''}
                 ${mdfe.status === 'rascunho' ? `
-                    <button onclick="editarMdfe('${mdfe.id}')" class="btn btn-warning btn-small" title="Editar">
+                    <button type="button" onclick="editarMdfe('${escapeHtmlMdfe(mdfe.id)}')" class="btn btn-warning btn-small" title="Editar" aria-label="Editar MDF-e">
                         <i class="fas fa-edit"></i>
                     </button>
                 ` : ''}
+                ${mdfe.chaveAcesso ? `
+                    <button type="button" onclick="consultarMdfeFiscal('${escapeHtmlMdfe(mdfe.id)}')" class="btn btn-primary btn-small" title="Consultar SEFAZ" aria-label="Consultar MDF-e na SEFAZ">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                ` : ''}
+                </div>
             </td>
         </tr>
     `).join('');
@@ -510,7 +572,7 @@ function carregarMdfesParaEncerramento() {
 }
 
 // Encerrar MDF-e
-function encerrarMdfe() {
+async function encerrarMdfe() {
     const mdfeId = document.getElementById('mdfeEncerramento').value;
     const dataEncerramento = document.getElementById('dataEncerramento').value;
     const municipioEncerramento = document.getElementById('municipioEncerramento').value;
@@ -536,15 +598,30 @@ function encerrarMdfe() {
         return;
     }
     
-    // Atualizar status
-    mdfe.status = 'encerrado';
-    mdfe.dataEncerramento = dataEncerramento;
-    mdfe.municipioEncerramento = municipioEncerramento;
-    mdfe.protocoloEncerramento = gerarProtocolo();
-    
-    document.getElementById('protocoloEncerramento').value = mdfe.protocoloEncerramento;
-    
-    salvarDados();
+    try {
+        const senhaA1 = document.getElementById('mdfeSenhaA1Encerramento')?.value || '';
+        if (!senhaA1) throw new Error('Informe a senha do certificado A1.');
+        const cMunEnc = await resolverCodigoMunicipio(mdfe.ufFim, municipioEncerramento);
+        const result = await window.firebaseService.callFunction('mdfe_encerrar', {
+            tenantId: tenantIdMdfe,
+            mdfeId: mdfe.id,
+            chave: mdfe.chaveAcesso,
+            cMunEnc,
+            dtEnc: dataEncerramento,
+            senhaA1,
+            ambiente: document.getElementById('mdfeAmbiente')?.value || 'homologacao',
+        });
+        if (!result?.encerrado) throw new Error(result?.xMotivo || 'SEFAZ não autorizou o encerramento.');
+        mdfe.status = 'encerrado';
+        mdfe.dataEncerramento = dataEncerramento;
+        mdfe.municipioEncerramento = municipioEncerramento;
+        mdfe.protocoloEncerramento = result.protocolo || '';
+        document.getElementById('protocoloEncerramento').value = mdfe.protocoloEncerramento;
+    } catch (error) {
+        console.error('❌ Erro ao salvar encerramento MDF-e:', error);
+        alert(`Não foi possível salvar o encerramento: ${error.message}`);
+        return;
+    }
     alert('MDF-e encerrado com sucesso!\nProtocolo: ' + mdfe.protocoloEncerramento);
     
     // Limpar formulário
@@ -559,19 +636,36 @@ function encerrarMdfe() {
 }
 
 // Encerrar MDF-e rapidamente
-function encerrarMdfeRapido(id) {
+async function encerrarMdfeRapido(id) {
     const municipio = prompt('Informe o município de encerramento:');
     if (!municipio) return;
     
     const mdfe = mdfes.find(m => m.id === id);
     if (!mdfe) return;
     
-    mdfe.status = 'encerrado';
-    mdfe.dataEncerramento = new Date().toISOString();
-    mdfe.municipioEncerramento = municipio;
-    mdfe.protocoloEncerramento = gerarProtocolo();
-    
-    salvarDados();
+    try {
+        const senhaA1 = window.prompt('Informe a senha do certificado A1:');
+        if (!senhaA1) return;
+        const cMunEnc = await resolverCodigoMunicipio(mdfe.ufFim, municipio);
+        const result = await window.firebaseService.callFunction('mdfe_encerrar', {
+            tenantId: tenantIdMdfe,
+            mdfeId: mdfe.id,
+            chave: mdfe.chaveAcesso,
+            cMunEnc,
+            dtEnc: new Date().toISOString().slice(0, 10),
+            senhaA1,
+            ambiente: document.getElementById('mdfeAmbiente')?.value || 'homologacao',
+        });
+        if (!result?.encerrado) throw new Error(result?.xMotivo || 'SEFAZ não autorizou o encerramento.');
+        mdfe.status = 'encerrado';
+        mdfe.dataEncerramento = new Date().toISOString();
+        mdfe.municipioEncerramento = municipio;
+        mdfe.protocoloEncerramento = result.protocolo || '';
+    } catch (error) {
+        console.error('❌ Erro ao salvar encerramento rápido MDF-e:', error);
+        alert(`Não foi possível salvar o encerramento: ${error.message}`);
+        return;
+    }
     alert('MDF-e encerrado com sucesso!');
     
     consultarMdfes();
@@ -738,41 +832,53 @@ async function gerarRelatorioMdfe() {
 }
 
 // Salvar dados
-function salvarDados() {
+async function salvarDados(mdfe) {
+    const svc = window.firebaseService;
+    if (!tenantIdMdfe || !svc || typeof svc.saveToFirebase !== 'function') {
+        throw new Error('Firebase não está pronto para persistir o MDF-e.');
+    }
+    if (!mdfe || !mdfe.id) throw new Error('MDF-e sem identificador.');
+
+    const now = new Date().toISOString();
+    const payload = {
+        ...mdfe,
+        id: String(mdfe.id),
+        tenantId: tenantIdMdfe,
+        createdAt: mdfe.createdAt || now,
+        updatedAt: now
+    };
+    const result = await svc.saveToFirebase(`companies/${tenantIdMdfe}/fiscal/mdfe`, payload.id, payload);
+    if (!result || result.success === false) throw new Error(result?.error || 'Falha ao salvar MDF-e.');
+}
+
+async function consultarMdfeFiscal(id) {
+    const mdfe = mdfes.find((item) => item.id === id);
+    if (!mdfe || !mdfe.chaveAcesso) return;
+    const senhaA1 = window.prompt('Informe a senha do certificado A1:');
+    if (!senhaA1) return;
+
     try {
-        localStorage.setItem('mdfes', JSON.stringify(mdfes));
-        localStorage.setItem('documentosFiscais', JSON.stringify([])); // Limpar após uso
-        localStorage.setItem('configuracoesMdfe', JSON.stringify(configuracoesMdfe));
-        
-        console.log('💾 Dados salvos no localStorage');
-        
-        // Tentar salvar no Firebase se disponível
-        if (window.firebaseService && window.firebaseService.isFirebaseOperational) {
-            // Implementar salvamento no Firebase aqui
-            console.log('☁️ Dados sincronizados com Firebase');
-        }
-        
+        const result = await window.firebaseService.callFunction('mdfe_consultar', {
+            tenantId: tenantIdMdfe,
+            mdfeId: mdfe.id,
+            chave: mdfe.chaveAcesso,
+            senhaA1,
+            ambiente: document.getElementById('mdfeAmbiente')?.value || 'homologacao',
+        });
+        mdfe.cStat = result?.cStat || '';
+        mdfe.xMotivo = result?.xMotivo || '';
+        mdfe.protocolo = result?.protocolo || mdfe.protocolo || '';
+        alert(`Retorno SEFAZ: ${mdfe.cStat} - ${mdfe.xMotivo}`);
+        consultarMdfes();
     } catch (error) {
-        console.error('❌ Erro ao salvar dados:', error);
+        console.error('❌ Erro ao consultar MDF-e:', error);
+        alert(`Não foi possível consultar o MDF-e: ${error.message}`);
     }
 }
 
 // Funções utilitárias
 function gerarId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
-
-function gerarProtocolo() {
-    return 'PROT' + Date.now().toString().substr(-8) + Math.random().toString().substr(2, 4).toUpperCase();
-}
-
-function gerarChaveAcesso() {
-    // Simular chave de acesso de 44 dígitos
-    let chave = '';
-    for (let i = 0; i < 44; i++) {
-        chave += Math.floor(Math.random() * 10);
-    }
-    return chave;
 }
 
 function formatarCPF(cpf) {
@@ -811,6 +917,7 @@ window.visualizarMdfe = visualizarMdfe;
 window.editarMdfe = editarMdfe;
 window.encerrarMdfe = encerrarMdfe;
 window.encerrarMdfeRapido = encerrarMdfeRapido;
+window.consultarMdfeFiscal = consultarMdfeFiscal;
 window.gerarRelatorioMdfe = gerarRelatorioMdfe;
 
 console.log('🚛 Sistema MDF-e carregado com sucesso!'); 

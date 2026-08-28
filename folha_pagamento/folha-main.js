@@ -551,7 +551,7 @@ class FolhaPagamentoSystem {
             if (window.database) {
                 console.log('📡 Ativando listener realtime direto no RTDB');
                 (async () => {
-                    const { ref, onValue } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                    const { ref, onValue } = await import('../firebase/sdk/firebase-database.js');
                     const resolvePath = (p) => {
                         try {
                             if (window.FolhaUtils && typeof window.FolhaUtils.resolveFirebasePath === 'function') {

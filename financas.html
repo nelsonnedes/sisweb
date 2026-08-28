@@ -66,7 +66,7 @@
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
-    <script src="sentry-init.js?v=7849a9e5f9c0"></script>
+    <script src="sentry-init.js?v=e4dadfaea86a"></script>
 <script src="menu-component.js?v=fc5749bbb053"></script>
     <style>
         /* Note: Container styles are now in layout-comum.css */
@@ -1974,6 +1974,151 @@
         .filters-row .actions-group .action-btn,
         .filters-row .actions-group .btn{ flex:1 1 44px; }
     }
+    /* ===== Histórico de pagamentos em cards mobile ===== */
+    .finance-history-table-wrap {
+        width: 100%;
+        overflow-x: hidden;
+    }
+    .finance-history-table,
+    .finance-history-summary-table {
+        width: 100%;
+    }
+    @media (max-width: 768px) {
+        #pagamentoModal .finance-history-table-wrap {
+            overflow-x: visible;
+        }
+        #pagamentoModal .finance-history-table {
+            display: block !important;
+            width: 100% !important;
+            table-layout: auto !important;
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+            font-size: 13px !important;
+            line-height: 1.35 !important;
+        }
+        #pagamentoModal .finance-history-table colgroup,
+        #pagamentoModal .finance-history-table thead {
+            display: none !important;
+        }
+        #pagamentoModal .finance-history-table tbody,
+        #pagamentoModal .finance-history-table tbody > tr {
+            display: block !important;
+            width: 100% !important;
+        }
+        #pagamentoModal .finance-history-table tbody > tr {
+            box-sizing: border-box;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            margin-bottom: 12px;
+            padding: 8px 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+            background: #fff;
+            box-shadow: 0 2px 7px rgba(15, 23, 42, 0.06);
+        }
+        #pagamentoModal .finance-history-table tbody > tr:last-child {
+            margin-bottom: 0;
+        }
+        #pagamentoModal .finance-history-table td[data-label] {
+            display: flex !important;
+            align-items: flex-start !important;
+            justify-content: space-between !important;
+            gap: 12px;
+            box-sizing: border-box;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 34px !important;
+            max-height: none !important;
+            padding: 7px 0 !important;
+            border: 0 !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+            text-align: right !important;
+            white-space: normal !important;
+            overflow: visible !important;
+            overflow-wrap: anywhere;
+            line-height: 1.35 !important;
+        }
+        #pagamentoModal .finance-history-table td[data-label]::before {
+            content: attr(data-label);
+            flex: 0 1 42%;
+            min-width: 0;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .35px;
+            line-height: 1.25;
+            text-align: left;
+            text-transform: uppercase;
+        }
+        #pagamentoModal .finance-history-table td[data-label] > * {
+            max-width: 58%;
+        }
+        #pagamentoModal .finance-history-table td[data-label]:last-child,
+        #pagamentoModal .finance-history-table td.finance-history-action-cell {
+            border-bottom: 0 !important;
+        }
+        #pagamentoModal .finance-history-table td.finance-history-attachment-cell,
+        #pagamentoModal .finance-history-table td.finance-history-action-cell {
+            align-items: center !important;
+            margin-top: 4px;
+            padding-top: 10px !important;
+            border-top: 1px solid #e2e8f0 !important;
+        }
+        #pagamentoModal .finance-history-table td.finance-history-attachment-cell + td.finance-history-action-cell {
+            margin-top: 0;
+            border-top: 0 !important;
+        }
+        #pagamentoModal .finance-history-table td.finance-history-attachment-cell button,
+        #pagamentoModal .finance-history-table td.finance-history-action-cell button {
+            flex: 0 0 36px;
+            width: 36px !important;
+            min-width: 36px !important;
+            height: 36px !important;
+            min-height: 36px !important;
+            padding: 0 !important;
+            font-size: 13px !important;
+        }
+        #pagamentoModal .finance-history-table td.finance-history-empty {
+            display: block !important;
+            padding: 10px !important;
+            border: 0 !important;
+            text-align: center !important;
+        }
+        #pagamentoModal .finance-history-summary {
+            padding: 10px !important;
+            overflow: hidden;
+        }
+        #pagamentoModal .finance-history-summary-table {
+            display: block !important;
+            table-layout: auto !important;
+        }
+        #pagamentoModal .finance-history-summary-table tbody,
+        #pagamentoModal .finance-history-summary-table tr {
+            display: block !important;
+            width: 100% !important;
+        }
+        #pagamentoModal .finance-history-summary-table tr {
+            display: flex !important;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        #pagamentoModal .finance-history-summary-table td {
+            display: block !important;
+            box-sizing: border-box;
+            min-width: 0;
+            padding: 7px 6px !important;
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+        }
+        #pagamentoModal .finance-history-summary-table td:first-child {
+            flex: 1 1 auto;
+        }
+        #pagamentoModal .finance-history-summary-table td:last-child {
+            flex: 0 1 58%;
+        }
+    }
     @media (min-width: 1920px){
         .table { font-size: 14px; }
     }
@@ -2251,7 +2396,7 @@
                 ...financeFirebaseLocalService
             };
             window.__siswebFirebaseServiceReady = (async function () {
-                const firebaseSvc = await import('./firebaseService.js?v=e0acb7d52e36');
+                const firebaseSvc = await import('./firebaseService.js?v=10c72c116d87');
                 const existingFirebaseService = window.firebaseService || {};
                 window.firebaseService = {
                     ...existingFirebaseService,
@@ -2282,11 +2427,11 @@
     <script src="storageService.js?v=26c2875bf32d"></script>
     <script src="client-service.js?v=3061965a094a"></script>
     <script src="schema-migration-contatos.js?v=2e13b2ae3d91"></script>
-    <script src="commerce-pdf-share.js?v=9659e27a66f7"></script>
+    <script src="commerce-pdf-share.js?v=bf45a414e8b9"></script>
     <!-- Geração de Lâmina de Cobrança PIX -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="js/pix-brcode.js?v=1714fb7d79ee"></script>
     <script src="js/commerce-boleto-pix.js?v=304de555a465"></script>
-    <script src="financas.js?v=df9a8525d66c"></script>
+    <script src="financas.js?v=0c6b481535ce"></script>
 </body>
 </html>

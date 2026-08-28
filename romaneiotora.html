@@ -25,7 +25,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
-    <script src="sentry-init.js?v=7849a9e5f9c0"></script>
+    <script src="sentry-init.js?v=e4dadfaea86a"></script>
 <script>
         (function() {
             function isExtErr(m){if(!m)return false;var s=typeof m==='string'?m:(m.message||String(m));s=s.toLowerCase();return s.includes('message channel closed')||s.includes('extension context invalidated')||s.includes('chrome-extension://')||s.includes('moz-extension://')||s.includes('safari-extension://');}
@@ -1990,7 +1990,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <!-- Serviço Firebase canônico: uma única instância compartilhada por toda a página. -->
     <script>
         window.__siswebFirebaseServiceReady = (async function () {
-            const firebaseSvc = await import('./firebaseService.js?v=e0acb7d52e36');
+            const firebaseSvc = await import('./firebaseService.js?v=10c72c116d87');
             window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
             window.FirebaseService = window.firebaseService;
             return window.firebaseService;

@@ -3914,9 +3914,13 @@ tbody tr:last-child td {
     #folhasFechadasModal .table-container {
         border: 0 !important;
         border-radius: 0 !important;
-        flex: 0 0 auto !important;
+        flex: 1 1 auto !important;
         min-height: 0 !important;
-        overflow: visible !important;
+        max-height: none !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-gutter: stable;
     }
 
     #funcionariosListModal .funcionarios-list-table,
@@ -3961,8 +3965,11 @@ tbody tr:last-child td {
         border-radius: 8px !important;
         box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
         box-sizing: border-box !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
         margin-bottom: 12px !important;
-        overflow: hidden !important;
+        overflow: visible !important;
         padding: 10px 12px !important;
     }
 
@@ -3976,11 +3983,15 @@ tbody tr:last-child td {
         font-size: 13px !important;
         gap: 10px !important;
         grid-template-columns: minmax(96px, 38%) minmax(0, 1fr) !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
         line-height: 1.35 !important;
         padding: 8px 0 !important;
         text-align: right !important;
         white-space: normal !important;
         word-break: break-word !important;
+        overflow: visible !important;
     }
 
     #funcionariosListModal .funcionarios-list-table tbody td:nth-child(n),
@@ -4055,6 +4066,276 @@ tbody tr:last-child td {
         font-size: 12px !important;
         font-weight: 700 !important;
         text-align: left !important;
+    }
+
+    #funcionariosListModal td.actions-cell .action-button,
+    #cargosListModal td.actions-cell .action-button,
+    #folhasFechadasModal td.actions-cell .action-button {
+        flex: 0 0 36px !important;
+        width: 36px !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        padding: 0 !important;
+    }
+
+    #funcionariosListModal .funcionarios-list-table tbody td[data-label="Status"] .badge-status,
+    #cargosListModal table tbody td[data-label="Status"] .badge-status,
+    #folhasFechadasModal .folhas-fechadas-table tbody td[data-label="Status"] .badge-status,
+    #folhasTable tbody td[data-label="Status"] .badge-status {
+        justify-self: end !important;
+        width: fit-content !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+
+    #funcionariosListModal .paginacao-navegacao {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        justify-content: center !important;
+    }
+
+    #funcionariosListModal .modal-paginacao {
+        display: grid !important;
+        flex-direction: initial !important;
+        flex: 0 0 auto !important;
+        gap: 4px !important;
+        min-height: 0 !important;
+        margin-top: 0 !important;
+        padding: 6px !important;
+    }
+
+    #funcionariosListModal .paginacao-info,
+    #funcionariosListModal .paginacao-config {
+        justify-content: center !important;
+        margin-bottom: 0 !important;
+        text-align: center;
+    }
+
+    #funcionariosListModal .paginacao-navegacao {
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+    #funcionariosListModal .paginacao-navegacao .pagina-atual {
+        font-size: 11px;
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    #funcionariosListModal .paginacao-config {
+        min-height: 30px;
+        font-size: 11px;
+    }
+
+    #funcionariosListModal .paginacao-config select {
+        height: 30px;
+        min-height: 30px;
+        padding: 3px 6px;
+    }
+
+    #funcionariosListModal .paginacao-navegacao .btn-paginacao {
+        flex: 0 0 36px !important;
+        width: 36px !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        padding: 0 !important;
+    }
+
+    #funcionariosListModal .table-container {
+        flex: 1 1 80px !important;
+        min-height: 80px !important;
+    }
+
+    #cargosListModal .table-container,
+    #folhasFechadasModal .table-container {
+        min-height: 80px !important;
+    }
+}
+
+/* Altura e rolagem previsíveis para modais longos em telas pequenas. */
+@media screen and (max-width: 700px) {
+    #funcionariosListModal .modal-content,
+    #cargosListModal .modal-content,
+    #folhasFechadasModal .modal-content,
+    #relatorioModal .modal-content,
+    #resumoFolhaModal .modal-content,
+    #bh-modalLancamento .modal-content,
+    #bh-modalCompensar .modal-content,
+    #bh-modalConfig .modal-content,
+    #bh-modalAssinatura .modal-content,
+    #bh-modalGerenciar .modal-content {
+        box-sizing: border-box !important;
+        height: calc(100vh - 16px) !important;
+        height: calc(100dvh - 16px) !important;
+        max-height: calc(100vh - 16px) !important;
+        max-height: calc(100dvh - 16px) !important;
+        margin: 8px auto !important;
+    }
+
+    #relatorioModal .modal-content,
+    #resumoFolhaModal .modal-content,
+    #bh-modalLancamento .modal-content,
+    #bh-modalCompensar .modal-content,
+    #bh-modalConfig .modal-content,
+    #bh-modalAssinatura .modal-content,
+    #bh-modalGerenciar .modal-content {
+        display: flex !important;
+        flex-direction: column !important;
+        width: calc(100vw - 16px) !important;
+        max-width: calc(100vw - 16px) !important;
+        overflow: hidden !important;
+    }
+
+    #relatorioModal .modal-body,
+    #resumoFolhaModal .modal-body,
+    #bh-modalLancamento .modal-body,
+    #bh-modalCompensar .modal-body,
+    #bh-modalConfig .modal-body,
+    #bh-modalAssinatura .modal-body,
+    #bh-modalGerenciar .modal-body {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #relatorioModal .modal-footer,
+    #resumoFolhaModal .modal-footer,
+    #bh-modalLancamento .modal-footer,
+    #bh-modalCompensar .modal-footer,
+    #bh-modalConfig .modal-footer,
+    #bh-modalAssinatura .modal-footer,
+    #bh-modalGerenciar .modal-footer {
+        flex: 0 0 auto !important;
+    }
+
+    /* Banco de Horas: manter o contrato tabela -> cards sem labels absolutos. */
+    #bh-modalGerenciar .table-responsive.mobile-cards {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #bh-modalGerenciar #bh-formGerenciar {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
+        min-height: 0 !important;
+    }
+
+    #bh-modalGerenciar .table-responsive.mobile-cards table {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        table-layout: auto !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    #bh-modalGerenciar .table-responsive.mobile-cards thead {
+        display: none !important;
+    }
+
+    #bh-modalGerenciar .table-responsive.mobile-cards tbody,
+    #bh-modalGerenciar .table-responsive.mobile-cards tbody tr,
+    #bh-modalGerenciar .table-responsive.mobile-cards tbody td {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+    }
+
+    #bh-modalGerenciar .table-responsive.mobile-cards tbody tr {
+        box-sizing: border-box !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        margin: 0 0 12px !important;
+        padding: 10px 12px !important;
+        border: 1px solid #dfe7ef !important;
+        border-radius: 8px !important;
+        background: #fff !important;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
+    }
+
+    #bh-modalGerenciar .table-responsive.mobile-cards tbody td {
+        display: grid !important;
+        grid-template-columns: minmax(96px, 38%) minmax(0, 1fr) !important;
+        align-items: start !important;
+        gap: 10px !important;
+        box-sizing: border-box !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        padding: 8px 0 !important;
+        border: 0 !important;
+        border-bottom: 1px solid #eef2f6 !important;
+        text-align: right !important;
+        white-space: normal !important;
+        overflow: visible !important;
+        overflow-wrap: anywhere !important;
+    }
+
+    #bh-modalGerenciar .table-responsive.mobile-cards tbody td::before {
+        content: attr(data-label) !important;
+        display: block !important;
+        position: static !important;
+        width: auto !important;
+        max-width: none !important;
+        padding: 0 !important;
+        transform: none !important;
+        color: #5d6d7e !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        line-height: 1.25 !important;
+        text-align: left !important;
+        white-space: normal !important;
+    }
+
+    #bh-modalGerenciar .table-responsive.mobile-cards tbody td > input {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    #bh-modalGerenciar .table-responsive.mobile-cards tbody td.actions-cell {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
+        padding-top: 10px !important;
+        border-bottom: 0 !important;
+        text-align: left !important;
+    }
+
+    #bh-modalGerenciar .table-responsive.mobile-cards tbody td.actions-cell::before {
+        flex: 0 0 100% !important;
+    }
+
+    #bh-modalGerenciar .table-responsive.mobile-cards tbody td.actions-cell .action-button {
+        flex: 0 0 36px !important;
+        width: 36px !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
 }
 

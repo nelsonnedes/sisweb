@@ -53,7 +53,7 @@ test('perfil do usuario usa patch seguro e exibe campos compativeis com cadastro
 test('admin identifica superadmin operacional sem aplicar acoes comerciais', () => {
   const adminMain = read('scripts/admin/admin-main.js');
 
-  assert.match(adminMain, /ADMIN_ASSET_VERSION = "2026-06-11-profile-admin-v1"/);
+  assert.match(adminMain, /ADMIN_ASSET_VERSION = "[0-9a-f]{12}"/);
   assert.match(adminMain, /function isOperationalSuperAdminUser\(user\)/);
   assert.match(adminMain, /uid === "HfrQ6ObQq2aSEoeEE4Ng9jpAolB3"/);
   assert.match(adminMain, /email === "nedes1@hotmail.com"/);

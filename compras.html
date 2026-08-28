@@ -16,7 +16,7 @@
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
-    <script src="sentry-init.js?v=7849a9e5f9c0"></script>
+    <script src="sentry-init.js?v=e4dadfaea86a"></script>
 <script src="menu-component.js?v=fc5749bbb053"></script>
     <style>
         * {
@@ -2033,7 +2033,7 @@
     <script src="auth.js?v=9edf7c63fdab"></script>
     <script>
         window.__siswebFirebaseServiceReady = (async function () {
-            const firebaseSvc = await import('./firebaseService.js?v=e0acb7d52e36');
+            const firebaseSvc = await import('./firebaseService.js?v=10c72c116d87');
             const existingFirebaseService = window.firebaseService || {};
             window.firebaseService = {
                 ...existingFirebaseService,
@@ -2054,9 +2054,9 @@
     <script src="cities.js?v=741c80084e54"></script>
     <script src="ui-config.js?v=2f06b9dee53f"></script>
     <script src="commerce-responsive.js?v=24c36f6fc7bc"></script>
-    <script src="commerce-pdf-share.js?v=9659e27a66f7"></script>
+    <script src="commerce-pdf-share.js?v=bf45a414e8b9"></script>
     <!-- Carregar módulo de Compras -->
-    <script src="compras.js?v=a29a4ebe4135"></script>
+    <script src="compras.js?v=e6fe9793f63a"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

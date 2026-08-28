@@ -318,7 +318,7 @@ window.ModalListaRomaneiosPCT = (function() {
                 return;
             }
 
-            const { ref, onValue } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, onValue } = await import('../../firebase/sdk/firebase-database.js');
             const realtimePath = resolvePath('romaneios/pct');
             if (realtimePath === 'romaneios/pct' && !resolveCompanyId()) {
                 realtimeStarting = false;
@@ -504,7 +504,7 @@ window.ModalListaRomaneiosPCT = (function() {
             if (romaneios.length === 0 && window.database) {
                 try {
                     console.log("🔄 PCT: Fallback para Firebase direto...");
-                    const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                    const { ref, get } = await import('../../firebase/sdk/firebase-database.js');
                     const romaneiosRef = ref(window.database, resolvePath('romaneios/pct'));
                     const snapshot = await get(romaneiosRef);
                     
@@ -615,7 +615,7 @@ window.ModalListaRomaneiosPCT = (function() {
 
         try {
             if (!result.firebaseService && window.database) {
-                const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                    const { ref, get } = await import('../../firebase/sdk/firebase-database.js');
                 const romaneiosRef = ref(window.database, resolvePath('romaneios/pct'));
                 const snapshot = await get(romaneiosRef);
                 if (snapshot.exists()) {
@@ -1748,7 +1748,7 @@ window.ModalListaRomaneiosPCT = (function() {
         console.log('🔄 PCT: Forçando refresh dos dados do Firebase...');
         try {
             if (window.database) {
-                const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                    const { ref, get } = await import('../../firebase/sdk/firebase-database.js');
                     const romaneiosRef = ref(window.database, resolvePath('romaneios/pct'));
                 const snapshot = await get(romaneiosRef);
                 
@@ -1826,7 +1826,7 @@ window.ModalListaRomaneiosPCT = (function() {
         
         // Verificar no Firebase
         if (window.database) {
-            import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js').then(async ({ ref, get }) => {
+            import('../../firebase/sdk/firebase-database.js').then(async ({ ref, get }) => {
                 const romaneiosRef = ref(window.database, resolvePath('romaneios/pct'));
                 const snapshot = await get(romaneiosRef);
                 

@@ -251,6 +251,12 @@
             background-color: white;
         }
 
+        .mdfe-table .mdfe-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
         .status-badge {
             padding: 3px 6px;
             border-radius: 3px;
@@ -417,12 +423,108 @@
                 grid-template-columns: 1fr;
                 gap: 5px;
             }
+
+            .table-container > .nf-row:first-child {
+                display: none;
+            }
+
+            .nf-document-row > div {
+                display: grid;
+                grid-template-columns: minmax(7rem, 35%) 1fr;
+                gap: 8px;
+                align-items: start;
+            }
+
+            .nf-document-row > div::before {
+                content: attr(data-label);
+                color: var(--primary-color);
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .nf-document-row > div:last-child {
+                grid-template-columns: 1fr;
+                margin-top: 4px;
+            }
+
+            .mdfe-table {
+                display: block;
+                width: 100%;
+                background: transparent;
+            }
+
+            .mdfe-table thead {
+                display: none;
+            }
+
+            .mdfe-table tbody,
+            .mdfe-table tr {
+                display: block;
+                width: 100%;
+            }
+
+            .mdfe-table tr {
+                margin-bottom: 12px;
+                padding: 10px;
+                background: white;
+                border: 1px solid #dee2e6;
+                border-radius: 6px;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            }
+
+            .mdfe-table td {
+                display: grid;
+                grid-template-columns: minmax(8rem, 42%) 1fr;
+                gap: 8px;
+                width: 100%;
+                padding: 7px 4px;
+                border: 0;
+                text-align: right;
+                overflow-wrap: anywhere;
+            }
+
+            .mdfe-table td::before {
+                content: attr(data-label);
+                color: var(--primary-color);
+                font-weight: 700;
+                text-align: left;
+            }
+
+            .mdfe-table td:last-child {
+                display: block;
+                padding-top: 10px;
+                border-top: 1px solid #e9ecef;
+                text-align: left;
+            }
+
+            .mdfe-table td:last-child::before {
+                display: block;
+                margin-bottom: 6px;
+            }
+
+            .mdfe-table .mdfe-actions {
+                display: flex;
+                gap: 8px;
+            }
+
+            .mdfe-table .mdfe-actions .btn {
+                min-height: 36px;
+            }
+
+            .mdfe-table .mdfe-empty {
+                display: block;
+                text-align: center;
+            }
+
+            .mdfe-table .mdfe-empty::before {
+                display: none;
+            }
         }
     </style>
 
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
-    <script src="sentry-init.js?v=7849a9e5f9c0"></script></head>
+    <script src="sentry-init.js?v=e4dadfaea86a"></script></head>
 <body>
     <div class="container">
         <main-menu></main-menu>
@@ -432,16 +534,16 @@
         </h1>
 
         <div class="tabs">
-            <button class="tab active" onclick="showTab('emissao')">
+            <button class="tab active" onclick="showTab('emissao', this)">
                 <i class="fas fa-plus"></i> Emissão
             </button>
-            <button class="tab" onclick="showTab('consulta')">
+            <button class="tab" onclick="showTab('consulta', this)">
                 <i class="fas fa-search"></i> Consulta
             </button>
-            <button class="tab" onclick="showTab('encerramento')">
+            <button class="tab" onclick="showTab('encerramento', this)">
                 <i class="fas fa-check-circle"></i> Encerramento
             </button>
-            <button class="tab" onclick="showTab('dashboard')">
+            <button class="tab" onclick="showTab('dashboard', this)">
                 <i class="fas fa-chart-bar"></i> Dashboard
             </button>
         </div>
@@ -496,6 +598,17 @@
                                 <option value="SE">Sergipe</option>
                                 <option value="TO">Tocantins</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="mdfeAmbiente">Ambiente SEFAZ:</label>
+                            <select id="mdfeAmbiente">
+                                <option value="homologacao" selected>Homologação</option>
+                                <option value="producao">Produção</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="mdfeSenhaA1">Senha do certificado A1:</label>
+                            <input type="password" id="mdfeSenhaA1" autocomplete="new-password" placeholder="Usada somente nesta emissão">
                         </div>
                     </div>
                 </div>
@@ -669,7 +782,7 @@
             </div>
 
             <div class="table-container">
-                <table class="data-table">
+                <table class="data-table mdfe-table">
                     <thead>
                         <tr>
                             <th>Número</th>
@@ -715,6 +828,12 @@
                     <div class="form-group">
                         <label for="protocoloEncerramento">Protocolo de Encerramento:</label>
                         <input type="text" id="protocoloEncerramento" placeholder="Será gerado automaticamente" readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="mdfeSenhaA1Encerramento">Senha do certificado A1:</label>
+                        <input type="password" id="mdfeSenhaA1Encerramento" autocomplete="new-password" placeholder="Usada somente no encerramento">
                     </div>
                 </div>
                 <div class="button-group">
@@ -770,8 +889,9 @@
 
     <script src="auth.js?v=9edf7c63fdab"></script>
     <script src="menu-component.js?v=fc5749bbb053"></script>
-    <script src="cities-loader.js?v=7cbcd32f8b64"></script>
-    <script>
+    <script src="cities-loader.js?v=6daa9ba1b097"></script>
+    <!-- Legacy inline implementation kept as a non-executable migration reference. -->
+    <script type="text/plain" id="legacy-mdfe-implementation">
         // Dados dos MDF-e
         let manifestos = [];
         let editandoManifesto = null;
@@ -1068,13 +1188,14 @@
     </script>
     <script type="module">
         // Importar firebaseService e disponibilizar globalmente
-        import { authService, isFirebaseOperational } from './firebaseService.js?v=e0acb7d52e36';
+        import { authService, isFirebaseOperational } from './firebaseService.js?v=10c72c116d87';
         
         // Disponibilizar firebaseService globalmente
-        window.firebaseService = { authService, isFirebaseOperational };
+        window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational };
         
         console.log("✅ firebaseService carregado no mdf-e.html");
     </script>
-    <script src="mdf-e.js?v=f4b1cac09c9e"></script>
+    <script src="mdfe-xml-builder.js?v=5f468745ae5d"></script>
+    <script src="mdf-e.js?v=45bf0e654db3"></script>
 </body>
 </html>

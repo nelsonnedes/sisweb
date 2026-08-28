@@ -1457,3 +1457,14 @@ exports.nf_obterConfiguracaoFiscal = onFiscalCall(async (data, context) => {
     config
   };
 });
+
+// Compartilhado apenas pelo módulo MDF-e do backend; não é uma API callable.
+exports.__mdfeInternals = {
+  assertTenantAccess,
+  hasFiscalAdminPermission,
+  sanitizePathSegment,
+  descriptografarPFXdoStorage,
+  assinarXMLcomForge,
+  postSefaz,
+  parseSefazResponse,
+};

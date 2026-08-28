@@ -865,7 +865,7 @@ function unwrapCallableResult(result) {
 }
 
 function requiresAuthenticatedCallable(functionName) {
-    return /^(nf_|finance(?:[A-Z_]|$)|superAdminMfa)/.test(String(functionName || '').trim());
+    return /^(nf_|finance(?:[A-Z_]|$)|superAdminMfa|recordAdminAccessDenied|sentry)/.test(String(functionName || '').trim());
 }
 
 async function getCallableIdToken(user, forceRefresh = false) {
@@ -3157,6 +3157,15 @@ async function sweepOrphanCompanies(payload) {
     }
 }
 
+async function adminUpdateSubscriber(payload) {
+    try {
+        const data = payload && typeof payload === 'object' ? payload : {};
+        return await callAdminCallableWithRetry('adminUpdateSubscriber', data);
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
 async function getCampaignExecutiveSummary() {
     try {
         return await callAdminCallableWithRetry('getCampaignExecutiveSummary', {});
@@ -4506,6 +4515,7 @@ export {
     deleteSubscriptionManagedData,
     fullUserCleanup,
     sweepOrphanCompanies,
+    adminUpdateSubscriber,
     invalidateReadCacheForPath,
     createSupportTicket,
     sendPublicSupportEmail,

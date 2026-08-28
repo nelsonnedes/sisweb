@@ -2471,9 +2471,11 @@ function isCommercePwaPrintContext() {
         const smallTouchScreen = window.matchMedia
             && window.matchMedia('(pointer: coarse)').matches
             && window.innerWidth <= 768;
-        return !!(standalone || smallTouchScreen);
+        // Desktop instalado deve se comportar como browser normal: so usa PDF em contexto mobile/touch pequeno
+        if (smallTouchScreen) return true;
+        return false;
     } catch (_) {
-        return window.navigator.standalone === true;
+        return false;
     }
 }
 

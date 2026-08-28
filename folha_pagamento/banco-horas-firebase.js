@@ -226,7 +226,7 @@ window.BHFirebase.bhDeleteLancamento = async function bhDeleteLancamento(funcId,
 			: (window.FolhaUtils && typeof window.FolhaUtils.resolveFirebasePath === 'function')
 				? window.FolhaUtils.resolveFirebasePath(rawPath)
 				: rawPath;
-		const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+		const { ref, remove } = await import('../firebase/sdk/firebase-database.js');
 		await remove(ref(m.database, resolvedPath));
 	}
     bhInvalidateLancamentosBatchCache();

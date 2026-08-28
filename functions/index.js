@@ -2533,6 +2533,102 @@ exports.upsertCompanyProfile = https.onCall(async (data, context) => {
     return { success: true, companyId, profile: nextProfile, logoCleanup };
 });
 
+exports.adminUpdateSubscriber = https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem alterar assinantes.');
+    }
+    await assertSuperAdmin(context, 'Apenas superadmin pode editar dados de assinantes.');
+    const payload = data && typeof data === 'object' ? data : {};
+    const targetUid = sanitizeText(payload.targetUid || '', '');
+    if (!targetUid) {
+        throw new functions.https.HttpsError('invalid-argument', 'targetUid é obrigatório.');
+    }
+    const userPatchRaw = payload.userPatch && typeof payload.userPatch === 'object' ? payload.userPatch : {};
+    const companyPatchRaw = payload.companyPatch && typeof payload.companyPatch === 'object' ? payload.companyPatch : {};
+    const userRef = admin.database().ref(`users/${targetUid}`);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists()) {
+        throw new functions.https.HttpsError('not-found', 'Assinante não encontrado.');
+    }
+    const currentUser = userSnap.val() || {};
+    let companyId = sanitizeText(companyPatchRaw.companyId || companyPatchRaw.id || currentUser.companyId || currentUser.companyID || '', '');
+    const userUpdates = {};
+    if (userPatchRaw.displayName !== undefined) userUpdates.displayName = sanitizeText(userPatchRaw.displayName, '');
+    if (userPatchRaw.username !== undefined) userUpdates.username = sanitizeText(userPatchRaw.username, '');
+    if (userPatchRaw.name !== undefined) userUpdates.name = sanitizeText(userPatchRaw.name, '');
+    if (userPatchRaw.phone !== undefined) userUpdates.phone = sanitizeText(userPatchRaw.phone, '');
+    if (userPatchRaw.email !== undefined) {
+        const emailSan = sanitizeText(userPatchRaw.email, '');
+        if (emailSan && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailSan)) {
+            throw new functions.https.HttpsError('invalid-argument', 'E-mail do assinante inválido.');
+        }
+        if (emailSan) userUpdates.email = emailSan;
+    }
+    if (Object.keys(userUpdates).length) {
+        userUpdates.updatedAt = new Date().toISOString();
+        userUpdates.updatedBy = context.auth.uid;
+        await userRef.update(userUpdates);
+    }
+    let companyProfile = null;
+    if (companyId) {
+        const profileRef = admin.database().ref(`companies/${companyId}/profile`);
+        const currentSnap = await profileRef.get();
+        const current = currentSnap.exists() && currentSnap.val() && typeof currentSnap.val() === 'object' ? currentSnap.val() : {};
+        const requestedCnpjRaw = sanitizeText(companyPatchRaw.cnpj || companyPatchRaw.cnpjCpf || '', '');
+        if (requestedCnpjRaw) {
+            const digits = normalizeDocumentDigits(requestedCnpjRaw);
+            if (digits.length >= 11) {
+                const companiesSnap = await admin.database().ref('companies').get();
+                const companies = companiesSnap.exists() && companiesSnap.val() && typeof companiesSnap.val() === 'object' ? companiesSnap.val() : {};
+                const duplicatedIn = Object.keys(companies).find((otherId) => {
+                    if (String(otherId).trim() === companyId) return false;
+                    const prof = companies[otherId] && companies[otherId].profile && typeof companies[otherId].profile === 'object' ? companies[otherId].profile : {};
+                    const otherDigits = normalizeDocumentDigits(prof.cnpj || '');
+                    return !!otherDigits && otherDigits === digits;
+                });
+                if (duplicatedIn) {
+                    throw new functions.https.HttpsError('already-exists', `CNPJ já cadastrado na empresa ${duplicatedIn}.`);
+                }
+            }
+        }
+        const nextProfile = {
+            ...current,
+            id: companyId,
+            companyId,
+            name: companyPatchRaw.name !== undefined ? sanitizeText(companyPatchRaw.name, '') : (current.name || ''),
+            cnpj: companyPatchRaw.cnpj !== undefined ? sanitizeText(companyPatchRaw.cnpj, '') : (current.cnpj || ''),
+            email: companyPatchRaw.email !== undefined ? sanitizeText(companyPatchRaw.email, '') : (current.email || ''),
+            phone: companyPatchRaw.phone !== undefined ? sanitizeText(companyPatchRaw.phone, '') : (current.phone || ''),
+            address: companyPatchRaw.address !== undefined ? sanitizeText(companyPatchRaw.address, '') : (current.address || ''),
+            city: companyPatchRaw.city !== undefined ? sanitizeText(companyPatchRaw.city, '') : (current.city || ''),
+            state: companyPatchRaw.state !== undefined ? sanitizeText(companyPatchRaw.state, '') : (current.state || ''),
+            zip: companyPatchRaw.zip !== undefined ? sanitizeText(companyPatchRaw.zip, '') : (current.zip || ''),
+            responsible: companyPatchRaw.responsible !== undefined ? sanitizeText(companyPatchRaw.responsible, '') : (current.responsible || ''),
+            stateRegistration: companyPatchRaw.stateRegistration !== undefined ? sanitizeText(companyPatchRaw.stateRegistration, '') : (current.stateRegistration || ''),
+            updatedAt: new Date().toISOString(),
+            updatedBy: context.auth.uid
+        };
+        if (!nextProfile.name) {
+            throw new functions.https.HttpsError('invalid-argument', 'Nome da empresa é obrigatório.');
+        }
+        await profileRef.set(nextProfile);
+        companyProfile = nextProfile;
+        if (!currentUser.companyId) {
+            await userRef.update({ companyId, updatedAt: new Date().toISOString() });
+        }
+    }
+    await admin.database().ref(`subscriptionAdminPurgeAudit/${context.auth.uid}`).push({
+        at: new Date().toISOString(),
+        by: context.auth.uid,
+        type: 'adminUpdateSubscriber',
+        targetUid,
+        companyId: companyId || null,
+        userPatch: userUpdates,
+        companyPatch: companyProfile || null
+    });
+    return { success: true, targetUid, companyId: companyId || null, userUpdates, companyProfile };
+});
+
 exports.updateMyCompanyProfile = https.onCall(async (data, context) => {
     if (!context.auth || !context.auth.uid) {
         throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem alterar empresa.');
@@ -6652,6 +6748,12 @@ exports.nf_configurarCertNuvem = nfFunctions.nf_configurarCertNuvem;
 exports.nf_obterResumoCertificadoFiscal = nfFunctions.nf_obterResumoCertificadoFiscal;
 exports.nf_obterConfiguracaoFiscal = nfFunctions.nf_obterConfiguracaoFiscal;
 
+const mdfeFunctions = require('./mdfe-functions');
+exports.mdfe_reservarNumero = mdfeFunctions.mdfe_reservarNumero;
+exports.mdfe_emitir = mdfeFunctions.mdfe_emitir;
+exports.mdfe_consultar = mdfeFunctions.mdfe_consultar;
+exports.mdfe_encerrar = mdfeFunctions.mdfe_encerrar;
+
 const financeFunctions = require('./finance-functions');
 financeFunctions.configure({ isCallerSuperAdmin });
 exports.financeNextSequence = financeFunctions.financeNextSequence;
@@ -6683,3 +6785,6 @@ modulePermissionsFunctions.configure({ isCallerSuperAdmin });
 exports.setMemberModulePermissions = modulePermissionsFunctions.setMemberModulePermissions;
 exports.applyDefaultModulePermissions = modulePermissionsFunctions.applyDefaultModulePermissions;
 exports.superAdminMfaDisable = mfaFunctions.superAdminMfaDisable;
+
+const securityAuditFunctions = require('./security-audit-functions');
+exports.recordAdminAccessDenied = securityAuditFunctions.recordAdminAccessDenied;

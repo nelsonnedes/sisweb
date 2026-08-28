@@ -19,7 +19,7 @@
     </script>
     <link rel="stylesheet" href="assets/fontawesome/all.min.css?v=20260808">
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
-    <script src="sentry-init.js?v=7849a9e5f9c0"></script>
+    <script src="sentry-init.js?v=e4dadfaea86a"></script>
     <script>
         // ✅ Correção: suprimir erros de message channel causados por extensões do navegador
         (function () {
@@ -1314,7 +1314,7 @@
         // Registro e Recuperação usam exclusivamente authService (sem duplicatas).
         // ═══════════════════════════════════════════════════════════════════════
         import { app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-init.js?v=37242a2253a6';
-        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=e0acb7d52e36';
+        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=10c72c116d87';
 
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim };
         if (typeof window.runLoginHealthCheck === 'function') {

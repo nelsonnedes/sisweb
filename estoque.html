@@ -16,7 +16,7 @@
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
-    <script src="sentry-init.js?v=7849a9e5f9c0"></script>
+    <script src="sentry-init.js?v=e4dadfaea86a"></script>
 <script src="menu-component.js?v=fc5749bbb053"></script>
     <style>
         * {
@@ -194,6 +194,23 @@
                 white-space: normal !important;
                 word-break: break-word !important;
                 line-height: 1.35 !important;
+            }
+
+            /* Empty states remain readable instead of becoming a one-field card. */
+            #tabelaEntrada tbody tr td[colspan],
+            #tabelaSaidaToras tbody tr td[colspan],
+            #tabelaEstoque tbody tr td[colspan],
+            #tabelaMovimentacoes tbody tr td[colspan],
+            #tabelaProdutos tbody tr td[colspan],
+            #tabelaTorasDisponiveis tbody tr td[colspan],
+            .saida-plaqueta-results-table tbody tr td[colspan] {
+                display: block !important;
+                width: 100% !important;
+                min-height: 0 !important;
+                padding: 14px 4px !important;
+                border: 0 !important;
+                text-align: center !important;
+                color: #64748b !important;
             }
 
             /* Respeitar colunas ocultas configuradas pelo usuário */
@@ -3606,7 +3623,7 @@
         
         console.log("✅ firebaseService carregado no estoque.html completo");
     </script>
-    <script src="commerce-pdf-share.js?v=9659e27a66f7"></script>
+    <script src="commerce-pdf-share.js?v=bf45a414e8b9"></script>
     <script src="estoque_produtos.js?v=4a7de766ba3b"></script>
         <script src="estoque.js?v=7c3bc08a7250"></script>
 <script>

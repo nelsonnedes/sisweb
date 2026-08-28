@@ -4,7 +4,7 @@
 > sessão (Codex, opencode, deepseek) retomar contexto sem regressões e sem perder
 > o "porquê" das decisões já tomadas. SEMPRE consultar antes de implementar.
 >
-> Atualizado em: 2026-08-24 (Regressão modais Lista de Fornecedores/Espécies do romaneiotora corrigida — campos desalinhados em mobile; fix cache-buster v30)
+> Atualizado em: 2026-08-27 (PWA desktop print + cabeçalho impressão + auditoria IP + varredura órfãs + edição assinaturas)
 
 ---
 
@@ -329,3 +329,90 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - Atualizar após QUALQUER mudança de arquitetura, decisão, fix ou descoberta de armadilha.
 - Referenciar story/plano com data para aprofundamento (documents em `docs/stories/`, `docs/superpowers/plans/`, `docs/runbooks/`).
 - Manter seções curtas e orientadas a "evitar regressão" — este arquivo é memória operacional, não doc de specs.
+
+## 17. Sessão 2026-08-26 — Histórico de Pagamentos responsivo
+
+- **Problema:** em `financas.html`, o histórico aberto pela coluna **Ações** usava tabela fixa de 8 colunas, `white-space: nowrap` e conteúdo inline; em 390px os títulos, valores, anexos e exclusão ficavam comprimidos/cortados.
+- **Decisão/fix:** manter a tabela desktop intacta e, somente até 768px, transformar `#pagamentoModal .finance-history-table` em cards. Cada célula agora possui `data-label` (Data, Juros Período, Pagamento, Saldo Após, Método, Observações, Anexo, Ações); anexar/excluir continuam usando os mesmos handlers e botões 36x36. O resumo recebeu estilo próprio para quebra segura.
+- **Anti-regressão:** CSS isolado em `financas.html`; não usar `.mobile-cards`, não alterar `ui-components.css`, cálculos, persistência, tenant ou impressão. Classes semânticas adicionadas no único renderer `verHistoricoPagamentos()` em `financas.js`.
+- **Validação/publicação:** `tests/financas-mobile-cards.test.mjs` = 8/8; `npm test` = 503 pass / 0 fail / 1 skip esperado; `npm run lint`, `npm run typecheck`, `npm run validate:pr` = 6/6 e build Hosting = 467 arquivos. Puppeteer estrutural em 390x844 confirmou tabela/linhas/células como `block/block/flex`, modal 354px, tabela 326px e `document.scrollWidth` igual ao viewport; em 1280px confirmou `table/table-row/table-cell`. Publicado em produção via `npm run deploy:hosting` em 2026-08-26; `financas.html` e `financas.js?v=3dd186bec3dc` retornaram HTTP 200 com CSS/classes/data-label novos. Screenshot temporário: `C:\Users\Nelson\AppData\Local\Temp\opencode\financas-historico-mobile.png`.
+
+## 18. Sessão 2026-08-26 — Correção pós-publicação do Histórico de Pagamentos
+
+- **Problema reproduzido em produção com sessão autenticada de testes:** os cards pareciam possuir labels, mas as linhas se sobrepunham verticalmente.
+- **Causa raiz:** `print-styles.css` aplica globalmente a tabelas dentro de modais `height:50px !important` em `.modal table th/td` e `.modal table tbody tr`, além de `table-layout:fixed` e `border-collapse:collapse`; os primeiros overrides mobile não neutralizavam altura de linha/célula.
+- **Fix:** no escopo `#pagamentoModal .finance-history-table` e breakpoint mobile, aplicar `height:auto`, `min/max-height` compatíveis, `border-collapse:separate`/`border-spacing:0`, `white-space:normal` e `overflow-wrap:anywhere`. Nenhum cálculo, persistência ou handler financeiro foi alterado.
+- **Validação final:** produção autenticada em 390x844 confirmou `table=block`, `rows=block`, `cells=flex`, `borderCollapse=separate`, alturas de cards de 293px, células de 34px, gap de 12px, `cellRight=345` dentro do `modalRight=380` e `document.scrollWidth=390`. `APP_VERSION` atualizado para `2026-08-26-folha-firebase-stability-v1` para invalidar o cache PWA. `npm run validate:pr` = 6/6; `npm run deploy:hosting` concluído novamente, somente Hosting.
+
+## 19. Sessão 2026-08-26 — Estabilidade da Folha de Pagamentos
+
+- **RangeError no carregamento:** `folha.html` inicializava `window.database` pelo SDK local, mas os módulos ativos da Folha importavam `firebase-database.js` direto do gstatic. Essa mistura de bundles provocava recursão em `ChildrenNode.equals` durante a leitura de `cargos`. Todos os imports RTDB ativos em `folha_pagamento/` agora usam `../firebase/sdk/firebase-database.js`; não usar import Firebase gstatic nesses módulos.
+- **Erro de salário na edição:** `fillFolhaForm()` disparava `change` de `folhaTipoPagamento` antes de preencher `funcionarioSalario`, acionando cálculo com base zero. `FolhaLancamentos` agora bloqueia cálculos durante hidratação, libera em `finally` e `collectLancamentoData()` inclui `salarioBase` no nível esperado por `FolhaCalculos`, com fallback para dados persistidos.
+- **Validação:** smoke autenticado local e produção sem `RangeError`, sem erro de salário/delta e sem requisições gstatic Firebase; Manager inicializado/conectado e edição controlada confirmou salário 2500 no campo e no payload. Suíte completa `npm test` = 505 pass / 0 fail / 1 skip esperado; regressão focada = 12/12; `lint`, `typecheck`, build Hosting e `validate:pr` = OK. Publicado somente Hosting em 2026-08-26 com `APP_VERSION=2026-08-26-folha-mobile-modals-v1`.
+
+## 20. Sessão 2026-08-26 — Caminho residual de Relatórios da Folha
+
+- **Problema:** após a unificação do SDK, o `DataSyncManager` ainda registrava `Erro ao carregar dados: unknown` ao sincronizar a chave `relatorios`.
+- **Causa raiz:** `FOLHA_KEY_MAPPING` apontava `relatorios` para `companies/{tenant}/relatorios`, mas esse nó não possui regra; o caminho suportado é `companies/{tenant}/folha/relatorios`. O fallback funcionava depois, mas deixava o erro de permissão no console.
+- **Fix:** mapeado `relatorios` diretamente para `folha/relatorios`; o fallback agora detecta caminhos já prefixados e não gera `folha/folha/relatorios`. Sem alteração de Rules ou dados.
+- **Validação/publicação:** regressão focada 3/3; `validate:pr` 6/6; produção autenticada confirmou `relatorios` vazio com sucesso, Manager conectado, sem `Permission denied`, `unknown`, `RangeError` ou requisições Firebase gstatic. Publicado somente Hosting em 2026-08-26.
+
+## 21. Sessão 2026-08-26 — Auditoria mobile dos modais da Folha
+
+- **Problema:** em `320x480`/`390x480`, a Lista de Funcionários era renderizada como cards, mas o `.table-container` estava com `overflow:visible` enquanto o corpo do modal usava `overflow:hidden`; os botões **Selecionar** ficavam fora da viewport. O mesmo risco existia nas listas de Cargos e Folhas Fechadas.
+- **Correção de contrato mobile:** mantida a transformação tabela → cards (`thead` oculto, `tr`/`td` empilhados, `data-label` e ações touch-friendly), com scroll vertical interno nos containers dos cards. Paginação da Lista de Funcionários foi compactada sem herdar `min-width:100%` dos botões globais.
+- **Demais modais auditados:** `Funcionário`, `Cargo`, `Folha`, `Relatórios`, `Resumo da Folha`, `Folhas Fechadas` e Banco de Horas passaram a respeitar altura disponível baseada em `100dvh`, body rolável e rodapé fora da área de scroll. O gerenciamento de Banco de Horas recebeu `data-label` e cards próprios, sem labels absolutos.
+- **Seleção:** `resumoFuncionario` foi incluído no conjunto de campos rastreados; Filtros, Relatórios individuais, Resumo da Folha, Folha e Banco de Horas preservam `targetField` e selecionam o funcionário correto.
+- **Validação/publicação:** produção autenticada em `320x480` confirmou seleção nos três contextos, modal fechado e campo preenchido; `1280x800` confirmou tabela desktop normal e documento sem overflow. Testes focados mobile `14/14`, suíte completa `510 pass / 0 fail / 1 skip esperado`, `lint`, `typecheck`, build e `validate:pr` `6/6`. Publicado somente Hosting em 2026-08-26 com `APP_VERSION=2026-08-26-folha-mobile-cards-v1`.
+
+## 22. Sessão 2026-08-26 — Cards da Lista de Funcionários cortados
+
+- **Problema reproduzido:** o modal `funcionariosListModal` já tinha cards, mas em produção cada `tr` permanecia com `height:50px` e `overflow:hidden`; somente Nome/Contrato apareciam, ocultando CPF, Cargo, Forma Pgto., Salário, Status e Ações.
+- **Causa raiz:** regras globais de `print-styles.css` para tabelas em modais (`.modal table th/td` e `.modal table tbody tr`) impunham altura fixa de 50px. O override mobile anterior transformava o layout, mas não neutralizava `height`, `min-height` e `max-height`.
+- **Fix:** cards mobile de Funcionários, Cargos e Folhas Fechadas agora usam `height:auto !important`, `min-height:0`, `max-height:none` e `overflow:visible`; o container continua com rolagem interna e as ações permanecem touch-friendly. Desktop não foi alterado.
+- **Validação/publicação:** produção autenticada em `390x844` confirmou `table=block`, `tr=block`, card de 313px, sete células com alturas `[42,35,35,35,35,35,76]`, todas as informações visíveis, container rolável e seleção funcionando no filtro. `document.scrollWidth=390`, sem erros no console. Publicado somente Hosting em 2026-08-26 com `APP_VERSION=2026-08-26-folha-status-badge-v1`. Screenshot: `C:\Users\Nelson\AppData\Local\Temp\opencode\funcionarios-list-production-cards-final.png`.
+
+## 23. Sessão 2026-08-26 — Badge de status Ativo no mobile
+
+- **Problema:** no card mobile da Lista de Funcionários, o fundo verde de `ATIVO` ocupava toda a coluna de valor porque o item do CSS Grid usava `stretch` por padrão.
+- **Fix:** badges de status em Funcionários, Cargos, Folhas Fechadas e tabela principal usam `justify-self:end`, `width:fit-content` e `min-width:0` somente no mobile. O estado textual e a lógica do toggle permanecem inalterados.
+- **Validação/publicação:** smoke local e produção em `390x844` confirmaram badge `ATIVO` com aproximadamente 56px em vez de largura total, alinhado à direita, card íntegro e `document.scrollWidth` igual ao viewport. Teste mobile focado passou 4/4; `validate:pr` passou 6/6; Service Worker versionado para `2026-08-26-nfe-mobile-cards-v1`; Hosting republicado somente com esta correção.
+
+## 24. Sessão 2026-08-26 — Consolidação e cards mobile do MDF-e
+
+- **Problema:** `mdf-e.html` mantinha uma implementação inline legada concorrendo com `mdf-e.js`; a versão externa sobrescrevia funções e `showTab()` dependia de `window.event`, quebrando chamadas programáticas como edição. A consulta também permanecia em tabela horizontal de aproximadamente `569px` em viewport de `390px`.
+- **Fix:** `mdf-e.js` passou a ser a única fonte executável; o bloco inline ficou desativado como referência de migração. Estados e cidades continuam sendo inicializados pelo JS ativo. Consulta e documentos fiscais agora recebem `data-label`, cards mobile e ações touch-friendly; desktop mantém tabela normal.
+- **Validação/publicação:** smoke autenticado em produção confirmou `mdf-e.js?v=feb6ccfa3bd9`, quatro abas sem overflow em `390x844`, navegação programática sem erro e documentos com cinco rótulos mobile. Em desktop `1280x800`, a tabela permaneceu normal. Testes focados `7/7`, suíte completa `517 pass / 0 fail / 1 skip esperado`, `lint`, `typecheck` e `validate:pr` aprovados. Publicado somente Hosting em 2026-08-26 com `APP_VERSION=2026-08-26-mdfe-mobile-cards-v1`.
+
+## 25. Sessão 2026-08-27 — Persistência tenant-scoped do MDF-e
+
+- **Problema:** MDF-e usava `localStorage` global para carregar e salvar registros, sem fonte autoritativa por empresa; a ponte de `firebaseService` também era sobrescrita pelo módulo HTML reduzido.
+- **Fix:** leitura e gravação passaram para `companies/{tenantId}/fiscal/mdfe/{mdfeId}`, com resolução de tenant autenticado antes da carga. O cache local não é mais usado como fonte dos MDF-es.
+- **Validação/publicação:** testes focados, `node --check`, lint das Functions e smoke autenticado confirmaram serviço Firebase completo, quatro abas sem overflow e publicação Hosting.
+
+## 26. Sessão 2026-08-27 — MDF-e fiscal e auditoria do Estoque
+
+- **MDF-e fiscal:** criado `mdfe-xml-builder.js` para gerar chave de 44 dígitos e XML modelo 58/v3.00 com códigos IBGE. Criadas as callables `mdfe_reservarNumero`, `mdfe_emitir`, `mdfe_consultar` e `mdfe_encerrar`, usando certificado A1, assinatura no backend, mTLS, endpoints SVRS e persistência do retorno por tenant. Functions publicadas em 2026-08-27.
+- **Proteções:** emissão bloqueia XML inválido, ausência de senha, CNPJ/IE/município inválidos e divergência de CNPJ. Smoke de produção testou rejeição de XML vazio (`functions/invalid-argument`) sem reservar número, salvar documento ou transmitir à SEFAZ. Emissão real homologada ainda requer certificado A1, senha e dados fiscais válidos do owner.
+- **Estoque:** auditoria autenticada nas sete abas em `390x844` confirmou cards existentes, `document.scrollWidth=390` e ausência de overflow. Estado vazio da consulta recebeu alinhamento centralizado no card mobile; desktop não foi alterado.
+- **Validação final:** builder publicado com chave de 44 dígitos e `<mod>58</mod>`; testes focados MDF-e/Estoque `13/13`, `npm test` `522 pass / 0 fail / 1 skip esperado`, `lint`, `typecheck`, `npm --prefix functions run lint` e `validate:pr` aprovados. Hosting publicado com `APP_VERSION=2026-08-27-mdfe-fiscal-v1`.
+
+## 27. Sessão 2026-08-27 — PWA desktop impressão igual ao navegador
+- **Problema:** PWA instalado no desktop (display: standalone) caía em isCommercePwaPrintContext()=true e gerava PDF via jsPDF/share, enquanto navegador gerava HTML. Layouts diferentes.
+- **Fix:** vendas.js:2810 / compras.js:2464 isCommercePwaPrintContext() reescrito para retornar true só em pointer:coarse && innerWidth<=768 (mobile touch pequeno). Desktop instalado retorna false → mesmo HTML do navegador.
+- **Validação:** vm 5 cenários, sw.js bump 2026-08-27-pwa-desktop-print-v1, validate:pr 6/6 PASS.
+
+## 28. Sessão 2026-08-27 — Cabeçalho de impressão com contraste em Finanças/Vendas
+- **Problema:** Ao imprimir com "Gráficos de segundo plano" desmarcado, table th {background:#2c3e50; color:#fff} sumia e texto branco ficava invisível.
+- **Fix:** commerce-pdf-share.js:295 * {print-color-adjust:exact !important} e th {background:#2c3e50 !important; print-color-adjust:exact !important; box-shadow:inset 0 0 0 1000px #2c3e50 !important}
+- **Validação:** validate:pr 6/6 PASS, hosting publicado 2026-08-27-print-header-contrast-v1.
+
+## 29. Sessão 2026-08-27 — Auditoria de acesso negado com IP real
+- **Problema:** Aba Segurança Dispositivo mostrava "-" e log não trazia IP.
+- **Fix:** functions/security-audit-functions.js extrai x-forwarded-for/x-real-ip/remoteAddress e user-agent do rawRequest no servidor. Salva ip + userAgent em users/{uid}/securityAudit. admin-main.js exibe Chrome / Win — 2804:2c20... com title UA+IP e CSV com coluna IP.
+- **Validação:** Puppeteer superadmin confirmou 26 issues com IP, functions recordAdminAccessDenied + hosting publicados.
+
+## 30. Sessão 2026-08-27 — Varredura de Órfãs 100% funcional + painel Assinaturas com Edição
+- **Varredura desktop PWA:** ADMIN_ASSET_VERSION desatualizado vs firebaseService.js + sw staleWhileRevalidate fazia PWA servir cache antigo sem sweepOrphanCompanies. Fix: admin-main.js:21 → "10c72c116d87", sweepOrphanCompaniesFlow usa resolveAdminFirebaseService, mensagens reescritas, botão desabilitado.
+- **Assinaturas — Coluna Ações:** tdActions flex/wrap, novo botão Editar (fa-pen) só SuperAdmin, abre openEditSubscriberModal com form Assinante e Empresa, salva via nova callable adminUpdateSubscriber (functions/index.js + firebaseService.js), valida CNPJ duplicado, audita.
+- **Validação:** puppeteer superadmin confirmou botão Editar e modal, firebase deploy functions:adminUpdateSubscriber + hosting, validate:pr 6/6 PASS, sw 2026-08-27-subscriptions-edit-v1.

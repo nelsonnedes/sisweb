@@ -11,7 +11,7 @@ const FOLHA_KEY_MAPPING = {
     'cargos': 'cargos', 
     'folhas': 'folhas',
     'configuracoes': 'configuracoes',
-    'relatorios': 'relatorios'
+    'relatorios': 'folha/relatorios'
 };
 
 /**
@@ -302,7 +302,10 @@ async function getFolhaDataInternalCore(key, options = {}) {
                 // prosseguir para fallback
             }
             // Fallback para caminho legado (compatibilidade)
-            return await manager.loadData(`folha/${mappedKey}`, {
+            const fallbackKey = String(mappedKey).startsWith('folha/')
+                ? mappedKey
+                : `folha/${mappedKey}`;
+            return await manager.loadData(fallbackKey, {
                 useCache: true,
                 debounceMs: 300,
                 ...options
@@ -391,7 +394,7 @@ async function deleteFolhaDataCore(key) {
 
         const manager = (window.getFirebaseManager && window.getFirebaseManager()) || window.firebaseManager || null;
         if (manager && manager.database) {
-            const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, remove } = await import('../firebase/sdk/firebase-database.js');
             try { await remove(ref(manager.database, `folha/${mappedKey}`)); } catch {}
             try { await remove(ref(manager.database, `${mappedKey}`)); } catch {}
             console.log(`🗑️ Dados deletados: ${key}`);

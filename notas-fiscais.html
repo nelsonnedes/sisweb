@@ -6,13 +6,12 @@
     <title>Notas Fiscais - Sistema de Gestão</title>
     <script>
         if (new URLSearchParams(window.location.search).get('diag') === 'auth-perf') {
-            document.write('
-    <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
-    <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
-    <script src="sentry-init.js?v=7849a9e5f9c0"></script>
-<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
+            document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
         }
     </script>
+    <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
+    <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
+    <script src="sentry-init.js?v=e4dadfaea86a"></script>
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
@@ -715,6 +714,274 @@
                 grid-template-columns: 1fr;
                 gap: 5px;
             }
+
+            /* Tabelas fiscais operacionais viram cards no mobile. */
+            .nf-mobile-table-container,
+            .nf-volume-list {
+                min-width: 0 !important;
+                overflow: visible !important;
+            }
+
+            .nf-card-table {
+                display: block !important;
+                width: 100% !important;
+                min-width: 0 !important;
+                table-layout: auto !important;
+                border-collapse: separate !important;
+                border-spacing: 0 !important;
+                background: transparent !important;
+                box-shadow: none !important;
+            }
+
+            .nf-card-table thead,
+            .nf-card-table colgroup {
+                display: none !important;
+            }
+
+            .nf-card-table tbody,
+            .nf-card-table tbody > tr,
+            .nf-card-table tbody > tr > td {
+                display: block !important;
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: none !important;
+            }
+
+            .nf-card-table tbody > tr {
+                box-sizing: border-box !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                margin: 0 0 12px !important;
+                padding: 10px 12px !important;
+                border: 1px solid #dfe7ef !important;
+                border-radius: 8px !important;
+                background: #fff !important;
+                box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
+                overflow: visible !important;
+            }
+
+            .nf-card-table tbody > tr > td[data-label] {
+                display: grid !important;
+                grid-template-columns: minmax(96px, 38%) minmax(0, 1fr) !important;
+                align-items: start !important;
+                gap: 10px !important;
+                box-sizing: border-box !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                padding: 8px 0 !important;
+                border: 0 !important;
+                border-bottom: 1px solid #eef2f6 !important;
+                text-align: right !important;
+                white-space: normal !important;
+                overflow: visible !important;
+                overflow-wrap: anywhere !important;
+                line-height: 1.35 !important;
+            }
+
+            .nf-card-table tbody > tr > td[data-label]::before {
+                content: attr(data-label) !important;
+                display: block !important;
+                position: static !important;
+                width: auto !important;
+                max-width: none !important;
+                padding: 0 !important;
+                transform: none !important;
+                color: #5d6d7e !important;
+                font-size: 11px !important;
+                font-weight: 700 !important;
+                line-height: 1.25 !important;
+                text-align: left !important;
+                white-space: normal !important;
+            }
+
+            .nf-card-table tbody > tr > td[data-label] > * {
+                min-width: 0 !important;
+                max-width: 100% !important;
+            }
+
+            .nf-card-table tbody > tr > td:first-child {
+                padding-top: 2px !important;
+                text-align: left !important;
+            }
+
+            .nf-card-table tbody > tr > td:first-child::before,
+            .nf-card-table tbody > tr > td[colspan]::before {
+                display: none !important;
+            }
+
+            .nf-card-table tbody > tr > td[colspan] {
+                display: block !important;
+                border-bottom: 0 !important;
+                padding: 10px !important;
+                text-align: center !important;
+            }
+
+            .nf-card-table tbody > tr > td[data-label="Ações"] {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                align-items: center !important;
+                justify-content: flex-start !important;
+                gap: 8px !important;
+                padding-top: 10px !important;
+                border-bottom: 0 !important;
+                text-align: left !important;
+            }
+
+            .nf-card-table tbody > tr > td[data-label="Ações"]::before {
+                flex: 0 0 100% !important;
+            }
+
+            .nf-card-table tbody > tr > td[data-label="Ações"] button,
+            .nf-card-table tbody > tr > td:last-child button {
+                flex: 0 0 36px !important;
+                width: 36px !important;
+                min-width: 36px !important;
+                height: 36px !important;
+                min-height: 36px !important;
+                padding: 0 !important;
+            }
+
+            .nf-items-table tbody > tr > td[data-label="Produto"] {
+                font-weight: 600;
+            }
+
+            .nf-card-table tbody > tr > td[data-label="Status"] > * {
+                justify-self: end;
+                width: fit-content !important;
+                min-width: 0 !important;
+                max-width: 100%;
+            }
+
+            /* Seletores compostos que eram inline-flex no desktop. */
+            #nfForm .nf-customer-picker {
+                display: grid !important;
+                grid-template-columns: minmax(0, 1fr) 40px 40px !important;
+                gap: 8px !important;
+            }
+
+            #nfForm .nf-customer-picker #nfClienteBusca {
+                grid-column: 1 / -1;
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+
+            #nfForm .nf-customer-picker #nfCliente {
+                grid-column: 1;
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+
+            #nfForm .nf-customer-picker button,
+            #nfForm .nf-natureza-picker button {
+                width: 40px !important;
+                min-width: 40px !important;
+                height: 40px !important;
+                padding: 0 !important;
+            }
+
+            #nfForm .nf-natureza-picker {
+                display: grid !important;
+                grid-template-columns: minmax(0, 1fr) 40px !important;
+                gap: 8px !important;
+            }
+
+            #nfForm .nf-natureza-picker select {
+                min-width: 0 !important;
+                width: 100% !important;
+            }
+
+            #nfForm .nf-product-entry-row,
+            #nfForm .nf-product-entry-row .form-group {
+                min-width: 0 !important;
+                width: 100% !important;
+                max-width: none !important;
+            }
+
+            #nfForm .nf-form-actions {
+                display: grid !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px !important;
+            }
+
+            #nfForm .nf-form-actions .nf-step-actions {
+                grid-column: 1 / -1;
+                display: flex !important;
+                flex-direction: row !important;
+                width: 100%;
+            }
+
+            #nfForm .nf-form-actions .nf-step-actions .btn,
+            #nfForm .nf-form-actions > .btn {
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+
+            .cfg-panel-header {
+                flex-wrap: wrap !important;
+                padding: 12px !important;
+            }
+
+            .cfg-panel-header h3 {
+                min-width: 0 !important;
+                overflow-wrap: anywhere;
+                font-size: 13px !important;
+            }
+
+            .cfg-panel-header h3 button {
+                margin-left: 0 !important;
+                margin-top: 6px;
+                max-width: 100%;
+            }
+
+            /* Modais dinâmicos: conteúdo rolável e footer sempre alcançável. */
+            #nfEditItemModal .modal-content,
+            #nfFiscalEventModal .modal-content,
+            #newClientModal .modal-content,
+            #modalNatOp > div {
+                box-sizing: border-box !important;
+                width: calc(100vw - 16px) !important;
+                max-width: calc(100vw - 16px) !important;
+                max-height: calc(100dvh - 16px) !important;
+                margin: 8px auto !important;
+                display: flex !important;
+                flex-direction: column !important;
+                overflow: hidden !important;
+            }
+
+            #nfEditItemModal .modal-body,
+            #nfFiscalEventModal .modal-body,
+            #newClientModal .modal-body,
+            #modalNatOp > div > div:nth-child(2) {
+                flex: 1 1 auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                overflow-x: hidden !important;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #nfEditItemModal .modal-footer,
+            #nfFiscalEventModal .modal-footer,
+            #newClientModal .modal-footer,
+            #modalNatOp > div > div:nth-child(3) {
+                flex: 0 0 auto !important;
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+            }
+
+            #modalNatOp > div > div:nth-child(2) > div[style*="grid-template-columns"] {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+
+            #nfEditItemModal .modal-footer button,
+            #nfFiscalEventModal .modal-footer button,
+            #modalNatOp > div > div:nth-child(3) button {
+                flex: 1 1 140px;
+                min-width: 0 !important;
+            }
         }
     </style>
 </head>
@@ -815,7 +1082,7 @@
                 </div>
                 <div class="form-group">
                   <label for="nfNatOpSelect">Natureza da Operação:</label>
-                  <div style="display:flex;gap:8px;align-items:center;">
+                     <div class="nf-natureza-picker" style="display:flex;gap:8px;align-items:center;">
                     <select id="nfNatOpSelect" style="flex:1" onchange="nfAplicarNatOp(this)">
                       <option value="">Selecione a Natureza...</option>
                     </select>
@@ -846,7 +1113,7 @@
               <div class="form-row">
                 <div class="form-group">
                   <label for="nfCliente">Cliente: *</label>
-                  <div style="display:flex;gap:8px;align-items:center;">
+                   <div class="nf-customer-picker" style="display:flex;gap:8px;align-items:center;">
                     <input type="text" id="nfClienteBusca" placeholder="Buscar cliente..."
                       style="flex:1;min-width:120px"
                       oninput="nfFiltrarClientesSelect(this.value)">
@@ -1025,7 +1292,7 @@
 
               <!-- Seção: Produto Cadastrado (fica oculta por padrão) -->
               <div id="nfSecaoProdutoCadastrado" class="nf-produto-section" style="display:none;background:#f0f4f8;border:1px solid #d0d8e4;border-radius:6px;padding:12px;margin-bottom:12px;">
-                <div class="form-row" style="align-items:flex-end;flex-wrap:wrap;gap:8px;">
+                 <div class="form-row nf-product-entry-row" style="align-items:flex-end;flex-wrap:wrap;gap:8px;">
                   <div class="form-group" style="min-width:220px">
                     <label for="nfProdCadSelect">Produto:</label>
                     <select id="nfProdCadSelect" onchange="window.NFProdutosNF?.autoPreencherPorProduto(this.value)">
@@ -1074,7 +1341,7 @@
 
               <!-- Seção: Produto Manual (visível por padrão) -->
               <div id="nfSecaoProdutoManual" class="nf-produto-section" style="background:#f0f4f8;border:1px solid #d0d8e4;border-radius:6px;padding:12px;margin-bottom:12px;">
-                <div class="form-row" style="align-items:flex-end;flex-wrap:wrap;gap:8px;">
+                 <div class="form-row nf-product-entry-row" style="align-items:flex-end;flex-wrap:wrap;gap:8px;">
                   <div class="form-group" style="min-width:160px">
                     <label for="itemNomeManual">Nome do Produto:</label>
                     <input type="text" id="itemNomeManual" placeholder="Digite o nome do produto">
@@ -1120,8 +1387,8 @@
               </div>
 
               <!-- Tabela de itens -->
-              <div class="table-container">
-                <table class="data-table" id="tabelaItensNF">
+              <div class="table-container nf-mobile-table-container">
+                 <table class="data-table nf-card-table nf-items-table" id="tabelaItensNF">
                   <thead>
                     <tr>
                       <th>Produto</th>
@@ -1277,8 +1544,8 @@
             </div>
           </div>
 
-          <div class="table-container">
-            <table class="data-table">
+           <div class="table-container nf-mobile-table-container">
+             <table class="data-table nf-card-table nf-notas-table">
               <thead>
                 <tr>
                   <th>Número</th>
@@ -1776,7 +2043,7 @@
             normalizeCompanyProfileForReport,
             getCompanyProfileForReport,
             resolveAuthenticatedTenant
-        } from './firebaseService.js?v=e0acb7d52e36';
+        } from './firebaseService.js?v=10c72c116d87';
         window.firebaseService = {
             ...(window.firebaseService || {}),
             loadFromFirebase,
@@ -1812,7 +2079,7 @@
     </script>
     <script src="auth.js?v=9edf7c63fdab"></script>
     <script src="menu-component.js?v=fc5749bbb053"></script>
-    <script src="cities-loader.js?v=7cbcd32f8b64"></script>
+    <script src="cities-loader.js?v=6daa9ba1b097"></script>
     <script src="client-service.js?v=3061965a094a"></script>
     <script src="openNewClientModal.js?v=fe2ff86f8dec"></script>
     <script src="storageService.js?v=26c2875bf32d"></script>
@@ -2545,20 +2812,20 @@
       const tbody = document.getElementById('itensContainer');
       if (!tbody) return;
       if (_itensNF.length === 0) {
-        tbody.innerHTML = '<tr id="trItensVazio"><td colspan="9" style="text-align:center;color:#999;font-style:italic;">Nenhum item adicionado</td></tr>';
+        tbody.innerHTML = '<tr id="trItensVazio"><td colspan="9" class="nf-card-empty" style="text-align:center;color:#999;font-style:italic;">Nenhum item adicionado</td></tr>';
         return;
       }
       tbody.innerHTML = _itensNF.map(it => `
         <tr>
-          <td>${escapeHtmlNF(it.xProd)}</td>
-          <td style="font-family:monospace">${escapeHtmlNF(it.ncm)}</td>
-          <td>${escapeHtmlNF(it.cfop)}</td>
-          <td>${escapeHtmlNF(it.uCom)}</td>
-          <td style="text-align:right">${it.qCom.toLocaleString('pt-BR',{minimumFractionDigits:3})}</td>
-          <td style="text-align:right">${fmtMoedaForm(it.vUnCom)}</td>
-          <td style="text-align:right;font-weight:600">${fmtMoedaForm(it.vProd)}</td>
-          <td>${escapeHtmlNF(it.csosn)}</td>
-          <td style="display:flex;gap:6px;justify-content:center;">
+          <td data-label="Produto">${escapeHtmlNF(it.xProd)}</td>
+          <td data-label="NCM" style="font-family:monospace">${escapeHtmlNF(it.ncm)}</td>
+          <td data-label="CFOP">${escapeHtmlNF(it.cfop)}</td>
+          <td data-label="UN">${escapeHtmlNF(it.uCom)}</td>
+          <td data-label="Qtd" style="text-align:right">${it.qCom.toLocaleString('pt-BR',{minimumFractionDigits:3})}</td>
+          <td data-label="Vl.Unit." style="text-align:right">${fmtMoedaForm(it.vUnCom)}</td>
+          <td data-label="Total" style="text-align:right;font-weight:600">${fmtMoedaForm(it.vProd)}</td>
+          <td data-label="CSOSN">${escapeHtmlNF(it.csosn)}</td>
+          <td data-label="Ações" class="nf-actions-cell" style="display:flex;gap:6px;justify-content:center;">
             <button type="button" onclick="editarItemNF('${escapeHtmlNF(it.id)}')" class="btn btn-warning btn-small" title="Editar item"><i class="fas fa-edit"></i></button>
             <button type="button" onclick="removerItemNF('${escapeHtmlNF(it.id)}')" class="btn btn-danger btn-small" title="Remover item"><i class="fas fa-trash"></i></button>
           </td>
@@ -2782,7 +3049,7 @@
         return;
       }
       box.innerHTML = `
-        <table>
+        <table class="nf-card-table nf-volumes-table">
           <thead>
             <tr>
               <th>Qtd.</th>
@@ -2797,16 +3064,16 @@
           <tbody>
             ${_volumesNF.map((vol, idx) => `
               <tr>
-                <td>${escapeHtmlNF(vol.qVol || '')}</td>
-                <td>${escapeHtmlNF(vol.esp || vol.especie || '')}</td>
-                <td>${escapeHtmlNF(vol.marca || '')}</td>
-                <td>${escapeHtmlNF(vol.nVol || vol.numeracao || '')}</td>
-                <td>${escapeHtmlNF([
+                <td data-label="Qtd.">${escapeHtmlNF(vol.qVol || '')}</td>
+                <td data-label="Espécie">${escapeHtmlNF(vol.esp || vol.especie || '')}</td>
+                <td data-label="Marca">${escapeHtmlNF(vol.marca || '')}</td>
+                <td data-label="Numeração">${escapeHtmlNF(vol.nVol || vol.numeracao || '')}</td>
+                <td data-label="Pesos">${escapeHtmlNF([
                   vol.pesoB != null && vol.pesoB !== '' ? `B ${fmtNumeroFiscal(vol.pesoB)} kg` : '',
                   vol.pesoL != null && vol.pesoL !== '' ? `L ${fmtNumeroFiscal(vol.pesoL)} kg` : '',
                 ].filter(Boolean).join(' / '))}</td>
-                <td>${escapeHtmlNF((vol.lacres || []).join(', '))}</td>
-                <td><button type="button" class="btn btn-danger btn-small" onclick="removerVolumeNF(${idx})" title="Remover volume"><i class="fas fa-trash"></i></button></td>
+                <td data-label="Lacres">${escapeHtmlNF((vol.lacres || []).join(', '))}</td>
+                <td data-label="Ações" class="nf-actions-cell"><button type="button" class="btn btn-danger btn-small" onclick="removerVolumeNF(${idx})" title="Remover volume"><i class="fas fa-trash"></i></button></td>
               </tr>
             `).join('')}
           </tbody>
@@ -3449,7 +3716,7 @@
     async function consultarNotas() {
       const tbody = document.getElementById('notasTable');
       if (!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">⏳ Carregando...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="nf-card-empty" style="text-align:center;">⏳ Carregando...</td></tr>';
       try {
         const filtros = {
           busca:      document.getElementById('searchNF')?.value,
@@ -3469,7 +3736,7 @@
           set('totalCanceladas', stats.totalCanceladas);
         }
       } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:red;">Erro: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="nf-card-empty" style="text-align:center;color:red;">Erro: ${e.message}</td></tr>`;
       }
     }
 
@@ -3477,7 +3744,7 @@
       const tbody = document.getElementById('notasTable');
       if (!tbody) return;
       if (!notas || notas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#666;font-style:italic;">Nenhuma nota fiscal encontrada</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="nf-card-empty" style="text-align:center;color:#666;font-style:italic;">Nenhuma nota fiscal encontrada</td></tr>';
         return;
       }
       const statusMap = {
@@ -3494,13 +3761,13 @@
         const chave = n.chave ? n.chave.replace(/(\d{4})/g,'$1 ').trim().slice(0,24)+'...' : '—';
         const prot  = n.nProt ? ` | Prot: ${n.nProt}` : '';
         return `<tr>
-          <td style="font-family:monospace;font-weight:600">${String(n.numero||'').padStart(9,'0')}</td>
-          <td>${(n.dataEmissao||'').slice(0,10).split('-').reverse().join('/')}</td>
-          <td>${n.dest?.nome || '—'}</td>
-          <td style="text-align:right;font-weight:600">${fmtMoedaForm(val)}</td>
-          <td style="font-family:monospace;font-size:11px">${chave}${prot}</td>
-          <td><span style="padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;color:${cor};background:${bg};">${label}</span></td>
-          <td>
+          <td data-label="Número" style="font-family:monospace;font-weight:600">${String(n.numero||'').padStart(9,'0')}</td>
+          <td data-label="Data">${(n.dataEmissao||'').slice(0,10).split('-').reverse().join('/')}</td>
+          <td data-label="Destinatário">${n.dest?.nome || '—'}</td>
+          <td data-label="Valor Total" style="text-align:right;font-weight:600">${fmtMoedaForm(val)}</td>
+          <td data-label="Chave / Protocolo" style="font-family:monospace;font-size:11px">${chave}${prot}</td>
+          <td data-label="Status"><span style="padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;color:${cor};background:${bg};">${label}</span></td>
+          <td data-label="Ações" class="nf-actions-cell">
             ${window.NFDanfe ? `<button class="btn btn-primary btn-small" onclick="abrirDANFENota('${n.id}')" title="DANFE"><i class="fas fa-file-pdf"></i></button>` : ''}
             ${n.status==='autorizada' ? `<button class="btn btn-warning btn-small" onclick="abrirModalCartaCorrecaoNF('${n.id}','${n.chave || ''}')" title="Carta de Correção"><i class="fas fa-file-signature"></i></button>` : ''}
             ${n.status==='autorizada' ? `<button class="btn btn-danger btn-small" onclick="iniciarCancelamento('${n.id}','${n.chave}','${n.nProt||''}')" title="Cancelar"><i class="fas fa-ban"></i></button>` : ''}
@@ -4095,7 +4362,7 @@
         return;
       }
       container.innerHTML = `
-        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <table class="nf-card-table nf-naturezas-table" style="width:100%;border-collapse:collapse;font-size:13px;">
           <thead>
             <tr style="background:#f0f4f8;">
               <th style="padding:8px;text-align:left;border-bottom:2px solid #ddd;">Descrição</th>
@@ -4109,12 +4376,12 @@
           <tbody>
             ${naturezas.map(n => `
               <tr style="border-bottom:1px solid #eee;">
-                <td style="padding:8px;">${n.descricao}</td>
-                <td style="padding:8px;text-align:center;font-family:monospace;">${n.cfopPadrao || '—'}</td>
-                <td style="padding:8px;text-align:center;">${n.tipo === 'saida' ? 'Saída' : 'Entrada'}</td>
-                <td style="padding:8px;text-align:center;font-family:monospace;">${n.csosn || '—'}</td>
-                <td style="padding:8px;text-align:center;">${n.ativo !== false ? '✅' : '❌'}</td>
-                <td style="padding:8px;text-align:center;display:flex;gap:6px;justify-content:center;">
+                <td data-label="Descrição" style="padding:8px;">${n.descricao}</td>
+                <td data-label="CFOP" style="padding:8px;text-align:center;font-family:monospace;">${n.cfopPadrao || '—'}</td>
+                <td data-label="Tipo" style="padding:8px;text-align:center;">${n.tipo === 'saida' ? 'Saída' : 'Entrada'}</td>
+                <td data-label="CSOSN" style="padding:8px;text-align:center;font-family:monospace;">${n.csosn || '—'}</td>
+                <td data-label="Ativo" style="padding:8px;text-align:center;">${n.ativo !== false ? '✅' : '❌'}</td>
+                <td data-label="Ações" class="nf-actions-cell" style="padding:8px;text-align:center;display:flex;gap:6px;justify-content:center;">
                   <button class="btn btn-warning btn-small" onclick="nfEditarNatureza('${n.id}')" title="Editar">
                     <i class="fas fa-edit"></i>
                   </button>

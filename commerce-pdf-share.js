@@ -294,6 +294,9 @@
 
             * {
                 box-sizing: border-box;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
             }
 
             html,
@@ -484,10 +487,15 @@
 
             .sisweb-print-table th,
             table th {
-                background: #2c3e50;
-                color: #fff;
+                background: #2c3e50 !important;
+                color: #fff !important;
                 font-weight: 800;
                 text-align: left;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                /* Fallback para navegadores com "Background graphics" desativado */
+                box-shadow: inset 0 0 0 1000px #2c3e50 !important;
             }
 
             .sisweb-print-table tbody tr:nth-child(even),

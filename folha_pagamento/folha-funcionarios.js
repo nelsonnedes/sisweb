@@ -326,6 +326,7 @@ class FolhaFuncionarios {
             'folhaFuncionario',       // Modal de folha
             'filtroFechadasFuncionario', // Modal de folhas fechadas
             'funcionarioRelatorio',   // Modal de relatórios
+            'resumoFuncionario',      // Modal de resumo da folha
             'bh-funcionario-nome',    // Modal de BH - lançamento
             'bh-ger-func-nome'        // Modal de BH - gerenciar
         ];
@@ -347,7 +348,7 @@ class FolhaFuncionarios {
      * 👆 HANDLER PARA FOCO EM CAMPO DE FUNCIONÁRIO
      */
     handleFuncionarioFieldFocus(e) {
-        const camposFuncionario = ['funcionarioFiltro', 'folhaFuncionario', 'filtroFechadasFuncionario', 'funcionarioRelatorio', 'bh-funcionario-nome', 'bh-ger-func-nome'];
+        const camposFuncionario = ['funcionarioFiltro', 'folhaFuncionario', 'filtroFechadasFuncionario', 'funcionarioRelatorio', 'resumoFuncionario', 'bh-funcionario-nome', 'bh-ger-func-nome'];
         
         // Limpar flag de outros campos
         camposFuncionario.forEach(campoId => {
@@ -373,7 +374,7 @@ class FolhaFuncionarios {
         const input = document.getElementById(targetId);
         if (!input) return false;
         this.targetField = targetId;
-        const camposFuncionario = ['funcionarioFiltro', 'folhaFuncionario', 'filtroFechadasFuncionario', 'funcionarioRelatorio', 'bh-funcionario-nome', 'bh-ger-func-nome'];
+        const camposFuncionario = ['funcionarioFiltro', 'folhaFuncionario', 'filtroFechadasFuncionario', 'funcionarioRelatorio', 'resumoFuncionario', 'bh-funcionario-nome', 'bh-ger-func-nome'];
         camposFuncionario.forEach((campoId) => {
             const campo = document.getElementById(campoId);
             if (campo) campo.dataset.lastFocused = campoId === targetId ? 'true' : 'false';
@@ -391,7 +392,7 @@ class FolhaFuncionarios {
     }
 
     _prepareFuncionarioSelectionTarget() {
-        const camposFuncionario = ['funcionarioFiltro', 'folhaFuncionario', 'filtroFechadasFuncionario', 'funcionarioRelatorio', 'bh-funcionario-nome', 'bh-ger-func-nome'];
+        const camposFuncionario = ['funcionarioFiltro', 'folhaFuncionario', 'filtroFechadasFuncionario', 'funcionarioRelatorio', 'resumoFuncionario', 'bh-funcionario-nome', 'bh-ger-func-nome'];
         if (this.targetField && this._isFuncionarioTargetUsable(this.targetField)) {
             this._setFuncionarioTargetField(this.targetField);
             return this.targetField;
@@ -1192,7 +1193,7 @@ class FolhaFuncionarios {
             const collection = window.FUNCIONARIOS_CONFIG ? window.FUNCIONARIOS_CONFIG.COLLECTION : 'funcionarios';
             console.log(`🗑️ Removendo da coleção: ${collection}`);
             if (window.database) {
-                const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                const { ref, remove } = await import('../firebase/sdk/firebase-database.js');
                 const resolvePath = (p) => {
                     try {
                         if (window.FolhaUtils && typeof window.FolhaUtils.resolveFirebasePath === 'function') {
@@ -1906,6 +1907,7 @@ class FolhaFuncionarios {
                 'folhaFuncionario',       // Modal de folha
                 'filtroFechadasFuncionario', // Modal de folhas fechadas
                 'funcionarioRelatorio',   // Modal de relatórios
+                'resumoFuncionario',      // Modal de resumo da folha
                 'bh-funcionario-nome',    // Modal de Banco de Horas
                 'bh-ger-func-nome'        // Modal de BH - gerenciar
             ];
@@ -1947,7 +1949,7 @@ class FolhaFuncionarios {
         
         // 4. Última opção: Primeiro campo disponível
         if (!campoAtivo) {
-            const camposFallback = ['funcionarioFiltro', 'folhaFuncionario', 'filtroFechadasFuncionario', 'funcionarioRelatorio', 'bh-funcionario-nome'];
+            const camposFallback = ['funcionarioFiltro', 'folhaFuncionario', 'filtroFechadasFuncionario', 'funcionarioRelatorio', 'resumoFuncionario', 'bh-funcionario-nome'];
             for (const campoId of camposFallback) {
                 const campo = document.getElementById(campoId);
                 if (campo) {
@@ -2026,7 +2028,7 @@ class FolhaFuncionarios {
             }
             
             // Limpar flag de lastFocused de outros campos
-            const todosCampos = ['funcionarioFiltro', 'folhaFuncionario', 'filtroFechadasFuncionario', 'funcionarioRelatorio', 'bh-funcionario-nome', 'bh-ger-func-nome'];
+            const todosCampos = ['funcionarioFiltro', 'folhaFuncionario', 'filtroFechadasFuncionario', 'funcionarioRelatorio', 'resumoFuncionario', 'bh-funcionario-nome', 'bh-ger-func-nome'];
             todosCampos.forEach(campoId => {
                 const campo = document.getElementById(campoId);
                 if (campo && campo !== campoAtivo) {

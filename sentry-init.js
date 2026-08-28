@@ -146,12 +146,22 @@
   // ─── Redação de campos sensíveis antes do envio ────────────────────────────
   var SENSITIVE_KEYS = /(password|passwd|senha|token|secret|authorization|cookie|api[_-]?key|credit|card|cvv|ssn|cpf)/i;
 
-  function sanitizeObject(obj) {
+  function sanitizeObject(obj, seen, depth) {
     if (!obj || typeof obj !== 'object') return;
+    seen = seen || (typeof WeakSet !== 'undefined' ? new WeakSet() : []);
+    depth = depth || 0;
+    if (depth > 12) return;
+    if (typeof seen.add === 'function') {
+      if (seen.has(obj)) return;
+      seen.add(obj);
+    } else {
+      if (seen.indexOf(obj) >= 0) return;
+      seen.push(obj);
+    }
     for (var key in obj) {
       if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
       if (SENSITIVE_KEYS.test(key)) { obj[key] = '[REDACTED]'; continue; }
-      if (obj[key] && typeof obj[key] === 'object') sanitizeObject(obj[key]);
+      if (obj[key] && typeof obj[key] === 'object') sanitizeObject(obj[key], seen, depth + 1);
     }
   }
 

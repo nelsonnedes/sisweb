@@ -43,6 +43,35 @@ test('functions/index.js registra as 4 exports do módulo Sentry', () => {
   assert.match(idx, /exports\.sentryWebhook = sentryFunctions\.sentryWebhook/, 'deve registrar sentryWebhook');
 });
 
+test('auditoria de acesso admin negado usa callable server-side em vez de write direto', () => {
+  const adminMain = read('scripts/admin/admin-main.js');
+  const audit = read('functions/security-audit-functions.js');
+  const index = read('functions/index.js');
+  assert.match(adminMain, /callFunction\("recordAdminAccessDenied"/);
+  assert.doesNotMatch(adminMain, /saveData\("users\/" \+ uid \+ "\/securityAudit/);
+  assert.match(audit, /exports\.recordAdminAccessDenied = functions\.https\.onCall/);
+  assert.match(audit, /resolveAuth/);
+  assert.match(audit, /auth\.uid/);
+  assert.match(audit, /securityAudit\/adminAccessDenied/);
+  assert.match(index, /exports\.recordAdminAccessDenied = securityAuditFunctions\.recordAdminAccessDenied/);
+});
+
+test('leituras RTDB ativas não misturam o SDK local com firebase-database do CDN', () => {
+  const finance = read('financas.js');
+  const pct = read('modules/romaneiopct/modal-lista-romaneios-pct.js');
+  assert.doesNotMatch(finance, /gstatic\.com\/firebasejs\/10\.7\.1\/firebase-database\.js/);
+  assert.doesNotMatch(pct, /gstatic\.com\/firebasejs\/10\.7\.1\/firebase-database\.js/);
+  assert.match(finance, /import\('\.\/firebase\/sdk\/firebase-database\.js'\)/);
+  assert.match(pct, /import\('\.\.\/\.\.\/firebase\/sdk\/firebase-database\.js'\)/);
+});
+
+test('sanitização Sentry é limitada contra objetos circulares ou profundos', () => {
+  const src = read('sentry-init.js');
+  assert.match(src, /function sanitizeObject\(obj, seen, depth\)/);
+  assert.match(src, /seen\.has\(obj\)/);
+  assert.match(src, /depth > 12/);
+});
+
 test('nenhuma credencial da Sentry vaza para o client (páginas publicadas e scripts)', () => {
   const htmls = allowlist.filter((f) => f.toLowerCase().endsWith('.html'));
   const files = [

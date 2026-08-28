@@ -10,7 +10,7 @@
 
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
-    <script src="sentry-init.js?v=7849a9e5f9c0"></script></head>
+    <script src="sentry-init.js?v=e4dadfaea86a"></script></head>
 <body>
     <main-menu></main-menu>
     <div class="shell">
@@ -545,7 +545,7 @@
                                 <th>UID</th>
                                 <th>Motivo</th>
                                 <th>Rota</th>
-                                <th>Dispositivo</th>
+                                <th>Dispositivo / IP</th>
                                 <th>Origem</th>
                             </tr>
                         </thead>
@@ -600,12 +600,21 @@
 
                     <!-- Filtros -->
                     <div class="filters">
+                        <select id="sentryPeriodFilter" title="Filtrar por período da última ocorrência">
+                            <option value="all">Período: Tudo</option>
+                            <option value="24h">Período: Últimas 24h</option>
+                            <option value="7d">Período: Últimos 7 dias</option>
+                            <option value="30d">Período: Últimos 30 dias</option>
+                        </select>
                         <select id="sentryLevelFilter">
                             <option value="all">Nível: Todos</option>
                             <option value="fatal">Fatal</option>
                             <option value="error">Erro</option>
                             <option value="warning">Aviso</option>
                         </select>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:#334155;white-space:nowrap;cursor:pointer;">
+                            <input type="checkbox" id="sentryHideResolved"> Ocultar resolvidos
+                        </label>
                         <input id="sentrySearch" type="text" placeholder="Filtrar por mensagem, página, empresa ou release">
                         <button type="button" class="btn small" id="sentryReloadBtn"><i class="fas fa-rotate-left"></i><span>Redefinir filtros</span></button>
                     </div>
@@ -631,6 +640,7 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="sentryPagination" class="admin-pagination-host"></div>
                     <div id="sentryCopyFeedback" style="display:none;margin-top:8px;font-size:0.8rem;color:#166534;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;"></div>
                 </div>
             </div>
@@ -1112,11 +1122,11 @@
         </div>
     </div>
 
-    <script src="firebaseService.js?v=e0acb7d52e36" type="module"></script>
+    <script src="firebaseService.js?v=10c72c116d87" type="module"></script>
     <script src="auth.js?v=9edf7c63fdab"></script>
     <script src="menu-component.js?v=fc5749bbb053"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
     <script src="scripts/admin/admin-ui.js?v=ec6765700811"></script>
-    <script src="scripts/admin/admin-main.js?v=6fbaf24469ff"></script>
+    <script src="scripts/admin/admin-main.js?v=9238f2dade4f"></script>
 </body>
 </html>

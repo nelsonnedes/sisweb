@@ -411,11 +411,11 @@
 				const esc = (v)=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 				tbody.innerHTML = (lista||[]).sort((a,b)=>String(a.data).localeCompare(String(b.data))).map(l=>`
 					<tr>
-						<td><input type="date" value="${esc((l.data||'').slice(0,10))}" data-id="${esc(l.id)}" class="bh-ger-data"/></td>
-						<td><input type="text" value="${esc(fmtHHMM(l.minutos||0))}" placeholder="hh:mm" data-id="${esc(l.id)}" class="bh-ger-min" style="width:120px;"/></td>
-						<td><input type="date" value="${esc((l.venceEm||'').slice(0,10))}" data-id="${esc(l.id)}" class="bh-ger-vence"/></td>
-						<td><input type="text" value="${esc(l.observacao||'')}" data-id="${esc(l.id)}" class="bh-ger-obs"/></td>
-						<td class="actions-cell" style="text-align:center;">
+						<td data-label="Data"><input type="date" value="${esc((l.data||'').slice(0,10))}" data-id="${esc(l.id)}" class="bh-ger-data"/></td>
+						<td data-label="Horas"><input type="text" value="${esc(fmtHHMM(l.minutos||0))}" placeholder="hh:mm" data-id="${esc(l.id)}" class="bh-ger-min" style="width:120px;"/></td>
+						<td data-label="Vence"><input type="date" value="${esc((l.venceEm||'').slice(0,10))}" data-id="${esc(l.id)}" class="bh-ger-vence"/></td>
+						<td data-label="Observação"><input type="text" value="${esc(l.observacao||'')}" data-id="${esc(l.id)}" class="bh-ger-obs"/></td>
+						<td data-label="Ações" class="actions-cell" style="text-align:center;">
 							<button type="button" class="action-button edit-button bh-ger-salvar" data-id="${esc(l.id)}" title="Salvar">
 								<i class="fas fa-save"></i>
 							</button>

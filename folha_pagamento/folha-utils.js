@@ -2293,7 +2293,7 @@ class FolhaUtils {
                 FolhaUtils.mostrarErro('Banco indisponível. Abra folha.html logado e tente novamente.');
                 return { total: 0, elegiveis: 0, atualizados: 0 };
             }
-            const { ref, get, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, get, update } = await import('../firebase/sdk/firebase-database.js');
             const resolvedPath = FolhaUtils.resolveFirebasePath(path);
             const snap = await get(ref(window.database, resolvedPath));
             const val = snap.val() || {};
@@ -2366,7 +2366,7 @@ class FolhaUtils {
                 FolhaUtils.mostrarErro('Banco indisponível. Abra folha.html logado e tente novamente.');
                 return { total: 0, elegiveis: 0, atualizados: 0 };
             }
-            const { ref, get, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, get, update } = await import('../firebase/sdk/firebase-database.js');
             const resolvedPath = FolhaUtils.resolveFirebasePath(path);
             const snap = await get(ref(window.database, resolvedPath));
             const val = snap.val() || {};
@@ -2432,7 +2432,7 @@ class FolhaUtils {
                 FolhaUtils.mostrarErro('Banco indisponível. Abra folha.html logado e tente novamente.');
                 return { total: 0, elegiveis: 0, atualizados: 0 };
             }
-            const { ref, get, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, get, update } = await import('../firebase/sdk/firebase-database.js');
             const resolvedPath = FolhaUtils.resolveFirebasePath(path);
             const snap = await get(ref(window.database, resolvedPath));
             const val = snap.val() || {};
@@ -2572,7 +2572,7 @@ class FolhaUtils {
                 FolhaUtils.mostrarErro('Banco indisponível. Abra folha.html logado e tente novamente.');
                 return false;
             }
-            const { ref, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const { ref, update } = await import('../firebase/sdk/firebase-database.js');
             const resolvedPath = FolhaUtils.resolveFirebasePath(path);
             await update(ref(window.database, `${resolvedPath}/${id}`), { percentualQuinzena: perc });
             FolhaUtils.mostrarSucesso(`Percentual atualizado: ${id} -> ${perc}%`);
@@ -3044,7 +3044,7 @@ class FolhaUtils {
                     lancamentos = await window.folhaLancamentos.buscarTodasFolhas();
                 } else if (window.database) {
                     // Fallback direto do Firebase
-                    const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+                    const { ref, get } = await import('../firebase/sdk/firebase-database.js');
                     const resolvePath = (p) => {
                         try {
                             if (window.FolhaUtils && typeof window.FolhaUtils.resolveFirebasePath === 'function') {

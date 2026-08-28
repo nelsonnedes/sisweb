@@ -64,6 +64,12 @@ test("Controle de Estoque de Toras - Renderizadores em estoque.js injetam atribu
     assert.match(js, /function renderizarTabelaEntrada[\s\S]*?data-label="Plaqueta"/, "renderizarTabelaEntrada deve injetar data-label=\"Plaqueta\"");
 });
 
+test("Controle de Estoque - estados vazios permanecem centralizados nos cards mobile", () => {
+    const html = fs.readFileSync(path.resolve("estoque.html"), "utf8");
+    assert.match(html, /#tabelaEstoque\s+tbody\s+tr\s+td\[colspan\][\s\S]*?display:\s*block\s*!important/);
+    assert.match(html, /#tabelaEstoque\s+tbody\s+tr\s+td\[colspan\][\s\S]*?text-align:\s*center\s*!important/);
+});
+
 test("Controle de Estoque - Almoxarifado renderiza data-label em estoque_produtos.js", () => {
     const prodJsPath = path.resolve("estoque_produtos.js");
     const prodJs = fs.readFileSync(prodJsPath, "utf8");
