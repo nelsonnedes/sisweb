@@ -247,9 +247,29 @@ class RomaneioManager {
                 else this.allRomaneios.unshift(record);
             }
             
-            // Persistir cache local atualizado
+            // Persistir cache local atualizado com tratamento de quota
             if (count > 0 && sk) {
-                localStorage.setItem(sk, JSON.stringify(localData));
+                try {
+                    // Limitar cache local a 80 itens mais recentes para evitar quota
+                    const toStore = localData.length > 80 ? localData.slice(-80) : localData;
+                    localStorage.setItem(sk, JSON.stringify(toStore));
+                } catch (quotaErr) {
+                    const isQuota = quotaErr && (quotaErr.name === 'QuotaExceededError' || quotaErr.code === 22 || String(quotaErr.message||'').toLowerCase().includes('quota'));
+                    if (isQuota) {
+                        console.warn(`⚠️ [${this.type}] Quota localStorage excedida. Limpando cache e mantendo apenas dados essenciais.`);
+                        try {
+                            // Tentar limpar e salvar apenas os registros mais recentes (20)
+                            localStorage.removeItem(sk);
+                            const minimal = localData.slice(-20);
+                            localStorage.setItem(sk, JSON.stringify(minimal));
+                        } catch (_) {
+                            console.warn(`⚠️ [${this.type}] Ainda sem espaço. Cache local ignorado, mantendo apenas Firebase como fonte.`);
+                            try { localStorage.removeItem(sk); } catch (_) {}
+                        }
+                    } else {
+                        console.warn(`⚠️ [${this.type}] Falha ao persistir cache local:`, quotaErr);
+                    }
+                }
                 this.applyFilter(this.currentFilter);
                 this.renderFilteredTable();
             }

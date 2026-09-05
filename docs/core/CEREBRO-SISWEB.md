@@ -4,7 +4,7 @@
 > sessão (Codex, opencode, deepseek) retomar contexto sem regressões e sem perder
 > o "porquê" das decisões já tomadas. SEMPRE consultar antes de implementar.
 >
-> Atualizado em: 2026-08-27 (PWA desktop print + cabeçalho impressão + auditoria IP + varredura órfãs + edição assinaturas)
+> Atualizado em: 2026-08-27 (Romaneio Tora quota localStorage + impressão + PWA)
 
 ---
 
@@ -416,3 +416,8 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Varredura desktop PWA:** ADMIN_ASSET_VERSION desatualizado vs firebaseService.js + sw staleWhileRevalidate fazia PWA servir cache antigo sem sweepOrphanCompanies. Fix: admin-main.js:21 → "10c72c116d87", sweepOrphanCompaniesFlow usa resolveAdminFirebaseService, mensagens reescritas, botão desabilitado.
 - **Assinaturas — Coluna Ações:** tdActions flex/wrap, novo botão Editar (fa-pen) só SuperAdmin, abre openEditSubscriberModal com form Assinante e Empresa, salva via nova callable adminUpdateSubscriber (functions/index.js + firebaseService.js), valida CNPJ duplicado, audita.
 - **Validação:** puppeteer superadmin confirmou botão Editar e modal, firebase deploy functions:adminUpdateSubscriber + hosting, validate:pr 6/6 PASS, sw 2026-08-27-subscriptions-edit-v1.
+
+## 31. Sessão 2026-08-27 — Romaneio Tora: QuotaExceededError ao editar/atualizar
+- **Sintoma:** Ao editar romaneio de Toras e clicar em Atualizar, console mostra QuotaExceededError: Failed to execute 'setItem' on 'Storage': Setting the value of 'companies/1749492103278/romaneios/tora' exceeded the quota em romaneio-manager.js:252 (localStorage.setItem(sk, JSON.stringify(localData))) e romaneiotora_tabela.js:919 via salvarRomaneio(). Ocorre porque saveData carrega todo o histórico local (JSON.parse(localStorage.getItem(sk) || '[]')), mescla o registro editado e tenta persistir o array completo (centenas de romaneios) ultrapassando 5-10MB do localStorage. O Firebase já havia salvo com sucesso, mas o throw quebrava o fluxo e disparava Sentry + 3x Uncaught (in promise) Error: A listener indicated...
+- **Fix:** romaneio-manager.js:251 envolvido em try-catch específico para quota: limita cache a 80 itens mais recentes (localData.slice(-80)), em falha limpa a chave e tenta 20 itens, em falha persistente remove a chave e segue apenas com Firebase (não lança). romaneiotora_tabela.js:54 persistLocalValue() com mesmo tratamento (tenta slice(-20) e fallback). Mantém Firebase como fonte da verdade, cache local como otimização best-effort.
+- **Validação:** node --check OK para ambos, npm test 525 pass / 0 fail, sw.js bump 2026-08-27-romaneio-tora-quota-v1 (6 testes de APP_VERSION atualizados), inject-cachebusters → romaneiotora.html com novos hashes, build:hosting 467 arquivos e deploy --only hosting OK. Erro não volta a quebrar Atualizar.

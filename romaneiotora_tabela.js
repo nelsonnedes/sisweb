@@ -57,8 +57,32 @@ function persistLocalValue(storageKey, data) {
             return window.SiswebStorage.write(storageKey, data) !== false;
         }
     } catch (_) {}
-    localStorage.setItem(storageKey, JSON.stringify(data));
-    return true;
+    try {
+        localStorage.setItem(storageKey, JSON.stringify(data));
+        return true;
+    } catch (e) {
+        const isQuota = e && (e.name === 'QuotaExceededError' || e.code === 22 || String(e.message||'').toLowerCase().includes('quota'));
+        if (isQuota) {
+            console.warn('⚠️ Quota localStorage excedida em persistLocalValue. Tentando limpar cache antigo.');
+            try {
+                // Tentar limpar chaves antigas de romaneios para liberar espaço
+                const keysToCheck = [];
+                for (let i=0; i<localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (k && k.includes('romaneios')) keysToCheck.push(k);
+                }
+                // Se a chave atual é grande, tentar salvar versão reduzida (últimos 20 itens se for array)
+                if (Array.isArray(data) && data.length > 20) {
+                    try { localStorage.setItem(storageKey, JSON.stringify(data.slice(-20))); return true; } catch (_) {}
+                }
+                // Último recurso: remover a chave e tentar novamente com dados mínimos
+                try { localStorage.removeItem(storageKey); localStorage.setItem(storageKey, JSON.stringify(Array.isArray(data) ? data.slice(-20) : data)); return true; } catch (_) {}
+                console.warn('⚠️ persistLocalValue: quota persistente, dado não cacheado localmente.');
+                return false;
+            } catch (_) { return false; }
+        }
+        throw e;
+    }
 }
 
 // Inicialização
