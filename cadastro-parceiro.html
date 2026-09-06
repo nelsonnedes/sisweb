@@ -108,6 +108,7 @@ body{background:#f6f9fc;color:var(--par-ink);}
 .par-reminder-card textarea:focus{outline:none;border-color:var(--par-blue);box-shadow:0 0 0 4px rgba(37,99,235,.13);}
 .par-reminder-count{text-align:right;font-size:.75rem;color:var(--par-muted);margin-top:4px;}
 .par-reminder-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap;}
+.parceiro-form input.par-field-error,.parceiro-form select.par-field-error{border-color:#ef4444;background:#fef2f2;box-shadow:0 0 0 4px rgba(239,68,68,.12);}
 .par-whatsapp-float{
   position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom, 0px));
   width:56px;height:56px;border-radius:50%;
@@ -219,6 +220,54 @@ function parceiroFriendlyError(err, fallback){
   if (/internal|unavailable|deadline|network|fetch|failed to fetch|cors|timeout|timed out|servi[cç]o|5\d\d|offline/.test(s)) return 'Serviço indisponível no momento. Tente novamente em instantes.';
   return fallback || 'Não foi possível concluir. Tente novamente.';
 }
+function parceiroErrorText(err){
+  var raw = '';
+  if (err && err.code) raw += ' ' + String(err.code);
+  if (err && err.message) raw += ' ' + String(err.message);
+  if (typeof err === 'string') raw += ' ' + err;
+  return raw;
+}
+function parceiroValidationField(err){
+  var s = parceiroErrorText(err).toLowerCase();
+  if (/nome/.test(s)) return 'parNome';
+  if (/e-mail|email/.test(s)) return 'parEmail';
+  if (/telefone|whatsapp|fone|phone/.test(s)) return 'parFone';
+  return '';
+}
+function highlightParceiroField(id){
+  if (!id) return;
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('par-field-error');
+  try { el.focus(); el.scrollIntoView({ block: 'nearest' }); } catch(_){}
+}
+async function isPartnerSessionActive(){
+  try {
+    var svc = window.firebaseService || {};
+    if (svc.authPersistenceReady) {
+      try { await Promise.race([svc.authPersistenceReady, new Promise(function(r){ setTimeout(r, 3000); })]); } catch(_){}
+    }
+    var a = svc.auth || null;
+    if (a && a.currentUser) return true;
+    if (a && typeof a.onAuthStateChanged === 'function') {
+      var user = await new Promise(function(resolve){
+        var done = false;
+        var to = setTimeout(function(){ if(!done){ done = true; resolve(null); } }, 2500);
+        try {
+          var un = a.onAuthStateChanged(function(u){
+            if (done) return;
+            done = true;
+            clearTimeout(to);
+            try { if (un) un(); } catch(_){}
+            resolve(u || null);
+          });
+        } catch(_){ if(!done){ done = true; clearTimeout(to); resolve(null); } }
+      });
+      return !!user;
+    }
+  } catch(_){}
+  return false;
+}
 async function handleParceiro(e){
   e.preventDefault();
   var msg = document.getElementById('parFormMsg');
@@ -243,7 +292,17 @@ async function handleParceiro(e){
     if (msg) { msg.style.color = '#10b981'; msg.textContent = (data && data.already) ? 'Cadastro já existente. Este é o seu código.' : 'Código gerado com sucesso!'; }
     try { localStorage.setItem('sisweb_parceiro_code', code); } catch(_){}
   } catch (err) {
-    if (msg) { msg.style.color = '#ef4444'; msg.textContent = parceiroFriendlyError(err, 'Erro ao gerar código.'); }
+    var fieldId = parceiroValidationField(err);
+    var serverText = parceiroErrorText(err);
+    if (msg) {
+      msg.style.color = '#ef4444';
+      if (fieldId === 'parNome') msg.textContent = 'Confira seu nome completo (mínimo 3 letras).';
+      else if (fieldId === 'parEmail') msg.textContent = 'Confira seu e-mail — parece inválido.';
+      else if (fieldId === 'parFone') msg.textContent = 'Confira o telefone/WhatsApp (mínimo 8 dígitos).';
+      else if (/muitas tentativas/i.test(serverText)) msg.textContent = 'Muitas tentativas. Aguarde uma hora e tente novamente.';
+      else msg.textContent = parceiroFriendlyError(err, 'Erro ao gerar código.');
+    }
+    highlightParceiroField(fieldId);
   }
   return false;
 }
@@ -254,9 +313,23 @@ function copyPartnerCode(){
     else { var t = document.createElement('textarea'); t.value = code; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
   } catch(_){}
 }
+(function bindParceiroFieldReset(){
+  function bind(){
+    ['parNome','parEmail','parFone'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el && !el._parResetBound) {
+        el._parResetBound = true;
+        el.addEventListener('input', function(){ el.classList.remove('par-field-error'); });
+      }
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
+  else bind();
+})();
 async function loadPartnerDashboard(){
   var host = document.getElementById('parDashboard');
   if (!host || !window.firebaseService || typeof window.firebaseService.getMyPartnerDashboard !== 'function') return;
+  if (!(await isPartnerSessionActive())) return;
   var res;
   try { res = await window.firebaseService.getMyPartnerDashboard(); } catch(_) { return; }
   var data = res && res.data ? res.data : res;

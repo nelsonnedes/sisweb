@@ -80,6 +80,23 @@ test('portal do parceiro usa backend e expoe painel proprio', () => {
   assert.match(portal, /par-whatsapp-float/);
   assert.match(portal, /wa\.me\/5591991311049/);
   assert.match(portal, /aria-label="Conversar sobre o Programa de Parceiros no WhatsApp"/);
+  assert.match(portal, /async function isPartnerSessionActive\(\)/);
+  assert.match(portal, /function parceiroValidationField\(/);
+  assert.match(portal, /par-field-error/);
+  assert.match(portal, /await isPartnerSessionActive\(\)/);
+});
+
+test('vitrine do iphone usa capturas mobile reais', () => {
+  const landing = readFileSync('landing-vendas.html', 'utf8');
+  assert.match(landing, /romaneiotora-overview-mobile\.png/);
+  assert.match(landing, /notas-fiscais-overview-mobile\.png/);
+  const css = readFileSync('landing-vendas.css', 'utf8');
+  assert.match(css, /aspect-ratio:\s?9\/19\.5/);
+  const hosting = JSON.parse(readFileSync('hosting-files.json', 'utf8'));
+  const files = Array.isArray(hosting) ? hosting : hosting.files || [];
+  for (const img of ['assets/help-manual/romaneiotora-overview-mobile.png', 'assets/help-manual/financas-overview-mobile.png', 'assets/help-manual/notas-fiscais-overview-mobile.png']) {
+    assert.ok(files.includes(img), `manifesto sem: ${img}`);
+  }
 });
 
 test('landing vitrine exibe carrosseis iphone e desktop com telas reais', () => {
