@@ -1322,7 +1322,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-    <script src="menu-component.js?v=f68937b4ac7e"></script>
+    <script src="menu-component.js?v=809a6acd5085"></script>
     <script src="auth.js?v=9edf7c63fdab"></script>
     <script type="module">
         import {
@@ -2584,6 +2584,39 @@
             container.innerHTML = freePlanHtml + paidPlansHtml;
         }
 
+        function setFreePlanBusy(busy) {
+            try {
+                const btn = document.querySelector('button.select-plan[onclick="activateFreePlan()"]');
+                if (!btn) return null;
+                if (busy) {
+                    if (!btn.dataset.origLabel) btn.dataset.origLabel = btn.textContent;
+                    btn.disabled = true;
+                    btn.textContent = 'Ativando plano grátis...';
+                } else {
+                    btn.disabled = false;
+                    if (btn.dataset.origLabel) btn.textContent = btn.dataset.origLabel;
+                }
+                return btn;
+            } catch (_) { return null; }
+        }
+
+        function resolvePostTrialDestination() {
+            try {
+                const u = currentUserDetails || {};
+                const cid = String(u.companyId || u.companyID || u.tenantId || '').trim();
+                if (cid) return 'index.html';
+                try {
+                    const raw = localStorage.getItem('company_info');
+                    if (raw) {
+                        const info = JSON.parse(raw);
+                        const id = String((info && (info.companyId || info.companyID || info.tenantId || info.id)) || '').trim();
+                        if (id) return 'index.html';
+                    }
+                } catch (_) {}
+                return 'company.html?reason=subscription_onboarding';
+            } catch (_) { return 'index.html'; }
+        }
+
         async function activateFreePlan(options = {}) {
             try {
                 if (!(await requireSubscriptionLogin('subscription_free_trial', {
@@ -2602,6 +2635,7 @@
                 if (!window.firebaseService || typeof window.firebaseService.activateFreeTrial !== 'function') {
                     throw new Error('Serviço de ativação do plano grátis indisponível.');
                 }
+                setFreePlanBusy(true);
                 const result = await window.firebaseService.activateFreeTrial();
                 if (!result || result.success === false) {
                     throw new Error(friendlySubscriptionErrorMessage((result && result.error) || 'Não foi possível ativar o plano grátis.'));
@@ -2614,8 +2648,11 @@
                 } else {
                     alert('Status de assinatura atualizado com sucesso. Redirecionando para o sistema...');
                 }
-                window.location.href = 'index.html';
+                setFreePlanBusy(false);
+                try { await loadAuthenticatedSubscriptionContext({}); } catch (_) {}
+                window.location.href = resolvePostTrialDestination();
             } catch (error) {
+                setFreePlanBusy(false);
                 alert(friendlySubscriptionErrorMessage(error && error.message ? error.message : 'Erro ao ativar plano grátis.'));
             }
         }
@@ -2691,7 +2728,7 @@
             try { sessionStorage.removeItem('siswebPendingSubscriptionOnboarding'); } catch (_) {}
             if (intent.activateTrial) {
                 if (currentStatusKey === 'active' || currentStatusKey === 'trial_active') {
-                    window.location.href = 'index.html';
+                    window.location.href = resolvePostTrialDestination();
                     return;
                 }
                 await activateFreePlan({ fromOnboarding: true });

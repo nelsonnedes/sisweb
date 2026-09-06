@@ -117,6 +117,9 @@ test('landing vitrine exibe carrosseis iphone e desktop com telas reais', () => 
   const js = readFileSync('landing-vendas.js', 'utf8');
   assert.match(js, /initCarousel\('lv-phone-carousel'\)/);
   assert.match(js, /initCarousel\('lv-desk-carousel'\)/);
+  assert.match(landing, /id="lv-hero-carousel"/);
+  assert.match(landing, /index-overview\.png/);
+  assert.match(js, /initCarousel\('lv-hero-carousel'\)/);
 });
 
 test('caixa de parceiro da assinatura tem estilo proprio e responsivo', () => {

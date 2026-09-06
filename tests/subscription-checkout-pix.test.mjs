@@ -137,7 +137,6 @@ test('admin cupons usa Cloud Functions administrativas em vez de escrita direta 
 
 test('Mercado Pago usa Secret Manager em producao e webhook exige token configurado', () => {
   const functionsIndex = read('functions/index.js');
-
   assert.match(functionsIndex, /defineSecret\('MERCADO_PAGO_ACCESS_TOKEN'\)/);
   assert.match(functionsIndex, /defineSecret\('MERCADO_PAGO_WEBHOOK_TOKEN'\)/);
   assert.match(functionsIndex, /defineSecret\('MERCADO_PAGO_WEBHOOK_URL'\)/);
@@ -150,5 +149,17 @@ test('Mercado Pago usa Secret Manager em producao e webhook exige token configur
   assert.match(functionsIndex, /if \(!requiredWebhookToken\) \{/);
   assert.match(functionsIndex, /webhook_token_not_configured/);
   assert.doesNotMatch(functionsIndex, /if \(requiredWebhookToken\) \{[\s\S]{0,180}invalid_webhook_token/);
+});
+
+test('plano gratis mostra processamento e direciona sem empresa para onboarding', () => {
+  const html = read('subscription.html');
+
+  assert.match(html, /function setFreePlanBusy\(busy\)/);
+  assert.match(html, /Ativando plano grátis\.\.\./);
+  assert.match(html, /setFreePlanBusy\(true\)/);
+  assert.match(html, /setFreePlanBusy\(false\)/);
+  assert.match(html, /function resolvePostTrialDestination\(\)/);
+  assert.match(html, /company\.html\?reason=subscription_onboarding/);
+  assert.match(html, /window\.location\.href = resolvePostTrialDestination\(\)/);
 });
 

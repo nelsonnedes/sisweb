@@ -168,4 +168,25 @@ test('updateMyCompanyProfile permite somente conta primaria marcada por ownerUid
   assert.match(accessBlock, /const primaryCompanyAccount = isPrimaryCompanyAccountForProfile\(uid, tenant, userData, companyData\)/);
   assert.match(accessBlock, /\|\| primaryCompanyAccount/);
   assert.doesNotMatch(accessBlock, /subscriptionStatus\s*={0,3}\s*'active'/);
+  assert.doesNotMatch(source, /authEmail === companyEmail/);
+});
+
+test('falha na logo nao aborta salvamento da empresa (onboarding sem claim)', () => {
+  const page = read('company.html');
+  const saveBlock = blockBetween(
+    page,
+    'async function saveCompany()',
+    '// ✅ FUNÇÃO showCompanyList CORRIGIDA COM LOGO'
+  );
+
+  assert.match(saveBlock, /logoPayload = existingLogoPayload \|\| \{\}/);
+  assert.match(saveBlock, /A empresa será salva sem a nova logo/);
+  assert.match(saveBlock, /__companyOnboardingMode/);
+  assert.doesNotMatch(saveBlock, /Erro ao processar logo:[\s\S]{0,400}return;/);
+});
+
+test('toasts nunca renderizam vazios', () => {
+  const menu = read('menu-component.js');
+
+  assert.match(menu, /s=String\(message\|\|''\);if\(!s\)return;/);
 });

@@ -11,7 +11,7 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <script src="menu-component.js?v=f68937b4ac7e"></script>
+    <script src="menu-component.js?v=809a6acd5085"></script>
     <!-- Firebase via módulo compartilhado (singleton) -->
 
     <script type="module">
@@ -1919,7 +1919,17 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
             // Se há uma nova logo para upload
             if (logoFile) {
-                try {
+                if (window.__companyOnboardingMode) {
+                    // Onboarding usa ID temporário (Date.now): o Storage exigiria
+                    // claim companyId que ainda não existe (403 garantido).
+                    // Salva sem logo; ela poderá ser adicionada depois em edição.
+                    logoPayload = {};
+                    try {
+                        const msg = 'A logo será adicionada depois: na primeira empresa, salve sem logo e edite em seguida em Cadastro de Empresa.';
+                        if (typeof window.__toast === 'function') window.__toast(msg, 'warning', { duration: 6000 });
+                        else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
+                    } catch (_) {}
+                } else try {
                     if (!draftCompanyId) {
                         throw new Error('ID da empresa indisponível para enviar logo');
                     }
@@ -1928,15 +1938,19 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     console.log('✅ Logo processada com sucesso');
                 } catch (error) {
                     console.error('❌ Erro ao processar logo:', error);
+                    // Falha na logo NÃO aborta o salvamento: mantém a logo anterior
+                    // (ou segue sem logo) e continua. Perder a empresa inteira por
+                    // causa da imagem seria pior que ficar sem a imagem.
+                    logoPayload = existingLogoPayload || {};
                     try {
                         const rawMsg = String(error && error.message ? error.message : error || '');
-                        const msg = rawMsg.toLowerCase().includes('permission')
-                            ? 'Não foi possível enviar a nova logo para o Storage. Você pode salvar sem trocar a logo ou solicitar ajuste de permissão ao administrador.'
-                            : (rawMsg || 'Erro ao processar a imagem do logo');
-                        if (typeof window.__toast === 'function') window.__toast(msg, 'error', { duration: 5000 });
-                        else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'error');
+                        const denied = /permission|unauthorized|403|negada/i.test(rawMsg);
+                        const msg = denied
+                            ? 'Sem permissão para enviar a logo agora. A empresa será salva sem a nova logo; adicione-a depois em Cadastro de Empresa.'
+                            : ((rawMsg || 'Erro ao processar a imagem do logo.') + ' A empresa será salva sem a nova logo.');
+                        if (typeof window.__toast === 'function') window.__toast(msg, 'warning', { duration: 6000 });
+                        else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
                     } catch (_) {}
-                    return;
                 }
             } else {
                 // Manter logo existente se não há nova logo

@@ -1,6 +1,6 @@
-// Landing Vendas — Diagrama animado (sem expor admin.html) + Carrosseis da vitrine.
+// Landing Vendas — Diagrama animado (sem expor admin.html) + Carrosseis da vitrine e do hero.
 // Hooks publicos: #lv-diagram, #lv-diagram-tooltip, .lv-node[data-module],
-// #lv-phone-carousel, #lv-desk-carousel (.lv-slide, .lv-dot, .lv-prev, .lv-next).
+// #lv-hero-carousel, #lv-phone-carousel, #lv-desk-carousel (.lv-slide, .lv-dot, .lv-prev, .lv-next).
 // Nao renomear sem atualizar landing-vendas.html e landing-vendas.css.
 const TOOLTIPS = {
   "RTDB": "Banco unico Firebase: todos os modulos leem e escrevem aqui, com dados separados por empresa.",
@@ -62,8 +62,9 @@ const TOOLTIPS = {
   }, 4000);
 })();
 
-// Vitrine "Veja o Sisweb por dentro" — carrossel vanilla (sem dependencias).
+// Vitrine "Veja o Sisweb por dentro" + hero "Painel real" — carrossel vanilla (sem dependencias).
 // Autoplay com pausa em hover/focus, setas, dots clicaveis, teclado e swipe.
+// O hero (#lv-hero-carousel) reaproveita tudo sem dots: setas + autoplay de 6s.
 (function(){
   function initCarousel(id){
     const root = document.getElementById(id);
@@ -128,6 +129,7 @@ const TOOLTIPS = {
     go(0);
     start();
   }
+  initCarousel('lv-hero-carousel');
   initCarousel('lv-phone-carousel');
   initCarousel('lv-desk-carousel');
 })();

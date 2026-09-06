@@ -462,3 +462,16 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Fix (1 linha + comentario):** import trocado para `require('firebase-functions/v1')`; teste de regressao novo asserts v1 e ausencia do require raiz (ignorando comentarios).
 - **Deploy:** delete das 9 gen2 quebradas (banco vazio, impacto zero) + `deploy --only functions` → 9/9 recriadas como **v1** callable nodejs22 (falhas restantes sao as gen2 pre-existentes de quota, revisoes no ar).
 - **Verificacao fim a fim (producao, com limpeza):** valido → 200 `PAR-BDJK`; removidos `/campaignPartners/-P0sGLYegQ_Mq2Ka7ReX` e `/campaignPartnerCodes/PAR-BDJK` (volta a null); invalido → 400 INVALID_ARGUMENT; sem login → 401 UNAUTHENTICATED com mensagem amigavel.
+
+## 39. Sessao 2026-09-06 — Onboarding pos-plano gratis: feedback, redirect, logo 403, toasts vazios
+- **1) Plano gratis sem feedback:** `activateFreePlan` (subscription.html) nao indicava processamento. Fix: `setFreePlanBusy()` desabilita o botao + "Ativando plano grátis..." com restore em finally/catch (re-query a cada chamada, imune a re-render).
+- **2) Redirect pos-registro:** sucesso ia sempre para `index.html`. Fix: `resolvePostTrialDestination()` — recarrega snapshot (`users/{uid}`) + `company_info`; sem empresa → `company.html?reason=subscription_onboarding` (infra ja existente), com empresa → `index.html`. Aplicado tambem no resume de intent com trial ativo.
+- **3) Logo 403 abortava o cadastro:** onboarding usa ID temporario (Date.now) e token sem claim → Storage nega; o `return` no catch impedia a criacao da empresa. Fix: em onboarding pula o upload fadado a 403; fora dele, falha na logo cai para `existingLogoPayload` e CONTINUA salvando (warning explicando que a logo entra depois). Regra do Storage mantida (correta).
+- **4) Toasts vazios:** `__toast` (menu-component.js) renderizava caixa colorida com texto vazio. Fix: `if(!s)return;` — sem texto, sem toast.
+- **Verificacao:** 18/18 nos testes tocados (2 asserts novos por arquivo); browser: busy on/off + label restaurado, destino `company.html?reason=subscription_onboarding` p/ sem-empresa; publicado (hosting) apos validate:pr 6/6.
+
+## 38. Sessao 2026-09-06 — Hero "Painel real" implementado de verdade
+- **Achado:** o hero referenciava `assets/help-manual/dashboard-overview.png`, que NAO existe em disco — o `onerror` escondia a imagem e o frame ficava vazio (era o "nao implementado" do usuario).
+- **Fix (landing-vendas.html/css/js):** `.lv-hero-mockup` virou `.lv-hero-stage`: desktop com mini-carrossel `#lv-hero-carousel` (Dashboard=index-overview.png, Estoque, Vendas — existencia e hosting-files verificados) via `initCarousel` (+1 linha JS), setas, hint e legendas PT-BR; mini iPhone flutuante com `index-mobile.png`; caption honesta ("versao de bolso no celular"); fallback CSS atras das imagens, sem onerror apagador.
+- **Polish:** iPhone responsivo em 390px sem cobrir CTAs, caption com padding-right, flutuacao sutil com reduced-motion.
+- **Verificacao:** tests 14/14 (asserts do hero inclusos); screenshots desktop+390 OK, 16/16 imgs, sem overflow, console limpo; sem commit/push/deploy (pendentes).
