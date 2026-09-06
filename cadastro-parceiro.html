@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadastro de Parceiro — Sisweb</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="landing-vendas.css">
+<script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
+<script src="sentry-init.js?v=e4dadfaea86a"></script>
+<style>
+.parceiro-hero{padding:32px 0;background:linear-gradient(180deg,#fff 0%,#f1f5f9 100%);text-align:center}
+.parceiro-form{max-width:560px;margin:24px auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px}
+.parceiro-form label{display:block;font-size:0.85rem;color:#334155;margin-bottom:4px;font-weight:600}
+.parceiro-form input,.parceiro-form select{width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:12px}
+.parceiro-code-box{display:none;margin-top:16px;padding:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;text-align:center}
+.parceiro-code{font-size:1.6rem;font-weight:800;letter-spacing:2px;color:#166534}
+</style>
+</head>
+<body>
+<header class="lv-topbar">
+  <div class="lv-container lv-topbar-inner">
+    <div class="lv-logo"><i class="fas fa-cube"></i> <strong>Sisweb</strong> <span>Programa de Parceiros</span></div>
+    <a href="landing-vendas.html" class="lv-btn lv-btn-ghost">Voltar</a>
+  </div>
+</header>
+<section class="parceiro-hero">
+  <div class="lv-container">
+    <h1><i class="fas fa-handshake"></i> Inscreva-se como Parceiro Sisweb</h1>
+    <p>Consultores, contadores e técnicos florestais que indicam o Sisweb constroem <strong>receita recorrente</strong> a cada parcela paga.</p>
+    <p style="font-size:0.85rem;color:#64748b;">Ao concluir, você receberá seu <strong>Código de Parceiro exclusivo</strong> (ex: <code>PAR-XXXX</code>). Seu indicado informa esse código ao se cadastrar em <a href="https://sisweb-7ce82.web.app/login.html?mode=register">Sisweb</a> e o vínculo é automatizado.</p>
+  </div>
+</section>
+<div class="lv-container">
+  <form id="parceiroForm" class="parceiro-form" onsubmit="return handleParceiro(event)">
+    <label>Nome completo *<input type="text" id="parNome" required placeholder="Seu nome completo"></label>
+    <label>E-mail *<input type="email" id="parEmail" required placeholder="seu@email.com"></label>
+    <label>Telefone / WhatsApp *<input type="text" id="parFone" required placeholder="(91) 99131-1049"></label>
+    <label>Cidade / UF<input type="text" id="parCidade" placeholder="Ex: Paragominas - PA"></label>
+    <label>Atuação<select id="parAtuacao"><option value="">Selecione</option><option>Consultor</option><option>Contador</option><option>Técnico Florestal</option><option>Outro</option></select></label>
+    <button type="submit" class="lv-btn lv-btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-check"></i> Gerar meu Código de Parceiro</button>
+    <div id="parCodeBox" class="parceiro-code-box">
+      <div>Seu Código de Parceiro:</div>
+      <div id="parCode" class="parceiro-code">PAR-XXXX</div>
+      <p style="font-size:0.85rem;color:#334155;margin-top:8px;">Compartilhe este código com seus indicados. Quando eles se cadastrarem em <a href="https://sisweb-7ce82.web.app/login.html?mode=register">https://sisweb-7ce82.web.app/login.html?mode=register</a> e informarem o código no campo <strong>Código de Parceiro</strong>, o vínculo será criado automaticamente.</p>
+      <p style="font-size:0.75rem;color:#64748b;"><i class="fas fa-info-circle"></i> Percentuais e regras de comissionamento são definidos centralmente pelos administradores via <strong>Painel SuperAdmin</strong> em atualizações futuras. Valores exibidos como [Percentual % X] são ilustrativos.</p>
+      <a href="https://wa.me/5591991311049?text=Ol%C3%A1!%20Acabei%20de%20gerar%20meu%20C%C3%B3digo%20de%20Parceiro%20Sisweb%20e%20quero%20falar%20com%20o%20suporte." target="_blank" rel="noopener" class="lv-btn lv-btn-ghost" style="margin-top:10px;"><i class="fab fa-whatsapp"></i> Falar com Suporte</a>
+    </div>
+  </form>
+</div>
+<footer class="lv-footer"><div class="lv-container"><p>© Sisweb — Programa de Parceiros • <a href="https://wa.me/5591991311049?text=Ol%C3%A1!%20Quero%20saber%20mais%20sobre%20o%20Programa%20de%20Parceiros%20Sisweb." target="_blank">WhatsApp +55 91 99131-1049</a></p></div></footer>
+<script>
+function handleParceiro(e){
+  e.preventDefault();
+  const nome=document.getElementById('parNome').value.trim();
+  const email=document.getElementById('parEmail').value.trim();
+  if(!nome || !email){ alert('Preencha nome e e-mail.'); return false; }
+  // Geração simples local — em produção, o código deve ser gerado e validado no backend (SuperAdmin)
+  const code='PAR-' + Math.random().toString(36).substring(2,6).toUpperCase();
+  document.getElementById('parCode').textContent=code;
+  document.getElementById('parCodeBox').style.display='block';
+  // Persistência local — o vínculo automático no backend será validado pelo Painel SuperAdmin em atualização futura
+  try{ localStorage.setItem('sisweb_parceiro_code', code); localStorage.setItem('sisweb_parceiro_email', email); localStorage.setItem('sisweb_parceiro_at', new Date().toISOString()); const fone=document.getElementById('parFone').value.trim(); if(fone) localStorage.setItem('sisweb_parceiro_fone', fone);}catch(_){}
+  return false;
+}
+</script>
+</body>
+</html>

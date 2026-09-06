@@ -465,5 +465,9 @@
   "sentry/sentry.browser.min.js",
   "sentry-init.js",
   "robots.txt",
-  "sitemap.xml"
+  "sitemap.xml",
+  "landing-vendas.html",
+  "landing-vendas.css",
+  "landing-vendas.js",
+  "cadastro-parceiro.html"
 ]

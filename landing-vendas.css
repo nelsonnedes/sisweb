@@ -1,0 +1,86 @@
+/* Sisweb Landing Vendas — Design System B2B */
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:"Segoe UI",Arial,sans-serif;color:#0f172a;background:#f8fafc;line-height:1.5}
+.lv-container{max-width:1120px;margin:0 auto;padding:0 20px}
+.lv-topbar{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid #e2e8f0}
+.lv-topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0}
+.lv-logo{font-weight:800;display:flex;align-items:center;gap:8px}
+.lv-logo span{font-weight:400;color:#64748b;font-size:0.85rem}
+.lv-nav{display:flex;gap:18px}
+.lv-nav a{color:#334155;text-decoration:none;font-weight:600;font-size:0.9rem}
+.lv-nav a:hover{color:#0f172a}
+.lv-topbar-ctas{display:flex;gap:10px}
+.lv-btn{padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:8px;border:1px solid transparent;transition:.2s}
+.lv-btn-primary{background:#0f172a;color:#fff}
+.lv-btn-primary:hover{background:#1e293b}
+.lv-btn-secondary{background:#fff;color:#0f172a;border-color:#e2e8f0}
+.lv-btn-ghost{background:#fff;color:#0f172a;border-color:#e2e8f0}
+.lv-btn-lg{padding:14px 22px;font-size:1rem}
+.lv-badge{background:#eff6ff;color:#1d4ed8;padding:6px 10px;border-radius:999px;font-size:0.75rem;font-weight:700;display:inline-flex;gap:6px;align-items:center}
+.lv-hero{padding:48px 0 32px;background:linear-gradient(180deg,#fff 0%,#f1f5f9 100%)}
+.lv-hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:32px;align-items:center}
+.lv-hero-copy h1{font-size:2.6rem;line-height:1.05;margin:14px 0 12px}
+.lv-hero-copy h1 span{color:#2563eb}
+.lv-hero-copy p{color:#334155;font-size:1.05rem}
+.lv-hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}
+.lv-hero-proof{color:#64748b;font-size:0.85rem;margin-top:8px}
+.lv-mockup-desktop{border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+.lv-mockup-bar{height:32px;background:#0f172a;display:flex;gap:6px;align-items:center;padding:0 12px}
+.lv-mockup-bar span{width:10px;height:10px;border-radius:50%;background:#334155}
+.lv-mockup-caption{padding:8px 12px;font-size:0.75rem;color:#64748b;border-top:1px solid #f1f5f9}
+.lv-mockup-mobile{display:none}
+.lv-strip{background:#0f172a;color:#fff;padding:18px 0}
+.lv-strip-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;text-align:center}
+.lv-strip-grid strong{font-size:1.6rem;display:block}
+.lv-strip-grid span{font-size:0.85rem;color:#cbd5e1}
+.lv-section{padding:48px 0}
+.lv-section-alt{background:#fff}
+.lv-section-dark{background:#0f172a;color:#fff}
+.lv-section-accent{background:#eff6ff;border-top:1px solid #dbeafe;border-bottom:1px solid #dbeafe}
+.lv-section-title{font-size:1.8rem;margin:0 0 8px}
+.lv-section-sub{color:#475569;margin:0 0 22px}
+.lv-text-white{color:#fff}.lv-text-muted{color:#94a3b8}
+.lv-cards-5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.lv-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px}
+.lv-card i{color:#2563eb;font-size:1.2rem}
+.lv-card-accent{border-color:#2563eb;box-shadow:0 4px 18px rgba(37,99,235,.12)}
+.lv-split{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center}
+.lv-split.reverse{grid-template-columns:1fr 1fr}
+.lv-split.reverse > div:first-child{order:2}
+.lv-mockup-placeholder{border:2px dashed #cbd5e1;border-radius:12px;padding:24px;background:#f8fafc;color:#334155;font-size:0.85rem}
+.lv-check{background:#f1f5f9;padding:4px 8px;border-radius:999px;font-size:0.75rem;margin-right:6px}
+.lv-ecosystem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.lv-eco-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px}
+.lv-eco-card i{color:#0f172a}
+.lv-eco-card span{font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.04em}
+.lv-eco-card-muted{border-style:dashed;background:#f8fafc}
+.lv-ecosystem-note{margin-top:14px;background:#f1f5f9;padding:10px 12px;border-radius:8px;font-size:0.85rem;color:#334155}
+.lv-diagram{position:relative;background:#0b1220;border-radius:16px;padding:18px;overflow:hidden}
+.lv-diagram-svg{width:100%;height:auto;display:block}
+.lv-node circle{fill:#1e293b;stroke:#38bdf8;stroke-width:2}
+.lv-node text{fill:#fff;font-size:10px;text-anchor:middle;dominant-baseline:middle;font-weight:700}
+.lv-node-center circle{fill:#38bdf8;stroke:#fff}
+.lv-node-center text{fill:#0f172a}
+.lv-orbit{animation:lv-rotate 20s linear infinite;transform-origin:400px 250px}
+.lv-orbit-slow{animation:lv-rotate 32s linear infinite reverse;transform-origin:400px 250px}
+@keyframes lv-rotate{to{transform:rotate(360deg)}}
+.lv-arrow{stroke:#38bdf8;stroke-width:2;stroke-dasharray:6 6;animation:lv-dash 1.2s linear infinite}
+@keyframes lv-dash{to{stroke-dashoffset:-12}}
+.lv-tooltip{position:absolute;background:#fff;color:#0f172a;padding:10px 12px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.2);font-size:0.8rem;max-width:260px;pointer-events:none}
+.lv-diagram-legend{display:flex;gap:16px;justify-content:center;color:#94a3b8;font-size:0.8rem;margin-top:10px}
+.lv-steps-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.lv-step{background:#fff;border:1px solid #dbeafe;border-radius:12px;padding:16px}
+.lv-step span{width:28px;height:28px;border-radius:50%;background:#2563eb;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem}
+.lv-nota-tecnica{background:#fff;border:1px dashed #93c5fd;border-radius:8px;padding:12px;margin:16px 0;font-size:0.8rem;color:#334155}
+.lv-ctas-center{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.lv-cta-final{background:#0f172a;color:#fff;padding:40px 0;text-align:center}
+.lv-cta-final-inner h2{margin:0 0 16px}
+.lv-footer{padding:18px 0;color:#64748b;font-size:0.8rem;text-align:center;border-top:1px solid #e2e8f0}
+.lv-float{position:fixed;right:16px;width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:90}
+.lv-float-wa{bottom:84px;background:#25D366}
+.lv-float-ig{bottom:20px;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5)}
+@media(max-width:900px){
+  .lv-hero-grid,.lv-split{grid-template-columns:1fr}
+  .lv-cards-5,.lv-ecosystem-grid,.lv-steps-4{grid-template-columns:1fr}
+  .lv-nav{display:none}
+  .lv-strip-grid{grid-template-columns:repeat(2,1fr)}
+}

@@ -727,6 +727,15 @@
                     <div id="regErrorMessage" class="error-message" role="alert"></div>
                 </div>
 
+                <div class="form-group">
+                    <label for="regPartnerCode">Código de Parceiro <span style="font-weight:400;color:#64748b;">(opcional)</span></label>
+                    <div class="input-group">
+                        <input type="text" id="regPartnerCode" autocomplete="off" placeholder="Ex: PAR-XXXX" style="text-transform:uppercase">
+                        <i class="fas fa-handshake" aria-hidden="true"></i>
+                    </div>
+                    <div style="font-size:11px;color:#64748b;margin-top:4px;">Se você foi indicado por um parceiro Sisweb, informe o código aqui (ex: PAR-XXXX). Ele será salvo junto ao seu cadastro para validação posterior.</div>
+                </div>
+
                 <button type="submit" id="registerSubmitBtn">
                     <i class="fas fa-user-plus" aria-hidden="true"></i> Registrar
                 </button>
@@ -1459,6 +1468,26 @@
                     return;
                 }
 
+                const partnerCodeInput = document.getElementById('regPartnerCode');
+                const partnerCode = String((partnerCodeInput && partnerCodeInput.value) || '').trim().toUpperCase().replace(/\s+/g, '');
+                if (partnerCodeInput && partnerCodeInput.value !== partnerCode) {
+                    partnerCodeInput.value = partnerCode;
+                }
+                if (partnerCode && !/^PAR-[A-Z0-9]{4,8}$/.test(partnerCode)) {
+                    errorMessage.textContent = 'Código de parceiro inválido. Use o formato PAR-XXXX informado pelo parceiro.';
+                    errorMessage.style.display = 'block';
+                    setFormBusy('registerForm', 'register-loading-spinner', false);
+                    if (submitBtn) submitBtn.disabled = false;
+                    return;
+                }
+                if (partnerCode) {
+                    try {
+                        const pending = JSON.stringify({ code: partnerCode, email: email, at: new Date().toISOString() });
+                        sessionStorage.setItem('sisweb_pending_partner', pending);
+                        localStorage.setItem('sisweb_pending_partner', pending);
+                    } catch (_) {}
+                }
+
                 const result = await authService.register(email, password, document.getElementById('regUsername').value);
 
                 if (result.success) {
@@ -1729,6 +1758,13 @@
                             setSystemHealth('ok', 'Crie sua conta', 'Após o registro, você será direcionado para cadastrar a empresa.');
                             setTimeout(function () {
                                 if (typeof showRegisterModal === 'function') showRegisterModal();
+                                try {
+                                    const refCode = String(initialParams.get('partner') || initialParams.get('ref') || '').trim().toUpperCase().replace(/\s+/g, '');
+                                    if (refCode) {
+                                        const input = document.getElementById('regPartnerCode');
+                                        if (input) input.value = refCode;
+                                    }
+                                } catch (_) {}
                             }, 0);
                         }
                     } catch (_) {}

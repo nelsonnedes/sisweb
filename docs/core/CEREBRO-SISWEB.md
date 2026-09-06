@@ -4,7 +4,7 @@
 > sessão (Codex, opencode, deepseek) retomar contexto sem regressões e sem perder
 > o "porquê" das decisões já tomadas. SEMPRE consultar antes de implementar.
 >
-> Atualizado em: 2026-08-27 (Romaneio Tora quota localStorage + impressão + PWA)
+> Atualizado em: 2026-09-06 (Landing vendas links + parceiro + WhatsApp 5591991311049)
 
 ---
 
@@ -421,3 +421,9 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Sintoma:** Ao editar romaneio de Toras e clicar em Atualizar, console mostra QuotaExceededError: Failed to execute 'setItem' on 'Storage': Setting the value of 'companies/1749492103278/romaneios/tora' exceeded the quota em romaneio-manager.js:252 (localStorage.setItem(sk, JSON.stringify(localData))) e romaneiotora_tabela.js:919 via salvarRomaneio(). Ocorre porque saveData carrega todo o histórico local (JSON.parse(localStorage.getItem(sk) || '[]')), mescla o registro editado e tenta persistir o array completo (centenas de romaneios) ultrapassando 5-10MB do localStorage. O Firebase já havia salvo com sucesso, mas o throw quebrava o fluxo e disparava Sentry + 3x Uncaught (in promise) Error: A listener indicated...
 - **Fix:** romaneio-manager.js:251 envolvido em try-catch específico para quota: limita cache a 80 itens mais recentes (localData.slice(-80)), em falha limpa a chave e tenta 20 itens, em falha persistente remove a chave e segue apenas com Firebase (não lança). romaneiotora_tabela.js:54 persistLocalValue() com mesmo tratamento (tenta slice(-20) e fallback). Mantém Firebase como fonte da verdade, cache local como otimização best-effort.
 - **Validação:** node --check OK para ambos, npm test 525 pass / 0 fail, sw.js bump 2026-08-27-romaneio-tora-quota-v1 (6 testes de APP_VERSION atualizados), inject-cachebusters → romaneiotora.html com novos hashes, build:hosting 467 arquivos e deploy --only hosting OK. Erro não volta a quebrar Atualizar.
+
+## 32. Sessao 2026-09-06 — Landing vendas: links WhatsApp, registro com modal e cadastro de parceiro
+- **WhatsApp/suporte:** todos os links da landing e do cadastro de parceiro apontam para wa.me/5591991311049 (+55 91 99131-1049) com texto prefill; botao Instagram placeholder removido (sem handle oficial).
+- **Inscrever-se:** Entrar vai para login.html puro; todos os CTAs de inscricao vao para login.html?mode=register, que abre o modal Criar Conta automaticamente (login.html auto-open ja existente, preservado).
+- **Parceiro:** botoes "Inscrever-se como Parceiro" vao para cadastro-parceiro.html (novo no deploy via hosting-files.json); cadastro gera codigo PAR-XXXX local + persiste; campo Codigo de Parceiro no registro (regPartnerCode) agora e lido, validado (PAR-XXXX) e salvo como pendencia local (sisweb_pending_partner), com prefill via ?partner= ou ?ref=. Vinculo automatico no backend segue pendente (referral atual e por e-mail; ver docs/stories/2026-06-10-admin-assinaturas-empresas-campanhas.md) — textos ajustados para nao prometer automacao inexistente.
+- **Validacao:** 19 checks estaticos OK, lint/typecheck OK, npm test 525 pass / 0 fail / 1 skip, deploy hosting 471 arquivos OK, producao 200 nas 3 URLs.
