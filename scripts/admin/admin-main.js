@@ -1954,6 +1954,11 @@
                     return d.toLocaleDateString("pt-BR");
                 } catch (_) { return "-"; }
             }
+            function formatPlanLabelSafe(plan, assumed) {
+                var base = String(plan || "-");
+                if (assumed) return base + " (estimado)";
+                return base;
+            }
             function renderPartnerProjections(companies) {
                 var tbody = document.getElementById("partnerProjectionsBody");
                 if (!tbody) return;
@@ -1972,7 +1977,7 @@
                     return '<tr><td>' + escapeHtmlSafe(p.n) + '</td>' +
                         '<td>' + escapeHtmlSafe(r.company) + '</td>' +
                         '<td>' + escapeHtmlSafe(formatDateOnlySafe(p.dueDate)) + '</td>' +
-                        '<td>' + escapeHtmlSafe(p.plan || "-") + (p.assumedPlan ? " (estimado)" : "") + '</td>' +
+                        '<td>' + escapeHtmlSafe(formatPlanLabelSafe(p.plan, p.assumedPlan)) + '</td>' +
                         '<td>' + formatBRLSafe(p.amount) + '</td>' +
                         '<td>' + escapeHtmlSafe(p.percent) + '%</td>' +
                         '<td>' + formatBRLSafe(p.commission) + '</td></tr>';
