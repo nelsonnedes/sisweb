@@ -76,6 +76,23 @@ test('portal do parceiro usa backend e expoe painel proprio', () => {
   assert.doesNotMatch(portal, /Math\.random\(\)\.toString\(36\)/);
   assert.match(portal, /@media \(max-width:\s?640px\)/);
   assert.match(portal, /prefers-reduced-motion/);
+  assert.match(portal, /representantes, vendedores, clientes, parceiros/);
+  assert.match(portal, /par-whatsapp-float/);
+  assert.match(portal, /wa\.me\/5591991311049/);
+  assert.match(portal, /aria-label="Conversar sobre o Programa de Parceiros no WhatsApp"/);
+});
+
+test('landing vitrine exibe carrosseis iphone e desktop com telas reais', () => {
+  const landing = readFileSync('landing-vendas.html', 'utf8');
+  assert.match(landing, /id="vitrine"/);
+  assert.match(landing, /id="lv-phone-carousel"/);
+  assert.match(landing, /id="lv-desk-carousel"/);
+  assert.match(landing, /assets\/help-manual\//);
+  const css = readFileSync('landing-vendas.css', 'utf8');
+  assert.match(css, /lv-carousel/);
+  const js = readFileSync('landing-vendas.js', 'utf8');
+  assert.match(js, /initCarousel\('lv-phone-carousel'\)/);
+  assert.match(js, /initCarousel\('lv-desk-carousel'\)/);
 });
 
 test('caixa de parceiro da assinatura tem estilo proprio e responsivo', () => {

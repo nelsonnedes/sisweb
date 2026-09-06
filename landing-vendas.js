@@ -1,5 +1,6 @@
-// Landing Vendas — Diagrama animado (sem expor admin.html)
-// Hooks publicos: #lv-diagram, #lv-diagram-tooltip, .lv-node[data-module].
+// Landing Vendas — Diagrama animado (sem expor admin.html) + Carrosseis da vitrine.
+// Hooks publicos: #lv-diagram, #lv-diagram-tooltip, .lv-node[data-module],
+// #lv-phone-carousel, #lv-desk-carousel (.lv-slide, .lv-dot, .lv-prev, .lv-next).
 // Nao renomear sem atualizar landing-vendas.html e landing-vendas.css.
 const TOOLTIPS = {
   "RTDB": "Banco unico Firebase: todos os modulos leem e escrevem aqui, com dados separados por empresa.",
@@ -59,4 +60,74 @@ const TOOLTIPS = {
     idx++;
     setTimeout(hideTip, 2500);
   }, 4000);
+})();
+
+// Vitrine "Veja o Sisweb por dentro" — carrossel vanilla (sem dependencias).
+// Autoplay com pausa em hover/focus, setas, dots clicaveis, teclado e swipe.
+(function(){
+  function initCarousel(id){
+    const root = document.getElementById(id);
+    if(!root) return;
+    const slides = [...root.querySelectorAll('.lv-slide')];
+    const dots = [...root.querySelectorAll('.lv-dot')];
+    const prev = root.querySelector('.lv-prev');
+    const next = root.querySelector('.lv-next');
+    if(!slides.length) return;
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const delay = parseInt(root.getAttribute('data-autoplay'), 10) || 5500;
+    let i = 0;
+    let timer = null;
+    function go(n){
+      i = ((n % slides.length) + slides.length) % slides.length;
+      slides.forEach((s, k)=>{
+        const active = k === i;
+        s.classList.toggle('is-active', active);
+        if(active){ s.removeAttribute('aria-hidden'); }
+        else{ s.setAttribute('aria-hidden', 'true'); }
+      });
+      dots.forEach((d, k)=>{
+        const active = k === i;
+        d.setAttribute('aria-selected', active ? 'true' : 'false');
+        if(active){ d.removeAttribute('tabindex'); }
+        else{ d.setAttribute('tabindex', '-1'); }
+      });
+    }
+    function stop(){ if(timer){ clearInterval(timer); timer = null; } }
+    function start(){
+      if(reduceMotion || timer) return;
+      timer = setInterval(()=>go(i + 1), delay);
+    }
+    if(prev) prev.addEventListener('click', ()=>{ go(i - 1); });
+    if(next) next.addEventListener('click', ()=>{ go(i + 1); });
+    dots.forEach((d, k)=>d.addEventListener('click', ()=>go(k)));
+    // Teclado: setas navegam quando o carrossel (ou controle) tem foco.
+    root.addEventListener('keydown', (e)=>{
+      if(e.key === 'ArrowLeft'){ e.preventDefault(); go(i - 1); }
+      else if(e.key === 'ArrowRight'){ e.preventDefault(); go(i + 1); }
+    });
+    // Pausa no hover e no foco dentro do carrossel.
+    root.addEventListener('mouseenter', stop);
+    root.addEventListener('mouseleave', start);
+    root.addEventListener('focusin', stop);
+    root.addEventListener('focusout', start);
+    // Swipe basico por touch.
+    let touchX = null;
+    root.addEventListener('touchstart', (e)=>{
+      if(e.touches && e.touches.length === 1) touchX = e.touches[0].clientX;
+    }, { passive: true });
+    root.addEventListener('touchend', (e)=>{
+      if(touchX === null) return;
+      const dx = (e.changedTouches && e.changedTouches[0].clientX) - touchX;
+      touchX = null;
+      if(Math.abs(dx) < 40) return;
+      go(dx < 0 ? i + 1 : i - 1);
+    }, { passive: true });
+    document.addEventListener('visibilitychange', ()=>{
+      if(document.hidden) stop(); else start();
+    });
+    go(0);
+    start();
+  }
+  initCarousel('lv-phone-carousel');
+  initCarousel('lv-desk-carousel');
 })();

@@ -176,10 +176,78 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-float-wa{bottom:84px;background:var(--lv-wa)}
 .lv-float-wa:hover{filter:brightness(1.08)}
 
+/* ---------- Vitrine "Veja o Sisweb por dentro" ---------- */
+.lv-section-vitrine{background:linear-gradient(180deg,var(--lv-card) 0%,#F3EAD3 100%);border-top:1px solid var(--lv-areia);border-bottom:1px solid var(--lv-areia)}
+.lv-vitrine-grid{display:grid;grid-template-columns:minmax(0,290px) minmax(0,1fr);gap:36px;align-items:start}
+.lv-phone-wrap{display:flex;flex-direction:column;align-items:center}
+.lv-monitor-wrap{display:flex;flex-direction:column;align-items:center;min-width:0}
+.lv-device-cap{color:var(--lv-muted);font-size:0.85rem;text-align:center;margin:14px 0 0;max-width:420px}
+.lv-device-cap i{color:var(--lv-mogno)}
+
+/* iPhone em CSS puro */
+.lv-phone{width:100%;max-width:290px;position:relative}
+.lv-phone::before,.lv-phone::after{content:"";position:absolute;left:-3px;width:3px;border-radius:3px;background:#3A2E1E}
+.lv-phone::before{top:110px;height:56px}
+.lv-phone::after{top:180px;height:90px;box-shadow:0 -34px 0 #3A2E1E}
+.lv-phone-frame{position:relative;background:#0D0A06;border-radius:52px;padding:12px;box-shadow:0 24px 60px rgba(28,19,11,.35),inset 0 0 0 2px #3A2E1E}
+.lv-phone-island{position:absolute;top:24px;left:50%;transform:translateX(-50%);width:104px;height:28px;background:#000;border-radius:999px;z-index:4}
+.lv-phone-island::after{content:"";position:absolute;right:14px;top:50%;transform:translateY(-50%);width:9px;height:9px;border-radius:50%;background:#1E2A38;box-shadow:inset 0 0 3px #4A7BA6}
+.lv-phone-screen{border-radius:42px;overflow:hidden;background:var(--lv-tora)}
+
+/* Monitor em CSS puro */
+.lv-monitor{width:100%;max-width:640px}
+.lv-monitor-frame{position:relative;background:var(--lv-casca);border-radius:16px;padding:12px 12px 16px;box-shadow:0 24px 60px rgba(28,19,11,.3)}
+.lv-monitor-cam{position:absolute;top:5px;left:50%;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:#0A0704;box-shadow:inset 0 0 2px #4A7BA6;z-index:4}
+.lv-monitor-screen{border-radius:8px;overflow:hidden;background:var(--lv-tora)}
+.lv-monitor-neck{width:74px;height:26px;background:linear-gradient(180deg,#3A2E1E,#241A0E);margin:0 auto}
+.lv-monitor-base{width:220px;height:12px;background:linear-gradient(180deg,#4A3A26,#241A0E);border-radius:8px 8px 4px 4px;margin:0 auto;box-shadow:0 8px 20px rgba(28,19,11,.3)}
+
+/* Carrossel (sem dependencias) */
+.lv-carousel{outline-offset:4px}
+.lv-viewport{position:relative;overflow:hidden;background:var(--lv-tora)}
+.lv-phone-viewport{aspect-ratio:9/18.2}
+.lv-desk-viewport{aspect-ratio:16/10}
+.lv-slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .45s ease,visibility .45s;pointer-events:none}
+.lv-slide.is-active{opacity:1;visibility:visible;pointer-events:auto;z-index:1}
+.lv-slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;display:block;z-index:2;background:var(--lv-tora)}
+.lv-slide-cap{position:absolute;left:0;right:0;bottom:0;z-index:3;background:rgba(28,19,11,.88);color:var(--lv-dark-ink);font-size:0.72rem;font-weight:600;padding:8px 12px;text-align:center}
+.lv-phone-viewport .lv-slide-cap{font-size:0.66rem;padding:7px 8px}
+
+/* Mini-UI de reserva (aparece se a captura falhar): sidebar + cards + tabela */
+.lv-mini{position:absolute;inset:0;z-index:1;display:flex;background:var(--lv-tora)}
+.lv-mini-side{flex:0 0 26%;background:var(--lv-casca);display:flex;flex-direction:column;gap:8px;padding:12px 10px}
+.lv-mini-side i{display:block;height:10px;border-radius:5px;background:#4A3A26}
+.lv-mini-side i:first-child{height:14px;background:var(--lv-serragem);margin-bottom:4px}
+.lv-mini-main{flex:1;display:flex;flex-direction:column;gap:8px;padding:12px}
+.lv-mini-main>b{display:block;height:14px;width:55%;border-radius:7px;background:var(--lv-mogno)}
+.lv-mini-cards{display:flex;gap:8px}
+.lv-mini-cards i{flex:1;height:34px;border-radius:8px;background:#EFE4CE;border:1px solid var(--lv-areia)}
+.lv-mini-cards i:first-child{background:var(--lv-serragem)}
+.lv-mini-rows{display:flex;flex-direction:column;gap:6px;margin-top:2px}
+.lv-mini-rows i{display:block;height:12px;border-radius:6px;background:#fff;border:1px solid var(--lv-areia)}
+.lv-mini-rows i:nth-child(even){background:#F3EAD3}
+
+/* Controles: setas + dots com area de toque >=44px */
+.lv-controls{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--lv-casca);padding:6px 8px;flex-wrap:wrap}
+.lv-arrow-btn{min-width:44px;min-height:44px;width:44px;height:44px;border-radius:50%;border:2px solid #5A4A33;background:transparent;color:var(--lv-serragem);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:0.9rem;flex:0 0 auto}
+.lv-arrow-btn:hover{border-color:var(--lv-serragem);background:rgba(227,154,45,.12)}
+.lv-dots{display:flex;align-items:center;justify-content:center;gap:2px;flex:1 1 180px;flex-wrap:wrap}
+.lv-dot{min-width:44px;min-height:44px;background:none;border:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.lv-dot span{width:11px;height:11px;border-radius:50%;background:#6B5D4A;display:block;transition:transform .2s,background .2s}
+.lv-dot[aria-selected="true"] span{background:var(--lv-serragem);transform:scale(1.35)}
+.lv-dot:hover span{background:var(--lv-dark-ink)}
+/* No iPhone (tela estreita): setas em linha propria, dots em linha cheia */
+.lv-phone-screen .lv-prev{order:1}
+.lv-phone-screen .lv-next{order:2}
+.lv-phone-screen .lv-dots{order:3;flex:1 1 100%}
+
 /* ---------- Responsivo ---------- */
 @media(max-width:900px){
   .lv-hero-grid{grid-template-columns:1fr}
   .lv-cards-5,.lv-ecosystem-grid,.lv-steps-4,.lv-flow{grid-template-columns:1fr 1fr}
+  .lv-vitrine-grid{grid-template-columns:1fr;gap:28px}
+  .lv-phone{max-width:260px}
+  .lv-monitor{max-width:100%}
   .lv-nav{display:none}
   .lv-strip-grid{grid-template-columns:repeat(2,1fr)}
 }
@@ -196,6 +264,9 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
   .lv-logpile i:nth-child(3n){width:46px;height:46px}
   .lv-float{right:12px;width:50px;height:50px}
   .lv-section{padding:40px 0}
+  .lv-phone{max-width:230px}
+  .lv-monitor-base{width:150px}
+  .lv-phone-viewport{aspect-ratio:9/17.5}
 }
 
 /* ---------- Movimento reduzido ---------- */
