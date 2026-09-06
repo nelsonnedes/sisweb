@@ -123,6 +123,15 @@ test('landing vitrine exibe carrosseis iphone e desktop com telas reais', () => 
   assert.match(js, /initCarousel\('lv-hero-carousel'\)/);
 });
 
+test('landing direciona o painel do parceiro para login autenticado', () => {
+  const landing = readFileSync('landing-vendas.html', 'utf8');
+  assert.match(landing, /href="https:\/\/sisweb-7ce82\.web\.app\/login\.html"[^>]*>.*Meu painel do Parceiro/);
+  assert.match(landing, /href="https:\/\/sisweb-7ce82\.web\.app\/login\.html"[^>]*>.*Acessar meu Painel/);
+  assert.match(landing, /id="lv-hero-phone-carousel"/);
+  assert.match(landing, /id="lv-hero-phone-carousel"[\s\S]*assets\/help-manual\/index-mobile\.png/);
+  assert.match(readFileSync('landing-vendas.js', 'utf8'), /initCarousel\('lv-hero-phone-carousel'\)/);
+});
+
 test('caixa de parceiro da assinatura tem estilo proprio e responsivo', () => {
   const sub = readFileSync('subscription.html', 'utf8');
   assert.match(sub, /class="partner-row"/);

@@ -51,7 +51,8 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-nav{display:flex;gap:18px;flex-wrap:nowrap}
 .lv-nav a{color:#4A3D2C;text-decoration:none;font-weight:600;font-size:0.9rem;white-space:nowrap}
 .lv-nav a:hover{color:var(--lv-mogno);text-decoration:underline;text-underline-offset:4px}
-.lv-topbar-ctas{display:flex;gap:10px;flex-wrap:nowrap}
+.lv-topbar-ctas{display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
+.lv-topbar-ctas .lv-btn{white-space:nowrap;min-height:42px;padding:8px 14px;font-size:.88rem}
 
 /* ---------- Botoes ---------- */
 .lv-btn{padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:2px solid transparent;transition:background .2s,transform .15s,box-shadow .2s;cursor:pointer;font-family:var(--lv-font-body)}
@@ -85,15 +86,22 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 
 /* ---------- Hero "Painel real": desktop + mobile carrosséis estilo vitrine ---------- */
 .lv-hero-mockup{min-width:0;max-width:100%}
-.lv-hero-stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,290px);gap:36px;align-items:start;padding-bottom:26px}
+.lv-hero-stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,130px);gap:16px;align-items:start;padding-bottom:26px}
 .lv-hero-desktop{width:100%}
 .lv-hero-desktop .lv-monitor{width:100%;max-width:100%}
 .lv-hero-desktop .lv-desk-viewport{aspect-ratio:16/10}
-.lv-hero-phone{width:100%;max-width:290px}
-.lv-hero-phone .lv-phone-frame{border-radius:52px;padding:12px}
-.lv-hero-phone .lv-phone-island{top:24px;width:104px;height:28px}
-.lv-hero-phone .lv-phone-island::after{right:14px;width:5px;height:5px}
-.lv-hero-phone-screen{position:relative;aspect-ratio:9/19.5;border-radius:42px;overflow:hidden;background:var(--lv-tora)}
+.lv-hero-stage > .lv-phone-wrap{min-width:0;width:100%;max-width:130px;justify-self:end}
+.lv-hero-stage > .lv-phone-wrap .lv-phone{width:100%;max-width:none}
+.lv-hero-stage > .lv-phone-wrap .lv-phone-frame{border-radius:34px;padding:8px}
+.lv-hero-stage > .lv-phone-wrap .lv-phone-island{top:16px;width:64px;height:18px}
+.lv-hero-stage > .lv-phone-wrap .lv-phone-island::after{right:9px;width:5px;height:5px}
+.lv-hero-stage > .lv-phone-wrap .lv-phone-screen{border-radius:28px;overflow:hidden;background:var(--lv-tora)}
+.lv-hero-stage > .lv-phone-wrap .lv-phone-viewport{aspect-ratio:9/19.5}
+.lv-hero-stage > .lv-phone-wrap .lv-controls{gap:1px;padding:2px 1px;flex-wrap:nowrap}
+.lv-hero-stage > .lv-phone-wrap .lv-arrow-btn{min-width:28px;min-height:28px;width:28px;height:28px;font-size:.65rem}
+.lv-hero-stage > .lv-phone-wrap .lv-dots{gap:0;flex-wrap:nowrap;min-width:0}
+.lv-hero-stage > .lv-phone-wrap .lv-dot{min-width:18px;min-height:28px;width:18px;padding:0}
+.lv-hero-stage > .lv-phone-wrap .lv-dot span{width:6px;height:6px}
 .lv-hero-phone-screen img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;display:block;z-index:2;background:var(--lv-tora)}
 .lv-hero-phone-cap{display:none}
 @keyframes lv-hero-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
@@ -265,8 +273,7 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
   .lv-monitor{max-width:100%}
   .lv-nav{display:none}
   .lv-strip-grid{grid-template-columns:repeat(2,1fr)}
-  .lv-hero-desktop{margin-right:42px}
-  .lv-hero-phone{width:96px}
+  .lv-hero-stage > .lv-phone-wrap{max-width:112px}
 }
 @media(max-width:480px){
   .lv-container{padding:0 16px}
@@ -284,16 +291,13 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
   .lv-phone{max-width:230px}
   .lv-monitor-base{width:150px}
   .lv-phone-viewport{aspect-ratio:9/17.5}
+  .lv-hero-phone .lv-phone-viewport{aspect-ratio:9/19.5}
   .lv-hero-stage{padding-bottom:20px}
-  .lv-hero-desktop{margin-right:32px}
-  .lv-hero-desktop .lv-mockup-caption{padding-right:48px}
-  .lv-hero-phone{width:74px}
-  .lv-hero-phone .lv-phone-frame{border-radius:20px;padding:5px}
-  .lv-hero-phone .lv-phone-island{top:10px;width:36px;height:10px}
-  .lv-hero-phone .lv-phone-island::after{right:5px;width:4px;height:4px}
-  .lv-hero-phone-screen{border-radius:15px}
-  .lv-hero-phone-cap{font-size:0.6rem}
-  .lv-hero-hint{font-size:0.66rem}
+  .lv-hero-stage > .lv-phone-wrap{max-width:100px}
+  .lv-hero-stage > .lv-phone-wrap .lv-phone-frame{border-radius:20px;padding:5px}
+  .lv-hero-stage > .lv-phone-wrap .lv-phone-island{top:10px;width:36px;height:10px}
+  .lv-hero-stage > .lv-phone-wrap .lv-phone-island::after{right:5px;width:4px;height:4px}
+  .lv-hero-stage > .lv-phone-wrap .lv-phone-screen{border-radius:15px}
 }
 
 /* ---------- Movimento reduzido ---------- */
