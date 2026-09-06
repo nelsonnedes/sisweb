@@ -41,6 +41,13 @@ test('functions/index.js registra parceiros e ganchos aditivos', () => {
   assert.match(indexSrc, /pendingPayment\.partnerId = partner\.id/);
 });
 
+test('partner-functions usa namespace v1 (data, context)', () => {
+  const raw = readFileSync('functions/partner-functions.js', 'utf8');
+  const src = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
+  assert.match(src, /require\('firebase-functions\/v1'\)/);
+  assert.doesNotMatch(src, /require\('firebase-functions'\)/);
+});
+
 test('database.rules.json bloqueia nos de parceiros no client', () => {
   for (const node of ['campaignPartners', 'campaignPartnerCodes', 'campaignReferrals', 'campaignCommissions', 'campaignReminderLog']) {
     assert.equal(rules.rules[node]['.read'], 'auth != null && auth.token.superadmin == true', node);

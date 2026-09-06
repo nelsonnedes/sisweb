@@ -18,7 +18,11 @@
  * - campaignReminderLog/{partnerId}/{companyId} (rate-limit 24h)
  */
 
-const functions = require('firebase-functions');
+// IMPORTANTE: usar o namespace v1 — no firebase-functions v7 o
+// `require('firebase-functions').https.onCall` é o onCall v2 (handler recebe
+// o envelope {data,...} e `payload.name` chegaria sempre vazio). O padrão v1
+// (data, context) é o mesmo das demais callables do index.js.
+const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 const crypto = require('crypto');
 

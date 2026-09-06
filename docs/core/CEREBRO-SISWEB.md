@@ -455,3 +455,10 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Fix portal (cadastro-parceiro.html):** `isPartnerSessionActive()` (authPersistenceReady + currentUser/onAuthStateChanged com timeout) — dashboard só chama o backend logado, sem 401 no console de visitantes; `parceiroValidationField()` mapeia a mensagem do servidor para o campo (parNome/parEmail/parFone) + `highlightParceiroField()` (classe `.par-field-error`, foco, limpa ao digitar); mensagens especificas por campo no catch do `handleParceiro`.
 - **Slides mobile:** 3 PNGs novos entraram em `hosting-files.json` (allowlist do build); iPhone usa `*-mobile.png`, CSS `aspect-ratio:9/19.5`.
 - **Publicado:** validate:pr 6/6, tests 13/13, build 471+3 arqs, deploy hosting OK, produção verificada.
+
+## 37. Sessao 2026-09-06 — Root cause do 400: onCall v1 x v2 no firebase-functions v7
+- **Sintoma:** todo `registerPartner` (valido ou nao) retornava 400 'Informe seu nome completo.'; reproduzido via SDK e via fetch direto.
+- **Causa:** `functions/partner-functions.js` usava `require('firebase-functions').https.onCall` — no SDK v7 instalado (7.2.5) o root onCall === v2 onCall (provado: `root===v2: true`), cujo handler recebe o envelope `{data,...}`. O codigo estilo v1 `(data, context)` lia `payload.name` = undefined sempre. As demais callables usam `firebase-functions/v1` e funcionam.
+- **Fix (1 linha + comentario):** import trocado para `require('firebase-functions/v1')`; teste de regressao novo asserts v1 e ausencia do require raiz (ignorando comentarios).
+- **Deploy:** delete das 9 gen2 quebradas (banco vazio, impacto zero) + `deploy --only functions` → 9/9 recriadas como **v1** callable nodejs22 (falhas restantes sao as gen2 pre-existentes de quota, revisoes no ar).
+- **Verificacao fim a fim (producao, com limpeza):** valido → 200 `PAR-BDJK`; removidos `/campaignPartners/-P0sGLYegQ_Mq2Ka7ReX` e `/campaignPartnerCodes/PAR-BDJK` (volta a null); invalido → 400 INVALID_ARGUMENT; sem login → 401 UNAUTHENTICATED com mensagem amigavel.
