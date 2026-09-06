@@ -2571,6 +2571,25 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                 }
             } catch (_) {}
 
+            if (ctx.tenantId !== 'default') try {
+                const remindersRaw = await this.loadNamespaced('partnerReminders');
+                const reminders = this.normalizeArrayLike(remindersRaw)
+                    .filter((r) => r && r.read !== true)
+                    .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+                    .slice(0, 3);
+                reminders.forEach((r) => {
+                    alerts.push({
+                        id: `partner_reminder__${String(r.id || r.partnerId || 'x')}`,
+                        title: 'Assinatura • Cobrança do parceiro',
+                        message: String(r.message || 'Parceiro informa mensalidade em atraso. Regularize em Minha Assinatura.').slice(0, 280),
+                        href: this.resolveUrl('subscription-status.html'),
+                        severity: 'warning',
+                        createdAt: r.createdAt || now.toISOString(),
+                        read: false
+                    });
+                });
+            } catch (_) {}
+
             return alerts;
         }
 

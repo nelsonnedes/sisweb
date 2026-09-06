@@ -18,7 +18,7 @@
             let supportTickets = [];
             let currentAccessModel = { isSuperAdmin: false, canDashboard: false, canSubscriptions: false, canSettings: false };
             var debugState = {};
-            var ADMIN_ASSET_VERSION = "10c72c116d87";
+            var ADMIN_ASSET_VERSION = "39f5f155a918";
             async function resolveAdminFirebaseService(requiredFunction) {
                 var required = String(requiredFunction || "").trim();
                 var current = window.firebaseService;
@@ -288,7 +288,8 @@
                 financial: { page: 0, size: 25 },
                 security: { page: 0, size: 25 },
                 support: { page: 0, size: 25 },
-                sentry: { page: 0, size: 10 }
+                sentry: { page: 0, size: 10 },
+                partners: { page: 0, size: 20 }
             };
             function paginateAdminList(list, state) {
                 var arr = Array.isArray(list) ? list : [];
@@ -1023,6 +1024,7 @@
                 }
                 if (access.isSuperAdmin) {
                     tabs.push({key:"support",label:"Suporte",icon:"fa-headset"});
+                    tabs.push({key:"partners",label:"Parceiros",icon:"fa-handshake"});
                 }
                 return tabs;
             }
@@ -1071,6 +1073,7 @@
                 const financePanel = document.getElementById("tab-finance");
                 const securityPanel = document.getElementById("tab-security");
                 const supportPanel = document.getElementById("tab-support");
+                const partnersPanel = document.getElementById("tab-partners");
                 if (dashboardPanel) dashboardPanel.style.display = tabKey === "dashboard" ? "" : "none";
                 if (subscriptionsPanel) subscriptionsPanel.style.display = tabKey === "subscriptions" ? "" : "none";
                 if (financePanel) financePanel.style.display = tabKey === "finance" ? "" : "none";
@@ -1080,6 +1083,7 @@
                 if (campaignPanel) campaignPanel.style.display = tabKey === "campaign" ? "" : "none";
                 if (securityPanel) securityPanel.style.display = tabKey === "security" ? "" : "none";
                 if (supportPanel) supportPanel.style.display = tabKey === "support" ? "" : "none";
+                if (partnersPanel) partnersPanel.style.display = tabKey === "partners" ? "" : "none";
                 const title = document.getElementById("panelTitle");
                 const subtitle = document.getElementById("panelSubtitle");
                 if (tabKey === "dashboard") {
@@ -1128,6 +1132,10 @@
                     title.textContent = "Fila de suporte";
                     subtitle.textContent = "Tickets multi-tenant enviados pela Central de Suporte global.";
                     await loadSupportTicketsPanel();
+                } else if (tabKey === "partners") {
+                    title.textContent = "Programa de Parceiros";
+                    subtitle.textContent = "Códigos PAR-XXXX, vínculos e comissões sobre pagamento real.";
+                    await loadPartnersPanel();
                 }
                 scheduleResponsiveTablesHydration();
                 renderAllowedTabs();
@@ -1792,6 +1800,250 @@
                     await loadSupportTicketsPanel();
                 } catch (err) {
                     notifyAdmin((err && err.message) || "Erro ao atualizar ticket.", "error");
+                }
+            }
+            var partnersCache = [];
+            var activePartnerId = "";
+            var activePartnerDetail = null;
+            function formatBRLSafe(value) {
+                var n = Number(value || 0);
+                try { return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
+                catch (_) { return "R$ " + n.toFixed(2); }
+            }
+            function escapeHtmlSafe(value) {
+                return String(value == null ? "" : value)
+                    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+            }
+            async function loadPartnersPanel() {
+                var tbody = document.getElementById("partnersBody");
+                if (tbody) tbody.innerHTML = '<tr><td colspan="11" class="empty-state">Carregando parceiros...</td></tr>';
+                try {
+                    var svc = await resolveAdminFirebaseService("getPartnersAdmin");
+                    if (!svc || typeof svc.getPartnersAdmin !== "function") throw new Error("Serviço getPartnersAdmin indisponível.");
+                    var result = await svc.getPartnersAdmin();
+                    var data = result && result.data ? result.data : result;
+                    if (!result || result.success === false || (data && data.success === false)) {
+                        throw new Error((result && result.error) || (data && data.error) || "Falha ao listar parceiros.");
+                    }
+                    partnersCache = Array.isArray(data.partners) ? data.partners : [];
+                    if (adminPaginationState.partners) adminPaginationState.partners.page = 0;
+                    applyPartnersFilter();
+                } catch (err) {
+                    partnersCache = [];
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="11" class="empty-state">Erro ao carregar parceiros.</td></tr>';
+                    notifyAdmin((err && err.message) || "Erro ao carregar parceiros.", "error");
+                }
+            }
+            function applyPartnersFilter() {
+                var q = String((document.getElementById("partnersSearch") || {}).value || "").trim().toLowerCase();
+                var st = String((document.getElementById("partnersStatusFilter") || {}).value || "");
+                var list = (partnersCache || []).filter(function(p) {
+                    if (st && String(p.status || "") !== st) return false;
+                    if (!q) return true;
+                    return String(p.name || "").toLowerCase().includes(q)
+                        || String(p.code || "").toLowerCase().includes(q)
+                        || String(p.email || "").toLowerCase().includes(q);
+                });
+                var meta = document.getElementById("partnersMeta");
+                if (meta) meta.textContent = list.length + " parceiro(s)";
+                var tbody = document.getElementById("partnersBody");
+                if (!tbody) return;
+                if (!list.length) {
+                    tbody.innerHTML = '<tr><td colspan="11" class="empty-state">Nenhum parceiro encontrado.</td></tr>';
+                    renderAdminPaginationControls("partnersPagination", adminPaginationState.partners, 0, function() { applyPartnersFilter(); });
+                    return;
+                }
+                var paged = paginateAdminList(list, adminPaginationState.partners);
+                tbody.innerHTML = paged.rows.map(function(p) {
+                    var statusKey = String(p.status || "active");
+                    var statusTag = statusKey === "active" ? "green" : (statusKey === "pending" ? "yellow" : "red");
+                    var statusLabel = statusKey === "active" ? "Ativo" : (statusKey === "pending" ? "Pendente" : "Bloqueado");
+                    return '<tr>' +
+                        '<td>' + escapeHtmlSafe(p.name || "-") + '</td>' +
+                        '<td><code>' + escapeHtmlSafe(p.code || "-") + '</code></td>' +
+                        '<td>' + escapeHtmlSafe(p.email || "-") + (p.phone ? "<br>" + escapeHtmlSafe(p.phone) : "") + '</td>' +
+                        '<td>' + Number(p.linked || 0) + '</td>' +
+                        '<td>' + Number(p.active || 0) + '</td>' +
+                        '<td>' + formatBRLSafe(p.revenue) + '</td>' +
+                        '<td>' + formatBRLSafe(p.earned) + '</td>' +
+                        '<td>' + formatBRLSafe(p.paid) + '</td>' +
+                        '<td>' + formatBRLSafe(p.pending) + '</td>' +
+                        '<td><span class="tag ' + statusTag + '">' + escapeHtmlSafe(statusLabel) + '</span></td>' +
+                        '<td><button type="button" class="btn small" data-partner-detail="' + escapeHtmlSafe(p.id) + '"><i class="fas fa-eye"></i><span>Detalhes</span></button></td>' +
+                        '</tr>';
+                }).join("");
+                Array.prototype.forEach.call(tbody.querySelectorAll("[data-partner-detail]"), function(btn) {
+                    btn.addEventListener("click", function() { openPartnerDetail(btn.getAttribute("data-partner-detail")); });
+                });
+                renderAdminPaginationControls("partnersPagination", adminPaginationState.partners, list.length, function() { applyPartnersFilter(); });
+            }
+            async function openPartnerDetail(partnerId) {
+                activePartnerId = String(partnerId || "");
+                var host = document.getElementById("partnerDetail");
+                if (host) host.style.display = "";
+                var cBody = document.getElementById("partnerCompaniesBody");
+                var mBody = document.getElementById("partnerCommissionsBody");
+                if (cBody) cBody.innerHTML = '<tr><td colspan="6" class="empty-state">Carregando...</td></tr>';
+                if (mBody) mBody.innerHTML = '<tr><td colspan="6" class="empty-state">Carregando...</td></tr>';
+                try {
+                    var svc = await resolveAdminFirebaseService("getPartnerDetailAdmin");
+                    var result = await svc.getPartnerDetailAdmin(activePartnerId);
+                    var data = result && result.data ? result.data : result;
+                    if (!result || result.success === false || (data && data.success === false)) {
+                        throw new Error((result && result.error) || (data && data.error) || "Falha ao carregar detalhe.");
+                    }
+                    activePartnerDetail = data;
+                    var p = data.partner || {};
+                    var title = document.getElementById("partnerDetailTitle");
+                    if (title) title.textContent = (p.name || "Parceiro") + " • " + (p.code || "");
+                    var pct = document.getElementById("partnerCommissionPercent");
+                    if (pct) pct.value = (p.commissionPercent === null || p.commissionPercent === undefined || p.commissionPercent === "") ? "" : String(p.commissionPercent);
+                    renderPartnerCompanies(data.companies || []);
+                    renderPartnerCommissions(data.commissions || []);
+                } catch (err) {
+                    notifyAdmin((err && err.message) || "Erro ao carregar detalhe do parceiro.", "error");
+                }
+            }
+            function renderPartnerCompanies(companies) {
+                var tbody = document.getElementById("partnerCompaniesBody");
+                if (!tbody) return;
+                if (!companies.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma empresa vinculada.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = companies.map(function(c) {
+                    var last = c.lastPayment ? (formatBRLSafe(c.lastPayment.amount) + " • " + escapeHtmlSafe(c.lastPayment.status || "")) : "-";
+                    return '<tr><td>' + escapeHtmlSafe(c.companyName || c.companyId || "-") + '</td>' +
+                        '<td>' + escapeHtmlSafe(c.userName || c.userEmail || "-") + '</td>' +
+                        '<td>' + escapeHtmlSafe(c.status || "-") + (c.overdue ? " (em atraso)" : "") + '</td>' +
+                        '<td>' + escapeHtmlSafe(c.plan || "-") + '</td>' +
+                        '<td>' + escapeHtmlSafe(c.endDate || "-") + '</td>' +
+                        '<td>' + last + '</td></tr>';
+                }).join("");
+            }
+            function renderPartnerCommissions(commissions) {
+                var tbody = document.getElementById("partnerCommissionsBody");
+                if (!tbody) return;
+                if (!commissions.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Sem comissões.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = commissions.map(function(c) {
+                    var action = c.status === "earned"
+                        ? '<button type="button" class="btn small" data-comm-paid="' + escapeHtmlSafe(c.entryId) + '"><i class="fas fa-check"></i><span>Marcar pago</span></button>'
+                        : "-";
+                    var commTag = c.status === "paid" ? "green" : (c.status === "earned" ? "yellow" : "blue");
+                    var commLabel = c.status === "paid" ? "Paga" : (c.status === "earned" ? "A receber" : String(c.status || "-"));
+                    return '<tr><td>' + escapeHtmlSafe(c.at || "-") + '</td>' +
+                        '<td>' + formatBRLSafe(c.paidAmount) + '</td>' +
+                        '<td>' + escapeHtmlSafe(c.percent) + '%</td>' +
+                        '<td>' + formatBRLSafe(c.commission) + '</td>' +
+                        '<td><span class="tag ' + commTag + '">' + escapeHtmlSafe(commLabel) + '</span></td>' +
+                        '<td>' + action + '</td></tr>';
+                }).join("");
+                Array.prototype.forEach.call(tbody.querySelectorAll("[data-comm-paid]"), function(btn) {
+                    btn.addEventListener("click", function() { markPartnerCommissionPaid(btn.getAttribute("data-comm-paid")); });
+                });
+            }
+            function openCommissionPaidModal(entryId) {
+                var modal = document.getElementById("commissionPaidModal");
+                if (!modal) return;
+                var hidden = document.getElementById("commissionPaidEntryId");
+                var note = document.getElementById("commissionPaidNote");
+                var count = document.getElementById("commissionPaidCount");
+                if (hidden) hidden.value = String(entryId || "");
+                if (note) note.value = "";
+                if (count) count.textContent = "0";
+                modal.classList.add("active");
+                if (note) setTimeout(function() { try { note.focus(); } catch (_) {} }, 50);
+            }
+            function closeCommissionPaidModal() {
+                var modal = document.getElementById("commissionPaidModal");
+                if (modal) modal.classList.remove("active");
+            }
+            function bindCommissionPaidModalOnce() {
+                if (bindCommissionPaidModalOnce._done) return;
+                bindCommissionPaidModalOnce._done = true;
+                var closeBtn = document.getElementById("commissionPaidCloseBtn");
+                var cancelBtn = document.getElementById("commissionPaidCancelBtn");
+                var confirmBtn = document.getElementById("commissionPaidConfirmBtn");
+                var note = document.getElementById("commissionPaidNote");
+                var modal = document.getElementById("commissionPaidModal");
+                if (closeBtn) closeBtn.addEventListener("click", function() { closeCommissionPaidModal(); });
+                if (cancelBtn) cancelBtn.addEventListener("click", function() { closeCommissionPaidModal(); });
+                if (modal) modal.addEventListener("click", function(e) { if (e.target === modal) closeCommissionPaidModal(); });
+                document.addEventListener("keydown", function(e) {
+                    if (!e) return;
+                    if (e.key === "Escape") {
+                        var m = document.getElementById("commissionPaidModal");
+                        if (m && m.classList.contains("active")) closeCommissionPaidModal();
+                    }
+                });
+                if (note) note.addEventListener("input", function() {
+                    var count = document.getElementById("commissionPaidCount");
+                    if (count) count.textContent = String(note.value.length);
+                });
+                if (confirmBtn) confirmBtn.addEventListener("click", function() { submitCommissionPaidModal(); });
+            }
+            async function submitCommissionPaidModal() {
+                try {
+                    var hidden = document.getElementById("commissionPaidEntryId");
+                    var noteEl = document.getElementById("commissionPaidNote");
+                    var entryId = hidden ? String(hidden.value || "") : "";
+                    var note = noteEl ? String(noteEl.value || "").slice(0, 280) : "";
+                    if (!entryId) { closeCommissionPaidModal(); return; }
+                    var svc = await resolveAdminFirebaseService("markCommissionPaid");
+                    if (!svc || typeof svc.markCommissionPaid !== "function") throw new Error("Serviço markCommissionPaid indisponível.");
+                    var result = await svc.markCommissionPaid({ partnerId: activePartnerId, entryId: entryId, note: note });
+                    var data = result && result.data ? result.data : result;
+                    if (!result || result.success === false || (data && data.success === false)) {
+                        throw new Error((result && result.error) || (data && data.error) || "Falha ao marcar comissão como paga.");
+                    }
+                    closeCommissionPaidModal();
+                    notifyAdmin("Comissão marcada como paga.", "success");
+                    await openPartnerDetail(activePartnerId);
+                    await loadPartnersPanel();
+                } catch (err) {
+                    notifyAdmin((err && err.message) || "Erro ao marcar comissão.", "error");
+                }
+            }
+            async function markPartnerCommissionPaid(entryId) {
+                bindCommissionPaidModalOnce();
+                openCommissionPaidModal(entryId);
+            }
+            async function savePartnerConfig() {
+                try {
+                    var svc = await resolveAdminFirebaseService("setPartnerConfig");
+                    var raw = String((document.getElementById("partnerCommissionPercent") || {}).value || "").trim();
+                    var payload = { partnerId: activePartnerId };
+                    payload.commissionPercent = raw === "" ? null : Number(raw);
+                    var result = await svc.setPartnerConfig(payload);
+                    var data = result && result.data ? result.data : result;
+                    if (!result || result.success === false || (data && data.success === false)) {
+                        throw new Error((result && result.error) || (data && data.error) || "Falha ao salvar %.");
+                    }
+                    notifyAdmin("Percentual do parceiro atualizado.", "success");
+                    await loadPartnersPanel();
+                } catch (err) {
+                    notifyAdmin((err && err.message) || "Erro ao salvar %.", "error");
+                }
+            }
+            async function togglePartnerBlock() {
+                try {
+                    var current = activePartnerDetail && activePartnerDetail.partner ? String(activePartnerDetail.partner.status || "active") : "active";
+                    var next = current === "active" ? "blocked" : "active";
+                    var svc = await resolveAdminFirebaseService("setPartnerConfig");
+                    var result = await svc.setPartnerConfig({ partnerId: activePartnerId, status: next });
+                    var data = result && result.data ? result.data : result;
+                    if (!result || result.success === false || (data && data.success === false)) {
+                        throw new Error((result && result.error) || (data && data.error) || "Falha ao alternar status.");
+                    }
+                    notifyAdmin(next === "blocked" ? "Parceiro bloqueado." : "Parceiro ativado.", "success");
+                    await openPartnerDetail(activePartnerId);
+                    await loadPartnersPanel();
+                } catch (err) {
+                    notifyAdmin((err && err.message) || "Erro ao alternar status.", "error");
                 }
             }
             function appendSupportDetailField(container, label, value) {
@@ -5957,6 +6209,7 @@
                     }
                     if (access.isSuperAdmin) {
                         allowedTabs.push("support");
+                        allowedTabs.push("partners");
                     }
                     var requestedTab = "";
                     try { requestedTab = new URLSearchParams(window.location.search || "").get("tab") || ""; } catch (_) {}
@@ -6002,6 +6255,12 @@
                     var supportModuleEl = document.getElementById("supportModuleFilter");
                     var supportSearchEl = document.getElementById("supportSearch");
                     var supportReloadEl = document.getElementById("supportReload");
+                    var partnersSearchEl = document.getElementById("partnersSearch");
+                    var partnersStatusEl = document.getElementById("partnersStatusFilter");
+                    var partnersReloadEl = document.getElementById("partnersReload");
+                    var partnerDetailCloseEl = document.getElementById("partnerDetailClose");
+                    var partnerCommissionSaveEl = document.getElementById("partnerCommissionSave");
+                    var partnerBlockToggleEl = document.getElementById("partnerBlockToggle");
                     if (filterEl) filterEl.addEventListener("change",applySubscriptionsFilter);
                     if (requestFilterEl) requestFilterEl.addEventListener("change",applySubscriptionsFilter);
                     if (searchEl) searchEl.addEventListener("input",function() {applySubscriptionsFilter();});
@@ -6045,6 +6304,17 @@
                     });
                     if (supportSearchEl) supportSearchEl.addEventListener("input", applySupportFilter);
                     if (supportReloadEl) supportReloadEl.addEventListener("click", loadSupportTicketsPanel);
+                    if (partnersSearchEl) partnersSearchEl.addEventListener("input", function() { if (adminPaginationState.partners) adminPaginationState.partners.page = 0; applyPartnersFilter(); });
+                    if (partnersStatusEl) partnersStatusEl.addEventListener("change", function() { if (adminPaginationState.partners) adminPaginationState.partners.page = 0; applyPartnersFilter(); });
+                    if (partnersReloadEl) partnersReloadEl.addEventListener("click", loadPartnersPanel);
+                    bindCommissionPaidModalOnce();
+                    if (partnerDetailCloseEl) partnerDetailCloseEl.addEventListener("click", function() {
+                        var host = document.getElementById("partnerDetail");
+                        if (host) host.style.display = "none";
+                        activePartnerId = "";
+                    });
+                    if (partnerCommissionSaveEl) partnerCommissionSaveEl.addEventListener("click", savePartnerConfig);
+                    if (partnerBlockToggleEl) partnerBlockToggleEl.addEventListener("click", togglePartnerBlock);
                     var settingsReloadBtn = document.getElementById("settingsReload");
                     if (settingsReloadBtn) settingsReloadBtn.addEventListener("click",function() {loadSubscriptionSettings();});
                     var settingsSaveBtn = document.getElementById("settingsSave");

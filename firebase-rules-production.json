@@ -94,6 +94,10 @@
           ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')",
           ".indexOn": ["data", "remessaId", "movimentacaoId", "toraId", "plaqueta", "romaneioId", "numeroRomaneio", "status"]
         },
+        "partnerReminders": {
+          ".read": "auth != null && (auth.token.superadmin == true || auth.token.companyId == $companyId || auth.token.companyID == $companyId || auth.token.tenantId == $companyId || root.child('users/' + auth.uid + '/companyId').val() == $companyId || root.child('users/' + auth.uid + '/companyID').val() == $companyId || root.child('users/' + auth.uid + '/tenantId').val() == $companyId || root.child('companies/' + $companyId + '/users/' + auth.uid).exists())",
+          ".write": "auth != null && auth.token.superadmin == true"
+        },
         "funcionarios": {
           ".write": "auth != null && auth.token.companyId == $companyId && (auth.token.superadmin == true || auth.token.subscriptionStatus == 'active' || auth.token.subscriptionStatus == 'trial_active')",
           ".indexOn": ["status", "cargoId"]
@@ -138,6 +142,36 @@
     "system": {
       ".read": "auth != null",
       ".write": "auth != null && auth.token.superadmin == true"
+    },
+
+    "campaignPartners": {
+      ".read": "auth != null && auth.token.superadmin == true",
+      ".write": "auth != null && auth.token.superadmin == true"
+    },
+
+    "campaignPartnerCodes": {
+      ".read": "auth != null && auth.token.superadmin == true",
+      ".write": "auth != null && auth.token.superadmin == true"
+    },
+
+    "campaignReferrals": {
+      ".read": "auth != null && auth.token.superadmin == true",
+      ".write": "auth != null && auth.token.superadmin == true"
+    },
+
+    "campaignCommissions": {
+      ".read": "auth != null && auth.token.superadmin == true",
+      ".write": "auth != null && auth.token.superadmin == true"
+    },
+
+    "campaignReminderLog": {
+      ".read": "auth != null && auth.token.superadmin == true",
+      ".write": "auth != null && auth.token.superadmin == true"
+    },
+
+    "partnerSignupAttempts": {
+      ".read": false,
+      ".write": false
     }
   }
 }

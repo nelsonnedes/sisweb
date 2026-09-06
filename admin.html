@@ -1079,6 +1079,96 @@
                 </div>
                 <div id="supportPagination" class="admin-pagination-host"></div>
             </div>
+            <div id="tab-partners" data-tab-panel="partners" style="display:none;margin-top:6px;">
+                <div class="section-header-inline">
+                    <div>
+                        <div class="section-title">Programa de Parceiros</div>
+                        <div style="font-size:0.78rem;color:#64748b;margin-top:2px;">Parceiros por código PAR-XXXX, empresas vinculadas e comissões geradas somente após pagamento real aprovado. Visível apenas para Super Admin.</div>
+                    </div>
+                    <span id="partnersMeta" class="badge pill">0 parceiros</span>
+                </div>
+                <div class="filters partners-admin-filters">
+                    <input id="partnersSearch" type="text" placeholder="Buscar nome, código, e-mail">
+                    <select id="partnersStatusFilter" aria-label="Filtrar status do parceiro">
+                        <option value="">Todos os status</option>
+                        <option value="active">Ativo</option>
+                        <option value="pending">Pendente</option>
+                        <option value="blocked">Bloqueado</option>
+                    </select>
+                    <button type="button" class="btn small" id="partnersReload"><i class="fas fa-sync-alt"></i><span>Recarregar</span></button>
+                </div>
+                <div class="table-wrapper">
+                    <table id="partnersTable">
+                        <thead>
+                            <tr>
+                                <th>Parceiro</th>
+                                <th>Código</th>
+                                <th>Contato</th>
+                                <th>Vinculadas</th>
+                                <th>Ativas</th>
+                                <th>Receita</th>
+                                <th>Ganha</th>
+                                <th>Paga</th>
+                                <th>Pendente</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partnersBody">
+                            <tr><td colspan="11" class="empty-state">Carregando parceiros...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="partnersPagination" class="admin-pagination-host"></div>
+                <div id="partnerDetail" style="display:none;margin-top:14px;">
+                    <div class="section-header-inline">
+                        <div>
+                            <div class="section-title" id="partnerDetailTitle">Detalhe do parceiro</div>
+                            <div style="font-size:0.78rem;color:#64748b;margin-top:2px;" id="partnerDetailSub">Empresas vinculadas e ledger de comissões.</div>
+                        </div>
+                        <button type="button" class="btn small" id="partnerDetailClose"><i class="fas fa-times"></i><span>Fechar</span></button>
+                    </div>
+                    <div class="filters partners-admin-filters">
+                        <input id="partnerCommissionPercent" type="number" min="0" max="40" step="0.5" placeholder="% comissão (0-40, vazio = campanha)" style="max-width:260px;">
+                        <button type="button" class="btn small" id="partnerCommissionSave"><i class="fas fa-percent"></i><span>Salvar %</span></button>
+                        <button type="button" class="btn small" id="partnerBlockToggle"><i class="fas fa-ban"></i><span>Bloquear/Ativar</span></button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="partnerCompaniesTable">
+                            <thead>
+                                <tr>
+                                    <th>Empresa</th>
+                                    <th>Usuário</th>
+                                    <th>Status</th>
+                                    <th>Plano</th>
+                                    <th>Vencimento</th>
+                                    <th>Último pagamento</th>
+                                </tr>
+                            </thead>
+                            <tbody id="partnerCompaniesBody">
+                                <tr><td colspan="6" class="empty-state">Selecione um parceiro.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-wrapper" style="margin-top:10px;">
+                        <table id="partnerCommissionsTable">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Valor pago</th>
+                                    <th>%</th>
+                                    <th>Comissão</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="partnerCommissionsBody">
+                                <tr><td colspan="6" class="empty-state">Sem comissões.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
     </div>
 
     <!-- Modal Analisar Prorrogação -->
@@ -1122,11 +1212,33 @@
         </div>
     </div>
 
-    <script src="firebaseService.js?v=10c72c116d87" type="module"></script>
+    <!-- Modal Nota de Pagamento da Comissão (Parceiros) -->
+    <div id="commissionPaidModal" class="modal-overlay">
+        <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="commissionPaidTitle">
+            <div class="modal-header">
+                <h3 class="modal-title" id="commissionPaidTitle">Marcar comissão como paga</h3>
+                <button type="button" class="modal-close" id="commissionPaidCloseBtn" aria-label="Fechar"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-field">
+                    <span class="modal-field-label">Nota do pagamento (opcional, máx. 280 caracteres)</span>
+                    <textarea id="commissionPaidNote" class="modal-field-value" style="width: 100%; box-sizing: border-box; background: #ffffff; resize: vertical; min-height: 70px;" maxlength="280" placeholder="Ex: Pago via PIX em 05/09/2026."></textarea>
+                    <div style="text-align:right;font-size:0.75rem;color:#64748b;margin-top:4px;"><span id="commissionPaidCount">0</span>/280</div>
+                </div>
+                <input type="hidden" id="commissionPaidEntryId">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn" id="commissionPaidCancelBtn">Cancelar</button>
+                <button type="button" class="btn primary" id="commissionPaidConfirmBtn"><i class="fas fa-check"></i> Confirmar pagamento</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="firebaseService.js?v=39f5f155a918" type="module"></script>
     <script src="auth.js?v=9edf7c63fdab"></script>
-    <script src="menu-component.js?v=fc5749bbb053"></script>
+    <script src="menu-component.js?v=f68937b4ac7e"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
     <script src="scripts/admin/admin-ui.js?v=ec6765700811"></script>
-    <script src="scripts/admin/admin-main.js?v=9238f2dade4f"></script>
+    <script src="scripts/admin/admin-main.js?v=4ea2d5ad70f3"></script>
 </body>
 </html>

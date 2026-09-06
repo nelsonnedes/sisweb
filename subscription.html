@@ -894,6 +894,75 @@
             margin-top: 6px;
         }
 
+        .referral-box input:focus {
+            outline: none;
+            border-color: #2c3e50;
+            box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.12);
+        }
+
+        #partnerCodeBox {
+            margin-top: 12px;
+            padding: 12px 14px;
+            border: 1px solid #dbe7f3;
+            border-left: 4px solid #2563eb;
+            border-radius: 10px;
+            background: linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+        }
+
+        #partnerCodeBox label {
+            font-weight: 700;
+            color: #1e3a5f;
+            font-size: 0.9rem;
+        }
+
+        #partnerCodeBox label::after {
+            content: "Ganhe vínculos automáticos de indicação";
+            display: block;
+            font-weight: 400;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .partner-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .partner-row input {
+            flex: 1;
+            min-width: 0;
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .partner-row .validate-button {
+            margin: 0;
+            padding: 10px 16px;
+            white-space: nowrap;
+            border-radius: 6px;
+        }
+
+        #partnerCodeMessage {
+            font-size: 13px;
+            margin-top: 6px;
+            min-height: 1.2em;
+            font-weight: 600;
+        }
+
+        @media (max-width: 480px) {
+            .partner-row {
+                flex-direction: column;
+            }
+
+            .partner-row .validate-button {
+                width: 100%;
+            }
+        }
+
         .payment-methods-select {
             margin: 14px 0;
             text-align: left;
@@ -1205,6 +1274,14 @@
                             <label for="referralEmail">Campanha de Indicação (opcional)</label>
                             <input type="email" id="referralEmail" placeholder="Email de quem indicou você">
                         </div>
+                        <div class="referral-box" id="partnerCodeBox">
+                            <label for="partnerCode">Código do Parceiro (opcional)</label>
+                            <div class="partner-row">
+                                <input type="text" id="partnerCode" placeholder="Ex: PAR-AB12" maxlength="12">
+                                <button type="button" class="validate-button" onclick="validatePartnerCodeInput()">Validar</button>
+                            </div>
+                            <div id="partnerCodeMessage"></div>
+                        </div>
                         <div class="referral-box" id="promoCodeBox">
                             <label for="promoCodeInput">Cupom de Desconto (opcional)</label>
                             <div style="display:flex; gap:8px; margin-top:6px;">
@@ -1245,7 +1322,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-    <script src="menu-component.js?v=fc5749bbb053"></script>
+    <script src="menu-component.js?v=f68937b4ac7e"></script>
     <script src="auth.js?v=9edf7c63fdab"></script>
     <script type="module">
         import {
@@ -1261,7 +1338,7 @@
             subscribe,
             getTenantId,
             getCurrentUid
-        } from './firebaseService.js?v=10c72c116d87';
+        } from './firebaseService.js?v=39f5f155a918';
         window.firebaseService = {
             ...(window.firebaseService || {}),
             authService,
@@ -2029,6 +2106,55 @@
                 updatePaymentAmountDisplay();
             }
         }
+
+        async function validatePartnerCodeInput() {
+            const input = document.getElementById('partnerCode');
+            const msg = document.getElementById('partnerCodeMessage');
+            if (!input || !msg) return;
+            const code = String(input.value || '').trim().toUpperCase().replace(/\s+/g, '');
+            if (!code) { msg.textContent = ''; return; }
+            if (!/^PAR-[A-Z0-9]{4,8}$/.test(code)) {
+                msg.style.color = '#ef4444';
+                msg.textContent = 'Formato inválido. Use PAR-XXXX.';
+                return;
+            }
+            msg.style.color = '#f59e0b';
+            msg.textContent = 'Validando código...';
+            try {
+                if (!window.firebaseService || typeof window.firebaseService.validatePartnerCode !== 'function') {
+                    throw new Error('Serviço de validação indisponível.');
+                }
+                const result = await window.firebaseService.validatePartnerCode(code);
+                const data = result && result.data ? result.data : result;
+                if (data && (data.valid === true || (data.success && data.valid !== false && !data.error))) {
+                    const name = data.partnerName || (data.data && data.data.partnerName) || 'Parceiro Sisweb';
+                    msg.style.color = '#10b981';
+                    msg.textContent = `Código válido (${name}). Será vinculado à sua assinatura.`;
+                } else {
+                    throw new Error('Código não encontrado ou inativo.');
+                }
+            } catch (error) {
+                msg.style.color = '#ef4444';
+                msg.textContent = error && error.message ? error.message : 'Código inválido.';
+            }
+        }
+
+        (function prefillPartnerCode() {
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                const fromQuery = String(params.get('partner') || params.get('ref') || '').trim().toUpperCase().replace(/\s+/g, '');
+                const pending = String(localStorage.getItem('sisweb_pending_partner') || sessionStorage.getItem('sisweb_pending_partner') || '').trim().toUpperCase().replace(/\s+/g, '');
+                const code = /^PAR-[A-Z0-9]{4,8}$/.test(fromQuery) ? fromQuery : (/^PAR-[A-Z0-9]{4,8}$/.test(pending) ? pending : '');
+                if (code) {
+                    const run = () => {
+                        const input = document.getElementById('partnerCode');
+                        if (input && !input.value) { input.value = code; validatePartnerCodeInput(); }
+                    };
+                    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+                    else run();
+                }
+            } catch (_) {}
+        })();
 
         function updatePaymentAmountDisplay() {
             let baseAmount = getPlanAmountFromSettings(currentPlan);
@@ -2955,6 +3081,10 @@
             if (referralEmailInput && referralEmailInput === String(currentUser.email || '').toLowerCase()) {
                 throw new Error('O email de indicação não pode ser o mesmo email do assinante.');
             }
+            const partnerCodeInput = (document.getElementById('partnerCode') ? document.getElementById('partnerCode').value : '').trim().toUpperCase().replace(/\s+/g, '');
+            if (partnerCodeInput && !/^PAR-[A-Z0-9]{4,8}$/.test(partnerCodeInput)) {
+                throw new Error('Código de parceiro inválido. Use o formato PAR-XXXX.');
+            }
             if (!window.firebaseService || typeof window.firebaseService.submitSubscriptionRequest !== 'function') {
                 throw new Error('Serviço de assinatura indisponível no backend.');
             }
@@ -2970,6 +3100,7 @@
                 proofFileName: proofUpload && proofUpload.name ? proofUpload.name : '',
                 proofMimeType: proofUpload && proofUpload.contentType ? proofUpload.contentType : '',
                 referralEmail: referralEmailInput,
+                partnerCode: partnerCodeInput || '',
                 transactionMeta: transactionMeta && typeof transactionMeta === 'object' ? transactionMeta : {},
                 promoCode: appliedPromoCode
             });

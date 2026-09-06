@@ -1982,7 +1982,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     
     <script src="estados-cidades.js?v=e634a7c28536"></script>
     <!-- removido: handler de modais de clientes (não utilizado em fornecedores) -->
-    <script src="menu-component.js?v=fc5749bbb053"></script>
+    <script src="menu-component.js?v=f68937b4ac7e"></script>
     
     <!-- Scripts de Correção - ORDEM REORGANIZADA -->
     <script src="correcao-interface-database.js?v=44e2d6290888"></script>
@@ -1990,7 +1990,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <!-- Serviço Firebase canônico: uma única instância compartilhada por toda a página. -->
     <script>
         window.__siswebFirebaseServiceReady = (async function () {
-            const firebaseSvc = await import('./firebaseService.js?v=10c72c116d87');
+            const firebaseSvc = await import('./firebaseService.js?v=39f5f155a918');
             window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
             window.FirebaseService = window.firebaseService;
             return window.firebaseService;

@@ -67,7 +67,7 @@
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=e4dadfaea86a"></script>
-<script src="menu-component.js?v=fc5749bbb053"></script>
+<script src="menu-component.js?v=f68937b4ac7e"></script>
     <style>
         /* Note: Container styles are now in layout-comum.css */
 
@@ -2396,7 +2396,7 @@
                 ...financeFirebaseLocalService
             };
             window.__siswebFirebaseServiceReady = (async function () {
-                const firebaseSvc = await import('./firebaseService.js?v=10c72c116d87');
+                const firebaseSvc = await import('./firebaseService.js?v=39f5f155a918');
                 const existingFirebaseService = window.firebaseService || {};
                 window.firebaseService = {
                     ...existingFirebaseService,

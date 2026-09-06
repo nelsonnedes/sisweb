@@ -4336,6 +4336,8 @@ exports.submitSubscriptionRequest = https.onCall(async (data, context) => {
     const graceDays = Math.max(0, Math.min(30, parseInt(settings.lateGraceDays, 10) || 0));
     const referralCount = Math.max(0, parseInt(payload.referralCount, 10) || 0);
     const referralEmail = sanitizeText(payload.referralEmail || '').toLowerCase();
+    const partnerCodeRaw = sanitizeText(payload.partnerCode || payload.partnercode || '', '').toUpperCase().replace(/\s+/g, '');
+    const partnerCode = /^PAR-[A-Z0-9]{4,8}$/.test(partnerCodeRaw) ? partnerCodeRaw : '';
     settings.__runtimeReferralCount = referralCount;
     settings.__runtimeHasReferral = !!referralEmail;
     const allowedMethods = getAllowedPaymentMethods(settings);
@@ -4407,6 +4409,21 @@ exports.submitSubscriptionRequest = https.onCall(async (data, context) => {
     };
     const userSync = await applyUserPatchAcrossScopes(uid, userPatch, { companyId, email: userEmail });
     const effectiveCompanyId = userSync.companyId || String(companyId || '').trim();
+    // Gancho aditivo Programa de Parceiros: codigo PAR-XXXX vira partnerId + referralEmail do parceiro.
+    let partnerLink = null;
+    if (partnerCode) {
+        try {
+            const partner = await partnerFunctions.resolvePartnerByCode(partnerCode);
+            if (partner && partner.status === 'active') {
+                partnerLink = { partnerId: partner.id, code: partnerCode };
+                pendingPayment.partnerId = partner.id;
+                pendingPayment.partnerCode = partnerCode;
+                if (!pendingPayment.referralEmail && partner.email) {
+                    pendingPayment.referralEmail = String(partner.email).toLowerCase();
+                }
+            }
+        } catch (_) {}
+    }
     const reqRef = admin.database().ref(`subscriptionRequests/${uid}`).push();
     const requestId = reqRef.key;
     const requestPayload = {
@@ -4423,9 +4440,27 @@ exports.submitSubscriptionRequest = https.onCall(async (data, context) => {
         userSnapshot: identitySnapshot
     };
     if (effectiveCompanyId) requestPayload.companyId = effectiveCompanyId;
+    if (partnerLink) {
+        requestPayload.partnerId = partnerLink.partnerId;
+        requestPayload.partnerCode = partnerLink.code;
+        if (!requestPayload.referralEmail && pendingPayment.referralEmail) {
+            requestPayload.referralEmail = pendingPayment.referralEmail;
+        }
+    }
     await reqRef.set(requestPayload);
     if (effectiveCompanyId) {
         await admin.database().ref(`companies/${effectiveCompanyId}/subscriptionRequests/${uid}/${requestId}`).set(requestPayload);
+    }
+    if (partnerLink) {
+        try {
+            await partnerFunctions.ensureReferral({
+                uid,
+                partnerId: partnerLink.partnerId,
+                code: partnerLink.code,
+                source: 'subscription',
+                companyId: effectiveCompanyId || ''
+            });
+        } catch (_) {}
     }
     await replayRef.set({
         uid,
@@ -5626,6 +5661,31 @@ exports.confirmSubscriptionApproval = https.onCall(async (data, context) => {
                 });
             }
         }
+        // Gancho aditivo Programa de Parceiros: comissao earned so apos pagamento real aprovado.
+        try {
+            const link = await partnerFunctions.resolvePartnerLink({
+                requestPartnerId: (pendingPayment && pendingPayment.partnerId) || req.partnerId || '',
+                referredUid: resolved.uid
+            });
+            if (link && link.partnerId) {
+                const earned = await partnerFunctions.recordPartnerCommissionEarned({
+                    partnerId: link.partnerId,
+                    referredUid: resolved.uid,
+                    companyId: user.companyId || req.companyId || resolved.companyId || '',
+                    requestId: resolved.requestId,
+                    paidAmount,
+                    approverUid: callerUid,
+                    campaignSettings: settings
+                });
+                if (earned && earned.created && earned.ownerUid) {
+                    await pushUserNotification(earned.ownerUid, {
+                        type: 'success',
+                        title: 'Nova comissão de parceiro',
+                        message: `Indicação ${link.code || ''} gerou comissão de ${Number(earned.commission || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.`
+                    });
+                }
+            }
+        } catch (_) {}
         await pushUserNotification(resolved.uid, {
             type: 'success',
             title: 'Pagamento aprovado',
@@ -6788,3 +6848,15 @@ exports.superAdminMfaDisable = mfaFunctions.superAdminMfaDisable;
 
 const securityAuditFunctions = require('./security-audit-functions');
 exports.recordAdminAccessDenied = securityAuditFunctions.recordAdminAccessDenied;
+
+const partnerFunctions = require('./partner-functions');
+partnerFunctions.configure({ isCallerSuperAdmin });
+exports.registerPartner = partnerFunctions.registerPartner;
+exports.validatePartnerCode = partnerFunctions.validatePartnerCode;
+exports.linkPartnerReferral = partnerFunctions.linkPartnerReferral;
+exports.getMyPartnerDashboard = partnerFunctions.getMyPartnerDashboard;
+exports.sendBillingReminder = partnerFunctions.sendBillingReminder;
+exports.getPartnersAdmin = partnerFunctions.getPartnersAdmin;
+exports.getPartnerDetailAdmin = partnerFunctions.getPartnerDetailAdmin;
+exports.setPartnerConfig = partnerFunctions.setPartnerConfig;
+exports.markCommissionPaid = partnerFunctions.markCommissionPaid;

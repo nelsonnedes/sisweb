@@ -3166,6 +3166,78 @@ async function adminUpdateSubscriber(payload) {
     }
 }
 
+async function registerPartner(payload) {
+    return callSupportFunction('registerPartner', payload);
+}
+
+async function validatePartnerCode(code) {
+    try {
+        const data = await callFunction('validatePartnerCode', { code });
+        return { success: true, data };
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function linkPartnerReferral(code) {
+    try {
+        const data = await callFunction('linkPartnerReferral', { code });
+        return { success: true, data };
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function getMyPartnerDashboard() {
+    try {
+        const data = await callFunction('getMyPartnerDashboard', {});
+        return { success: true, data };
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function sendBillingReminder(payload) {
+    try {
+        const data = await callFunction('sendBillingReminder', payload);
+        return { success: true, data };
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function getPartnersAdmin() {
+    try {
+        return await callAdminCallableWithRetry('getPartnersAdmin', {});
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function getPartnerDetailAdmin(partnerId) {
+    try {
+        return await callAdminCallableWithRetry('getPartnerDetailAdmin', { partnerId });
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function setPartnerConfig(payload) {
+    try {
+        return await callAdminCallableWithRetry('setPartnerConfig', payload);
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function markCommissionPaid(payload) {
+    try {
+        return await callAdminCallableWithRetry('markCommissionPaid', payload);
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
 async function getCampaignExecutiveSummary() {
     try {
         return await callAdminCallableWithRetry('getCampaignExecutiveSummary', {});
@@ -4516,6 +4588,15 @@ export {
     fullUserCleanup,
     sweepOrphanCompanies,
     adminUpdateSubscriber,
+    registerPartner,
+    validatePartnerCode,
+    linkPartnerReferral,
+    getMyPartnerDashboard,
+    sendBillingReminder,
+    getPartnersAdmin,
+    getPartnerDetailAdmin,
+    setPartnerConfig,
+    markCommissionPaid,
     invalidateReadCacheForPath,
     createSupportTicket,
     sendPublicSupportEmail,
