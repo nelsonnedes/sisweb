@@ -177,6 +177,14 @@ body{background:#f6f9fc;color:var(--par-ink);}
         <tbody id="parDashCommissions"><tr><td colspan="5">Carregando...</td></tr></tbody>
       </table>
     </div>
+    <h3>Próximas comissões (projeção)</h3>
+    <p style="font-size:0.8rem;color:#64748b;">Estimativa se o indicado pagar no vencimento. Só o pagamento real gera comissão.</p>
+    <div class="table-wrapper" style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+        <thead><tr><th>#</th><th>Empresa</th><th>Vencimento</th><th>Comissão projetada</th></tr></thead>
+        <tbody id="parDashProjections"><tr><td colspan="4">Carregando...</td></tr></tbody>
+      </table>
+    </div>
     <div id="parDashMsg" style="font-size:0.85rem;margin-top:8px;"></div>
   </section>
 </div>
@@ -354,6 +362,20 @@ async function loadPartnerDashboard(){
   mBody.innerHTML = commissions.length ? commissions.map(function(c){
     return '<tr><td>' + escParceiro(c.at || '-') + '</td><td>' + brlParceiro(c.paidAmount) + '</td><td>' + escParceiro(c.percent) + '%</td><td>' + brlParceiro(c.commission) + '</td><td>' + escParceiro(c.status || '-') + '</td></tr>';
   }).join('') : '<tr><td colspan="5">Sem comissões ainda. Comissões nascem após pagamento aprovado.</td></tr>';
+  var pBody = document.getElementById('parDashProjections');
+  if (pBody) {
+    var rows = [];
+    (Array.isArray(data.companies) ? data.companies : []).forEach(function(c){
+      (c.projections || []).forEach(function(p){
+        rows.push({ company: c.companyName || '-', proj: p });
+      });
+    });
+    pBody.innerHTML = rows.length ? rows.map(function(r){
+      var due = r.proj.dueDate || '';
+      try { due = new Date(due).toLocaleDateString('pt-BR'); } catch(_){}
+      return '<tr><td>' + escParceiro(r.proj.n) + '</td><td>' + escParceiro(r.company) + '</td><td>' + escParceiro(due || '-') + '</td><td>' + brlParceiro(r.proj.commission) + '</td></tr>';
+    }).join('') : '<tr><td colspan="4">Sem projeções no momento.</td></tr>';
+  }
 }
 var parReminderCompanyId = '';
 function openPartnerReminderModal(companyId){

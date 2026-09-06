@@ -30,7 +30,8 @@ test('functions/index.js registra parceiros e ganchos aditivos', () => {
     'getPartnersAdmin',
     'getPartnerDetailAdmin',
     'setPartnerConfig',
-    'markCommissionPaid'
+    'markCommissionPaid',
+    'adminLinkReferral'
   ]) {
     assert.match(indexSrc, new RegExp(`exports\\.${name} = partnerFunctions\\.${name}`), `export ausente: ${name}`);
   }
@@ -131,7 +132,7 @@ test('caixa de parceiro da assinatura tem estilo proprio e responsivo', () => {
 
 test('frontend expoe contrato de parceiros sem write direto', () => {
   const svc = readFileSync('firebaseService.js', 'utf8');
-  for (const name of ['registerPartner', 'validatePartnerCode', 'linkPartnerReferral', 'getMyPartnerDashboard', 'sendBillingReminder', 'getPartnersAdmin', 'getPartnerDetailAdmin', 'setPartnerConfig', 'markCommissionPaid']) {
+  for (const name of ['registerPartner', 'validatePartnerCode', 'linkPartnerReferral', 'getMyPartnerDashboard', 'sendBillingReminder', 'getPartnersAdmin', 'getPartnerDetailAdmin', 'setPartnerConfig', 'markCommissionPaid', 'adminLinkReferral']) {
     assert.match(svc, new RegExp(`async function ${name}\\(`), `wrapper ausente: ${name}`);
   }
   const sub = readFileSync('subscription.html', 'utf8');
@@ -200,4 +201,51 @@ test('admin pagina tabela de parceiros em 20 itens com filtros resetando', () =>
   assert.match(main, /renderAdminPaginationControls\("partnersPagination"/);
   assert.match(main, /Página /);
   assert.match(admin, /id="partnersPagination"/);
+});
+
+test('trial gratuito vincula indicacao por codigo de parceiro', () => {
+  assert.match(indexSrc, /trialPartnerCode/);
+  assert.match(indexSrc, /source: 'free_trial'/);
+  assert.match(indexSrc, /ensureReferral\(\{[\s\S]*?uid,[\s\S]*?partnerId: trialPartner\.id/);
+  const svc = readFileSync('firebaseService.js', 'utf8');
+  assert.match(svc, /async function activateFreeTrial\(payload\)/);
+  const sub = readFileSync('subscription.html', 'utf8');
+  assert.match(sub, /freePartnerCode/);
+  assert.match(sub, /activateFreeTrial\(\{[\s\S]*?partnerCode:/);
+});
+
+test('projecoes das 3 proximas comissoes sao calculadas sem criar ledger', () => {
+  assert.equal(partner.planPeriodMonths('quarterly'), 3);
+  assert.equal(partner.planPeriodMonths('premium'), 12);
+  assert.equal(partner.planPeriodMonths('free_trial'), 1);
+  assert.equal(partner.resolveEffectivePercent({ commissionPercent: null }, { campaign: { referral: { commissionPercentForReferrer: 10 } } }), 10);
+  assert.equal(partner.resolveEffectivePercent({ commissionPercent: 7 }, { campaign: { referral: { commissionPercentForReferrer: 10 } } }), 7);
+  const projs = partner.buildProjections({
+    planKey: 'free_trial',
+    endDateIso: '2026-10-06T00:00:00.000Z',
+    settings: { plans: { monthly: { amount: 19.9 } } },
+    percent: 10
+  });
+  assert.equal(projs.length, 3);
+  assert.ok(projs.every((p) => p.projected === true && p.assumedPlan === true));
+  assert.equal(projs[0].commission, 1.99);
+  assert.equal(projs[1].dueDate.slice(0, 7), '2026-11');
+  assert.deepEqual(partner.buildProjections({ planKey: 'monthly', endDateIso: '', settings: { plans: { monthly: { amount: 19.9 } } }, percent: 0 }), []);
+  const portal = readFileSync('cadastro-parceiro.html', 'utf8');
+  assert.match(portal, /id="parDashProjections"/);
+  const admin = readFileSync('admin.html', 'utf8');
+  assert.match(admin, /id="partnerProjectionsBody"/);
+  const main = readFileSync('scripts/admin/admin-main.js', 'utf8');
+  assert.match(main, /function renderPartnerProjections\(companies\)/);
+});
+
+test('admin vincula indicacao manualmente por email ou uid', () => {
+  assert.match(indexSrc, /exports\.adminLinkReferral = partnerFunctions\.adminLinkReferral/);
+  const svc = readFileSync('firebaseService.js', 'utf8');
+  assert.match(svc, /async function adminLinkReferral\(payload\)/);
+  const admin = readFileSync('admin.html', 'utf8');
+  assert.match(admin, /id="partnerLinkIdentity"/);
+  assert.match(admin, /id="partnerLinkBtn"/);
+  const main = readFileSync('scripts/admin/admin-main.js', 'utf8');
+  assert.match(main, /async function adminLinkReferralFlow\(\)/);
 });

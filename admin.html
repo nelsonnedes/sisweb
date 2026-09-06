@@ -1167,6 +1167,34 @@
                             </tbody>
                         </table>
                     </div>
+                    <div class="section-header-inline" style="margin-top:10px;">
+                        <div>
+                            <div class="section-title">Próximas comissões (projeção)</div>
+                            <div style="font-size:0.78rem;color:#64748b;margin-top:2px;">Estimativa se o indicado pagar no vencimento. Não gera comissão — só o pagamento real aprovado gera.</div>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="partnerProjectionsTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Empresa</th>
+                                    <th>Vencimento</th>
+                                    <th>Plano</th>
+                                    <th>Valor</th>
+                                    <th>%</th>
+                                    <th>Comissão projetada</th>
+                                </tr>
+                            </thead>
+                            <tbody id="partnerProjectionsBody">
+                                <tr><td colspan="7" class="empty-state">Sem projeções.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="filters partners-admin-filters" style="margin-top:10px;">
+                        <input id="partnerLinkIdentity" type="text" placeholder="E-mail ou UID do indicado" style="max-width:280px;">
+                        <button type="button" class="btn small" id="partnerLinkBtn"><i class="fas fa-link"></i><span>Vincular indicação</span></button>
+                    </div>
                 </div>
             </div>
     </div>
@@ -1234,11 +1262,11 @@
         </div>
     </div>
 
-    <script src="firebaseService.js?v=39f5f155a918" type="module"></script>
+    <script src="firebaseService.js?v=de8a86b85e86" type="module"></script>
     <script src="auth.js?v=9edf7c63fdab"></script>
     <script src="menu-component.js?v=809a6acd5085"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
     <script src="scripts/admin/admin-ui.js?v=ec6765700811"></script>
-    <script src="scripts/admin/admin-main.js?v=4ea2d5ad70f3"></script>
+    <script src="scripts/admin/admin-main.js?v=f61a7bb7468d"></script>
 </body>
 </html>

@@ -2646,11 +2646,12 @@ async function revalidatePixPayment(payload) {
     }
 }
 
-async function activateFreeTrial() {
+async function activateFreeTrial(payload) {
     try {
+        const data = payload && typeof payload === 'object' ? payload : {};
         const functions = getFunctions(app);
         const callable = httpsCallable(functions, 'activateFreeTrial');
-        const result = await callable({});
+        const result = await callable(data);
         return { success: true, data: result && result.data ? result.data : null };
     } catch (error) {
         return { success: false, error: error && error.message ? error.message : String(error) };
@@ -3233,6 +3234,14 @@ async function setPartnerConfig(payload) {
 async function markCommissionPaid(payload) {
     try {
         return await callAdminCallableWithRetry('markCommissionPaid', payload);
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+async function adminLinkReferral(payload) {
+    try {
+        return await callAdminCallableWithRetry('adminLinkReferral', payload);
     } catch (error) {
         return { success: false, error: error && error.message ? error.message : String(error) };
     }
@@ -4597,6 +4606,7 @@ export {
     getPartnerDetailAdmin,
     setPartnerConfig,
     markCommissionPaid,
+    adminLinkReferral,
     invalidateReadCacheForPath,
     createSupportTicket,
     sendPublicSupportEmail,

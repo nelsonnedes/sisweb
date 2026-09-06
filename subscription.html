@@ -1338,7 +1338,7 @@
             subscribe,
             getTenantId,
             getCurrentUid
-        } from './firebaseService.js?v=39f5f155a918';
+        } from './firebaseService.js?v=de8a86b85e86';
         window.firebaseService = {
             ...(window.firebaseService || {}),
             authService,
@@ -2636,7 +2636,10 @@
                     throw new Error('Serviço de ativação do plano grátis indisponível.');
                 }
                 setFreePlanBusy(true);
-                const result = await window.firebaseService.activateFreeTrial();
+                const freePartnerCode = (document.getElementById('partnerCode') ? document.getElementById('partnerCode').value : '').trim().toUpperCase().replace(/\s+/g, '');
+                const result = await window.firebaseService.activateFreeTrial({
+                    partnerCode: /^PAR-[A-Z0-9]{4,8}$/.test(freePartnerCode) ? freePartnerCode : ''
+                });
                 if (!result || result.success === false) {
                     throw new Error(friendlySubscriptionErrorMessage((result && result.error) || 'Não foi possível ativar o plano grátis.'));
                 }

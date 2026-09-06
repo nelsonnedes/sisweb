@@ -37,12 +37,22 @@
 | `getPartnerDetailAdmin` | superadmin | referrals com status da empresa + ledger de comissões |
 | `setPartnerConfig` | superadmin | `{partnerId, commissionPercent 0..40|null, status}` + auditoria |
 | `markCommissionPaid` | superadmin | `earned→paid` com nota + auditoria (trilha do dinheiro) |
+| `adminLinkReferral` | superadmin | vincula `{partnerId, e-mail/UID}` sem sobrescrever (apoio/suporte) |
+
+Leituras com projeção: `getMyPartnerDashboard` e `getPartnerDetailAdmin`
+retornam `projections` por empresa + `projectedTotal` — as 3 próximas
+comissões **se pagar no vencimento** (percentual efetivo × valor do plano;
+plano grátis/desconhecido assume mensal com `assumedPlan: true`). Projeção
+nunca escreve ledger: só pagamento real aprovado gera `earned`.
 
 ## 3. Gancho no motor de aprovação (aditivo)
 
 - `submitSubscriptionRequest`: aceita `partnerCode` opcional → resolve parceiro ativo →
   grava `partnerId/partnerCode` no request **e** `referralEmail` = e-mail do parceiro
   (reaproveita o motor existente sem tocá-lo).
+- `activateFreeTrial`: aceita `partnerCode` opcional → `ensureReferral` com
+  `source: 'free_trial'` (anti-autoindicação por uid/e-mail). Sem isso, o
+  indicado do plano grátis nunca aparecia no painel do parceiro.
 - `confirmSubscriptionApproval` (ramo approve): após o bloco `referralEmail`
   existente, resolve `partnerId` (request ou `campaignReferrals[uid]`); se houver e
   não existir entry para `(partnerId, requestId)`: `percent = override ??

@@ -1901,6 +1901,7 @@
                     if (pct) pct.value = (p.commissionPercent === null || p.commissionPercent === undefined || p.commissionPercent === "") ? "" : String(p.commissionPercent);
                     renderPartnerCompanies(data.companies || []);
                     renderPartnerCommissions(data.commissions || []);
+                    renderPartnerProjections(data.companies || []);
                 } catch (err) {
                     notifyAdmin((err && err.message) || "Erro ao carregar detalhe do parceiro.", "error");
                 }
@@ -1945,6 +1946,66 @@
                 Array.prototype.forEach.call(tbody.querySelectorAll("[data-comm-paid]"), function(btn) {
                     btn.addEventListener("click", function() { markPartnerCommissionPaid(btn.getAttribute("data-comm-paid")); });
                 });
+            }
+            function formatDateOnlySafe(value) {
+                try {
+                    const d = new Date(value);
+                    if (Number.isNaN(d.getTime())) return "-";
+                    return d.toLocaleDateString("pt-BR");
+                } catch (_) { return "-"; }
+            }
+            function renderPartnerProjections(companies) {
+                var tbody = document.getElementById("partnerProjectionsBody");
+                if (!tbody) return;
+                var rows = [];
+                (companies || []).forEach(function(c) {
+                    (c.projections || []).forEach(function(p) {
+                        rows.push({ company: c.companyName || c.companyId || "-", proj: p });
+                    });
+                });
+                if (!rows.length) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Sem projeções. Projeções aparecem quando há percentual de comissão e plano com valor.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = rows.map(function(r) {
+                    var p = r.proj || {};
+                    return '<tr><td>' + escapeHtmlSafe(p.n) + '</td>' +
+                        '<td>' + escapeHtmlSafe(r.company) + '</td>' +
+                        '<td>' + escapeHtmlSafe(formatDateOnlySafe(p.dueDate)) + '</td>' +
+                        '<td>' + escapeHtmlSafe(p.plan || "-") + (p.assumedPlan ? " (estimado)" : "") + '</td>' +
+                        '<td>' + formatBRLSafe(p.amount) + '</td>' +
+                        '<td>' + escapeHtmlSafe(p.percent) + '%</td>' +
+                        '<td>' + formatBRLSafe(p.commission) + '</td></tr>';
+                }).join("");
+            }
+            async function adminLinkReferralFlow() {
+                try {
+                    if (!activePartnerId) {
+                        notifyAdmin("Selecione um parceiro primeiro.", "error");
+                        return;
+                    }
+                    var input = document.getElementById("partnerLinkIdentity");
+                    var identity = String((input && input.value) || "").trim();
+                    if (!identity) {
+                        notifyAdmin("Informe o e-mail ou UID do indicado.", "error");
+                        return;
+                    }
+                    var svc = await resolveAdminFirebaseService("adminLinkReferral");
+                    if (!svc || typeof svc.adminLinkReferral !== "function") {
+                        throw new Error("Serviço adminLinkReferral indisponível.");
+                    }
+                    var result = await svc.adminLinkReferral({ partnerId: activePartnerId, identity: identity });
+                    var data = result && result.data ? result.data : result;
+                    if (!result || result.success === false || (data && data.success === false)) {
+                        throw new Error((result && result.error) || (data && data.error) || "Falha ao vincular indicação.");
+                    }
+                    notifyAdmin(data && data.created ? "Indicação vinculada." : "Indicação já existia.", "success");
+                    if (input) input.value = "";
+                    await openPartnerDetail(activePartnerId);
+                    await loadPartnersPanel();
+                } catch (err) {
+                    notifyAdmin((err && err.message) || "Erro ao vincular indicação.", "error");
+                }
             }
             function openCommissionPaidModal(entryId) {
                 var modal = document.getElementById("commissionPaidModal");
@@ -6261,6 +6322,7 @@
                     var partnerDetailCloseEl = document.getElementById("partnerDetailClose");
                     var partnerCommissionSaveEl = document.getElementById("partnerCommissionSave");
                     var partnerBlockToggleEl = document.getElementById("partnerBlockToggle");
+                    var partnerLinkBtnEl = document.getElementById("partnerLinkBtn");
                     if (filterEl) filterEl.addEventListener("change",applySubscriptionsFilter);
                     if (requestFilterEl) requestFilterEl.addEventListener("change",applySubscriptionsFilter);
                     if (searchEl) searchEl.addEventListener("input",function() {applySubscriptionsFilter();});
@@ -6315,6 +6377,7 @@
                     });
                     if (partnerCommissionSaveEl) partnerCommissionSaveEl.addEventListener("click", savePartnerConfig);
                     if (partnerBlockToggleEl) partnerBlockToggleEl.addEventListener("click", togglePartnerBlock);
+                    if (partnerLinkBtnEl) partnerLinkBtnEl.addEventListener("click", adminLinkReferralFlow);
                     var settingsReloadBtn = document.getElementById("settingsReload");
                     if (settingsReloadBtn) settingsReloadBtn.addEventListener("click",function() {loadSubscriptionSettings();});
                     var settingsSaveBtn = document.getElementById("settingsSave");

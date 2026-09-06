@@ -4589,7 +4589,7 @@ exports.updateSubscriptionFinancialEvent = https.onCall(async (data, context) =>
     };
 });
 
-exports.activateFreeTrial = https.onCall(async (_data, context) => {
+exports.activateFreeTrial = https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem ativar o período gratuito.');
     }
@@ -4659,6 +4659,25 @@ exports.activateFreeTrial = https.onCall(async (_data, context) => {
         updatedAt: nowIso
     };
     const userSync = await applyUserPatchAcrossScopes(uid, patch, { companyId, email: userEmail });
+    // Gancho aditivo Programa de Parceiros: trial gratuito também vincula indicação.
+    try {
+        const trialPayload = data && typeof data === 'object' ? data : {};
+        const trialPartnerCode = String(trialPayload.partnerCode || trialPayload.partnercode || '').trim().toUpperCase().replace(/\s+/g, '');
+        if (/^PAR-[A-Z0-9]{4,8}$/.test(trialPartnerCode)) {
+            const trialPartner = await partnerFunctions.resolvePartnerByCode(trialPartnerCode);
+            if (trialPartner && trialPartner.status === 'active'
+                && String(trialPartner.ownerUid || '') !== String(uid)
+                && String(trialPartner.email || '').toLowerCase() !== String(userEmail || '').toLowerCase()) {
+                await partnerFunctions.ensureReferral({
+                    uid,
+                    partnerId: trialPartner.id,
+                    code: trialPartnerCode,
+                    source: 'free_trial',
+                    companyId: userSync.companyId || companyId || ''
+                });
+            }
+        }
+    } catch (_) {}
     await pushUserNotification(uid, {
         type: 'success',
         title: 'Período gratuito ativado',
@@ -6860,3 +6879,4 @@ exports.getPartnersAdmin = partnerFunctions.getPartnersAdmin;
 exports.getPartnerDetailAdmin = partnerFunctions.getPartnerDetailAdmin;
 exports.setPartnerConfig = partnerFunctions.setPartnerConfig;
 exports.markCommissionPaid = partnerFunctions.markCommissionPaid;
+exports.adminLinkReferral = partnerFunctions.adminLinkReferral;

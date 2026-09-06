@@ -335,6 +335,100 @@ async function recordPartnerCommissionEarned({ partnerId, referredUid, companyId
     return { created: true, commission, percent: pct, ownerUid: partner.ownerUid || null, partnerName: partner.name || '' };
 }
 
+// ─── Projeções das 3 próximas comissões (somente leitura; nunca cria comissão)
+
+const PARTNER_SETTINGS_PATH = 'system/subscriptionSettings';
+
+function planPeriodMonths(planKey) {
+    const k = String(planKey || '').toLowerCase();
+    if (k === 'quarterly' || k === 'annual') return 3;
+    if (k === 'premium') return 12;
+    return 1;
+}
+
+function planAmountFromSettings(settings, planKey) {
+    const plans = (settings && settings.plans) || {};
+    const pick = (obj, fb) => {
+        const n = Number(obj && obj.amount);
+        return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : fb;
+    };
+    const monthly = pick(plans.monthly, 0);
+    const k = String(planKey || '').toLowerCase();
+    if (k === 'quarterly' || k === 'annual') {
+        const v = pick(plans.quarterly, 0);
+        return { amount: v || monthly, plan: 'quarterly', assumed: !v && !!monthly };
+    }
+    if (k === 'premium') {
+        return { amount: pick(plans.premium, 0), plan: 'premium', assumed: false };
+    }
+    if (k === 'monthly') return { amount: monthly, plan: 'monthly', assumed: false };
+    return { amount: monthly, plan: 'monthly', assumed: true };
+}
+
+function resolveEffectivePercent(partner, campaignSettings) {
+    if (partner && partner.commissionPercent !== null && partner.commissionPercent !== undefined && partner.commissionPercent !== '') {
+        const p = Number(partner.commissionPercent);
+        if (Number.isFinite(p) && p > 0) return p;
+    }
+    const referralCfg = (campaignSettings && campaignSettings.campaign && campaignSettings.campaign.referral) || {};
+    const d = Number(referralCfg.commissionPercentForReferrer || 0);
+    return Number.isFinite(d) && d > 0 ? d : 0;
+}
+
+async function readPartnerPricing() {
+    try {
+        const snap = await admin.database().ref(PARTNER_SETTINGS_PATH).get();
+        return snap.exists() ? snap.val() : {};
+    } catch (_) {
+        return {};
+    }
+}
+
+function buildProjections({ planKey, endDateIso, settings, percent }) {
+    const pct = Number(percent) || 0;
+    if (!(pct > 0)) return [];
+    const priced = planAmountFromSettings(settings, planKey);
+    if (!(priced.amount > 0)) return [];
+    const months = planPeriodMonths(priced.plan);
+    let base = endDateIso ? new Date(endDateIso) : null;
+    if (!base || Number.isNaN(base.getTime())) base = new Date();
+    const out = [];
+    for (let i = 0; i < 3; i += 1) {
+        const due = new Date(base.getTime());
+        if (i > 0) due.setMonth(due.getMonth() + (i * months));
+        out.push({
+            n: i + 1,
+            plan: priced.plan,
+            assumedPlan: priced.assumed,
+            dueDate: due.toISOString(),
+            amount: priced.amount,
+            percent: pct,
+            commission: computeCommission(priced.amount, pct),
+            projected: true
+        });
+    }
+    return out;
+}
+
+async function attachProjections(companies, partner, settings) {
+    const list = Array.isArray(companies) ? companies : [];
+    const pct = resolveEffectivePercent(partner, settings);
+    let projectedTotal = 0;
+    list.forEach((c) => {
+        const projs = buildProjections({
+            planKey: (c && (c.planKey || c.plan)) || '',
+            endDateIso: (c && (c.endDate || c.subscriptionEndDate)) || '',
+            settings,
+            percent: pct
+        });
+        c.projections = projs;
+        projs.forEach((p) => {
+            projectedTotal = Math.round((projectedTotal + Number(p.commission || 0)) * 100) / 100;
+        });
+    });
+    return { companies: list, projectedTotal: Math.round(projectedTotal * 100) / 100 };
+}
+
 // ─── 4) Dashboard do parceiro (somente dados próprios) ──────────────────────
 
 function isOverdueUser(userData) {
@@ -437,6 +531,8 @@ exports.getMyPartnerDashboard = functions.https.onCall(async (data, context) => 
     });
     earned = Math.round(earned * 100) / 100;
     paid = Math.round(paid * 100) / 100;
+    const pricingSettings = await readPartnerPricing();
+    const enriched = await attachProjections(companies, partner, pricingSettings);
     return {
         success: true,
         partner: {
@@ -453,10 +549,12 @@ exports.getMyPartnerDashboard = functions.https.onCall(async (data, context) => 
             revenue,
             earned,
             paid,
-            pending: earned
+            pending: earned,
+            projected: enriched.projectedTotal
         },
-        companies,
-        commissions: commissions.slice(0, 100)
+        companies: enriched.companies,
+        commissions: commissions.slice(0, 100),
+        projectedTotal: enriched.projectedTotal
     };
 });
 
@@ -687,7 +785,9 @@ exports.getPartnerDetailAdmin = functions.https.onCall(async (data, context) => 
     const commRaw = commSnap.exists() ? commSnap.val() : {};
     const commissions = Object.entries(commRaw || {}).map(([entryId, c]) => ({ entryId, ...(c || {}) }))
         .sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
-    return { success: true, partner, companies, commissions };
+    const detailPricing = await readPartnerPricing();
+    const detailEnriched = await attachProjections(companies, partner, detailPricing);
+    return { success: true, partner, companies: detailEnriched.companies, commissions, projectedTotal: detailEnriched.projectedTotal };
 });
 
 exports.setPartnerConfig = functions.https.onCall(async (data, context) => {
@@ -767,6 +867,64 @@ exports.markCommissionPaid = functions.https.onCall(async (data, context) => {
     return { success: true, partnerId, entryId };
 });
 
+exports.adminLinkReferral = functions.https.onCall(async (data, context) => {
+    await assertSuperAdminCall(context);
+    const payload = data && typeof data === 'object' ? data : {};
+    const partnerId = sanitizeStr(payload.partnerId, 128);
+    const identity = sanitizeStr(payload.userEmail || payload.referredUid || payload.identity || '', 180).toLowerCase();
+    if (!partnerId || !identity) {
+        throw new functions.https.HttpsError('invalid-argument', 'partnerId e e-mail/UID do indicado são obrigatórios.');
+    }
+    const partner = await readPartnerById(partnerId);
+    if (!partner || partner.status !== 'active') {
+        throw new functions.https.HttpsError('not-found', 'Parceiro não encontrado ou inativo.');
+    }
+    let uid = '';
+    let userData = {};
+    if (/^[A-Za-z0-9]{10,128}$/.test(identity) && !identity.includes('@')) {
+        const snap = await admin.database().ref(`users/${identity}`).get();
+        if (!snap.exists()) {
+            throw new functions.https.HttpsError('not-found', 'Usuário não encontrado.');
+        }
+        uid = identity;
+        userData = snap.val() || {};
+    } else {
+        const usersSnap = await admin.database().ref('users').get();
+        const users = usersSnap.exists() ? usersSnap.val() : {};
+        for (const [candidateUid, u] of Object.entries(users || {})) {
+            if (u && String(u.email || '').toLowerCase() === identity) {
+                uid = String(candidateUid);
+                userData = u || {};
+                break;
+            }
+        }
+        if (!uid) {
+            throw new functions.https.HttpsError('not-found', 'Usuário não encontrado.');
+        }
+    }
+    const userEmail = String(userData.email || '').toLowerCase();
+    if (String(partner.ownerUid || '') === uid || (userEmail && partner.email && userEmail === String(partner.email).toLowerCase())) {
+        throw new functions.https.HttpsError('failed-precondition', 'Parceiro não pode indicar a si mesmo.');
+    }
+    const link = await ensureReferral({
+        uid,
+        partnerId: partner.id,
+        code: partner.code || '',
+        source: 'manual_admin',
+        companyId: String(userData.companyId || userData.companyID || '')
+    });
+    try {
+        await admin.database().ref(`subscriptionAdminPurgeAudit/${context.auth.uid}`).push({
+            at: new Date().toISOString(),
+            by: String(context.auth.uid),
+            type: 'adminLinkReferral',
+            partnerId: partner.id,
+            referredUid: uid
+        });
+    } catch (_) {}
+    return { success: true, created: !!link.created, partnerId: partner.id, referredUid: uid, code: partner.code || '' };
+});
+
 module.exports = {
     configure,
     normalizePartnerCode,
@@ -780,6 +938,11 @@ module.exports = {
     ensureReferral,
     isOverdueUser,
     recordPartnerCommissionEarned,
+    planPeriodMonths,
+    planAmountFromSettings,
+    resolveEffectivePercent,
+    buildProjections,
+    attachProjections,
     registerPartner: exports.registerPartner,
     validatePartnerCode: exports.validatePartnerCode,
     linkPartnerReferral: exports.linkPartnerReferral,
@@ -788,5 +951,6 @@ module.exports = {
     getPartnersAdmin: exports.getPartnersAdmin,
     getPartnerDetailAdmin: exports.getPartnerDetailAdmin,
     setPartnerConfig: exports.setPartnerConfig,
-    markCommissionPaid: exports.markCommissionPaid
+    markCommissionPaid: exports.markCommissionPaid,
+    adminLinkReferral: exports.adminLinkReferral
 };

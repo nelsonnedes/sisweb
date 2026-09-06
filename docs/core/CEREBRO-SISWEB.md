@@ -470,6 +470,13 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **4) Toasts vazios:** `__toast` (menu-component.js) renderizava caixa colorida com texto vazio. Fix: `if(!s)return;` — sem texto, sem toast.
 - **Verificacao:** 18/18 nos testes tocados (2 asserts novos por arquivo); browser: busy on/off + label restaurado, destino `company.html?reason=subscription_onboarding` p/ sem-empresa; publicado (hosting) apos validate:pr 6/6.
 
+## 40. Sessao 2026-09-06 — Vinculo perdido no plano gratis + projecoes + vinculo manual
+- **Causa do painel vazio:** `login.html` so salva `sisweb_pending_partner` local; `submitSubscriptionRequest` consome no pago, mas o gratis (`activateFreeTrial`) ignorava — indicado free nunca gerava `campaignReferrals`.
+- **Fix:** `activateFreeTrial` aceita `partnerCode` → `ensureReferral(source:'free_trial')` com anti-autoindicacao; `firebaseService.activateFreeTrial(payload)`; `subscription.html` envia o codigo do campo no plano gratis (pago ja enviava).
+- **Projecoes (leitura, sem ledger):** `buildProjections` (helpers puros exportados) gera as 3 proximas comissoes se pagar no vencimento — percentual efetivo (override ?? campanha) × valor do plano; gratis/desconhecido assume mensal (`assumedPlan`). `getMyPartnerDashboard`/`getPartnerDetailAdmin` retornam `projections` por empresa + `projectedTotal`; portal e admin ganharam tabelas "Projeção" rotuladas.
+- **Vinculo manual (superadmin):** `adminLinkReferral` (email/UID, sem sobrescrever, com auditoria) + campo no detalhe do parceiro — serve para ligar o cliente teste existente (teste@cliente.com) ao PAR-UNS6 pelo painel.
+- **Verificacao:** tests 17/17; publicado functions (v1) + hosting apos validate:pr.
+
 ## 38. Sessao 2026-09-06 — Hero "Painel real" implementado de verdade
 - **Achado:** o hero referenciava `assets/help-manual/dashboard-overview.png`, que NAO existe em disco — o `onerror` escondia a imagem e o frame ficava vazio (era o "nao implementado" do usuario).
 - **Fix (landing-vendas.html/css/js):** `.lv-hero-mockup` virou `.lv-hero-stage`: desktop com mini-carrossel `#lv-hero-carousel` (Dashboard=index-overview.png, Estoque, Vendas — existencia e hosting-files verificados) via `initCarousel` (+1 linha JS), setas, hint e legendas PT-BR; mini iPhone flutuante com `index-mobile.png`; caption honesta ("versao de bolso no celular"); fallback CSS atras das imagens, sem onerror apagador.
