@@ -130,6 +130,7 @@ const TOOLTIPS = {
     start();
   }
   initCarousel('lv-hero-carousel');
+  initCarousel('lv-hero-phone-carousel');
   initCarousel('lv-phone-carousel');
   initCarousel('lv-desk-carousel');
 })();

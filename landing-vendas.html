@@ -50,46 +50,83 @@
     </div>
     <div class="lv-hero-mockup">
       <div class="lv-hero-stage">
-        <div class="lv-mockup-desktop lv-hero-desktop">
-          <div class="lv-mockup-bar" aria-hidden="true"><span></span><span></span><span></span></div>
-          <div class="lv-carousel" id="lv-hero-carousel" role="region" aria-roledescription="carrossel" aria-label="Painel real do Sisweb: Dashboard, Estoque e Vendas" tabindex="0" data-autoplay="6000">
-            <div class="lv-viewport lv-hero-viewport">
-              <div class="lv-slide is-active" role="group" aria-roledescription="slide" aria-label="1 de 3: Dashboard">
-                <div class="lv-mini" aria-hidden="true"><span class="lv-mini-side"><i></i><i></i><i></i><i></i><i></i></span><span class="lv-mini-main"><b></b><span class="lv-mini-cards"><i></i><i></i><i></i></span><span class="lv-mini-rows"><i></i><i></i><i></i><i></i></span></span></div>
-                <img src="assets/help-manual/index-overview.png" alt="Dashboard do Sisweb no computador" loading="lazy" onerror="this.remove()">
-                <span class="lv-slide-cap">Dashboard — o pátio inteiro num painel</span>
+        <div class="lv-monitor-wrap">
+          <div class="lv-monitor">
+            <div class="lv-monitor-frame">
+              <div class="lv-monitor-cam" aria-hidden="true"></div>
+              <div class="lv-monitor-screen">
+                <div class="lv-carousel" id="lv-hero-carousel" role="region" aria-roledescription="carrossel" aria-label="Painel real do Sisweb: Dashboard, Estoque e Vendas" tabindex="0" data-autoplay="6000">
+                  <div class="lv-viewport lv-desk-viewport">
+                    <div class="lv-slide is-active" role="group" aria-roledescription="slide" aria-label="1 de 3: Dashboard">
+                      <div class="lv-mini" aria-hidden="true"><span class="lv-mini-side"><i></i><i></i><i></i><i></i><i></i></span><span class="lv-mini-main"><b></b><span class="lv-mini-cards"><i></i><i></i><i></i></span><span class="lv-mini-rows"><i></i><i></i><i></i><i></i></span></span></div>
+                      <img src="assets/help-manual/index-overview.png" alt="Dashboard do Sisweb no computador" loading="lazy" onerror="this.remove()">
+                      <span class="lv-slide-cap">Dashboard — o pátio inteiro num painel</span>
+                    </div>
+                    <div class="lv-slide" role="group" aria-roledescription="slide" aria-label="2 de 3: Estoque" aria-hidden="true">
+                      <div class="lv-mini" aria-hidden="true"><span class="lv-mini-side"><i></i><i></i><i></i><i></i><i></i></span><span class="lv-mini-main"><b></b><span class="lv-mini-cards"><i></i><i></i><i></i></span><span class="lv-mini-rows"><i></i><i></i><i></i><i></i></span></span></div>
+                      <img src="assets/help-manual/estoque-overview.png" alt="Estoque de pátio do Sisweb no computador" loading="lazy" onerror="this.remove()">
+                      <span class="lv-slide-cap">Estoque — saldo real do pátio</span>
+                    </div>
+                    <div class="lv-slide" role="group" aria-roledescription="slide" aria-label="3 de 3: Vendas" aria-hidden="true">
+                      <div class="lv-mini" aria-hidden="true"><span class="lv-mini-side"><i></i><i></i><i></i><i></i><i></i></span><span class="lv-mini-main"><b></b><span class="lv-mini-cards"><i></i><i></i><i></i></span><span class="lv-mini-rows"><i></i><i></i><i></i><i></i></span></span></div>
+                      <img src="assets/help-manual/vendas-overview.png" alt="Vendas do Sisweb no computador" loading="lazy" onerror="this.remove()">
+                      <span class="lv-slide-cap">Vendas — do orçamento ao pedido</span>
+                    </div>
+                  </div>
+                  <div class="lv-controls">
+                    <button type="button" class="lv-arrow-btn lv-prev" aria-label="Tela anterior do painel" aria-controls="lv-hero-carousel"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
+                    <div class="lv-dots" role="group" aria-label="Escolher tela no computador">
+                      <button type="button" class="lv-dot" aria-label="Ir para Dashboard" aria-selected="true"><span aria-hidden="true"></span></button>
+                      <button type="button" class="lv-dot" aria-label="Ir para Estoque" aria-selected="false" tabindex="-1"><span aria-hidden="true"></span></button>
+                      <button type="button" class="lv-dot" aria-label="Ir para Vendas" aria-selected="false" tabindex="-1"><span aria-hidden="true"></span></button>
+                    </div>
+                    <button type="button" class="lv-arrow-btn lv-next" aria-label="Próxima tela do painel" aria-controls="lv-hero-carousel"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
+                  </div>
+                </div>
               </div>
-              <div class="lv-slide" role="group" aria-roledescription="slide" aria-label="2 de 3: Estoque" aria-hidden="true">
-                <div class="lv-mini" aria-hidden="true"><span class="lv-mini-side"><i></i><i></i><i></i><i></i><i></i></span><span class="lv-mini-main"><b></b><span class="lv-mini-cards"><i></i><i></i><i></i></span><span class="lv-mini-rows"><i></i><i></i><i></i><i></i></span></span></div>
-                <img src="assets/help-manual/estoque-overview.png" alt="Estoque de pátio do Sisweb no computador" loading="lazy" onerror="this.remove()">
-                <span class="lv-slide-cap">Estoque — saldo real do pátio</span>
-              </div>
-              <div class="lv-slide" role="group" aria-roledescription="slide" aria-label="3 de 3: Vendas" aria-hidden="true">
-                <div class="lv-mini" aria-hidden="true"><span class="lv-mini-side"><i></i><i></i><i></i><i></i><i></i></span><span class="lv-mini-main"><b></b><span class="lv-mini-cards"><i></i><i></i><i></i></span><span class="lv-mini-rows"><i></i><i></i><i></i><i></i></span></span></div>
-                <img src="assets/help-manual/vendas-overview.png" alt="Vendas do Sisweb no computador" loading="lazy" onerror="this.remove()">
-                <span class="lv-slide-cap">Vendas — do orçamento ao pedido</span>
-              </div>
-            </div>
-            <div class="lv-controls lv-hero-controls">
-              <button type="button" class="lv-arrow-btn lv-prev" aria-label="Tela anterior do painel" aria-controls="lv-hero-carousel"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
-              <span class="lv-hero-hint" aria-hidden="true">Dashboard • Estoque • Vendas</span>
-              <button type="button" class="lv-arrow-btn lv-next" aria-label="Próxima tela do painel" aria-controls="lv-hero-carousel"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
             </div>
           </div>
-          <div class="lv-mockup-caption">Painel real do Sisweb — Dashboard, Estoque e Vendas no computador, com versão de bolso no celular</div>
-        </div>
-        <div class="lv-hero-phone">
-          <div class="lv-phone-frame">
-            <div class="lv-phone-island" aria-hidden="true"></div>
-            <div class="lv-phone-screen lv-hero-phone-screen">
-              <div class="lv-mini" aria-hidden="true"><span class="lv-mini-side"><i></i><i></i><i></i><i></i><i></i></span><span class="lv-mini-main"><b></b><span class="lv-mini-cards"><i></i><i></i></span><span class="lv-mini-rows"><i></i><i></i><i></i></span></span></div>
-              <img src="assets/help-manual/index-mobile.png" alt="Painel do Sisweb no celular" loading="lazy" onerror="this.remove()">
+          <div class="lv-phone-wrap">
+            <div class="lv-phone">
+              <div class="lv-phone-frame">
+                <div class="lv-phone-island" aria-hidden="true"></div>
+                <div class="lv-phone-screen">
+                  <div class="lv-carousel" id="lv-hero-phone-carousel" role="region" aria-roledescription="carrossel" aria-label="Painel real do Sisweb no celular" tabindex="0" data-autoplay="5500">
+                    <div class="lv-viewport lv-phone-viewport">
+                      <div class="lv-slide is-active" role="group" aria-roledescription="slide" aria-label="1 de 3: Dashboard">
+                        <div class="lv-mini" aria-hidden="true"><span class="lv-mini-side"><i></i><i></i><i></i><i></i><i></i></span><span class="lv-mini-main"><b></b><span class="lv-mini-cards"><i></i><i></i></span><span class="lv-mini-rows"><i></i><i></i><i></i></span></span></div>
+                        <img src="assets/help-manual/index-mobile.png" alt="Dashboard do Sisweb no celular" loading="lazy" onerror="this.remove()">
+                        <span class="lv-slide-cap">Dashboard — o pátio inteiro num painel</span>
+                      </div>
+                      <div class="lv-slide" role="group" aria-roledescription="slide" aria-label="2 de 3: Estoque" aria-hidden="true">
+                        <div class="lv-mini" aria-hidden="true"><span class="lv-mini-side"><i></i><i></i><i></i><i></i><i></i></span><span class="lv-mini-main"><b></b><span class="lv-mini-cards"><i></i><i></i></span><span class="lv-mini-rows"><i></i><i></i><i></i></span></span></div>
+                        <img src="assets/help-manual/estoque-mobile.png" alt="Estoque de pátio do Sisweb no celular" loading="lazy" onerror="this.remove()">
+                        <span class="lv-slide-cap">Estoque — saldo real e rastreio</span>
+                      </div>
+                      <div class="lv-slide" role="group" aria-roledescription="slide" aria-label="3 de 3: Vendas" aria-hidden="true">
+                        <div class="lv-mini" aria-hidden="true"><span class="lv-mini-side"><i></i><i></i><i></i><i></i><i></i></span><span class="lv-mini-main"><b></b><span class="lv-mini-cards"><i></i><i></i></span><span class="lv-mini-rows"><i></i><i></i><i></i></span></span></div>
+                        <img src="assets/help-manual/vendas-mobile.png" alt="Vendas do Sisweb no celular" loading="lazy" onerror="this.remove()">
+                        <span class="lv-slide-cap">Vendas — do orçamento ao pedido</span>
+                      </div>
+                    </div>
+                    <div class="lv-controls">
+                      <button type="button" class="lv-arrow-btn lv-prev" aria-label="Tela anterior no celular" aria-controls="lv-hero-phone-carousel"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
+                      <div class="lv-dots" role="group" aria-label="Escolher tela no celular">
+                        <button type="button" class="lv-dot" aria-label="Ir para Dashboard" aria-selected="true"><span aria-hidden="true"></span></button>
+                        <button type="button" class="lv-dot" aria-label="Ir para Estoque" aria-selected="false" tabindex="-1"><span aria-hidden="true"></span></button>
+                        <button type="button" class="lv-dot" aria-label="Ir para Vendas" aria-selected="false" tabindex="-1"><span aria-hidden="true"></span></button>
+                      </div>
+                      <button type="button" class="lv-arrow-btn lv-next" aria-label="Próxima tela no celular" aria-controls="lv-hero-phone-carousel"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <p class="lv-hero-phone-cap">No celular</p>
         </div>
       </div>
     </div>
+    <div class="lv-hero-phone-cap" style="display:none;"><i class="fas fa-mobile-alt" aria-hidden="true"></i> No celular</div>
   </div>
   <!-- Assinatura: pilha de toras em CSS puro -->
   <div class="lv-logpile" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
@@ -324,7 +361,7 @@
     <div class="lv-nota-tecnica"><i class="fas fa-info-circle"></i> <strong>Transparência:</strong> percentuais, prazos de repasse e regras são definidos pelos administradores no Painel SuperAdmin. Comissão só nasce após pagamento aprovado do indicado.</div>
     <div class="lv-ctas-center">
       <a href="https://sisweb-7ce82.web.app/cadastro-parceiro.html" class="lv-btn lv-btn-primary lv-btn-lg"><i class="fas fa-handshake"></i> Inscrever-se como Parceiro</a>
-      <a href="https://sisweb-7ce82.web.app/cadastro-parceiro.html" class="lv-btn lv-btn-ghost lv-btn-lg"><i class="fas fa-chart-line"></i> Painel do Parceiro</a>
+      <a href="https://sisweb-7ce82.web.app/login.html" class="lv-btn lv-btn-ghost lv-btn-lg"><i class="fas fa-sign-in-alt"></i> Acessar meu Painel</a>
       <a href="https://sisweb-7ce82.web.app/login.html?mode=register" class="lv-btn lv-btn-ghost lv-btn-lg">Indique com seu código</a>
     </div>
   </div>
@@ -351,6 +388,6 @@
 <a href="https://wa.me/5591991311049?text=Ol%C3%A1!%20Vim%20pela%20p%C3%A1gina%20de%20vendas%20do%20Sisweb%20e%20quero%20falar%20com%20um%20consultor." class="lv-float lv-float-wa" aria-label="Conversar no WhatsApp com a Sisweb: +55 91 99131-1049" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i></a>
 <!-- Instagram: botão oculto até haver handle oficial. Não publicar link placeholder. -->
 
-<script src="landing-vendas.js?v=2377b4aa7478"></script>
+<script src="landing-vendas.js?v=54dad059f3f6"></script>
 </body>
 </html>
