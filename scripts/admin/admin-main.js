@@ -1936,11 +1936,15 @@
                         : "-";
                     var commTag = c.status === "paid" ? "green" : (c.status === "earned" ? "yellow" : "blue");
                     var commLabel = c.status === "paid" ? "Paga" : (c.status === "earned" ? "A receber" : String(c.status || "-"));
+                    var riskFlags = Array.isArray(c.riskFlags) ? c.riskFlags : [];
+                    var riskMark = riskFlags.indexOf("phone-match") >= 0
+                        ? ' <span class="tag red" title="Telefone do indicado igual ao do parceiro — verificar possível autoindicação.">⚠ mesmo telefone</span>'
+                        : "";
                     return '<tr><td>' + escapeHtmlSafe(c.at || "-") + '</td>' +
                         '<td>' + formatBRLSafe(c.paidAmount) + '</td>' +
                         '<td>' + escapeHtmlSafe(c.percent) + '%</td>' +
                         '<td>' + formatBRLSafe(c.commission) + '</td>' +
-                        '<td><span class="tag ' + commTag + '">' + escapeHtmlSafe(commLabel) + '</span></td>' +
+                        '<td><span class="tag ' + commTag + '">' + escapeHtmlSafe(commLabel) + '</span>' + riskMark + '</td>' +
                         '<td>' + action + '</td></tr>';
                 }).join("");
                 Array.prototype.forEach.call(tbody.querySelectorAll("[data-comm-paid]"), function(btn) {

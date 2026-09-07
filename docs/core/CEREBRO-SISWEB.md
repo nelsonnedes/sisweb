@@ -463,6 +463,13 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Mobile:** tabelas com scroll controlado, botões ≥44px, modal com safe padding, topbar/botões existentes; CLI sem viewport — QA por inspeção CSS + screenshot desktop.
 - **Verificacao:** tests 24/24; validate:pr 6/6; publicado (hosting) após gates.
 
+## 42. Sessao 2026-09-06 — Anti-autoindicação total + tipo de conta + cupons na landing
+- **Loophole real confirmado e fechado:** gancho do plano pago não tinha trava de código próprio (trial/link tinham). Agora submit + `recordPartnerCommissionEarned` (defesa no nascimento do dinheiro) bloqueiam uid/e-mail iguais (`self-referral`); telefone igual vira `riskFlags:['phone-match']` com ⚠ no ledger do admin. E-mails diferentes seguem indetectáveis — revisão operacional.
+- **Registro (login.html):** seletor "Como você vai usar" (Usuário/Apenas Parceiro/Ambos); parceiro-only oculta campo de código; Ambos avisa que código próprio será recusado + link cupons.
+- **`validatePartnerCode` retorna `own`** (só revela ao dono); assinatura valida e bloqueia com aviso + sugestão de cupom antes de enviar.
+- **Cupons na landing:** `listActivePromoCodes` público (só vitrine, sem auth); seção #cupons com cards (Copiar + Usar cupom → subscription?cupom=); falha some a seção. DESCONTO5 5% até 30/12/2026 verificado no ar.
+- **Verificacao:** tests 30/30; validate:pr 6/6; functions gen1 OK (gen2 quota pré-existente); hosting OK; commit + push.
+
 ## 37. Sessao 2026-09-06 — Root cause do 400: onCall v1 x v2 no firebase-functions v7
 - **Sintoma:** todo `registerPartner` (valido ou nao) retornava 400 'Informe seu nome completo.'; reproduzido via SDK e via fetch direto.
 - **Causa:** `functions/partner-functions.js` usava `require('firebase-functions').https.onCall` — no SDK v7 instalado (7.2.5) o root onCall === v2 onCall (provado: `root===v2: true`), cujo handler recebe o envelope `{data,...}`. O codigo estilo v1 `(data, context)` lia `payload.name` = undefined sempre. As demais callables usam `firebase-functions/v1` e funcionam.

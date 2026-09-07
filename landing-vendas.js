@@ -133,4 +133,77 @@ const TOOLTIPS = {
   initCarousel('lv-hero-phone-carousel');
   initCarousel('lv-phone-carousel');
   initCarousel('lv-desk-carousel');
+  loadActiveCoupons();
 })();
+
+// Cupons ativos (vitrine pública, sem login). Falha silenciosa: esconde a seção.
+async function loadActiveCoupons(){
+  var section = document.getElementById('cupons');
+  var host = document.getElementById('lv-coupon-list');
+  if (!host || !section) return;
+  function esc(s){
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function planNames(plans){
+    var map = { monthly: 'Mensal', quarterly: 'Trimestral', annual: 'Trimestral', premium: 'Anual' };
+    var list = Array.isArray(plans) ? plans : [];
+    var names = list.map(function(p){ return map[String(p || '').toLowerCase()] || String(p || ''); }).filter(Boolean);
+    return names.length ? names.join(' • ') : 'Todos os planos';
+  }
+  function validity(expiresAt){
+    if (!expiresAt) return 'Por tempo limitado';
+    var d = new Date(expiresAt);
+    if (Number.isNaN(d.getTime())) return 'Por tempo limitado';
+    return 'Válido até ' + d.toLocaleDateString('pt-BR');
+  }
+  try {
+    var ctrl = null, timer = null;
+    try {
+      ctrl = new AbortController();
+      timer = setTimeout(function(){ try { ctrl.abort(); } catch (_) {} }, 8000);
+    } catch (_) { ctrl = null; }
+    var res = await fetch('https://us-central1-sisweb-7ce82.cloudfunctions.net/listActivePromoCodes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: {} }),
+      signal: ctrl ? ctrl.signal : undefined
+    });
+    if (timer) clearTimeout(timer);
+    if (!res || !res.ok) throw new Error('http ' + (res && res.status));
+    var body = await res.json();
+    var coupons = body && body.result && Array.isArray(body.result.coupons) ? body.result.coupons : [];
+    if (!coupons.length) { section.style.display = 'none'; return; }
+    host.innerHTML = coupons.map(function(c){
+      var code = String(c.code || '');
+      var link = 'https://sisweb-7ce82.web.app/subscription.html?cupom=' + encodeURIComponent(code);
+      return '<article class="lv-coupon-card">'
+        + '<div class="lv-coupon-off">' + esc(c.discountText || 'Desconto') + '</div>'
+        + '<div><span class="lv-coupon-code">' + esc(code) + '</span></div>'
+        + '<p class="lv-coupon-meta">' + esc(validity(c.expiresAt)) + ' • ' + esc(planNames(c.allowedPlans)) + '</p>'
+        + '<div class="lv-coupon-actions">'
+        + '<button type="button" class="lv-btn lv-btn-secondary" data-coupon-copy="' + esc(code) + '"><i class="fas fa-copy"></i> Copiar</button>'
+        + '<a class="lv-btn lv-btn-primary" href="' + esc(link) + '">Usar cupom</a>'
+        + '</div></article>';
+    }).join('');
+    Array.prototype.forEach.call(host.querySelectorAll('[data-coupon-copy]'), function(btn){
+      btn.addEventListener('click', function(){
+        var code = btn.getAttribute('data-coupon-copy') || '';
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code);
+          else {
+            var t = document.createElement('textarea');
+            t.value = code;
+            document.body.appendChild(t);
+            t.select();
+            try { document.execCommand('copy'); } catch (_) {}
+            t.remove();
+          }
+          btn.innerHTML = '<i class="fas fa-check"></i> Copiado!';
+          setTimeout(function(){ btn.innerHTML = '<i class="fas fa-copy"></i> Copiar'; }, 2000);
+        } catch (_) {}
+      });
+    });
+  } catch (_) {
+    section.style.display = 'none';
+  }
+}

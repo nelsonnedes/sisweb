@@ -1338,7 +1338,7 @@
             subscribe,
             getTenantId,
             getCurrentUid
-        } from './firebaseService.js?v=72defcc41145';
+        } from './firebaseService.js?v=b16442b6c9a5';
         window.firebaseService = {
             ...(window.firebaseService || {}),
             authService,
@@ -2127,6 +2127,12 @@
                 const result = await window.firebaseService.validatePartnerCode(code);
                 const data = result && result.data ? result.data : result;
                 if (data && (data.valid === true || (data.success && data.valid !== false && !data.error))) {
+                    const own = data.own === true || (data.data && data.data.own === true);
+                    if (own) {
+                        msg.style.color = '#ef4444';
+                        msg.textContent = 'Este código é seu e não pode gerar indicação. Informe o código de outro parceiro ou use um cupom promocional ativo.';
+                        return;
+                    }
                     const name = data.partnerName || (data.data && data.data.partnerName) || 'Parceiro Sisweb';
                     msg.style.color = '#10b981';
                     msg.textContent = `Código válido (${name}). Será vinculado à sua assinatura.`;
@@ -3124,6 +3130,18 @@
             const partnerCodeInput = (document.getElementById('partnerCode') ? document.getElementById('partnerCode').value : '').trim().toUpperCase().replace(/\s+/g, '');
             if (partnerCodeInput && !/^PAR-[A-Z0-9]{4,8}$/.test(partnerCodeInput)) {
                 throw new Error('Código de parceiro inválido. Use o formato PAR-XXXX.');
+            }
+            if (partnerCodeInput && window.firebaseService && typeof window.firebaseService.validatePartnerCode === 'function') {
+                try {
+                    const ownCheck = await window.firebaseService.validatePartnerCode(partnerCodeInput);
+                    const ownData = ownCheck && ownCheck.data ? ownCheck.data : ownCheck;
+                    const isOwn = ownData && (ownData.own === true || (ownData.data && ownData.data.own === true));
+                    if (isOwn) {
+                        throw new Error('Este código de parceiro é seu e não pode gerar indicação. Informe o código de outro parceiro ou use um cupom promocional ativo.');
+                    }
+                } catch (ownErr) {
+                    if (ownErr && /código de parceiro é seu/i.test(String(ownErr.message || ''))) throw ownErr;
+                }
             }
             if (!window.firebaseService || typeof window.firebaseService.submitSubscriptionRequest !== 'function') {
                 throw new Error('Serviço de assinatura indisponível no backend.');

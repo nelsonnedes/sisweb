@@ -40,7 +40,7 @@
 <div id="partnerReminderModal" class="partner-modal" hidden><div class="partner-modal-card" role="dialog" aria-modal="true" aria-labelledby="partnerReminderTitle"><h3 id="partnerReminderTitle">Enviar recado de cobrança</h3><p>Recado opcional à empresa (máx. 280 caracteres).</p><textarea id="partnerReminderText" maxlength="280" rows="4" placeholder="Ex.: Olá! Sua mensalidade venceu ontem. Qualquer dúvida estou à disposição."></textarea><div class="partner-modal-count"><span id="partnerReminderCount">0</span>/280</div><div id="partnerReminderMessage" class="partner-message" role="status"></div><div class="partner-actions"><button id="partnerReminderCancel" class="lv-btn lv-btn-ghost" type="button">Cancelar</button><button id="partnerReminderConfirm" class="lv-btn lv-btn-primary" type="button"><i class="fas fa-paper-plane"></i> Confirmar envio</button></div></div></div>
 </div></main><footer class="lv-footer"><div class="lv-container"><p>© Sisweb — Programa de Parceiros</p></div></footer>
 <script type="module">
-import { authService, claimPartnerAccount, getMyPartnerDashboard, sendBillingReminder } from './firebaseService.js?v=72defcc41145';
+import { authService, claimPartnerAccount, getMyPartnerDashboard, sendBillingReminder } from './firebaseService.js?v=b16442b6c9a5';
 window.partnerPortalServices = { authService, claimPartnerAccount, getMyPartnerDashboard, sendBillingReminder };
 window.dispatchEvent(new CustomEvent('sisweb:partner-portal-ready'));
 </script>

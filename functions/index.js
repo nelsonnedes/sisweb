@@ -4410,11 +4410,14 @@ exports.submitSubscriptionRequest = https.onCall(async (data, context) => {
     const userSync = await applyUserPatchAcrossScopes(uid, userPatch, { companyId, email: userEmail });
     const effectiveCompanyId = userSync.companyId || String(companyId || '').trim();
     // Gancho aditivo Programa de Parceiros: codigo PAR-XXXX vira partnerId + referralEmail do parceiro.
+    // Anti-autoindicação: código próprio (mesmo uid ou e-mail do parceiro) não gera vínculo.
     let partnerLink = null;
     if (partnerCode) {
         try {
             const partner = await partnerFunctions.resolvePartnerByCode(partnerCode);
-            if (partner && partner.status === 'active') {
+            const ownCode = partner && (String(partner.ownerUid || '') === String(uid)
+                || String(partner.email || '').toLowerCase() === String(userEmail || '').toLowerCase());
+            if (partner && partner.status === 'active' && !ownCode) {
                 partnerLink = { partnerId: partner.id, code: partnerCode };
                 pendingPayment.partnerId = partner.id;
                 pendingPayment.partnerCode = partnerCode;
@@ -6806,6 +6809,42 @@ exports.validatePromoCode = https.onCall(async (data, context) => {
         type,
         value
     };
+});
+
+// Lista pública de cupons ativos (somente campos de vitrine; sem dados sensíveis).
+// Usada pela landing para exibir ofertas vigentes sem exigir login.
+exports.listActivePromoCodes = https.onCall(async (_data, context) => {
+    const snap = await admin.database().ref('system/promocodes').get();
+    const all = snap.exists() ? snap.val() : {};
+    const now = Date.now();
+    const out = [];
+    Object.values(all || {}).forEach((promo) => {
+        if (!promo || typeof promo !== 'object') return;
+        if (promo.active !== true || promo.archived === true) return;
+        if (promo.expiresAt && new Date(promo.expiresAt).getTime() < now) return;
+        const maxUses = parseInt(promo.maxUses, 10) || 0;
+        const currentUses = parseInt(promo.currentUses, 10) || 0;
+        if (maxUses > 0 && currentUses >= maxUses) return;
+        const code = normalizePromoCodeValue(promo.code);
+        if (!code) return;
+        const type = String(promo.type || 'percent').toLowerCase() === 'fixed' ? 'fixed' : 'percent';
+        const value = toMoney(promo.value || 0, 0);
+        if (!(value > 0)) return;
+        const allowedPlans = normalizePromoAllowedPlans(promo.allowedPlans || promo.plans || promo.planIds || []);
+        const discountText = type === 'percent'
+            ? `${String(value).replace('.', ',')}% OFF`
+            : `R$ ${value.toFixed(2).replace('.', ',')} OFF`;
+        out.push({
+            code,
+            type,
+            value,
+            expiresAt: promo.expiresAt || null,
+            allowedPlans,
+            discountText
+        });
+    });
+    out.sort((a, b) => String(a.code).localeCompare(String(b.code)));
+    return { success: true, coupons: out.slice(0, 20) };
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

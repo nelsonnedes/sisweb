@@ -3320,6 +3320,10 @@ async function validatePromoCode(payload) {
     }
 }
 
+async function listActivePromoCodes() {
+    return callSupportFunction('listActivePromoCodes', {});
+}
+
 const REPORT_COMPANY_BLOCKED_IDS = new Set([
     'users',
     'companies',
@@ -4631,6 +4635,7 @@ export {
     getPromoCodeAdmin,
     upsertPromoCodeAdmin,
     archivePromoCodeAdmin,
+    listActivePromoCodes,
     getAll,
     migrateFromIndexedDB,
     db,

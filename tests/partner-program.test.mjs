@@ -317,3 +317,61 @@ test('portal exibe projecoes, cobranca por clientRef e reload com token', () => 
   assert.match(portal, /async function refreshSession/);
   assert.doesNotMatch(portal, /sendBillingReminder\(\{companyId:/);
 });
+
+test('codigo proprio nao gera vinculo nem comissao', () => {
+  assert.match(indexSrc, /Anti-autoindica[^:]*: código próprio/);
+  assert.match(indexSrc, /const ownCode = partner && \(String\(partner\.ownerUid/);
+  const funcSrc = readFileSync('functions/partner-functions.js', 'utf8');
+  assert.match(funcSrc, /reason: 'self-referral'/);
+  assert.match(funcSrc, /riskFlags\.push\('phone-match'\)/);
+  assert.match(funcSrc, /own: !!own/);
+});
+
+test('registro orienta tipo de conta e codigo proprio', () => {
+  const login = readFileSync('login.html', 'utf8');
+  assert.match(login, /id="regAccountType"/);
+  assert.match(login, /Apenas Parceiro/);
+  assert.match(login, /Ambos \(usar o sistema e indicar\)/);
+  assert.match(login, /function updateRegAccountTypeUI\(\)/);
+  assert.match(login, /será recusado na assinatura/);
+  assert.match(login, /landing-vendas\.html#cupons/);
+  assert.match(login, /regAccountType !== 'partner'/);
+});
+
+test('assinatura bloqueia codigo proprio com aviso de cupom', () => {
+  const sub = readFileSync('subscription.html', 'utf8');
+  assert.match(sub, /Este código é seu e não pode gerar indicação/);
+  assert.match(sub, /own === true/);
+  assert.match(sub, /cupom promocional ativo/);
+});
+
+test('landing exibe cupons ativos com fallback silencioso', () => {
+  const landing = readFileSync('landing-vendas.html', 'utf8');
+  assert.match(landing, /id="cupons"/);
+  assert.match(landing, /id="lv-coupon-list"/);
+  assert.match(landing, /href="#cupons">Cupons/);
+  const css = readFileSync('landing-vendas.css', 'utf8');
+  assert.match(css, /lv-coupon-card/);
+  const js = readFileSync('landing-vendas.js', 'utf8');
+  assert.match(js, /listActivePromoCodes/);
+  assert.match(js, /subscription\.html\?cupom=/);
+});
+
+test('endpoint publico de cupons expoe so vitrine', () => {
+  const start = indexSrc.indexOf('exports.listActivePromoCodes');
+  assert.notEqual(start, -1);
+  const block = indexSrc.slice(start, indexSrc.indexOf('NF-e CLOUD FUNCTIONS', start));
+  assert.match(block, /discountText/);
+  assert.match(block, /allowedPlans/);
+  assert.doesNotMatch(block, /createdBy/);
+  assert.doesNotMatch(block, /assertSuperAdmin/);
+  assert.match(block, /out\.push\(\{\s*code,\s*type,\s*value,\s*expiresAt:[^}]*allowedPlans,[^}]*discountText/s);
+  const svc = readFileSync('firebaseService.js', 'utf8');
+  assert.match(svc, /async function listActivePromoCodes\(\)/);
+});
+
+test('admin sinaliza risco de mesmo telefone no ledger', () => {
+  const main = readFileSync('scripts/admin/admin-main.js', 'utf8');
+  assert.match(main, /mesmo telefone/);
+  assert.match(main, /riskFlags/);
+});

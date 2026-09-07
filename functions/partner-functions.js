@@ -256,7 +256,12 @@ exports.validatePartnerCode = functions.https.onCall(async (data, context) => {
     const partner = await resolvePartnerByCode(code);
     if (!partner || partner.status !== 'active') return { success: true, valid: false };
     const firstName = String(partner.name || '').trim().split(/\s+/)[0] || 'Parceiro Sisweb';
-    return { success: true, valid: true, partnerName: firstName };
+    // own revela APENAS ao dono se o código é dele (sem expor PII a terceiros).
+    const callerUid = String(context.auth.uid || '');
+    const callerEmail = String((context.auth.token && context.auth.token.email) || '').toLowerCase();
+    const own = (partner.ownerUid && String(partner.ownerUid) === callerUid)
+        || (callerEmail && partner.email && callerEmail === String(partner.email).toLowerCase());
+    return { success: true, valid: true, partnerName: firstName, own: !!own };
 });
 
 // ─── 2.1) Claim de acesso independente do parceiro ──────────────────────────
@@ -406,6 +411,27 @@ async function recordPartnerCommissionEarned({ partnerId, referredUid, companyId
     if (!pid) return { created: false };
     const partner = await readPartnerById(pid);
     if (!partner || partner.status !== 'active') return { created: false, reason: 'partner-inactive' };
+    // Anti-autoindicação no nascimento do dinheiro: uid/e-mail iguais bloqueiam;
+    // telefone igual vira sinal de risco para revisão (não bloqueia sozinho).
+    const riskFlags = [];
+    let referredEmail = '';
+    try {
+        const referredSnap = await admin.database().ref(`users/${String(referredUid || '')}`).get();
+        const referred = referredSnap.exists() ? (referredSnap.val() || {}) : {};
+        referredEmail = String(referred.email || '').toLowerCase();
+        const referredPhone = String(referred.phone || referred.telefone || referred.celular || referred.whatsapp || '').replace(/\D/g, '');
+        const partnerPhone = String(partner.phone || '').replace(/\D/g, '');
+        if ((partner.ownerUid && String(partner.ownerUid) === String(referredUid || ''))
+            || (referredEmail && partner.email && referredEmail === String(partner.email).toLowerCase())) {
+            return { created: false, reason: 'self-referral' };
+        }
+        if (referredPhone.length >= 8 && partnerPhone.length >= 8 && referredPhone === partnerPhone) {
+            riskFlags.push('phone-match');
+        }
+    } catch (_) {
+        // Falha de leitura não bloqueia: as travas de submit/trial/link já
+        // barraram uid/e-mail iguais; aqui é defesa em profundidade.
+    }
     const entryId = sanitizeEntryId(requestId);
     const entryRef = admin.database().ref(`campaignCommissions/${pid}/${entryId}`);
     const existing = await entryRef.get();
@@ -430,7 +456,8 @@ async function recordPartnerCommissionEarned({ partnerId, referredUid, companyId
         at: nowIso,
         paidAt: null,
         paidBy: null,
-        note: ''
+        note: '',
+        riskFlags
     });
     const totalsSnap = await admin.database().ref(`campaignPartners/${pid}/totalEarned`).get();
     const current = Number(totalsSnap.val() || 0);

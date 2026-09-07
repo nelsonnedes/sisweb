@@ -728,12 +728,24 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="regAccountType">Como você vai usar o Sisweb?</label>
+                    <div class="input-group">
+                        <select id="regAccountType" onchange="updateRegAccountTypeUI()">
+                            <option value="client" selected>Usuário Sisweb (usar o sistema)</option>
+                            <option value="partner">Apenas Parceiro (indicar e receber comissões)</option>
+                            <option value="both">Ambos (usar o sistema e indicar)</option>
+                        </select>
+                        <i class="fas fa-user-tag" aria-hidden="true"></i>
+                    </div>
+                </div>
+
+                <div class="form-group" id="regPartnerCodeGroup">
                     <label for="regPartnerCode">Código de Parceiro <span style="font-weight:400;color:#64748b;">(opcional)</span></label>
                     <div class="input-group">
                         <input type="text" id="regPartnerCode" autocomplete="off" placeholder="Ex: PAR-XXXX" style="text-transform:uppercase">
                         <i class="fas fa-handshake" aria-hidden="true"></i>
                     </div>
-                    <div style="font-size:11px;color:#64748b;margin-top:4px;">Se você foi indicado por um parceiro Sisweb, informe o código aqui (ex: PAR-XXXX). Ele será salvo junto ao seu cadastro para validação posterior.</div>
+                    <div id="regPartnerHint" style="font-size:11px;color:#64748b;margin-top:4px;">Se você foi indicado por um parceiro Sisweb, informe o código aqui (ex: PAR-XXXX). Ele será salvo junto ao seu cadastro para validação posterior.</div>
                 </div>
 
                 <button type="submit" id="registerSubmitBtn">
@@ -1256,6 +1268,28 @@
             document.getElementById('registerForm').reset();
             document.getElementById('regErrorMessage').style.display = 'none';
             openAccessModal('registerModal', '#regUsername');
+            try { updateRegAccountTypeUI(); } catch (_) {}
+        }
+
+        function updateRegAccountTypeUI() {
+            try {
+                const typeEl = document.getElementById('regAccountType');
+                const group = document.getElementById('regPartnerCodeGroup');
+                const codeInput = document.getElementById('regPartnerCode');
+                const hint = document.getElementById('regPartnerHint');
+                const type = typeEl ? String(typeEl.value || 'client') : 'client';
+                if (type === 'partner') {
+                    if (group) group.style.display = 'none';
+                    if (codeInput) codeInput.value = '';
+                } else {
+                    if (group) group.style.display = '';
+                    if (hint) {
+                        hint.innerHTML = type === 'both'
+                            ? 'Você vai <strong>usar e indicar</strong>. Se informar um código, use o de <strong>outro parceiro</strong> — o seu próprio código será recusado na assinatura. Sem código de outro parceiro? Veja os <a href="https://sisweb-7ce82.web.app/landing-vendas.html#cupons">cupons ativos</a>.'
+                            : 'Se você foi indicado por um parceiro Sisweb, informe o código aqui (ex: PAR-XXXX). Ele será salvo junto ao seu cadastro para validação posterior.';
+                    }
+                }
+            } catch (_) {}
         }
 
         function closeRegisterModal() {
@@ -1325,7 +1359,7 @@
         // Registro e Recuperação usam exclusivamente authService (sem duplicatas).
         // ═══════════════════════════════════════════════════════════════════════
         import { app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-init.js?v=37242a2253a6';
-        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=72defcc41145';
+        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=b16442b6c9a5';
 
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim };
         if (typeof window.runLoginHealthCheck === 'function') {
@@ -1482,7 +1516,9 @@
                     if (submitBtn) submitBtn.disabled = false;
                     return;
                 }
-                if (partnerCode) {
+                const regTypeEl = document.getElementById('regAccountType');
+                const regAccountType = regTypeEl ? String(regTypeEl.value || 'client') : 'client';
+                if (partnerCode && regAccountType !== 'partner') {
                     try {
                         const pending = JSON.stringify({ code: partnerCode, email: email, at: new Date().toISOString() });
                         sessionStorage.setItem('sisweb_pending_partner', pending);
