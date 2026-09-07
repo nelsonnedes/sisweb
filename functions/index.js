@@ -6913,6 +6913,7 @@ exports.registerPartner = partnerFunctions.registerPartner;
 exports.validatePartnerCode = partnerFunctions.validatePartnerCode;
 exports.claimPartnerAccount = partnerFunctions.claimPartnerAccount;
 exports.linkPartnerReferral = partnerFunctions.linkPartnerReferral;
+exports.getMyPartnerStatus = partnerFunctions.getMyPartnerStatus;
 exports.getMyPartnerDashboard = partnerFunctions.getMyPartnerDashboard;
 exports.sendBillingReminder = partnerFunctions.sendBillingReminder;
 exports.getPartnersAdmin = partnerFunctions.getPartnersAdmin;

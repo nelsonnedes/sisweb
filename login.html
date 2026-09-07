@@ -838,7 +838,7 @@
     </div>
 
     <script src="js/deep-clean.js?v=26495e9d74f4"></script>
-    <script src="auth.js?v=d6ee2d57f611"></script>
+    <script src="auth.js?v=b75f1afa13a9"></script>
     <script src="superadmin-mfa.js?v=27ab1839aafe"></script>
     <script>
         // ═══════════════════════════════════════════════════════════════════════
@@ -1024,7 +1024,8 @@
                         requestedRedirect: requested,
                         statusKey,
                         isSuperAdmin: isAdmin,
-                        isAdminPanelUser
+                        isAdminPanelUser,
+                        checkPartner: true
                     });
                     if (routed) return routed;
                 } catch (_) {}
@@ -1383,7 +1384,7 @@
         // Registro e Recuperação usam exclusivamente authService (sem duplicatas).
         // ═══════════════════════════════════════════════════════════════════════
         import { app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-init.js?v=9d73fc31bff4';
-        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=e595e26f6271';
+        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=3c40c82f58d9';
 
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim };
         if (typeof window.runLoginHealthCheck === 'function') {

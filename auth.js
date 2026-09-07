@@ -1030,6 +1030,28 @@ function isPartnerPortalTarget(value) {
     return raw === 'portal-parceiro.html';
 }
 
+let __partnerAccountRouteCache = null;
+async function isPartnerOnlyAccount() {
+    try {
+        if (__partnerAccountRouteCache && (Date.now() - __partnerAccountRouteCache.at) < 5 * 60 * 1000) {
+            return __partnerAccountRouteCache.value === true;
+        }
+        let value = false;
+        const svc = (typeof window !== 'undefined' && window.firebaseService) ? window.firebaseService : null;
+        if (svc && typeof svc.getMyPartnerStatus === 'function') {
+            const res = await Promise.race([
+                svc.getMyPartnerStatus(),
+                new Promise((resolve) => setTimeout(() => resolve(null), 4000))
+            ]);
+            value = !!(res && res.success === true && res.data && res.data.isPartner === true);
+        }
+        __partnerAccountRouteCache = { value, at: Date.now() };
+        return value;
+    } catch (_) {
+        return false;
+    }
+}
+
 async function resolvePostLoginRoute(userDetails, options = {}) {
     const opts = options && typeof options === 'object' ? options : {};
     const currentPathname = String(opts.currentPathname || (typeof window !== 'undefined' ? window.location.pathname : '') || '').toLowerCase();
@@ -1076,6 +1098,13 @@ async function resolvePostLoginRoute(userDetails, options = {}) {
     const companyId = getNormalizedCompanyId(user);
     const hasCompanyId = !!companyId;
     if (!hasCompanyId) {
+        // Conta só-parceiro (sem empresa) vai ao portal — nunca ao fluxo de assinatura.
+        // Restrito aos fluxos de login (opts.checkPartner) para não alterar guards de navegação.
+        if (opts.checkPartner === true) {
+            try {
+                if (await isPartnerOnlyAccount()) return 'portal-parceiro.html';
+            } catch (_) {}
+        }
         if (statusKey === 'active') return 'company.html?reason=link_company';
         if (statusKey === 'pending' || statusKey === 'pending_grace') return 'subscription-status.html?reason=pending';
         if (statusKey === 'blocked') return 'subscription-status.html?reason=blocked';
@@ -1578,7 +1607,8 @@ async function login(email, password) {
             persistAuthenticatedSession(routeUser, { source: 'login' });
             const flowRedirect = await resolvePostLoginRoute(routeUser, {
                 statusKey: subscriptionStatus,
-                isSuperAdmin
+                isSuperAdmin,
+                checkPartner: true
             });
             return {
                 success: true,

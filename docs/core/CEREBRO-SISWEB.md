@@ -506,3 +506,8 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Reenviar silencioso:** `currentUser.sendEmailVerification()` não existe no SDK modular v10 (só top-level). Adicionado `sendEmailVerification` ao `firebase-init` + `authService.sendVerificationEmail()`; portal usa o wrapper com mensagens reais; registro passa a enviar a confirmação automaticamente (best-effort) + toast orienta inbox.
 - **Mobile:** topbar da landing estourava em 390px (3 CTAs); botão parceiro oculto ≤480px (acesso segue pela seção Parceiros). Auditoria via CDP em sessão isolada: sem overflow de conteúdo (só skip-link decorativo); portal/cadastro contidos (tabelas com scroll interno, KPIs 2 col, modal com padding).
 - **Verificacao:** tests 32/32; validate 6/6; hosting OK; commit + push.
+
+## 45. Sessao 2026-09-06 — Login roteia conta só-parceiro ao portal
+- **Sintoma:** parceiro verificado sem empresa parava em `subscription.html?reason=subscription_required`.
+- **Fix:** novo `getMyPartnerStatus` (só leitura, sem writes) + `isPartnerOnlyAccount()` com cache 5min/timeout 4s/fail-closed; `resolvePostLoginRoute` desvia ao portal só no ramo sem-empresa e só com `checkPartner: true` (fluxos de login); guards de navegação intactos; cliente com/sem empresa inalterado.
+- **Verificacao:** tests 33/33; navegador com serviço simulado: parceiro→portal, não-parceiro→subscription, erro→subscription, sem flag→subscription; endpoint live 401 sem auth; functions v1 + hosting OK; commit + push.

@@ -380,6 +380,30 @@ test('admin sinaliza risco de mesmo telefone no ledger', () => {
   assert.match(main, /riskFlags/);
 });
 
+test('roteamento identifica conta so-parceiro sem tocar fluxo cliente', () => {
+  assert.match(indexSrc, /exports\.getMyPartnerStatus = partnerFunctions\.getMyPartnerStatus/);
+  const funcSrc = readFileSync('functions/partner-functions.js', 'utf8');
+  const funcStart = funcSrc.indexOf('exports.getMyPartnerStatus');
+  const funcBlock = funcSrc.slice(funcStart, funcSrc.indexOf('// ─── 3) Vincular indicação', funcStart));
+  assert.match(funcBlock, /needsClaim/);
+  assert.match(funcBlock, /needsVerification/);
+  assert.doesNotMatch(funcBlock, /\.set\(/);
+  assert.doesNotMatch(funcBlock, /\.update\(/);
+  assert.doesNotMatch(funcBlock, /\.push\(/);
+  const svc = readFileSync('firebaseService.js', 'utf8');
+  assert.match(svc, /async function getMyPartnerStatus\(\)/);
+  assert.match(svc, /getMyPartnerStatus\|getMyPartnerDashboard/);
+  const auth = readFileSync('auth.js', 'utf8');
+  assert.match(auth, /async function isPartnerOnlyAccount\(\)/);
+  assert.match(auth, /5 \* 60 \* 1000/);
+  assert.match(auth, /opts\.checkPartner === true/);
+  assert.match(auth, /return 'portal-parceiro\.html';/);
+  const guardCall = auth.slice(auth.indexOf('async function enforceSubscriptionGuard'));
+  assert.doesNotMatch(guardCall.slice(0, 2000), /checkPartner/);
+  const login = readFileSync('login.html', 'utf8');
+  assert.match(login, /checkPartner: true/);
+});
+
 test('topbar nao estoura em mobile: parceiro sai do topo em 480px', () => {
   const css = readFileSync('landing-vendas.css', 'utf8');
   assert.match(css, /\.lv-topbar-ctas a\[href\*="portal-parceiro\.html"\]\{display:none\}/);

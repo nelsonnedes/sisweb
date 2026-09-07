@@ -340,6 +340,35 @@ exports.claimPartnerAccount = functions.https.onCall(async (data, context) => {
     };
 });
 
+// ─── 2.2) Status de parceiro (leve, sem writes; para roteamento pós-login) ───
+
+exports.getMyPartnerStatus = functions.https.onCall(async (data, context) => {
+    if (!context.auth || !context.auth.uid) {
+        throw new functions.https.HttpsError('unauthenticated', 'Faça login.');
+    }
+    const uid = String(context.auth.uid);
+    const token = context.auth.token || {};
+    const email = sanitizeEmail(token.email);
+    const verified = token.email_verified === true;
+    const snap = await admin.database().ref('campaignPartners').get();
+    const partners = snap.exists() ? snap.val() : {};
+    for (const [pid, p] of Object.entries(partners || {})) {
+        if (!p) continue;
+        if (p.ownerUid && String(p.ownerUid) === uid) {
+            return { success: true, isPartner: true, status: String(p.status || 'active'), needsClaim: false, needsVerification: !verified };
+        }
+    }
+    if (email) {
+        for (const [pid, p] of Object.entries(partners || {})) {
+            if (!p) continue;
+            if (!p.ownerUid && sanitizeEmail(p.email) === email) {
+                return { success: true, isPartner: true, status: String(p.status || 'active'), needsClaim: true, needsVerification: !verified };
+            }
+        }
+    }
+    return { success: true, isPartner: false };
+});
+
 // ─── 3) Vincular indicação (autenticada, idempotente, anti-autoindicação) ───
 
 exports.linkPartnerReferral = functions.https.onCall(async (data, context) => {
@@ -1142,6 +1171,7 @@ module.exports = {
     validatePartnerCode: exports.validatePartnerCode,
     claimPartnerAccount: exports.claimPartnerAccount,
     linkPartnerReferral: exports.linkPartnerReferral,
+    getMyPartnerStatus: exports.getMyPartnerStatus,
     getMyPartnerDashboard: exports.getMyPartnerDashboard,
     sendBillingReminder: exports.sendBillingReminder,
     getPartnersAdmin: exports.getPartnersAdmin,
