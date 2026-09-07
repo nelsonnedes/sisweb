@@ -507,6 +507,11 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Mobile:** topbar da landing estourava em 390px (3 CTAs); botão parceiro oculto ≤480px (acesso segue pela seção Parceiros). Auditoria via CDP em sessão isolada: sem overflow de conteúdo (só skip-link decorativo); portal/cadastro contidos (tabelas com scroll interno, KPIs 2 col, modal com padding).
 - **Verificacao:** tests 32/32; validate 6/6; hosting OK; commit + push.
 
+## 46. Sessao 2026-09-06 — Reenvio sem chegada: parceiro existe, conta não existia
+- **Certeza obtida por leitura:** `selma_bia@hotmail.com` não tinha conta Auth (export) e o claim nunca foi chamado (logs); parceiro PAR-V4SY/Selma Silva foi criado depois, ativo e sem claim. WS/CSP do console vêm da aba admin em bfcache, não do portal.
+- **Explicação:** sem conta logada não há para onde enviar; com outra conta logada, o e-mail vai para ela, não para selma_bia. Possível confusão de sessão.
+- **Melhoria:** ativação do portal mostra "Conta conectada: <e-mail>" para eliminar a dúvida; tests 33/33; hosting OK; commit + push.
+
 ## 45. Sessao 2026-09-06 — Reenvio 400 do Google: rate-limit + método inexistente
 - **400 é real, não cache:** vem do `identitytoolkit sendOobCode` em tempo real. Causa mais provável: limite por tentativas repetidas; agravante: `currentUser.sendEmailVerification()` não existe no SDK modular → retorno silencioso, zero feedback.
 - **Fix:** `sendEmailVerification` no `firebase-init` + `authService.sendVerificationEmail()` (recarrega user, pula se já verificado, erro com `code`); portal com cooldown 60s, mensagem de rate-limit e pulo quando verificado; registro autoenvia best-effort.
