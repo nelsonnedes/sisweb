@@ -421,4 +421,9 @@ test('confirmacao de e-mail usa API modular em todas as pontas', () => {
   const login = readFileSync('login.html', 'utf8');
   assert.match(login, /authService\.sendVerificationEmail\(\)/);
   assert.match(login, /Enviamos uma confirmação para seu e-mail/);
+  assert.match(portal, /lastResendAt/);
+  assert.match(portal, /Aguarde /);
+  assert.match(portal, /alreadyVerified/);
+  assert.match(portal, /Muitas tentativas em sequência/);
+  assert.match(svc, /user\.reload/);
 });

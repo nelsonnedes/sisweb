@@ -4334,7 +4334,15 @@ export const authService = {
     },
     sendVerificationEmail: async () => {
         const user = auth && auth.currentUser ? auth.currentUser : null;
-        if (!user) throw new Error('Faça login para solicitar a confirmação de e-mail.');
+        if (!user) {
+            const err = new Error('Faça login para solicitar a confirmação de e-mail.');
+            err.code = 'auth/unauthenticated';
+            throw err;
+        }
+        try {
+            if (typeof user.reload === 'function') await user.reload();
+        } catch (_) {}
+        if (user.emailVerified === true) return { success: true, alreadyVerified: true };
         await sendEmailVerification(user);
         return { success: true };
     },

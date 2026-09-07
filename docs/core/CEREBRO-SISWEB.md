@@ -507,6 +507,12 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Mobile:** topbar da landing estourava em 390px (3 CTAs); botão parceiro oculto ≤480px (acesso segue pela seção Parceiros). Auditoria via CDP em sessão isolada: sem overflow de conteúdo (só skip-link decorativo); portal/cadastro contidos (tabelas com scroll interno, KPIs 2 col, modal com padding).
 - **Verificacao:** tests 32/32; validate 6/6; hosting OK; commit + push.
 
+## 45. Sessao 2026-09-06 — Reenvio 400 do Google: rate-limit + método inexistente
+- **400 é real, não cache:** vem do `identitytoolkit sendOobCode` em tempo real. Causa mais provável: limite por tentativas repetidas; agravante: `currentUser.sendEmailVerification()` não existe no SDK modular → retorno silencioso, zero feedback.
+- **Fix:** `sendEmailVerification` no `firebase-init` + `authService.sendVerificationEmail()` (recarrega user, pula se já verificado, erro com `code`); portal com cooldown 60s, mensagem de rate-limit e pulo quando verificado; registro autoenvia best-effort.
+- **Mobile:** topbar escondida ≤480px; auditoria CDP sem overflow de conteúdo; portal/cadastro contidos.
+- **Verificacao:** tests 33/33; wrapper em runtime (401 sem login, como esperado); hosting OK; commit + push.
+
 ## 45. Sessao 2026-09-06 — Login roteia conta só-parceiro ao portal
 - **Sintoma:** parceiro verificado sem empresa parava em `subscription.html?reason=subscription_required`.
 - **Fix:** novo `getMyPartnerStatus` (só leitura, sem writes) + `isPartnerOnlyAccount()` com cache 5min/timeout 4s/fail-closed; `resolvePostLoginRoute` desvia ao portal só no ramo sem-empresa e só com `checkPartner: true` (fluxos de login); guards de navegação intactos; cliente com/sem empresa inalterado.
