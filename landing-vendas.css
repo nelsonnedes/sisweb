@@ -280,6 +280,7 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
   .lv-hero{padding:36px 0 6px}
   .lv-hero-ctas .lv-btn,.lv-ctas-center .lv-btn,.lv-flow-cta .lv-btn{width:100%}
   .lv-topbar-ctas .lv-btn{padding:9px 12px;font-size:0.85rem}
+  .lv-topbar-ctas a[href*="portal-parceiro.html"]{display:none}
   .lv-logo span{display:none}
   .lv-cards-5,.lv-ecosystem-grid,.lv-steps-4,.lv-flow{grid-template-columns:1fr}
   .lv-strip-grid{grid-template-columns:repeat(2,1fr);gap:12px}

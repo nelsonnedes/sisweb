@@ -14,7 +14,7 @@ import {
     browserSessionPersistence, browserLocalPersistence,
     signInWithEmailAndPassword, createUserWithEmailAndPassword,
     signInAnonymously,
-    sendPasswordResetEmail, EmailAuthProvider,
+    sendPasswordResetEmail, sendEmailVerification, EmailAuthProvider,
     reauthenticateWithCredential,
     firebaseUpdatePassword, firebaseUpdateProfile, updateCurrentUser,
     httpsCallable, getFunctions,
@@ -4322,6 +4322,12 @@ export const authService = {
         const normalizedEmail = String(email || '').trim().toLowerCase();
         if (!normalizedEmail) throw new Error('Email obrigatório para recuperação de senha.');
         return sendPasswordResetEmail(auth, normalizedEmail);
+    },
+    sendVerificationEmail: async () => {
+        const user = auth && auth.currentUser ? auth.currentUser : null;
+        if (!user) throw new Error('Faça login para solicitar a confirmação de e-mail.');
+        await sendEmailVerification(user);
+        return { success: true };
     },
     // Login com email/senha
     async login(email, password) {

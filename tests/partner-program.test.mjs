@@ -317,6 +317,8 @@ test('portal exibe projecoes, cobranca por clientRef e reload com token', () => 
   assert.match(portal, /async function refreshSession/);
   assert.match(portal, /Ainda não confirmado/);
   assert.match(portal, /Reenviar confirmação/);
+  assert.match(portal, /sendVerificationEmail/);
+  assert.doesNotMatch(portal, /currentUser\.sendEmailVerification/);
   assert.doesNotMatch(portal, /sendBillingReminder\(\{companyId:/);
 });
 
@@ -376,4 +378,23 @@ test('admin sinaliza risco de mesmo telefone no ledger', () => {
   const main = readFileSync('scripts/admin/admin-main.js', 'utf8');
   assert.match(main, /mesmo telefone/);
   assert.match(main, /riskFlags/);
+});
+
+test('topbar nao estoura em mobile: parceiro sai do topo em 480px', () => {
+  const css = readFileSync('landing-vendas.css', 'utf8');
+  assert.match(css, /\.lv-topbar-ctas a\[href\*="portal-parceiro\.html"\]\{display:none\}/);
+});
+
+test('confirmacao de e-mail usa API modular em todas as pontas', () => {
+  const init = readFileSync('firebase-init.js', 'utf8');
+  assert.match(init, /sendEmailVerification,/);
+  const svc = readFileSync('firebaseService.js', 'utf8');
+  assert.match(svc, /sendVerificationEmail: async \(\) => \{/);
+  assert.match(svc, /await sendEmailVerification\(user\)/);
+  const portal = readFileSync('portal-parceiro.html', 'utf8');
+  assert.match(portal, /svc\.sendVerificationEmail\(\)/);
+  assert.match(portal, /Enviamos uma nova confirmação para seu e-mail/);
+  const login = readFileSync('login.html', 'utf8');
+  assert.match(login, /authService\.sendVerificationEmail\(\)/);
+  assert.match(login, /Enviamos uma confirmação para seu e-mail/);
 });

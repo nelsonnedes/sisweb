@@ -501,3 +501,8 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Diagnostico com evidencia (somente leitura):** parceiro PAR-Y34W ativo; conta Auth existe mas `emailVerified: false`; `ownerUid` nunca gravado; log do `claimPartnerAccount` sem tentativa autenticada. O clique nunca chegou ao backend porque o claim exige e-mail verificado — correto por segurança, não bug. E-mail temporário provavelmente não entregou a confirmação.
 - **Ruído separado:** WS "Back-Forward Cache" + CSP `script-src` vêm da aba `admin.html` em segundo plano (CSP existe só para `/admin.html`); não afetam o portal. Cobrar/imports íntegros em produção.
 - **Melhorias:** "Verificar novamente" mostra hora + orienta spam/reenvio; select de tipo de conta com padding do ícone; tests 30/30; validate 6/6; hosting OK; commit `61a7106` + push.
+
+## 44. Sessao 2026-09-06 — Reenvio via API modular + overflow mobile do topbar
+- **Reenviar silencioso:** `currentUser.sendEmailVerification()` não existe no SDK modular v10 (só top-level). Adicionado `sendEmailVerification` ao `firebase-init` + `authService.sendVerificationEmail()`; portal usa o wrapper com mensagens reais; registro passa a enviar a confirmação automaticamente (best-effort) + toast orienta inbox.
+- **Mobile:** topbar da landing estourava em 390px (3 CTAs); botão parceiro oculto ≤480px (acesso segue pela seção Parceiros). Auditoria via CDP em sessão isolada: sem overflow de conteúdo (só skip-link decorativo); portal/cadastro contidos (tabelas com scroll interno, KPIs 2 col, modal com padding).
+- **Verificacao:** tests 32/32; validate 6/6; hosting OK; commit + push.

@@ -1382,8 +1382,8 @@
         // MÓDULO CANÔNICO: Firebase + controle de sessão + Fale Conosco
         // Registro e Recuperação usam exclusivamente authService (sem duplicatas).
         // ═══════════════════════════════════════════════════════════════════════
-        import { app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-init.js?v=37242a2253a6';
-        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=b16442b6c9a5';
+        import { app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-init.js?v=9d73fc31bff4';
+        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=e595e26f6271';
 
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim };
         if (typeof window.runLoginHealthCheck === 'function') {
@@ -1554,10 +1554,15 @@
 
                 if (result.success) {
                     try {
+                        if (authService && typeof authService.sendVerificationEmail === 'function') {
+                            await authService.sendVerificationEmail();
+                        }
+                    } catch (_) {}
+                    try {
                         if (typeof window.__toast === 'function') {
-                            window.__toast('Conta criada com sucesso! Você tem 30 dias de teste gratuito.', 'success');
+                            window.__toast('Conta criada com sucesso! Enviamos uma confirmação para seu e-mail.', 'success');
                         } else if (window.Utils && window.Utils.showToast) {
-                            window.Utils.showToast('Conta criada com sucesso! Você tem 30 dias de teste gratuito.', 'success');
+                            window.Utils.showToast('Conta criada com sucesso! Verifique seu e-mail para confirmar a conta.', 'success');
                         }
                     } catch (_) {}
 
