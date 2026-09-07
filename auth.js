@@ -953,6 +953,7 @@ function isAuthLandingPath(pathname) {
     if (!path || path === '/' || path.endsWith('/')) return true;
     if (path.includes('index.html')) return true;
     if (path.includes('login.html')) return true;
+    if (path.includes('portal-parceiro.html')) return true;
     if (path.includes('subscription.html')) return true;
     if (path.includes('subscription-status.html')) return true;
     return false;
@@ -1024,11 +1025,19 @@ function normalizeInternalRedirectTarget(value, fallback = '') {
     }
 }
 
+function isPartnerPortalTarget(value) {
+    const raw = String(value || '').toLowerCase().split(/[?#]/)[0].replace(/^\/+/, '').replace(/\/+$/, '');
+    return raw === 'portal-parceiro.html';
+}
+
 async function resolvePostLoginRoute(userDetails, options = {}) {
     const opts = options && typeof options === 'object' ? options : {};
     const currentPathname = String(opts.currentPathname || (typeof window !== 'undefined' ? window.location.pathname : '') || '').toLowerCase();
     const requested = normalizeInternalRedirectTarget(opts.requestedRedirect);
     const lowerRequested = requested.toLowerCase();
+    if (isPartnerPortalTarget(requested) || isPartnerPortalTarget(currentPathname)) {
+        return requested || 'portal-parceiro.html';
+    }
     const user = userDetails && typeof userDetails === 'object' ? userDetails : {};
     const isAdmin = opts.isSuperAdmin === true ? true : await isSuperAdminSession();
     const isAdminPanelUser = opts.isAdminPanelUser === true ? true : await hasAnyAdminPanelAccess();
@@ -1094,6 +1103,7 @@ function isReadOnlyStatus(statusKey) {
 function shouldBypassSubscriptionGuard(pathname) {
     const path = String(pathname || '').toLowerCase();
     if (path.includes('login.html')) return true;
+    if (path.includes('portal-parceiro.html')) return true;
     if (path.includes('subscription.html')) return true;
     if (path.includes('subscription-status.html')) return true;
     if (isAdminInternalPath(path)) return true;

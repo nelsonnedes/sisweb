@@ -865,7 +865,7 @@ function unwrapCallableResult(result) {
 }
 
 function requiresAuthenticatedCallable(functionName) {
-    return /^(nf_|finance(?:[A-Z_]|$)|superAdminMfa|recordAdminAccessDenied|sentry)/.test(String(functionName || '').trim());
+    return /^(nf_|finance(?:[A-Z_]|$)|superAdminMfa|recordAdminAccessDenied|sentry|validatePartnerCode|claimPartnerAccount|linkPartnerReferral|getMyPartnerDashboard|sendBillingReminder)/.test(String(functionName || '').trim());
 }
 
 async function getCallableIdToken(user, forceRefresh = false) {
@@ -3180,6 +3180,15 @@ async function validatePartnerCode(code) {
     }
 }
 
+async function claimPartnerAccount(payload = {}) {
+    try {
+        const data = await callFunction('claimPartnerAccount', payload && typeof payload === 'object' ? payload : {});
+        return { success: true, data };
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error), code: error && error.code };
+    }
+}
+
 async function linkPartnerReferral(code) {
     try {
         const data = await callFunction('linkPartnerReferral', { code });
@@ -4599,6 +4608,7 @@ export {
     adminUpdateSubscriber,
     registerPartner,
     validatePartnerCode,
+    claimPartnerAccount,
     linkPartnerReferral,
     getMyPartnerDashboard,
     sendBillingReminder,

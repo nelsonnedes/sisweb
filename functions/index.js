@@ -6872,6 +6872,7 @@ const partnerFunctions = require('./partner-functions');
 partnerFunctions.configure({ isCallerSuperAdmin });
 exports.registerPartner = partnerFunctions.registerPartner;
 exports.validatePartnerCode = partnerFunctions.validatePartnerCode;
+exports.claimPartnerAccount = partnerFunctions.claimPartnerAccount;
 exports.linkPartnerReferral = partnerFunctions.linkPartnerReferral;
 exports.getMyPartnerDashboard = partnerFunctions.getMyPartnerDashboard;
 exports.sendBillingReminder = partnerFunctions.sendBillingReminder;

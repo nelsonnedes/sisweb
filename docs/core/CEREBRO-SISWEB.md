@@ -456,6 +456,13 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Slides mobile:** 3 PNGs novos entraram em `hosting-files.json` (allowlist do build); iPhone usa `*-mobile.png`, CSS `aspect-ratio:9/19.5`.
 - **Publicado:** validate:pr 6/6, tests 13/13, build 471+3 arqs, deploy hosting OK, produção verificada.
 
+## 41. Sessao 2026-09-06 — Portal: redaction final, rota exata, projeções/Cobrar, mobile
+- **Rota exata:** `auth.js:isPartnerPortalTarget()` e `login.html` comparam pathname normalizado `=== 'portal-parceiro.html'` (antes: `includes`, vulnerável a `company.html?next=portal-parceiro.html`).
+- **Portal completo:** tabela de projeções (3 comissões se pagar no vencimento), botão Cobrar por `clientRef` com modal (contador 280, ESC/overlay, foco), refresh com `reload()` + `getIdToken(true)` + `getCurrentUser`.
+- **Dedupe neutro confirmado:** `registerPartner` retorna `{success:true, already:true}` sem código/partnerId.
+- **Mobile:** tabelas com scroll controlado, botões ≥44px, modal com safe padding, topbar/botões existentes; CLI sem viewport — QA por inspeção CSS + screenshot desktop.
+- **Verificacao:** tests 24/24; validate:pr 6/6; publicado (hosting) após gates.
+
 ## 37. Sessao 2026-09-06 — Root cause do 400: onCall v1 x v2 no firebase-functions v7
 - **Sintoma:** todo `registerPartner` (valido ou nao) retornava 400 'Informe seu nome completo.'; reproduzido via SDK e via fetch direto.
 - **Causa:** `functions/partner-functions.js` usava `require('firebase-functions').https.onCall` — no SDK v7 instalado (7.2.5) o root onCall === v2 onCall (provado: `root===v2: true`), cujo handler recebe o envelope `{data,...}`. O codigo estilo v1 `(data, context)` lia `payload.name` = undefined sempre. As demais callables usam `firebase-functions/v1` e funcionam.

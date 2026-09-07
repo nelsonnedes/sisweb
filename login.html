@@ -802,7 +802,7 @@
     </div>
 
     <script src="js/deep-clean.js?v=26495e9d74f4"></script>
-    <script src="auth.js?v=9edf7c63fdab"></script>
+    <script src="auth.js?v=d6ee2d57f611"></script>
     <script src="superadmin-mfa.js?v=27ab1839aafe"></script>
     <script>
         // ═══════════════════════════════════════════════════════════════════════
@@ -970,6 +970,8 @@
             const params = getLoginInitialParams();
             const redirect = params.get('redirect');
             const requested = sanitizeInternalRedirectTarget(redirect || 'index.html', 'index.html');
+            const requestedPathname = String(requested || '').toLowerCase().split(/[?#]/)[0].replace(/^\/+/, '').replace(/\/+$/, '');
+            if (requestedPathname === 'portal-parceiro.html') return requested;
             const details = window.getCurrentUserDetails ? await window.getCurrentUserDetails() : null;
             const isAdmin = window.isSuperAdminSession ? await window.isSuperAdminSession() : false;
             const isAdminPanelUser = window.hasAnyAdminPanelAccess ? await window.hasAnyAdminPanelAccess() : false;
@@ -1323,7 +1325,7 @@
         // Registro e Recuperação usam exclusivamente authService (sem duplicatas).
         // ═══════════════════════════════════════════════════════════════════════
         import { app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-init.js?v=37242a2253a6';
-        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=de8a86b85e86';
+        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=72defcc41145';
 
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim };
         if (typeof window.runLoginHealthCheck === 'function') {

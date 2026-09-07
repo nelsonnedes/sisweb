@@ -91,6 +91,20 @@ function sanitizeEntryId(value) {
     return String(value || '').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 120) || 'entry';
 }
 
+function buildOpaquePartnerRef(prefix, ...parts) {
+    const material = parts.map((part) => String(part == null ? '' : part)).join('\u001f');
+    const digest = crypto.createHash('sha256').update(material).digest('hex').slice(0, 16);
+    return `${prefix}_${digest}`;
+}
+
+function buildPartnerClientRef(partnerId, companyId, referredUid) {
+    return buildOpaquePartnerRef('client', partnerId, companyId || referredUid);
+}
+
+function buildPartnerCommissionRef(partnerId, entryId) {
+    return buildOpaquePartnerRef('commission', partnerId, entryId);
+}
+
 // ─── Leituras internas ─────────────────────────────────────────────────────
 
 async function readPartnerById(partnerId) {
@@ -110,6 +124,22 @@ async function resolvePartnerByCode(code) {
     const partnerId = idxSnap.val() && idxSnap.val().partnerId ? String(idxSnap.val().partnerId) : '';
     if (!partnerId) return null;
     return readPartnerById(partnerId);
+}
+
+async function resolveUnclaimedPartnerByEmail(email, ownerUid = '') {
+    const normalizedEmail = sanitizeEmail(email);
+    const expectedOwnerUid = String(ownerUid || '').trim();
+    if (!normalizedEmail) return null;
+    const snap = await admin.database().ref('campaignPartners').get();
+    const partners = snap.exists() ? snap.val() : {};
+    for (const [partnerId, value] of Object.entries(partners || {})) {
+        const partner = value || {};
+        const ownerUid = String(partner.ownerUid || '').trim();
+        if ((!ownerUid || (expectedOwnerUid && ownerUid === expectedOwnerUid)) && sanitizeEmail(partner.email) === normalizedEmail) {
+            return { id: partnerId, ...partner };
+        }
+    }
+    return null;
 }
 
 async function readReferral(referredUid) {
@@ -174,9 +204,10 @@ exports.registerPartner = functions.https.onCall(async (data, context) => {
     // Dedupe por e-mail: devolve o código existente (idempotente)
     const partnersSnap = await admin.database().ref('campaignPartners').get();
     const partners = partnersSnap.exists() ? partnersSnap.val() : {};
-    for (const [pid, p] of Object.entries(partners || {})) {
+    for (const p of Object.values(partners || {})) {
         if (p && String(p.email || '').toLowerCase() === email) {
-            return { success: true, already: true, partnerId: pid, code: p.code || '' };
+            // Keep the public response idempotent without confirming the partner identity.
+            return { success: true, already: true };
         }
     }
 
@@ -226,6 +257,82 @@ exports.validatePartnerCode = functions.https.onCall(async (data, context) => {
     if (!partner || partner.status !== 'active') return { success: true, valid: false };
     const firstName = String(partner.name || '').trim().split(/\s+/)[0] || 'Parceiro Sisweb';
     return { success: true, valid: true, partnerName: firstName };
+});
+
+// ─── 2.1) Claim de acesso independente do parceiro ──────────────────────────
+
+exports.claimPartnerAccount = functions.https.onCall(async (data, context) => {
+    if (!context.auth || !context.auth.uid) {
+        throw new functions.https.HttpsError('unauthenticated', 'Faça login para ativar seu acesso de parceiro.');
+    }
+    const uid = String(context.auth.uid).trim();
+    const token = context.auth.token || {};
+    const email = sanitizeEmail(token.email);
+    if (!email || token.email_verified !== true) {
+        throw new functions.https.HttpsError('failed-precondition', 'Confirme seu e-mail antes de ativar o painel de parceiro.');
+    }
+
+    const payload = data && typeof data === 'object' ? data : {};
+    const code = normalizePartnerCode(payload.code);
+    if (code && !isValidPartnerCode(code)) {
+        throw new functions.https.HttpsError('invalid-argument', 'Código de parceiro inválido. Use o formato PAR-XXXX.');
+    }
+
+    const partner = code
+        ? await resolvePartnerByCode(code)
+        : await resolveUnclaimedPartnerByEmail(email, uid);
+    if (!partner) return { success: false, error: 'not-a-partner' };
+    if (sanitizeEmail(partner.email) !== email) {
+        throw new functions.https.HttpsError('permission-denied', 'O código não pertence ao e-mail autenticado.');
+    }
+    const status = String(partner.status || '').toLowerCase();
+    if (status !== 'active') {
+        throw new functions.https.HttpsError(
+            'failed-precondition',
+            status === 'blocked' ? 'Seu acesso de parceiro está bloqueado.' : 'Seu cadastro de parceiro está pendente.',
+            { status }
+        );
+    }
+
+    const partnerRef = admin.database().ref(`campaignPartners/${partner.id}`);
+    const nowIso = new Date().toISOString();
+    const transaction = await partnerRef.transaction((current) => {
+        if (!current) return;
+        const currentOwnerUid = String(current.ownerUid || '').trim();
+        if (currentOwnerUid && currentOwnerUid !== uid) return;
+        if (String(current.status || '').toLowerCase() !== 'active') return;
+        if (currentOwnerUid === uid) return current;
+        return { ...current, ownerUid: uid, updatedAt: nowIso, updatedBy: 'partner_claim' };
+    });
+
+    if (!transaction.committed) {
+        const currentSnap = await partnerRef.get();
+        const current = currentSnap.exists() ? currentSnap.val() || {} : {};
+        const currentOwnerUid = String(current.ownerUid || '').trim();
+        const currentStatus = String(current.status || '').toLowerCase();
+        if (currentOwnerUid && currentOwnerUid !== uid) {
+            throw new functions.https.HttpsError('already-exists', 'Este parceiro já está vinculado a outra conta.');
+        }
+        if (currentOwnerUid === uid && currentStatus === 'active') {
+            return {
+                success: true,
+                partnerId: partner.id,
+                status: 'active',
+                capabilities: { dashboard: true, messaging: true }
+            };
+        }
+        if (currentStatus !== 'active') {
+            throw new functions.https.HttpsError('failed-precondition', 'Este parceiro não está ativo.', { status: currentStatus });
+        }
+        throw new functions.https.HttpsError('aborted', 'Não foi possível ativar o parceiro. Tente novamente.');
+    }
+
+    return {
+        success: true,
+        partnerId: partner.id,
+        status: 'active',
+        capabilities: { dashboard: true, messaging: true }
+    };
 });
 
 // ─── 3) Vincular indicação (autenticada, idempotente, anti-autoindicação) ───
@@ -365,6 +472,19 @@ function planAmountFromSettings(settings, planKey) {
     return { amount: monthly, plan: 'monthly', assumed: true };
 }
 
+function planLabelFromSettings(settings, planKey) {
+    const plans = (settings && settings.plans) || {};
+    const key = String(planKey || '').toLowerCase();
+    const normalizedKey = key === 'annual' ? 'quarterly' : key;
+    const labels = {
+        monthly: 'Plano Mensal',
+        quarterly: 'Plano Trimestral',
+        premium: 'Plano Premium',
+        free_trial: 'Período de teste'
+    };
+    return String((plans[normalizedKey] && plans[normalizedKey].label) || labels[normalizedKey] || labels.monthly);
+}
+
 function resolveEffectivePercent(partner, campaignSettings) {
     if (partner && partner.commissionPercent !== null && partner.commissionPercent !== undefined && partner.commissionPercent !== '') {
         const p = Number(partner.commissionPercent);
@@ -429,6 +549,45 @@ async function attachProjections(companies, partner, settings) {
     return { companies: list, projectedTotal: Math.round(projectedTotal * 100) / 100 };
 }
 
+function redactPartnerCompany(company, partner, settings) {
+    const source = company || {};
+    const planKey = source.planKey || source.plan || '';
+    const planLabel = planLabelFromSettings(settings, planKey);
+    return {
+        clientRef: buildPartnerClientRef(partner.id, source.companyId, source.referredUid),
+        companyName: source.companyName || null,
+        userName: source.userName || null,
+        status: source.status || 'unknown',
+        plan: planLabel,
+        planLabel,
+        endDate: source.endDate || null,
+        overdue: source.overdue === true,
+        linkedAt: source.linkedAt || '',
+        projections: (Array.isArray(source.projections) ? source.projections : []).map((projection) => ({
+            n: projection.n,
+            plan: planLabelFromSettings(settings, projection.plan),
+            planLabel: planLabelFromSettings(settings, projection.plan),
+            assumedPlan: projection.assumedPlan === true,
+            dueDate: projection.dueDate || null,
+            amount: Number(projection.amount || 0),
+            percent: Number(projection.percent || 0),
+            commission: Number(projection.commission || 0),
+            projected: projection.projected === true
+        }))
+    };
+}
+
+function redactPartnerCommission(entry, partnerId, internalEntryId) {
+    const source = entry || {};
+    return {
+        entryId: buildPartnerCommissionRef(partnerId, internalEntryId),
+        paidAmount: Number(source.paidAmount || 0),
+        commission: Number(source.commission || 0),
+        status: String(source.status || ''),
+        date: source.at || source.paidAt || null
+    };
+}
+
 // ─── 4) Dashboard do parceiro (somente dados próprios) ──────────────────────
 
 function isOverdueUser(userData) {
@@ -444,23 +603,28 @@ function isOverdueUser(userData) {
 }
 
 async function findPartnerForCaller(auth) {
+    if (!auth || !auth.uid) {
+        throw new functions.https.HttpsError('unauthenticated', 'Faça login como parceiro.');
+    }
+    const token = auth.token || {};
+    if (token.email_verified !== true) {
+        throw new functions.https.HttpsError('failed-precondition', 'Confirme seu e-mail antes de acessar o painel de parceiro.');
+    }
     const uid = String(auth.uid);
-    const email = String((auth.token && auth.token.email) || '').toLowerCase();
     const snap = await admin.database().ref('campaignPartners').get();
     const partners = snap.exists() ? snap.val() : {};
     for (const [pid, p] of Object.entries(partners || {})) {
         if (!p) continue;
-        if (p.ownerUid && String(p.ownerUid) === uid) return { id: pid, ...p };
-    }
-    if (email) {
-        for (const [pid, p] of Object.entries(partners || {})) {
-            if (p && String(p.email || '').toLowerCase() === email) {
-                // Adota ownerUid no primeiro acesso autenticado com o mesmo e-mail
-                try {
-                    await admin.database().ref(`campaignPartners/${pid}`).update({ ownerUid: uid, updatedAt: new Date().toISOString() });
-                } catch (_) {}
-                return { id: pid, ...p, ownerUid: uid };
+        if (p.ownerUid && String(p.ownerUid) === uid) {
+            const status = String(p.status || '').toLowerCase();
+            if (status !== 'active') {
+                throw new functions.https.HttpsError(
+                    'failed-precondition',
+                    status === 'blocked' ? 'Seu acesso de parceiro está bloqueado.' : 'Seu cadastro de parceiro está pendente.',
+                    { status }
+                );
             }
+            return { id: pid, ...p };
         }
     }
     return null;
@@ -521,7 +685,10 @@ exports.getMyPartnerDashboard = functions.https.onCall(async (data, context) => 
     companies.sort((a, b) => String(b.linkedAt || '').localeCompare(String(a.linkedAt || '')));
     const commSnap = await admin.database().ref(`campaignCommissions/${partner.id}`).orderByKey().limitToLast(100).get();
     const commRaw = commSnap.exists() ? commSnap.val() : {};
-    const commissions = Object.entries(commRaw || {}).map(([entryId, c]) => ({ entryId, ...(c || {}) }))
+    const commissions = Object.entries(commRaw || {}).map(([entryId, c]) => ({
+        __internalEntryId: entryId,
+        ...(c || {})
+    }))
         .sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
     let earned = 0;
     let paid = 0;
@@ -533,13 +700,15 @@ exports.getMyPartnerDashboard = functions.https.onCall(async (data, context) => 
     paid = Math.round(paid * 100) / 100;
     const pricingSettings = await readPartnerPricing();
     const enriched = await attachProjections(companies, partner, pricingSettings);
+    const redactedCompanies = enriched.companies.map((company) => redactPartnerCompany(company, partner, pricingSettings));
+    const redactedCommissions = commissions
+        .map((commission) => redactPartnerCommission(commission, partner.id, commission.__internalEntryId))
+        .slice(0, 100);
     return {
         success: true,
         partner: {
-            id: partner.id,
             code: partner.code || '',
             name: partner.name || '',
-            email: partner.email || '',
             status: partner.status || 'active',
             commissionPercent: partner.commissionPercent !== undefined ? partner.commissionPercent : null
         },
@@ -552,8 +721,8 @@ exports.getMyPartnerDashboard = functions.https.onCall(async (data, context) => 
             pending: earned,
             projected: enriched.projectedTotal
         },
-        companies: enriched.companies,
-        commissions: commissions.slice(0, 100),
+        companies: redactedCompanies,
+        commissions: redactedCommissions,
         projectedTotal: enriched.projectedTotal
     };
 });
@@ -565,10 +734,11 @@ exports.sendBillingReminder = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('unauthenticated', 'Faça login como parceiro.');
     }
     const payload = data && typeof data === 'object' ? data : {};
-    const companyId = sanitizeStr(payload.companyId, 128);
+    const clientRef = sanitizeStr(payload.clientRef, 128);
+    const legacyCompanyId = sanitizeStr(payload.companyId, 128);
     const customMessage = sanitizeStr(payload.message, 280);
-    if (!companyId) {
-        throw new functions.https.HttpsError('invalid-argument', 'companyId é obrigatório.');
+    if (!clientRef && !legacyCompanyId) {
+        throw new functions.https.HttpsError('invalid-argument', 'clientRef é obrigatório.');
     }
     const partner = await findPartnerForCaller(context.auth);
     if (!partner) {
@@ -578,27 +748,23 @@ exports.sendBillingReminder = functions.https.onCall(async (data, context) => {
     const refsSnap = await admin.database().ref('campaignReferrals').get();
     const refs = refsSnap.exists() ? refsSnap.val() : {};
     let linkedUid = '';
-    let linkedAt = '';
+    let companyId = '';
     for (const [referredUid, r] of Object.entries(refs || {})) {
-        if (r && r.partnerId === partner.id && String(r.companyId || '') === companyId) {
-            linkedUid = referredUid;
-            linkedAt = r.at || '';
-            break;
-        }
-    }
-    if (!linkedUid) {
-        // Fallback: empresa atual do indicado
-        for (const [referredUid, r] of Object.entries(refs || {})) {
-            if (!(r && r.partnerId === partner.id)) continue;
+        if (!(r && r.partnerId === partner.id)) continue;
+        let resolvedCompanyId = String(r.companyId || '');
+        if (!resolvedCompanyId) {
             try {
                 const us = await admin.database().ref(`users/${referredUid}`).get();
                 const ud = us.exists() ? us.val() : {};
-                if (String(ud.companyId || ud.companyID || '') === companyId) {
-                    linkedUid = referredUid;
-                    linkedAt = r.at || '';
-                    break;
-                }
+                resolvedCompanyId = String(ud.companyId || ud.companyID || '');
             } catch (_) {}
+        }
+        const matchesClient = clientRef && buildPartnerClientRef(partner.id, resolvedCompanyId, referredUid) === clientRef;
+        const matchesLegacyCompany = legacyCompanyId && resolvedCompanyId === legacyCompanyId;
+        if (matchesClient || matchesLegacyCompany) {
+            linkedUid = referredUid;
+            companyId = resolvedCompanyId;
+            break;
         }
     }
     if (!linkedUid) {
@@ -640,6 +806,7 @@ exports.sendBillingReminder = functions.https.onCall(async (data, context) => {
         }
     } catch (e) {
         if (e instanceof functions.https.HttpsError) throw e;
+        throw new functions.https.HttpsError('unavailable', 'Não foi possível verificar o limite de alertas. Tente novamente.');
     }
     const nowIso = new Date().toISOString();
     const title = 'Cobrança do parceiro';
@@ -672,7 +839,7 @@ exports.sendBillingReminder = functions.https.onCall(async (data, context) => {
         const prev = (await logRef.get()).val() || {};
         await logRef.set({ lastSentAt: nowIso, count: Number(prev.count || 0) + 1, by: String(context.auth.uid) });
     } catch (_) {}
-    return { success: true, reminderId: remRef.key, notifiedUsers: memberList.length };
+    return { success: true, notifiedUsers: memberList.length };
 });
 
 // ─── 6/7/8/9) Admin (superadmin) ────────────────────────────────────────────
@@ -943,8 +1110,10 @@ module.exports = {
     resolveEffectivePercent,
     buildProjections,
     attachProjections,
+    findPartnerForCaller,
     registerPartner: exports.registerPartner,
     validatePartnerCode: exports.validatePartnerCode,
+    claimPartnerAccount: exports.claimPartnerAccount,
     linkPartnerReferral: exports.linkPartnerReferral,
     getMyPartnerDashboard: exports.getMyPartnerDashboard,
     sendBillingReminder: exports.sendBillingReminder,

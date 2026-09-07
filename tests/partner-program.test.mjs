@@ -24,6 +24,7 @@ test('functions/index.js registra parceiros e ganchos aditivos', () => {
   for (const name of [
     'registerPartner',
     'validatePartnerCode',
+    'claimPartnerAccount',
     'linkPartnerReferral',
     'getMyPartnerDashboard',
     'sendBillingReminder',
@@ -47,6 +48,31 @@ test('partner-functions usa namespace v1 (data, context)', () => {
   const src = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
   assert.match(src, /require\('firebase-functions\/v1'\)/);
   assert.doesNotMatch(src, /require\('firebase-functions'\)/);
+});
+
+test('claimPartnerAccount usa identidade autenticada e claim atômico', () => {
+  const source = readFileSync('functions/partner-functions.js', 'utf8');
+  const claim = source.slice(source.indexOf('exports.claimPartnerAccount'), source.indexOf('// ─── 3)'));
+  assert.match(claim, /context\.auth\.uid/);
+  assert.match(claim, /token\.email/);
+  assert.match(claim, /token\.email_verified !== true/);
+  assert.match(claim, /status !== 'active'/);
+  assert.match(claim, /partnerRef\.transaction\(/);
+  assert.match(claim, /currentOwnerUid && currentOwnerUid !== uid/);
+  assert.match(claim, /ownerUid: uid/);
+  assert.match(claim, /capabilities: \{ dashboard: true, messaging: true \}/);
+  assert.doesNotMatch(claim, /payload\.(ownerUid|email|partnerId|companyId)/);
+  assert.equal(typeof partner.claimPartnerAccount, 'function');
+  assert.equal(typeof partner.findPartnerForCaller, 'function');
+});
+
+test('lookup do caller é somente leitura e exige parceiro ativo', () => {
+  const source = readFileSync('functions/partner-functions.js', 'utf8');
+  const lookup = source.slice(source.indexOf('async function findPartnerForCaller'), source.indexOf('exports.getMyPartnerDashboard'));
+  assert.match(lookup, /email_verified !== true/);
+  assert.match(lookup, /status !== 'active'/);
+  assert.doesNotMatch(lookup, /\.update\(/);
+  assert.doesNotMatch(lookup, /ownerUid:\s*uid/);
 });
 
 test('database.rules.json bloqueia nos de parceiros no client', () => {
@@ -74,24 +100,43 @@ test('admin expoe aba Parceiros com detalhe e ledger', () => {
   assert.match(main, /async function markPartnerCommissionPaid\(/);
 });
 
-test('portal do parceiro usa backend e expoe painel proprio', () => {
-  const portal = readFileSync('cadastro-parceiro.html', 'utf8');
-  assert.match(portal, /registerPartner/);
+test('portal independente possui estados, ativação e dashboard autenticado', () => {
+  const portal = readFileSync('portal-parceiro.html', 'utf8');
+  for (const id of ['partnerVisitor', 'partnerActivation', 'partnerDashboard', 'partnerRestricted', 'partnerNoPartner']) {
+    assert.match(portal, new RegExp(`id="${id}"`), `estado ausente: ${id}`);
+  }
+  assert.match(portal, /claimPartnerAccount/);
   assert.match(portal, /getMyPartnerDashboard/);
-  assert.match(portal, /sendBillingReminder/);
-  assert.match(portal, /parDashCompanies/);
-  assert.match(portal, /parDashCommissions/);
-  assert.doesNotMatch(portal, /Math\.random\(\)\.toString\(36\)/);
-  assert.match(portal, /@media \(max-width:\s?640px\)/);
+  assert.match(portal, /if\(!currentUser\|\|!activePartner\)return/);
+  assert.match(portal, /emailVerified/);
+  assert.match(portal, /bloquead/);
+  assert.match(portal, /pendent/);
+  assert.match(portal, /not-a-partner/);
+  assert.doesNotMatch(portal, /company\.html/);
+  assert.match(portal, /@media\(max-width:720px\)/);
   assert.match(portal, /prefers-reduced-motion/);
-  assert.match(portal, /representantes, vendedores, clientes, parceiros/);
-  assert.match(portal, /par-whatsapp-float/);
-  assert.match(portal, /wa\.me\/5591991311049/);
-  assert.match(portal, /aria-label="Conversar sobre o Programa de Parceiros no WhatsApp"/);
-  assert.match(portal, /async function isPartnerSessionActive\(\)/);
-  assert.match(portal, /function parceiroValidationField\(/);
-  assert.match(portal, /par-field-error/);
-  assert.match(portal, /await isPartnerSessionActive\(\)/);
+  assert.match(portal, /Dados carregados somente para a conta autenticada/);
+});
+
+test('cadastro permanece público e encaminha para o portal sem carregar dashboard', () => {
+  const cadastro = readFileSync('cadastro-parceiro.html', 'utf8');
+  assert.match(cadastro, /registerPartner/);
+  assert.match(cadastro, /href="portal-parceiro\.html"/);
+  assert.doesNotMatch(cadastro, /getMyPartnerDashboard/);
+  assert.doesNotMatch(cadastro, /sendBillingReminder/);
+  assert.match(cadastro, /representantes, vendedores, clientes, parceiros/);
+});
+
+test('login preserva rota do portal e não aplica redirecionamento empresarial', () => {
+  const login = readFileSync('login.html', 'utf8');
+  const auth = readFileSync('auth.js', 'utf8');
+  const hosting = JSON.parse(readFileSync('hosting-files.json', 'utf8'));
+  assert.match(login, /requestedPathname === 'portal-parceiro\.html'/);
+  assert.doesNotMatch(login, /requestedIsPartnerPortal = String\(requested[^)]*\)\.toLowerCase\(\)\.includes\('portal-parceiro\.html'\)/);
+  assert.match(auth, /function isPartnerPortalTarget\(value\)/);
+  assert.match(auth, /raw === 'portal-parceiro\.html'/);
+  assert.doesNotMatch(auth, /lowerRequested\.includes\('portal-parceiro\.html'\)/);
+  assert.ok(hosting.includes('portal-parceiro.html'));
 });
 
 test('vitrine do iphone usa capturas mobile reais', () => {
@@ -125,8 +170,8 @@ test('landing vitrine exibe carrosseis iphone e desktop com telas reais', () => 
 
 test('landing direciona o painel do parceiro para login autenticado', () => {
   const landing = readFileSync('landing-vendas.html', 'utf8');
-  assert.match(landing, /href="https:\/\/sisweb-7ce82\.web\.app\/login\.html"[^>]*>.*Meu painel do Parceiro/);
-  assert.match(landing, /href="https:\/\/sisweb-7ce82\.web\.app\/login\.html"[^>]*>.*Acessar meu Painel/);
+  assert.match(landing, /href="https:\/\/sisweb-7ce82\.web\.app\/portal-parceiro\.html"[^>]*>.*Meu painel do Parceiro/);
+  assert.match(landing, /href="https:\/\/sisweb-7ce82\.web\.app\/portal-parceiro\.html"[^>]*>.*Acessar meu Painel/);
   assert.match(landing, /id="lv-hero-phone-carousel"/);
   assert.match(landing, /id="lv-hero-phone-carousel"[\s\S]*assets\/help-manual\/index-mobile\.png/);
   assert.match(readFileSync('landing-vendas.js', 'utf8'), /initCarousel\('lv-hero-phone-carousel'\)/);
@@ -141,9 +186,13 @@ test('caixa de parceiro da assinatura tem estilo proprio e responsivo', () => {
 
 test('frontend expoe contrato de parceiros sem write direto', () => {
   const svc = readFileSync('firebaseService.js', 'utf8');
-  for (const name of ['registerPartner', 'validatePartnerCode', 'linkPartnerReferral', 'getMyPartnerDashboard', 'sendBillingReminder', 'getPartnersAdmin', 'getPartnerDetailAdmin', 'setPartnerConfig', 'markCommissionPaid', 'adminLinkReferral']) {
+  for (const name of ['registerPartner', 'validatePartnerCode', 'claimPartnerAccount', 'linkPartnerReferral', 'getMyPartnerDashboard', 'sendBillingReminder', 'getPartnersAdmin', 'getPartnerDetailAdmin', 'setPartnerConfig', 'markCommissionPaid', 'adminLinkReferral']) {
     assert.match(svc, new RegExp(`async function ${name}\\(`), `wrapper ausente: ${name}`);
   }
+  const authCallableGuard = svc.slice(svc.indexOf('function requiresAuthenticatedCallable'), svc.indexOf('async function getCallableIdToken'));
+  assert.match(authCallableGuard, /validatePartnerCode/);
+  assert.match(authCallableGuard, /claimPartnerAccount/);
+  assert.match(authCallableGuard, /getMyPartnerDashboard/);
   const sub = readFileSync('subscription.html', 'utf8');
   assert.match(sub, /id="partnerCode"/);
   assert.match(sub, /partnerCode: partnerCodeInput/);
@@ -175,31 +224,20 @@ test('admin sem window.prompt: modal inline de nota de pagamento', () => {
   assert.match(admin, /maxlength="280"/);
 });
 
-test('portal sem window.prompt: modal inline de recado de cobranca', () => {
-  const portal = readFileSync('cadastro-parceiro.html', 'utf8');
+test('portal não usa prompt nem autoriza dashboard antes do claim', () => {
+  const portal = readFileSync('portal-parceiro.html', 'utf8');
   assert.doesNotMatch(portal, /window\.prompt/);
-  assert.match(portal, /async function sendPartnerReminder\(/);
-  assert.match(portal, /id="parReminderModal"/);
-  assert.match(portal, /id="parReminderText"/);
-  assert.match(portal, /id="parReminderCount"/);
-  assert.match(portal, /id="parReminderConfirm"/);
-  assert.match(portal, /id="parReminderCancel"/);
-  assert.match(portal, /openPartnerReminderModal/);
-  assert.match(portal, /closePartnerReminderModal/);
-  assert.match(portal, /submitPartnerReminderModal/);
-  assert.match(portal, /maxlength="280"/);
-  assert.match(portal, /Escape/);
-  assert.match(portal, /lv-btn/);
+  assert.match(portal, /async function claim\(\)/);
+  assert.match(portal, /activePartner=true/);
+  assert.match(portal, /await loadDashboard\(\)/);
 });
 
 test('portal mapeia erros do backend para PT-BR claro', () => {
-  const portal = readFileSync('cadastro-parceiro.html', 'utf8');
-  assert.match(portal, /function parceiroFriendlyError\(/);
-  assert.match(portal, /Serviço indisponível no momento\. Tente novamente em instantes\./);
-  assert.match(portal, /Limite de uso atingido/);
-  assert.match(portal, /Código inválido/);
-  assert.match(portal, /parceiroFriendlyError\(err/);
-  assert.doesNotMatch(portal, /msg\.textContent = \(err && err\.message\) \|\| 'Erro ao enviar alerta\.'/);
+  const portal = readFileSync('portal-parceiro.html', 'utf8');
+  assert.match(portal, /function friendlyError\(/);
+  assert.match(portal, /Acesso bloqueado/);
+  assert.match(portal, /Cadastro pendente/);
+  assert.match(portal, /Acesso já reivindicado/);
 });
 
 test('admin pagina tabela de parceiros em 20 itens com filtros resetando', () => {
@@ -240,8 +278,8 @@ test('projecoes das 3 proximas comissoes sao calculadas sem criar ledger', () =>
   assert.equal(projs[0].commission, 1.99);
   assert.equal(projs[1].dueDate.slice(0, 7), '2026-11');
   assert.deepEqual(partner.buildProjections({ planKey: 'monthly', endDateIso: '', settings: { plans: { monthly: { amount: 19.9 } } }, percent: 0 }), []);
-  const portal = readFileSync('cadastro-parceiro.html', 'utf8');
-  assert.match(portal, /id="parDashProjections"/);
+  const portal = readFileSync('portal-parceiro.html', 'utf8');
+  assert.match(portal, /id="partnerDashboard"/);
   const admin = readFileSync('admin.html', 'utf8');
   assert.match(admin, /id="partnerProjectionsBody"/);
   const main = readFileSync('scripts/admin/admin-main.js', 'utf8');
@@ -257,4 +295,25 @@ test('admin vincula indicacao manualmente por email ou uid', () => {
   assert.match(admin, /id="partnerLinkBtn"/);
   const main = readFileSync('scripts/admin/admin-main.js', 'utf8');
   assert.match(main, /async function adminLinkReferralFlow\(\)/);
+});
+
+test('cadastro duplicado nao expoe codigo nem partnerId', () => {
+  const src = readFileSync('functions/partner-functions.js', 'utf8');
+  const block = src.slice(src.indexOf('Dedupe por e-mail'), src.indexOf('// Gera código único'));
+  assert.match(block, /return \{ success: true, already: true \}/);
+  assert.doesNotMatch(block, /code/);
+  assert.doesNotMatch(block, /partnerId/);
+});
+
+test('portal exibe projecoes, cobranca por clientRef e reload com token', () => {
+  const portal = readFileSync('portal-parceiro.html', 'utf8');
+  assert.match(portal, /id="partnerProjections"/);
+  assert.match(portal, /data-remind/);
+  assert.match(portal, /clientRef/);
+  assert.match(portal, /id="partnerReminderModal"/);
+  assert.match(portal, /sendBillingReminder\(\{clientRef:/);
+  assert.match(portal, /currentUser\.reload/);
+  assert.match(portal, /getIdToken\(true\)/);
+  assert.match(portal, /async function refreshSession/);
+  assert.doesNotMatch(portal, /sendBillingReminder\(\{companyId:/);
 });
