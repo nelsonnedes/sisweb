@@ -315,6 +315,8 @@ test('portal exibe projecoes, cobranca por clientRef e reload com token', () => 
   assert.match(portal, /currentUser\.reload/);
   assert.match(portal, /getIdToken\(true\)/);
   assert.match(portal, /async function refreshSession/);
+  assert.match(portal, /Ainda não confirmado/);
+  assert.match(portal, /Reenviar confirmação/);
   assert.doesNotMatch(portal, /sendBillingReminder\(\{companyId:/);
 });
 
