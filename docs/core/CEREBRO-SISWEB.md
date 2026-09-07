@@ -496,3 +496,8 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Fix (landing-vendas.html/css/js):** `.lv-hero-mockup` virou `.lv-hero-stage`: desktop com mini-carrossel `#lv-hero-carousel` (Dashboard=index-overview.png, Estoque, Vendas — existencia e hosting-files verificados) via `initCarousel` (+1 linha JS), setas, hint e legendas PT-BR; mini iPhone flutuante com `index-mobile.png`; caption honesta ("versao de bolso no celular"); fallback CSS atras das imagens, sem onerror apagador.
 - **Polish:** iPhone responsivo em 390px sem cobrir CTAs, caption com padding-right, flutuacao sutil com reduced-motion.
 - **Verificacao:** tests 14/14 (asserts do hero inclusos); screenshots desktop+390 OK, 16/16 imgs, sem overflow, console limpo; sem commit/push/deploy (pendentes).
+
+## 43. Sessao 2026-09-06 — Ativar Acesso: conta existe, e-mail não verificado
+- **Diagnostico com evidencia (somente leitura):** parceiro PAR-Y34W ativo; conta Auth existe mas `emailVerified: false`; `ownerUid` nunca gravado; log do `claimPartnerAccount` sem tentativa autenticada. O clique nunca chegou ao backend porque o claim exige e-mail verificado — correto por segurança, não bug. E-mail temporário provavelmente não entregou a confirmação.
+- **Ruído separado:** WS "Back-Forward Cache" + CSP `script-src` vêm da aba `admin.html` em segundo plano (CSP existe só para `/admin.html`); não afetam o portal. Cobrar/imports íntegros em produção.
+- **Melhorias:** "Verificar novamente" mostra hora + orienta spam/reenvio; select de tipo de conta com padding do ícone; tests 30/30; validate 6/6; hosting OK; commit `61a7106` + push.
