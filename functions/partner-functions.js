@@ -316,6 +316,31 @@ exports.claimPartnerAccount = functions.https.onCall(async (data, context) => {
         const currentOwnerUid = String(current.ownerUid || '').trim();
         const currentStatus = String(current.status || '').toLowerCase();
         if (currentOwnerUid && currentOwnerUid !== uid) {
+            // A conta dona pode ter sido excluída (ciclo apaga/recria conta):
+            // nesse caso o vínculo é lixo — recupera em vez de travar para sempre.
+            let ownerExists = true;
+            try {
+                await admin.auth().getUser(currentOwnerUid);
+            } catch (e) {
+                if (e && e.code === 'auth/user-not-found') ownerExists = false;
+            }
+            if (!ownerExists) {
+                const reclaim = await partnerRef.transaction((cur) => {
+                    if (!cur) return;
+                    if (String(cur.ownerUid || '').trim() !== currentOwnerUid) return;
+                    if (String(cur.status || '').toLowerCase() !== 'active') return;
+                    return { ...cur, ownerUid: uid, updatedAt: nowIso, updatedBy: 'partner_claim_reclaim' };
+                });
+                if (reclaim.committed) {
+                    return {
+                        success: true,
+                        partnerId: partner.id,
+                        status: 'active',
+                        reclaimed: true,
+                        capabilities: { dashboard: true, messaging: true }
+                    };
+                }
+            }
             throw new functions.https.HttpsError('already-exists', 'Este parceiro já está vinculado a outra conta.');
         }
         if (currentOwnerUid === uid && currentStatus === 'active') {

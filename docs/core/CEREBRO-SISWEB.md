@@ -522,3 +522,9 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Sintoma:** parceiro verificado sem empresa parava em `subscription.html?reason=subscription_required`.
 - **Fix:** novo `getMyPartnerStatus` (só leitura, sem writes) + `isPartnerOnlyAccount()` com cache 5min/timeout 4s/fail-closed; `resolvePostLoginRoute` desvia ao portal só no ramo sem-empresa e só com `checkPartner: true` (fluxos de login); guards de navegação intactos; cliente com/sem empresa inalterado.
 - **Verificacao:** tests 33/33; navegador com serviço simulado: parceiro→portal, não-parceiro→subscription, erro→subscription, sem flag→subscription; endpoint live 401 sem auth; functions v1 + hosting OK; commit + push.
+
+## 46. Sessao 2026-09-06 — Claim 409: vínculo de conta excluída agora é recuperável
+- **Sintoma:** `claimPartnerAccount` devolveu 409 `already-exists` mesmo com `ownerUid` vazio no re-read posterior.
+- **Causa estrutural:** se a conta dona foi excluída (ciclo apaga/recria, comum em testes), o `ownerUid` vira lixo e todo claim futuro trava para sempre — sem caminho de recuperação pela UI.
+- **Fix:** no ramo de conflito, verifica `admin.auth().getUser(ownerUid)`; se `auth/user-not-found`, retoma via transação condicional (`partner_claim_reclaim`); senão mantém o 409 legítimo. Trava de regressão em testes.
+- **Verificacao:** tests 33/33; lint + validate 6/6; functions v1 no ar; commit + push.
