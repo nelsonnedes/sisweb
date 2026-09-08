@@ -286,6 +286,36 @@ test('projecoes das 3 proximas comissoes sao calculadas sem criar ledger', () =>
   assert.match(main, /function renderPartnerProjections\(companies\)/);
 });
 
+test('admin exclui parceiro definitivamente com impacto e confirmacao', () => {
+  assert.match(indexSrc, /exports\.deletePartnerAdmin = partnerFunctions\.deletePartnerAdmin/);
+  const start = indexSrc.indexOf('exports.deletePartnerAdmin');
+  assert.notEqual(start, -1);
+  const funcSrc = readFileSync('functions/partner-functions.js', 'utf8');
+  const delStart = funcSrc.indexOf('exports.deletePartnerAdmin');
+  assert.notEqual(delStart, -1);
+  const delBlock = funcSrc.slice(delStart, funcSrc.indexOf('module.exports', delStart));
+  assert.match(delBlock, /dryRun/);
+  assert.match(delBlock, /confirmCode/);
+  assert.match(delBlock, /campaignPartnerCodes\//);
+  assert.match(delBlock, /campaignCommissions\//);
+  assert.match(delBlock, /campaignReminderLog\//);
+  assert.match(delBlock, /partnerReminders/);
+  assert.match(delBlock, /subscriptionAdminPurgeAudit/);
+  assert.doesNotMatch(delBlock, /users\/\$\{uid\}`\]\s*=\s*null/);
+  const svc = readFileSync('firebaseService.js', 'utf8');
+  assert.match(svc, /async function deletePartnerAdmin\(payload\)/);
+  const admin = readFileSync('admin.html', 'utf8');
+  assert.match(admin, /id="partnerDeleteModal"/);
+  assert.match(admin, /id="partnerDeleteImpact"/);
+  assert.match(admin, /id="partnerDeleteCode"/);
+  assert.match(admin, /id="partnerDeleteConfirmBtn"/);
+  const main = readFileSync('scripts/admin/admin-main.js', 'utf8');
+  assert.match(main, /data-partner-delete/);
+  assert.match(main, /async function openPartnerDeleteModal\(partnerId\)/);
+  assert.match(main, /async function submitPartnerDeleteModal\(\)/);
+  assert.match(main, /function bindPartnerDeleteModalOnce\(\)/);
+});
+
 test('admin vincula indicacao manualmente por email ou uid', () => {
   assert.match(indexSrc, /exports\.adminLinkReferral = partnerFunctions\.adminLinkReferral/);
   const svc = readFileSync('firebaseService.js', 'utf8');

@@ -1262,11 +1262,33 @@
         </div>
     </div>
 
-    <script src="firebaseService.js?v=53be9ea8b6e9" type="module"></script>
+    <div id="partnerDeleteModal" class="modal-overlay">
+        <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="partnerDeleteTitle">
+            <div class="modal-header">
+                <h3 class="modal-title" id="partnerDeleteTitle">Excluir parceiro definitivamente</h3>
+                <button type="button" class="modal-close" id="partnerDeleteCloseBtn" aria-label="Fechar"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:0.85rem;color:#991b1b;font-weight:600;">Esta ação remove o parceiro e todos os seus vínculos, códigos, comissões e lembretes. Auditoria e histórico de assinaturas são preservados. Não há como desfazer.</p>
+                <div id="partnerDeleteImpact" style="font-size:0.85rem;color:#334155;margin:10px 0;">Carregando impacto...</div>
+                <div class="modal-field">
+                    <span class="modal-field-label">Digite o código do parceiro para confirmar</span>
+                    <input type="text" id="partnerDeleteCode" class="modal-field-value" style="width:100%;box-sizing:border-box;text-transform:uppercase;" maxlength="12" placeholder="PAR-XXXX" autocomplete="off">
+                </div>
+                <input type="hidden" id="partnerDeleteId">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn" id="partnerDeleteCancelBtn">Cancelar</button>
+                <button type="button" class="btn danger" id="partnerDeleteConfirmBtn"><i class="fas fa-trash"></i> Excluir definitivamente</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="firebaseService.js?v=aa4116f3b881" type="module"></script>
     <script src="auth.js?v=b75f1afa13a9"></script>
     <script src="menu-component.js?v=809a6acd5085"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
     <script src="scripts/admin/admin-ui.js?v=ec6765700811"></script>
-    <script src="scripts/admin/admin-main.js?v=7ef54fb492ec"></script>
+    <script src="scripts/admin/admin-main.js?v=c686afc84b3d"></script>
 </body>
 </html>

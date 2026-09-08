@@ -413,8 +413,10 @@
             cursor: pointer;
             color: #475569;
             transition: color 0.3s;
-            width: 34px;
-            height: 34px;
+            width: 44px;
+            height: 44px;
+            min-width:44px;
+            min-height:44px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1384,7 +1386,7 @@
         // Registro e Recuperação usam exclusivamente authService (sem duplicatas).
         // ═══════════════════════════════════════════════════════════════════════
         import { app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-init.js?v=9d73fc31bff4';
-        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=53be9ea8b6e9';
+        import { authService, isFirebaseOperational, setCompanyClaim } from './firebaseService.js?v=aa4116f3b881';
 
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim };
         if (typeof window.runLoginHealthCheck === 'function') {

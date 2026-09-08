@@ -1870,11 +1870,14 @@
                         '<td>' + formatBRLSafe(p.paid) + '</td>' +
                         '<td>' + formatBRLSafe(p.pending) + '</td>' +
                         '<td><span class="tag ' + statusTag + '">' + escapeHtmlSafe(statusLabel) + '</span></td>' +
-                        '<td><button type="button" class="btn small" data-partner-detail="' + escapeHtmlSafe(p.id) + '"><i class="fas fa-eye"></i><span>Detalhes</span></button></td>' +
+                        '<td><button type="button" class="btn small" data-partner-detail="' + escapeHtmlSafe(p.id) + '"><i class="fas fa-eye"></i><span>Detalhes</span></button> <button type="button" class="btn small danger" data-partner-delete="' + escapeHtmlSafe(p.id) + '"><i class="fas fa-trash"></i><span>Excluir</span></button></td>' +
                         '</tr>';
                 }).join("");
                 Array.prototype.forEach.call(tbody.querySelectorAll("[data-partner-detail]"), function(btn) {
                     btn.addEventListener("click", function() { openPartnerDetail(btn.getAttribute("data-partner-detail")); });
+                });
+                Array.prototype.forEach.call(tbody.querySelectorAll("[data-partner-delete]"), function(btn) {
+                    btn.addEventListener("click", function() { openPartnerDeleteModal(btn.getAttribute("data-partner-delete")); });
                 });
                 renderAdminPaginationControls("partnersPagination", adminPaginationState.partners, list.length, function() { applyPartnersFilter(); });
             }
@@ -2081,6 +2084,93 @@
             async function markPartnerCommissionPaid(entryId) {
                 bindCommissionPaidModalOnce();
                 openCommissionPaidModal(entryId);
+            }
+            function fmtPartnerDeleteImpact(impact) {
+                if (!impact) return "Não foi possível calcular o impacto.";
+                function row(label, value) {
+                    return "<div>" + escapeHtmlSafe(label) + ": <strong>" + escapeHtmlSafe(value) + "</strong></div>";
+                }
+                return row("Parceiro", (impact.partner && impact.partner.name) || "-")
+                    + row("Código (índice)", impact.codeIndex ? "sim" : "não")
+                    + row("Indicações vinculadas", impact.referrals)
+                    + row("Comissões no ledger", impact.commissions)
+                    + row("Comissões ganhas / pagas", formatBRLSafe(impact.earnedTotal) + " / " + formatBRLSafe(impact.paidTotal))
+                    + row("Lembretes em empresas", impact.reminders)
+                    + row("Alertas em sininhos", impact.notifications)
+                    + row("Empresas envolvidas", impact.companiesInvolved);
+            }
+            async function openPartnerDeleteModal(partnerId) {
+                var modal = document.getElementById("partnerDeleteModal");
+                var host = document.getElementById("partnerDeleteImpact");
+                var hidden = document.getElementById("partnerDeleteId");
+                var codeInput = document.getElementById("partnerDeleteCode");
+                if (hidden) hidden.value = String(partnerId || "");
+                if (codeInput) codeInput.value = "";
+                if (host) host.innerHTML = "Carregando impacto...";
+                if (modal) modal.classList.add("active");
+                try {
+                    var svc = await resolveAdminFirebaseService("deletePartnerAdmin");
+                    if (!svc || typeof svc.deletePartnerAdmin !== "function") {
+                        throw new Error("Serviço deletePartnerAdmin indisponível.");
+                    }
+                    var result = await svc.deletePartnerAdmin({ partnerId: partnerId, dryRun: true });
+                    var data = result && result.data ? result.data : result;
+                    if (!result || result.success === false || !data || data.success === false) {
+                        throw new Error((result && result.error) || (data && data.error) || "Falha ao calcular impacto.");
+                    }
+                    if (host) host.innerHTML = fmtPartnerDeleteImpact(data.impact);
+                } catch (err) {
+                    if (host) host.innerHTML = escapeHtmlSafe((err && err.message) || "Erro ao calcular impacto.");
+                }
+            }
+            function closePartnerDeleteModal() {
+                var modal = document.getElementById("partnerDeleteModal");
+                if (modal) modal.classList.remove("active");
+            }
+            function bindPartnerDeleteModalOnce() {
+                if (bindPartnerDeleteModalOnce._done) return;
+                bindPartnerDeleteModalOnce._done = true;
+                var closeBtn = document.getElementById("partnerDeleteCloseBtn");
+                var cancelBtn = document.getElementById("partnerDeleteCancelBtn");
+                var confirmBtn = document.getElementById("partnerDeleteConfirmBtn");
+                var modal = document.getElementById("partnerDeleteModal");
+                if (closeBtn) closeBtn.addEventListener("click", function() { closePartnerDeleteModal(); });
+                if (cancelBtn) cancelBtn.addEventListener("click", function() { closePartnerDeleteModal(); });
+                if (modal) modal.addEventListener("click", function(e) { if (e.target === modal) closePartnerDeleteModal(); });
+                document.addEventListener("keydown", function(e) {
+                    if (!e) return;
+                    if (e.key === "Escape") {
+                        var m = document.getElementById("partnerDeleteModal");
+                        if (m && m.classList.contains("active")) closePartnerDeleteModal();
+                    }
+                });
+                if (confirmBtn) confirmBtn.addEventListener("click", function() { submitPartnerDeleteModal(); });
+            }
+            async function submitPartnerDeleteModal() {
+                try {
+                    var hidden = document.getElementById("partnerDeleteId");
+                    var codeInput = document.getElementById("partnerDeleteCode");
+                    var partnerId = String((hidden && hidden.value) || "").trim();
+                    var confirmCode = String((codeInput && codeInput.value) || "").trim();
+                    if (!partnerId) throw new Error("Parceiro não selecionado.");
+                    if (!confirmCode) {
+                        notifyAdmin("Digite o código do parceiro para confirmar.", "error");
+                        return;
+                    }
+                    var svc = await resolveAdminFirebaseService("deletePartnerAdmin");
+                    var result = await svc.deletePartnerAdmin({ partnerId: partnerId, confirmCode: confirmCode });
+                    var data = result && result.data ? result.data : result;
+                    if (!result || result.success === false || !data || data.success === false) {
+                        throw new Error((result && result.error) || (data && data.error) || "Falha ao excluir parceiro.");
+                    }
+                    closePartnerDeleteModal();
+                    var detail = document.getElementById("partnerDetail");
+                    if (detail) detail.style.display = "none";
+                    notifyAdmin("Parceiro excluído definitivamente.", "success");
+                    await loadPartnersPanel();
+                } catch (err) {
+                    notifyAdmin((err && err.message) || "Erro ao excluir parceiro.", "error");
+                }
             }
             async function savePartnerConfig() {
                 try {
@@ -6387,6 +6477,7 @@
                     if (partnerCommissionSaveEl) partnerCommissionSaveEl.addEventListener("click", savePartnerConfig);
                     if (partnerBlockToggleEl) partnerBlockToggleEl.addEventListener("click", togglePartnerBlock);
                     if (partnerLinkBtnEl) partnerLinkBtnEl.addEventListener("click", adminLinkReferralFlow);
+                    bindPartnerDeleteModalOnce();
                     var settingsReloadBtn = document.getElementById("settingsReload");
                     if (settingsReloadBtn) settingsReloadBtn.addEventListener("click",function() {loadSubscriptionSettings();});
                     var settingsSaveBtn = document.getElementById("settingsSave");

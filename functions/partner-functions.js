@@ -1173,6 +1173,131 @@ exports.adminLinkReferral = functions.https.onCall(async (data, context) => {
     return { success: true, created: !!link.created, partnerId: partner.id, referredUid: uid, code: partner.code || '' };
 });
 
+exports.deletePartnerAdmin = functions.https.onCall(async (data, context) => {
+    await assertSuperAdminCall(context);
+    const payload = data && typeof data === 'object' ? data : {};
+    const partnerId = sanitizeStr(payload.partnerId, 128);
+    const dryRun = payload.dryRun === true;
+    if (!partnerId) {
+        throw new functions.https.HttpsError('invalid-argument', 'partnerId é obrigatório.');
+    }
+    const partner = await readPartnerById(partnerId);
+    if (!partner) {
+        throw new functions.https.HttpsError('not-found', 'Parceiro não encontrado.');
+    }
+    const pid = partner.id;
+    const code = String(partner.code || '');
+
+    // 1) Vínculos de indicação do parceiro.
+    const refsSnap = await admin.database().ref('campaignReferrals').get();
+    const refs = refsSnap.exists() ? refsSnap.val() : {};
+    const referralUids = Object.entries(refs || {})
+        .filter(([, r]) => r && r.partnerId === pid)
+        .map(([referredUid]) => String(referredUid));
+
+    // 2) Ledger de comissões (subárvore inteira) + totais.
+    const commSnap = await admin.database().ref(`campaignCommissions/${pid}`).get();
+    const commRaw = commSnap.exists() ? commSnap.val() : {};
+    const commissionIds = Object.keys(commRaw || {});
+    let earnedTotal = 0;
+    let paidTotal = 0;
+    Object.values(commRaw || {}).forEach((c) => {
+        if (!c) return;
+        if (c.status === 'paid') paidTotal = Math.round((paidTotal + Number(c.commission || 0)) * 100) / 100;
+        else if (c.status === 'earned') earnedTotal = Math.round((earnedTotal + Number(c.commission || 0)) * 100) / 100;
+    });
+
+    // 3) Empresas envolvidas (via referrals + comissões) e lembretes do parceiro nelas.
+    const companyIds = new Set();
+    referralUids.forEach((uid) => {
+        const r = (refs || {})[uid] || {};
+        if (r.companyId) companyIds.add(String(r.companyId));
+    });
+    Object.values(commRaw || {}).forEach((c) => {
+        if (c && c.companyId) companyIds.add(String(c.companyId));
+    });
+    const reminderPaths = [];
+    const memberUids = new Set(referralUids);
+    for (const companyId of companyIds) {
+        try {
+            const remSnap = await admin.database().ref(`companies/${companyId}/partnerReminders`).get();
+            if (remSnap.exists()) {
+                Object.entries(remSnap.val() || {}).forEach(([rid, r]) => {
+                    if (r && String(r.partnerId || '') === pid) {
+                        reminderPaths.push(`companies/${companyId}/partnerReminders/${rid}`);
+                    }
+                });
+            }
+        } catch (_) {}
+        try {
+            const memSnap = await admin.database().ref(`companies/${companyId}/users`).get();
+            if (memSnap.exists()) Object.keys(memSnap.val() || {}).forEach((u) => memberUids.add(String(u)));
+        } catch (_) {}
+    }
+
+    // 4) Sininho dos usuários (somente alertas deste parceiro: source + nome).
+    const partnerName = String(partner.name || '');
+    const notificationPaths = [];
+    for (const uid of memberUids) {
+        try {
+            const notSnap = await admin.database().ref(`users/${uid}/notifications`).get();
+            if (!notSnap.exists()) continue;
+            Object.entries(notSnap.val() || {}).forEach(([nid, n]) => {
+                if (n && String(n.source || '') === 'partner_billing'
+                    && partnerName && String(n.message || '').includes(partnerName)) {
+                    notificationPaths.push(`users/${uid}/notifications/${nid}`);
+                }
+            });
+        } catch (_) {}
+    }
+
+    // 5) Log de lembretes do parceiro (subárvore inteira, se existir).
+    const reminderLogSnap = await admin.database().ref(`campaignReminderLog/${pid}`).get();
+    const hasReminderLog = reminderLogSnap.exists();
+
+    const impact = {
+        partner: { id: pid, code, name: partner.name || '', email: partner.email || '', status: partner.status || '' },
+        codeIndex: !!code,
+        referrals: referralUids.length,
+        commissions: commissionIds.length,
+        earnedTotal: Math.round(earnedTotal * 100) / 100,
+        paidTotal: Math.round(paidTotal * 100) / 100,
+        pendingTotal: Math.round(earnedTotal * 100) / 100,
+        reminderLog: hasReminderLog,
+        reminders: reminderPaths.length,
+        notifications: notificationPaths.length,
+        companiesInvolved: companyIds.size
+    };
+    if (dryRun) return { success: true, dryRun: true, impact };
+
+    const confirmCode = normalizePartnerCode(payload.confirmCode);
+    if (!confirmCode || confirmCode !== normalizePartnerCode(code)) {
+        throw new functions.https.HttpsError('failed-precondition', 'Digite o código do parceiro para confirmar a exclusão definitiva.');
+    }
+
+    const removals = {
+        [`campaignPartners/${pid}`]: null,
+        [`campaignCommissions/${pid}`]: null,
+        [`campaignReminderLog/${pid}`]: null
+    };
+    if (code) removals[`campaignPartnerCodes/${code}`] = null;
+    referralUids.forEach((uid) => { removals[`campaignReferrals/${uid}`] = null; });
+    reminderPaths.forEach((path) => { removals[path] = null; });
+    notificationPaths.forEach((path) => { removals[path] = null; });
+    await admin.database().ref().update(removals);
+
+    try {
+        await admin.database().ref(`subscriptionAdminPurgeAudit/${context.auth.uid}`).push({
+            at: new Date().toISOString(),
+            by: String(context.auth.uid),
+            type: 'deletePartnerAdmin',
+            partnerId: pid,
+            impact
+        });
+    } catch (_) {}
+    return { success: true, deleted: impact };
+});
+
 module.exports = {
     configure,
     normalizePartnerCode,
@@ -1203,5 +1328,6 @@ module.exports = {
     getPartnerDetailAdmin: exports.getPartnerDetailAdmin,
     setPartnerConfig: exports.setPartnerConfig,
     markCommissionPaid: exports.markCommissionPaid,
-    adminLinkReferral: exports.adminLinkReferral
+    adminLinkReferral: exports.adminLinkReferral,
+    deletePartnerAdmin: exports.deletePartnerAdmin
 };

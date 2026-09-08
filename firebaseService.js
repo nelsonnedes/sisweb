@@ -3265,6 +3265,14 @@ async function adminLinkReferral(payload) {
     }
 }
 
+async function deletePartnerAdmin(payload) {
+    try {
+        return await callAdminCallableWithRetry('deletePartnerAdmin', payload);
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
 async function getCampaignExecutiveSummary() {
     try {
         return await callAdminCallableWithRetry('getCampaignExecutiveSummary', {});
@@ -4645,6 +4653,7 @@ export {
     setPartnerConfig,
     markCommissionPaid,
     adminLinkReferral,
+    deletePartnerAdmin,
     invalidateReadCacheForPath,
     createSupportTicket,
     sendPublicSupportEmail,
