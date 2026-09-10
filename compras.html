@@ -379,28 +379,42 @@
         }
 
         #listaPedidosTable th.atualizado-col,
-        #listaPedidosTable td.atualizado-cell {
-            min-width: 112px;
+        #listaPedidosTable td.atualizado-cell,
+        #listaPedidosModal th.atualizado-col,
+        #listaPedidosModal td.atualizado-cell {
+            min-width: 104px;
+            text-align: center;
             white-space: nowrap;
         }
 
         #listaPedidosTable th.actions-col,
-        #listaPedidosTable td.acoes-cell {
-            width: 164px;
+        #listaPedidosTable td.acoes-cell,
+        #listaPedidosModal th.actions-col,
+        #listaPedidosModal td.acoes-cell {
             min-width: 164px;
             text-align: center;
+            width: 164px;
             white-space: nowrap;
         }
 
         #listaPedidosModal #pedidosTable td:last-child {
             white-space: nowrap;
         }
+        #listaPedidosModal .acoes-cell {
+            white-space: nowrap;
+        }
         #listaPedidosModal .acoes-buttons {
-            display: flex;
             align-items: center;
+            display: flex;
             justify-content: center;
             gap: 6px;
             width: 100%;
+        }
+        #listaPedidosModal .acoes-buttons .btn-small {
+            flex: 0 0 32px;
+            height: 30px;
+            min-width: 32px;
+            padding: 0;
         }
         #listaPedidosModal .pedido-numero-cell,
         #listaPedidosModal .pedido-numero-head {
@@ -427,14 +441,6 @@
         }
         #listaPedidosModal .btn-print-selected {
             white-space: nowrap;
-        }
-
-        #listaPedidosModal #pedidosTable .btn-small {
-            padding: 2px 5px;
-            min-height: 22px;
-            height: 22px;
-            line-height: 1;
-            font-size: 11px;
         }
 
         .action-buttons {
@@ -464,14 +470,15 @@
             color: #2c3e50;
         }
 
-        /* Modal de Lista de Pedidos com Flexbox para Rolagem */
+        /* Modal de Lista de Pedidos — padronizado com Vendas */
         #listaPedidosModal .modal-content {
-            max-width: 1200px;
+            max-width: 1000px;
             padding: 0;
             margin: 2% auto;
             display: flex;
             flex-direction: column;
             max-height: 90vh;
+            width: 95%;
         }
 
         #listaPedidosModal .modal-body {
@@ -1603,33 +1610,31 @@
         </div>
     </div>
 
-    <!-- Modal Lista de Pedidos -->
+    <!-- Modal Lista de Pedidos — padronizado com Vendas -->
     <div id="listaPedidosModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Lista de Pedidos</h2>
-                <span class="close" onclick="fecharModal('listaPedidosModal')">&times;</span>
+                <span class="close-modal" onclick="fecharModal('listaPedidosModal')">&times;</span>
             </div>
             <div class="modal-body">
-                <div class="search-box commerce-filters-row">
+                <div class="search-box">
                     <input type="text" id="searchPedidos" placeholder="Pesquisar pedidos..." onkeyup="filtrarPedidos()">
-                    <div class="inline-field commerce-filter-field">
+                    <div class="inline-field">
+                        <label for="filtroFornecedor">Fornecedor</label>
+                        <select id="filtroFornecedor" onchange="filtrarPedidos()">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="inline-field">
                         <label for="filtroEspecie">Espécie</label>
                         <select id="filtroEspecie" onchange="filtrarPedidos()">
                             <option value="">Todas</option>
                         </select>
                     </div>
-                </div>
-                <div class="form-row commerce-filters-row" style="margin-bottom: 10px;">
-                    <div class="form-group commerce-filter-field">
-                        <label for="filtroFornecedor">Fornecedor:</label>
-                        <select id="filtroFornecedor">
-                            <option value="">Todos</option>
-                        </select>
-                    </div>
-                    <div class="form-group commerce-filter-field">
-                        <label for="filtroStatus">Status:</label>
-                        <select id="filtroStatus">
+                    <div class="inline-field">
+                        <label for="filtroStatus">Status</label>
+                        <select id="filtroStatus" onchange="filtrarPedidos()">
                             <option value="">Todos</option>
                             <option value="pendente">Pendente</option>
                             <option value="aprovado">Aprovado</option>
@@ -1638,30 +1643,21 @@
                         </select>
                     </div>
                 </div>
-                <div class="form-row date-filter-row commerce-filters-row">
-                    <div class="form-group commerce-filter-field">
+                <div class="form-row date-filter-row">
+                    <div class="form-group">
                         <label for="filtroInicio">Início:</label>
                         <input type="date" id="filtroInicio" onchange="filtrarPedidos()">
                     </div>
-                    <div class="form-group commerce-filter-field">
+                    <div class="form-group">
                         <label for="filtroFim">Fim:</label>
                         <input type="date" id="filtroFim" onchange="filtrarPedidos()">
                     </div>
-                    <button type="button" class="btn-primary btn-print-selected commerce-filter-action" onclick="imprimirPedidosSelecionados()">
+                    <button type="button" class="btn-primary btn-print-selected" onclick="imprimirPedidosSelecionados()">
                         <i class="fas fa-print"></i> Imprimir <span id="pedidosPrintSelectedCount">(0)</span>
                     </button>
                 </div>
                 <div class="table-responsive mobile-cards commerce-orders-table-wrap">
                     <table class="table commerce-orders-table" id="listaPedidosTable">
-                        <colgroup>
-                            <col style="width: 120px;">
-                            <col style="width: 120px;">
-                            <col>
-                            <col style="width: 120px;">
-                            <col style="width: 120px;">
-                            <col style="width: 140px;">
-                            <col style="width: 160px;">
-                        </colgroup>
                         <thead>
                             <tr>
                                 <th>
