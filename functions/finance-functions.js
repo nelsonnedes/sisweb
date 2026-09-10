@@ -181,7 +181,17 @@ function moneyToCents(value, label) {
     if (typeof value !== 'number' && typeof value !== 'string') {
         throw new FinanceValidationError(`${label} deve ser um valor monetário.`);
     }
-    const raw = typeof value === 'string' ? value.trim() : String(value);
+    let raw;
+    if (typeof value === 'number') {
+        if (!Number.isFinite(value)) {
+            throw new FinanceValidationError(`${label} é inválido.`);
+        }
+        // Normaliza erro binário de ponto flutuante (0.1+0.2 => 0.30000000000000004)
+        // antes da validação de precisão, mantendo o arredondamento em centavos.
+        raw = String(Math.round(value * 100) / 100);
+    } else {
+        raw = value.trim();
+    }
     if (!/^-?\d+(?:\.\d{1,2})?$/.test(raw)) {
         throw new FinanceValidationError(`${label} deve respeitar precisão de centavos.`);
     }

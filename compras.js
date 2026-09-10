@@ -2051,13 +2051,15 @@ async function salvarPedido(event) {
         }));
 
         // Contas a criar: payload canônico validado pela callable no servidor
+        // Normaliza para centavos antes de enviar para evitar 0.30000000000000004 etc.
+        const toCentsValue = (v) => Math.round((typeof v === 'number' ? v : parseCurrency(v)) * 100) / 100;
         const contasCriar = contasParaGerar.map(c => ({
             id: String(c.id),
             fornecedor: pedido.fornecedor.nome,
             descricao: `Compra ${pedido.numero} - ${c.observacao || getTipoContaLabel(c.tipo)}`,
-            valor: typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor),
-            valorOriginal: typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor),
-            valorRestante: typeof c.valor === 'number' ? c.valor : parseCurrency(c.valor),
+            valor: toCentsValue(c.valor),
+            valorOriginal: toCentsValue(c.valor),
+            valorRestante: toCentsValue(c.valor),
             dataVencimento: c.vencimento,
             dataEmissao: c.dataEmissao || pedido.data || '',
             status: c.status || 'pendente',
