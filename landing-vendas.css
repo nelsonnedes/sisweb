@@ -81,6 +81,15 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-share-opt i.fa-copy{color:var(--lv-mogno)}
 .lv-share-opt span{font-weight:600;font-size:0.9rem}
 .lv-share-opt small{display:block;color:var(--lv-muted);font-size:0.72rem;font-weight:400;margin-top:2px}
+@media(max-width:768px){
+  .lv-topbar-inner{gap:10px}
+  .lv-topbar-ctas{gap:6px}
+  .lv-nav{gap:12px}
+  .lv-topbar-ctas .lv-btn{padding:8px 11px;font-size:.82rem}
+  .lv-btn-share{background:transparent;color:var(--lv-casca);border-color:var(--lv-areia);padding:8px 11px}
+  .lv-btn-share:hover{background:#F3EAD3;border-color:var(--lv-mogno);color:var(--lv-mogno)}
+  .lv-btn-share span{display:none}
+}
 @media(max-width:480px){
   .lv-share-popover{right:-20px;min-width:220px}
   .lv-share-arrow{right:36px}
@@ -97,6 +106,13 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0 6px}
 .lv-hero-proof{color:var(--lv-muted);font-size:0.87rem;margin-top:10px}
 .lv-hero-proof i{color:var(--lv-mata)}
+.lv-hero-proofs{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.lv-proof-pill{display:inline-flex;align-items:center;gap:6px;background:#FFFDF7;border:1px solid var(--lv-areia);border-radius:999px;padding:7px 12px;font-size:.78rem;font-weight:600;color:#4A3D2C;box-shadow:0 2px 8px rgba(28,19,11,.06);line-height:1}
+.lv-proof-pill i{color:var(--lv-mata);font-size:.82rem}
+.lv-proof-pill strong{color:var(--lv-casca);font-weight:800}
+.lv-proof-pill--accent{background:var(--lv-mogno);color:#fff;border-color:var(--lv-mogno);box-shadow:0 4px 12px rgba(124,63,22,.22)}
+.lv-proof-pill--accent i{color:var(--lv-serragem)}
+.lv-proof-pill--accent strong{color:#fff}
 .lv-mockup-desktop{border:1px solid var(--lv-areia);border-radius:var(--lv-radius);overflow:hidden;background:var(--lv-card);box-shadow:0 16px 40px rgba(28,19,11,.14)}
 .lv-mockup-desktop img{display:block;width:100%;height:auto}
 .lv-mockup-bar{height:32px;background:var(--lv-casca);display:flex;gap:6px;align-items:center;padding:0 12px}
