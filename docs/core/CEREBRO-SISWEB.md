@@ -4,7 +4,7 @@
 > sessão (Codex, opencode, deepseek) retomar contexto sem regressões e sem perder
 > o "porquê" das decisões já tomadas. SEMPRE consultar antes de implementar.
 >
-> Atualizado em: 2026-09-06 (Landing vendas links + parceiro + WhatsApp 5591991311049)
+> Atualizado em: 2026-09-13 (Portal parceiro claim idempotente + vendas parcelas + share WhatsApp)
 
 ---
 
@@ -542,3 +542,21 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **`linkPartnerReferral` marcado COMPAT:** sem chamador direto no frontend (submit/trial usam ensureReferral); comentário proíbe remoção sem substituto versionado.
 - **Equivalência provada:** harness node comparou 10 casos antigo×novo (única "divergência" era expectativa errada do harness — regex `/bloquead/` original só casa PT).
 - **Verificacao:** tests 39/39; validate 6/6; hosting OK; commit + push.
+
+## 49. Sessao 2026-09-13 — Compras título Ações + Vendas parcelas progressivas
+- **Compras `th.actions-col` 13px:** regra injetada `species-manager.js` excluía `th.actions-col` e fazia título cair para 14px (degrau "Atualizado|Ações"); fix `compras.html:164` com `padding:12px 6px; font-size:13px` no `th.actions-col` (48px = vizinho).
+- **Vendas `redistribuirProgressivoParcelas`:** `atualizarValorConta` e `onParcelaValorInput` não marcavam `locked:true` antes de chamar redistribuição; `reordenarParaOriginal` perdia `locked`; fix `vendas.js:5984/6140/6322` iguala `compras.js` (valor editado fixo, restante redistribuído nas parcelas seguintes).
+- **Verificacao:** `node --check` OK; `npm test` 569 pass / 0 fail; lint/typecheck OK; `npm run build:hosting` + hosting publicado; commits `02b12bc`/`0b754fb`.
+
+## 50. Sessao 2026-09-13 — Portal parceiro claim 409/ aborted → idempotente (selma_bia@hotmail.com)
+- **Sintoma:** `portal-parceiro.html` mostrava "Não foi possível ativar" + `claimPartnerAccount 409` mesmo com parceira `Selma Silva` ativa (`PAR-SA6F`); após hosting fix virou `aborted` ("Não foi possível ativar. Tente novamente.").
+- **Causa 1 — hosting-dist stale:** `portal-parceiro.html` local já tinha `boot()` com `getMyPartnerStatus` antes de `claim`, mas `firebase deploy --only hosting` sem `npm run build:hosting` publicava build antigo (75 linhas atrás). `boot()` antigo sempre fazia `renderActivation → await claim()` → 409 para quem já tem `ownerUid`.
+- **Causa 2 — transação RTDB abortava:** `partnerRef.transaction` com `ownerUid` vazio retornava novo objeto mas `committed=false` por contenção; fallback era só `already-exists`/`aborted` genérico sem retentativa.
+- **Fix portal (`portal-parceiro.html:78`):** `boot()` consulta `getMyPartnerStatus` primeiro; `blocked/pending→restricted`; `needsClaim:true→renderActivation` sem auto-claim (botão manual); `needsClaim:false+active+emailVerified→loadDashboard` direto; sem `emailVerified→renderActivation`. Validado com `selma_bia` (`debug=1` → `needsClaim:false` → dashboard "Visão do seu programa").
+- **Fix functions (`partner-functions.js:354`):** após `!committed`, se `!currentOwnerUid && active` tenta segunda `transaction` + `update` direto via Admin SDK (bypass rules) como `partner_claim_direct`; erro `aborted` agora inclui `{partnerId, currentOwnerUid, currentStatus}`.
+- **Deploy:** `npm run build:hosting` (476 arquivos) + hosting; `firebase deploy --only functions:claimPartnerAccount` individual (evita quota 20 vCPU); teste ao vivo: `claim({}) → {success:true, partnerId:"-P1RC-JjcJweW9f0Y-7L"}` e `getMyPartnerDashboard` OK; portal sem `?debug` mostra dashboard direto.
+- **Anti-regressão:** `validate:pr 6/6` (569 pass), `getMyPartnerStatus` é só-leitura com cache 5min/timeout 4s/fail-closed; `isPartnerPortalTarget` é `=== 'portal-parceiro.html'` (não `includes`).
+
+## 51. Sessao 2026-09-13 — Share + marketing landing
+- **Landing:** dropdown "Compartilhar" (`landing-vendas.css/html/js`) com texto comercial `SHARE_COMMERCIAL_TEXT` + `wa.me/5591991311049?text=` e botão copiar; `docs/marketing/PLANO-DIVULGACAO-LANDING-VENDAS.md` (posicionamento por estado, assets, plano 14 dias).
+- **Verificacao:** lint/typecheck/test OK; `inject-cachebusters` manual para `landing-vendas.js?v=` e `vendas.js?v=`; `build:hosting` 476 arquivos; commit `320a8ed`.
