@@ -5992,6 +5992,7 @@ function atualizarValorConta(contaId, novoValor) {
     if (conta) {
         const valorNumerico = parseCurrencyValue(novoValor);
         conta.valor = valorNumerico;
+        conta.locked = true; // Marcar como fixa para redistribuição progressiva
         
         // Reformatar o campo
         const input = document.getElementById(`conta-valor-${contaId}`);
@@ -6160,6 +6161,9 @@ function onParcelaValorInput(contaId, inputEl) {
                 const totalPedidoStr = totalPedidoEl && totalPedidoEl.value !== undefined ? totalPedidoEl.value : (totalPedidoEl ? totalPedidoEl.textContent : '0');
                 const totalPedido = parseCurrencyValue(totalPedidoStr);
                 if (!(totalPedido > 0)) return;
+                // Marcar a conta editada como locked antes da redistribuição
+                const conta = contasReceber.find(c => String(c.id) === key);
+                if (conta) conta.locked = true;
                 const res = redistribuirProgressivoParcelas(contasReceber, key, novoValor, totalPedido);
                 if (res && res.success && Array.isArray(res.parcelas)) {
                     contasReceber = res.parcelas.map(p => ({ ...p }));
@@ -6324,7 +6328,10 @@ function reordenarParaOriginal(originalParcelas, sorted, merged) {
     for (let i = 0; i < sorted.length; i++) {
         mapById.set(String(sorted[i].p.id), merged[i]);
     }
-    return originalParcelas.map(p => ({ ...p, valor: (mapById.get(String(p.id))?.valor ?? p.valor) }));
+    return originalParcelas.map(p => {
+        const m = mapById.get(String(p.id));
+        return m ? { ...p, valor: m.valor, locked: m.locked } : p;
+    });
 }
 
 function runTestsProgressivo() {
