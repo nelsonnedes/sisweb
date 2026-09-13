@@ -163,7 +163,10 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-section{padding:52px 0}
 .lv-section-alt{background:var(--lv-card);border-top:1px solid var(--lv-areia);border-bottom:1px solid var(--lv-areia)}
 .lv-section-dark{background:var(--lv-casca) repeating-radial-gradient(circle at 115% -10%,rgba(227,154,45,.08) 0 2px,transparent 2px 22px);color:var(--lv-dark-ink)}
-.lv-section-accent{background:#F3EAD3;border-top:2px solid var(--lv-areia);border-bottom:2px solid var(--lv-areia)}
+.lv-section-accent{position:relative;background:#F3EAD3;border-top:2px solid var(--lv-areia);border-bottom:2px solid var(--lv-areia)}
+.lv-section-accent::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg, var(--lv-mogno), var(--lv-serragem), var(--lv-mata));opacity:.9;pointer-events:none}
+#parceiros .lv-ctas-center .lv-btn-primary{min-width:280px;box-shadow:0 8px 24px rgba(124,63,22,.22)}
+#parceiros .lv-ctas-center .lv-btn-ghost{opacity:.96}
 .lv-section-title{font-family:var(--lv-font-display);font-size:clamp(1.5rem,3vw,1.9rem);margin:0 0 10px;color:var(--lv-casca);letter-spacing:-.01em}
 .lv-section-dark .lv-section-title{color:var(--lv-dark-ink)}
 .lv-section-sub{color:var(--lv-muted);margin:0 0 24px;max-width:720px}
@@ -172,11 +175,16 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 
 /* ---------- Cartoes: 5 pilares ---------- */
 .lv-cards-5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
-.lv-card{background:var(--lv-card);border:1px solid var(--lv-areia);border-top:5px solid var(--lv-mata);border-radius:var(--lv-radius);padding:18px 16px}
+.lv-card{background:var(--lv-card);border:1px solid var(--lv-areia);border-top:5px solid var(--lv-mata);border-radius:var(--lv-radius);padding:18px 16px;transition:transform .2s, box-shadow .2s}
+.lv-card:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(28,19,11,.14)}
 .lv-card i{color:var(--lv-mogno);font-size:1.25rem}
+.lv-card-icon{width:42px;height:42px;border-radius:10px;background:#EFE4CE;border:1px solid var(--lv-areia);display:inline-flex;align-items:center;justify-content:center;flex:0 0 42px}
+.lv-card-icon i{font-size:1.1rem;margin:0}
 .lv-card h3{font-family:var(--lv-font-display);font-size:1.02rem;margin:10px 0 6px;color:var(--lv-casca)}
 .lv-card p{font-size:0.87rem;color:#4A3D2C;margin:0}
 .lv-card-accent{border-top-color:var(--lv-serragem);box-shadow:0 8px 24px rgba(124,63,22,.14)}
+.lv-card-accent:hover{box-shadow:0 14px 32px rgba(124,63,22,.18)}
+.lv-card-accent .lv-card-icon{background:#FFF1E0;border-color:#E8C9A0}
 
 /* ---------- Fluxo "do patio a nota" ---------- */
 .lv-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;counter-reset:etapa}
@@ -249,16 +257,18 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-phone::before,.lv-phone::after{content:"";position:absolute;left:-3px;width:3px;border-radius:3px;background:#3A2E1E}
 .lv-phone::before{top:110px;height:56px}
 .lv-phone::after{top:180px;height:90px;box-shadow:0 -34px 0 #3A2E1E}
-.lv-phone-frame{position:relative;background:#0D0A06;border-radius:52px;padding:12px;box-shadow:0 24px 60px rgba(28,19,11,.35),inset 0 0 0 2px #3A2E1E}
+.lv-phone-frame{position:relative;background:#0D0A06;border-radius:52px;padding:12px;box-shadow:0 24px 60px rgba(28,19,11,.35),inset 0 0 0 2px #3A2E1E, inset 0 1px 0 rgba(255,255,255,.06)}
 .lv-phone-island{position:absolute;top:24px;left:50%;transform:translateX(-50%);width:104px;height:28px;background:#000;border-radius:999px;z-index:4}
 .lv-phone-island::after{content:"";position:absolute;right:14px;top:50%;transform:translateY(-50%);width:9px;height:9px;border-radius:50%;background:#1E2A38;box-shadow:inset 0 0 3px #4A7BA6}
-.lv-phone-screen{border-radius:42px;overflow:hidden;background:var(--lv-tora)}
+.lv-phone-screen{position:relative;border-radius:42px;overflow:hidden;background:var(--lv-tora)}
+.lv-phone-screen::after{content:"";position:absolute;inset:0;background:linear-gradient(118deg, rgba(255,255,255,.09) 0 18%, transparent 42%);pointer-events:none;z-index:3}
 
 /* Monitor em CSS puro */
 .lv-monitor{width:100%;max-width:640px}
-.lv-monitor-frame{position:relative;background:var(--lv-casca);border-radius:16px;padding:12px 12px 16px;box-shadow:0 24px 60px rgba(28,19,11,.3)}
+.lv-monitor-frame{position:relative;background:var(--lv-casca);border-radius:16px;padding:12px 12px 16px;box-shadow:0 24px 60px rgba(28,19,11,.3), inset 0 1px 0 rgba(255,255,255,.06)}
 .lv-monitor-cam{position:absolute;top:5px;left:50%;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:#0A0704;box-shadow:inset 0 0 2px #4A7BA6;z-index:4}
-.lv-monitor-screen{border-radius:8px;overflow:hidden;background:var(--lv-tora)}
+.lv-monitor-screen{position:relative;border-radius:8px;overflow:hidden;background:var(--lv-tora)}
+.lv-monitor-screen::after{content:"";position:absolute;inset:0;background:linear-gradient(118deg, rgba(255,255,255,.07) 0 16%, transparent 38%);pointer-events:none;z-index:3}
 .lv-monitor-neck{width:74px;height:26px;background:linear-gradient(180deg,#3A2E1E,#241A0E);margin:0 auto}
 .lv-monitor-base{width:220px;height:12px;background:linear-gradient(180deg,#4A3A26,#241A0E);border-radius:8px 8px 4px 4px;margin:0 auto;box-shadow:0 8px 20px rgba(28,19,11,.3)}
 
@@ -270,8 +280,9 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .45s ease,visibility .45s;pointer-events:none}
 .lv-slide.is-active{opacity:1;visibility:visible;pointer-events:auto;z-index:1}
 .lv-slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;display:block;z-index:2;background:var(--lv-tora)}
-.lv-slide-cap{position:absolute;left:0;right:0;bottom:0;z-index:3;background:rgba(28,19,11,.88);color:var(--lv-dark-ink);font-size:0.72rem;font-weight:600;padding:8px 12px;text-align:center}
-.lv-phone-viewport .lv-slide-cap{font-size:0.66rem;padding:7px 8px}
+.lv-slide::before{content:"Captura real";position:absolute;top:8px;left:8px;z-index:3;background:rgba(255,253,247,.94);color:var(--lv-casca);font-size:.62rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:4px 8px;border-radius:999px;border:1px solid var(--lv-areia);box-shadow:0 2px 8px rgba(28,19,11,.12);pointer-events:none}
+.lv-slide-cap{position:absolute;left:0;right:0;bottom:0;z-index:3;background:linear-gradient(180deg, transparent 0, rgba(28,19,11,.88) 45%);color:var(--lv-dark-ink);font-size:0.72rem;font-weight:600;padding:14px 12px 9px;text-align:center;backdrop-filter:blur(2px)}
+.lv-phone-viewport .lv-slide-cap{font-size:0.66rem;padding:12px 8px 8px}
 
 /* Mini-UI de reserva (aparece se a captura falhar): sidebar + cards + tabela */
 .lv-mini{position:absolute;inset:0;z-index:1;display:flex;background:var(--lv-tora)}
@@ -346,10 +357,13 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-eyebrow i{color:var(--lv-serragem)}
 .lv-coupons-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr));gap:14px;margin-top:20px}
 .lv-coupon-card{min-width:0;overflow-wrap:anywhere}
-.lv-coupon-card{background:var(--lv-card);border:2px dashed var(--lv-mogno);border-radius:var(--lv-radius);padding:18px 16px;position:relative}
+.lv-coupon-card{background:var(--lv-card);border:2px dashed var(--lv-mogno);border-radius:var(--lv-radius);padding:18px 16px;position:relative;transition:transform .2s, box-shadow .2s;overflow:hidden}
+.lv-coupon-card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(28,19,11,.12)}
+.lv-coupon-card::after{content:"";position:absolute;top:10px;right:-28px;width:86px;height:18px;background:var(--lv-serragem);opacity:.13;transform:rotate(34deg);pointer-events:none}
 .lv-coupon-off{font-family:var(--lv-font-display);font-weight:800;font-size:1.7rem;color:var(--lv-mogno);line-height:1.1}
 .lv-coupon-code{display:inline-block;margin:10px 0 6px;background:var(--lv-casca);color:var(--lv-serragem);font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;letter-spacing:2px;font-size:1.05rem;padding:8px 16px;border-radius:8px;overflow-wrap:anywhere;word-break:break-word;max-width:100%}
 .lv-coupon-meta{font-size:.8rem;color:var(--lv-muted);margin:0 0 12px}
+.lv-coupon-urgency{display:inline-flex;align-items:center;gap:6px;margin-left:8px;background:#FFF1E0;color:#9C2A00;border:1px solid #E8C9A0;padding:3px 8px;border-radius:999px;font-size:.72rem;font-weight:700;vertical-align:middle}
 .lv-coupon-actions{display:flex;gap:8px;flex-wrap:wrap}
 .lv-coupon-actions .lv-btn{padding:9px 14px;font-size:.85rem;min-height:44px}
 .lv-coupons-note{margin-top:16px;font-size:.85rem;color:var(--lv-muted)}

@@ -256,6 +256,15 @@ async function loadActiveCoupons(){
     if (Number.isNaN(d.getTime())) return 'Por tempo limitado';
     return 'Válido até ' + d.toLocaleDateString('pt-BR');
   }
+  function urgencyBadge(expiresAt){
+    if (!expiresAt) return '';
+    var d = new Date(expiresAt);
+    var now = new Date();
+    if (Number.isNaN(d.getTime())) return '';
+    var diff = Math.ceil((d.getTime() - now.getTime()) / 86400000);
+    if (diff >= 0 && diff <= 30) return '<span class="lv-coupon-urgency"><i class="fas fa-clock"></i> Expira em ' + diff + 'd</span>';
+    return '';
+  }
   try {
     var ctrl = null, timer = null;
     try {
@@ -278,7 +287,7 @@ async function loadActiveCoupons(){
       var link = 'https://sisweb-7ce82.web.app/subscription.html?cupom=' + encodeURIComponent(code);
       return '<article class="lv-coupon-card">'
         + '<div class="lv-coupon-off">' + esc(c.discountText || 'Desconto') + '</div>'
-        + '<div><span class="lv-coupon-code">' + esc(code) + '</span></div>'
+        + '<div><span class="lv-coupon-code">' + esc(code) + '</span>' + urgencyBadge(c.expiresAt) + '</div>'
         + '<p class="lv-coupon-meta">' + esc(validity(c.expiresAt)) + ' • ' + esc(planNames(c.allowedPlans)) + '</p>'
         + '<div class="lv-coupon-actions">'
         + '<button type="button" class="lv-btn lv-btn-secondary" data-coupon-copy="' + esc(code) + '"><i class="fas fa-copy"></i> Copiar</button>'
