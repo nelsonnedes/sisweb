@@ -4573,6 +4573,12 @@
                         var statusStr = isActive ? '<span class="tag green">Ativo</span>' : '<span class="tag red">Inativo</span>';
                         if (isExpired) statusStr = '<span class="tag red">Expirado</span>';
                         else if (isExhausted) statusStr = '<span class="tag red">Esgotado</span>';
+                        else if (isActive && c.expiresAt) {
+                            var daysLeft = Math.ceil((new Date(c.expiresAt).getTime() - Date.now()) / 86400000);
+                            if (daysLeft >= 0 && daysLeft <= 30) {
+                                statusStr += ' <span class="tag yellow" title="Renove a validade ou o cupom some da landing">Expira em ' + daysLeft + 'd</span>';
+                            }
+                        }
 
                         var expStr = "Sem validade";
                         if (c.expiresAt) {

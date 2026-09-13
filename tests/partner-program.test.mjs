@@ -354,7 +354,8 @@ test('portal exibe projecoes, cobranca por clientRef e reload com token', () => 
 
 test('codigo proprio nao gera vinculo nem comissao', () => {
   assert.match(indexSrc, /Anti-autoindica[^:]*: código próprio/);
-  assert.match(indexSrc, /const ownCode = partner && \(String\(partner\.ownerUid/);
+  assert.match(indexSrc, /partnerFunctions\.isSelfReferral\(partner, uid, userEmail\)/);
+  assert.match(indexSrc, /partnerFunctions\.isSelfReferral\(trialPartner, uid, userEmail\)/);
   const funcSrc = readFileSync('functions/partner-functions.js', 'utf8');
   assert.match(funcSrc, /reason: 'self-referral'/);
   assert.match(funcSrc, /riskFlags\.push\('phone-match'\)/);
@@ -460,4 +461,36 @@ test('confirmacao de e-mail usa API modular em todas as pontas', () => {
   assert.match(portal, /alreadyVerified/);
   assert.match(portal, /Muitas tentativas em sequência/);
   assert.match(svc, /user\.reload/);
+});
+
+test('anti-autoindicacao usa helper unico nos 4 pontos', () => {
+  const funcSrc = readFileSync('functions/partner-functions.js', 'utf8');
+  assert.match(funcSrc, /function isSelfReferral\(partner, uid, email\)/);
+  assert.match(funcSrc, /isSelfReferral\(partner, uid, tokenEmail\)/);
+  assert.match(funcSrc, /isSelfReferral\(partner, uid, userEmail\)/);
+  assert.match(funcSrc, /isSelfReferral\(partner, referredUid, referredEmail\)/);
+  assert.match(funcSrc, /isSelfReferral,/);
+  assert.doesNotMatch(funcSrc, /partner\.ownerUid && partner\.ownerUid === uid/);
+  const indexSrc = readFileSync('functions/index.js', 'utf8');
+  assert.match(indexSrc, /partnerFunctions\.isSelfReferral\(partner, uid, userEmail\)/);
+  assert.match(indexSrc, /partnerFunctions\.isSelfReferral\(trialPartner, uid, userEmail\)/);
+  assert.equal(partner.isSelfReferral({ ownerUid: 'u1', email: 'a@b.c' }, 'u1', 'x@y.z'), true);
+  assert.equal(partner.isSelfReferral({ ownerUid: 'u1', email: 'a@b.c' }, 'u2', 'A@B.C'), true);
+  assert.equal(partner.isSelfReferral({ ownerUid: '', email: '' }, '', ''), false);
+  assert.equal(partner.isSelfReferral(null, 'u1', 'a@b.c'), false);
+});
+
+test('admin sinaliza cupom proximo do vencimento (30d)', () => {
+  const main = readFileSync('scripts/admin/admin-main.js', 'utf8');
+  assert.match(main, /Expira em '/);
+  assert.match(main, /Renove a validade ou o cupom some da landing/);
+});
+
+test('portal expoe diagnostico ?debug=1 da propria sessao', () => {
+  const portal = readFileSync('portal-parceiro.html', 'utf8');
+  assert.match(portal, /id="partnerDebug"/);
+  assert.match(portal, /function isDebugMode\(\)/);
+  assert.match(portal, /async function renderDebug\(\)/);
+  assert.match(portal, /partnerStatus: /);
+  assert.match(portal, /getMyPartnerStatus/);
 });

@@ -4415,8 +4415,7 @@ exports.submitSubscriptionRequest = https.onCall(async (data, context) => {
     if (partnerCode) {
         try {
             const partner = await partnerFunctions.resolvePartnerByCode(partnerCode);
-            const ownCode = partner && (String(partner.ownerUid || '') === String(uid)
-                || String(partner.email || '').toLowerCase() === String(userEmail || '').toLowerCase());
+            const ownCode = partnerFunctions.isSelfReferral(partner, uid, userEmail);
             if (partner && partner.status === 'active' && !ownCode) {
                 partnerLink = { partnerId: partner.id, code: partnerCode };
                 pendingPayment.partnerId = partner.id;
@@ -4669,8 +4668,7 @@ exports.activateFreeTrial = https.onCall(async (data, context) => {
         if (/^PAR-[A-Z0-9]{4,8}$/.test(trialPartnerCode)) {
             const trialPartner = await partnerFunctions.resolvePartnerByCode(trialPartnerCode);
             if (trialPartner && trialPartner.status === 'active'
-                && String(trialPartner.ownerUid || '') !== String(uid)
-                && String(trialPartner.email || '').toLowerCase() !== String(userEmail || '').toLowerCase()) {
+                && !partnerFunctions.isSelfReferral(trialPartner, uid, userEmail)) {
                 await partnerFunctions.ensureReferral({
                     uid,
                     partnerId: trialPartner.id,

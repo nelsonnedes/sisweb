@@ -528,3 +528,11 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Causa estrutural:** se a conta dona foi excluída (ciclo apaga/recria, comum em testes), o `ownerUid` vira lixo e todo claim futuro trava para sempre — sem caminho de recuperação pela UI.
 - **Fix:** no ramo de conflito, verifica `admin.auth().getUser(ownerUid)`; se `auth/user-not-found`, retoma via transação condicional (`partner_claim_reclaim`); senão mantém o 409 legítimo. Trava de regressão em testes.
 - **Verificacao:** tests 33/33; lint + validate 6/6; functions v1 no ar; commit + push.
+
+## 47. Sessao 2026-09-13 — Auditoria 13 dias: 1 fix real + melhorias antifraude
+- **Escopo:** 25 commits (05/09–10/09), programa de parceiros + fiscal + modais + landing.
+- **Sem regressões ativas:** validate:pr 6/6, 34→37 testes parceiros verdes, larguras 1000px/164px idênticas, routing `checkPartner` isolado dos guards.
+- **Fix aplicado:** guia da assinatura apontava `?cupom=BLACKFRIDAI20` (expirado em 30/06) → `DESCONTO5` (ativo até 30/12, confirmado live). Commit + push.
+- **Gates que salvaram 2 deploys quebrados:** coluna Ações 148px e teste com regex `currentUses` — barrados antes do merge.
+- **Melhorias:** `isSelfReferral()` único nos 4 pontos antifraude; tag `Expira em Xd` nos cupons ≤30 dias; `?debug=1` no portal (sessão + status, só dados próprios).
+- **Verificacao:** tests 37/37; functions v1 parceiras no ar (gen2 quota pré-existente só em mdfe/sentry); endpoint público de cupons 200 live; hosting OK.

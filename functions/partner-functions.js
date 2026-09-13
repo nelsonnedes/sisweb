@@ -394,6 +394,17 @@ exports.getMyPartnerStatus = functions.https.onCall(async (data, context) => {
     return { success: true, isPartner: false };
 });
 
+// Anti-autoindicação centralizada: mesma conta (uid) ou mesmo e-mail do parceiro.
+// Ponto único da regra — usada em link, submit, trial e no nascimento da comissão.
+function isSelfReferral(partner, uid, email) {
+    if (!partner) return false;
+    const callerUid = String(uid || '');
+    const callerEmail = String(email || '').trim().toLowerCase();
+    if (callerUid && partner.ownerUid && String(partner.ownerUid) === callerUid) return true;
+    if (callerEmail && partner.email && String(partner.email).toLowerCase() === callerEmail) return true;
+    return false;
+}
+
 // ─── 3) Vincular indicação (autenticada, idempotente, anti-autoindicação) ───
 
 exports.linkPartnerReferral = functions.https.onCall(async (data, context) => {
@@ -414,10 +425,7 @@ exports.linkPartnerReferral = functions.https.onCall(async (data, context) => {
         return { success: true, already: true, partnerId: existing.partnerId, code: existing.code || '' };
     }
     const tokenEmail = String((context.auth.token && context.auth.token.email) || '').toLowerCase();
-    if (partner.ownerUid && partner.ownerUid === uid) {
-        throw new functions.https.HttpsError('failed-precondition', 'Você não pode indicar a si mesmo.');
-    }
-    if (tokenEmail && partner.email && tokenEmail === String(partner.email).toLowerCase()) {
+    if (isSelfReferral(partner, uid, tokenEmail)) {
         throw new functions.https.HttpsError('failed-precondition', 'Você não pode indicar a si mesmo.');
     }
     let companyId = '';
@@ -426,7 +434,7 @@ exports.linkPartnerReferral = functions.https.onCall(async (data, context) => {
         const userData = userSnap.exists() ? userSnap.val() : {};
         companyId = String(userData.companyId || userData.companyID || '');
         const userEmail = String(userData.email || tokenEmail).toLowerCase();
-        if (userEmail && partner.email && userEmail === String(partner.email).toLowerCase()) {
+        if (isSelfReferral(partner, uid, userEmail)) {
             throw new functions.https.HttpsError('failed-precondition', 'Você não pode indicar a si mesmo.');
         }
     } catch (e) {
@@ -475,8 +483,7 @@ async function recordPartnerCommissionEarned({ partnerId, referredUid, companyId
         referredEmail = String(referred.email || '').toLowerCase();
         const referredPhone = String(referred.phone || referred.telefone || referred.celular || referred.whatsapp || '').replace(/\D/g, '');
         const partnerPhone = String(partner.phone || '').replace(/\D/g, '');
-        if ((partner.ownerUid && String(partner.ownerUid) === String(referredUid || ''))
-            || (referredEmail && partner.email && referredEmail === String(partner.email).toLowerCase())) {
+        if (isSelfReferral(partner, referredUid, referredEmail)) {
             return { created: false, reason: 'self-referral' };
         }
         if (referredPhone.length >= 8 && partnerPhone.length >= 8 && referredPhone === partnerPhone) {
@@ -1309,6 +1316,7 @@ module.exports = {
     resolvePartnerByCode,
     resolvePartnerLink,
     ensureReferral,
+    isSelfReferral,
     isOverdueUser,
     recordPartnerCommissionEarned,
     planPeriodMonths,
