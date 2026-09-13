@@ -60,6 +60,15 @@ test('CSS global injetado nao esmaga a coluna Acoes da Lista de Pedidos', () => 
   assert.doesNotMatch(speciesJs, /\.table th:last-child,\s*\n\s*\.table td:last-child \{\s*\n\s*width: 80px !important/);
 });
 
+test('titulo Acoes tem mesma altura de texto dos vizinhos (13px/12px)', () => {
+  const block = comprasHtml.slice(
+    comprasHtml.indexOf('#listaPedidosTable th.actions-col,'),
+    comprasHtml.indexOf('#listaPedidosTable th.actions-col,') + 900
+  );
+  assert.match(block, /padding: 12px 6px/);
+  assert.match(block, /font-size: 13px/);
+});
+
 test('acoes de item de clone escapam o id em string literal', () => {
   const block = between(vendas, 'function removerItem(itemId', 'function atualizarTotais()');
   assert.match(block, /onclick="editarItem\('\$\{escapeJsString\(item\.id\)\}'\)"/);
