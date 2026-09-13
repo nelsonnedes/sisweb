@@ -96,8 +96,9 @@ window.dispatchEvent(new CustomEvent('sisweb:partner-portal-ready'));
                         renderActivation(currentUser);
                         return;
                     }
-                    // Já tem claim ativo (needsClaim: false) → direto ao dashboard
+                    // Já tem claim ativo (needsClaim: false) → direto ao dashboard (só se e-mail verificado)
                     if(status==='active'){
+                        if(!currentUser.emailVerified){ renderActivation(currentUser); return; }
                         activePartner=true;
                         await loadDashboard();
                         return;
