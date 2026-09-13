@@ -354,7 +354,27 @@ exports.claimPartnerAccount = functions.https.onCall(async (data, context) => {
         if (currentStatus !== 'active') {
             throw new functions.https.HttpsError('failed-precondition', 'Este parceiro não está ativo.', { status: currentStatus });
         }
-        throw new functions.https.HttpsError('aborted', 'Não foi possível ativar o parceiro. Tente novamente.');
+        // Fallback direto: transação pode abortar por contenção mesmo quando livre.
+        // Se ainda está livre (sem ownerUid) e ativo, tenta update direto idempotente.
+        if (!currentOwnerUid && currentStatus === 'active') {
+            try {
+                const direct = await partnerRef.transaction((cur) => {
+                    if (!cur) return;
+                    if (String(cur.ownerUid || '').trim()) return;
+                    if (String(cur.status || '').toLowerCase() !== 'active') return;
+                    return { ...cur, ownerUid: uid, updatedAt: nowIso, updatedBy: 'partner_claim_direct' };
+                });
+                if (direct.committed) {
+                    return { success: true, partnerId: partner.id, status: 'active', capabilities: { dashboard: true, messaging: true } };
+                }
+                // Último recurso: update direto (admin bypassa rules)
+                await partnerRef.update({ ownerUid: uid, updatedAt: nowIso, updatedBy: 'partner_claim_direct_update' });
+                return { success: true, partnerId: partner.id, status: 'active', capabilities: { dashboard: true, messaging: true } };
+            } catch (e) {
+                console.error('claimPartnerAccount direct fallback failed', e);
+            }
+        }
+        throw new functions.https.HttpsError('aborted', 'Não foi possível ativar o parceiro. Tente novamente.', { partnerId: partner.id, currentOwnerUid, currentStatus });
     }
 
     return {

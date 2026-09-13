@@ -6920,3 +6920,4 @@ exports.setPartnerConfig = partnerFunctions.setPartnerConfig;
 exports.markCommissionPaid = partnerFunctions.markCommissionPaid;
 exports.adminLinkReferral = partnerFunctions.adminLinkReferral;
 exports.deletePartnerAdmin = partnerFunctions.deletePartnerAdmin;
+
