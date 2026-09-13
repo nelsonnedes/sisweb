@@ -1356,6 +1356,7 @@
         };
         console.log("✅ firebaseService carregado e disponibilizado globalmente no subscription.html");
     </script>
+    <script src="partner-errors.js?v=89cedc137155"></script>
     <script>
         // Verificar estado de autenticação ao carregar a página
         document.addEventListener('DOMContentLoaded', async function() {
@@ -2130,7 +2131,7 @@
                     const own = data.own === true || (data.data && data.data.own === true);
                     if (own) {
                         msg.style.color = '#ef4444';
-                        msg.textContent = 'Este código é seu e não pode gerar indicação. Informe o código de outro parceiro ou use um cupom promocional ativo.';
+                        msg.textContent = window.PartnerErrors ? window.PartnerErrors.ownCodeMessage() : 'Este código é seu e não pode gerar indicação. Informe o código de outro parceiro ou use um cupom promocional ativo.';
                         return;
                     }
                     const name = data.partnerName || (data.data && data.data.partnerName) || 'Parceiro Sisweb';
@@ -3137,7 +3138,7 @@
                     const ownData = ownCheck && ownCheck.data ? ownCheck.data : ownCheck;
                     const isOwn = ownData && (ownData.own === true || (ownData.data && ownData.data.own === true));
                     if (isOwn) {
-                        throw new Error('Este código de parceiro é seu e não pode gerar indicação. Informe o código de outro parceiro ou use um cupom promocional ativo.');
+                        throw new Error(window.PartnerErrors ? window.PartnerErrors.ownCodeMessage() : 'Este código de parceiro é seu e não pode gerar indicação. Informe o código de outro parceiro ou use um cupom promocional ativo.');
                     }
                 } catch (ownErr) {
                     if (ownErr && /código de parceiro é seu/i.test(String(ownErr.message || ''))) throw ownErr;

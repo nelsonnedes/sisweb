@@ -406,6 +406,9 @@ function isSelfReferral(partner, uid, email) {
 }
 
 // ─── 3) Vincular indicação (autenticada, idempotente, anti-autoindicação) ───
+// COMPAT: nenhum frontend atual chama este callable diretamente (submit/trial
+// vinculam via ensureReferral). Mantido como API pública estável para
+// integrações externas — NÃO remover sem substituto versionado.
 
 exports.linkPartnerReferral = functions.https.onCall(async (data, context) => {
     if (!context.auth || !context.auth.uid) {

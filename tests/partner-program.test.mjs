@@ -494,3 +494,32 @@ test('portal expoe diagnostico ?debug=1 da propria sessao', () => {
   assert.match(portal, /partnerStatus: /);
   assert.match(portal, /getMyPartnerStatus/);
 });
+
+test('mensagens de erro usam modulo compartilhado sem mudar copy', () => {
+  const shared = readFileSync('partner-errors.js', 'utf8');
+  assert.match(shared, /window\.PartnerErrors/);
+  assert.match(shared, /function message\(err, fallback\)/);
+  assert.match(shared, /function restricted\(error\)/);
+  assert.match(shared, /function ownCodeMessage\(\)/);
+  assert.match(shared, /Limite de uso atingido/);
+  assert.match(shared, /Serviço indisponível no momento/);
+  assert.match(shared, /Acesso já reivindicado/);
+  assert.match(shared, /cupom promocional ativo/);
+  const portal = readFileSync('portal-parceiro.html', 'utf8');
+  assert.match(portal, /window\.PartnerErrors\.restricted/);
+  assert.match(portal, /<script src="partner-errors\.js"><\/script>/);
+  const cadastro = readFileSync('cadastro-parceiro.html', 'utf8');
+  assert.match(cadastro, /window\.PartnerErrors\.message/);
+  assert.match(cadastro, /<script src="partner-errors\.js"><\/script>/);
+  const sub = readFileSync('subscription.html', 'utf8');
+  assert.match(sub, /window\.PartnerErrors\.ownCodeMessage\(\)/);
+  assert.match(sub, /<script src="partner-errors\.js"><\/script>/);
+  const hosting = JSON.parse(readFileSync('hosting-files.json', 'utf8'));
+  const files = Array.isArray(hosting) ? hosting : hosting.files || [];
+  assert.ok(files.includes('partner-errors.js'), 'manifesto sem: partner-errors.js');
+});
+
+test('linkPartnerReferral marcado como API de compatibilidade', () => {
+  const funcSrc = readFileSync('functions/partner-functions.js', 'utf8');
+  assert.match(funcSrc, /COMPAT: nenhum frontend atual chama este callable diretamente/);
+});

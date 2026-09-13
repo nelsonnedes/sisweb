@@ -536,3 +536,9 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Gates que salvaram 2 deploys quebrados:** coluna Ações 148px e teste com regex `currentUses` — barrados antes do merge.
 - **Melhorias:** `isSelfReferral()` único nos 4 pontos antifraude; tag `Expira em Xd` nos cupons ≤30 dias; `?debug=1` no portal (sessão + status, só dados próprios).
 - **Verificacao:** tests 37/37; functions v1 parceiras no ar (gen2 quota pré-existente só em mdfe/sentry); endpoint público de cupons 200 live; hosting OK.
+
+## 48. Sessao 2026-09-13 — Propostas futuras: partner-errors.js + compat linkPartnerReferral
+- **`partner-errors.js` compartilhado:** `message()` (cadastro), `restricted()` (portal), `ownCodeMessage()` (assinatura) com copy byte-idêntica; 3 páginas delegam com fallback local se o script falhar; `?v=` via inject-cachebusters + manifesto; verificado live.
+- **`linkPartnerReferral` marcado COMPAT:** sem chamador direto no frontend (submit/trial usam ensureReferral); comentário proíbe remoção sem substituto versionado.
+- **Equivalência provada:** harness node comparou 10 casos antigo×novo (única "divergência" era expectativa errada do harness — regex `/bloquead/` original só casa PT).
+- **Verificacao:** tests 39/39; validate 6/6; hosting OK; commit + push.
