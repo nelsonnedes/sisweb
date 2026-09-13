@@ -2284,8 +2284,8 @@ style.textContent = `
     gap: 5px !important;
 }
 
-/* Estilos para tabelas */
-.table thead th {
+/* Estilos para tabelas (exceto Lista de Pedidos, que tem CSS proprio com .actions-col) */
+.table thead th:not(.actions-col) {
     background-color: #2c3e50 !important;
     color: white !important;
     font-weight: 600 !important;
@@ -2311,9 +2311,9 @@ style.textContent = `
     transition: background-color 0.2s ease !important;
 }
 
-/* Coluna de ações com largura fixa */
-.table th:last-child,
-.table td:last-child {
+/* Coluna de ações com largura fixa (exceto Lista de Pedidos: usa .actions-col/.acoes-cell de 164px) */
+.table th:last-child:not(.actions-col),
+.table td:last-child:not(.acoes-cell) {
     width: 80px !important;
     min-width: 80px !important;
     max-width: 80px !important;

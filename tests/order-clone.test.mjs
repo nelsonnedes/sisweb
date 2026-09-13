@@ -52,6 +52,14 @@ test('quarta acao cabe no desktop e no card responsivo', () => {
   assert.match(responsiveCss, /grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\)/);
 });
 
+test('CSS global injetado nao esmaga a coluna Acoes da Lista de Pedidos', () => {
+  const speciesJs = fs.readFileSync(new URL('../species-manager.js', import.meta.url), 'utf8');
+  assert.match(speciesJs, /\.table th:last-child:not\(\.actions-col\)/);
+  assert.match(speciesJs, /\.table td:last-child:not\(\.acoes-cell\)/);
+  assert.match(speciesJs, /\.table thead th:not\(\.actions-col\)/);
+  assert.doesNotMatch(speciesJs, /\.table th:last-child,\s*\n\s*\.table td:last-child \{\s*\n\s*width: 80px !important/);
+});
+
 test('acoes de item de clone escapam o id em string literal', () => {
   const block = between(vendas, 'function removerItem(itemId', 'function atualizarTotais()');
   assert.match(block, /onclick="editarItem\('\$\{escapeJsString\(item\.id\)\}'\)"/);
