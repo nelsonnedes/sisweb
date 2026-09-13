@@ -507,13 +507,13 @@ test('mensagens de erro usam modulo compartilhado sem mudar copy', () => {
   assert.match(shared, /cupom promocional ativo/);
   const portal = readFileSync('portal-parceiro.html', 'utf8');
   assert.match(portal, /window\.PartnerErrors\.restricted/);
-  assert.match(portal, /<script src="partner-errors\.js"><\/script>/);
+  assert.match(portal, /<script src="partner-errors\.js(\?v=[^"']+)?"><\/script>/);
   const cadastro = readFileSync('cadastro-parceiro.html', 'utf8');
   assert.match(cadastro, /window\.PartnerErrors\.message/);
-  assert.match(cadastro, /<script src="partner-errors\.js"><\/script>/);
+  assert.match(cadastro, /<script src="partner-errors\.js(\?v=[^"']+)?"><\/script>/);
   const sub = readFileSync('subscription.html', 'utf8');
   assert.match(sub, /window\.PartnerErrors\.ownCodeMessage\(\)/);
-  assert.match(sub, /<script src="partner-errors\.js"><\/script>/);
+  assert.match(sub, /<script src="partner-errors\.js(\?v=[^"']+)?"><\/script>/);
   const hosting = JSON.parse(readFileSync('hosting-files.json', 'utf8'));
   const files = Array.isArray(hosting) ? hosting : hosting.files || [];
   assert.ok(files.includes('partner-errors.js'), 'manifesto sem: partner-errors.js');
