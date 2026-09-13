@@ -13,6 +13,46 @@ const TOOLTIPS = {
   "fiscal": "notas-fiscais.html — NF-e e MDF-e para o carregamento sair documentado.",
   "compras": "compras.html — pedido de compra que entra direto no estoque e no contas a pagar."
 };
+
+// Texto comercial para compartilhamento no WhatsApp
+const SHARE_COMMERCIAL_TEXT = `🪵 *Sisweb - Sistema de Gestão de Serraria*
+
+🎯 *Sua madeireira do pátio à nota em um só sistema.*
+
+Chega de romaneio no papel, cubagem na calculadora e estoque na cabeça do apontador. O Sisweb junta *romaneio de toras e serrados, cubagem Francon e geométrica, estoque de pátio, AUTEF/DOF, financeiro e NF-e/MDF-e* num login único — feito no Pará, para o ritmo de quem carrega caminhão todo dia.
+
+✅ *14 Módulos Integrados:*
+• Vendas — Orçamento → pedido → financeiro sincronizado
+• Compras — Pedido → estoque → contas a pagar
+• Estoque de pátio — Saldo real + cubagem Francon/geométrica
+• Financeiro — Pagar, receber e juros por dia civil
+• Romaneios — Tora / PCT / TL / PES / Pré (5 tipos)
+• NF-e / MDF-e — Emissão e impressão do carregamento
+• Folha + Banco de horas — Lançamentos, filtros, relatórios
+• Cadastros — Clientes, espécies, fornecedores, empresa
+• Governança — SuperAdmin, assinatura segura
+
+🏆 *5 Pilares que resolvem a dor do pátio:*
+⚡ Romaneio sem fila — Grade com Enter contínuo, imprime em 1 clique
+⚖️ CONAMA 411 sem susto — Resumos técnicos prontos para auditoria
+📃 Excel vira romaneio — Arraste a planilha, valida e cria em segundos
+🛠️ Cubagem auditável — Francon + geométrica, X1–X4, custódia, volume
+🔗 Rastro tora → prancha — Baixa automática, prova de origem em 1 clique
+
+🔄 *Do pátio à nota em 4 passos:*
+1. Aponta no pátio (estoque.html)
+2. Romeia e cuba (romaneiotora.html)
+3. Carrega documentado (NF-e/MDF-e + AUTEF/DOF)
+4. Recebe e controla (financeiro + folha)
+
+💚 *Feito no Pará • Suporte WhatsApp (91) 99131-1049 • 0 planilha paralela*
+
+🔗 Acesse: https://sisweb-7ce82.web.app/landing-vendas.html
+
+📲 *Teste grátis:* https://sisweb-7ce82.web.app/login.html?mode=register
+
+---`;
+
 (function(){
   const diagram = document.getElementById('lv-diagram');
   const tooltip = document.getElementById('lv-diagram-tooltip');
@@ -134,7 +174,67 @@ const TOOLTIPS = {
   initCarousel('lv-phone-carousel');
   initCarousel('lv-desk-carousel');
   loadActiveCoupons();
+  initShareButton();
 })();
+
+// Botão de compartilhar no WhatsApp
+function initShareButton(){
+  const btn = document.getElementById('lv-share-btn');
+  const popover = document.getElementById('lv-share-popover');
+  const waLink = document.getElementById('lv-share-wa');
+  const copyBtn = document.getElementById('lv-share-copy');
+  if(!btn || !popover || !waLink || !copyBtn) return;
+
+  // Prepara link do WhatsApp com texto comercial codificado
+  const waUrl = 'https://wa.me/5591991311049?text=' + encodeURIComponent(SHARE_COMMERCIAL_TEXT);
+  waLink.href = waUrl;
+
+  // Toggle popover
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const isOpen = !popover.hasAttribute('hidden');
+    popover.hidden = isOpen;
+    btn.setAttribute('aria-expanded', !isOpen);
+  });
+
+  // Fecha ao clicar fora
+  document.addEventListener('click', (e)=>{
+    if(!popover.hasAttribute('hidden') && !popover.contains(e.target) && e.target !== btn){
+      popover.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  // Fecha com Escape
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && !popover.hasAttribute('hidden')){
+      popover.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+      btn.focus();
+    }
+  });
+
+  // Copiar link da landing
+  copyBtn.addEventListener('click', async ()=>{
+    const url = 'https://sisweb-7ce82.web.app/landing-vendas.html';
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(url);
+      } else {
+        const t = document.createElement('textarea');
+        t.value = url;
+        document.body.appendChild(t);
+        t.select();
+        document.execCommand('copy');
+        t.remove();
+      }
+      copyBtn.innerHTML = '<i class="fas fa-check"></i> <span>Copiado!</span><small>Link da landing</small>';
+      setTimeout(()=>{
+        copyBtn.innerHTML = '<i class="fas fa-copy"></i> <span>Copiar link</span><small>Link da landing</small>';
+      }, 2000);
+    }catch(_){}
+  });
+}
 
 // Cupons ativos (vitrine pública, sem login). Falha silenciosa: esconde a seção.
 async function loadActiveCoupons(){

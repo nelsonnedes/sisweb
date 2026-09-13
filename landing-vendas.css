@@ -66,6 +66,26 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-section-dark .lv-btn-ghost,.lv-cta-final .lv-btn-ghost{color:var(--lv-dark-ink);border-color:#5A4A33}
 .lv-section-dark .lv-btn-ghost:hover,.lv-cta-final .lv-btn-ghost:hover{border-color:var(--lv-serragem);color:var(--lv-serragem)}
 
+/* ---------- Share button (dropdown) ---------- */
+.lv-share-wrap{position:relative;display:inline-flex;flex-direction:column}
+.lv-btn-share{background:var(--lv-serragem);color:#fff;border-color:var(--lv-serragem);white-space:nowrap}
+.lv-btn-share:hover{background:#C97B1A;border-color:#C97B1A;transform:translateY(-1px)}
+.lv-share-popover{position:absolute;top:calc(100% + 8px);right:0;z-index:200;background:var(--lv-card);border:2px solid var(--lv-areia);border-radius:12px;box-shadow:0 12px 32px rgba(28,19,11,.2);min-width:200px;overflow:hidden}
+.lv-share-popover[hidden]{display:none}
+.lv-share-arrow{position:absolute;top:-8px;right:16px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:8px solid var(--lv-areia);filter:drop-shadow(0 -2px 2px rgba(0,0,0,.1))}
+.lv-share-options{display:flex;flex-direction:column}
+.lv-share-opt{display:flex;align-items:center;gap:10px;padding:12px 14px;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-family:var(--lv-font-body);color:var(--lv-ink);text-decoration:none;transition:background .15s}
+.lv-share-opt:hover{background:#F3EAD3}
+.lv-share-opt i{font-size:1.1rem;width:24px;text-align:center}
+.lv-share-opt i.fa-whatsapp{color:var(--lv-wa)}
+.lv-share-opt i.fa-copy{color:var(--lv-mogno)}
+.lv-share-opt span{font-weight:600;font-size:0.9rem}
+.lv-share-opt small{display:block;color:var(--lv-muted);font-size:0.72rem;font-weight:400;margin-top:2px}
+@media(max-width:480px){
+  .lv-share-popover{right:-20px;min-width:220px}
+  .lv-share-arrow{right:36px}
+}
+
 /* ---------- Hero ---------- */
 .lv-badge{background:var(--lv-casca);color:var(--lv-dark-ink);padding:7px 12px;border-radius:999px;font-size:0.75rem;font-weight:700;display:inline-flex;gap:8px;align-items:center;letter-spacing:.02em}
 .lv-badge i{color:var(--lv-serragem)}
