@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-09-13-compras-acoes-v1';
+const APP_VERSION = '2026-09-14-landing-topbar-iphone-v2';
 const CACHE_NAME = `sisweb-runtime-${APP_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',
