@@ -41,6 +41,7 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-skip:focus{left:0}
 
 .lv-container{max-width:1120px;margin:0 auto;padding:0 20px;width:100%;min-width:0}
+.lv-topbar .lv-container{max-width:1320px}
 
 /* ---------- Topbar ---------- */
 .lv-topbar{position:sticky;top:0;z-index:100;background:#FBF7EE;border-bottom:2px solid var(--lv-areia);overflow:clip;max-width:100%}
@@ -129,17 +130,17 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-hero-desktop .lv-desk-viewport{aspect-ratio:16/10}
 .lv-hero-stage > .lv-phone-wrap{min-width:0;width:100%;max-width:130px;justify-self:end}
 .lv-hero-stage > .lv-phone-wrap .lv-phone{width:100%;max-width:none}
-.lv-hero-stage > .lv-phone-wrap .lv-phone-frame{border-radius:34px;padding:8px 8px 11px}
+.lv-hero-stage > .lv-phone-wrap .lv-phone-frame{border-radius:28px;padding:6px 6px 8px}
 .lv-hero-stage > .lv-phone-wrap .lv-phone-frame::after{width:58px;height:3px;bottom:4px}
-.lv-hero-stage > .lv-phone-wrap .lv-phone-island{top:16px;width:64px;height:18px}
+.lv-hero-stage > .lv-phone-wrap .lv-phone-island{top:12px;width:64px;height:18px}
 .lv-hero-stage > .lv-phone-wrap .lv-phone-island::after{right:9px;width:5px;height:5px}
-.lv-hero-stage > .lv-phone-wrap .lv-phone-screen{border-radius:28px;overflow:hidden;background:var(--lv-tora)}
-.lv-hero-stage > .lv-phone-wrap .lv-phone-viewport{aspect-ratio:9/19.5}
-.lv-hero-stage > .lv-phone-wrap .lv-controls{gap:1px;padding:2px 1px;flex-wrap:nowrap}
-.lv-hero-stage > .lv-phone-wrap .lv-arrow-btn{min-width:44px;min-height:44px;width:44px;height:44px;font-size:.65rem}
-.lv-hero-stage > .lv-phone-wrap .lv-dots{gap:0;flex-wrap:nowrap;min-width:0}
-.lv-hero-stage > .lv-phone-wrap .lv-dot{min-width:44px;min-height:44px;width:44px;padding:0}
-.lv-hero-stage > .lv-phone-wrap .lv-dot span{width:6px;height:6px}
+.lv-hero-stage > .lv-phone-wrap .lv-phone-screen{border-radius:22px;overflow:hidden;background:var(--lv-tora)}
+.lv-hero-stage > .lv-phone-wrap .lv-phone-viewport{aspect-ratio:9/18;max-height:320px}
+.lv-hero-stage > .lv-phone-wrap .lv-controls{gap:2px;padding:3px 4px;flex-wrap:nowrap}
+.lv-hero-stage > .lv-phone-wrap .lv-arrow-btn{min-width:28px;min-height:28px;width:28px;height:28px;font-size:.6rem}
+.lv-hero-stage > .lv-phone-wrap .lv-dots{gap:0;flex-wrap:nowrap;min-width:0;flex:1 1 auto}
+.lv-hero-stage > .lv-phone-wrap .lv-dot{min-width:26px;min-height:26px;width:26px;padding:0}
+.lv-hero-stage > .lv-phone-wrap .lv-dot span{width:5px;height:5px}
 .lv-hero-phone-screen img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;display:block;z-index:2;background:var(--lv-tora)}
 .lv-hero-phone-cap{display:none}
 @keyframes lv-hero-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
@@ -258,12 +259,12 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-phone::before,.lv-phone::after{content:"";position:absolute;left:-3px;width:3px;border-radius:3px;background:#3A2E1E}
 .lv-phone::before{top:110px;height:56px}
 .lv-phone::after{top:180px;height:90px;box-shadow:0 -34px 0 #3A2E1E}
-.lv-phone-frame{position:relative;background:#0D0A06;border-radius:52px;padding:12px 12px 18px;box-shadow:0 24px 60px rgba(28,19,11,.35),inset 0 0 0 2px #3A2E1E, inset 0 1px 0 rgba(255,255,255,.06)}
-.lv-phone-frame::after{content:"";position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:96px;height:4px;background:#F5ECDA;border-radius:999px;z-index:5;opacity:.92;pointer-events:none}
+.lv-phone-frame{position:relative;background:#0D0A06;border-radius:46px;padding:12px 12px 8px;box-shadow:0 24px 60px rgba(28,19,11,.35),inset 0 0 0 2px #3A2E1E, inset 0 1px 0 rgba(255,255,255,.06)}
+.lv-phone-frame::after{content:"";position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:88px;height:3px;background:#F5ECDA;border-radius:999px;z-index:5;opacity:.85;pointer-events:none}
 .lv-phone-island{position:absolute;top:24px;left:50%;transform:translateX(-50%);width:104px;height:28px;background:#000;border-radius:999px;z-index:4}
 .lv-phone-island::after{content:"";position:absolute;right:14px;top:50%;transform:translateY(-50%);width:9px;height:9px;border-radius:50%;background:#1E2A38;box-shadow:inset 0 0 3px #4A7BA6}
-.lv-phone-screen{position:relative;border-radius:42px;overflow:hidden;background:var(--lv-tora)}
-.lv-phone-screen::after{content:"";position:absolute;inset:0;background:linear-gradient(118deg, rgba(255,255,255,.09) 0 18%, transparent 42%);pointer-events:none;z-index:3}
+.lv-phone-screen{position:relative;border-radius:36px;overflow:hidden;background:var(--lv-tora)}
+.lv-phone-screen::after{content:"";position:absolute;inset:0;background:linear-gradient(118deg, rgba(255,255,255,.04) 0 18%, transparent 42%);pointer-events:none;z-index:3}
 
 /* Monitor em CSS puro */
 .lv-monitor{width:100%;max-width:640px}
@@ -277,7 +278,7 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 /* Carrossel (sem dependencias) */
 .lv-carousel{outline-offset:4px}
 .lv-viewport{position:relative;overflow:hidden;background:var(--lv-tora)}
-.lv-phone-viewport{aspect-ratio:9/19.5}
+.lv-phone-viewport{aspect-ratio:9/18;max-height:520px}
 .lv-desk-viewport{aspect-ratio:16/10}
 .lv-slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .45s ease,visibility .45s;pointer-events:none}
 .lv-slide.is-active{opacity:1;visibility:visible;pointer-events:auto;z-index:1}
@@ -300,7 +301,7 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-mini-rows i{display:block;height:12px;border-radius:6px;background:#fff;border:1px solid var(--lv-areia)}
 .lv-mini-rows i:nth-child(even){background:#F3EAD3}
 
-/* Controles: setas + dots com area de toque >=44px */
+/* Controles: setas + dots (compacto no iPhone para caber em 1 linha) */
 .lv-controls{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--lv-casca);padding:6px 8px;flex-wrap:wrap}
 .lv-arrow-btn{min-width:44px;min-height:44px;width:44px;height:44px;border-radius:50%;border:2px solid #5A4A33;background:transparent;color:var(--lv-serragem);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:0.9rem;flex:0 0 auto}
 .lv-arrow-btn:hover{border-color:var(--lv-serragem);background:rgba(227,154,45,.12)}
@@ -309,21 +310,27 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-dot span{width:11px;height:11px;border-radius:50%;background:#6B5D4A;display:block;transition:transform .2s,background .2s}
 .lv-dot[aria-selected="true"] span{background:var(--lv-serragem);transform:scale(1.35)}
 .lv-dot:hover span{background:var(--lv-dark-ink)}
-/* No iPhone (tela estreita): setas em linha propria, dots em linha cheia */
+/* iPhone: 1 linha, compacto (resolve "botões muito altos") */
+.lv-phone-screen .lv-controls{gap:4px;padding:4px 6px;flex-wrap:nowrap}
+.lv-phone-screen .lv-arrow-btn{width:32px;height:32px;min-width:32px;min-height:32px;font-size:.7rem;flex:0 0 32px}
+.lv-phone-screen .lv-dots{order:2;flex:1 1 auto;gap:0}
+.lv-phone-screen .lv-dot{min-width:28px;min-height:28px}
+.lv-phone-screen .lv-dot span{width:7px;height:7px}
 .lv-phone-screen .lv-prev{order:1}
-.lv-phone-screen .lv-next{order:2}
-.lv-phone-screen .lv-dots{order:3;flex:1 1 100%}
+.lv-phone-screen .lv-next{order:3}
 
-/* ---------- Topbar: evita estouro em desktop 1120-1262 ---------- */
-@media(max-width:1220px){
+/* ---------- Topbar: arquitetura definitiva 1320 + hide 1430 (CEREBRO) ---------- */
+@media(max-width:1430px){
+  .lv-nav{display:none}
+}
+@media(max-width:1430px) and (min-width:901px){
   .lv-topbar-inner{gap:10px}
-  .lv-nav{gap:12px}
-  .lv-nav a{font-size:.84rem}
   .lv-topbar-ctas{gap:6px}
   .lv-topbar-ctas .lv-btn{padding:8px 11px;font-size:.82rem}
 }
-@media(max-width:1280px){
-  .lv-nav{display:none}
+@media(min-width:1431px){
+  .lv-nav{gap:14px}
+  .lv-nav a{font-size:.86rem}
 }
 /* ---------- Responsivo ---------- */
 @media(max-width:900px){
