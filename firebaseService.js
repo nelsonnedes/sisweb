@@ -865,7 +865,7 @@ function unwrapCallableResult(result) {
 }
 
 function requiresAuthenticatedCallable(functionName) {
-    return /^(nf_|finance(?:[A-Z_]|$)|superAdminMfa|recordAdminAccessDenied|sentry|validatePartnerCode|claimPartnerAccount|linkPartnerReferral|getMyPartnerStatus|getMyPartnerDashboard|sendBillingReminder)/.test(String(functionName || '').trim());
+    return /^(nf_|finance(?:[A-Z_]|$)|superAdminMfa|recordAdminAccessDenied|sentry|validatePartnerCode|claimPartnerAccount|linkPartnerReferral|getMyPartnerStatus|getMyPartnerDashboard|sendBillingReminder|getPartnersAdmin|getPartnerDetailAdmin|setPartnerConfig|markCommissionPaid|bulkMarkCommissionPaid|adminLinkReferral|deletePartnerAdmin)/.test(String(functionName || '').trim());
 }
 
 async function getCallableIdToken(user, forceRefresh = false) {
@@ -3257,6 +3257,14 @@ async function markCommissionPaid(payload) {
     }
 }
 
+async function bulkMarkCommissionPaid(payload) {
+    try {
+        return await callAdminCallableWithRetry('bulkMarkCommissionPaid', payload);
+    } catch (error) {
+        return { success: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
 async function adminLinkReferral(payload) {
     try {
         return await callAdminCallableWithRetry('adminLinkReferral', payload);
@@ -4652,6 +4660,7 @@ export {
     getPartnerDetailAdmin,
     setPartnerConfig,
     markCommissionPaid,
+    bulkMarkCommissionPaid,
     adminLinkReferral,
     deletePartnerAdmin,
     invalidateReadCacheForPath,

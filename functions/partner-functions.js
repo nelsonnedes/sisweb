@@ -1114,35 +1114,116 @@ exports.markCommissionPaid = functions.https.onCall(async (data, context) => {
     const partnerId = sanitizeStr(payload.partnerId, 128);
     const entryId = sanitizeEntryId(payload.entryId);
     const note = sanitizeStr(payload.note, 280);
+    if (!partnerId || !entryId) throw new functions.https.HttpsError('invalid-argument', 'partnerId e entryId são obrigatórios.');
     const ref = admin.database().ref(`campaignCommissions/${partnerId}/${entryId}`);
-    const snap = await ref.get();
-    if (!snap.exists()) {
-        throw new functions.https.HttpsError('not-found', 'Comissão não encontrada.');
-    }
-    const entry = snap.val() || {};
-    if (entry.status !== 'earned') {
-        throw new functions.https.HttpsError('failed-precondition', 'Somente comissões com status "earned" podem ser marcadas como pagas.');
-    }
     const nowIso = new Date().toISOString();
-    await ref.update({ status: 'paid', paidAt: nowIso, paidBy: String(context.auth.uid), note });
+    const uid = String(context.auth.uid);
+    const txn = await ref.transaction((current) => {
+        if (!current) return;
+        if (String(current.status) !== 'earned') return;
+        return { ...current, status: 'paid', paidAt: nowIso, paidBy: uid, note };
+    });
+    if (!txn.committed) {
+        const snap = await ref.get();
+        if (!snap.exists()) throw new functions.https.HttpsError('not-found', 'Comissão não encontrada.');
+        const cur = snap.val() || {};
+        if (String(cur.status) !== 'earned') throw new functions.https.HttpsError('failed-precondition', 'Somente comissões com status "earned" podem ser marcadas como pagas.');
+        throw new functions.https.HttpsError('aborted', 'Não foi possível marcar comissão como paga. Tente novamente.');
+    }
+    const snapAfter = txn.snapshot && typeof txn.snapshot.val === 'function' ? txn.snapshot.val() : null;
+    const commissionVal = Number((snapAfter && snapAfter.commission) || 0);
     try {
-        const totalsSnap = await admin.database().ref(`campaignPartners/${partnerId}/totalPaid`).get();
-        const current = Number(totalsSnap.val() || 0);
-        await admin.database().ref(`campaignPartners/${partnerId}`).update({
-            totalPaid: Math.round((current + Number(entry.commission || 0)) * 100) / 100,
-            updatedAt: nowIso
+        const totalRef = admin.database().ref(`campaignPartners/${partnerId}/totalPaid`);
+        await totalRef.transaction((cur) => {
+            const curNum = Number(cur || 0);
+            return Math.round((curNum + commissionVal) * 100) / 100;
         });
-        await admin.database().ref(`subscriptionAdminPurgeAudit/${context.auth.uid}`).push({
+        await admin.database().ref(`campaignPartners/${partnerId}`).update({ updatedAt: nowIso });
+        await admin.database().ref(`subscriptionAdminPurgeAudit/${uid}`).push({
             at: nowIso,
-            by: String(context.auth.uid),
+            by: uid,
             type: 'markCommissionPaid',
             partnerId,
             entryId,
-            commission: Number(entry.commission || 0),
+            commission: commissionVal,
             note
         });
     } catch (_) {}
     return { success: true, partnerId, entryId };
+});
+
+exports.bulkMarkCommissionPaid = functions.https.onCall(async (data, context) => {
+    await assertSuperAdminCall(context);
+    const payload = data && typeof data === 'object' ? data : {};
+    const partnerId = sanitizeStr(payload.partnerId, 128);
+    const rawIds = Array.isArray(payload.entryIds) ? payload.entryIds : [];
+    const note = sanitizeStr(payload.note, 280);
+    const operationId = sanitizeStr(payload.operationId, 128);
+    if (!partnerId) throw new functions.https.HttpsError('invalid-argument', 'partnerId é obrigatório.');
+    if (!rawIds.length) throw new functions.https.HttpsError('invalid-argument', 'Selecione ao menos uma comissão.');
+    if (rawIds.length > 100) throw new functions.https.HttpsError('invalid-argument', 'Máximo de 100 comissões por lote.');
+    const entryIds = Array.from(new Set(rawIds.map((v) => sanitizeEntryId(v)).filter(Boolean)));
+    if (!entryIds.length) throw new functions.https.HttpsError('invalid-argument', 'entryIds inválidos.');
+    if (entryIds.length !== rawIds.length) throw new functions.https.HttpsError('invalid-argument', 'entryIds duplicados ou inválidos.');
+    // idempotência por operationId (opcional)
+    const opId = operationId || null;
+    const fingerprint = JSON.stringify({ partnerId, entryIds: entryIds.slice().sort(), note });
+    if (opId) {
+        const opSnap = await admin.database().ref(`_partnerBulkOperations/${opId}`).get();
+        if (opSnap.exists()) {
+            const existing = opSnap.val() || {};
+            if (existing.fingerprint === fingerprint && existing.partnerId === partnerId) {
+                return { success: true, partnerId, entryIds, succeeded: entryIds, skipped: [], totalCommission: Number(existing.totalCommission || 0), idempotent: true };
+            }
+            if (existing.fingerprint !== fingerprint) throw new functions.https.HttpsError('already-exists', 'operationId já usado com outro lote.');
+        }
+    }
+    const nowIso = new Date().toISOString();
+    const uid = String(context.auth.uid);
+    // validar todas earned antes de qualquer write (sem parcial)
+    const snaps = await Promise.all(entryIds.map((eid) => admin.database().ref(`campaignCommissions/${partnerId}/${eid}`).get()));
+    let totalCommission = 0;
+    const missing = [];
+    const notEarned = [];
+    for (let i = 0; i < entryIds.length; i++) {
+        const eid = entryIds[i];
+        const snap = snaps[i];
+        if (!snap.exists()) missing.push(eid);
+        else {
+            const cur = snap.val() || {};
+            if (String(cur.status) !== 'earned') notEarned.push(eid);
+            else totalCommission = Math.round((totalCommission + Number(cur.commission || 0)) * 100) / 100;
+        }
+    }
+    if (missing.length) throw new functions.https.HttpsError('not-found', `Comissões não encontradas: ${missing.join(', ')}`);
+    if (notEarned.length) throw new functions.https.HttpsError('failed-precondition', `Somente comissões earned podem ser pagas: ${notEarned.join(', ')}`);
+    // atomic multi-path update
+    const updates = {};
+    entryIds.forEach((eid) => {
+        updates[`campaignCommissions/${partnerId}/${eid}/status`] = 'paid';
+        updates[`campaignCommissions/${partnerId}/${eid}/paidAt`] = nowIso;
+        updates[`campaignCommissions/${partnerId}/${eid}/paidBy`] = uid;
+        updates[`campaignCommissions/${partnerId}/${eid}/note`] = note;
+    });
+    // totalPaid via read+calc dentro da mesma update (Admin SDK update é atômico para esses paths se totalPaid for atualizado com valor calculado)
+    const totalSnap = await admin.database().ref(`campaignPartners/${partnerId}/totalPaid`).get();
+    const currentPaid = Number(totalSnap.val() || 0);
+    const newTotal = Math.round((currentPaid + totalCommission) * 100) / 100;
+    updates[`campaignPartners/${partnerId}/totalPaid`] = newTotal;
+    updates[`campaignPartners/${partnerId}/updatedAt`] = nowIso;
+    const auditKey = admin.database().ref(`subscriptionAdminPurgeAudit/${uid}`).push().key;
+    updates[`subscriptionAdminPurgeAudit/${uid}/${auditKey}`] = {
+        at: nowIso,
+        by: uid,
+        type: 'bulkMarkCommissionPaid',
+        partnerId,
+        entryIds,
+        totalCommission,
+        note
+    };
+    if (opId) updates[`_partnerBulkOperations/${opId}`] = { at: nowIso, by: uid, partnerId, entryIds, totalCommission, fingerprint, note };
+    await admin.database().ref().update(updates);
+    return { success: true, partnerId, entryIds, succeeded: entryIds, skipped: [], totalCommission, idempotent: false };
 });
 
 exports.adminLinkReferral = functions.https.onCall(async (data, context) => {
@@ -1359,6 +1440,7 @@ module.exports = {
     getPartnerDetailAdmin: exports.getPartnerDetailAdmin,
     setPartnerConfig: exports.setPartnerConfig,
     markCommissionPaid: exports.markCommissionPaid,
+    bulkMarkCommissionPaid: exports.bulkMarkCommissionPaid,
     adminLinkReferral: exports.adminLinkReferral,
     deletePartnerAdmin: exports.deletePartnerAdmin
 };

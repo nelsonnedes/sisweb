@@ -18,7 +18,7 @@
             let supportTickets = [];
             let currentAccessModel = { isSuperAdmin: false, canDashboard: false, canSubscriptions: false, canSettings: false };
             var debugState = {};
-            var ADMIN_ASSET_VERSION = "39f5f155a918";
+            var ADMIN_ASSET_VERSION = "551ae6a7fe3e";
             async function resolveAdminFirebaseService(requiredFunction) {
                 var required = String(requiredFunction || "").trim();
                 var current = window.firebaseService;
@@ -1930,20 +1930,23 @@
                 var tbody = document.getElementById("partnerCommissionsBody");
                 if (!tbody) return;
                 if (!commissions.length) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Sem comissões.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Sem comissões.</td></tr>';
                     return;
                 }
                 tbody.innerHTML = commissions.map(function(c) {
                     var action = c.status === "earned"
                         ? '<button type="button" class="btn small" data-comm-paid="' + escapeHtmlSafe(c.entryId) + '"><i class="fas fa-check"></i><span>Marcar pago</span></button>'
                         : "-";
+                    var check = c.status === "earned"
+                        ? '<input type="checkbox" data-comm-check="' + escapeHtmlSafe(c.entryId) + '" data-comm-amount="' + Number(c.commission||0) + '">'
+                        : '<input type="checkbox" disabled>';
                     var commTag = c.status === "paid" ? "green" : (c.status === "earned" ? "yellow" : "blue");
                     var commLabel = c.status === "paid" ? "Paga" : (c.status === "earned" ? "A receber" : String(c.status || "-"));
                     var riskFlags = Array.isArray(c.riskFlags) ? c.riskFlags : [];
                     var riskMark = riskFlags.indexOf("phone-match") >= 0
                         ? ' <span class="tag red" title="Telefone do indicado igual ao do parceiro — verificar possível autoindicação.">⚠ mesmo telefone</span>'
                         : "";
-                    return '<tr><td>' + escapeHtmlSafe(c.at || "-") + '</td>' +
+                    return '<tr><td>' + check + '</td><td>' + escapeHtmlSafe(c.at || "-") + '</td>' +
                         '<td>' + formatBRLSafe(c.paidAmount) + '</td>' +
                         '<td>' + escapeHtmlSafe(c.percent) + '%</td>' +
                         '<td>' + formatBRLSafe(c.commission) + '</td>' +
@@ -1953,6 +1956,28 @@
                 Array.prototype.forEach.call(tbody.querySelectorAll("[data-comm-paid]"), function(btn) {
                     btn.addEventListener("click", function() { markPartnerCommissionPaid(btn.getAttribute("data-comm-paid")); });
                 });
+                // bulk selection handling
+                function updateBulkBar(){
+                    var checks = tbody.querySelectorAll("[data-comm-check]:not([disabled])");
+                    var selected = Array.prototype.filter.call(tbody.querySelectorAll("[data-comm-check]:checked"), function(c){return !c.disabled});
+                    var bar = document.getElementById("partnerCommissionsBulkBar");
+                    var info = document.getElementById("partnerCommissionsBulkInfo");
+                    var total = selected.reduce(function(s,el){return s + Number(el.getAttribute("data-comm-amount")||0)},0);
+                    if(bar){
+                        bar.style.display = checks.length ? "flex" : "none";
+                        if(info) info.textContent = selected.length ? (selected.length + " selecionada(s) • Total R$ " + total.toLocaleString("pt-BR",{minimumFractionDigits:2}) ) : (checks.length + " pendente(s) — selecione para pagar em lote");
+                    }
+                    var master = document.getElementById("partnerCommissionsSelectAll");
+                    if(master){ master.checked = checks.length && selected.length===checks.length; master.indeterminate = selected.length>0 && selected.length<checks.length; }
+                }
+                Array.prototype.forEach.call(tbody.querySelectorAll("[data-comm-check]"), function(ch){ ch.addEventListener("change", updateBulkBar); });
+                var master = document.getElementById("partnerCommissionsSelectAll");
+                if(master){ master.onchange = function(){ var on=master.checked; Array.prototype.forEach.call(tbody.querySelectorAll("[data-comm-check]:not([disabled])"), function(c){c.checked=on}); updateBulkBar(); }; }
+                var bulkBtn = document.getElementById("partnerCommissionsBulkBtn");
+                if(bulkBtn){ bulkBtn.onclick = function(){ openCommissionBulkPaidModal(); }; }
+                var selectAllBtn = document.getElementById("partnerCommissionsSelectAllBtn");
+                if(selectAllBtn){ selectAllBtn.onclick = function(){ var m=document.getElementById("partnerCommissionsSelectAll"); if(m){m.checked=true; m.dispatchEvent(new Event("change")); } Array.prototype.forEach.call(tbody.querySelectorAll("[data-comm-check]:not([disabled])"), function(c){c.checked=true}); updateBulkBar(); };}
+                updateBulkBar();
             }
             function formatDateOnlySafe(value) {
                 try {
@@ -2060,6 +2085,9 @@
                 if (confirmBtn) confirmBtn.addEventListener("click", function() { submitCommissionPaidModal(); });
             }
             async function submitCommissionPaidModal() {
+                var confirmBtn = document.getElementById("commissionPaidConfirmBtn");
+                if (confirmBtn && confirmBtn.disabled) return;
+                if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.setAttribute("aria-busy", "true"); }
                 try {
                     var hidden = document.getElementById("commissionPaidEntryId");
                     var noteEl = document.getElementById("commissionPaidNote");
@@ -2079,12 +2107,75 @@
                     await loadPartnersPanel();
                 } catch (err) {
                     notifyAdmin((err && err.message) || "Erro ao marcar comissão.", "error");
+                } finally {
+                    var btn = document.getElementById("commissionPaidConfirmBtn");
+                    if (btn) { btn.disabled = false; btn.removeAttribute("aria-busy"); }
                 }
             }
             async function markPartnerCommissionPaid(entryId) {
                 bindCommissionPaidModalOnce();
                 openCommissionPaidModal(entryId);
             }
+            function openCommissionBulkPaidModal(){
+                var bar = document.getElementById("partnerCommissionsBulkBar");
+                var tbody = document.getElementById("partnerCommissionsBody");
+                if(!tbody) return;
+                var selected = Array.prototype.filter.call(tbody.querySelectorAll("[data-comm-check]:checked"), function(c){return !c.disabled});
+                if(!selected.length){ notifyAdmin("Selecione ao menos uma comissão pendente.", "error"); return; }
+                var total = selected.reduce(function(s,el){return s + Number(el.getAttribute("data-comm-amount")||0)},0);
+                var modal = document.getElementById("commissionBulkPaidModal");
+                var summary = document.getElementById("commissionBulkSummary");
+                var note = document.getElementById("commissionBulkNote");
+                var count = document.getElementById("commissionBulkCount");
+                if(summary) summary.innerHTML = "<strong>" + selected.length + " comissão(ões)</strong> • Total <strong>R$ " + total.toLocaleString("pt-BR",{minimumFractionDigits:2}) + "</strong> • Parceiro <code>" + escapeHtmlSafe(activePartnerId||"") + "</code>";
+                if(note) note.value = "";
+                if(count) count.textContent = "0";
+                if(modal) modal.classList.add("active");
+                if(note) setTimeout(function(){ try{note.focus()}catch(_){} },50);
+            }
+            function closeCommissionBulkPaidModal(){ var m=document.getElementById("commissionBulkPaidModal"); if(m) m.classList.remove("active"); }
+            function bindCommissionBulkModalOnce(){
+                if(bindCommissionBulkModalOnce._done) return;
+                bindCommissionBulkModalOnce._done = true;
+                var closeBtn=document.getElementById("commissionBulkCloseBtn");
+                var cancelBtn=document.getElementById("commissionBulkCancelBtn");
+                var confirmBtn=document.getElementById("commissionBulkConfirmBtn");
+                var note=document.getElementById("commissionBulkNote");
+                var modal=document.getElementById("commissionBulkPaidModal");
+                if(closeBtn) closeBtn.addEventListener("click", closeCommissionBulkPaidModal);
+                if(cancelBtn) cancelBtn.addEventListener("click", closeCommissionBulkPaidModal);
+                if(modal) modal.addEventListener("click", function(e){ if(e.target===modal) closeCommissionBulkPaidModal(); });
+                document.addEventListener("keydown", function(e){ if(!e) return; if(e.key==="Escape"){ var m=document.getElementById("commissionBulkPaidModal"); if(m&&m.classList.contains("active")) closeCommissionBulkPaidModal(); }});
+                if(note) note.addEventListener("input", function(){ var c=document.getElementById("commissionBulkCount"); if(c) c.textContent = String(note.value.length); });
+                if(confirmBtn) confirmBtn.addEventListener("click", submitCommissionBulkPaidModal);
+            }
+            async function submitCommissionBulkPaidModal(){
+                var confirmBtn=document.getElementById("commissionBulkConfirmBtn");
+                if(confirmBtn && confirmBtn.disabled) return;
+                if(confirmBtn){ confirmBtn.disabled=true; confirmBtn.setAttribute("aria-busy","true"); }
+                try{
+                    var tbody=document.getElementById("partnerCommissionsBody");
+                    var selected = tbody ? Array.prototype.filter.call(tbody.querySelectorAll("[data-comm-check]:checked"), function(c){return !c.disabled}) : [];
+                    var entryIds = selected.map(function(el){return String(el.getAttribute("data-comm-check")||"")}).filter(Boolean);
+                    if(!entryIds.length){ closeCommissionBulkPaidModal(); return; }
+                    if(entryIds.length>100){ notifyAdmin("Máximo 100 por lote.", "error"); return; }
+                    var noteEl=document.getElementById("commissionBulkNote");
+                    var note=noteEl ? String(noteEl.value||"").slice(0,280) : "";
+                    var svc=await resolveAdminFirebaseService("bulkMarkCommissionPaid");
+                    if(!svc || typeof svc.bulkMarkCommissionPaid!=="function") throw new Error("Serviço bulkMarkCommissionPaid indisponível.");
+                    var operationId = "bulk_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
+                    var result=await svc.bulkMarkCommissionPaid({ partnerId: activePartnerId, entryIds: entryIds, note: note, operationId: operationId });
+                    var data=result && result.data ? result.data : result;
+                    if(!result || result.success===false || (data && data.success===false)) throw new Error((result&&result.error)||(data&&data.error)||"Falha no pagamento em lote.");
+                    closeCommissionBulkPaidModal();
+                    notifyAdmin((data&&data.succeeded?data.succeeded.length:entryIds.length) + " comissão(ões) marcada(s) como paga(s). Total R$ " + Number(data&&data.totalCommission||0).toLocaleString("pt-BR",{minimumFractionDigits:2}), "success");
+                    await openPartnerDetail(activePartnerId);
+                    await loadPartnersPanel();
+                }catch(err){ notifyAdmin((err&&err.message)||"Erro no pagamento em lote.", "error"); }
+                finally{ var b=document.getElementById("commissionBulkConfirmBtn"); if(b){ b.disabled=false; b.removeAttribute("aria-busy"); } }
+            }
+            // ensure bulk modal binds once
+            try{ bindCommissionBulkModalOnce(); }catch(_){}
             function fmtPartnerDeleteImpact(impact) {
                 if (!impact) return "Não foi possível calcular o impacto.";
                 function row(label, value) {
