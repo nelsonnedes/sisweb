@@ -6918,6 +6918,7 @@ exports.getPartnersAdmin = partnerFunctions.getPartnersAdmin;
 exports.getPartnerDetailAdmin = partnerFunctions.getPartnerDetailAdmin;
 exports.setPartnerConfig = partnerFunctions.setPartnerConfig;
 exports.markCommissionPaid = partnerFunctions.markCommissionPaid;
+exports.bulkMarkCommissionPaid = partnerFunctions.bulkMarkCommissionPaid;
 exports.adminLinkReferral = partnerFunctions.adminLinkReferral;
 exports.deletePartnerAdmin = partnerFunctions.deletePartnerAdmin;
 

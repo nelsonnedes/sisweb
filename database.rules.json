@@ -396,6 +396,11 @@
       ".write": "auth != null && auth.token.superadmin == true"
     },
 
+    "_partnerBulkOperations": {
+      ".read": "auth != null && auth.token.superadmin == true",
+      ".write": "auth != null && auth.token.superadmin == true"
+    },
+
     "campaignReminderLog": {
       ".read": "auth != null && auth.token.superadmin == true",
       ".write": "auth != null && auth.token.superadmin == true"

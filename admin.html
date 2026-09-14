@@ -1154,6 +1154,7 @@
                         <table id="partnerCommissionsTable">
                             <thead>
                                 <tr>
+                                    <th style="width:36px"><input type="checkbox" id="partnerCommissionsSelectAll" title="Selecionar todas"></th>
                                     <th>Data</th>
                                     <th>Valor pago</th>
                                     <th>%</th>
@@ -1258,6 +1259,27 @@
             <div class="modal-actions">
                 <button type="button" class="btn" id="commissionPaidCancelBtn">Cancelar</button>
                 <button type="button" class="btn primary" id="commissionPaidConfirmBtn"><i class="fas fa-check"></i> Confirmar pagamento</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="commissionBulkPaidModal" class="modal-overlay">
+        <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="commissionBulkPaidTitle">
+            <div class="modal-header">
+                <h3 class="modal-title" id="commissionBulkPaidTitle">Pagar comissões selecionadas</h3>
+                <button type="button" class="modal-close" id="commissionBulkCloseBtn" aria-label="Fechar"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div id="commissionBulkSummary" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:12px;font-size:.88rem"></div>
+                <div class="modal-field">
+                    <span class="modal-field-label">Nota do lote (opcional, máx. 280 caracteres)</span>
+                    <textarea id="commissionBulkNote" class="modal-field-value" style="width:100%;box-sizing:border-box;background:#ffffff;resize:vertical;min-height:70px;" maxlength="280" placeholder="Ex: Lote 05/09/2026 via PIX."></textarea>
+                    <div style="text-align:right;font-size:0.75rem;color:#64748b;margin-top:4px;"><span id="commissionBulkCount">0</span>/280</div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn" id="commissionBulkCancelBtn">Cancelar</button>
+                <button type="button" class="btn primary" id="commissionBulkConfirmBtn"><i class="fas fa-check"></i> Confirmar pagamento do lote</button>
             </div>
         </div>
     </div>

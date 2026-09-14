@@ -4,7 +4,7 @@
 > sessão (Codex, opencode, deepseek) retomar contexto sem regressões e sem perder
 > o "porquê" das decisões já tomadas. SEMPRE consultar antes de implementar.
 >
-> Atualizado em: 2026-09-14 (Portal alinhado + topbar/iPhone/share + SW portal-polish)
+> Atualizado em: 2026-09-14 (Comissões bulk A+B + portal/topbar/iPhone)
 
 ---
 
@@ -570,3 +570,7 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 ## 53. Sessao 2026-09-14 — Portal parceiro alinhado profissional + refresh resiliente
 - **Alinhamento:** tokens `partner-blue→lv-mogno, green→lv-mata, line→lv-areia, tora, shadow 16/40` + Fraunces/Inter via Google Fonts; hero `48/56` contido `1.9→2.7rem`, shell `1120` `margin -28`, cards `24/16` `border-top 4px mata` hover, KPIs `36px` ícones, tabelas `sticky` zebra `badge--ok/warn/muted`, modal `border-top 4px serragem + blur`, debug `68rem`, footer `lv-footer`, empty com `fa-inbox/fa-coins`, skeleton `partner-shimmer`; sem quebrar `.lv-*` contrato.
 - **Refresh bugs:** FOUC `partnerVisitor` → `html.js-loading` + `partnerLoading` skeleton + `partnerShell hidden`; `setInterval 50ms` race → `debouncedBoot 40ms + generation + cachedStatus 30s + token reload + retry 401 250ms`; `sessionStorage lastView + pageshow bfcache + pagehide`, `claimInFlight`, `setBooting`; `SW bump portal-polish-v1`; `validate:pr 6/6` (569 pass), `build:hosting` 476 + hosting.
+
+## 54. Sessao 2026-09-14 — Comissões parceiros: pagamento A (harden) + B (bulk) sem regressão
+- **A — Harden 1-a-1:** `markCommissionPaid` `get+update` → `transaction` `earned→paid` + `totalPaid` via `transaction` + `audit`; frontend `submitCommissionPaidModal` com `confirmBtn.disabled` + `aria-busy` + `finally`; `validate:pr 6/6` (569 pass) sem tocar `finance/storage`.
+- **B — Bulk `≤100`:** novo `bulkMarkCommissionPaid` `partner-functions.js:1147` (`partnerId, entryIds dedupe, note 280, operationId fingerPrint, idempotência `_partnerBulkOperations/{opId}`, validação todas `earned` sem parcial, `ref().update` multi-path atômico `status/paidAt/paidBy/note` + `totalPaid` + `audit` + `_partnerBulkOperations`); Rules `_partnerBulkOperations superadmin-only` `database.rules.json:401` + `firebase-rules-production.json:162`; `firebaseService.js:3260` wrapper + `requiresAuthenticatedCallable`; `admin.html` bulk bar `partnerCommissionsBulkBar` + header checkbox `partnerCommissionsSelectAll` + modal `commissionBulkPaidModal` `BulkSummary/BulkNote/BulkCount`; `admin-main.js:1929` checkbox `data-comm-check` + `updateBulkBar` + `open/close/submitBulk` com `operationId bulk_Date.now` + `totalCommission`; `ADMIN_ASSET_VERSION 551ae6a7fe3e`; `SW bump commission-bulk-v1`; `validate:pr 6/6`; hosting 476; functions `markCommissionPaid` + `bulkMarkCommissionPaid` deploy unitário (evita quota 20 vCPU).
