@@ -4,7 +4,7 @@
 > sessão (Codex, opencode, deepseek) retomar contexto sem regressões e sem perder
 > o "porquê" das decisões já tomadas. SEMPRE consultar antes de implementar.
 >
-> Atualizado em: 2026-09-13 (Portal parceiro claim idempotente + vendas parcelas + share WhatsApp)
+> Atualizado em: 2026-09-14 (Portal alinhado + topbar/iPhone/share + SW portal-polish)
 
 ---
 
@@ -560,3 +560,13 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 ## 51. Sessao 2026-09-13 — Share + marketing landing
 - **Landing:** dropdown "Compartilhar" (`landing-vendas.css/html/js`) com texto comercial `SHARE_COMMERCIAL_TEXT` + `wa.me/5591991311049?text=` e botão copiar; `docs/marketing/PLANO-DIVULGACAO-LANDING-VENDAS.md` (posicionamento por estado, assets, plano 14 dias).
 - **Verificacao:** lint/typecheck/test OK; `inject-cachebusters` manual para `landing-vendas.js?v=` e `vendas.js?v=`; `build:hosting` 476 arquivos; commit `320a8ed`.
+
+## 52. Sessao 2026-09-14 — Landing topbar + iPhone realista + share dropdown
+- **Topbar estourando `1262px` (`lv-topbar 1378 > 1120`):** `overflow:clip` cortava "Compartilhar" em "Compa"; `nav 6 links 536 + ctas 595 + logo 215 =1490`. Fix `landing-vendas.css:43` `.lv-topbar .lv-container{max-width:1320px}` + `1430` hide `nav` + compress `1220` gaps; `validate:pr 6/6`; hosting 476.
+- **iPhone alto `9/19.5 628px +30 +108 =766`:** fix `9/18 max 520/320`, frame `46px padding 12 12 8` + home bar `88×3`, `36px` radius, controles `32/28` 1 linha `9/18`; `SW bump iphone-buttons-v1`; validado `?fresh` `phoneH 284`.
+- **Share dropdown invisível:** `overflow:clip` cortava `lv-share-popover`; fix `overflow-x:clip; overflow-y:visible`; `SW bump share-dropdown-v1`; `agent-browser` click `expanded true` com `WhatsApp/Copiar` visíveis.
+- **Botões laterais iPhone desproporcionais `290px`:** `::before 56 + ::after 90 + shadow -34` → `::before 24 + shadows 36/72 + ::after 54` direito (hero `16/36`); `SW bump iphone-buttons-v1`.
+
+## 53. Sessao 2026-09-14 — Portal parceiro alinhado profissional + refresh resiliente
+- **Alinhamento:** tokens `partner-blue→lv-mogno, green→lv-mata, line→lv-areia, tora, shadow 16/40` + Fraunces/Inter via Google Fonts; hero `48/56` contido `1.9→2.7rem`, shell `1120` `margin -28`, cards `24/16` `border-top 4px mata` hover, KPIs `36px` ícones, tabelas `sticky` zebra `badge--ok/warn/muted`, modal `border-top 4px serragem + blur`, debug `68rem`, footer `lv-footer`, empty com `fa-inbox/fa-coins`, skeleton `partner-shimmer`; sem quebrar `.lv-*` contrato.
+- **Refresh bugs:** FOUC `partnerVisitor` → `html.js-loading` + `partnerLoading` skeleton + `partnerShell hidden`; `setInterval 50ms` race → `debouncedBoot 40ms + generation + cachedStatus 30s + token reload + retry 401 250ms`; `sessionStorage lastView + pageshow bfcache + pagehide`, `claimInFlight`, `setBooting`; `SW bump portal-polish-v1`; `validate:pr 6/6` (569 pass), `build:hosting` 476 + hosting.
