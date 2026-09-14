@@ -44,7 +44,7 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-topbar .lv-container{max-width:1320px}
 
 /* ---------- Topbar ---------- */
-.lv-topbar{position:sticky;top:0;z-index:100;background:#FBF7EE;border-bottom:2px solid var(--lv-areia);overflow:clip;max-width:100%}
+.lv-topbar{position:sticky;top:0;z-index:100;background:#FBF7EE;border-bottom:2px solid var(--lv-areia);overflow-x:clip;overflow-y:visible;max-width:100%}
 .lv-topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;flex-wrap:nowrap}
 .lv-logo{font-family:var(--lv-font-display);font-weight:800;display:flex;align-items:center;gap:8px;color:var(--lv-casca);font-size:1.15rem;flex-shrink:0}
 .lv-logo i{color:var(--lv-mogno)}
