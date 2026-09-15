@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-09-14-login-perf-v3';
+const APP_VERSION = '2026-09-14-login-perf-v4';
 const CACHE_NAME = `sisweb-runtime-${APP_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',
@@ -65,8 +65,18 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (request.destination === 'script' || request.destination === 'style' || request.destination === 'worker') {
-    // JS/CSS: serve o cache quente imediatamente e revalida em
+    // JS de autenticação sempre da rede (evita HTML novo + auth antigo):
+    // firebase-init/auth/firebaseService com cache quente geram os 12 logs
+    // de boot duplicado. Demais JS/CSS: cache quente + revalidação em
     // segundo plano; a revisão é o APP_VERSION (limpeza no activate).
+    try {
+      const url = new URL(request.url);
+      const authCritical = /^\/(firebase-init\.js|firebaseService\.js|auth\.js|firebase-compat-bridge\.js)$/.test(url.pathname);
+      if (authCritical && isSameOrigin(request)) {
+        event.respondWith(networkFirst(request));
+        return;
+      }
+    } catch (_) {}
     event.respondWith(staleWhileRevalidate(request));
     return;
   }

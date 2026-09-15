@@ -2157,7 +2157,7 @@
     
     <!-- ✅ Firebase via módulo compartilhado (firebase-init.js) -->
     <script type="module">
-        import { app, auth, db, storage, ref, set, get, remove, child, onValue, off, update, serverTimestamp, push, onAuthStateChanged, signOut, storageRef, uploadBytes, getDownloadURL, deleteObject, getStorage, getBlob } from './firebase-init.js?v=9d73fc31bff4';
+        import { app, auth, db, storage, ref, set, get, remove, child, onValue, off, update, serverTimestamp, push, onAuthStateChanged, signOut, storageRef, uploadBytes, getDownloadURL, deleteObject, getStorage, getBlob } from './firebase-init.js?v=207b2a126015';
         
         window.database = db;
         window.firebaseRef = ref;
@@ -2396,7 +2396,7 @@
                 ...financeFirebaseLocalService
             };
             window.__siswebFirebaseServiceReady = (async function () {
-                const firebaseSvc = await import('./firebaseService.js?v=61730af2608f');
+                const firebaseSvc = await import('./firebaseService.js?v=95bf07ff3b88');
                 const existingFirebaseService = window.firebaseService || {};
                 window.firebaseService = {
                     ...existingFirebaseService,

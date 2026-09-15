@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="assets/fontawesome/all.min.css?v=20260808">
     <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script defer src="sentry-init.js?v=e4dadfaea86a"></script>
+    <link rel="modulepreload" href="firebaseService.js?v=61730af2608f">
     <script>
         // ✅ Correção: suprimir erros de message channel causados por extensões do navegador
         (function () {
@@ -843,7 +844,7 @@
     </div>
 
     <script src="js/deep-clean.js?v=26495e9d74f4"></script>
-    <script src="auth.js?v=b75f1afa13a9"></script>
+    <script src="auth.js?v=3e7cb59cef68"></script>
     <script src="superadmin-mfa.js?v=27ab1839aafe"></script>
     <script>
         // ═══════════════════════════════════════════════════════════════════════
@@ -1391,8 +1392,7 @@
         // MÓDULO CANÔNICO: Firebase + controle de sessão + Fale Conosco
         // Registro e Recuperação usam exclusivamente authService (sem duplicatas).
         // ═══════════════════════════════════════════════════════════════════════
-        import { app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ensureInitialized } from './firebase-init.js?v=9d73fc31bff4';
-        import { authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence } from './firebaseService.js?v=61730af2608f';
+        import { authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence, app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ensureInitialized } from './firebaseService.js?v=95bf07ff3b88';
 
         try { ensureInitialized(); } catch (_) {}
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence };

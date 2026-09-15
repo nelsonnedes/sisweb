@@ -19,7 +19,18 @@ import {
     firebaseUpdatePassword, firebaseUpdateProfile, updateCurrentUser,
     httpsCallable, getFunctions,
     storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject
-} from './firebase-init.js?v=9d73fc31bff4';
+} from './firebase-init.js';
+
+// Re-export canônico do singleton (login.html e outras rotas importam DAQUI,
+// nunca de './firebase-init.js' direto — query strings divergentes (?v=)
+// criariam 2 instâncias do módulo e quebrariam o singleton).
+// app/auth/db já são exportados no bloco export principal abaixo; aqui só
+// os símbolos que faltavam. Manter sincronizado com o que login.html consome.
+export {
+    ref, set, get, remove, child, onValue,
+    getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+    signOut, onAuthStateChanged, ensureInitialized
+} from './firebase-init.js';
 
 function getAuthPerformanceDiagnostics() {
     try {

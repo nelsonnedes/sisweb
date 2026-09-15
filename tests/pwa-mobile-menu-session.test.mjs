@@ -48,7 +48,7 @@ test('PWA verifica updates instalados e service worker responde versao atual', (
   const menuComponent = read('menu-component.js');
   const sw = read('sw.js');
 
-  assert.match(sw, /const APP_VERSION = '2026-09-14-login-perf-v3'/);
+  assert.match(sw, /const APP_VERSION = '2026-09-14-login-perf-v4'/);
   assert.match(menuComponent, /window\.addEventListener\('online', \(\) => checkForUpdate\(true\)\)/);
   assert.match(menuComponent, /window\.addEventListener\('pageshow', \(\) => checkForUpdate\(true\)\)/);
   assert.match(menuComponent, /window\.setTimeout\(\(\) => checkForUpdate\(true\), 1500\)/);
@@ -149,7 +149,8 @@ test('auth PWA mantem cache duravel para UX sem usa-lo como autorizacao', () => 
   assert.match(login, /id="email" name="email" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false"/);
   assert.match(login, /auth\.js\?v=[^"'\s]+/);
   assert.match(login, /\.\/firebaseService\.js\?v=[^"'\s]+/);
-  assert.match(login, /window\.firebaseService = \{ \.\.\.\(window\.firebaseService \|\| \{\}\), authService, isFirebaseOperational, setCompanyClaim \}/);
+  assert.match(login, /import \{[\s\S]*?\bauthService\b[\s\S]*?\bensureAuthPersistence\b[\s\S]*?\bensureInitialized\b[\s\S]*?\} from '\.\/firebaseService\.js\?v=[^"'\s]+'/);
+  assert.doesNotMatch(login, /from '\.\/firebase-init\.js/);
   assert.match(login, /localStorage\.removeItem\('siswebAuthSession'\)/);
   assert.match(login, /localStorage\.removeItem\('company_info'\)/);
   assert.match(menuComponent, /localStorage\.removeItem\('siswebAuthSession'\)/);

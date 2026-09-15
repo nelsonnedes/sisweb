@@ -592,8 +592,9 @@ async function getCurrentUidSafe() {
     return getStoredUid();
 }
 
-async function isSuperAdminSession() {
+async function isSuperAdminSession(opts) {
     try {
+        const allowClaimSync = !!(opts && opts.allowClaimSync);
         const authUser = await getAuthService().getCurrentUser();
         const authUid = authUser && authUser.uid ? String(authUser.uid).trim() : '';
         if (authUid && readCachedSuperAdminFlag(authUid)) return true;
@@ -608,7 +609,12 @@ async function isSuperAdminSession() {
             const tokenResult = await getCanonicalTokenResult(authUser, { forceRefresh: false });
             const claims = tokenResult && tokenResult.claims ? tokenResult.claims : {};
             const isAdmin = claims.superadmin === true;
-            if (!isAdmin && window.firebaseService && typeof window.firebaseService.syncMyAdminClaims === 'function') {
+            // P2.2: evita syncMyAdminClaims + token refresh forçado para usuários comuns.
+            // Sincroniza somente com sinal de admin (UID conhecido) ou quando o
+            // chamador permite explicitamente (painel admin), preservando a
+            // detecção de promoção sem custo no fluxo de login.
+            const hasAdminSignal = (authUid && SUPER_ADMIN_UIDS.has(authUid)) || readCachedSuperAdminFlag(authUid);
+            if (!isAdmin && (hasAdminSignal || allowClaimSync) && window.firebaseService && typeof window.firebaseService.syncMyAdminClaims === 'function') {
                 await window.firebaseService.syncMyAdminClaims();
                 const refreshedToken = await getCanonicalTokenResult(authUser, {
                     forceRefresh: true,
@@ -658,7 +664,7 @@ function normalizeAdminPermissions(input) {
 
 async function hasAdminPageAccess(pageKey) {
     try {
-        if (await isSuperAdminSession()) return true;
+        if (await isSuperAdminSession({ allowClaimSync: true })) return true;
         const details = await getCurrentUserDetails();
         const uid = details && (details.uid || details.id || details.userId) ? String(details.uid || details.id || details.userId) : '';
         if (!uid) return false;
