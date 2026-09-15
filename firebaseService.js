@@ -25,11 +25,16 @@ import {
 // nunca de './firebase-init.js' direto — query strings divergentes (?v=)
 // criariam 2 instâncias do módulo e quebrariam o singleton).
 // app/auth/db já são exportados no bloco export principal abaixo; aqui só
-// os símbolos que faltavam. Manter sincronizado com o que login.html consome.
+// os símbolos que faltavam. Manter sincronizado com o que as rotas consomem
+// (login, preromaneio, romaneiotl, romaneiotora).
 export {
-    ref, set, get, remove, child, onValue,
+    ref, set, get, remove, child, onValue, off, push, update,
+    serverTimestamp, query, orderByChild, limitToLast,
     getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-    signOut, onAuthStateChanged, ensureInitialized
+    signOut, onAuthStateChanged, ensureInitialized,
+    storage, functions,
+    sendPasswordResetEmail, reauthenticateWithCredential,
+    httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject
 } from './firebase-init.js';
 
 function getAuthPerformanceDiagnostics() {

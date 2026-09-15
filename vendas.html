@@ -16,8 +16,9 @@
     <link rel="stylesheet" href="layout-comum.css">
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
-    <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
-    <script src="sentry-init.js?v=e4dadfaea86a"></script>
+    <link rel="dns-prefetch" href="https://o4511662240432128.ingest.us.sentry.io">
+    <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
+    <script defer src="sentry-init.js?v=e4dadfaea86a"></script>
 <script src="menu-component.js?v=809a6acd5085"></script>
     <style>
         * {
@@ -2014,7 +2015,7 @@
     <script src="auth.js?v=3e7cb59cef68"></script>
     <script>
         window.__siswebFirebaseServiceReady = (async function () {
-            const firebaseSvc = await import('./firebaseService.js?v=95bf07ff3b88');
+            const firebaseSvc = await import('./firebaseService.js?v=6285419b7986');
             const existingFirebaseService = window.firebaseService || {};
             window.firebaseService = {
                 ...existingFirebaseService,
