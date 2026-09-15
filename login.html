@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="assets/fontawesome/all.min.css?v=20260808">
     <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script defer src="sentry-init.js?v=e4dadfaea86a"></script>
-    <link rel="modulepreload" href="firebaseService.js?v=61730af2608f">
+    <link rel="modulepreload" href="firebaseService.js?v=6285419b7986">
     <script>
         // ✅ Correção: suprimir erros de message channel causados por extensões do navegador
         (function () {
@@ -1392,7 +1392,7 @@
         // MÓDULO CANÔNICO: Firebase + controle de sessão + Fale Conosco
         // Registro e Recuperação usam exclusivamente authService (sem duplicatas).
         // ═══════════════════════════════════════════════════════════════════════
-        import { authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence, app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ensureInitialized } from './firebaseService.js?v=95bf07ff3b88';
+        import { authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence, app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ensureInitialized } from './firebaseService.js?v=6285419b7986';
 
         try { ensureInitialized(); } catch (_) {}
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence };

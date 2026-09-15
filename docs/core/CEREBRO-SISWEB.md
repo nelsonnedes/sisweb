@@ -4,7 +4,7 @@
 > sessão (Codex, opencode, deepseek) retomar contexto sem regressões e sem perder
 > o "porquê" das decisões já tomadas. SEMPRE consultar antes de implementar.
 >
-> Atualizado em: 2026-09-14 (Login P2 singleton + token gating + SW networkFirst)
+> Atualizado em: 2026-09-14 (Romaneios 404+singleton+sentry + login P2)
 
 ---
 
@@ -581,3 +581,10 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Fix P2:** `firebase-init.js:108` eager só fora de `login.html` (idle p/ login) + export `ensureInitialized`; `login.html` chama `ensureInitialized()` no módulo; `isSuperAdminSession(opts)` com `allowClaimSync` (login pula sync p/ comuns; `hasAdminPageAccess` passa `true`); `sw.js` `networkFirst` p/ `firebase-init/auth/firebaseService/compat-bridge`; `modulepreload` firebaseService após diag.
 - **Fix singleton durável:** `firebaseService.js` re-exporta `ref/set/get/remove/child/onValue/getAuth/.../ensureInitialized` (`app/auth/db` já no bloco principal); `login.html` importa TUDO de `firebaseService.js?v=` (zero `firebase-init` no HTML); teste `pwa-mobile-menu-session:152` trava import único + `doesNotMatch firebase-init`. **NUNCA importar `firebase-init.js` direto de HTML** — `inject-cachebusters` reescreve `?v` no HTML e recria a divergência.
 - **Verificacao:** `validate:pr 6/6`, `npm test 569/0` (e2e PES flaky ambiental — falha igual em árvore limpa via `git stash`, passa em retry; `navigation timeout 30s` no Puppeteer); `build:hosting` 476 + hosting; `SW APP_VERSION login-perf-v4`.
+
+## 56. Sessao 2026-09-14 — Romaneios/Vendas/Compras: 404 + singleton + sentry (padrão login)
+- **404 `fix-import-errors.js` (`romaneiopct.html:2834`):** tag órfã (arquivo deletado em `1ad46ab`, fora de `hosting-files.json` → Hosting servia `text/html` → `ERR_ABORTED 404` + `MIME type`); shim sem callers (`fixImportErrors/_IMPORT_FIXES_APPLIED` zero match; lógica viva em `database-adapter.js`/`utils.js`). Fix: remover a tag (não restaurar). Ao vivo: zero requests.
+- **Singleton:** `preromaneio:1268`/`romaneiotl:1865`/`romaneiotora:13` importavam `firebase-init.js?v=207b2a` direto + `firebaseService` bare → 2 instâncias; `compat-bridge:42` pinava `?v=21eb` (3ª). Fix: 3 páginas importam de `./firebaseService.js` (re-export estendido com storage/functions/off/push/update/serverTimestamp/query/orderByChild/limitToLast/sendPasswordResetEmail/reauthenticate/httpsCallable/storageRef/uploadBytes/getDownloadURL/getBytes/deleteObject); bridge sem `?v`. Vendas/compras/PCT/PES já estavam corretas (só via service). `client/company/financas/fornecedor/importar/index/species` mantêm padrão antigo (fora do escopo).
+- **Sentry:** `defer` + `dns-prefetch` nas 7 páginas (sem `Sentry.*` inline → seguro); `login.html` modulepreload com hash atual `6285419b7986`.
+- **Ordem build:** `build:hosting` ANTES de `inject-cachebusters` publica `?v` stale — ordem correta é `inject` raiz primeiro e `build` depois; validado `hosting-dist` com `?v=6285419b7986` antes do 2º deploy.
+- **Teste:** `no-anonymous-session` travava import direto em TL → aceita bootstrap canônico (`firebase-init|firebaseService`); `validate:pr 6/6`, `npm test 569/0`; `SW APP_VERSION romaneio-boot-v1`; hosting 476.

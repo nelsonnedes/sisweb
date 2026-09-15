@@ -39,7 +39,7 @@ import {
   signInAnonymously,
   httpsCallable,
   storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject
-} from './firebase-init.js?v=21eb04e409d8';
+} from './firebase-init.js';
 
 // ─── Database Reference Wrapper ──────────────────────────────────────────────
 

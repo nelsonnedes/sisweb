@@ -7,7 +7,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 test('romaneiotl.html não cria sessão anônima e inicia listener realtime só com sessão real', () => {
   const html = read('romaneiotl.html');
 
-  assert.match(html, /from '\.\/firebase-init\.js\?v=[^']+'/);
+  assert.match(html, /from '\.\/(firebase-init\.js|firebaseService\.js)\?v=[^']+'/);
   assert.match(html, /import '\.\/firebase-compat-bridge\.js\?v=[^']+'/);
   assert.doesNotMatch(html, /signInAnonymously/);
   assert.match(html, /auth\.onAuthStateChanged/);
