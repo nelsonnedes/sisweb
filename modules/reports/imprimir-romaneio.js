@@ -343,6 +343,7 @@ window.ImprimirRomaneio = (function() {
             ? window.ToraGeometry.normalizarCamposGeoItem(n)
             : normalizarCamposGeoToraImpressao(n);
         n.custodia = geo.custodia || n.custodia || '';
+        n.autef = geo.autef || n.autef || n.AUTEF || '';
         n.compGeo = geo.compGeo || 0;
         n.x1 = geo.x1 || 0;
         n.x2 = geo.x2 || 0;
@@ -379,6 +380,7 @@ window.ImprimirRomaneio = (function() {
         }
         return {
             custodia: String(pickToraValue(item, ['custodia', 'custody', 'Custodia', 'Custódia']) || '').trim(),
+            autef: String(pickToraValue(item, ['autef', 'AUTEF', 'Autef']) || '').trim(),
             compGeo,
             x1,
             x2,
@@ -450,6 +452,7 @@ window.ImprimirRomaneio = (function() {
             <tr>
                 <th class="col-plaqueta-tora">Plaqueta</th>
                 <th class="col-custodia-tora">Custódia</th>
+                <th class="col-autef-tora">AUTEF</th>
                 <th class="col-especie-tora">Espécie</th>
                 <th class="col-rodo-tora">Rodo</th>
                 <th class="col-comprimento-tora">Comp.</th>
@@ -474,6 +477,7 @@ window.ImprimirRomaneio = (function() {
             <tr>
                 <td class="text-center col-plaqueta-tora">${item.plaqueta || idx + 1}</td>
                 <td class="text-center col-custodia-tora">${item.custodia || '-'}</td>
+                <td class="text-center col-autef-tora">${item.autef || '-'}</td>
                 <td class="text-left col-especie-tora">${item.especie || ''}</td>
                 <td class="text-center col-rodo-tora">${formatarNumero(item.diametro, 0)}</td>
                 <td class="text-center col-comprimento-tora">${formatarNumero(item.comprimento, 0)}</td>
@@ -496,7 +500,7 @@ window.ImprimirRomaneio = (function() {
 
         const totaisLinha = `
             <tr class="total-row">
-                <td colspan="7" class="text-right tora-total-label">Total:</td>
+                <td colspan="8" class="text-right tora-total-label">Total:</td>
                 <td class="text-right col-vb-tora">${formatarVolume(totals.vb)}</td>
                 <td class="text-right col-vd-tora">${formatarVolume(totals.vd)}</td>
                 <td class="text-right col-vl-tora">${formatarVolume(totals.vl)}</td>

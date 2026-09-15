@@ -155,6 +155,7 @@ function normalizarCamposGeoItemTabela(item = {}) {
     }
     return {
         custodia: item.custodia || '',
+        autef: item.autef || item.AUTEF || '',
         compGeo: toNumberBR(item.compGeo),
         x1: toNumberBR(item.x1),
         x2: toNumberBR(item.x2),
@@ -167,6 +168,7 @@ function normalizarCamposGeoItemTabela(item = {}) {
 function lerCamposGeoFormularioTabela() {
     return normalizarCamposGeoItemTabela({
         custodia: document.getElementById('custodia')?.value || '',
+        autef: document.getElementById('autef')?.value || '',
         compGeo: document.getElementById('compGeo')?.value || 0,
         x1: document.getElementById('x1')?.value || 0,
         x2: document.getElementById('x2')?.value || 0,
@@ -660,11 +662,15 @@ function adicionarItem() {
         
         // Criar objeto do item
         const valorTotal = volumeSerraria * preco;
+        // AUTEF é texto livre do campo #autef — explícito APÓS ...geo para que
+        // nenhuma normalização o cubra com '' (bug 2026-09-15: coluna zerava)
+        const autefItem = (document.getElementById('autef')?.value || '').trim();
         const novoItem = {
             id: Date.now() + Math.random(),
             especie: especie,
             plaqueta: plaqueta,
             ...geo,
+            autef: autefItem || geo.autef || '',
             rodo: rodo,
             diametro: rodo,
             comprimento: comprimento,
