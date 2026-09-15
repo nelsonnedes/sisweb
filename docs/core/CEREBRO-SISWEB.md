@@ -588,3 +588,10 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Sentry:** `defer` + `dns-prefetch` nas 7 páginas (sem `Sentry.*` inline → seguro); `login.html` modulepreload com hash atual `6285419b7986`.
 - **Ordem build:** `build:hosting` ANTES de `inject-cachebusters` publica `?v` stale — ordem correta é `inject` raiz primeiro e `build` depois; validado `hosting-dist` com `?v=6285419b7986` antes do 2º deploy.
 - **Teste:** `no-anonymous-session` travava import direto em TL → aceita bootstrap canônico (`firebase-init|firebaseService`); `validate:pr 6/6`, `npm test 569/0`; `SW APP_VERSION romaneio-boot-v1`; hosting 476.
+
+
+## 57. Sessao 2026-09-15 - Emulator RBAC cobre bulk (gate pendente quitado)
+- **Pendencia:** validate:pr sugere test:security:emulator, nunca executado nesta sequencia - executado: 21/21 incluindo novo teste campaignCommissions/_partnerBulkOperations superadmin-only (member falha set+get, superadmin set/get/remove OK).
+- **Armadilha operacional:** ChildProcess.kill do runner deixa java orfao segurando porta 9000 - proxima execucao falha 'port taken'. Workaround: Get-Process java | Stop-Process -Force, aguardar liberacao, rodar via 'cmd /c ... > log' detached (Start-Process cmd.exe) e ler o log por polling. Porta livre confirmada via netstat 127.0.0.1:9000.
+- **Suite unit:** npm test 570 testes, 569 pass, 0 fail, 1 skip (esperado).
+- **Lembrete producao:** rules _partnerBulkOperations validadas no emulator local, mas deploy --only database segue falhando (Failed to get instance details, timeout asia-southeast1) - deploy de rules de producao ainda pendente.

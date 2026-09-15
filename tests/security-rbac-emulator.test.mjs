@@ -628,4 +628,21 @@ if (!EMULATOR_HOST) {
       set(ref(database, `companies/${TENANT_A}/clients/teste1`), { nome: "teste" }),
     );
   });
+
+  test("comissoes de parceiros e bulk ops sao superadmin-only (bulk A+B)", async () => {
+    const member = memberDatabase();
+    const superadmin = superadminDatabase();
+    const commissionPath = "campaignCommissions/par-test/e1";
+    const bulkPath = "_partnerBulkOperations/bulk-test-1";
+    // membro do tenant não lê nem escreve nos nós de campanha
+    await assertFails(set(ref(member, commissionPath), { status: "paid" }));
+    await assertFails(set(ref(member, bulkPath), { at: "2026-09-14" }));
+    await assertFails(get(ref(member, commissionPath)));
+    // superadmin escreve nos dois (backend opera via Admin SDK)
+    await assertSucceeds(set(ref(superadmin, commissionPath), { status: "earned", commission: 10 }));
+    await assertSucceeds(set(ref(superadmin, bulkPath), { partnerId: "par-test" }));
+    await assertSucceeds(get(ref(superadmin, commissionPath)));
+    await assertSucceeds(remove(ref(superadmin, commissionPath)));
+    await assertSucceeds(remove(ref(superadmin, bulkPath)));
+  });
 }
