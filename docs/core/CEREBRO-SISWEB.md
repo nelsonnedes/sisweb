@@ -624,3 +624,10 @@ NavegaÃ§Ã£o real (madeportes27@gmail.com, tenant `1774030248295`): index, finanÃ
 - **Botao:** ancora .btn.btn-modelo-excel (outline verde Excel #107c41, hover inverte) ao lado de Importar, com download + title das colunas. Classe global em layout-comum.css com !important (sistema de botoes usa !important).
 - **gitignore:** ~$* + *.xls/*.xlsx/*.xlsm com excecao !assets/modelos/*.xlsx (modelo oficial versionado; copias de trabalho ignoradas).
 - **Verificado ao vivo:** HEAD 200 + attachment + MIME xlsx correto. Gates 6/6.
+
+## 62. Sessao 2026-09-15 - AUTEF sumia no Atualizar: causa real + sweep completo
+- **CAUSA RAIZ (edit->update):** window.adicionarItem real e o de romaneiotora_tabela.js (carrega DEPOIS de romaneiotora.js e vence o '|| fallback'). Ele lia geo via lerCamposGeoFormularioTabela, que NAO lia #autef e cujo fallback nao tinha autef -> todo add/update gravava autef=''. Reproduzido AO VIVO no browser (item criado com autef='' com campo preenchido).
+- **Fix tabela.js:** lerCamposGeoFormularioTabela le #autef; fallback com autef; novoItem com autef explicito APOS ...geo. Verificado AO VIVO: add preserva, edit preenche campo + botao 'Atualizar Item', update preserva (n=1), celula td[data-label=AUTEF] renderiza valor.
+- **Save tambem blindado:** salvarRomaneio whitelist usa ...normalizarCamposGeoItemTabela (agora com autef) — salvamentos futuros nao stripam.
+- **Sweep outros cantos:** print (imprimir-romaneio.js) NAO tinha coluna AUTEF — adicionada (normalizacao + th/td + colspan total 7->8, conta 8+3+5+1+1=18 fecha). Estoque so le (geo.autef||item.autef||'-'), sem strip. Landing so texto marketing. Filtros da pagina sao display-only. List-modal do manager lista romaneios (sem autef por item) — sem acao.
+- **Gates:** validate:pr 6/6, node --check, inject+build 477 + hosting deployed.
