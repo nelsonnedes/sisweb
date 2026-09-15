@@ -610,3 +610,11 @@ NavegaÃ§Ã£o real (madeportes27@gmail.com, tenant `1774030248295`): index, finanÃ
 - **P1-6 Sentry:** Breadcrumbs com console:false (buildIntegrations filtra default + re-adiciona se S.Breadcrumbs existir; fallback mantem defaults). Console volta a mostrar origem real dos logs.
 - **P2:** fornecedor-vazio log 1x (flag) + listener no window com once (document nunca recebia o evento); logs por campo/focus/Enter atras de window.__SISWEB_DEBUG_BOOT; .info/connected suprime 1o falso-positivo offline; fallback local 5s pula quando _FIREBASE_READY/conectado; sistemaRomaneiosPronto com guard _SISTEMA_PRONTO_DISPARADO nos 2 dispatchers (inline + coordenador).
 - **Gates:** validate:pr 6/6 (unit 80/80 no escopo PR + suite integral 570 sem fail), inject+build 476, hosting deployed. hosting-dist validado com lazy+dedup no ar.
+
+## 60. Sessao 2026-09-15 - Import AUTEF + 2a leva de warnings do Tora
+- **BUG AUTEF (causa raiz):** import-v4 nao mapeava a coluna — colIndices sem autef, tabela/save ja suportavam item.autef. Modelo tem AUTEF na coluna C (texto '274862/2025 AUTEF - POA'). Fix: detectar (autef|autex|autorizacao de exploracao), extrair como string SEMPRE (nunca parseNum — parseFloat corromperia p/ 274862), item.autef DEPOIS do spread ...geo (senao geo.autef='' cobria).
+- **Teste real:** harness Node com a matriz do Modelo_Romaneio_Tora_import.xlsx (10 linhas): header autef:2, 9/9 itens com autef exato, demais colunas intactas (AUTEF-OK).
+- **Sentry ainda wrapava console:** bundle local v10 NAO exporta S.Breadcrumbs (1 ocorrencia interna) -> fallback devolvia defaults com console. Fix: filtrar SEMPRE, re-adicionar so se construtor existir. Harness: integrations [GlobalHandlers,Dedupe], sem Breadcrumbs, captura de erros intacta. (Nota: installHook.js no log do usuario e extensao do navegador dele — React DevTools — tambem faz wrap; nao e nosso codigo.)
+- **Candidatos vazios ruidosos:** warns agora dizem QUAL path + tentados; throttle 1x por path por sessao (depois so debug com __SISWEB_DEBUG_BOOT).
+- **fetchFornecedores 12x:** cache memoria TTL 60s + dedupe de voo concorrente; invalidateFornecedoresCache() nos 3 pontos de escrita (save firebase, save fallback, excluir).
+- **Gates:** validate:pr 6/6, node --check nos 4 alterados, inject+build+hosting deployed, hosting-dist com autef no ar.

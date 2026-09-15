@@ -1793,9 +1793,18 @@ async function loadFromFirebaseCore(path) {
                     warnPermissionDeniedThrottled(candidate, e);
                     continue;
                 }
-                console.warn('⚠️ Erro ao tentar caminho candidato do Firebase');
+                console.warn('⚠️ Erro ao tentar caminho candidato do Firebase:', path, '→', candidate, '-', (e && e.message) || e);
             }
         }
+
+        // Throttle: caminhos vazios (ex.: coleções ainda não criadas no tenant)
+        // são sondados a cada sync — avisar 1x por sessão, depois só debug.
+        let _emptyWarned = false;
+        try {
+            if (!window.__siswebEmptyWarned) window.__siswebEmptyWarned = {};
+            _emptyWarned = !!window.__siswebEmptyWarned[path];
+            window.__siswebEmptyWarned[path] = true;
+        } catch (_) {}
         
         // Caminhos opcionais: podem estar vazios sem representar erro de dados
         // Inclui aliases e variantes que podem ser passados por diferentes módulos
@@ -1819,8 +1828,13 @@ async function loadFromFirebaseCore(path) {
         if (hadPermissionDenied) {
             return { success: true, data: null, source: 'firebase', permissionDenied: true };
         }
-        // ⚠️ Aviso enriquecido: inclui os caminhos candidatos tentados para facilitar diagnóstico
-        console.warn('⚠️ Nenhum dos caminhos candidatos retornou dados');
+        // ⚠️ Aviso enriquecido: inclui o caminho lógico + candidatos tentados
+        // para facilitar diagnóstico (antes não dizia QUAL coleção estava vazia)
+        if (_emptyWarned) {
+            if (window.__SISWEB_DEBUG_BOOT) console.debug('ℹ️ Caminho segue vazio:', path, orderedCandidates);
+        } else {
+            console.warn('⚠️ Nenhum dos caminhos candidatos retornou dados:', path, '— tentados:', orderedCandidates.join(', '));
+        }
         return { success: true, data: null, source: 'firebase' };
 
         

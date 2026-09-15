@@ -198,12 +198,15 @@
   function buildIntegrations(defaults) {
     try {
       var list = Array.isArray(defaults) ? defaults.slice() : [];
+      // Sempre remover o Breadcrumbs padrao (console:true faz wrap de console.*
+      // e o DevTools atribui todos os logs ao bundle do Sentry).
       var semConsole = list.filter(function (i) { return !i || i.name !== 'Breadcrumbs'; });
+      // Re-adicionar SEM console apenas se o construtor existir no bundle
+      // (no bundle local v10 ele NAO e exportado — verificado em 2026-09-15).
       if (S && typeof S.Breadcrumbs === 'function') {
         semConsole.push(new S.Breadcrumbs({ console: false, dom: true, fetch: true, xhr: true, history: true }));
-        return semConsole;
       }
-      return list;
+      return semConsole;
     } catch (_) {
       return defaults;
     }

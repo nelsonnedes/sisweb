@@ -132,8 +132,40 @@ function normalizeFornecedores(data) {
  *
  * IMPORTANTE: fornecedores NÃO são clientes. Não misturar caminhos.
  */
-async function fetchFornecedores() {
+async function fetchFornecedores(options) {
+    // Cache em memória (TTL 60s) + dedupe de voos concorrentes: a página Tora
+    // chamava 12x em sequência (autocomplete/modal/import/dedup). Stale-while-
+    // revalidate simples; escrita invalida via invalidateFornecedoresCache().
+    const opts = options || {};
     const basePath = getFornecedorBasePath();
+    const now = Date.now();
+    if (!opts.force && _fornCache.data && _fornCache.path === basePath &&
+        (now - _fornCache.at) < FORN_CACHE_TTL_MS) {
+        return Array.isArray(_fornCache.data) ? _fornCache.data.slice() : _fornCache.data;
+    }
+    if (!opts.force && _fornCache.promise && _fornCache.path === basePath) {
+        return _fornCache.promise;
+    }
+    _fornCache.path = basePath;
+    _fornCache.promise = _fetchFornecedoresFresh(basePath);
+    try {
+        const list = await _fornCache.promise;
+        _fornCache = { at: Date.now(), promise: null, data: list, path: basePath };
+        return list;
+    } catch (e) {
+        _fornCache.promise = null;
+        throw e;
+    }
+}
+
+const FORN_CACHE_TTL_MS = 60000;
+let _fornCache = { at: 0, promise: null, data: null, path: '' };
+function invalidateFornecedoresCache() {
+    _fornCache = { at: 0, promise: null, data: null, path: '' };
+}
+try { window.invalidateFornecedoresCache = invalidateFornecedoresCache; } catch (_) {}
+
+async function _fetchFornecedoresFresh(basePath) {
     console.log(`🔍 [fetchFornecedores] Buscando em: ${basePath}`);
 
     // 1) Firebase RTDB direto (mais confiável, bypassa aliases)
@@ -1150,6 +1182,7 @@ async function saveClient(event) {
             if (savedOk) {
                 const finalFornecedor = { ...fornecedorData, id: savedId };
                 console.log("✅ Fornecedor salvo com sucesso:", finalFornecedor.nome || finalFornecedor.name);
+                try { invalidateFornecedoresCache(); } catch (_) {}
 
                 window.editingClientId = null;
                 window.editingFornecedorId = null;
@@ -1214,6 +1247,7 @@ async function saveClient(event) {
             await saveData(basePath, fornecedorList);
 
             console.log("✅ Fornecedor salvo via fallback");
+            try { invalidateFornecedoresCache(); } catch (_) {}
 
             const finalFornecedor = { ...fornecedorData, id: savedId };
 
@@ -1489,6 +1523,7 @@ async function excluirFornecedor(fornecedorId) {
                 const updatedList = currentList.filter(f => String(f.id) !== String(fornecedorId));
                 await saveData(basePath, updatedList);
                 await saveData('fornecedores', updatedList);
+                try { invalidateFornecedoresCache(); } catch (_) {}
             }
         } catch (lsErr) {
             console.warn("⚠️ Erro ao atualizar cache local:", lsErr);

@@ -124,6 +124,7 @@ function processarMatrizImportada(matrix) {
         especie: -1,
         plaqueta: -1,
         custodia: -1,
+        autef: -1,
         rodo: -1,
         comprimento: -1,
         oco1: -1,
@@ -149,6 +150,7 @@ function processarMatrizImportada(matrix) {
             if (val.includes('especie') || val.includes('descricao')) colIndices.especie = colIndex;
             else if (val.includes('plaqueta') || val.includes('placa') || val.includes('etiqueta')) colIndices.plaqueta = colIndex;
             else if (val.includes('custodia') || val.includes('custody')) colIndices.custodia = colIndex;
+            else if (val.includes('autef') || val.includes('autex') || val.includes('autorizacao de exploracao')) colIndices.autef = colIndex;
             else if ((val.includes('comp') && val.includes('geo')) || val.includes('comprimento geometrico')) colIndices.compGeo = colIndex;
             else if (val === 'x1' || val.includes('x1')) colIndices.x1 = colIndex;
             else if (val === 'x2' || val.includes('x2')) colIndices.x2 = colIndex;
@@ -169,7 +171,7 @@ function processarMatrizImportada(matrix) {
         }
         
         // Resetar para próxima tentativa se não encontrou o suficiente
-        colIndices = { especie: -1, plaqueta: -1, custodia: -1, rodo: -1, comprimento: -1, oco1: -1, oco2: -1, preco: -1, compGeo: -1, x1: -1, x2: -1, x3: -1, x4: -1, volumeGeo: -1 };
+        colIndices = { especie: -1, plaqueta: -1, custodia: -1, autef: -1, rodo: -1, comprimento: -1, oco1: -1, oco2: -1, preco: -1, compGeo: -1, x1: -1, x2: -1, x3: -1, x4: -1, volumeGeo: -1 };
     }
 
     if (headerRowIndex === -1) {
@@ -214,6 +216,9 @@ function processarMatrizImportada(matrix) {
 
         const plaqueta = colIndices.plaqueta !== -1 ? row[colIndices.plaqueta] : '';
         const custodia = colIndices.custodia !== -1 ? row[colIndices.custodia] : '';
+        // AUTEF é texto livre (ex.: "274862/2025 AUTEF - POA") — NUNCA parse numérico
+        const autefRaw = colIndices.autef !== -1 ? row[colIndices.autef] : '';
+        const autef = (autefRaw === null || autefRaw === undefined) ? '' : String(autefRaw).trim();
         const rodo = colIndices.rodo !== -1 ? parseNumV4(row[colIndices.rodo]) : 0;
         const comprimento = colIndices.comprimento !== -1 ? parseNumV4(row[colIndices.comprimento]) : 0;
         const oco1 = colIndices.oco1 !== -1 ? parseNumV4(row[colIndices.oco1]) : 0;
@@ -310,6 +315,9 @@ function processarMatrizImportada(matrix) {
             especieId: especieId,
             plaqueta: String(plaqueta || ''),
             ...geo,
+            // DEPOIS do spread: geo não recebe autef no import (sem campo no
+            // normalizador) e sobrescreveria com '' — garantir o valor aqui
+            autef: autef,
             comprimento: comprimento,
             diametro: rodo, // manter compatibilidade
             rodo: rodo,
