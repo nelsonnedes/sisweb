@@ -95,3 +95,10 @@ logs-*.md
 
 # Config local do agente (opencode) — não versional
 /opencode.json
+
+# Planilhas e travas do Excel (modelo oficial versionado em assets/modelos/)
+~$*
+*.xls
+*.xlsx
+*.xlsm
+!assets/modelos/*.xlsx

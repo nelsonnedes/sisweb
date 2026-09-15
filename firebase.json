@@ -227,6 +227,15 @@
         ]
       },
       {
+        "source": "assets/modelos/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+          { "key": "Pragma", "value": "no-cache" },
+          { "key": "Expires", "value": "0" },
+          { "key": "Content-Disposition", "value": "attachment" }
+        ]
+      },
+      {
         "source": "@(robots.txt|sitemap.xml)",
         "headers": [
           { "key": "Cache-Control", "value": "public, max-age=86400" }
