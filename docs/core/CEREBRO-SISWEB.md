@@ -4,7 +4,7 @@
 > sessão (Codex, opencode, deepseek) retomar contexto sem regressões e sem perder
 > o "porquê" das decisões já tomadas. SEMPRE consultar antes de implementar.
 >
-> Atualizado em: 2026-09-14 (Comissões bulk A+B + portal/topbar/iPhone)
+> Atualizado em: 2026-09-14 (Login P2 singleton + token gating + SW networkFirst)
 
 ---
 
@@ -574,3 +574,10 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 ## 54. Sessao 2026-09-14 — Comissões parceiros: pagamento A (harden) + B (bulk) sem regressão
 - **A — Harden 1-a-1:** `markCommissionPaid` `get+update` → `transaction` `earned→paid` + `totalPaid` via `transaction` + `audit`; frontend `submitCommissionPaidModal` com `confirmBtn.disabled` + `aria-busy` + `finally`; `validate:pr 6/6` (569 pass) sem tocar `finance/storage`.
 - **B — Bulk `≤100`:** novo `bulkMarkCommissionPaid` `partner-functions.js:1147` (`partnerId, entryIds dedupe, note 280, operationId fingerPrint, idempotência `_partnerBulkOperations/{opId}`, validação todas `earned` sem parcial, `ref().update` multi-path atômico `status/paidAt/paidBy/note` + `totalPaid` + `audit` + `_partnerBulkOperations`); Rules `_partnerBulkOperations superadmin-only` `database.rules.json:401` + `firebase-rules-production.json:162`; `firebaseService.js:3260` wrapper + `requiresAuthenticatedCallable`; `admin.html` bulk bar `partnerCommissionsBulkBar` + header checkbox `partnerCommissionsSelectAll` + modal `commissionBulkPaidModal` `BulkSummary/BulkNote/BulkCount`; `admin-main.js:1929` checkbox `data-comm-check` + `updateBulkBar` + `open/close/submitBulk` com `operationId bulk_Date.now` + `totalCommission`; `ADMIN_ASSET_VERSION 551ae6a7fe3e`; `SW bump commission-bulk-v1`; `validate:pr 6/6`; hosting 476; functions `markCommissionPaid` + `bulkMarkCommissionPaid` deploy unitário (evita quota 20 vCPU).
+
+## 55. Sessao 2026-09-14 — Login rápido P0-P2 sem regressão (12 logs → boot limpo)
+- **Causas:** `firebase-init 2×` (`login.html ?v=9d73fc` vs `firebaseService.js` sem `?v` — e `firebaseService.js:22` ainda pinava `?v=9d73fc` stale, `compat-bridge ?v=21eb` terceira instância); Sentry sync `+300ms`; `setPersistence SESSION` eager (IndexedDB); `.info/connected` no login (`⚠️ offline`); `isSuperAdminSession` com `syncMyAdminClaims` + `forceRefresh` p/ todo usuário.
+- **Fix P0:** `login.html` preconnect rtdb/googleapis/dns-prefetch + sentry `defer`; guard `firebaseService.js:120` pula observer/monitoramento em `login.html`; `ensureAuthPersistence()` lazy só no `handleLogin` submit (SESSION mantida).
+- **Fix P2:** `firebase-init.js:108` eager só fora de `login.html` (idle p/ login) + export `ensureInitialized`; `login.html` chama `ensureInitialized()` no módulo; `isSuperAdminSession(opts)` com `allowClaimSync` (login pula sync p/ comuns; `hasAdminPageAccess` passa `true`); `sw.js` `networkFirst` p/ `firebase-init/auth/firebaseService/compat-bridge`; `modulepreload` firebaseService após diag.
+- **Fix singleton durável:** `firebaseService.js` re-exporta `ref/set/get/remove/child/onValue/getAuth/.../ensureInitialized` (`app/auth/db` já no bloco principal); `login.html` importa TUDO de `firebaseService.js?v=` (zero `firebase-init` no HTML); teste `pwa-mobile-menu-session:152` trava import único + `doesNotMatch firebase-init`. **NUNCA importar `firebase-init.js` direto de HTML** — `inject-cachebusters` reescreve `?v` no HTML e recria a divergência.
+- **Verificacao:** `validate:pr 6/6`, `npm test 569/0` (e2e PES flaky ambiental — falha igual em árvore limpa via `git stash`, passa em retry; `navigation timeout 30s` no Puppeteer); `build:hosting` 476 + hosting; `SW APP_VERSION login-perf-v4`.
