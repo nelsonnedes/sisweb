@@ -397,22 +397,40 @@ class SpeciesManager {
             const MAX_ATTEMPTS = 50; 
             const RETRY_INTERVAL = 200;
 
-            // Esperar pelo Firebase estar pronto antes de tentar carregar
+            // Esperar pelo Firebase estar pronto antes de tentar carregar.
+            // Se o store compartilhado existe, ele já aguarda o contexto
+            // internamente (waitForContext) — pular o polling local.
+            const useSharedStore = !!(window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.getAll === 'function');
             let firebaseReadyAttempts = 0;
             
-            while ((!window.firebaseService || (!window.firebaseService.db && !window.firebaseService.database && !(window.firebaseService.dbService && typeof window.firebaseService.dbService.getDatabase === 'function')) || typeof window.firebaseService.loadFromFirebase !== 'function') && firebaseReadyAttempts < MAX_ATTEMPTS) {
+            while (!useSharedStore && ((!window.firebaseService || (!window.firebaseService.db && !window.firebaseService.database && !(window.firebaseService.dbService && typeof window.firebaseService.dbService.getDatabase === 'function')) || typeof window.firebaseService.loadFromFirebase !== 'function') && firebaseReadyAttempts < MAX_ATTEMPTS)) {
                 if (firebaseReadyAttempts % 10 === 0) console.log(`⏳ Aguardando FirebaseService... Tentativa ${firebaseReadyAttempts + 1}/${MAX_ATTEMPTS}`);
                 await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL));
                 firebaseReadyAttempts++;
             }
 
             const firebaseReady = (window.firebaseService && (window.firebaseService.db || window.firebaseService.database || (window.firebaseService.dbService && typeof window.firebaseService.dbService.getDatabase === 'function')));
-            if (!firebaseReady) {
+            if (!firebaseReady && !useSharedStore) {
                 console.warn(`⚠️ FirebaseService não pronto após ${MAX_ATTEMPTS} tentativas. Usando fallback.`);
+            }
+
+            // 1b. Via store compartilhado PRIMEIRO (carga única: o store dedupe
+            // voos concorrentes via loadingPromise + cache TTL — evita 2º/3º
+            // read remoto quando carregarEspecies() da página corre em paralelo)
+            if (allSpecies.length === 0 && window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.getAll === 'function') {
+                try {
+                    const stored = await window.SiswebSpeciesStore.getAll({ waitRemote: true, timeoutMs: 8000 });
+                    if (stored && stored.length > 0) {
+                        allSpecies = stored;
+                        console.log(`✅ ${allSpecies.length} espécies via SiswebSpeciesStore (carga única).`);
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Falha no store compartilhado de espécies:', e && e.message);
+                }
             }
             
             // 2. Tentar Firebase - verificar ambas as tabelas para resolver inconsistência
-            if (firebaseReady) {
+            if (firebaseReady && allSpecies.length === 0) {
                 try {
                     // Tentar usar DatabaseAdapter primeiro (melhor cache)
                     if (window.databaseAdapter && typeof window.databaseAdapter.loadData === 'function') {

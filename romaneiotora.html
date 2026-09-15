@@ -10,7 +10,7 @@
 
     <script type="module">
 
-        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebaseService.js?v=6285419b7986';
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebaseService.js?v=732736b0bd7b';
 import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     </script><!-- compat shim do singleton (window.firebase para módulos antigos) --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -26,7 +26,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <link rel="dns-prefetch" href="https://o4511662240432128.ingest.us.sentry.io">
     <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
-    <script defer src="sentry-init.js?v=e4dadfaea86a"></script>
+    <script defer src="sentry-init.js?v=6765c488e3bc"></script>
 <script>
         (function() {
             function isExtErr(m){if(!m)return false;var s=typeof m==='string'?m:(m.message||String(m));s=s.toLowerCase();return s.includes('message channel closed')||s.includes('extension context invalidated')||s.includes('chrome-extension://')||s.includes('moz-extension://')||s.includes('safari-extension://');}
@@ -1986,12 +1986,12 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="menu-component.js?v=809a6acd5085"></script>
     
     <!-- Scripts de Correção - ORDEM REORGANIZADA -->
-    <script src="correcao-interface-database.js?v=44e2d6290888"></script>
+    <script src="correcao-interface-database.js?v=151ac35c2de4"></script>
 
     <!-- Serviço Firebase canônico: uma única instância compartilhada por toda a página. -->
     <script>
         window.__siswebFirebaseServiceReady = (async function () {
-            const firebaseSvc = await import('./firebaseService.js?v=6285419b7986');
+            const firebaseSvc = await import('./firebaseService.js?v=732736b0bd7b');
             window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
             window.FirebaseService = window.firebaseService;
             return window.firebaseService;
@@ -2002,7 +2002,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="species-utils.js?v=1eae09b2ccc7"></script>
     <script src="species-store.js?v=f6f5cff9d5aa"></script>
     <script src="species-modal-standard.js?v=791d267e95fa"></script>
-    <script src="species-manager.js?v=87174b18632a"></script>
+    <script src="species-manager.js?v=9d5e4cc298f8"></script>
     
     <!-- Script de fornecedor modals -->
     <script src="fornecedor-modals.js?v=ea27190b352d"></script>
@@ -2025,10 +2025,10 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="romaneio-print-config.js?v=0c4709b882a7"></script>
     <script src="modules/core/romaneio-list-columns.js?v=4a678c769887" data-page="tora" data-target="romaneioListTable"></script>
     <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
-    <script src="coordenador-inicializacao.js?v=1344dd426230"></script>
-    <script src="romaneiotora.js?v=607245bdf19a"></script>
+    <script src="coordenador-inicializacao.js?v=013c48db2ca9"></script>
+    <script src="romaneiotora.js?v=6636559512ed"></script>
     <script src="romaneiotora_tabela.js?v=f0369b8dc183"></script>
-    <script src="romaneio-manager.js?v=3d10c57b8d86"></script>
+    <script src="romaneio-manager.js?v=540de95bd179"></script>
     <script src="romaneiotora-import-v4.js?v=544705593380"></script>
     
     <!-- Scripts de correções -->
@@ -2198,14 +2198,18 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     // Erro silencioso
                 }
                 
-                // 7. Disparar evento de sistema pronto
-                window.dispatchEvent(new CustomEvent('sistemaRomaneiosPronto', {
+                // 7. Disparar evento de sistema pronto (1x — coordenador também
+                // dispara; guard evita boot duplo nos listeners)
+                if (!window._SISTEMA_PRONTO_DISPARADO) {
+                    window._SISTEMA_PRONTO_DISPARADO = true;
+                    window.dispatchEvent(new CustomEvent('sistemaRomaneiosPronto', {
                     detail: { 
                         timestamp: new Date().toISOString(),
                         firebase: !!window.firebase,
                         adapter: !!window.databaseAdapter
                     }
-                }));
+                    }));
+                }
                 
             } catch (error) {
                 // Mesmo com erro, marcar como tentativa feita
@@ -2264,7 +2268,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                         handleEnterNavigation(event, campoId, index, camposSequencia);
                     });
                     
-                    console.log(`✅ Listener configurado para campo: ${campoId}`);
+                    if (window.__SISWEB_DEBUG_BOOT) console.log(`✅ Listener configurado para campo: ${campoId}`);
                 } else {
                     console.warn(`⚠️ Campo não encontrado: ${campoId}`);
                 }
@@ -2279,7 +2283,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             if (event.key === 'Enter' || event.keyCode === 13) {
                 event.preventDefault(); // Evitar comportamento padrão
                 
-                console.log(`🎯 Enter pressionado no campo: ${campoAtual}`);
+                if (window.__SISWEB_DEBUG_BOOT) console.log(`🎯 Enter pressionado no campo: ${campoAtual}`);
                 
                 // ✅ VERIFICAR SE É O ÚLTIMO CAMPO (x4)
                 if (campoAtual === 'x4') {
@@ -2407,14 +2411,14 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     // ✅ FEEDBACK VISUAL AO FOCAR
                     campo.addEventListener('focus', function() {
                         this.style.borderLeft = '3px solid #007bff';
-                        console.log(`🎯 Campo focado: ${campoId}`);
+                        if (window.__SISWEB_DEBUG_BOOT) console.log(`🎯 Campo focado: ${campoId}`);
                     });
                     
                     campo.addEventListener('blur', function() {
                         this.style.borderLeft = '3px solid transparent';
                     });
                     
-                    console.log(`✅ Melhorias aplicadas ao campo: ${campoId}`);
+                    if (window.__SISWEB_DEBUG_BOOT) console.log(`✅ Melhorias aplicadas ao campo: ${campoId}`);
                 }
             });
             
@@ -2534,7 +2538,11 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 window.clienteSelecionado = null;
                 window.selectedFornecedor = null;
                 
-                console.log("✅ Campo fornecedor garantidamente vazio na inicialização");
+                // P2-7: logar 1x (antes: ~13 linhas idênticas por boot)
+                if (!window._FORN_VAZIO_LOGGED) {
+                    window._FORN_VAZIO_LOGGED = true;
+                    console.log("✅ Campo fornecedor garantidamente vazio na inicialização");
+                }
             }
         }
         
@@ -2548,8 +2556,8 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             setTimeout(garantirCampoFornecedorVazio, 100);
         }
         
-        // Executar após sistema estar pronto
-        document.addEventListener('sistemaRomaneiosPronto', garantirCampoFornecedorVazio);
+        // Executar após sistema estar pronto (1x — no window, onde o evento é disparado)
+        window.addEventListener('sistemaRomaneiosPronto', garantirCampoFornecedorVazio, { once: true });
         
         // Executar periodicamente nos primeiros segundos para garantir
         let tentativas = 0;
@@ -2566,18 +2574,49 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     window.garantirCampoFornecedorVazio = garantirCampoFornecedorVazio;
 </script>
 
-<!-- ✅ EXECUTAR DEDUPLICAÇÃO DE FORNECEDORES UMA ÚNICA VEZ -->
+<!-- ✅ EXECUTAR DEDUPLICAÇÃO DE FORNECEDORES UMA ÚNICA VEZ (após Firebase pronto) -->
 <script>
-(async function() {
-    try {
-        if (!window._DEDUP_FORNECEDORES_RUN && typeof window.deduplicarFornecedores === 'function') {
-            window._DEDUP_FORNECEDORES_RUN = true;
-            const result = await window.deduplicarFornecedores(true);
-            console.log('✅ Deduplicação de fornecedores executada:', result);
-        }
-    } catch (e) {
-        console.warn('⚠️ Deduplicação de fornecedores falhou:', e);
+(function() {
+    if (window._DEDUP_FORNECEDORES_SCHEDULED) return;
+    window._DEDUP_FORNECEDORES_SCHEDULED = true;
+    var MAX_WAIT_MS = 45000;
+    var POLL_MS = 500;
+    var waited = 0;
+    function firebasePronto() {
+        return !!(window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function' && window._FIREBASE_READY !== false && window.firebaseConnected !== false);
     }
+    async function executar() {
+        if (window._DEDUP_FORNECEDORES_RUN) return;
+        if (typeof window.deduplicarFornecedores !== 'function') {
+            console.warn('⚠️ Deduplicação de fornecedores pulada: função indisponível');
+            return;
+        }
+        window._DEDUP_FORNECEDORES_RUN = true;
+        try {
+            const result = await window.deduplicarFornecedores(true);
+            if (result && result.success) {
+                console.log('✅ Deduplicação de fornecedores executada:', result);
+            } else {
+                console.warn('⚠️ Deduplicação de fornecedores sem efeito:', result);
+            }
+        } catch (e) {
+            console.warn('⚠️ Deduplicação de fornecedores falhou:', e);
+        }
+    }
+    // Via evento (caminho rápido, sem polling) + fallback por polling com teto
+    window.addEventListener('sistemaRomaneiosPronto', executar, { once: true });
+    var intervalo = setInterval(() => {
+        if (window._DEDUP_FORNECEDORES_RUN) { clearInterval(intervalo); return; }
+        waited += POLL_MS;
+        if (firebasePronto() || waited >= MAX_WAIT_MS) {
+            clearInterval(intervalo);
+            if (!firebasePronto()) {
+                console.warn('⚠️ Deduplicação de fornecedores pulada: Firebase não ficou pronto em 45s');
+                return;
+            }
+            executar();
+        }
+    }, POLL_MS);
 })();
 </script>
     <!-- ✅ VALIDAÇÃO AUTOMÁTICA: FORÇAR ATUALIZAÇÃO E ABRIR LISTA (usar ?autoValidate=1) -->

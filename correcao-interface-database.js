@@ -39,7 +39,9 @@ function waitForDatabaseAdapter() {
                 return;
             }
             
-            console.log(`⏳ Aguardando DatabaseAdapter... (tentativa ${attempts}/${maxAttempts})`);
+            if (attempts === 1 || attempts % 10 === 0) {
+                console.log(`⏳ Aguardando DatabaseAdapter... (tentativa ${attempts}/${maxAttempts})`);
+            }
             setTimeout(checkAdapter, 500);
         };
         
@@ -361,16 +363,18 @@ async function executarCorrecao() {
     console.log('🚀 Iniciando correção da interface DatabaseAdapter...');
     
     try {
-        // Aguardar Firebase estar pronto primeiro
+        // Aguardar Firebase estar pronto primeiro (orientado a evento + backstop)
         if (window.firebaseService && !window._FIREBASE_READY) {
             console.log('⏳ Aguardando Firebase estar pronto antes de corrigir interface...');
-            
-            // Aguardar até 60 segundos pelo Firebase
-            let tentativasFirebase = 120; // 60 segundos
-            while (!window._FIREBASE_READY && tentativasFirebase > 0) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                tentativasFirebase--;
-            }
+
+            await new Promise((resolve) => {
+                if (window._FIREBASE_READY) { resolve(); return; }
+                const onPronto = () => { window.removeEventListener('sistemaRomaneiosPronto', onPronto); window.removeEventListener('firebasePronto', onPronto); resolve(); };
+                window.addEventListener('sistemaRomaneiosPronto', onPronto, { once: true });
+                window.addEventListener('firebasePronto', onPronto, { once: true });
+                // Backstop de 60s (antes: polling cego 120x500ms)
+                setTimeout(onPronto, 60000);
+            });
             
             if (!window._FIREBASE_READY) {
                 console.warn('⚠️ Firebase não ficou pronto, mas continuando com correção...');

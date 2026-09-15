@@ -230,15 +230,19 @@ function setupConnectionMonitoring() {
     }
 
     // Fallback: monitoramento direto do RTDB
+    // P2-9: o primeiro disparo de .info/connected é falso-positivo de "offline"
+    // (o SDK ainda está conectando) — não poluir o console com ele.
+    let _connectionPrimed = false;
     try {
         const connectedRef = ref(db, '.info/connected');
         onValue(connectedRef, (snap) => {
             const isConnected = snap.val() === true;
             if (isConnected) {
                 console.log("✅ Firebase conectado com sucesso!");
-            } else {
+            } else if (_connectionPrimed) {
                 console.log("⚠️ Firebase offline");
             }
+            _connectionPrimed = true;
             notifyConnectionChange(isConnected, 'rtdb-info-connected');
         }, (error) => {
             console.error("❌ Erro no monitoramento de conexão:", error && error.code ? error.code : 'unknown');
@@ -1673,6 +1677,28 @@ async function loadFromFirebaseCore(path) {
 
         const deduplicatedCandidates = finalCandidates.filter((item, index, arr) => item && arr.indexOf(item) === index);
         console.log('🔍 Caminhos candidatos preparados para leitura');
+
+        // P1-3: prioriza o caminho resolvido em leitura anterior (evita sondagem
+        // sequencial com N round-trips; apenas reordena — semântica preservada).
+        const _resolvedCacheKey = `${tenantId || 'no-tenant'}::${path}`;
+        const _rememberResolvedPath = (candidate) => {
+            try {
+                if (!window.__siswebResolvedPaths) window.__siswebResolvedPaths = {};
+                window.__siswebResolvedPaths[_resolvedCacheKey] = candidate;
+                if (window.sessionStorage) {
+                    try { window.sessionStorage.setItem('sisweb:resolvedPath:' + _resolvedCacheKey, candidate); } catch (_) {}
+                }
+            } catch (_) {}
+        };
+        let _cachedResolved = null;
+        try {
+            _cachedResolved = (window.__siswebResolvedPaths && window.__siswebResolvedPaths[_resolvedCacheKey])
+                || (window.sessionStorage ? window.sessionStorage.getItem('sisweb:resolvedPath:' + _resolvedCacheKey) : null);
+        } catch (_) {}
+        let orderedCandidates = deduplicatedCandidates;
+        if (_cachedResolved && deduplicatedCandidates.includes(_cachedResolved)) {
+            orderedCandidates = [_cachedResolved, ...deduplicatedCandidates.filter((c) => c !== _cachedResolved)];
+        }
         
         // Verificar se Firebase está operacional
         const status = isFirebaseOperational();
@@ -1683,7 +1709,7 @@ async function loadFromFirebaseCore(path) {
         // Carregar dados do Firebase tentando candidatos em ordem
         const dbRef = ref(db);
         let hadPermissionDenied = false;
-        for (const candidate of deduplicatedCandidates) {
+        for (const candidate of orderedCandidates) {
             try {
                 tenantAuditLog('READ', path, candidate, 'firebaseService');
                 // ✅ PROTEÇÃO CONTRA STACK OVERFLOW / RECURSION
@@ -1745,6 +1771,7 @@ async function loadFromFirebaseCore(path) {
 
                 if (exists) {
                     console.log('✅ Dados carregados do Firebase');
+                    try { _rememberResolvedPath(candidate); } catch (_) {}
                     return { success: true, data, source: 'firebase', path: candidate };
                 } else {
                     console.log('ℹ️ Nenhum dado encontrado no caminho consultado');
@@ -1758,6 +1785,7 @@ async function loadFromFirebaseCore(path) {
                             authPerfRead(candidate, 'physical');
                             const retried = await get(child(dbRef, candidate));
                             if (retried.exists()) {
+                                try { _rememberResolvedPath(candidate); } catch (_) {}
                                 return { success: true, data: retried.val(), source: 'firebase', path: candidate };
                             }
                         } catch (_) {}

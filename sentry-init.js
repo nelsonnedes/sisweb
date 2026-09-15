@@ -192,6 +192,23 @@
   }
 
   // ─── Init ──────────────────────────────────────────────────────────────────
+  // NOTA (2026-09-15): o Breadcrumbs padrão faz wrap de console.* e o DevTools
+  // passa a atribuir TODOS os logs ao bundle do Sentry — cegando diagnósticos.
+  // Desligamos só o breadcrumb de console (erros continuam capturados).
+  function buildIntegrations(defaults) {
+    try {
+      var list = Array.isArray(defaults) ? defaults.slice() : [];
+      var semConsole = list.filter(function (i) { return !i || i.name !== 'Breadcrumbs'; });
+      if (S && typeof S.Breadcrumbs === 'function') {
+        semConsole.push(new S.Breadcrumbs({ console: false, dom: true, fetch: true, xhr: true, history: true }));
+        return semConsole;
+      }
+      return list;
+    } catch (_) {
+      return defaults;
+    }
+  }
+
   S.init({
     dsn: dsn,
     release: window.__SISWEB_RELEASE__ || 'sisweb-local',
@@ -202,7 +219,8 @@
     beforeSend: beforeSend,
     ignoreErrors: IGNORED_ERRORS,
     denyUrls: EXTENSION_PATTERNS,
-    maxBreadcrumbs: 40
+    maxBreadcrumbs: 40,
+    integrations: buildIntegrations
   });
 
   try {

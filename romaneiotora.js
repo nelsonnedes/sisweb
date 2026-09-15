@@ -2055,10 +2055,17 @@ if (!window.firebaseReconnectListenerAdded) {
     window.firebaseReconnectListenerAdded = true;
 }
 
-// Fallback: inicializar após DOMContentLoaded se Firebase não estiver disponível
+// Fallback: inicializar após DOMContentLoaded se Firebase não estiver disponível.
+// P2-10: se o caminho Firebase já assumiu o boot (_FIREBASE_READY/conectado),
+// pular o modo local para não carregar espécies/fornecedores em duplicidade.
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(async function() {
         if (!syncInitialized) {
+            if (window._FIREBASE_READY === true || window.firebaseConnected === true || window._FIREBASE_CONNECTED === true) {
+                if (window.__SISWEB_DEBUG_BOOT) console.log("ℹ️ Boot Firebase ativo — fallback local pulado");
+                syncInitialized = true;
+                return;
+            }
             console.log("📱 Inicializando sem Firebase (modo local apenas)");
             if (typeof carregarFornecedores === 'function') carregarFornecedores();
             carregarEspecies();

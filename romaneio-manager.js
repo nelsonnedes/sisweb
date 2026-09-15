@@ -824,20 +824,35 @@ class RomaneioManager {
     setupRealtimeRomaneios() { /* Implementação simplificada */ }
 }
 
-// Instâncias Globais
-window.romaneioToraManager = new RomaneioManager('tora');
-window.romaneioPctManager = new RomaneioManager('pct');
-window.romaneioTlManager = new RomaneioManager('tl');
-window.romaneioPesManager = new RomaneioManager('pes');
+// Instâncias lazy: antes eram 4 `new RomaneioManager` ansiosos em TODA página
+// (tora+pct+tl+pes com setup completo). Agora cada tipo é construído apenas
+// no primeiro uso — 1 por página no caminho comum. A semântica de acesso
+// (window.romaneioXManager.*) é preservada via getter/setter.
+const _romaneioManagerCache = {};
+function _pageRomaneioType() {
+    try {
+        const f = String(window.location.pathname || '').toLowerCase();
+        if (f.includes('pct')) return 'pct';
+        if (f.includes('tl')) return 'tl';
+        if (f.includes('pes')) return 'pes';
+        return 'tora';
+    } catch (_) { return 'tora'; }
+}
+function getRomaneioManager(type) {
+    const t = String(type || 'tora').toLowerCase();
+    const key = (t === 'pct' || t === 'tl' || t === 'pes' || t === 'tora') ? t : 'tora';
+    if (!_romaneioManagerCache[key]) _romaneioManagerCache[key] = new RomaneioManager(key);
+    return _romaneioManagerCache[key];
+}
+[['Tora', 'tora'], ['Pct', 'pct'], ['Tl', 'tl'], ['Pes', 'pes']].forEach(([suf, t]) => {
+    Object.defineProperty(window, 'romaneio' + suf + 'Manager', {
+        configurable: true,
+        get() { return getRomaneioManager(t); },
+        set(v) { _romaneioManagerCache[t] = v; }
+    });
+});
 
-window.getRomaneioManager = (type) => {
-    switch (type?.toLowerCase()) {
-        case 'pct': return window.romaneioPctManager;
-        case 'tl': return window.romaneioTlManager;
-        case 'pes': return window.romaneioPesManager;
-        default: return window.romaneioToraManager;
-    }
-};
+window.getRomaneioManager = getRomaneioManager;
 
 // Funções de Abertura
 window.abrirListaRomaneiosTora = () => window.romaneioToraManager.openModal();
@@ -845,7 +860,14 @@ window.abrirListaRomaneiosPct = () => window.romaneioPctManager.openModal();
 window.abrirListaRomaneiosTl = () => window.romaneioTlManager.openModal();
 window.abrirListaRomaneiosPes = () => window.romaneioPesManager.openModal();
 
-window.romaneioToraManager.openModal = window.romaneioToraManager.openModal.bind(window.romaneioToraManager);
+// Bind preguiçoso: materializa no boot SOMENTE o manager do tipo da página
+// (antes esta linha construía o manager 'tora' em todas as páginas).
+(function () {
+    try {
+        const m = getRomaneioManager(_pageRomaneioType());
+        m.openModal = m.openModal.bind(m);
+    } catch (_) {}
+})();
 window.abrirListaRomaneios = window.abrirListaRomaneiosTora;
 
 // Funções Genéricas

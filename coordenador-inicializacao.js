@@ -21,50 +21,63 @@ window._SISTEMA_ESTADOS = {
  * Aguardar que todos os componentes do sistema estejam prontos
  */
 async function aguardarSistemaPronto() {
-    console.log('🔄 Aguardando sistema estar completamente pronto...');
-    
-    const maxTentativas = 240; // 2 minutos
-    let tentativas = 0;
-    
-    while (tentativas < maxTentativas) {
-        tentativas++;
-        
-        // Verificar Firebase
-        const firebaseOk = window._FIREBASE_READY || !window.firebaseService;
-        
-        // Verificar DatabaseAdapter
-        const adapterOk = window.databaseAdapter && typeof window.databaseAdapter === 'object';
-        
-        // Verificar Interface
-        const interfaceOk = window._INTERFACE_CORRIGIDA === true;
-        
-        // Atualizar estados
-        window._SISTEMA_ESTADOS.firebase = firebaseOk;
-        window._SISTEMA_ESTADOS.databaseAdapter = adapterOk;
-        window._SISTEMA_ESTADOS.interface = interfaceOk;
-        
-        // Log do progresso a cada 10 tentativas
-        if (tentativas % 10 === 0) {
-            console.log(`🔍 Verificação ${tentativas}/${maxTentativas}:`, {
-                firebase: firebaseOk ? '✅' : '❌',
-                adapter: adapterOk ? '✅' : '❌', 
-                interface: interfaceOk ? '✅' : '❌'
+    const checar = () => ({
+        firebase: Boolean(window._FIREBASE_READY) || !window.firebaseService,
+        adapter: Boolean(window.databaseAdapter && typeof window.databaseAdapter === 'object'),
+        interface: window._INTERFACE_CORRIGIDA === true
+    });
+    const tudoPronto = (e) => e.firebase && e.adapter && e.interface;
+
+    let estado = checar();
+    if (tudoPronto(estado)) {
+        console.log('? Todos os componentes do sistema est�o prontos!');
+        window._SISTEMA_ESTADOS.firebase = true;
+        window._SISTEMA_ESTADOS.databaseAdapter = true;
+        window._SISTEMA_ESTADOS.interface = true;
+        window._SISTEMA_ESTADOS.completo = true;
+        return true;
+    }
+
+    console.log('?? Aguardando sistema estar completamente pronto...');
+
+    const TIMEOUT_MS = 60000;
+    const POLL_MS = 1000;
+    const inicio = Date.now();
+    let acordar = null;
+
+    const onSinal = () => { if (acordar) { const f = acordar; acordar = null; f(); } };
+    ['firebasePronto', 'interfaceDatabaseAdapterPronta', 'sistemaRomaneiosPronto'].forEach((ev) => {
+        window.addEventListener(ev, onSinal);
+    });
+
+    try {
+        while (Date.now() - inicio < TIMEOUT_MS) {
+            estado = checar();
+            if (tudoPronto(estado)) {
+                console.log('? Todos os componentes do sistema est�o prontos!');
+                window._SISTEMA_ESTADOS.firebase = estado.firebase;
+                window._SISTEMA_ESTADOS.databaseAdapter = estado.adapter;
+                window._SISTEMA_ESTADOS.interface = estado.interface;
+                window._SISTEMA_ESTADOS.completo = true;
+                return true;
+            }
+            await new Promise((resolve) => {
+                acordar = resolve;
+                setTimeout(() => { if (acordar === resolve) { acordar = null; resolve(); } }, POLL_MS);
             });
         }
-        
-        // Se tudo estiver pronto
-        if (firebaseOk && adapterOk && interfaceOk) {
-            console.log('✅ Todos os componentes do sistema estão prontos!');
-            window._SISTEMA_ESTADOS.completo = true;
-            return true;
-        }
-        
-        // Aguardar 500ms antes da próxima verificação
-        await new Promise(resolve => setTimeout(resolve, 500));
+    } finally {
+        ['firebasePronto', 'interfaceDatabaseAdapterPronta', 'sistemaRomaneiosPronto'].forEach((ev) => {
+            window.removeEventListener(ev, onSinal);
+        });
     }
-    
-    console.warn('⚠️ Sistema não ficou completamente pronto no tempo limite');
-    console.warn('📊 Estado final dos componentes:', window._SISTEMA_ESTADOS);
+
+    estado = checar();
+    window._SISTEMA_ESTADOS.firebase = estado.firebase;
+    window._SISTEMA_ESTADOS.databaseAdapter = estado.adapter;
+    window._SISTEMA_ESTADOS.interface = estado.interface;
+    console.warn('?? Sistema n�o ficou completamente pronto no tempo limite (60s)');
+    console.warn('?? Estado final dos componentes:', window._SISTEMA_ESTADOS);
     return false;
 }
 
@@ -92,15 +105,19 @@ async function inicializarAplicacaoCompleta() {
             console.warn('⚠️ Função inicializarAplicacao não encontrada');
         }
         
-        // Disparar evento de sistema pronto
-        const evento = new CustomEvent('sistemaRomaneiosPronto', {
-            detail: {
-                estados: window._SISTEMA_ESTADOS,
-                timestamp: new Date().toISOString()
-            }
-        });
-        window.dispatchEvent(evento);
-        console.log('📢 Evento sistemaRomaneiosPronto disparado');
+        // Disparar evento de sistema pronto (1x — o init inline da página
+        // também dispara; guard evita boot duplo nos listeners)
+        if (!window._SISTEMA_PRONTO_DISPARADO) {
+            window._SISTEMA_PRONTO_DISPARADO = true;
+            const evento = new CustomEvent('sistemaRomaneiosPronto', {
+                detail: {
+                    estados: window._SISTEMA_ESTADOS,
+                    timestamp: new Date().toISOString()
+                }
+            });
+            window.dispatchEvent(evento);
+            console.log('📢 Evento sistemaRomaneiosPronto disparado');
+        }
         
     } catch (error) {
         console.error('❌ Erro na inicialização completa:', error);

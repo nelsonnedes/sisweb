@@ -15,7 +15,7 @@
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <link rel="dns-prefetch" href="https://o4511662240432128.ingest.us.sentry.io">
     <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
-    <script defer src="sentry-init.js?v=e4dadfaea86a"></script>
+    <script defer src="sentry-init.js?v=6765c488e3bc"></script>
 <script>
         (function() {
             function isExtErr(m){if(!m)return false;var s=typeof m==='string'?m:(m.message||String(m));s=s.toLowerCase();return s.includes('message channel closed')||s.includes('extension context invalidated')||s.includes('chrome-extension://')||s.includes('moz-extension://')||s.includes('safari-extension://');}
@@ -1384,7 +1384,7 @@
             db,
             auth,
             app
-        } from './firebaseService.js?v=6285419b7986';
+        } from './firebaseService.js?v=732736b0bd7b';
         const tenantFromContext = (() => {
             try {
                 if (window.appTenantId) return String(window.appTenantId);

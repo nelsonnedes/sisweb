@@ -1,0 +1,121 @@
+# .opencodeignore — Sisweb (sisweb-7ce82)
+# Objetivo: indexar APENAS codigo-fonte logico (html/js/css/functions/tests/tools/docs).
+# Sintaxe estilo .gitignore. Revisado em 2026-09-15.
+#
+# DELIBERADAMENTE MANTIDOS NO INDICE (nao ignorar):
+#   docs/ (CEREBRO-SISWEB.md + stories), .claude/skills, .agents/skills,
+#   .aiox-core/, .agent/, .superpowers/ (skills e personas carregados em runtime),
+#   package.json, .env.example, *.md de historico (texto barato e util para grep).
+
+# --- 1. Versionamento ---
+.git/
+
+# --- 2. Dependencias e pacotes de terceiros ---
+node_modules/
+functions/node_modules/
+assets/vendor/
+assets/fontawesome/
+firebase/sdk/
+
+# --- 3. Build, dist, deploy e artefatos gerados ---
+hosting-dist/
+.firebase/
+.vercel/
+hosting-files.json
+firestore.indexes.json
+firebase-debug.log
+firebase-deploy.log
+*-debug.log
+*.log
+
+# --- 4. Worktrees (COPIAS INTEGRAIS do repo, ~61 MB) ---
+.codex-worktrees/
+
+# --- 5. IDEs, assistentes e caches locais ---
+.vscode/
+.cursor/
+.antigravity/
+.gemini/
+.kimi/
+.trae/
+.freebuff/
+.pytest_cache/
+.coverage/
+
+# --- 6. Backups e arquivos de trabalho temporarios ---
+backup/
+tmp/
+scratch/
+*.backup.*
+*.pix_backup
+*.bak
+*.orig
+*.rej
+*.tmp
+*.temp
+nul
+
+# --- 7. Dumps de dados / exports / diagnosticos (JSONs de MB, nao sao codigo) ---
+sisweb-7ce82-default-rtdb-export*.json
+new-session-*.json
+relatorio_*.json
+sisweb-diagnostic-*.json
+temp_file_list.json
+test_output.txt
+src.txt
+date_fns.txt
+date_matches.txt
+date_vars.txt
+date_vars2.txt
+
+# --- 8. Midia pesada (imagens, video, audio, pdf, fontes) ---
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.bmp
+*.ico
+*.mp4
+*.webm
+*.mov
+*.avi
+*.mp3
+*.wav
+*.ogg
+*.pdf
+*.woff
+*.woff2
+*.ttf
+*.otf
+*.eot
+assets/img/
+assets/icons/
+assets/help/
+assets/help-manual/
+help-assets/
+
+# --- 9. Arquivos temporarios de sistema e swap de editores ---
+Thumbs.db
+desktop.ini
+.DS_Store
+~*
+*.swp
+*.swo
+*.swn
+
+# --- 10. Segredos (ja git-ignorados; fora do indice por higiene) ---
+.env
+.env.backup.*
+service-account.json
+
+# --- 11. Lockfiles gerados (package.json continua indexado) ---
+package-lock.json
+functions/package-lock.json
+
+# --- 12. Compactados ---
+*.zip
+*.tgz
+*.tar.gz
+*.7z
+*.rar
