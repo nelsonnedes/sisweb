@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-09-14-commission-bulk-v1';
+const APP_VERSION = '2026-09-14-login-perf-v1';
 const CACHE_NAME = `sisweb-runtime-${APP_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',

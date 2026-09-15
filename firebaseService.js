@@ -107,26 +107,46 @@ const SUPERADMIN_UID_LOCAL_ALLOWLIST = new Set([
 
 // Firebase já foi inicializado pelo firebase-init.js, que é importado acima.
 // Aqui apenas configuramos listeners e monitoramentos adicionais.
+let _authPersistenceConfigured = false;
+export async function ensureAuthPersistence() {
+    if (_authPersistenceConfigured) return authPersistenceReady;
+    _authPersistenceConfigured = true;
+    try {
+        const isPwaStandalone = typeof window !== 'undefined' && (
+            (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+            || window.navigator.standalone === true
+        );
+        const persistence = isPwaStandalone ? browserLocalPersistence : browserSessionPersistence;
+        authPersistenceReady = setPersistence(auth, persistence)
+            .then(() => console.log(`🔒 Persistência de autenticação definida para ${isPwaStandalone ? 'LOCAL_PWA' : 'SESSION'}`))
+            .catch(e => console.warn("⚠️ Falha ao definir persistência de autenticação:", e && e.message || e));
+        return authPersistenceReady;
+    } catch (e) {
+        console.warn("⚠️ Falha ao definir persistência de autenticação:", e && e.message || e);
+        return Promise.resolve();
+    }
+}
 try {
-    const isPwaStandalone = typeof window !== 'undefined' && (
-        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
-        || window.navigator.standalone === true
-    );
-    const persistence = isPwaStandalone ? browserLocalPersistence : browserSessionPersistence;
-    authPersistenceReady = setPersistence(auth, persistence)
-        .then(() => console.log(`🔒 Persistência de autenticação definida para ${isPwaStandalone ? 'LOCAL_PWA' : 'SESSION'}`))
-        .catch(e => console.warn("⚠️ Falha ao definir persistência de autenticação:", e && e.message || e));
+    const _isPublicLoginRoutePersist = typeof window !== 'undefined' && typeof window.location !== 'undefined' && String(window.location.pathname || '').includes('login.html');
+    if (!_isPublicLoginRoutePersist) ensureAuthPersistence();
 } catch (_) {}
 try {
     if (typeof window.ENABLE_ANON_AUTH === 'undefined') {
         window.ENABLE_ANON_AUTH = false;
     }
-    ensureCanonicalAuthObserver();
+    const _isPublicLoginRoute = typeof window !== 'undefined' && typeof window.location !== 'undefined' && String(window.location.pathname || '').includes('login.html');
+    if (!_isPublicLoginRoute) ensureCanonicalAuthObserver();
 } catch (e) {
     console.warn("⚠️ Falha ao configurar observador central de autenticação:", e?.message || e);
 }
-try { setupInternetMonitoring(); } catch (_) {}
-try { setupConnectionMonitoring(); } catch (_) {}
+try {
+    const _isPublicLoginRoute2 = typeof window !== 'undefined' && typeof window.location !== 'undefined' && String(window.location.pathname || '').includes('login.html');
+    if (!_isPublicLoginRoute2) setupInternetMonitoring();
+} catch (_) {}
+try {
+    const _isPublicLoginRoute3 = typeof window !== 'undefined' && typeof window.location !== 'undefined' && String(window.location.pathname || '').includes('login.html');
+    if (!_isPublicLoginRoute3) setupConnectionMonitoring();
+} catch (_) {}
 console.log('✅ FirebaseService: serviços Firebase prontos (via firebase-init.js)');
 
 function publishInternetState(available, source = 'navigator') {
