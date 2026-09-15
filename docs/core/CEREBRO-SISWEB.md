@@ -618,3 +618,9 @@ Navega√ß√£o real (madeportes27@gmail.com, tenant `1774030248295`): index, finan√
 - **Candidatos vazios ruidosos:** warns agora dizem QUAL path + tentados; throttle 1x por path por sessao (depois so debug com __SISWEB_DEBUG_BOOT).
 - **fetchFornecedores 12x:** cache memoria TTL 60s + dedupe de voo concorrente; invalidateFornecedoresCache() nos 3 pontos de escrita (save firebase, save fallback, excluir).
 - **Gates:** validate:pr 6/6, node --check nos 4 alterados, inject+build+hosting deployed, hosting-dist com autef no ar.
+
+## 61. Sessao 2026-09-15 - Botao Modelo Excel Tora + gitignore xlsx
+- **Decisao Hosting (nao Storage):** modelo estatico 10KB versionado no deploy ó sem CORS/token/rules/custo, mesmo pipeline. assets/modelos/Modelo_Romaneio_Tora_import.xlsx no manifest (477 arquivos), header firebase.json no-cache + Content-Disposition attachment.
+- **Botao:** ancora .btn.btn-modelo-excel (outline verde Excel #107c41, hover inverte) ao lado de Importar, com download + title das colunas. Classe global em layout-comum.css com !important (sistema de botoes usa !important).
+- **gitignore:** ~$* + *.xls/*.xlsx/*.xlsm com excecao !assets/modelos/*.xlsx (modelo oficial versionado; copias de trabalho ignoradas).
+- **Verificado ao vivo:** HEAD 200 + attachment + MIME xlsx correto. Gates 6/6.
