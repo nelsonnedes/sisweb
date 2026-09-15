@@ -595,3 +595,8 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
 - **Armadilha operacional:** ChildProcess.kill do runner deixa java orfao segurando porta 9000 - proxima execucao falha 'port taken'. Workaround: Get-Process java | Stop-Process -Force, aguardar liberacao, rodar via 'cmd /c ... > log' detached (Start-Process cmd.exe) e ler o log por polling. Porta livre confirmada via netstat 127.0.0.1:9000.
 - **Suite unit:** npm test 570 testes, 569 pass, 0 fail, 1 skip (esperado).
 - **Lembrete producao:** rules _partnerBulkOperations validadas no emulator local, mas deploy --only database segue falhando (Failed to get instance details, timeout asia-southeast1) - deploy de rules de producao ainda pendente.
+
+## 58. Sessao 2026-09-15 - Conclusao: gates 6/6 + rules de producao publicadas
+- **Gates finais:** npm run lint + typecheck + validate:pr 6/6 OK (unit 570 testes dentro do validate). Emulator RBAC 21/21 (sessao anterior).
+- **Deploy database (retry):** firebase deploy --only database SUCESSO - rules syntax valid + released p/ sisweb-7ce82-default-rtdb. Fecha pendencia do bulk (_partnerBulkOperations superadmin-only agora vale em producao).
+- **Estado final do programa:** hosting 476 publicado (romaneio-boot-v1), functions parceiros + bulk + claim no ar, rules prod atualizadas, main sincronizada com origin. P1s restantes (polling limits, compat TL, unified preromaneio, paginas legado client/company/financas) ficam como follow-up futuro - fora do escopo, nada quebrado.
