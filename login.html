@@ -1391,10 +1391,11 @@
         // MÓDULO CANÔNICO: Firebase + controle de sessão + Fale Conosco
         // Registro e Recuperação usam exclusivamente authService (sem duplicatas).
         // ═══════════════════════════════════════════════════════════════════════
-        import { app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-init.js?v=9d73fc31bff4';
+        import { app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ensureInitialized } from './firebase-init.js?v=9d73fc31bff4';
         import { authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence } from './firebaseService.js?v=61730af2608f';
 
-        window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim };
+        try { ensureInitialized(); } catch (_) {}
+        window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence };
         if (typeof window.runLoginHealthCheck === 'function') {
             window.runLoginHealthCheck();
         }

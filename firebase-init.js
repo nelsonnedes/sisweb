@@ -105,8 +105,16 @@ function startCanonicalAuthObserver() {
 }
 
 // ─── Eager init (executa na primeira importação) ────────────────────────────
-ensureInitialized();
-console.log('✅ firebase-init: Firebase v10.7.1 inicializado (singleton)');
+// Lazy para login.html (rota pública) — evita IndexedDB + WS antes do FCP
+const _isLoginRouteForInit = typeof window !== 'undefined' && String(window.location.pathname || '').includes('login.html');
+if (!_isLoginRouteForInit) {
+    ensureInitialized();
+    console.log('✅ firebase-init: Firebase v10.7.1 inicializado (singleton)');
+} else if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(() => { try { ensureInitialized(); console.log('✅ firebase-init: Firebase v10.7.1 inicializado (lazy login)'); } catch (_) {} }, { timeout: 2000 });
+} else {
+    setTimeout(() => { try { ensureInitialized(); console.log('✅ firebase-init: Firebase v10.7.1 inicializado (lazy login)'); } catch (_) {} }, 0);
+}
 
 // ─── Exports (instâncias diretas, não getters) ──────────────────────────────
 export {
@@ -129,6 +137,8 @@ export {
     httpsCallable,
     storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject, getBlob,
     FIREBASE_CONFIG,
+    // Init helpers (para login lazy)
+    ensureInitialized,
     // Getters do SDK (para páginas que precisam inicializar serviços adicionais)
     getAuth, getDatabase, getStorage, getFunctions,
     initializeApp, getApps
