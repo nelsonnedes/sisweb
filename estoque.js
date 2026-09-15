@@ -6762,6 +6762,10 @@ function getRelatorioMovimentacaoKey(m) {
     return m.id || `${m.data || ''}|${m.tipo || ''}|${m.plaqueta || ''}|${m.especie || ''}|${m.documento || ''}|${m.remessaId || ''}|${m.observacoes || ''}`;
 }
 
+function getRelatorioMovimentacaoPorRemessaKey(r) {
+    return r.remessaId || `${r.data || ''}|${r.remessaId || ''}`;
+}
+
 function getRelatorioRastreabilidadeKey(r) {
     return r.id || `${r.remessaId || ''}|${r.movimentacaoId || ''}|${r.toraId || ''}|${r.plaqueta || ''}|${r.numeroRomaneio || ''}`;
 }
@@ -6904,6 +6908,28 @@ function getEstoqueReportColumnsDefs(tipoRelatorio) {
             { key: 'status', label: 'Status' },
             { key: 'origem', label: 'Origem' },
             { key: 'confiabilidade', label: 'Confiança' }
+        ];
+    }
+    if (tipo === 'movimentacao_remessa') {
+        return [
+            { key: 'data', label: 'Data' },
+            { key: 'remessaId', label: 'Remessa' },
+            { key: 'romaneioId', label: 'Romaneio' },
+            { key: 'plaqueta', label: 'Plaqueta' },
+            { key: 'custodia', label: 'Custódia' },
+            { key: 'autef', label: 'AUTEF' },
+            { key: 'especie', label: 'Espécie' },
+            { key: 'rodo', label: 'Rodo', align: 'text-center' },
+            { key: 'comprimento', label: 'Comprimento', align: 'text-center' },
+            { key: 'oco1', label: 'Oco 1', align: 'text-center' },
+            { key: 'oco2', label: 'Oco 2', align: 'text-center' },
+            { key: 'volumeTora', label: 'Vol. Tora', align: 'text-right' },
+            { key: 'volumeProduzido', label: 'Vol. Produzido', align: 'text-right' },
+            { key: 'rendimento', label: 'Rendimento', align: 'text-right' },
+            { key: 'preco', label: 'Preço', align: 'text-right' },
+            { key: 'valor', label: 'Valor', align: 'text-right' },
+            { key: 'clienteNome', label: 'Cliente/Fornecedor' },
+            { key: 'status', label: 'Status' }
         ];
     }
     if (tipo === 'fornecedor') {
@@ -7230,6 +7256,29 @@ function obterValorCelulaRelatorioEstoque(tipo, key, item) {
         };
         return map[key] ?? '';
     }
+    if (tipo === 'movimentacao_remessa') {
+        const map = {
+            data: formatDate(item.data),
+            remessaId: escapeHtml(item.remessaId || '-'),
+            romaneioId: escapeHtml(item.romaneioId || '-'),
+            plaqueta: escapeHtml(item.plaqueta || '-'),
+            custodia: escapeHtml(item.custodia || '-'),
+            autef: escapeHtml(item.autef || '-'),
+            especie: escapeHtml(item.especie || '-'),
+            rodo: item.rodo ? `${formatNumber(item.rodo, 1)} cm` : '-',
+            comprimento: item.comprimento ? `${formatNumber(item.comprimento, 1)} cm` : '-',
+            oco1: item.oco1 ? `${formatNumber(item.oco1, 1)} cm` : '-',
+            oco2: item.oco2 ? `${formatNumber(item.oco2, 1)} cm` : '-',
+            volumeTora: `${formatNumber(item.volumeTora || 0, 3)} m³`,
+            volumeProduzido: `${formatNumber(item.volumeProduzido || 0, 3)} m³`,
+            rendimento: `${formatNumber(item.rendimento || 0, 2)}%`,
+            preco: formatCurrency(item.preco || 0),
+            valor: formatCurrency(item.valor || 0),
+            clienteNome: escapeHtml(item.clienteNome || '-'),
+            status: escapeHtml(item.status || '-')
+        };
+        return map[key] ?? '';
+    }
     if (tipo === 'rastreabilidade') {
         const map = {
             data: formatDate(item.data),
@@ -7320,6 +7369,11 @@ function montarTabelaRelatorioEstoque(tipo, items, selectionTipo, getKey, onlySe
         volumeTotal = items.reduce((acc, m) => acc + (m.volume || 0), 0);
         volumeGeoTotal = items.reduce((acc, m) => acc + (normalizarCamposGeoEstoque(m).volumeGeo || 0), 0);
         valorTotal = items.reduce((acc, m) => acc + (m.valor || ((m.volume || 0) * (m.preco || m.precoCusto || 0))), 0);
+    } else if (tipo === 'movimentacao_remessa') {
+        totalToras = items.length;
+        volumeTotal = items.reduce((acc, m) => acc + (m.volumeTora || 0), 0);
+        volumeGeoTotal = items.reduce((acc, m) => acc + (normalizarCamposGeoEstoque(m).volumeGeo || 0), 0);
+        valorTotal = items.reduce((acc, m) => acc + (m.valor || 0), 0);
     } else if (tipo === 'rastreabilidade') {
         totalToras = items.length;
         volumeTotal = items.reduce((acc, r) => acc + (parseNumeroEstoque(r.volumeTora) || 0), 0);
@@ -7533,6 +7587,8 @@ async function obterConteudoRelatorio(tipoRelatorio, dataInicio, dataFim, option
             return gerarRelatorioPorAutef(onlySelected, options);
         case 'movimentacao':
             return gerarRelatorioMovimentacao(dataInicio, dataFim, onlySelected, options);
+        case 'movimentacao_remessa':
+            return gerarRelatorioMovimentacaoPorRemessa(dataInicio, dataFim, onlySelected, options);
         case 'rastreabilidade':
             return gerarRelatorioRastreabilidade(dataInicio, dataFim, onlySelected, options);
         case 'produtos_saldo':
@@ -8085,6 +8141,86 @@ async function imprimirRelatorioEstoque() {
     });
 }
 
+async function exportarRelatorioEstoqueExcel() {
+    const data = window.__ultimoRelatorioEstoque || {};
+    const tipoRelatorio = data.tipoRelatorio || document.getElementById('tipoRelatorio')?.value || '';
+    if (!tipoRelatorio) {
+        alert('Por favor, selecione um tipo de relatório antes de exportar.');
+        return;
+    }
+    const content = document.getElementById('relatorioContent');
+    if (!content) return;
+    const dataInicio = data.dataInicio || document.getElementById('relDataInicio')?.value || '';
+    const dataFim = data.dataFim || document.getElementById('relDataFim')?.value || '';
+    const options = {
+        ...(data.options || {}),
+        tipo: (document.getElementById('relFiltroTipo')?.value || '').trim(),
+        agruparPorResponsavel: !!document.getElementById('relAgruparResponsavel')?.checked,
+        disablePagination: true
+    };
+    await ensureEstoqueReportColumnsConfigLoaded(tipoRelatorio);
+    const onlySelected = !!(window.relatorioSelecionados && window.relatorioSelecionados.size > 0);
+    const conteudo = await obterConteudoRelatorio(tipoRelatorio, dataInicio, dataFim, options, onlySelected);
+    
+    // Extrair dados da tabela para Excel
+    const table = document.createElement('table');
+    table.innerHTML = conteudo;
+    const thead = table.querySelector('thead');
+    const tbody = table.querySelector('tbody');
+    
+    if (!thead || !tbody) {
+        alert('Nenhum dado para exportar.');
+        return;
+    }
+    
+    // Extrair cabeçalhos
+    const headers = Array.from(thead.querySelectorAll('th'))
+        .filter(th => !th.classList.contains('relatorio-check-col'))
+        .map(th => th.textContent.trim());
+    
+    // Extrair linhas
+    const rows = Array.from(tbody.querySelectorAll('tr')).map(tr => {
+        return Array.from(tr.querySelectorAll('td'))
+            .filter(td => !td.classList.contains('relatorio-check-col'))
+            .map(td => td.textContent.trim());
+    });
+    
+    // Preparar dados para planilha
+    const wbData = [headers, ...rows];
+    
+    // Criar workbook
+    if (typeof XLSX === 'undefined') {
+        alert('Biblioteca SheetJS (XLSX) não carregada. Tente recarregar a página.');
+        return;
+    }
+    
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wbData);
+    
+    // Ajustar largura das colunas
+    const colWidths = headers.map((_, i) => {
+        const maxLen = Math.max(
+            headers[i].length,
+            ...rows.map(r => (r[i] || '').length)
+        );
+        return { wch: Math.min(Math.max(maxLen + 2, 10), 50) };
+    });
+    ws['!cols'] = colWidths;
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Relatório');
+    
+    // Nome do arquivo
+    const titulo = obterTituloRelatorioEstoque(tipoRelatorio);
+    const dataStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const fileName = `Relatorio_${titulo.replace(/[^a-zA-Z0-9]/g, '_')}_${dataStr}.xlsx`;
+    
+    XLSX.writeFile(wb, fileName);
+    
+    if (window.Utils && window.Utils.showToast) {
+        window.Utils.showToast('Relatório exportado para Excel com sucesso!', 'success');
+    }
+}
+
 function montarTabelaHtml(colunas, linhas) {
     const head = colunas.map(c => `<th>${c}</th>`).join('');
     const body = linhas.map(l => `<tr>${l.map(c => `<td>${c}</td>`).join('')}</tr>`).join('');
@@ -8478,8 +8614,101 @@ function gerarRelatorioMovimentacao(dataInicio, dataFim, onlySelected = false, o
     return montarTabelaRelatorioEstoque('movimentacao', movPeriodo, 'movimentacao', getRelatorioMovimentacaoKey, onlySelected, 'Nenhuma movimentação', options);
 }
 
-function gerarRelatorioRastreabilidade(dataInicio, dataFim, onlySelected = false, options = {}) {
-    const registros = filtrarItensSelecionadosRelatorio(
+function gerarRelatorioMovimentacaoPorRemessa(dataInicio, dataFim, onlySelected = false, options = {}) {
+    if (!dataInicio || !dataFim) {
+        return '<p>Informe o período para o relatório de movimentação por remessa.</p>';
+    }
+
+    // Filtrar movimentações do tipo saida que tenham remessaId
+    const movSaida = movimentacoes.filter(m => {
+        if (m.tipo !== 'saida') return false;
+        return m.data >= dataInicio && m.data <= dataFim && m.remessaId;
+    });
+
+    const movFiltrada = filtrarItensSelecionadosRelatorio(
+        'movimentacao',
+        movSaida,
+        getRelatorioMovimentacaoKey,
+        onlySelected
+    );
+
+    // Agrupar por remessaId
+    const remessasMap = new Map();
+    movFiltrada.forEach(mov => {
+        const remessaId = mov.remessaId || 'SEM_REMESSA';
+        if (!remessasMap.has(remessaId)) {
+            remessasMap.set(remessaId, {
+                remessaId,
+                data: mov.data,
+                itens: [],
+                romaneiosIds: new Set(),
+                clienteNome: '',
+                volumeTotal: 0,
+                volumeProduzido: 0,
+                valorTotal: 0
+            });
+        }
+        const grupo = remessasMap.get(remessaId);
+        grupo.itens.push(mov);
+        
+        // Coletar IDs dos romaneios
+        if (mov.romaneioId) grupo.romaneiosIds.add(mov.romaneioId);
+        if (mov.romaneiosRelacionados) {
+            mov.romaneiosRelacionados.forEach(r => grupo.romaneiosIds.add(r.id || r.numero || r));
+        }
+        
+        // Cliente/Fornecedor
+        const geo = normalizarCamposGeoEstoque(mov);
+        grupo.clienteNome = mov.clienteNome || geo.fornecedor || grupo.clienteNome || '-';
+        
+        // Acumular volumes e valores
+        const vol = parseNumeroEstoque(mov.volume || mov.volumeLiquido || 0);
+        const volProd = parseNumeroEstoque(mov.volumeProduzido || mov.volumeSerraria || mov.volume || 0);
+        const val = parseNumeroEstoque(mov.valor || (vol * (mov.preco || mov.precoCusto || 0)));
+        
+        grupo.volumeTotal += vol;
+        grupo.volumeProduzido += volProd;
+        grupo.valorTotal += val;
+    });
+
+    // Converter para array e ordenar por data (mais recente primeiro)
+    let resultado = Array.from(remessasMap.values());
+    resultado.sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0));
+
+    // Calcular rendimento e formatar romaneios
+    const itensFormatados = resultado.map(grupo => {
+        const rendimento = grupo.volumeTotal > 0 ? (grupo.volumeProduzido / grupo.volumeTotal) * 100 : 0;
+        const romaneiosArray = Array.from(grupo.romaneiosIds).sort();
+        return {
+            data: grupo.data,
+            remessaId: grupo.remessaId,
+            romaneioId: romaneiosArray.join(', '),
+            plaqueta: '', // Não se aplica no nível de remessa
+            custodia: '',
+            autef: '',
+            especie: '',
+            rodo: 0,
+            comprimento: 0,
+            oco1: 0,
+            oco2: 0,
+            volumeTora: grupo.volumeTotal,
+            volumeProduzido: grupo.volumeProduzido,
+            rendimento: rendimento,
+            preco: 0,
+            valor: grupo.valorTotal,
+            clienteNome: grupo.clienteNome,
+            status: 'concluida'
+        };
+    });
+
+    if (ordemRelatorio.tipo === 'movimentacao_remessa' && ordemRelatorio.coluna) {
+        ordenarListaRelatorioEstoque('movimentacao_remessa', itensFormatados);
+    }
+
+    return montarTabelaRelatorioEstoque('movimentacao_remessa', itensFormatados, 'movimentacao_remessa', getRelatorioMovimentacaoPorRemessaKey, onlySelected, 'Nenhuma remessa encontrada no período', options);
+}
+  
+function gerarRelatorioRastreabilidade(dataInicio, dataFim, onlySelected = false, options = {}) {const registros = filtrarItensSelecionadosRelatorio(
         'rastreabilidade',
         filtrarRegistrosRastreabilidade({ dataInicio, dataFim }),
         getRelatorioRastreabilidadeKey,

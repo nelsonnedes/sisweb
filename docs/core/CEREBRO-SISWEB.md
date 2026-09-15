@@ -637,3 +637,12 @@ NavegaÃ§Ã£o real (madeportes27@gmail.com, tenant `1774030248295`): index, finanÃ
 - **Pre-romaneio NAO tinha AUTEF (gap de continuidade):** adicionado campo #autefTora (form+th), fallback+ler+aplicar+sort accessor+td+colspan 17->18+enter-nav order, item com autef explicito apos ...geo. Save passa {...it} (sem strip) e loader pre->tora faz {...it,...geo} com ToraGeometry (preserva).
 - **Blindagem save tora:** whitelist do salvarRomaneio com autef explicito (anti-regressao futura).
 - **Gates:** validate:pr 6/6, node --check, hosting 477 deployed. Pre-romaneio NAO verificado ao vivo (ui_guard exige login; padrao identico ao tora ja provado) — pedir click-test ao usuario.
+
+## 64. Sessao 2026-09-15 - Rastreabilidade de Toras: AUTEF/Custodia + ordenacao + paginacao
+- **Tabela**: colunas AUTEF e Custodia adicionadas (HTML + JS render), colspan 10->12.
+- **Filtros**: campos AUTEF e Custodia no modal (HTML + lerFiltros/preencherFiltros + filtrarRegistros).
+- **Ordenacao**: RomaneioTableEnhancements configurado com 12 colunas (data, remessaId, plaqueta, especie, autef, custodia, numeroRomaneio, clienteNome, volumeTora, volumeProduzido, rendimento, status).
+- **Paginacao**: 15 itens/pagina (configuravel 10/15/25/50/100), controles first/prev/next/last + ellipsis, reset de pagina ao filtrar.
+- **Normalizacao**: normalizarRegistroRastreabilidade ja espalhava ...geo (custodia, autef) - confirmado OK.
+- **Impressao**: getVisibleEstoqueReportColumns('rastreabilidade') usa as colunas atualizadas automaticamente.
+- **Gates**: validate:pr 6/6, hosting 477 deployed.

@@ -2999,6 +2999,7 @@
                         <option value="especies">Estoque Agrupado Por Espécies</option>
                         <option value="autef">Estoque Por AUTEF</option>
                         <option value="movimentacao">Movimentação por Período</option>
+                        <option value="movimentacao_remessa">Movimentação por Remessa</option>
                         <option value="rastreabilidade">Rastreabilidade de Toras</option>
                         <option value="produtos_saldo">Saldo Atual de Produtos (Almoxarifado)</option>
                         <option value="produtos_movimentacao">Movimentação de Produtos (Almoxarifado)</option>
@@ -3027,6 +3028,9 @@
                     <div class="relatorios-actions">
                         <button type="button" onclick="imprimirRelatorioEstoque()" class="btn btn-secondary">
                             <i class="fas fa-print"></i> Imprimir
+                        </button>
+                        <button type="button" onclick="exportarRelatorioEstoqueExcel()" class="btn btn-success" title="Exportar relatório para Excel">
+                            <i class="fas fa-file-excel"></i> Exportar Excel
                         </button>
                         <button type="button" onclick="abrirConfiguracaoColunasRelatorio()" id="btnConfigColunasRelatorio" class="btn btn-secondary report-columns-btn" title="Configurar colunas deste relatório">
                             <i class="fas fa-list"></i> Colunas
@@ -3634,9 +3638,10 @@
         
         console.log("✅ firebaseService carregado no estoque.html completo");
     </script>
-    <script src="commerce-pdf-share.js?v=bf45a414e8b9"></script>
-    <script src="estoque_produtos.js?v=4a7de766ba3b"></script>
-        <script src="estoque.js?v=11a608d5b561"></script>
+<script src="commerce-pdf-share.js?v=bf45a414e8b9"></script>
+        <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+        <script src="estoque_produtos.js?v=4a7de766ba3b"></script>
+        <script src="estoque.js?v=9cffb408f5f9"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });
