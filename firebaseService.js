@@ -19,7 +19,7 @@ import {
     firebaseUpdatePassword, firebaseUpdateProfile, updateCurrentUser,
     httpsCallable, getFunctions,
     storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject
-} from './firebase-init.js';
+} from './firebase-init.js?v=9d73fc31bff4';
 
 function getAuthPerformanceDiagnostics() {
     try {
