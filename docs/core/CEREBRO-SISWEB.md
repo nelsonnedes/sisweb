@@ -646,3 +646,17 @@ NavegaÃ§Ã£o real (madeportes27@gmail.com, tenant `1774030248295`): index, finanÃ
 - **Normalizacao**: normalizarRegistroRastreabilidade ja espalhava ...geo (custodia, autef) - confirmado OK.
 - **Impressao**: getVisibleEstoqueReportColumns('rastreabilidade') usa as colunas atualizadas automaticamente.
 - **Gates**: validate:pr 6/6, hosting 477 deployed.
+
+## 65. Sessao 2026-09-15 - Estoque: Movimentação por Remessa + Export Excel
+- **Novo tipo de relatório:** movimentacao_remessa — agrupa movimentações de saída por emessaId, calcula volume total, volume produzido, rendimento, valor total e lista romaneios vinculados.
+- **Colunas:** Data, Remessa, Romaneio, Plaqueta, Custódia, AUTEF, Espécie, Rodo, Comprimento, Oco 1, Oco 2, Vol. Tora, Vol. Produzido, Rendimento, Preço, Valor, Cliente/Fornecedor, Status.
+- **Colunas configuráveis:** adicionado em getEstoqueReportColumnsDefs com movimentacao_remessa no switch.
+- **Handler:** gerarRelatorioMovimentacaoPorRemessa filtra movimentacoes tipo saida com emessaId, agrupa por remessa, acumula volumes/valores, lista romaneios.
+- **Key:** getRelatorioMovimentacaoPorRemessaKey usa emessaId.
+- **Totais:** case movimentacao_remessa em montarTabelaRelatorioEstoque soma olumeTora, olumeGeo, alor.
+- **Cell values:** obterValorCelulaRelatorioEstoque case movimentacao_remessa formata todas as colunas.
+- **Switch:** case movimentacao_remessa em obterConteudoRelatorio chama gerarRelatorioMovimentacaoPorRemessa.
+- **Export Excel:** botão Exportar Excel (verde, ícone file-excel) ao lado de Imprimir; exportarRelatorioEstoqueExtrai extrai thead/tbody do DOM, usa SheetJS (XLSX CDN) para gerar .xlsx com larguras auto-ajustadas.
+- **XLSX lib:** CDN https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js adicionado no HTML.
+- **Gates:** validate:pr 6/6, hosting 477, deployed.
+- **Teste:** selecionar tipo Movimentação por Remessa, preencher datas, gerar ? tabela com agrupamento por remessa; clicar Exportar Excel ? baixa .xlsx.
