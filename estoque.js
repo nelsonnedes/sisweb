@@ -42,6 +42,12 @@ let paginaAtualEstoque = 1;
 let paginaAtualMovimentacoes = 1;
 let paginaAtualRelatorio = 1;
 let totalItensRelatorioAtual = 0;
+let paginaAtualRastreabilidade = 1;
+const RASTREABILIDADE_PAGE_SIZE_DEFAULT = 15;
+const RASTREABILIDADE_PAGE_SIZE_OPTIONS = [10, 15, 25, 50, 100];
+const rastreabilidadeItensPorPagina = RASTREABILIDADE_PAGE_SIZE_DEFAULT;
+let ordemRastreabilidade = { coluna: 'data', direcao: 'desc' };
+let rastreabilidadeSelecionadas = new Set();
 
 try {
     Object.defineProperty(window, 'paginaAtualRelatorio', {
@@ -6316,6 +6322,8 @@ function filtrarRegistrosRastreabilidade(filtros = {}) {
     const remessa = normalizarTextoFiltroRastreabilidade(filtros.remessa);
     const movimentacao = normalizarTextoFiltroRastreabilidade(filtros.movimentacao);
     const especie = normalizarTextoFiltroRastreabilidade(filtros.especie);
+    const autef = normalizarTextoFiltroRastreabilidade(filtros.autef);
+    const custodia = normalizarTextoFiltroRastreabilidade(filtros.custodia);
     const cliente = normalizarTextoFiltroRastreabilidade(filtros.cliente);
     const usuario = normalizarTextoFiltroRastreabilidade(filtros.usuario);
     const statusFiltro = normalizarTextoFiltroRastreabilidade(filtros.status || 'ativo') || 'ativo';
@@ -6332,6 +6340,8 @@ function filtrarRegistrosRastreabilidade(filtros = {}) {
         if (remessa && !String(reg.remessaId || '').toLowerCase().includes(remessa)) return false;
         if (movimentacao && !String(reg.movimentacaoId || '').toLowerCase().includes(movimentacao)) return false;
         if (especie && !String(reg.especie || '').toLowerCase().includes(especie)) return false;
+        if (autef && !String(reg.autef || '').toLowerCase().includes(autef)) return false;
+        if (custodia && !String(reg.custodia || '').toLowerCase().includes(custodia)) return false;
         if (cliente && !String(reg.clienteNome || '').toLowerCase().includes(cliente)) return false;
         if (usuario && !`${reg.usuarioNome || ''} ${reg.usuarioEmail || ''} ${reg.usuarioId || ''}`.toLowerCase().includes(usuario)) return false;
         if (romaneio) {
@@ -6358,6 +6368,8 @@ function preencherFiltrosRastreabilidade(filtros = {}) {
     set('rastFiltroRemessa', filtros.remessa || '');
     set('rastFiltroMovimentacao', filtros.movimentacao || '');
     set('rastFiltroEspecie', filtros.especie || '');
+    set('rastFiltroAutef', filtros.autef || '');
+    set('rastFiltroCustodia', filtros.custodia || '');
     set('rastFiltroCliente', filtros.cliente || '');
     set('rastFiltroUsuario', filtros.usuario || '');
     set('rastFiltroStatus', filtros.status || 'ativo');
@@ -6373,6 +6385,8 @@ function lerFiltrosRastreabilidade() {
         remessa: document.getElementById('rastFiltroRemessa')?.value || '',
         movimentacao: document.getElementById('rastFiltroMovimentacao')?.value || '',
         especie: document.getElementById('rastFiltroEspecie')?.value || '',
+        autef: document.getElementById('rastFiltroAutef')?.value || '',
+        custodia: document.getElementById('rastFiltroCustodia')?.value || '',
         cliente: document.getElementById('rastFiltroCliente')?.value || '',
         usuario: document.getElementById('rastFiltroUsuario')?.value || '',
         status: document.getElementById('rastFiltroStatus')?.value || 'ativo'
@@ -6437,16 +6451,46 @@ function renderizarTimelineRastreabilidade(lista = []) {
 function renderizarTabelaRastreabilidade(lista = []) {
     const tbody = document.getElementById('rastreabilidadeTableBody');
     if (!tbody) return;
-    if (!lista.length) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Nenhum registro de rastreabilidade encontrado</td></tr>';
+
+    // Ordenação
+    if (ordemRastreabilidade.coluna) {
+        const col = ordemRastreabilidade.coluna;
+        const dir = ordemRastreabilidade.direcao === 'desc' ? -1 : 1;
+        lista.sort((a, b) => {
+            let va = a[ordemRastreabilidade.coluna];
+            let vb = b[ordemRastreabilidade.coluna];
+            if (typeof va === 'string') va = va.toLowerCase();
+            if (typeof vb === 'string') vb = vb.toLowerCase();
+            if (va < vb) return -1 * dir;
+            if (va > vb) return 1 * dir;
+            return 0;
+        });
+    }
+
+    // Paginação
+    const pageSize = rastreabilidadeItensPorPagina;
+    const totalPages = Math.max(1, Math.ceil(lista.length / pageSize));
+    if (paginaAtualRastreabilidade > totalPages) paginaAtualRastreabilidade = totalPages;
+    if (paginaAtualRastreabilidade < 1) paginaAtualRastreabilidade = 1;
+
+    const start = (paginaAtualRastreabilidade - 1) * pageSize;
+    const end = start + pageSize;
+    const pageItems = lista.slice(start, end);
+
+    if (!pageItems.length) {
+        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;">Nenhum registro de rastreabilidade encontrado</td></tr>';
+        atualizarPaginacaoRastreabilidade(lista.length, pageSize);
         return;
     }
-    tbody.innerHTML = lista.map(reg => `
+
+    tbody.innerHTML = pageItems.map(reg => `
         <tr>
             <td data-label="Data">${formatDate(reg.data)}</td>
             <td data-label="Remessa">${escapeHtml(reg.remessaId || '-')}</td>
             <td data-label="Plaqueta">${escapeHtml(reg.plaqueta || '-')}</td>
             <td data-label="Espécie">${escapeHtml(reg.especie || '-')}</td>
+            <td data-label="AUTEF">${escapeHtml(reg.autef || '-')}</td>
+            <td data-label="Custódia">${escapeHtml(reg.custodia || '-')}</td>
             <td data-label="Romaneio">${escapeHtml(reg.numeroRomaneio || reg.romaneioId || '-')}</td>
             <td data-label="Cliente/Fornecedor">${escapeHtml(reg.clienteNome || '-')}</td>
             <td data-label="Vol. Tora" class="text-right">${formatNumber(reg.volumeTora || 0, 3)} m³</td>
@@ -6455,6 +6499,60 @@ function renderizarTabelaRastreabilidade(lista = []) {
             <td data-label="Status">${escapeHtml(reg.status || 'ativo')}</td>
         </tr>
     `).join('');
+
+    atualizarPaginacaoRastreabilidade(lista.length, rastreabilidadeItensPorPagina);
+}
+
+function atualizarPaginacaoRastreabilidade(totalItems, pageSize) {
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const container = document.getElementById('rastreabilidadePagination');
+    if (!container) return;
+
+    const createBtn = (text, page, disabled = false, active = false) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pagination-btn' + (active ? ' active' : '') + (disabled ? ' disabled' : '');
+        btn.textContent = text;
+        btn.disabled = disabled;
+        if (!disabled) btn.onclick = () => { paginaAtualRastreabilidade = page; renderizarRastreabilidade(window.rastreabilidadeFiltrosAtuais); };
+        return btn;
+    };
+
+    container.innerHTML = '';
+    container.appendChild(createBtn('«', paginaAtualRastreabilidade - 1, paginaAtualRastreabilidade <= 1));
+    container.appendChild(createBtn('‹', paginaAtualRastreabilidade - 1, paginaAtualRastreabilidade <= 1));
+
+    const maxVisible = 5;
+    let start = Math.max(1, paginaAtualRastreabilidade - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1);
+
+    if (start > 1) {
+        container.appendChild(createBtn('1', 1, false, paginaAtualRastreabilidade === 1));
+        if (start > 2) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'pagination-ellipsis';
+            ellipsis.textContent = '…';
+            container.appendChild(ellipsis);
+        }
+    }
+
+    for (let p = start; p <= end; p++) {
+        container.appendChild(createBtn(String(p), p, false, paginaAtualRastreabilidade === p));
+    }
+
+    if (end < totalPages) {
+        if (end < totalPages - 1) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'pagination-ellipsis';
+            ellipsis.textContent = '…';
+            container.appendChild(ellipsis);
+        }
+        container.appendChild(createBtn(String(totalPages), totalPages, false, paginaAtualRastreabilidade === totalPages));
+    }
+
+    container.appendChild(createBtn('›', paginaAtualRastreabilidade + 1, paginaAtualRastreabilidade >= totalPages));
+    container.appendChild(createBtn('»', paginaAtualRastreabilidade + 1, paginaAtualRastreabilidade >= totalPages));
 }
 
 function renderizarRastreabilidade(filtros = {}) {
@@ -6464,6 +6562,37 @@ function renderizarRastreabilidade(filtros = {}) {
     renderizarResumoRastreabilidade(lista);
     renderizarTimelineRastreabilidade(lista);
     renderizarTabelaRastreabilidade(lista);
+    
+    // Configurar ordenação com RomaneioTableEnhancements
+    setTimeout(() => {
+        if (window.RomaneioTableEnhancements && document.getElementById('rastreabilidadeTableBody')) {
+            const table = document.querySelector('#rastreabilidadeTableBody').closest('table');
+            if (table) {
+                table.classList.add('romaneio-sortable-table');
+                window.RomaneioTableEnhancements.bindSortableHeaders({
+                    tableSelector: table,
+                    minWidth: '1500px',
+                    columns: [
+                        { key: 'data', type: 'date' },
+                        { key: 'remessaId' },
+                        { key: 'plaqueta' },
+                        { key: 'especie' },
+                        { key: 'autef' },
+                        { key: 'custodia' },
+                        { key: 'numeroRomaneio' },
+                        { key: 'clienteNome' },
+                        { key: 'volumeTora', type: 'number' },
+                        { key: 'volumeProduzido', type: 'number' },
+                        { key: 'rendimento', type: 'number' },
+                        { key: 'status' }
+                    ],
+                    getItems: () => window.rastreabilidadeFiltradaAtual || [],
+                    setPage: (page) => { paginaAtualRastreabilidade = page; renderizarRastreabilidade(window.rastreabilidadeFiltrosAtuais); },
+                    render: () => renderizarTabelaRastreabilidade(window.rastreabilidadeFiltradaAtual || [])
+                });
+            }
+        }
+    }, 0);
 }
 
 function abrirRastreabilidadeMovimentacoes() {

@@ -3451,6 +3451,14 @@
                         <input type="text" id="rastFiltroEspecie" placeholder="Espécie">
                     </div>
                     <div class="form-group">
+                        <label for="rastFiltroAutef">AUTEF:</label>
+                        <input type="text" id="rastFiltroAutef" placeholder="AUTEF">
+                    </div>
+                    <div class="form-group">
+                        <label for="rastFiltroCustodia">Custódia:</label>
+                        <input type="text" id="rastFiltroCustodia" placeholder="Custódia">
+                    </div>
+                    <div class="form-group">
                         <label for="rastFiltroCliente">Cliente/Fornecedor:</label>
                         <input type="text" id="rastFiltroCliente" placeholder="Nome">
                     </div>
@@ -3482,6 +3490,8 @@
                                 <th>Remessa</th>
                                 <th>Plaqueta</th>
                                 <th>Espécie</th>
+                                <th>AUTEF</th>
+                                <th>Custódia</th>
                                 <th>Romaneio</th>
                                 <th>Cliente/Fornecedor</th>
                                 <th>Vol. Tora</th>
@@ -3492,6 +3502,7 @@
                         </thead>
                         <tbody id="rastreabilidadeTableBody"></tbody>
                     </table>
+                    <div id="rastreabilidadePagination" class="pagination-container" style="display:flex; justify-content:center; gap:4px; margin-top:12px; flex-wrap:wrap;"></div>
                 </div>
             </div>
             <div class="modal-footer" style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
@@ -3625,7 +3636,7 @@
     </script>
     <script src="commerce-pdf-share.js?v=bf45a414e8b9"></script>
     <script src="estoque_produtos.js?v=4a7de766ba3b"></script>
-        <script src="estoque.js?v=7c3bc08a7250"></script>
+        <script src="estoque.js?v=11a608d5b561"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });
