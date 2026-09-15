@@ -881,6 +881,7 @@ async function salvarRomaneio() {
                 id: item.id || timestamp + Math.random(),
                 especie: item.especie || 'Desconhecida', // Garantir string
                 plaqueta: item.plaqueta || '',
+                autef: item.autef || item.AUTEF || '', // Blindado: nunca stripar no save
                 comprimento: parseFloat(item.comprimento) || 0,
                 diametro: parseFloat(item.diametro) || parseFloat(item.rodo) || 0,
                 rodo: parseFloat(item.rodo) || parseFloat(item.diametro) || 0,

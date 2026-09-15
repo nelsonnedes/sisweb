@@ -631,3 +631,9 @@ NavegaÃ§Ã£o real (madeportes27@gmail.com, tenant `1774030248295`): index, finanÃ
 - **Save tambem blindado:** salvarRomaneio whitelist usa ...normalizarCamposGeoItemTabela (agora com autef) — salvamentos futuros nao stripam.
 - **Sweep outros cantos:** print (imprimir-romaneio.js) NAO tinha coluna AUTEF — adicionada (normalizacao + th/td + colspan total 7->8, conta 8+3+5+1+1=18 fecha). Estoque so le (geo.autef||item.autef||'-'), sem strip. Landing so texto marketing. Filtros da pagina sao display-only. List-modal do manager lista romaneios (sem autef por item) — sem acao.
 - **Gates:** validate:pr 6/6, node --check, inject+build 477 + hosting deployed.
+
+## 63. Sessao 2026-09-15 - Sweep AUTEF: estoque OK + pre-romaneio ganha AUTEF
+- **Estoque auditado e LIMPO:** editarTora->aplicarCamposGeoEntrada (autefEntrada), atualizarToraEditada/adicionarItemEntrada via obterCamposGeoEntrada (#autefEntrada), normalizar fallback com autef, update {...original,...geo}. Nada a corrigir.
+- **Pre-romaneio NAO tinha AUTEF (gap de continuidade):** adicionado campo #autefTora (form+th), fallback+ler+aplicar+sort accessor+td+colspan 17->18+enter-nav order, item com autef explicito apos ...geo. Save passa {...it} (sem strip) e loader pre->tora faz {...it,...geo} com ToraGeometry (preserva).
+- **Blindagem save tora:** whitelist do salvarRomaneio com autef explicito (anti-regressao futura).
+- **Gates:** validate:pr 6/6, node --check, hosting 477 deployed. Pre-romaneio NAO verificado ao vivo (ui_guard exige login; padrao identico ao tora ja provado) — pedir click-test ao usuario.

@@ -39,6 +39,7 @@ const PREROMANEIO_SORT_COLUMNS_SERRADOS = [
 const PREROMANEIO_SORT_COLUMNS_TORAS = [
     { key: 'plaqueta', accessor: (item) => item.placa || item.plaqueta || '' },
     { key: 'custodia', accessor: (item) => normalizarCamposGeoTora(item).custodia || '' },
+    { key: 'autef', accessor: (item) => normalizarCamposGeoTora(item).autef || item.autef || '' },
     { key: 'especie' },
     { key: 'rodo', type: 'number' },
     { key: 'comprimento', type: 'number' },
@@ -236,6 +237,7 @@ function normalizarCamposGeoTora(item = {}) {
     }
     return {
         custodia: item.custodia || '',
+        autef: item.autef || item.AUTEF || '',
         compGeo: parseFloat(item.compGeo || 0) || 0,
         x1: parseFloat(item.x1 || 0) || 0,
         x2: parseFloat(item.x2 || 0) || 0,
@@ -248,6 +250,7 @@ function normalizarCamposGeoTora(item = {}) {
 function lerCamposGeoTora() {
     return normalizarCamposGeoTora({
         custodia: document.getElementById('custodiaTora')?.value || '',
+        autef: document.getElementById('autefTora')?.value || '',
         compGeo: document.getElementById('compGeoTora')?.value || 0,
         x1: document.getElementById('x1Tora')?.value || 0,
         x2: document.getElementById('x2Tora')?.value || 0,
@@ -264,6 +267,7 @@ function aplicarCamposGeoTora(item = {}) {
         if (el) el.value = value || '';
     };
     set('custodiaTora', geo.custodia);
+    set('autefTora', geo.autef || item.autef || '');
     set('compGeoTora', geo.compGeo);
     set('x1Tora', geo.x1);
     set('x2Tora', geo.x2);
@@ -321,7 +325,7 @@ function setupEnterNavigation() {
 
     const serradosOrder = ['especieInput', 'espessura', 'largura', 'price', 'comprimento', 'quantidade', 'pecasPorPacote'];
     const tlOrder = ['especieInput', 'espessura', 'largura', 'price', 'comprimento', 'quantidade'];
-    const toraOrder = ['placaTora', 'custodiaTora', 'especieToraInput', 'rodoTora', 'compTora', 'oco1Tora', 'oco2Tora', 'compGeoTora', 'x1Tora', 'x2Tora', 'x3Tora', 'x4Tora', 'precoTora'];
+    const toraOrder = ['placaTora', 'custodiaTora', 'autefTora', 'especieToraInput', 'rodoTora', 'compTora', 'oco1Tora', 'oco2Tora', 'compGeoTora', 'x1Tora', 'x2Tora', 'x3Tora', 'x4Tora', 'precoTora'];
 
     const addAndFocus = () => {
         if (currentTab === 'TORA') {
@@ -596,6 +600,8 @@ function adicionarItemTora() {
             placa,
             plaqueta: placa,
             ...geo,
+            // AUTEF explícito após ...geo (continuidade pré → romaneio tora)
+            autef: document.getElementById('autefTora')?.value?.trim() || geo.autef || '',
             especie,
             rodo,
             comprimento: comp,
@@ -664,7 +670,7 @@ function renderizarTabela() {
     configurarTabelaPreRomaneioOrdenavel();
     
     if (romaneioItens.length === 0) {
-        const cols = isTora ? 17 : 10;
+        const cols = isTora ? 18 : 10;
         tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center" style="padding: 20px; color: #999;">Nenhum item adicionado.</td></tr>`;
         renderizarPaginacao(0);
         return;
@@ -695,6 +701,7 @@ function renderizarTabela() {
             tr.innerHTML = `
                 <td data-label="Plaqueta">${item.placa || item.plaqueta || '-'}</td>
                 <td data-label="Custódia">${geo.custodia || '-'}</td>
+                <td data-label="AUTEF">${geo.autef || item.autef || '-'}</td>
                 <td data-label="Espécie">${item.especie}</td>
                 <td data-label="Rodo" class="text-center">${item.rodo}</td>
                 <td data-label="Comp." class="text-center">${item.comprimento}</td>
