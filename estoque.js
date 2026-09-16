@@ -8703,24 +8703,50 @@ function gerarRelatorioMovimentacaoPorRemessa(dataInicio, dataFim, onlySelected 
 
     // Calcular rendimento e formatar romaneios
     const itensFormatados = resultado.map(grupo => {
-        const rendimento = grupo.volumeTotal > 0 ? (grupo.volumeProduzido / grupo.volumeTotal) * 100 : 0;
         const romaneiosArray = Array.from(grupo.romaneiosIds).sort();
+        
+        // Agregar campos dos itens individuais da remessa
+        const itens = grupo.itens || [];
+        const plaquetas = [...new Set(itens.map(m => m.plaqueta || m.placa || '').filter(Boolean))].join(', ');
+        const custodias = [...new Set(itens.map(m => {
+            const geo = normalizarCamposGeoEstoque(m);
+            return geo.custodia || m.custodia || '';
+        }).filter(Boolean))].join(', ');
+        const autefs = [...new Set(itens.map(m => {
+            const geo = normalizarCamposGeoEstoque(m);
+            return geo.autef || m.autef || '';
+        }).filter(Boolean))].join(', ');
+        const especies = [...new Set(itens.map(m => m.especie || '').filter(Boolean))].join(', ');
+        
+        // Para campos numéricos: mostrar min/max ou primeiro valor
+        const rodos = itens.map(m => parseNumeroEstoque(m.rodo || m.diametro || 0)).filter(v => v > 0);
+        const comprimentos = itens.map(m => parseNumeroEstoque(m.comprimento || 0)).filter(v => v > 0);
+        const oco1s = itens.map(m => parseNumeroEstoque(m.oco1 || 0)).filter(v => v > 0);
+        const oco2s = itens.map(m => parseNumeroEstoque(m.oco2 || 0)).filter(v => v > 0);
+        const precos = itens.map(m => parseNumeroEstoque(m.preco || m.precoCusto || 0)).filter(v => v > 0);
+        
+        const rodoStr = rodos.length ? (rodos.length === 1 ? `${rodos[0]} cm` : `${Math.min(...rodos)}–${Math.max(...rodos)} cm`) : '-';
+        const compStr = comprimentos.length ? (comprimentos.length === 1 ? `${comprimentos[0]} cm` : `${Math.min(...comprimentos)}–${Math.max(...comprimentos)} cm`) : '-';
+        const oco1Str = oco1s.length ? (oco1s.length === 1 ? `${oco1s[0]} cm` : `${Math.min(...oco1s)}–${Math.max(...oco1s)} cm`) : '-';
+        const oco2Str = oco2s.length ? (oco2s.length === 1 ? `${oco2s[0]} cm` : `${Math.min(...oco2s)}–${Math.max(...oco2s)} cm`) : '-';
+        const precoStr = precos.length ? (precos.length === 1 ? formatCurrency(precos[0]) : `${formatCurrency(Math.min(...precos))}–${formatCurrency(Math.max(...precos))}`) : '-';
+        
         return {
             data: grupo.data,
             remessaId: grupo.remessaId,
             romaneioId: romaneiosArray.join(', '),
-            plaqueta: '', // Não se aplica no nível de remessa
-            custodia: '',
-            autef: '',
-            especie: '',
-            rodo: 0,
-            comprimento: 0,
-            oco1: 0,
-            oco2: 0,
+            plaqueta: plaquetas || '-',
+            custodia: custodias || '-',
+            autef: autefs || '-',
+            especie: especies || '-',
+            rodo: rodoStr,
+            comprimento: compStr,
+            oco1: oco1Str,
+            oco2: oco2Str,
             volumeTora: grupo.volumeTotal,
             volumeProduzido: grupo.volumeProduzido,
             rendimento: rendimento,
-            preco: 0,
+            preco: precoStr,
             valor: grupo.valorTotal,
             clienteNome: grupo.clienteNome,
             status: 'concluida'
