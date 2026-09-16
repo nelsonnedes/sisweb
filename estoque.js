@@ -8730,6 +8730,7 @@ function gerarRelatorioMovimentacaoPorRemessa(dataInicio, dataFim, onlySelected 
         const oco1Str = oco1s.length ? (oco1s.length === 1 ? `${oco1s[0]} cm` : `${Math.min(...oco1s)}–${Math.max(...oco1s)} cm`) : '-';
         const oco2Str = oco2s.length ? (oco2s.length === 1 ? `${oco2s[0]} cm` : `${Math.min(...oco2s)}–${Math.max(...oco2s)} cm`) : '-';
         const precoStr = precos.length ? (precos.length === 1 ? formatCurrency(precos[0]) : `${formatCurrency(Math.min(...precos))}–${formatCurrency(Math.max(...precos))}`) : '-';
+        const rendimento = grupo.volumeTotal > 0 ? (grupo.volumeProduzido / grupo.volumeTotal) * 100 : 0;
         
         return {
             data: grupo.data,
