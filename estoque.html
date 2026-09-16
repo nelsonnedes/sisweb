@@ -3005,6 +3005,10 @@
                         <option value="produtos_movimentacao">Movimentação de Produtos (Almoxarifado)</option>
                     </select>
                 </div>
+                <div class="form-group" id="relFiltroRemessaGroup" style="display:none;">
+                    <label for="relFiltroRemessa">Remessa:</label>
+                    <input type="text" id="relFiltroRemessa" placeholder="Número ou ID da remessa">
+                </div>
                 <div class="form-group">
                     <label for="relDataInicio">Data Início:</label>
                     <input type="date" id="relDataInicio">
@@ -3641,7 +3645,7 @@
 <script src="commerce-pdf-share.js?v=bf45a414e8b9"></script>
         <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
         <script src="estoque_produtos.js?v=4a7de766ba3b"></script>
-        <script src="estoque.js?v=9cffb408f5f9"></script>
+        <script src="estoque.js?v=47c383802693"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

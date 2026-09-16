@@ -6795,7 +6795,7 @@ function renderRelatorioSelecionarTd(tipo, raw, onlySelected = false, extraAttr 
 }
 
 function isEstoqueReportColumnsSupported(tipoRelatorio) {
-    return ['posicao', 'movimentacao', 'rastreabilidade', 'especies', 'localizacao', 'produtos_saldo', 'produtos_movimentacao'].includes(String(tipoRelatorio || ''));
+    return ['posicao', 'movimentacao', 'movimentacao_remessa', 'rastreabilidade', 'especies', 'localizacao', 'produtos_saldo', 'produtos_movimentacao'].includes(String(tipoRelatorio || ''));
 }
 
 function getEstoqueReportColumnsDefs(tipoRelatorio) {
@@ -7537,7 +7537,8 @@ async function gerarRelatorio(isSort = false) {
 
     const options = {
         tipo: (document.getElementById('relFiltroTipo')?.value || '').trim(),
-        agruparPorResponsavel: !!document.getElementById('relAgruparResponsavel')?.checked
+        agruparPorResponsavel: !!document.getElementById('relAgruparResponsavel')?.checked,
+        remessa: (document.getElementById('relFiltroRemessa')?.value || '').trim()
     };
 
     if (!isSort) {
@@ -7660,16 +7661,23 @@ try {
 
 function updateRelatoriosProdutosFiltersUI() {
     const tipoRelatorio = document.getElementById('tipoRelatorio')?.value || '';
-    const show = tipoRelatorio === 'produtos_movimentacao';
+    const showProdutos = tipoRelatorio === 'produtos_movimentacao';
+    const showRemessa = tipoRelatorio === 'movimentacao_remessa' || tipoRelatorio === 'movimentacao';
     const tipoGroup = document.getElementById('relFiltroTipoGroup');
     const agruparGroup = document.getElementById('relAgruparResponsavelGroup');
-    if (tipoGroup) tipoGroup.style.display = show ? 'block' : 'none';
-    if (agruparGroup) agruparGroup.style.display = show ? 'block' : 'none';
-    if (!show) {
+    const remessaGroup = document.getElementById('relFiltroRemessaGroup');
+    if (tipoGroup) tipoGroup.style.display = showProdutos ? 'block' : 'none';
+    if (agruparGroup) agruparGroup.style.display = showProdutos ? 'block' : 'none';
+    if (remessaGroup) remessaGroup.style.display = showRemessa ? 'block' : 'none';
+    if (!showProdutos) {
         const tipoEl = document.getElementById('relFiltroTipo');
         const chk = document.getElementById('relAgruparResponsavel');
         if (tipoEl) tipoEl.value = '';
         if (chk) chk.checked = false;
+    }
+    if (!showRemessa) {
+        const remessaEl = document.getElementById('relFiltroRemessa');
+        if (remessaEl) remessaEl.value = '';
     }
 }
 
@@ -7681,6 +7689,7 @@ function obterTituloRelatorioEstoque(tipo) {
         autef: 'Estoque Por AUTEF (Toras)',
         localizacao: 'Estoque Por AUTEF (Toras)',
         movimentacao: 'Movimentação de Toras',
+        movimentacao_remessa: 'Movimentação por Remessa',
         rastreabilidade: 'Rastreabilidade de Toras',
         produtos_saldo: 'Saldo de Produtos (Almoxarifado)',
         produtos_movimentacao: 'Movimentação de Produtos (Almoxarifado)'
@@ -8599,9 +8608,18 @@ function gerarRelatorioMovimentacao(dataInicio, dataFim, onlySelected = false, o
         return '<p>Informe o período para o relatório de movimentação.</p>';
     }
 
+    const remessaFiltro = (options && options.remessa) ? String(options.remessa).trim().toLowerCase() : '';
+    let movFiltradas = movimentacoes.filter(m => m.data >= dataInicio && m.data <= dataFim);
+    if (remessaFiltro) {
+        movFiltradas = movFiltradas.filter(m => {
+            const remessaId = String(m.remessaId || '').toLowerCase();
+            return remessaId.includes(remessaFiltro);
+        });
+    }
+
     const movPeriodo = filtrarItensSelecionadosRelatorio(
         'movimentacao',
-        movimentacoes.filter(m => m.data >= dataInicio && m.data <= dataFim),
+        movFiltradas,
         getRelatorioMovimentacaoKey,
         onlySelected
     );
@@ -8619,10 +8637,18 @@ function gerarRelatorioMovimentacaoPorRemessa(dataInicio, dataFim, onlySelected 
         return '<p>Informe o período para o relatório de movimentação por remessa.</p>';
     }
 
+    const remessaFiltro = (options && options.remessa) ? String(options.remessa).trim().toLowerCase() : '';
+
     // Filtrar movimentações do tipo saida que tenham remessaId
     const movSaida = movimentacoes.filter(m => {
         if (m.tipo !== 'saida') return false;
-        return m.data >= dataInicio && m.data <= dataFim && m.remessaId;
+        if (m.data < dataInicio || m.data > dataFim) return false;
+        if (!m.remessaId) return false;
+        if (remessaFiltro) {
+            const remessaId = String(m.remessaId || '').toLowerCase();
+            return remessaId.includes(remessaFiltro);
+        }
+        return true;
     });
 
     const movFiltrada = filtrarItensSelecionadosRelatorio(
