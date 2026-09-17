@@ -102,3 +102,6 @@ logs-*.md
 *.xlsx
 *.xlsm
 !assets/modelos/*.xlsx
+
+# PWA icon backups gerados do favicon
+assets/icons/*.bak
