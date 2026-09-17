@@ -6,7 +6,7 @@
     if (typeof window === 'undefined' || window.__siswebPWAInitialized) return;
     window.__siswebPWAInitialized = true;
 
-    const PWA_VERSION = '2026-09-17-mobile-app-fix-v1';
+    const PWA_VERSION = '2026-09-17-mobile-data-fix-v2';
     const state = {
         deferredPrompt: null,
         floatingButton: null,
