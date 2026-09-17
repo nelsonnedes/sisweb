@@ -1,7 +1,7 @@
 {
-  "name": "Sisweb",
+  "name": "Sisweb - Sistema de Gestão Madeireira",
   "short_name": "Sisweb",
-  "description": "Sistema Sisweb",
+  "description": "Sisweb - Sistema de Gestão Madeireira",
   "id": "/index.html",
   "start_url": "/index.html",
   "scope": "/",
