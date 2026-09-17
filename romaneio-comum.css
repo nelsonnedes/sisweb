@@ -3016,3 +3016,21 @@ button.btn-importar:hover,
         line-height: 1 !important;
     }
 }
+
+/* === MOBILE APP-LIKE FIX - Data emissão + scroll lateral (2026-09-17) === */
+html, body { max-width: 100%; overflow-x: clip; }
+body { overscroll-behavior-x: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+.table-responsive, .table-container, .romaneio-scroll-x { overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; }
+@media (max-width: 768px) {
+  html, body { overflow-x: hidden !important; max-width: 100vw !important; }
+  .container, body > .container { max-width: 100% !important; width: calc(100% - 16px) !important; margin: 0 auto !important; padding-left: 12px !important; padding-right: 12px !important; }
+  body { padding: 8px !important; }
+  /* Data emissão - neutraliza min-width 200/420 que estoura 641-768 */
+  .form-row, .romaneio-header-fields, .campos-grid { display: block !important; gap: 10px !important; }
+  .form-row .form-group, .romaneio-date-field, .romaneio-client-field, .campos-grid .form-group,
+  [style*="flex: 0.2"], [style*="flex: 0.4"], .species-default-field { min-width: 0 !important; width: 100% !important; flex: 1 1 auto !important; max-width: 100% !important; }
+  .geo-fields, .geo-fields .form-group { min-width: 0 !important; }
+  input, select, textarea { max-width: 100% !important; min-width: 0 !important; box-sizing: border-box !important; }
+  .form-buttons, .pre-romaneio-group { flex-wrap: wrap !important; white-space: normal !important; width: 100% !important; display: grid !important; grid-template-columns: 1fr !important; gap: 8px !important; }
+  .pre-romaneio-group select { min-width: 0 !important; width: 100% !important; }
+}
