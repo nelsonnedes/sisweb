@@ -3034,3 +3034,6 @@ body { overscroll-behavior-x: contain; touch-action: pan-y; -webkit-overflow-scr
   .form-buttons, .pre-romaneio-group { flex-wrap: wrap !important; white-space: normal !important; width: 100% !important; display: grid !important; grid-template-columns: 1fr !important; gap: 8px !important; }
   .pre-romaneio-group select { min-width: 0 !important; width: 100% !important; }
 }
+
+/* MOBILE FIX data v3 - 2026-09-17 - input date estouro */
+@media(max-width:768px){#dataRomaneio,#romaneioData,#dataRomaneioTora,input[type="date"]{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;display:block!important}.form-group:has(#dataRomaneio),.form-group:has(#romaneioData),.romaneio-date-field{width:100%!important;max-width:100%!important;min-width:0!important;overflow:hidden!important;display:block!important}}

@@ -211,3 +211,6 @@ body { max-width: 100%; overflow-x: clip; overscroll-behavior: contain; touch-ac
   .container { max-width: 100% !important; width: calc(100% - 16px) !important; margin: 0 auto !important; }
   body { padding: 8px !important; }
 }
+
+/* MOBILE FIX data v3 - 2026-09-17 - input date estouro */
+@media(max-width:768px){#dataRomaneio,#romaneioData,#dataRomaneioTora,input[type="date"]{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;display:block!important}.form-group:has(#dataRomaneio),.form-group:has(#romaneioData),.romaneio-date-field{width:100%!important;max-width:100%!important;min-width:0!important;overflow:hidden!important;display:block!important}}
