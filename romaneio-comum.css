@@ -3037,3 +3037,11 @@ body { overscroll-behavior-x: contain; touch-action: pan-y; -webkit-overflow-scr
 
 /* MOBILE FIX data v3 - 2026-09-17 - input date estouro */
 @media(max-width:768px){#dataRomaneio,#romaneioData,#dataRomaneioTora,input[type="date"]{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;display:block!important}.form-group:has(#dataRomaneio),.form-group:has(#romaneioData),.romaneio-date-field{width:100%!important;max-width:100%!important;min-width:0!important;overflow:hidden!important;display:block!important}}
+/* FIX altura e borda arredondada - 2026-09-17 v4 */
+#dataRomaneio, #romaneioData, #dataRomaneioTora { height: 42px !important; padding: 8px 12px !important; border: 1px solid #d1d5db !important; border-radius: 8px !important; box-sizing: border-box !important; line-height: 1.5 !important; font-size: 14px !important; background: #f8fafc !important; }
+@media(max-width:768px){
+  #dataRomaneio, #romaneioData, #dataRomaneioTora { height: 44px !important; border-radius: 8px !important; }
+  /* Gear dropdown centralizado no mobile */
+  .settings-dropdown .settings-panel { position: fixed !important; left: 12px !important; right: 12px !important; width: auto !important; max-width: none !important; transform: none !important; margin: 0 !important; top: 62px !important; max-height: calc(100vh - 80px) !important; overflow-y: auto !important; }
+  .sisweb-menu-shell .alerts-panel { left: 12px !important; right: 12px !important; width: auto !important; max-width: none !important; }
+}

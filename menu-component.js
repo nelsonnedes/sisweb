@@ -6,7 +6,7 @@
     if (typeof window === 'undefined' || window.__siswebPWAInitialized) return;
     window.__siswebPWAInitialized = true;
 
-    const PWA_VERSION = '2026-09-17-mobile-data-fix-v3';
+    const PWA_VERSION = '2026-09-17-mobile-data-fix-v4';
     const state = {
         deferredPrompt: null,
         floatingButton: null,
@@ -870,6 +870,20 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                         border-radius: 14px;
                         box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
                         overflow: hidden;
+                    }
+                    @media(max-width:768px){
+                        .settings-dropdown .settings-panel, .sisweb-menu-shell .alerts-panel {
+                            position: fixed !important;
+                            left: 12px !important;
+                            right: 12px !important;
+                            width: auto !important;
+                            max-width: none !important;
+                            transform: none !important;
+                            margin: 0 !important;
+                            top: 62px !important;
+                            max-height: calc(100vh - 80px) !important;
+                            overflow-y: auto !important;
+                        }
                     }
                     .settings-profile-card-slot {
                         padding: 0;
