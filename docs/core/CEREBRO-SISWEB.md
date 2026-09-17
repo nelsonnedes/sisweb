@@ -660,3 +660,9 @@ NavegaÃ§Ã£o real (madeportes27@gmail.com, tenant `1774030248295`): index, finanÃ
 - **XLSX lib:** CDN https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js adicionado no HTML.
 - **Gates:** validate:pr 6/6, hosting 477, deployed.
 - **Teste:** selecionar tipo Movimentação por Remessa, preencher datas, gerar ? tabela com agrupamento por remessa; clicar Exportar Excel ? baixa .xlsx.
+## 66. Sessao 2026-09-16 - Hotfix Relatorio Movimentacao por Remessa (ReferenceError)
+- **Incidente pos-deploy:** ReferenceError: rendimento is not defined em estoque.js:8748 ao gerar Relatorio Movimentacao por Remessa (logs.md 2026-09-16T19:51:57). Report trava em obterConteudoRelatorio -> gerarRelatorio.
+- **Causa raiz:** ao agregar Plaqueta/Custodia/AUTEF/Esp/Rodo/Comp/Ocos/Preco por remessa (d32b380), dupliquei const rendimento e const romaneiosArray dentro do .map — removi a 1a ocorrencia e o eturn ficou sem endimento no escopo.
+- **Fix:** reinserido const rendimento = grupo.volumeTotal>0 ? (grupo.volumeProduzido/grupo.volumeTotal)*100 : 0 antes do return. 
+ode --check OK, alidate:pr 6/6, hosting 477 (21608647 bytes) redeployed, commit 52c4e3e.
+- **Outros logs do mesmo boot:** 100 especies carregadas 2x, 6 caminhos candidatos em paralelo, Firebase conectado — tudo normal, sem acao.
