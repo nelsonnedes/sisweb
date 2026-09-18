@@ -775,3 +775,4 @@ G# 75. Sessao 2026-09-17 - Captura Completa de Telas Sanitizadas (Desktop & Mobi
   - `npm test`: 571 testes passando, 0 falhas, 1 skipped.
   - `npm run validate:pr`: 6/6 etapas aprovadas com sucesso.
   - Injetados cachebusters e gerado build de hosting (`build:hosting` 477 arquivos).
+- **Fix regressao desktop v12:** omaneio-comum.css:3040 com display:block !important; width:100% !important fora de @media fazia omaneiotora.html em desktop (1200px) abrir como mobile (form empilhado). Fix: removido display:block/width do global, mantido apenas height/border/radius fora, e display:block/width:100% apenas dentro de @media(768px) para mobile. Validado desktop com lex:0.2/0.4 intacto, mobile com lock e max-width:200px.
