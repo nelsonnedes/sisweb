@@ -724,3 +724,14 @@ o-cache para sempre buscar byte novo. setupUpdateChecks ja cobre PWA instalado: 
 - **Correcao preventiva:** Restaurado bloco CSS de cards e modais em preromaneio.html.
 - **Validacao:** validate:pr 6/6 OK, 571 testes passando, 0 falhas, build:hosting gerado com 477 arquivos.
 - **Follow-up paginacao v10 (fix definitivo):** usuario confirmou que paginacao subia junto com os cards (transparente sobreposta) em todos os modais de lista (clientes, fornecedores, especies, romaneios) ao rolar para cima em mobile. Causa: omaneio-comum.css:3053 com position:static; background:transparent fazia barra rolar com o conteudo. Fix: position:sticky; bottom:0; background:#f8fafc; border-top:1px #e2e8f0; z-index:10 + modal-body {display:flex; flex-direction:column; overflow:hidden} e .table-container {flex:1 1 auto; overflow-y:auto} para tabela rolar e paginacao ficar fixa no rodape, fora do scroll, com fundo solido. Testado com Exibir 5/10/50/100 e Densidade Normal/Compacta/Confortavel em 5 paginas x 4 abas.
+
+
+## 72. Sessao 2026-09-17 - Redesign Visual de subscription.html (Harmonizacao com Landing Vendas)
+- **Harmonizacao Visual & Identidade:** Padronizacao completa da pagina de checkout de assinaturas (`subscription.html`) com a identidade visual nobre da `landing-vendas.html` (estetica 'Patio de Toras / Estudio Madeireiro'):
+  - Tipografia: *Fraunces* (display editorial para titulos e precos) + *Inter* (corpo e badges).
+  - Cores: Paleta madeira Mogno (`#7C3F16`), Serragem Dourada (`#E39A2D`), Mata Tropical (`#194D33`), Casca Escura (`#1C130B`) e Areia Suave (`#F4EAD8`).
+  - Topbar de Branding: Adicionada navegacao institucional superior (`.subscription-header-brand`) com logo Sisweb, badges de confianca (Ativacao Imediata, PIX Automatico, Criptografia de Ponta a Ponta) e link direto para a landing.
+  - Planos Comerciais & Cards: Cards com gradientes escuros translucidos, backdrop-filter de vidro temperado, elevacao sutil, destaques com selo 'Mais Popular' em Mogno/Serragem, lista de recursos com checkmarks verdes e botoes de acao de alto impacto.
+  - Modais de Pagamento & Guia Rapido: Modais modernizados com contraste nitido, suporte a QR Code PIX responsivo, copia e cola e guia rapido com lightbox visual.
+- **Integridade Tecnica & Zero Regressoes:** Todos os seletores, IDs, scripts (`plansContainer`, `campaignStrip`, `subscriptionTitle`, `paymentBrick_container`, `partnerCodeBox`, etc.), integracao Mercado Pago, PIX e testes unitarios rigorosamente preservados.
+- **Validacao:** `npm test` (571 testes passando, 0 falhas), `npm run validate:pr` (6/6 etapas OK), `inject-cachebusters.mjs` e `build:hosting` executados com sucesso (477 arquivos).
