@@ -231,7 +231,8 @@ class RomaneioManager {
                     if (typeof window.firebaseService.saveToFirebase === 'function') {
                         await window.firebaseService.saveToFirebase(this.collectionKey, String(id), record, { silent: true });
                     } else if (typeof window.firebaseService.saveData === 'function') {
-                        await window.firebaseService.saveData(`${this.collectionKey}/${id}`, record);
+                        // saveData(path, key, data) no singleton (2 args gravava "[object Object]")
+                        await window.firebaseService.saveData(this.collectionKey, String(id), record);
                     }
                     count++;
                 }

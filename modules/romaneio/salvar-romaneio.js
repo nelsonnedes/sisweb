@@ -447,9 +447,10 @@ window.SalvarRomaneio = (function() {
                 }
             }
             // Tentar salvar no Firebase primeiro (unificado), depois serviço legado
-            if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
+            // saveToFirebase(path, key, data): 3 args (2 args em saveData do singleton gravava "[object Object]")
+            if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
                 try {
-                    await window.firebaseService.saveData(`romaneios/tl/${romaneio.id}`, romaneio);
+                    await window.firebaseService.saveToFirebase('romaneios/tl', String(romaneio.id), romaneio);
                     console.log('✅ Romaneio salvo no Firebase (unificado)');
                     
                     salvarLocalStorage(romaneio);

@@ -557,7 +557,8 @@ window.GerenciarEspecies = (function() {
                     if (svc && typeof svc.saveToFirebase === 'function') {
                         firebaseResult = await svc.saveToFirebase('especies', especie.id, especie);
                     } else if (svc && typeof svc.saveData === 'function') {
-                        firebaseResult = await svc.saveData(`especies/${especie.id}`, especie);
+                        // saveData(path, key, data) no singleton (2 args gravava "[object Object]")
+                        firebaseResult = await svc.saveData('especies', String(especie.id), especie);
                     } else if (window.databaseAdapter && typeof window.databaseAdapter.saveData === 'function') {
                         firebaseResult = await window.databaseAdapter.saveData(`especies/${especie.id}`, especie);
                     }

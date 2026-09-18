@@ -346,7 +346,8 @@ async function deduplicarFornecedores(commit = false) {
             for (const f of toDelete) {
                 try {
                     const basePath = getFornecedorBasePath();
-                    await window.firebaseService.deleteFromFirebase(basePath, String(f._key || f.id));
+                    // deleteFromFirebase(path): 1 arg — passar o caminho completo do registro
+                    await window.firebaseService.deleteFromFirebase(`${basePath}/${String(f._key || f.id)}`);
                     removed++;
                     console.log(`🗑️ Removido duplicado: ${f.nome || f.name} (${f._key || f.id})`);
                 } catch (e) {
@@ -1160,7 +1161,8 @@ async function saveClient(event) {
                     savedOk = true;
                     savedId = id;
                 } else if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
-                    await window.firebaseService.saveData(`${basePath}/${id}`, fornecedorData);
+                    // saveData(path, key, data) no singleton (2 args gravava "[object Object]")
+                    await window.firebaseService.saveData(basePath, String(id), fornecedorData);
                     savedOk = true;
                     savedId = id;
                 }
@@ -1173,7 +1175,8 @@ async function saveClient(event) {
                     savedOk = true;
                     savedId = newId;
                 } else if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
-                    await window.firebaseService.saveData(`${basePath}/${newId}`, fornecedorData);
+                    // saveData(path, key, data) no singleton (2 args gravava "[object Object]")
+                    await window.firebaseService.saveData(basePath, String(newId), fornecedorData);
                     savedOk = true;
                     savedId = newId;
                 }
@@ -1509,7 +1512,8 @@ async function excluirFornecedor(fornecedorId) {
                 } else if (typeof window.firebaseService.saveToFirebase === 'function') {
                     await window.firebaseService.saveToFirebase(basePath, String(fornecedorId), null);
                 } else if (typeof window.firebaseService.saveData === 'function') {
-                    await window.firebaseService.saveData(directItemPath, null);
+                    // saveData(path, key, data) no singleton (2 args gravava "[object Object]")
+                    await window.firebaseService.saveData(basePath, String(fornecedorId), null);
                 }
             } catch (fbErr) {
                 console.warn("⚠️ Erro ao remover do Firebase:", fbErr);

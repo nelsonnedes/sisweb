@@ -1476,7 +1476,8 @@ class SpeciesManager {
                     await window.firebaseService.saveToFirebase('especies', safeId, { ...canonicalRecord, id: safeId });
                     console.log(`✅ Espécie salva via firebaseService em especies/${safeId}`);
                 } else if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
-                    await window.firebaseService.saveData(`especies/${safeId}`, { ...canonicalRecord, id: safeId });
+                    // saveData(path, key, data) no singleton (2 args gravava "[object Object]")
+                    await window.firebaseService.saveData('especies', safeId, { ...canonicalRecord, id: safeId });
                     console.log(`✅ Espécie salva via firebaseService.saveData em especies/${safeId}`);
                 } else if (window.databaseAdapter && typeof window.databaseAdapter.saveData === 'function') {
                     await window.databaseAdapter.saveData(`especies/${safeId}`, { ...canonicalRecord, id: safeId });

@@ -7025,10 +7025,11 @@ async function reativarBotaoRomaneio(romaneioId, tipo = 'tl') {
             
             
             // ✅ CORREÇÃO: Atualizar APENAS o registro alvo no caminho canônico.
+            // saveData(path, key, data): 3 args no singleton (2 args gravava "[object Object]")
             if (typeof service.saveToFirebase === 'function') {
                 expectFinanceWrite(await service.saveToFirebase(collection, registroId, registroAtualizado), 'Reativação do romaneio');
             } else if (typeof service.saveData === 'function') {
-                await service.saveData(`${collection}/${registroId}`, registroAtualizado);
+                await service.saveData(collection, String(registroId), registroAtualizado);
             }
             
             // ✅ MELHORIA: Forçar atualização do modal correspondente

@@ -136,7 +136,8 @@
             return firebaseService.saveToFirebase(nodePath, String(id), data);
         }
         if (typeof firebaseService.saveData === 'function') {
-            return firebaseService.saveData(`${nodePath}/${id}`, data);
+            // saveData(path, key, data) no singleton (2 args gravava "[object Object]")
+            return firebaseService.saveData(nodePath, String(id), data);
         }
         throw new Error('Método de salvamento não disponível');
     }

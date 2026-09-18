@@ -3343,7 +3343,8 @@ async function excluirRomaneio(romaneioId) {
                 if (typeof window.firebaseService.saveToFirebase === 'function') {
                     deleteResult = await window.firebaseService.saveToFirebase('romaneios/tora', String(chaveFirebaseParaExcluir), null);
                 } else if (typeof window.firebaseService.deleteFromFirebase === 'function') {
-                    deleteResult = await window.firebaseService.deleteFromFirebase('romaneios/tora', chaveFirebaseParaExcluir);
+                    // deleteFromFirebase(path): 1 arg — caminho completo (2 args apagariam a coleção!)
+                    deleteResult = await window.firebaseService.deleteFromFirebase(`romaneios/tora/${chaveFirebaseParaExcluir}`);
                 } else if (typeof window.firebaseService.removeFromFirebase === 'function') {
                     deleteResult = await window.firebaseService.removeFromFirebase(`romaneios/tora/${chaveFirebaseParaExcluir}`);
                 }

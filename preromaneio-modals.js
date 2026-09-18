@@ -1130,8 +1130,13 @@ async function excluirPreRomaneio(id) {
     if (!confirm('Tem certeza que deseja excluir este Pré-Romaneio?')) return;
 
     try {
-        // Check if deleteData exists, otherwise try removeData or direct firebase
-        if (window.firebaseService.deleteData) {
+        // deleteFromFirebase(path)/removeFromFirebase(path): 1 arg com caminho completo
+        // (deleteData não existe no singleton — verificar antes para não lançar TypeError)
+        if (window.firebaseService.deleteFromFirebase) {
+            await window.firebaseService.deleteFromFirebase(`preromaneios/${id}`);
+        } else if (window.firebaseService.removeFromFirebase) {
+            await window.firebaseService.removeFromFirebase(`preromaneios/${id}`);
+        } else if (window.firebaseService.deleteData) {
             await window.firebaseService.deleteData(`preromaneios/${id}`);
         } else if (window.firebaseService.removeData) {
             await window.firebaseService.removeData(`preromaneios/${id}`);

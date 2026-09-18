@@ -1242,10 +1242,11 @@ async function salvarPreRomaneio() {
             const idToSave = payload.id || Date.now().toString();
             const dataToSave = { ...payload, id: idToSave };
             let result = null;
-            if (typeof window.firebaseService.saveData === 'function') {
-                result = await window.firebaseService.saveData(`preromaneios/${idToSave}`, dataToSave);
-            } else if (typeof window.firebaseService.saveToFirebase === 'function') {
-                result = await window.firebaseService.saveToFirebase('preromaneios', idToSave, dataToSave);
+            // saveToFirebase(path, key, data): forma canônica nos dois serviços (S1 e TL)
+            if (typeof window.firebaseService.saveToFirebase === 'function') {
+                result = await window.firebaseService.saveToFirebase('preromaneios', String(idToSave), dataToSave);
+            } else if (typeof window.firebaseService.saveData === 'function') {
+                result = await window.firebaseService.saveData('preromaneios', String(idToSave), dataToSave);
             } else if (window.firebaseServiceTL && typeof window.firebaseServiceTL.saveData === 'function') {
                 result = await window.firebaseServiceTL.saveData(`preromaneios/${idToSave}`, dataToSave);
             }
