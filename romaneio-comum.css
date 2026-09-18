@@ -702,14 +702,11 @@ textarea:focus {
     padding: 0 !important;
 }
 
-/* Container da tabela e rolagem do corpo (compatível com sticky header) */
-#speciesListModal .table-container {
-    overflow: visible !important; /* evita scroll duplo e permite sticky */
-}
+/* Container da tabela: o modelo flex final (bloco PAGINACAO FIXA, fim do arquivo)
+   define overflow/scroll — regras antigas removidas para não competir. */
 
 #speciesListModal .modal-body {
     max-height: none !important;
-    overflow-y: auto !important;
 }
 
 /* ====== Responsivo ====== */
@@ -955,9 +952,8 @@ textarea:focus {
 #speciesListModal .table-container {
     border: 1px solid #dbe4ef !important;
     border-radius: 8px !important;
-    overflow: auto !important;
-    max-height: 56vh !important;
     background: #fff !important;
+    /* overflow/max-height: definidos pelo modelo flex final no fim do arquivo */
 }
 
 #clientListModal .table,

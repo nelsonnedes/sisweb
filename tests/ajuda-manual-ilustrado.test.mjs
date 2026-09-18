@@ -37,10 +37,13 @@ test('ajuda manual usa prints sanitizados sem imagens externas ou help-assets pu
   }
 
   assert.ok(firebaseConfig.hosting.ignore.includes('help-assets/**'), 'help-assets precisa ficar fora do Hosting');
-  assert.ok(
-    firebaseConfig.hosting.headers.some((item) => item.source === 'assets/help-manual/**/*.@(png|webp|avif)'),
-    'prints do manual precisam ter cache proprio no Hosting'
-  );
+  // extglob @(...) nao e suportado pelo Hosting — precisa de entradas separadas por extensao
+  for (const source of ['assets/help-manual/**/*.png', 'assets/help-manual/**/*.webp', 'assets/help-manual/**/*.avif']) {
+    assert.ok(
+      firebaseConfig.hosting.headers.some((item) => item.source === source),
+      `prints do manual precisam ter cache proprio no Hosting (${source})`
+    );
+  }
 });
 
 test('ajuda cobre modulos publicos e oculta conteudo interno de super admin', () => {
