@@ -710,3 +710,16 @@ o-cache para sempre buscar byte novo. setupUpdateChecks ja cobre PWA instalado: 
 - **Texto Comercial WhatsApp V2:** Substituida mencao a AUTEF/DOF por 'Controle de estoque de toras com Plaqueta, Cadeia de Custodia e Rastreabilidade' e adicionados icones refinados (estrela/brilho, escudo, etiqueta, arvore).
 
 - **Follow-up 68h (paginacao no meio - analise do usuario correta):** print mostrava paginacao Exibir 10 por pagina entre dois cards, transparente sobrepondo. Confirmado: omaneio-comum.css:3053 com position:static; background:transparent fazia barra rolar junto com 	able-container overflow:visible (mobile) e ficar no meio quando 	able expandia. Fix: position:sticky; bottom:0; background:#f8fafc; border-top:1px #e2e8f0; z-index:10 + modal-body padding-bottom:12px e 	able-container padding-bottom:16px para ultimo card nao ficar escondido atras da barra fixa. Testado com Exibir 5/10/50/100 e Densidade Normal/Compacta/Confortavel (QA 390px) - paginacao agora no final, apos todos os cards, sem sobrepor, com fundo solido.
+
+
+## 71. Sessao 2026-09-17 - Roteamento pos-login de contas de Parceiro e Auditoria de CTAs da Landing
+- **Diagnostico:** Ao fazer login pelo botao 'Entrar' no topo da landing page, contas de usuario 'Apenas Parceiro' (sem companyId cadastrado) eram redirecionadas indevidamente para subscription.html?reason=subscription_required. Causa raiz: login.html nao importava getMyPartnerStatus no modulo firebaseService.js, tornando window.firebaseService.getMyPartnerStatus indefinido e fazendo com que isPartnerOnlyAccount() falhasse silenciosamente para false.
+- **Fix Roteamento Parceiro:**
+  1. login.html: getMyPartnerStatus importado e exposto em window.firebaseService e window.getMyPartnerStatus.
+  2. auth.js: isPartnerOnlyAccount(userDetails) aprimorado para consultar fallback global e aceitar userDetails.accountType === 'partner'. Implementado clearPartnerAccountRouteCache() disparado no login() e logout().
+  3. tests/partner-program.test.mjs: assercoes atualizadas e validadas.
+- **Auditoria de CTAs da Landing Page (landing-vendas.html):**
+  - Topo: 'Meu painel do Parceiro' -> portal-parceiro.html; 'Entrar' -> login.html (agora redireciona parceiro automaticamente para portal-parceiro.html e cliente para index.html ou planos); 'Comecar agora' -> login.html?mode=register.
+  - Secao Parceiros: 'Inscrever-se como Parceiro' -> cadastro-parceiro.html; 'Acessar meu Painel' -> portal-parceiro.html; 'Indique com seu codigo' -> login.html?mode=register.
+- **Correcao preventiva:** Restaurado bloco CSS de cards e modais em preromaneio.html.
+- **Validacao:** validate:pr 6/6 OK, 571 testes passando, 0 falhas, build:hosting gerado com 477 arquivos.

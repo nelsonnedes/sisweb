@@ -451,7 +451,7 @@ test('roteamento identifica conta so-parceiro sem tocar fluxo cliente', () => {
   assert.match(svc, /async function getMyPartnerStatus\(\)/);
   assert.match(svc, /getMyPartnerStatus\|getMyPartnerDashboard/);
   const auth = readFileSync('auth.js', 'utf8');
-  assert.match(auth, /async function isPartnerOnlyAccount\(\)/);
+  assert.match(auth, /async function isPartnerOnlyAccount\(/);
   assert.match(auth, /5 \* 60 \* 1000/);
   assert.match(auth, /opts\.checkPartner === true/);
   assert.match(auth, /return 'portal-parceiro\.html';/);
@@ -459,6 +459,7 @@ test('roteamento identifica conta so-parceiro sem tocar fluxo cliente', () => {
   assert.doesNotMatch(guardCall.slice(0, 2000), /checkPartner/);
   const login = readFileSync('login.html', 'utf8');
   assert.match(login, /checkPartner: true/);
+  assert.match(login, /getMyPartnerStatus/);
 });
 
 test('topbar nao estoura em mobile: parceiro sai do topo em 480px', () => {

@@ -848,7 +848,7 @@
     </div>
 
     <script src="js/deep-clean.js?v=26495e9d74f4"></script>
-    <script src="auth.js?v=3e7cb59cef68"></script>
+    <script src="auth.js?v=b94996251eaf"></script>
     <script src="superadmin-mfa.js?v=27ab1839aafe"></script>
     <script>
         // ═══════════════════════════════════════════════════════════════════════
@@ -1396,10 +1396,11 @@
         // MÓDULO CANÔNICO: Firebase + controle de sessão + Fale Conosco
         // Registro e Recuperação usam exclusivamente authService (sem duplicatas).
         // ═══════════════════════════════════════════════════════════════════════
-        import { authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence, app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ensureInitialized } from './firebaseService.js?v=2e758273082a';
+        import { authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence, getMyPartnerStatus, app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ensureInitialized } from './firebaseService.js?v=2e758273082a';
 
         try { ensureInitialized(); } catch (_) {}
-        window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence };
+        window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence, getMyPartnerStatus };
+        window.getMyPartnerStatus = getMyPartnerStatus;
         if (typeof window.runLoginHealthCheck === 'function') {
             window.runLoginHealthCheck();
         }

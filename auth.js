@@ -1037,16 +1037,30 @@ function isPartnerPortalTarget(value) {
 }
 
 let __partnerAccountRouteCache = null;
-async function isPartnerOnlyAccount() {
+function clearPartnerAccountRouteCache() {
+    __partnerAccountRouteCache = null;
+}
+
+async function isPartnerOnlyAccount(userDetails) {
     try {
+        if (userDetails && (userDetails.accountType === 'partner' || userDetails.isPartner === true)) {
+            return true;
+        }
         if (__partnerAccountRouteCache && (Date.now() - __partnerAccountRouteCache.at) < 5 * 60 * 1000) {
             return __partnerAccountRouteCache.value === true;
         }
         let value = false;
         const svc = (typeof window !== 'undefined' && window.firebaseService) ? window.firebaseService : null;
-        if (svc && typeof svc.getMyPartnerStatus === 'function') {
+        const fn = (svc && typeof svc.getMyPartnerStatus === 'function')
+            ? svc.getMyPartnerStatus
+            : (typeof window !== 'undefined' && typeof window.getMyPartnerStatus === 'function'
+                ? window.getMyPartnerStatus
+                : (typeof window !== 'undefined' && window.partnerPortalServices && typeof window.partnerPortalServices.getMyPartnerStatus === 'function'
+                    ? window.partnerPortalServices.getMyPartnerStatus
+                    : null));
+        if (fn) {
             const res = await Promise.race([
-                svc.getMyPartnerStatus(),
+                fn(),
                 new Promise((resolve) => setTimeout(() => resolve(null), 4000))
             ]);
             value = !!(res && res.success === true && res.data && res.data.isPartner === true);
@@ -1108,7 +1122,7 @@ async function resolvePostLoginRoute(userDetails, options = {}) {
         // Restrito aos fluxos de login (opts.checkPartner) para não alterar guards de navegação.
         if (opts.checkPartner === true) {
             try {
-                if (await isPartnerOnlyAccount()) return 'portal-parceiro.html';
+                if (await isPartnerOnlyAccount(user)) return 'portal-parceiro.html';
             } catch (_) {}
         }
         if (statusKey === 'active') return 'company.html?reason=link_company';
@@ -1544,10 +1558,12 @@ async function login(email, password) {
         await waitForFirebaseService();
         
         // Tentar login usando firebaseService
+        clearPartnerAccountRouteCache();
         const authService = getAuthService();
         const result = await authService.login(normalizedEmail, rawPassword);
         
         if (result.success) {
+            clearPartnerAccountRouteCache();
             console.log("✅ Login bem-sucedido");
             const user = result.user;
 
@@ -1724,6 +1740,7 @@ async function logout() {
             localStorage.removeItem('auth');
             clearDurableAuthSession();
             clearCompanyContextCache();
+            clearPartnerAccountRouteCache();
             sessionStorage.clear();
             try { window.__SESSION_SUPERADMIN = false; } catch (_) {}
             try { window.__SESSION_SUPERADMIN_UID = ''; } catch (_) {}
@@ -2042,7 +2059,9 @@ window.authFunctions = {
     getCurrentUserDetails,
     startTrial,
     activateSubscription,
-    setupAuthListener
+    setupAuthListener,
+    isPartnerOnlyAccount,
+    clearPartnerAccountRouteCache
 };
 
 // Também exportar diretamente no window para compatibilidade total
@@ -2052,6 +2071,8 @@ window.resolveSubscriptionRedirect = resolveSubscriptionRedirect;
 window.normalizeInternalRedirectTarget = normalizeInternalRedirectTarget;
 window.resolvePostLoginRoute = resolvePostLoginRoute;
 window.enforceSubscriptionGuard = enforceSubscriptionGuard;
+window.isPartnerOnlyAccount = isPartnerOnlyAccount;
+window.clearPartnerAccountRouteCache = clearPartnerAccountRouteCache;
 window.isSuperAdminUid = isSuperAdminUid;
 window.isSuperAdminSession = isSuperAdminSession;
 window.hasAdminPageAccess = hasAdminPageAccess;
