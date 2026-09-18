@@ -3026,7 +3026,7 @@ body { overscroll-behavior-x: contain; touch-action: pan-y; -webkit-overflow-scr
   body { padding: 8px !important; }
   /* Data emissão - neutraliza min-width 200/420 que estoura 641-768 */
   .form-row, .romaneio-header-fields, .campos-grid { display: block !important; gap: 10px !important; }
-  .form-row .form-group, .romaneio-date-field, .romaneio-client-field, .campos-grid .form-group,
+  .form-row .form-group, .form-row .form-group--data, .romaneio-date-field, .romaneio-client-field, .campos-grid .form-group,
   [style*="flex: 0.2"], [style*="flex: 0.4"], .species-default-field { min-width: 0 !important; width: 100% !important; flex: 1 1 auto !important; max-width: 100% !important; }
   .geo-fields, .geo-fields .form-group { min-width: 0 !important; }
   input, select, textarea { max-width: 100% !important; min-width: 0 !important; box-sizing: border-box !important; }
@@ -3038,6 +3038,12 @@ body { overscroll-behavior-x: contain; touch-action: pan-y; -webkit-overflow-scr
 @media(max-width:768px){#dataRomaneio,#romaneioData,#dataRomaneioTora,input[type="date"]{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;display:block!important}.form-group:has(#dataRomaneio),.form-group:has(#romaneioData),.romaneio-date-field{width:100%!important;max-width:100%!important;min-width:0!important;overflow:hidden!important;display:block!important}}
 /* FIX altura harmonizada v7 - 38px global para todos os romaneios (acessivel, WCAG) */
 #dataRomaneio, #romaneioData, #dataRomaneioTora { height: 38px !important; min-height: 38px !important; max-height: 38px !important; padding: 8px 12px !important; border: 1px solid #d1d5db !important; border-radius: 6px !important; box-sizing: border-box !important; line-height: 1.2 !important; font-size: 14px !important; background: #f8fafc !important; box-sizing: border-box !important; }
+/* DESKTOP-FIRST tora (2026-09-18): form-row lado-a-lado como preromaneio aba Toras.
+   Causa raiz: .form-row .form-group{min-width:200px} + flex-wrap quebrava em 1024-1200px.
+   Base agora min-width:0 + Data fixa 200px; empilhamento SÓ dentro de @media 768px abaixo. */
+.form-row .form-group--data { flex: 0 0 200px !important; max-width: 200px !important; min-width: 0 !important; }
+/* Data sem icones nao precisa do padding-right:100px global de .form-group input (roubava ~88px e forçava wrap) */
+.form-row input[type="date"] { padding-right: 12px !important; }
 /* Harmoniza demais campos dos 4 romaneios (TL/PCT/PES/Tora) de 31px/auto para 38px - apenas altura/borda, sem forçar display/width no desktop */
 .romaneio-date-field input, .form-row input, .form-row select, .campos-grid input, .campos-grid select { height: 38px !important; min-height: 38px !important; max-height: 38px !important; padding: 8px 12px !important; border: 1px solid #d1d5db !important; border-radius: 6px !important; font-size: 14px !important; box-sizing: border-box !important; }
 @media(max-width:768px){

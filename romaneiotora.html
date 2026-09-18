@@ -23,7 +23,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     </script><!-- compat shim do singleton (window.firebase para módulos antigos) --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="layout-comum.css?v=6eccf03acc7f">
-    <link rel="stylesheet" href="romaneio-comum.css?v=a54ef165f712">
+    <link rel="stylesheet" href="romaneio-comum.css?v=fdfc0773702a">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <link rel="stylesheet" href="print-styles.css">
     <link rel="stylesheet" href="ui-components.css?v=20260724modalv2">
@@ -113,11 +113,19 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             gap: 15px;
             margin-bottom: 10px;
             flex-wrap: wrap;
+            align-items: flex-end;
         }
-        
+
         .form-row .form-group {
-            flex: 1;
-            min-width: 200px;
+            flex: 1 1 0;
+            min-width: 0;
+        }
+
+        /* Desktop-first: Data fixa 200px (como preromaneio aba Toras), demais proporcionais */
+        .form-row .form-group--data {
+            flex: 0 0 200px;
+            max-width: 200px;
+            min-width: 0;
         }
 
         .form-row.geo-fields .form-group {
@@ -208,7 +216,10 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         .modal-body {
             padding: 20px;
             flex: 1 1 auto;
-            overflow-y: auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         .modal-footer {
@@ -225,7 +236,9 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .table-container {
-            overflow-x: auto !important; /* Corrigido para permitir rolagem se necessário */
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-x: auto !important;
             overflow-y: auto;
             margin: 15px 0;
             width: 100%;
@@ -1134,7 +1147,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             #romaneioTable tbody tr td:nth-child(15) { display: none !important; }
             #romaneioTable tbody tr td[style*="display: none"] { display: none !important; }
             .form-row { flex-direction: column !important; }
-            .form-row .form-group { min-width: 0 !important; flex: 1 1 auto !important; width: 100% !important; }
+            .form-row .form-group, .form-row .form-group--data { min-width: 0 !important; flex: 1 1 auto !important; width: 100% !important; max-width: 100% !important; }
             .form-buttons { flex-wrap: wrap !important; gap: 8px !important; }
         }
         @media (min-width: 769px) {
@@ -1202,12 +1215,12 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         </header>
         
         <div class="form-row">
-            <div class="form-group" style="flex: 0.2;">
+            <div class="form-group form-group--data">
                 <label for="dataRomaneio">Data:</label>
                 <input type="date" id="dataRomaneio">
             </div>
             
-            <div class="form-group" style="flex: 0.4;">
+            <div class="form-group">
                 <label for="fornecedorInput">Fornecedor:</label>
                 <div class="autocomplete-container">
                     <input type="text" id="fornecedorInput" class="autocomplete-input" placeholder="Selecionar fornecedor" oninput="if(typeof showClientSuggestions === 'function') showClientSuggestions(this)">
@@ -1222,7 +1235,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 </div>
             </div>
             
-            <div class="form-group" style="flex: 0.4;">
+            <div class="form-group">
                 <label for="especieInput">Espécie:</label>
                 <div class="autocomplete-container">
                     <input type="text" id="especieInput" class="autocomplete-input" placeholder="Selecionar espécie" autocomplete="off" data-species-list-on-type="true" data-species-list-min-chars="3" oninput="showSpeciesSuggestions(this)">
