@@ -705,3 +705,5 @@ o-cache para sempre buscar byte novo. setupUpdateChecks ja cobre PWA instalado: 
 - **Simulador Interativo de ROI (#simulador):** Inclusao de calculadora interativa com sliders de volume de caminhoes/mes, horas diarias gastas em papel/planilhas e custo hora da equipe. Exibe horas poupadas/mes, economia direta estimada (R$) e gera link de WhatsApp contextualizado com os dados da simulacao.
 - **Validacao:** validate:pr 6/6 (571 testes passando / 0 falhas), build:hosting 477 arquivos gerados.
 
+- **Share comercial refinado:** Mensagem WhatsApp encurtada de 55 para 18 linhas, com icones contextuais (tora, caminhao, balanca, arvore, folha, mobile), eliminando 'Ler mais' no celular e incluindo link direto para o novo Simulador de ROI (#simulador).
+

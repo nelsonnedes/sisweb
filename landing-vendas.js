@@ -15,43 +15,23 @@ const TOOLTIPS = {
 };
 
 // Texto comercial para compartilhamento no WhatsApp
-const SHARE_COMMERCIAL_TEXT = `🪵 *Sisweb - Sistema de Gestão de Serraria*
-
+const SHARE_COMMERCIAL_TEXT = `🪵 *Sisweb — Gestão Completa para Serrarias*
 🎯 *Sua madeireira do pátio à nota em um só sistema.*
 
-Chega de romaneio no papel, cubagem na calculadora e estoque na cabeça do apontador. O Sisweb junta *romaneio de toras e serrados, cubagem Francon e geométrica, estoque de pátio, AUTEF/DOF, financeiro e NF-e/MDF-e* num login único — feito no Pará, para o ritmo de quem carrega caminhão todo dia.
+Chega de romaneio no papel, cubagem na calculadora e planilha paralela. O Sisweb unifica toda a sua operação:
 
-✅ *14 Módulos Integrados:*
-• Vendas — Orçamento → pedido → financeiro sincronizado
-• Compras — Pedido → estoque → contas a pagar
-• Estoque de pátio — Saldo real + cubagem Francon/geométrica
-• Financeiro — Pagar, receber e juros por dia civil
-• Romaneios — Tora / PCT / TL / PES / Pré (5 tipos)
-• NF-e / MDF-e — Emissão e impressão do carregamento
-• Folha + Banco de horas — Lançamentos, filtros, relatórios
-• Cadastros — Clientes, espécies, fornecedores, empresa
-• Governança — SuperAdmin, assinatura segura
+🚛 *Romaneios Rápidos* — Toras e serrados com Enter contínuo e impressão em 1 clique
+⚖️ *Auditoria CONAMA 411* — Cubagem Francon e geométrica com AUTEF/DOF amarrados ao lote
+🌲 *Estoque & Rastreabilidade* — Da tora à prancha com baixa automática no carregamento
+📄 *NF-e, MDF-e & Financeiro* — Emissão integrada e juros por dia civil sem retrabalho
+📱 *No Bolso do Apontador* — Use no celular, tablet ou computador do escritório
 
-🏆 *5 Pilares que resolvem a dor do pátio:*
-⚡ Romaneio sem fila — Grade com Enter contínuo, imprime em 1 clique
-⚖️ CONAMA 411 sem susto — Resumos técnicos prontos para auditoria
-📃 Excel vira romaneio — Arraste a planilha, valida e cria em segundos
-🛠️ Cubagem auditável — Francon + geométrica, X1–X4, custódia, volume
-🔗 Rastro tora → prancha — Baixa automática, prova de origem em 1 clique
+🎁 *30 dias grátis* para testar no seu pátio
+🔓 *Sem fidelidade* • 💚 *Feito no Pará*
 
-🔄 *Do pátio à nota em 4 passos:*
-1. Aponta no pátio (estoque.html)
-2. Romeia e cuba (romaneiotora.html)
-3. Carrega documentado (NF-e/MDF-e + AUTEF/DOF)
-4. Recebe e controla (financeiro + folha)
-
-💚 *Feito no Pará • Suporte WhatsApp (91) 99131-1049 • 0 planilha paralela*
-
-🔗 Acesse: https://sisweb-7ce82.web.app/landing-vendas.html
-
-📲 *Teste grátis:* https://sisweb-7ce82.web.app/login.html?mode=register
-
----`;
+📊 *Simule sua economia:* https://sisweb-7ce82.web.app/landing-vendas.html#simulador
+🚀 *Comece seu teste grátis:* https://sisweb-7ce82.web.app/login.html?mode=register
+💬 *Dúvidas? Fale no WhatsApp:* (91) 99131-1049`;
 
 (function(){
   const diagram = document.getElementById('lv-diagram');

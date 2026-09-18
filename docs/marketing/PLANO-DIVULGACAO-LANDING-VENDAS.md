@@ -36,25 +36,25 @@ A landing possui carrosséis interativos com capturas reais. Tirar prints das á
 
 ## 3. Copy Pronta para Canais
 
-### 3.1 WhatsApp — Opção Curta (lista de transmissão)
+### 3.1 WhatsApp — Texto Comercial Oficial (Botão Compartilhar)
 ```
-🪵 Serraria no Pará/MT/RO? 
+🪵 *Sisweb — Gestão Completa para Serrarias*
+🎯 *Sua madeireira do pátio à nota em um só sistema.*
 
-Chega de romaneio no papel e cubagem na calculadora.
+Chega de romaneio no papel, cubagem na calculadora e planilha paralela. O Sisweb unifica toda a sua operação:
 
-O Sisweb junta num só sistema:
-✅ Romaneio de toras e serrados (TL, PCT, Pés, Pré)
-✅ Cubagem Francon + Geométrica (CONAMA 411)
-✅ Estoque de pátio com rastreabilidade tora→prancha
-✅ AUTEF/DOF amarrado ao lote
-✅ NF-e e MDF-e emitidos no carregamento
-✅ Financeiro com juros por dia civil (sem erro das 21h)
-✅ Folha + banco de horas da serraria
+🚛 *Romaneios Rápidos* — Toras e serrados com Enter contínuo e impressão em 1 clique
+⚖️ *Auditoria CONAMA 411* — Cubagem Francon e geométrica com AUTEF/DOF amarrados ao lote
+🌲 *Estoque & Rastreabilidade* — Da tora à prancha com baixa automática no carregamento
+📄 *NF-e, MDF-e & Financeiro* — Emissão integrada e juros por dia civil sem retrabalho
+📱 *No Bolso do Apontador* — Use no celular, tablet ou computador do escritório
 
-🔗 Teste grátis: https://sisweb-7ce82.web.app/login.html?mode=register
-💬 Dúvida? Chama no WhatsApp: (91) 99131-1049
+🎁 *30 dias grátis* para testar no seu pátio
+🔓 *Sem fidelidade* • 💚 *Feito no Pará*
 
-Feito no Pará, para quem carrega caminhão todo dia. 🚛
+📊 *Simule sua economia:* https://sisweb-7ce82.web.app/landing-vendas.html#simulador
+🚀 *Comece seu teste grátis:* https://sisweb-7ce82.web.app/login.html?mode=register
+💬 *Dúvidas? Fale no WhatsApp:* (91) 99131-1049
 ```
 
 ### 3.2 WhatsApp — Opção Média (conversa individual)
