@@ -848,7 +848,7 @@
     </div>
 
     <script src="js/deep-clean.js?v=26495e9d74f4"></script>
-    <script src="auth.js?v=a275a108a28b"></script>
+    <script src="auth.js?v=4173d8da9343"></script>
     <script src="superadmin-mfa.js?v=27ab1839aafe"></script>
     <script>
         // ═══════════════════════════════════════════════════════════════════════
@@ -1396,7 +1396,7 @@
         // MÓDULO CANÔNICO: Firebase + controle de sessão + Fale Conosco
         // Registro e Recuperação usam exclusivamente authService (sem duplicatas).
         // ═══════════════════════════════════════════════════════════════════════
-        import { authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence, getMyPartnerStatus, app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ensureInitialized } from './firebaseService.js?v=b43c8fc135f8';
+        import { authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence, getMyPartnerStatus, app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ensureInitialized } from './firebaseService.js?v=1eac6daf5e74';
 
         try { ensureInitialized(); } catch (_) {}
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence, getMyPartnerStatus };
@@ -1501,6 +1501,12 @@
         window.handleRegister = async function(event) {
             event.preventDefault();
 
+            // Capturar parâmetros da URL (plan, cupom, partner) do login inicial
+            const initialParams = getLoginInitialParams();
+            const planParam = initialParams.get('plan') || '';
+            const cupomParam = initialParams.get('cupom') || '';
+            const partnerParam = initialParams.get('partner') || '';
+
             try {
                 const currentUser = await authService.getCurrentUser();
                 if (currentUser) {
@@ -1568,7 +1574,12 @@
                     } catch (_) {}
                 }
 
-                const result = await authService.register(email, password, document.getElementById('regUsername').value);
+                const result = await authService.register(
+                    email,
+                    password,
+                    document.getElementById('regUsername').value,
+                    { plan: planParam, cupom: cupomParam, partner: partnerParam }
+                );
 
                 if (result.success) {
                     try {

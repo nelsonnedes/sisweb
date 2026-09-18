@@ -4557,11 +4557,11 @@ export const authService = {
     },
     
     // Registrar novo usuário
-    async register(email, password, username) {
+    async register(email, password, username, options = {}) {
         try {
             const normalizedEmail = String(email || '').trim().toLowerCase();
             const rawPassword = typeof password === 'string' ? password : String(password || '');
-            console.log("🔐 Registrando novo usuário");
+            console.log("🔐 Registrando novo usuário", options);
             
             const status = isFirebaseOperational();
             if (!status.operational) {
@@ -4579,6 +4579,8 @@ export const authService = {
                 console.warn('⚠️ Registro: falha ao preencher displayName no Auth:', profileError && profileError.message ? profileError.message : profileError);
             }
             
+            const { plan = '', cupom = '', partner = '' } = options;
+            
             // Salvar dados adicionais do usuário
             // NOTA: não gravar subscriptionStatus/accountStatus/status aqui — as rules
             // de users/$uid proíbem auto-escrita desses campos (só via Functions).
@@ -4591,10 +4593,13 @@ export const authService = {
                 telefone: '',
                 createdAt,
                 updatedAt: createdAt,
-                profileUpdatedAt: createdAt
+                profileUpdatedAt: createdAt,
+                ...(plan && { plan }),
+                ...(cupom && { cupom }),
+                ...(partner && { partner })
             });
             
-            console.log("✅ Usuário registrado com sucesso");
+            console.log("✅ Usuário registrado com sucesso", options);
             return { success: true, user };
             
         } catch (error) {

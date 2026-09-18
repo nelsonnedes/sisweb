@@ -1722,16 +1722,22 @@ async function login(email, password) {
  * @param {string} email - Email do usuário
  * @param {string} password - Senha do usuário
  * @param {string} companyId - ID da empresa a ser associada
+ * @param {Object} options - Opções extras do registro (plan, cupom, partner)
+ * @param {string} [options.plan] - Plano selecionado (starter, pro, enterprise)
+ * @param {string} [options.cupom] - Código do cupom (ex: LANDING30)
+ * @param {string} [options.partner] - Código de parceiro (ex: PAR-XXXX)
  * @returns {Promise<Object>} - Resultado da operação
  */
-async function register(email, password, companyId) {
+async function register(email, password, companyId, options = {}) {
     try {
-        console.log("📝 Iniciando processo de registro");
+        console.log("📝 Iniciando processo de registro", options);
 
         // Validar entrada
         if (!email || !password || !companyId) {
             return { success: false, error: "Email, senha e ID da empresa são obrigatórios" };
         }
+
+        const { plan = '', cupom = '', partner = '' } = options;
 
         // Aguardar firebaseService estar disponível
         console.log("⏳ Aguardando firebaseService estar disponível para registro...");
@@ -1739,7 +1745,7 @@ async function register(email, password, companyId) {
 
         // Tentar registrar usando firebaseService
         const authService = getAuthService();
-        const result = await authService.registerUser(email, password, companyId);
+        const result = await authService.registerUser(email, password, companyId, { plan, cupom, partner });
 
         if (result.success) {
             console.log("✅ Registro bem-sucedido");

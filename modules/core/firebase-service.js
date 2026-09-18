@@ -732,6 +732,29 @@ class FirebaseServiceTL {
         return request;
     }
 
+    /**
+     * 🔁 Força refresh de token (claims) — ex.: após concessão de trial,
+     * mudança de subscriptionStatus, aprovação de pagamento, etc.
+     * Uso: await firebaseServiceTL.refreshAuthToken({ forceRefresh: true, reason: 'claims_changed' })
+     */
+    async refreshAuthToken(options = {}) {
+        const forceRefresh = options.forceRefresh === true || options.reason === 'claims_changed';
+        const reason = options.reason || 'manual_refresh';
+        try {
+            const user = auth.currentUser;
+            if (!user) return { success: false, error: 'no-current-user' };
+            const tr = await this.getIdTokenResultSingleFlight(user, { forceRefresh, reason });
+            if (tr && tr.claims) {
+                console.log(`✅ [TL] Token refreshed (${reason}): claims atualizadas`);
+                return { success: true, claims: tr.claims };
+            }
+            return { success: false, error: 'no-claims' };
+        } catch (e) {
+            console.warn('⚠️ [TL] refreshAuthToken falhou:', e);
+            return { success: false, error: e && e.message ? e.message : String(e) };
+        }
+    }
+
     async loadUserProfileSingleFlight(user) {
         if (!user || !user.uid || !this.database) return { ok: false, profile: null, code: 'missing-user' };
         const uid = String(user.uid);
@@ -1516,3 +1539,4 @@ window.firebaseServiceTL.getFromFirebase = (key, options) => window.firebaseServ
 window.saveToFirebaseTL = (path, key, data, options) => window.firebaseServiceTL.saveToFirebase(path, key, data, options);
 
 console.log('🔥 Firebase Service TL carregado com sucesso (v2.1.0)');
+window.refreshAuthTokenTL = (options) => window.firebaseServiceTL.refreshAuthToken(options);
