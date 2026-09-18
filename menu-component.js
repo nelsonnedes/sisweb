@@ -6,7 +6,7 @@
     if (typeof window === 'undefined' || window.__siswebPWAInitialized) return;
     window.__siswebPWAInitialized = true;
 
-    const PWA_VERSION = '2026-09-17-mobile-data-fix-v16';
+    const PWA_VERSION = '2026-09-18-import-toast-mobile-v17';
     const state = {
         deferredPrompt: null,
         floatingButton: null,
@@ -641,7 +641,7 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                     window.__toast=function(message,type,opts){try{var now=Date.now(),s=String(message||'');if(!s)return;if(s===lastMsg&&now-lastAt<500)return;lastMsg=s;lastAt=now;var c=ensure();while(c.children.length>=MAX_TOASTS){try{c.removeChild(c.firstElementChild);}catch(e){break;}}var t=document.createElement('div');t.setAttribute('role','status');t.style.cssText='background:'+color(type)+';color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.25);font:14px/1.4 system-ui;max-width:420px;display:flex;align-items:center;gap:10px;pointer-events:auto;';var txt=document.createElement('div');txt.textContent=s;txt.title=s;txt.style.cssText='flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';var close=document.createElement('button');close.textContent='×';close.style.cssText='background:transparent;border:0;color:#fff;font-size:16px;line-height:1;cursor:pointer;';close.onclick=function(){try{c.removeChild(t);}catch(e){}};t.appendChild(txt);t.appendChild(close);c.appendChild(t);var dDefault=(type==='error'?0:(type==='warning'?4000:3000));var d=(opts&&typeof opts.duration==='number')?opts.duration:dDefault;if(d>0){setTimeout(function(){try{c.removeChild(t);}catch(e){}},d);}}catch(e){}};
                 }
                 var originalAlert = window.alert;
-                window.alert = function(msg){var m=String(msg||'');var lower=m.toLowerCase();var type=(lower.includes('erro')||lower.includes('error')||lower.includes('❌'))?'error':(lower.includes('sucesso')||lower.includes('✅'))?'success':'info';window.__toast(m,type,{duration:type==='error'?0:3000});};
+                window.alert = function(msg){var m=String(msg||'');var lower=m.toLowerCase();var type=(lower.includes('erro')||lower.includes('error')||lower.includes('❌'))?'error':(lower.includes('sucesso')||lower.includes('✅'))?'success':(lower.includes('selecione')||lower.includes('fornecedor')||lower.includes('aviso')||lower.includes('atenção')||lower.includes('atencao')||lower.includes('antes de')||lower.includes('confirme')||lower.includes('deseja'))?'warning':'info';window.__toast(m,type,{duration:type==='error'?0:3000});};
                 if (window.Utils && typeof window.Utils.showToast === 'function') {
                     window.Utils.showToast = function(message,type){window.__toast(message,type);}
                 }

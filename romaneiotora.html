@@ -23,7 +23,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     </script><!-- compat shim do singleton (window.firebase para módulos antigos) --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="layout-comum.css?v=6eccf03acc7f">
-    <link rel="stylesheet" href="romaneio-comum.css?v=16beae727658">
+    <link rel="stylesheet" href="romaneio-comum.css?v=80a0bc44b9d9">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <link rel="stylesheet" href="print-styles.css">
     <link rel="stylesheet" href="ui-components.css?v=20260724modalv2">
@@ -66,8 +66,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             padding: 20px;
         }
 
-        /* Note: Container styles are now in layout-comum.css?v=6eccf03acc7f */
-        input[type="date"] {
+        /* Note: Container styles are now in layout-comum.css?v=6eccf03acc7f"date"] {
             box-sizing: border-box;
             padding-right: 34px;
             position: relative;
@@ -1727,6 +1726,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 var lower = m.toLowerCase();
                 var type = (lower.includes('erro') || lower.includes('error') || lower.includes('❌')) ? 'error'
                          : (lower.includes('sucesso') || lower.includes('✅')) ? 'success'
+                         : (lower.includes('selecione') || lower.includes('fornecedor') || lower.includes('aviso') || lower.includes('atenção') || lower.includes('atencao') || lower.includes('antes de') || lower.includes('confirme') || lower.includes('deseja')) ? 'warning'
                          : 'info';
                 __showToast(m, type);
             };
@@ -1976,7 +1976,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     
     <script src="estados-cidades.js?v=e634a7c28536"></script>
     <!-- removido: handler de modais de clientes (não utilizado em fornecedores) -->
-    <script src="menu-component.js?v=ec68fe795d9d"></script>
+    <script src="menu-component.js?v=56d591f6ca43"></script>
     
     <!-- Scripts de Correção - ORDEM REORGANIZADA -->
     <script src="correcao-interface-database.js?v=151ac35c2de4"></script>
@@ -2022,7 +2022,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="romaneiotora.js?v=6636559512ed"></script>
     <script src="romaneiotora_tabela.js?v=77be3c628bf2"></script>
     <script src="romaneio-manager.js?v=540de95bd179"></script>
-    <script src="romaneiotora-import-v4.js?v=a749862d2685"></script>
+    <script src="romaneiotora-import-v4.js?v=10866a4070df"></script>
     
     <!-- Scripts de correções -->
     <!-- SCRIPTS PROBLEMÁTICOS DESABILITADOS -->

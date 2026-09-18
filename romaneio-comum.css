@@ -3150,3 +3150,41 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
     padding: 10px 0 4px !important;
     width: 100% !important;
 }
+
+/* === TOASTS NO MOBILE (2026-09-18) ===
+   Causa raiz: o container do toast e fixo top:16px/right:16px sem limite
+   esquerdo e o toast tem max-width:420px com texto nowrap+ellipsis. Em 390px
+   o toast nascia fora da tela (medido x=-21) e a mensagem aparecia cortada
+   ("or favor, selecione..."). Abaixo: container full-width com texto em
+   wrap (vence o cssText inline). Tambem sobe inputs para 16px no mobile
+   para o iOS nao aplicar auto-zoom no focus (que deixava a pagina
+   "desajustada" apos tocar em Importar sem fornecedor). */
+@media (max-width: 768px) {
+    #__toast_container__ {
+        left: 12px !important;
+        right: 12px !important;
+        top: 12px !important;
+        align-items: stretch !important;
+    }
+    #__toast_container__ > div {
+        max-width: none !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    #__toast_container__ > div > div:first-child {
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        overflow-wrap: anywhere !important;
+    }
+    html body .form-row input,
+    html body .form-row select,
+    html body .campos-grid input,
+    html body .campos-grid select,
+    html body .romaneio-date-field input,
+    html body .modal-body input,
+    html body .modal-body select,
+    html body input[type="date"] {
+        font-size: 16px !important;
+    }
+}

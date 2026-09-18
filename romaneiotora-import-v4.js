@@ -22,8 +22,13 @@ function importarRomaneio() {
         } else {
             alert(msg);
         }
-        // Focar no campo de fornecedor
-        if (fornecedorInput) fornecedorInput.focus();
+        // Focar no campo de fornecedor sem teletransportar a pagina (mobile):
+        // preventScroll evita o salto brusco; scrollIntoView centraliza suave.
+        if (fornecedorInput) {
+            try { fornecedorInput.focus({ preventScroll: true }); }
+            catch (_) { try { fornecedorInput.focus(); } catch (_) {} }
+            try { fornecedorInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
+        }
         return;
     }
 
