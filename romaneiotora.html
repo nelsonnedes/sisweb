@@ -11,6 +11,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Romaneio de Toras</title>
+    <!-- Toast unificado (carrega ANTES de qualquer uso de window.__toast) -->
+    <script type="module" src="./modules/core/toast.js?v=f23456f30f91"></script>
     
     <!-- Scripts do Firebase CDN (PRIMEIRO) -->
     <!-- Firebase via módulo compartilhado (singleton) -->
@@ -18,7 +20,7 @@
     <script type="module">
 
         import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebaseService.js?v=1eac6daf5e74';
-import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
+    import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     </script><!-- compat shim do singleton (window.firebase para módulos antigos) --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
@@ -1898,7 +1900,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     
     <script src="estados-cidades.js?v=e634a7c28536"></script>
     <!-- removido: handler de modais de clientes (não utilizado em fornecedores) -->
-    <script src="menu-component.js?v=ef6fb6ebdb34"></script>
+    <script src="menu-component.js?v=344efae10b79"></script>
     
     <!-- Scripts de Correção - ORDEM REORGANIZADA -->
     <script src="correcao-interface-database.js?v=151ac35c2de4"></script>

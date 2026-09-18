@@ -16,9 +16,11 @@
             document.write('<script src="auth-performance-diagnostics.js?v=1261bc9c8711"><\/script>');
         }
     </script>
+    <!-- Toast unificado (carrega ANTES de qualquer uso de window.__toast) -->
+    <script type="module" src="./modules/core/toast.js?v=f23456f30f91"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <script src="menu-component.js?v=ef6fb6ebdb34"></script>
+    <script src="menu-component.js?v=344efae10b79"></script>
     <!-- Firebase via módulo compartilhado (singleton) -->
 
     <script type="module">
