@@ -1649,89 +1649,10 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             </div>
         </div>
     </div>
-
-    <script>
-        (function() {
-            var containerId = '__toast_container__';
-            var lastMsg = '';
-            var lastAt = 0;
-            var MAX_TOASTS = 4;
-            function ensureContainer() {
-                var c = document.getElementById(containerId);
-                if (!c) {
-                    c = document.createElement('div');
-                    c.id = containerId;
-                    c.style.cssText = 'position:fixed;top:16px;right:16px;z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
-                    document.body.appendChild(c);
-                }
-                return c;
-            }
-            // Remover possíveis contêineres legados de toast (inferiores)
-            ['__global_toast__','__quick_toast__'].forEach(function(id){
-                var el = document.getElementById(id);
-                if (el && el.parentNode) try { el.parentNode.removeChild(el); } catch(e){}
-            });
-            function colorFor(type) {
-                if (type === 'error') return '#c0392b';
-                if (type === 'success') return '#27ae60';
-                if (type === 'warning') return '#f39c12';
-                return '#2c3e50';
-            }
-            function __showToast(message, type, opts) {
-                try {
-                    var now = Date.now();
-                    var s = String(message || '');
-                    if (s === lastMsg && now - lastAt < 500) return;
-                    lastMsg = s; lastAt = now;
-                    var c = ensureContainer();
-                    while (c.children.length >= MAX_TOASTS) {
-                        try { c.removeChild(c.firstElementChild); } catch(e) { break; }
-                    }
-                    var t = document.createElement('div');
-                    t.setAttribute('role', 'status');
-                    t.style.cssText = 'background:'+colorFor(type)+';color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.25);font:14px/1.4 system-ui;max-width:420px;display:flex;align-items:center;gap:10px;pointer-events:auto;';
-                    var txt = document.createElement('div');
-                    txt.textContent = s;
-                    txt.title = s;
-                    txt.style.cssText = 'flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
-                    var close = document.createElement('button');
-                    close.textContent = '×';
-                    close.style.cssText = 'background:transparent;border:0;color:#fff;font-size:16px;line-height:1;cursor:pointer;';
-                    close.onclick = function(){ try { c.removeChild(t); } catch(e){} };
-                    t.appendChild(txt);
-                    t.appendChild(close);
-                    c.appendChild(t);
-                    var durationDefault = (type === 'error' ? 0 : (type === 'warning' ? 4000 : 3000));
-                    var duration = (opts && typeof opts.duration === 'number') ? opts.duration : durationDefault;
-                    if (duration > 0) {
-                        setTimeout(function(){ try { c.removeChild(t); } catch(e){} }, duration);
-                    }
-                } catch(e) {}
-            }
-            if (!window.__toast) {
-                window.__toast = __showToast;
-            } else {
-                window.__toast = __showToast;
-            }
-            // Redirecionar quaisquer chamadas de Utils.showToast para o novo sistema (topo-direito)
-            try {
-                if (window.Utils && typeof window.Utils.showToast === 'function') {
-                    window.Utils.showToast = function(message, type, opts) {
-                        __showToast(message, type, opts);
-                    };
-                }
-            } catch(e){}
-            var originalAlert = window.alert;
-            window.alert = function(msg) {
-                var m = String(msg || '');
-                var lower = m.toLowerCase();
-                var type = (lower.includes('erro') || lower.includes('error') || lower.includes('❌')) ? 'error'
-                         : (lower.includes('sucesso') || lower.includes('✅')) ? 'success'
-                         : (lower.includes('selecione') || lower.includes('fornecedor') || lower.includes('aviso') || lower.includes('atenção') || lower.includes('atencao') || lower.includes('antes de') || lower.includes('confirme') || lower.includes('deseja')) ? 'warning'
-                         : 'info';
-                __showToast(m, type);
-            };
-        })();
+    <script type="module">
+        import { toast } from './modules/core/toast.js?v=f23456f30f91';
+        // Toast já disponível globalmente como window.__toast via modules/core/toast.js
+    </script>
     </script>
     <!-- Modal de Cadastro/Edição de Fornecedor -->
     <div id="fornecedorModal" class="modal">
