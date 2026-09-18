@@ -3050,8 +3050,10 @@ body { overscroll-behavior-x: contain; touch-action: pan-y; -webkit-overflow-scr
   /* Gear dropdown centralizado no mobile */
   .settings-dropdown .settings-panel { position: fixed !important; left: 12px !important; right: 12px !important; width: auto !important; max-width: none !important; transform: none !important; margin: 0 !important; top: 62px !important; max-height: calc(100vh - 80px) !important; overflow-y: auto !important; }
   .sisweb-menu-shell .alerts-panel { left: 12px !important; right: 12px !important; width: auto !important; max-width: none !important; }
-  /* Paginação sobrepondo cards - sticky com background para não cobrir último card */
-  .rlc-pagination-bar { position: sticky !important; bottom: 0 !important; background: #f8fafc !important; z-index: 5 !important; border-top: 1px solid #e2e8f0 !important; padding: 10px 0 8px !important; margin-top: 12px !important; box-shadow: 0 -4px 12px rgba(15,23,42,0.06) !important; }
-  .modal-body { padding-bottom: 8px !important; }
-  #listaModal .modal-body, #romaneioListModal .modal-body { padding-bottom: 12px !important; }
+  /* Paginação no final, sem sobrepor cards - scroll natural */
+  .rlc-pagination-bar { position: static !important; background: transparent !important; border-top: none !important; box-shadow: none !important; padding: 10px 0 4px !important; margin-top: 12px !important; z-index: auto !important; }
+  .modal-body { padding-bottom: 12px !important; }
+  #listaModal .modal-body, #romaneioListModal .modal-body, #clientListModal .modal-body, #fornecedorListModal .modal-body, #speciesListModal .modal-body { padding-bottom: 16px !important; display: flex !important; flex-direction: column !important; gap: 12px !important; }
+  .table-responsive, .table-container { padding-bottom: 4px !important; }
+  #clientListPagination, #fornecedorListPagination, #speciesListPagination, #romaneioListPagination { margin-top: 8px !important; padding-bottom: 4px !important; }
 }
