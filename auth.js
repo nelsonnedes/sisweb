@@ -1161,6 +1161,9 @@ function shouldBypassSubscriptionGuard(pathname) {
 
 async function enforceSubscriptionGuard(userDetails, currentPathname) {
     try {
+        if (typeof window !== 'undefined' && window.__SISWEB_MANUAL_TRAINING__ === true) {
+            return { allowed: true, statusKey: 'active' };
+        }
         const forcedRoute = await resolvePostLoginRoute(userDetails || {}, { currentPathname });
         if (forcedRoute && !isCurrentPathTarget(currentPathname, forcedRoute)) {
             return { allowed: false, redirect: forcedRoute, statusKey: 'flow_route' };
@@ -1374,6 +1377,12 @@ function checkAuth() {
                 sessionStorage.setItem('lastLogin', Date.now().toString());
             }
             
+            if (typeof window !== 'undefined' && window.__SISWEB_MANUAL_TRAINING__ === true) {
+                console.log("👤 Modo manual training ativo: autenticação permitida");
+                resolve(true);
+                return;
+            }
+
             // Verificar se temos um login recente na sessão
             const userAuthenticated = sessionStorage.getItem('userAuthenticated') === 'true';
             const lastLogin = parseInt(sessionStorage.getItem('lastLogin') || '0');

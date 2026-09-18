@@ -1,6 +1,9 @@
 const authService = window.firebaseService.authService;
 
 async function ensureAuthAndTenant() {
+    if (typeof window !== 'undefined' && window.__SISWEB_MANUAL_TRAINING__ === true) {
+        return window.appTenantId || 'company_treinamento';
+    }
     const noRedirect = (() => {
         try { return new URLSearchParams(window.location.search).get('noRedirect') === 'true'; } catch (_) { return false; }
     })();
