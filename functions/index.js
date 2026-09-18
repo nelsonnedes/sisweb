@@ -1790,6 +1790,20 @@ exports.setUserAccessStatus = https.onCall(async (data, context) => {
     if (status === 'blocked') updatePayload.accountStatus = 'blocked';
     if (status === 'active' || status === 'trial_active') updatePayload.accountStatus = 'active';
     const syncResult = await applyUserPatchAcrossScopes(targetUid, updatePayload, {});
+    // Atualizar claims + revogar tokens para efeito imediato
+    try {
+        const userRecord = await admin.auth().getUser(targetUid);
+        const currentClaims = userRecord.customClaims || {};
+        const nextClaims = {
+            ...currentClaims,
+            subscriptionStatus: status,
+            accountStatus: (status === 'active' || status === 'trial_active') ? 'active' : (status === 'blocked' ? 'blocked' : currentClaims.accountStatus || 'pending')
+        };
+        await admin.auth().setCustomUserClaims(targetUid, nextClaims);
+        await admin.auth().revokeRefreshTokens(targetUid);
+    } catch (claimErr) {
+        console.warn('[setUserAccessStatus] Falha ao sincronizar claims:', claimErr);
+    }
     return { success: true, targetUid, status, companyId: syncResult.companyId || '' };
 });
 
@@ -5218,6 +5232,20 @@ exports.extendSubscriptionAccess = https.onCall(async (data, context) => {
         title: 'Assinatura prorrogada',
         message: `Seu acesso foi prorrogado por ${extraDays} dia(s) pelo administrador.`
     });
+    // Atualizar claims + revogar tokens para efeito imediato
+    try {
+        const userRecord = await admin.auth().getUser(targetUid);
+        const currentClaims = userRecord.customClaims || {};
+        const nextClaims = {
+            ...currentClaims,
+            subscriptionStatus: 'active',
+            accountStatus: 'active'
+        };
+        await admin.auth().setCustomUserClaims(targetUid, nextClaims);
+        await admin.auth().revokeRefreshTokens(targetUid);
+    } catch (claimErr) {
+        console.warn('[extendSubscriptionAccess] Falha ao sincronizar claims:', claimErr);
+    }
     return { success: true, targetUid, extraDays, endDate: nextEndDate };
 });
 
