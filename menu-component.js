@@ -6,7 +6,7 @@
     if (typeof window === 'undefined' || window.__siswebPWAInitialized) return;
     window.__siswebPWAInitialized = true;
 
-    const PWA_VERSION = '2026-09-18-import-toast-mobile-v17';
+    const PWA_VERSION = '2026-09-18-species-scroll-v18';
     const state = {
         deferredPrompt: null,
         floatingButton: null,
