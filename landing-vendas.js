@@ -175,6 +175,7 @@ Chega de romaneio no papel, cubagem na calculadora e estoque na cabeça do apont
   initCarousel('lv-desk-carousel');
   loadActiveCoupons();
   initShareButton();
+  initRoiCalculator();
 })();
 
 // Botão de compartilhar no WhatsApp
@@ -316,3 +317,64 @@ async function loadActiveCoupons(){
     section.style.display = 'none';
   }
 }
+
+// Simulador de Economia / ROI de Pátio
+function initRoiCalculator(){
+  var trucksInput = document.getElementById('lv-sim-trucks');
+  var hoursInput = document.getElementById('lv-sim-hours');
+  var costInput = document.getElementById('lv-sim-cost');
+
+  var trucksVal = document.getElementById('lv-sim-trucks-val');
+  var hoursVal = document.getElementById('lv-sim-hours-val');
+  var costVal = document.getElementById('lv-sim-cost-val');
+
+  var savedHoursEl = document.getElementById('lv-sim-saved-hours');
+  var savedDaysEl = document.getElementById('lv-sim-saved-days');
+  var savedMoneyEl = document.getElementById('lv-sim-saved-money');
+  var waBtn = document.getElementById('lv-sim-btn-wa');
+
+  if (!trucksInput || !hoursInput || !costInput || !savedHoursEl || !savedMoneyEl) return;
+
+  function formatMoney(num){
+    return 'R$ ' + Number(num || 0).toLocaleString('pt-BR');
+  }
+
+  function updateCalc(){
+    var trucks = parseInt(trucksInput.value, 10) || 40;
+    var hours = parseFloat(hoursInput.value) || 3;
+    var cost = parseFloat(costInput.value) || 25;
+
+    // Atualiza labels dos sliders
+    if (trucksVal) trucksVal.textContent = trucks + (trucks === 1 ? ' carga' : ' cargas');
+    if (hoursVal) hoursVal.textContent = hours.toFixed(1) + ' horas/dia';
+    if (costVal) costVal.textContent = 'R$ ' + cost.toFixed(2).replace('.', ',') + '/h';
+
+    // Estimativa: 22 dias úteis de operação por mês
+    // O Sisweb elimina cerca de 78% do tempo gasto em digitação repetitiva de papel, cubagem manual e conferência
+    var monthlyPaperHours = hours * 22;
+    var savedHours = Math.round(monthlyPaperHours * 0.78);
+    var savedDays = (savedHours / 8).toFixed(1);
+    var savedMoney = Math.round(savedHours * cost);
+
+    savedHoursEl.textContent = '~' + savedHours + 'h';
+    if (savedDaysEl) savedDaysEl.textContent = savedDays;
+    savedMoneyEl.textContent = formatMoney(savedMoney);
+
+    // Atualiza o link do WhatsApp para iniciar a conversa contextualizada
+    if (waBtn) {
+      var msg = 'Olá! Fiz uma simulação no Sisweb: expedimos ~' + trucks + ' cargas/mês e gastamos ' + hours.toFixed(1) + 'h/dia em papel/romaneio. A estimativa indicou ~' + savedHours + 'h poupadas/mês (' + formatMoney(savedMoney) + '/mês). Gostaria de ver o sistema na prática!';
+      waBtn.href = 'https://wa.me/5591991311049?text=' + encodeURIComponent(msg);
+    }
+  }
+
+  trucksInput.addEventListener('input', updateCalc);
+  hoursInput.addEventListener('input', updateCalc);
+  costInput.addEventListener('input', updateCalc);
+
+  trucksInput.addEventListener('change', updateCalc);
+  hoursInput.addEventListener('change', updateCalc);
+  costInput.addEventListener('change', updateCalc);
+
+  updateCalc();
+}
+

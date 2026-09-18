@@ -177,6 +177,32 @@ test('landing direciona o painel do parceiro para login autenticado', () => {
   assert.match(readFileSync('landing-vendas.js', 'utf8'), /initCarousel\('lv-hero-phone-carousel'\)/);
 });
 
+test('landing possui metatags OpenGraph, Twitter, Geo e Schema.org JSON-LD estruturado', () => {
+  const landing = readFileSync('landing-vendas.html', 'utf8');
+  assert.match(landing, /<link rel="canonical" href="https:\/\/sisweb-7ce82\.web\.app\/landing-vendas\.html">/);
+  assert.match(landing, /<meta property="og:title"/);
+  assert.match(landing, /<meta property="og:image" content="https:\/\/sisweb-7ce82\.web\.app\/assets\/icons\/icon-512x512\.png"/);
+  assert.match(landing, /<meta name="twitter:card"/);
+  assert.match(landing, /<meta name="geo\.region" content="BR-PA"/);
+  assert.match(landing, /"SoftwareApplication"/);
+  assert.match(landing, /"LocalBusiness"/);
+});
+
+test('landing possui simulador interativo de economia e ROI de patio', () => {
+  const landing = readFileSync('landing-vendas.html', 'utf8');
+  assert.match(landing, /id="simulador"/);
+  assert.match(landing, /id="lv-sim-trucks"/);
+  assert.match(landing, /id="lv-sim-hours"/);
+  assert.match(landing, /id="lv-sim-cost"/);
+  assert.match(landing, /id="lv-sim-saved-hours"/);
+  assert.match(landing, /id="lv-sim-saved-money"/);
+  const css = readFileSync('landing-vendas.css', 'utf8');
+  assert.match(css, /\.lv-sim-grid/);
+  assert.match(css, /\.lv-slider/);
+  const js = readFileSync('landing-vendas.js', 'utf8');
+  assert.match(js, /initRoiCalculator/);
+});
+
 test('caixa de parceiro da assinatura tem estilo proprio e responsivo', () => {
   const sub = readFileSync('subscription.html', 'utf8');
   assert.match(sub, /class="partner-row"/);

@@ -425,6 +425,36 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
   .lv-device-mockup.lv-mobile img{border-radius:10px}
 }
 
+/* ---------- Simulador de Economia / ROI do Pátio ---------- */
+.lv-sim-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:28px;margin-top:28px;align-items:stretch}
+.lv-sim-card{background:var(--lv-card);border:1px solid var(--lv-areia);border-radius:var(--lv-radius);padding:28px;box-shadow:0 12px 32px rgba(28,19,11,.08);display:flex;flex-direction:column;justify-content:space-between}
+.lv-sim-card-title{font-family:var(--lv-font-display);font-size:1.25rem;color:var(--lv-casca);margin:0 0 20px;display:flex;align-items:center;gap:10px}
+.lv-sim-card-title i{color:var(--lv-mogno)}
+.lv-sim-field{margin-bottom:22px}
+.lv-sim-field-header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.lv-sim-field-header label{font-weight:700;font-size:0.92rem;color:var(--lv-casca)}
+.lv-sim-val{font-family:var(--lv-font-display);font-weight:800;font-size:1.15rem;color:var(--lv-mogno);white-space:nowrap}
+.lv-slider{width:100%;height:8px;border-radius:4px;background:var(--lv-areia);outline:none;-webkit-appearance:none;appearance:none;cursor:pointer}
+.lv-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:var(--lv-mogno);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer;transition:transform .15s}
+.lv-slider::-webkit-slider-thumb:hover{transform:scale(1.15)}
+.lv-slider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--lv-mogno);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer}
+.lv-sim-field-hint{font-size:0.76rem;color:var(--lv-muted);margin-top:5px}
+.lv-sim-kpis{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.lv-sim-kpi{background:#FFFDF7;border:1px solid var(--lv-areia);border-radius:12px;padding:16px;text-align:center;box-shadow:0 4px 12px rgba(28,19,11,.04)}
+.lv-sim-kpi-highlight{background:linear-gradient(135deg,#FFFDF7,#FFF6E6);border:2px solid var(--lv-serragem)}
+.lv-sim-kpi-num{display:block;font-family:var(--lv-font-display);font-size:1.85rem;font-weight:800;color:var(--lv-casca);line-height:1.1}
+.lv-sim-kpi-highlight .lv-sim-kpi-num{color:var(--lv-mogno)}
+.lv-sim-kpi-label{display:block;font-size:0.8rem;font-weight:700;color:var(--lv-muted);margin-top:6px;text-transform:uppercase;letter-spacing:0.04em}
+.lv-sim-kpi small{display:block;font-size:0.75rem;color:var(--lv-ink);margin-top:6px}
+.lv-sim-gains{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;border-top:1px dashed var(--lv-areia);padding-top:16px}
+.lv-sim-gain-item{display:flex;align-items:flex-start;gap:10px;font-size:0.86rem;color:#4A3D2C}
+.lv-sim-gain-item i{color:var(--lv-mata);font-size:1rem;margin-top:2px;flex-shrink:0}
+.lv-sim-actions{display:flex;flex-direction:column;gap:10px}
+.lv-sim-actions .lv-btn{width:100%}
+@media(max-width:560px){
+  .lv-sim-kpis{grid-template-columns:1fr}
+}
+
 /* ---------- Partner calculator ---------- */
 .lv-partner-calc{background:var(--lv-card);border:1px solid var(--lv-areia);border-radius:var(--lv-radius);padding:24px;max-width:420px;margin:16px auto 0}
 .lv-partner-calc label{display:block;font-weight:600;color:var(--lv-casca);margin-bottom:10px}
