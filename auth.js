@@ -1438,6 +1438,16 @@ function checkAuth() {
                 if (!effectiveCompanyId && remoteProfile) {
                     effectiveCompanyId = String((remoteProfile.companyId || remoteProfile.companyID || remoteProfile.tenantId) || '').trim();
                 }
+                // Token em cache pode estar obsoleto (ex.: trial concedido em outra sessão):
+                // uma única atualização forçada quando o perfil diverge.
+                try {
+                    const cachedStatus = String((claims && claims.subscriptionStatus) || '').toLowerCase();
+                    const profileStatus = String((remoteProfile && (remoteProfile.subscriptionStatus || remoteProfile.status)) || '').toLowerCase();
+                    const definitiveStatuses = new Set(['active', 'trial_active', 'expired', 'blocked', 'pending']);
+                    if (profileStatus && definitiveStatuses.has(profileStatus) && profileStatus !== cachedStatus && isSameActiveAuthUser(user)) {
+                        await getCanonicalTokenResult(user, { forceRefresh: true });
+                    }
+                } catch (_) {}
                 if (isSuperAdmin) {
                     await setCompanyContext(null, { ownerUid: user.uid, authoritative: true });
                 }
@@ -1582,7 +1592,7 @@ async function login(email, password) {
             if (!isSameActiveAuthUser(user)) {
                 return { success: false, error: 'A sessão mudou durante o login. Tente novamente.' };
             }
-            const claims = idTokenResult && idTokenResult.claims ? idTokenResult.claims : {};
+            let claims = idTokenResult && idTokenResult.claims ? idTokenResult.claims : {};
             const companyId = (sessionContext && sessionContext.companyId)
                 || claims.companyId
                 || claims.companyID
@@ -1615,6 +1625,24 @@ async function login(email, password) {
             if (!isSuperAdmin && !effectiveCompanyId) {
                 await setCompanyContext(null, { ownerUid: user.uid, authoritative: true });
             }
+
+            // Sincronizar claim de assinatura com o perfil: token obsoleto (ex.: sem
+            // subscriptionStatus após concessão de trial) causa PERMISSION_DENIED na
+            // primeira escrita. Uma única cura via setCompanyClaim + refresh.
+            try {
+                const tokenStatus = String((claims && claims.subscriptionStatus) || '').toLowerCase();
+                const profileStatus = String((remoteProfile && (remoteProfile.subscriptionStatus || remoteProfile.status)) || '').toLowerCase();
+                const definitive = new Set(['active', 'trial_active', 'expired', 'blocked', 'pending']);
+                if (!isSuperAdmin && effectiveCompanyId && profileStatus && definitive.has(profileStatus)
+                    && profileStatus !== tokenStatus && isSameActiveAuthUser(user)
+                    && window.firebaseService && typeof window.firebaseService.setCompanyClaim === 'function') {
+                    const sync = await window.firebaseService.setCompanyClaim(user.uid, effectiveCompanyId);
+                    if (sync && sync.success && isSameActiveAuthUser(user)) {
+                        const refreshed = await getCanonicalTokenResult(user, { forceRefresh: true });
+                        if (refreshed && refreshed.claims) claims = refreshed.claims;
+                    }
+                }
+            } catch (_) {}
 
             let subscriptionStatus = 'unknown';
             try {

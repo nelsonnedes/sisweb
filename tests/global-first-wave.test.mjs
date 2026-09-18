@@ -252,7 +252,8 @@ test('hosting aplica headers basicos de hardening em todas as rotas', () => {
   assert.equal(headerMap.get('X-Frame-Options'), 'DENY');
   assert.equal(headerMap.get('Referrer-Policy'), 'strict-origin-when-cross-origin');
   assert.match(headerMap.get('Permissions-Policy') || '', /camera=\(\)/);
-  assert.equal(headerMap.get('Cross-Origin-Opener-Policy'), 'same-origin');
+  // allow-popups (nao same-origin puro): signInWithPopup do Google precisa do opener
+  assert.equal(headerMap.get('Cross-Origin-Opener-Policy'), 'same-origin-allow-popups');
 });
 
 test('redirect pos-login aceita apenas alvos internos normalizados', () => {

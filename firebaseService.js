@@ -4580,6 +4580,8 @@ export const authService = {
             }
             
             // Salvar dados adicionais do usuário
+            // NOTA: não gravar subscriptionStatus/accountStatus/status aqui — as rules
+            // de users/$uid proíbem auto-escrita desses campos (só via Functions).
             await saveToFirebase(`users/${user.uid}`, null, {
                 username: normalizedUsername,
                 displayName: normalizedUsername,

@@ -848,7 +848,7 @@
     </div>
 
     <script src="js/deep-clean.js?v=26495e9d74f4"></script>
-    <script src="auth.js?v=84c2f35d49f2"></script>
+    <script src="auth.js?v=a275a108a28b"></script>
     <script src="superadmin-mfa.js?v=27ab1839aafe"></script>
     <script>
         // ═══════════════════════════════════════════════════════════════════════
@@ -1396,7 +1396,7 @@
         // MÓDULO CANÔNICO: Firebase + controle de sessão + Fale Conosco
         // Registro e Recuperação usam exclusivamente authService (sem duplicatas).
         // ═══════════════════════════════════════════════════════════════════════
-        import { authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence, getMyPartnerStatus, app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ensureInitialized } from './firebaseService.js?v=2e758273082a';
+        import { authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence, getMyPartnerStatus, app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ensureInitialized } from './firebaseService.js?v=b43c8fc135f8';
 
         try { ensureInitialized(); } catch (_) {}
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence, getMyPartnerStatus };
@@ -1455,6 +1455,9 @@
                 }
                 if (reason.includes('ui_not_authenticated') || reason.includes('save_requires_auth') || reason.includes('firebase_user_null') || reason.includes('session_expired') || reason.includes('logout_menu')) {
                     return 'folha_pagamento/folha.html';
+                }
+                if (reason.includes('tenant_required') || reason.includes('link_company') || reason.includes('missing-companyid')) {
+                    return 'company.html?reason=link_company';
                 }
                 return 'index.html';
             } catch (e) {
@@ -1819,12 +1822,12 @@
                             sessionStorage.setItem('redirectCount', '0');
                         }
                     } catch (_) {}
-                    if (autoForceHome && isAdminSession) {
+                    if (!noRedirect && autoForceHome && isAdminSession) {
                         setSystemHealth('ok', 'Sessão ativa detectada', 'Redirecionando automaticamente para o gerenciamento...');
                         setTimeout(function () {
                             window.location.href = 'admin.html?tab=dashboard';
                         }, 250);
-                    } else if (targetForLoggedSession && !String(targetForLoggedSession).toLowerCase().includes('login.html')) {
+                    } else if (!noRedirect && targetForLoggedSession && !String(targetForLoggedSession).toLowerCase().includes('login.html')) {
                         setSystemHealth('ok', 'Sessão ativa detectada', 'Redirecionando automaticamente...');
                         setTimeout(function () {
                             window.location.href = targetForLoggedSession;

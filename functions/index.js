@@ -1574,10 +1574,26 @@ exports.createCompanyOnboarding = https.onCall(async (data, context) => {
     await companyRef.update(companyPayload);
     const userRecord = await admin.auth().getUser(uid);
     const currentClaims = userRecord.customClaims || {};
-    const nextClaims = { ...currentClaims, companyId, tenantId: companyId };
+    // Preservar status de assinatura (DB tem precedência); sem ele o token reprova
+    // nas rules de escrita (subscriptionStatus active|trial_active). Default 'active'
+    // igual ao setCompanyClaim para não travar o onboarding.
+    let claimSubscriptionStatus = 'active';
+    try {
+        const statusSnap = await admin.database().ref(`users/${uid}/subscriptionStatus`).get();
+        if (statusSnap.exists() && statusSnap.val()) claimSubscriptionStatus = String(statusSnap.val());
+        else {
+            const legacySnap = await admin.database().ref(`users/${uid}/status`).get();
+            if (legacySnap.exists() && legacySnap.val()) claimSubscriptionStatus = String(legacySnap.val());
+        }
+    } catch (_) {}
+    const rawClaimStatus = String(claimSubscriptionStatus || '').trim().toLowerCase();
+    if (rawClaimStatus === 'trial' || rawClaimStatus === 'trialing') claimSubscriptionStatus = 'trial_active';
+    else claimSubscriptionStatus = rawClaimStatus || 'active';
+    const nextClaims = { ...currentClaims, companyId, tenantId: companyId, subscriptionStatus: claimSubscriptionStatus };
     await admin.auth().setCustomUserClaims(uid, nextClaims);
     await applyUserPatchAcrossScopes(uid, {
         companyId,
+        subscriptionStatus: claimSubscriptionStatus,
         updatedAt: nowIso,
         updatedBy: uid
     }, { email: email || userRecord.email || '' });

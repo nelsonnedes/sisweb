@@ -135,7 +135,9 @@ test('onboarding gera companyId no servidor e primeiro usuario vira admin da emp
 
   assert.match(block, /let companyId = `\$\{Date\.now\(\)\}\$\{Math\.floor\(Math\.random\(\) \* 1000\)\}`/);
   assert.doesNotMatch(block, /input\.id \|\| input\.companyId \|\| input\.companyID/);
-  assert.match(block, /const nextClaims = \{ \.\.\.currentClaims, companyId, tenantId: companyId \}/);
+  // claims precisam incluir subscriptionStatus (DB tem precedência), senão o token
+  // reprova nas rules de escrita mesmo com empresa vinculada
+  assert.match(block, /const nextClaims = \{ \.\.\.currentClaims, companyId, tenantId: companyId, subscriptionStatus: claimSubscriptionStatus \}/);
   assert.match(block, /companies\/\$\{companyId\}\/users\/\$\{uid\}/);
   assert.match(block, /role: 'admin'/);
   assert.match(block, /adminActive: true/);
