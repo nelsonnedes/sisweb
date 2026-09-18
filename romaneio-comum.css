@@ -3064,3 +3064,89 @@ body { overscroll-behavior-x: contain; touch-action: pan-y; -webkit-overflow-scr
   /* Garante que a tabela não vaze por baixo da paginação */
   #clientListModal .table-container, #fornecedorListModal .table-container, #speciesListModal .table-container, #listaModal .table-container, #romaneioListModal .table-container { padding-bottom: 8px !important; flex: 1 1 auto !important; overflow-y: auto !important; overflow-x: auto !important; max-height: min(55vh, 420px) !important; -webkit-overflow-scrolling: touch !important; }
 }
+
+/* === PAGINACAO FIXA NOS MODAIS DE LISTA (2026-09-18) ===
+   Causa raiz: camadas antigas contraditorias. No mobile, o override v8
+   (body #modal .modal-body{overflow-y:auto} + .table-container{overflow:visible})
+   tem especificidade (1,1,1) e vencia o modelo flex (1,1,0): o modal-body
+   inteiro rolava e a paginacao subia com os cards. No desktop, o bloco
+   PADRONIZACAO (#modal .modal-body{overflow-y:auto}) vencia o flex.
+   Modelo final (seletores html body #id = (1,1,2), vencem tudo acima):
+   modal-content com altura fixa em coluna; modal-body coluna SEM scroll;
+   table-container e o UNICO scroller; paginacao fixa no rodape. */
+html body #clientListModal .modal-content,
+html body #fornecedorListModal .modal-content,
+html body #speciesListModal .modal-content,
+html body #listaModal .modal-content,
+html body #romaneioListModal .modal-content {
+    display: flex !important;
+    flex-direction: column !important;
+    height: min(88vh, 720px) !important;
+    max-height: calc(100vh - 110px) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+html body #clientListModal .modal-body,
+html body #fornecedorListModal .modal-body,
+html body #speciesListModal .modal-body,
+html body #listaModal .modal-body,
+html body #romaneioListModal .modal-body {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    overflow-x: hidden !important;
+    overflow-y: hidden !important;
+}
+html body #clientListModal .modal-body > *,
+html body #fornecedorListModal .modal-body > *,
+html body #speciesListModal .modal-body > *,
+html body #listaModal .modal-body > *,
+html body #romaneioListModal .modal-body > * {
+    flex-shrink: 0 !important;
+}
+html body #clientListModal .modal-body > .table-container,
+html body #clientListModal .modal-body > .table-responsive,
+html body #clientListModal .modal-body > .modal-table-scroll,
+html body #fornecedorListModal .modal-body > .table-container,
+html body #fornecedorListModal .modal-body > .table-responsive,
+html body #fornecedorListModal .modal-body > .modal-table-scroll,
+html body #speciesListModal .modal-body > .table-container,
+html body #speciesListModal .modal-body > .table-responsive,
+html body #speciesListModal .modal-body > .modal-table-scroll,
+html body #listaModal .modal-body > .table-container,
+html body #listaModal .modal-body > .table-responsive,
+html body #listaModal .modal-body > .modal-table-scroll,
+html body #romaneioListModal .modal-body > .table-container,
+html body #romaneioListModal .modal-body > .table-responsive,
+html body #romaneioListModal .modal-body > .modal-table-scroll {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+    scrollbar-gutter: stable !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+html body #clientListModal .modal-body > .rlc-pagination-bar,
+html body #clientListModal .modal-body > [id$="Pagination"],
+html body #fornecedorListModal .modal-body > .rlc-pagination-bar,
+html body #fornecedorListModal .modal-body > [id$="Pagination"],
+html body #speciesListModal .modal-body > .rlc-pagination-bar,
+html body #speciesListModal .modal-body > [id$="Pagination"],
+html body #listaModal .modal-body > .rlc-pagination-bar,
+html body #listaModal .modal-body > [id$="Pagination"],
+html body #romaneioListModal .modal-body > .rlc-pagination-bar,
+html body #romaneioListModal .modal-body > [id$="Pagination"] {
+    flex: 0 0 auto !important;
+    position: relative !important;
+    z-index: 2 !important;
+    background: #ffffff !important;
+    border-top: 1px solid #e2e8f0 !important;
+    margin: 8px 0 0 !important;
+    padding: 10px 0 4px !important;
+    width: 100% !important;
+}
