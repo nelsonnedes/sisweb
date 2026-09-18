@@ -44,13 +44,13 @@ A landing possui carrosséis interativos com capturas reais. Tirar prints das á
 Chega de romaneio no papel, cubagem na calculadora e planilha paralela. O Sisweb unifica toda a sua operação:
 
 🚛 *Romaneios Rápidos* — Toras e serrados com Enter contínuo e impressão em 1 clique
-⚖️ *Auditoria CONAMA 411* — Cubagem Francon e geométrica com AUTEF/DOF amarrados ao lote
-🌲 *Estoque & Rastreabilidade* — Da tora à prancha com baixa automática no carregamento
+⚖️ *Auditoria CONAMA 411* — Cubagem Francon e geométrica com resumo técnico de pacote
+🏷️ *Estoque com Plaqueta* — Cadeia de custódia e rastreabilidade total da tora à prancha
 📄 *NF-e, MDF-e & Financeiro* — Emissão integrada e juros por dia civil sem retrabalho
-📱 *No Bolso do Apontador* — Use no celular, tablet ou computador do escritório
+📱 *No Bolso do Apontador* — Lançamento direto no celular, tablet ou computador
 
-🎁 *30 dias grátis* para testar no seu pátio
-🔓 *Sem fidelidade* • 💚 *Feito no Pará*
+✨ *30 dias grátis* para testar no seu pátio
+🛡️ *Sem fidelidade* • 💚 *Feito no Pará*
 
 📊 *Simule sua economia:* https://sisweb-7ce82.web.app/landing-vendas.html#simulador
 🚀 *Comece seu teste grátis:* https://sisweb-7ce82.web.app/login.html?mode=register

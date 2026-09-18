@@ -707,3 +707,5 @@ o-cache para sempre buscar byte novo. setupUpdateChecks ja cobre PWA instalado: 
 
 - **Share comercial refinado:** Mensagem WhatsApp encurtada de 55 para 18 linhas, com icones contextuais (tora, caminhao, balanca, arvore, folha, mobile), eliminando 'Ler mais' no celular e incluindo link direto para o novo Simulador de ROI (#simulador).
 
+- **Texto Comercial WhatsApp V2:** Substituida mencao a AUTEF/DOF por 'Controle de estoque de toras com Plaqueta, Cadeia de Custodia e Rastreabilidade' e adicionados icones refinados (estrela/brilho, escudo, etiqueta, arvore).
+
