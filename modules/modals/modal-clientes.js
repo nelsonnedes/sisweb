@@ -208,8 +208,8 @@ window.ModalClientes = (function() {
                 return {
                     ...client,
                     id: client.id || `CLIENT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                    nome: client.nome || client.name || 'Nome não informado',
-                    name: client.nome || client.name || 'Nome não informado', // Compatibilidade
+                    nome: client.nome || client.name || client.nomeCompleto || client.razaoSocial || client.nomeFantasia || client.nomeCliente || 'Nome não informado',
+                    name: client.nome || client.name || client.nomeCompleto || client.razaoSocial || client.nomeFantasia || client.nomeCliente || 'Nome não informado', // Compatibilidade
                     documento,
                     document: documento,
                     cnpj: documento,

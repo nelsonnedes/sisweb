@@ -486,7 +486,7 @@ window.GerenciarClientes = (function() {
         
         // Mapear campos do cliente para compatibilidade
         const mapeamento = {
-            clientName: cliente.nome || cliente.name || '',
+            clientName: cliente.nome || cliente.name || cliente.nomeCompleto || cliente.razaoSocial || cliente.nomeFantasia || cliente.nomeCliente || '',
             clientCnpj: cliente.documento || cliente.document || cliente.cnpj || cliente.cpf || '',
             clientPersonType: cliente.tipoPessoa || cliente.personType || cliente.fiscalPersonType || '',
             clientIndIEDest: cliente.indIEDest || cliente.indicadorInscricaoEstadual || cliente.ieIndicator || '',
@@ -909,7 +909,9 @@ window.GerenciarClientes = (function() {
      */
     function notificarSucesso(cliente, isEdicao) {
         const acao = isEdicao ? 'atualizado' : 'cadastrado';
-        const mensagem = `Cliente "${cliente.nome}" ${acao} com sucesso!`;
+        // Suporta múltiplos nomes de campo para o nome do cliente
+        const nomeCliente = cliente.nome || cliente.name || cliente.nomeCompleto || cliente.razaoSocial || cliente.nomeFantasia || cliente.nomeCliente || 'Cliente';
+        const mensagem = `Cliente "${nomeCliente}" ${acao} com sucesso!`;
         
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(mensagem, 'success');

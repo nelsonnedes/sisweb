@@ -1339,7 +1339,7 @@ class FirebaseService {
                 ? result.data 
                 : Object.keys(result.data).map(key => ({
                     id: key,
-                    nome: result.data[key].nome || result.data[key].name || 'Sem nome',
+                    nome: result.data[key].nome || result.data[key].name || result.data[key].nomeCompleto || result.data[key].razaoSocial || result.data[key].nomeFantasia || result.data[key].nomeCliente || 'Sem nome',
                     email: result.data[key].email || '',
                     ...result.data[key]
                 }));

@@ -555,7 +555,17 @@ function normalizeClient(client) {
         return '';
     };
     const nowIso = new Date().toISOString();
-    const nome = String(client.name || client.nome || '').trim();
+    // Suporta múltiplos nomes de campo para o nome do cliente (compatibilidade)
+    const nome = firstText(
+        client.nome,
+        client.name,
+        client.nomeCompleto,
+        client.razaoSocial,
+        client.nomeFantasia,
+        client.nomeCliente,
+        client.nomeCompletoCliente,
+        client.nomeRazaoSocial
+    );
     const documento = firstText(client.documento, client.document, client.cnpj, client.cpf);
     const estado = String(client.state || client.estado || '').trim();
     const cidade = String(client.city || client.cidade || '').trim();
