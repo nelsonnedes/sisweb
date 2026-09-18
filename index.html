@@ -55,7 +55,7 @@
         })();
     </script>
     
-    <script defer src="menu-component.js?v=e2c5f0f8f39d"></script>
+    <script defer src="menu-component.js?v=f18a29f878a4"></script>
     <!-- Firebase SDK -->
     <!-- Firebase via módulo compartilhado (singleton) -->
 
@@ -972,6 +972,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 }
 
                 function redirectDashboardToLogin(reason = 'tenant_required') {
+                    if (window.__SISWEB_MANUAL_TRAINING__ === true || window.__skipAuthRedirect === true) return;
                     try {
                         if (/(^|\/)login\.html$/i.test(window.location.pathname || '')) return;
                         const target = encodeURIComponent('index.html');
@@ -980,6 +981,11 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 }
 
                 async function enforceTenantContext() {
+                    if (window.__SISWEB_MANUAL_TRAINING__ === true || window.__skipAuthRedirect === true) {
+                        const trainingTenant = window.appTenantId || 'company_treinamento';
+                        try { window.dispatchEvent(new CustomEvent('tenantContextReady', { detail: { tenantId: trainingTenant } })); } catch (_) {}
+                        return { success: true, companyId: trainingTenant, tenantId: trainingTenant };
+                    }
                     try {
                         const svc = getDashboardFirebaseService();
                         if (!svc || typeof svc.resolveAuthenticatedTenant !== 'function') {

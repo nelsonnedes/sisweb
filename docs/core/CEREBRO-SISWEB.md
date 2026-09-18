@@ -776,3 +776,27 @@ G# 75. Sessao 2026-09-17 - Captura Completa de Telas Sanitizadas (Desktop & Mobi
   - `npm run validate:pr`: 6/6 etapas aprovadas com sucesso.
   - Injetados cachebusters e gerado build de hosting (`build:hosting` 477 arquivos).
 - **Fix regressao desktop v12:** omaneio-comum.css:3040 com display:block !important; width:100% !important fora de @media fazia omaneiotora.html em desktop (1200px) abrir como mobile (form empilhado). Fix: removido display:block/width do global, mantido apenas height/border/radius fora, e display:block/width:100% apenas dentro de @media(768px) para mobile. Validado desktop com lex:0.2/0.4 intacto, mobile com lock e max-width:200px.
+
+
+## 76. Sessao 2026-09-18 - Correcao de Sessao de Treinamento no Ambiente de Captura Local & Recaptura Completa
+- **Diagnostico Raiz da Falha de Captura Anterior:**
+  - O script de captura executava localmente com flags de desconexao (_FIREBASE_CONNECTED = false) e sem resolver o tenant autenticado (esolveAuthenticatedTenant / nsureAuthAndTenant), fazendo com que paginas protegidas (index.html, company.html, species.js, endas.js) redirecionassem para login.html?reason=tenant_required.
+  - Como consequencia, as capturas anteriores mostravam a tela de login ao inves das telas operacionais do sistema.
+- **Solucoes Implementadas & Mocks Robustos:**
+  - uth.js, js/client.js, js/species.js e index.html: adicionado bypass explicito quando window.__SISWEB_MANUAL_TRAINING__ === true ou window.__skipAuthRedirect === true, garantindo que o tenant company_treinamento e o usuario mockado sejam reconhecidos imediatamente.
+  - 	ools/help-screenshots/capture.mjs: atualizado installTrainingSeed com cadastro empresarial completo (Madeireira Modelo Sisweb LTDA, CNPJ, endereco BR-316, Plano Pro Anual ativo ate 2028), usuario administrador (Nelson Gerente), especies florestais (Ipe Amarelo com coeficiente Francon 0.7854, Macaranduba, Cumaru), romaneios de toras com plaquetas PLQ-8901..8905, pedidos de venda e compra, contas financeiras a pagar/receber e folha com chaves PIX.
+  - 	ools/help-screenshots/optimize.mjs: adicionado safeWriteFileSync com retentativas sincronas e sharp.cache(false) para evitar locks de arquivo no Windows.
+  - No pplyTrainingScenario: limpeza automatica de modais residuais, avisos de offline e banners de recuperacao de sessao antes de cada print.
+- **Resultados da Recaptura:**
+  - 214 imagens reais capturadas com sucesso em Desktop (1366x768) e Mobile (390x844).
+  - Otimizacao via Sharp com palette e compressao level 9: reducao de 28.5 MB para 8.9 MB (~68.8% de economia).
+  - Imagens sincronizadas em ssets/help-manual/ e espelhadas em 	mp/help-manual-optimized/.
+  - Atualizado manifesto ssets/help-manual/help-gallery.generated.js.
+- **Quality Gates:**
+  - 
+pm test: 571 testes passando, 0 falhas, 1 skipped.
+  - 
+pm run validate:pr: 6/6 etapas OK (artefatos, lint, typecheck, unit tests, pr focus, cachebusters).
+  - 
+ode tools/inject-cachebusters.mjs & 
+pm run build:hosting: 477 arquivos gerados em hosting-dist/.

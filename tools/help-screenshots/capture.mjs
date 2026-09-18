@@ -62,28 +62,42 @@ async function installTrainingSeed(context) {
       id: 'company_treinamento',
       companyId: 'company_treinamento',
       tenantId: 'company_treinamento',
-      razaoSocial: 'Empresa Treinamento Sisweb LTDA',
-      nomeFantasia: 'Empresa Treinamento',
-      cnpj: '00.000.000/0001-00',
-      email: 'contato@treinamento.local',
-      telefone: '(00) 00000-0000',
-      cidade: 'Cidade Exemplo',
+      razaoSocial: 'Madeireira Modelo Sisweb LTDA',
+      nomeFantasia: 'Madeireira Modelo',
+      cnpj: '12.345.678/0001-90',
+      email: 'contato@madeireiramodelo.local',
+      telefone: '(91) 98765-4321',
+      cidade: 'Ananindeua',
       estado: 'PA',
-      endereco: 'Rua de Treinamento, 100'
+      endereco: 'Rodovia BR-316, KM 12',
+      bairro: 'Centro',
+      cep: '67000-000',
+      hasActiveSubscription: true,
+      subscriptionPlan: 'Plano Pro Anual',
+      subscriptionStatus: 'active',
+      planType: 'annual'
     };
     const demoUser = {
       uid: 'uid_treinamento',
       id: 'uid_treinamento',
-      email: 'operador@treinamento.local',
-      displayName: 'Operador Treinamento',
-      username: 'operador.treinamento',
+      userId: 'uid_treinamento',
+      email: 'operador@madeireiramodelo.local',
+      displayName: 'Nelson Gerente',
+      username: 'nelson.gerente',
+      role: 'admin',
       companyId: demoCompany.companyId,
+      companyID: demoCompany.companyId,
       tenantId: demoCompany.companyId,
       hasActiveSubscription: true,
+      subscriptionStatus: 'active',
+      accountStatus: 'active',
+      status: 'active',
       subscription: {
-        type: 'monthly',
-        startDate: '2026-06-01',
-        endDate: '2026-07-01'
+        type: 'annual',
+        plan: 'Plano Pro Anual',
+        active: true,
+        startDate: '2026-01-01',
+        endDate: '2028-12-31'
       }
     };
 
@@ -98,11 +112,13 @@ async function installTrainingSeed(context) {
     };
 
     window.__SISWEB_MANUAL_TRAINING__ = true;
+    window.__skipAuthRedirect = true;
     window.ENABLE_ANON_AUTH = false;
-    window._FIREBASE_CONNECTED = false;
-    window.firebaseConnected = false;
+    window._FIREBASE_CONNECTED = true;
+    window.firebaseConnected = true;
     window.appTenantId = demoCompany.companyId;
     window.companyInfo = demoCompany;
+    window.currentUser = demoUser;
 
     put('company_info', demoCompany);
     put('companies', [demoCompany]);
@@ -330,6 +346,8 @@ async function applyTrainingScenario(page, scenario) {
     };
 
     badge();
+    // Remove operational state overlays, offline notices and modals that block content
+    document.querySelectorAll('.sisweb-operational-state, .banner-offline, #sessionRecoveryBanner, .warning-banner, .toast, .offline-banner').forEach((el) => el.remove());
     document.querySelectorAll('.loading, #loadingModal, .spinner').forEach((el) => hide(el));
     document.querySelectorAll('input[placeholder*="Carregando"], input[value*="Carregando"]').forEach((el) => val(el.id, 'Exemplo'));
     document.querySelectorAll('*').forEach((el) => {
@@ -343,17 +361,20 @@ async function applyTrainingScenario(page, scenario) {
         fillFirstTable([['Alerta', 'Financeiro', 'Título vence hoje', 'Abrir'], ['Rotina', 'Folha', 'Conferir lançamentos', 'Ver'], ['Suporte', 'Sistema', 'Ticket aguardando', 'Abrir']]);
         break;
       case 'empresa':
-        val('razaoSocial', 'Empresa Treinamento Sisweb LTDA');
-        val('nomeFantasia', 'Empresa Treinamento');
-        val('cnpj', '00.000.000/0001-00');
-        val('telefone', '(00) 00000-0000');
-        val('email', 'contato@treinamento.local');
+        val('razaoSocial', 'Madeireira Modelo Sisweb LTDA');
+        val('nomeFantasia', 'Madeireira Modelo');
+        val('cnpj', '12.345.678/0001-90');
+        val('telefone', '(91) 98765-4321');
+        val('email', 'contato@madeireiramodelo.local');
+        val('endereco', 'Rodovia BR-316, KM 12');
+        val('cidade', 'Ananindeua');
+        val('estado', 'PA');
         break;
       case 'empresa-lista':
-        fillModalBody('companyModal', 'Empresas cadastradas', [['Empresa Treinamento Sisweb LTDA', 'Tenant: company_treinamento'], ['CNPJ', '00.000.000/0001-00'], ['Status', 'Ativo']]);
+        fillModalBody('companyModal', 'Empresas cadastradas', [['Madeireira Modelo Sisweb LTDA', 'Tenant: company_treinamento'], ['CNPJ', '12.345.678/0001-90'], ['Status', 'Ativo (Plano Pro)']]);
         break;
       case 'cadastros':
-        fillFirstTable([['Cliente Exemplo', '000.000.000-00', '(00) 00000-0001', 'Editar'], ['Cliente Modelo', '111.111.111-11', '(00) 00000-0002', 'Editar']]);
+        fillFirstTable([['Construtora Norte Madeiras', '12.345.678/0001-99', '(91) 98111-2233', 'Editar'], ['Mobiliária Amazônia Real', '98.765.432/0001-11', '(91) 98222-3344', 'Editar']]);
         break;
       case 'romaneios':
         val('cliente', 'Cliente Exemplo');

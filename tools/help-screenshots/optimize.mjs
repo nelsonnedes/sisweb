@@ -29,6 +29,19 @@ let afterPng = 0;
 let afterWebp = 0;
 let changed = 0;
 
+function safeWriteFileSync(targetPath, buffer, retries = 5) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      writeFileSync(targetPath, buffer);
+      return;
+    } catch (err) {
+      if (attempt === retries) throw err;
+      const end = Date.now() + 150 * attempt;
+      while (Date.now() < end) {}
+    }
+  }
+}
+
 for (const file of files) {
   const input = path.join(sourceDir, file);
   const optimizedPng = path.join(dryDir, file);
@@ -46,7 +59,7 @@ for (const file of files) {
     })
     .toBuffer();
 
-  writeFileSync(optimizedPng, optimizedPngBuffer);
+  safeWriteFileSync(optimizedPng, optimizedPngBuffer);
   const optimizedSize = optimizedPngBuffer.length;
   afterPng += Math.min(originalSize, optimizedSize);
 
@@ -57,10 +70,10 @@ for (const file of files) {
     const candidateWebpBuffer = await sharp(inputBuffer, { limitInputPixels: false })
       .webp({ quality: 82, effort: 6, smartSubsample: true })
       .toBuffer();
-    writeFileSync(candidateWebp, candidateWebpBuffer);
+    safeWriteFileSync(candidateWebp, candidateWebpBuffer);
     webpSize = candidateWebpBuffer.length;
     if (apply && webpSize < Math.min(originalSize, optimizedSize)) {
-      writeFileSync(webpFile, candidateWebpBuffer);
+      safeWriteFileSync(webpFile, candidateWebpBuffer);
       afterWebp += webpSize;
     } else {
       if (existsSync(webpFile)) rmSync(webpFile, { force: true });
@@ -69,7 +82,7 @@ for (const file of files) {
   }
 
   if (apply && optimizedSize < originalSize) {
-    writeFileSync(input, optimizedPngBuffer);
+    safeWriteFileSync(input, optimizedPngBuffer);
     changed += 1;
   }
 
