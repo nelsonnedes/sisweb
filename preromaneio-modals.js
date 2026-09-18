@@ -539,10 +539,22 @@ if (clientForm) {
             };
 
             let result = null;
+            // saveData/saveToFirebase tem assinatura (path, key, data): passar o
+            // caminho base + id + payload (2 args gravava em "[object Object]").
+            const tenantId = (typeof resolveTenantId === 'function' ? resolveTenantId() : null);
+            if (!tenantId) {
+                throw new Error('Empresa não identificada na sessão. Recarregue a página e tente novamente.');
+            }
+            const basePath = `companies/${tenantId}/clients`;
+            const payload = {};
+            Object.keys(dataToSave).forEach((k) => {
+                const v = dataToSave[k];
+                payload[k] = (v === undefined ? null : v);
+            });
             if (svc && typeof svc.saveData === 'function') {
-                result = await svc.saveData(`clients/${id}`, dataToSave);
+                result = await svc.saveData(basePath, String(id), payload);
             } else if (svc && typeof svc.saveToFirebase === 'function') {
-                result = await svc.saveToFirebase(`clients/${id}`, dataToSave);
+                result = await svc.saveToFirebase(basePath, String(id), payload);
             } else {
                 throw new Error('Serviço de salvamento não disponível');
             }
@@ -562,7 +574,7 @@ if (clientForm) {
                 selectPreRomaneioClient(id, dataToSave.name);
                 closeNewClientModal();
             } else {
-                throw new Error('Erro ao salvar');
+                throw new Error('Erro ao salvar' + (result && result.error ? `: ${result.error}` : ''));
             }
         } catch (error) {
             console.error(error);
@@ -757,7 +769,18 @@ if (speciesForm) {
             : { id: speciesId, especie: name, nomeCientifico, createdAt: now, updatedAt: now };
 
         try {
-            const result = await window.firebaseService.saveData(`especies/${speciesId}`, newSpecies);
+            // saveData/saveToFirebase tem assinatura (path, key, data)
+            const speciesTenant = (typeof resolveTenantId === 'function' ? resolveTenantId() : null);
+            if (!speciesTenant) {
+                throw new Error('Empresa não identificada na sessão. Recarregue a página e tente novamente.');
+            }
+            const speciesBase = `companies/${speciesTenant}/especies`;
+            const speciesPayload = {};
+            Object.keys(newSpecies).forEach((k) => {
+                const v = newSpecies[k];
+                speciesPayload[k] = (v === undefined ? null : v);
+            });
+            const result = await window.firebaseService.saveData(speciesBase, String(speciesId), speciesPayload);
             if (result && result.success) {
                 selectSpecies(name, '');
                 closeNewSpeciesModal();
@@ -768,7 +791,7 @@ if (speciesForm) {
                 }
                 alert('Espécie cadastrada com sucesso!');
             } else {
-                throw new Error('Erro ao salvar');
+                throw new Error('Erro ao salvar' + (result && result.error ? `: ${result.error}` : ''));
             }
         } catch (error) {
             console.error(error);
