@@ -272,6 +272,36 @@ window.SISWEB_HELP_FULL_GALLERY = {
       "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
       "image": "assets/help-manual/romaneiotora-acao-listar.png",
       "alt": "Print sanitizado: Romaneio de Toras - Listar"
+    },
+    {
+      "title": "preromaneio.html - Mobile/PWA",
+      "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
+      "image": "assets/help-manual/preromaneio-mobile.png",
+      "alt": "Print sanitizado: preromaneio.html - Mobile/PWA"
+    },
+    {
+      "title": "romaneiotl.html - Mobile/PWA",
+      "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
+      "image": "assets/help-manual/romaneiotl-mobile.png",
+      "alt": "Print sanitizado: romaneiotl.html - Mobile/PWA"
+    },
+    {
+      "title": "romaneiopct.html - Mobile/PWA",
+      "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
+      "image": "assets/help-manual/romaneiopct-mobile.png",
+      "alt": "Print sanitizado: romaneiopct.html - Mobile/PWA"
+    },
+    {
+      "title": "romaneiopes.html - Mobile/PWA",
+      "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
+      "image": "assets/help-manual/romaneiopes-mobile.png",
+      "alt": "Print sanitizado: romaneiopes.html - Mobile/PWA"
+    },
+    {
+      "title": "romaneiotora.html - Mobile/PWA",
+      "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
+      "image": "assets/help-manual/romaneiotora-mobile.png",
+      "alt": "Print sanitizado: romaneiotora.html - Mobile/PWA"
     }
   ],
   "cadastros": [
@@ -316,6 +346,24 @@ window.SISWEB_HELP_FULL_GALLERY = {
       "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
       "image": "assets/help-manual/species-modal-speciesmodal.png",
       "alt": "Print sanitizado: Gerenciar Espécies - Sistema - Nova Espécie"
+    },
+    {
+      "title": "client.html - Mobile/PWA",
+      "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
+      "image": "assets/help-manual/client-mobile.png",
+      "alt": "Print sanitizado: client.html - Mobile/PWA"
+    },
+    {
+      "title": "fornecedor.html - Mobile/PWA",
+      "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
+      "image": "assets/help-manual/fornecedor-mobile.png",
+      "alt": "Print sanitizado: fornecedor.html - Mobile/PWA"
+    },
+    {
+      "title": "species.html - Mobile/PWA",
+      "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
+      "image": "assets/help-manual/species-mobile.png",
+      "alt": "Print sanitizado: species.html - Mobile/PWA"
     }
   ],
   "empresa": [
@@ -348,6 +396,12 @@ window.SISWEB_HELP_FULL_GALLERY = {
       "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
       "image": "assets/help-manual/company-acao-listar-empresas.png",
       "alt": "Print sanitizado: Cadastro de Empresa - Listar Empresas"
+    },
+    {
+      "title": "company.html - Mobile/PWA",
+      "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
+      "image": "assets/help-manual/company-mobile.png",
+      "alt": "Print sanitizado: company.html - Mobile/PWA"
     }
   ],
   "compras": [
@@ -918,6 +972,12 @@ window.SISWEB_HELP_FULL_GALLERY = {
       "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
       "image": "assets/help-manual/notas-fiscais-acao-gerar-relatorio.png",
       "alt": "Print sanitizado: Notas Fiscais - Sistema de Gestão - Gerar Relatório"
+    },
+    {
+      "title": "notas-fiscais.html - Mobile/PWA",
+      "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
+      "image": "assets/help-manual/notas-fiscais-mobile.png",
+      "alt": "Print sanitizado: notas-fiscais.html - Mobile/PWA"
     }
   ],
   "assinatura": [
@@ -950,6 +1010,18 @@ window.SISWEB_HELP_FULL_GALLERY = {
       "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
       "image": "assets/help-manual/subscription-modal-paymentmodal.png",
       "alt": "Print sanitizado: Assinatura - Sistema - Pagamento da Assinatura"
+    },
+    {
+      "title": "subscription-status.html - Mobile/PWA",
+      "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
+      "image": "assets/help-manual/subscription-status-mobile.png",
+      "alt": "Print sanitizado: subscription-status.html - Mobile/PWA"
+    },
+    {
+      "title": "subscription.html - Mobile/PWA",
+      "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
+      "image": "assets/help-manual/subscription-mobile.png",
+      "alt": "Print sanitizado: subscription.html - Mobile/PWA"
     }
   ],
   "perfil": [
@@ -964,6 +1036,12 @@ window.SISWEB_HELP_FULL_GALLERY = {
       "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
       "image": "assets/help-manual/user-profile-modal-editpersonalmodal.png",
       "alt": "Print sanitizado: Meu Perfil - Sistema - Editar Informações Pessoais"
+    },
+    {
+      "title": "user-profile.html - Mobile/PWA",
+      "caption": "Print real do layout em ambiente de treinamento, com dados fictícios.",
+      "image": "assets/help-manual/user-profile-mobile.png",
+      "alt": "Print sanitizado: user-profile.html - Mobile/PWA"
     }
   ],
   "vendas": [

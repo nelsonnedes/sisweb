@@ -3222,6 +3222,204 @@
     ]
   },
   {
+    "id": "company-mobile",
+    "path": "company.html",
+    "title": "company.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "company.html"
+      },
+      {
+        "type": "training",
+        "name": "empresa"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "client-mobile",
+    "path": "client.html",
+    "title": "client.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "client.html"
+      },
+      {
+        "type": "training",
+        "name": "cadastros"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "fornecedor-mobile",
+    "path": "fornecedor.html",
+    "title": "fornecedor.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "fornecedor.html"
+      },
+      {
+        "type": "training",
+        "name": "cadastros-fornecedor"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "species-mobile",
+    "path": "species.html",
+    "title": "species.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "species.html"
+      },
+      {
+        "type": "training",
+        "name": "cadastros-especies"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "preromaneio-mobile",
+    "path": "preromaneio.html",
+    "title": "preromaneio.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "preromaneio.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneios"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "romaneiotl-mobile",
+    "path": "romaneiotl.html",
+    "title": "romaneiotl.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiotl.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-tl"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "romaneiopct-mobile",
+    "path": "romaneiopct.html",
+    "title": "romaneiopct.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopct.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pct"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "romaneiopes-mobile",
+    "path": "romaneiopes.html",
+    "title": "romaneiopes.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiopes.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-pes"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "romaneiotora-mobile",
+    "path": "romaneiotora.html",
+    "title": "romaneiotora.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "romaneiotora.html"
+      },
+      {
+        "type": "training",
+        "name": "romaneio-tora"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
     "id": "vendas-mobile",
     "path": "vendas.html",
     "title": "vendas.html - Mobile/PWA",
@@ -3325,6 +3523,94 @@
       {
         "type": "training",
         "name": "folha"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "notas-fiscais-mobile",
+    "path": "notas-fiscais.html",
+    "title": "notas-fiscais.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "notas-fiscais.html"
+      },
+      {
+        "type": "training",
+        "name": "fiscal"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "subscription-status-mobile",
+    "path": "subscription-status.html",
+    "title": "subscription-status.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "subscription-status.html"
+      },
+      {
+        "type": "training",
+        "name": "assinatura"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "subscription-mobile",
+    "path": "subscription.html",
+    "title": "subscription.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "subscription.html"
+      },
+      {
+        "type": "training",
+        "name": "assinatura-pagamento"
+      },
+      {
+        "type": "trainingMobile"
+      }
+    ]
+  },
+  {
+    "id": "user-profile-mobile",
+    "path": "user-profile.html",
+    "title": "user-profile.html - Mobile/PWA",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "actions": [
+      {
+        "type": "trainingPage",
+        "route": "user-profile.html"
+      },
+      {
+        "type": "training",
+        "name": "perfil"
       },
       {
         "type": "trainingMobile"

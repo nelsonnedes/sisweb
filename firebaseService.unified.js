@@ -1515,16 +1515,23 @@ const unifiedAuthService = {
 
 firebaseServiceInstance.authService = unifiedAuthService;
 
-// Auto-inicializar
+// Auto-inicializar - usa instancia local para evitar corrida com window.firebaseService de outro bundle
 if (!window._FIREBASE_UNIFIED_INIT_TRIGGERED) {
   window._FIREBASE_UNIFIED_INIT_TRIGGERED = true;
   const triggerInit = async () => {
     try {
-      // Se houver manager, aguardar conexão/ready indiretamente
       if (window.getFirebaseManager) {
         try { window.getFirebaseManager(); } catch {}
       }
-      await window.firebaseService.initialize();
+      // Usa a instancia criada neste arquivo, nao window.firebaseService que pode ter sido sobrescrito
+      if (firebaseServiceInstance && typeof firebaseServiceInstance.initialize === 'function') {
+        await firebaseServiceInstance.initialize();
+      } else if (window.firebaseService && typeof window.firebaseService.initialize === 'function') {
+        await window.firebaseService.initialize();
+      } else {
+        console.warn('⚠️ FirebaseService sem initialize, ignorando auto-init');
+        return;
+      }
       console.log('✅ FirebaseService auto-inicializado');
     } catch (error) {
       console.error('❌ Erro na auto-inicialização do Firebase:', error);

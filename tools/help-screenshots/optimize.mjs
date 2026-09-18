@@ -1,7 +1,10 @@
-import { existsSync, mkdirSync, readdirSync, statSync, copyFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+
+// Disable sharp file-cache to prevent file-locking on Windows
+sharp.cache(false);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,10 +32,11 @@ let changed = 0;
 for (const file of files) {
   const input = path.join(sourceDir, file);
   const optimizedPng = path.join(dryDir, file);
-  const originalSize = statSync(input).size;
+  const inputBuffer = readFileSync(input);
+  const originalSize = inputBuffer.length;
   before += originalSize;
 
-  await sharp(input, { limitInputPixels: false })
+  const optimizedPngBuffer = await sharp(inputBuffer, { limitInputPixels: false })
     .png({
       compressionLevel: 9,
       effort: 10,
@@ -40,21 +44,23 @@ for (const file of files) {
       quality: 92,
       dither: 0
     })
-    .toFile(optimizedPng);
+    .toBuffer();
 
-  const optimizedSize = statSync(optimizedPng).size;
+  writeFileSync(optimizedPng, optimizedPngBuffer);
+  const optimizedSize = optimizedPngBuffer.length;
   afterPng += Math.min(originalSize, optimizedSize);
 
   let webpSize = 0;
   if (webp) {
     const webpFile = path.join(sourceDir, file.replace(/\.png$/i, '.webp'));
     const candidateWebp = path.join(dryDir, file.replace(/\.png$/i, '.webp'));
-    await sharp(input, { limitInputPixels: false })
+    const candidateWebpBuffer = await sharp(inputBuffer, { limitInputPixels: false })
       .webp({ quality: 82, effort: 6, smartSubsample: true })
-      .toFile(candidateWebp);
-    webpSize = statSync(candidateWebp).size;
+      .toBuffer();
+    writeFileSync(candidateWebp, candidateWebpBuffer);
+    webpSize = candidateWebpBuffer.length;
     if (apply && webpSize < Math.min(originalSize, optimizedSize)) {
-      copyFileSync(candidateWebp, webpFile);
+      writeFileSync(webpFile, candidateWebpBuffer);
       afterWebp += webpSize;
     } else {
       if (existsSync(webpFile)) rmSync(webpFile, { force: true });
@@ -63,7 +69,7 @@ for (const file of files) {
   }
 
   if (apply && optimizedSize < originalSize) {
-    copyFileSync(optimizedPng, input);
+    writeFileSync(input, optimizedPngBuffer);
     changed += 1;
   }
 

@@ -118,7 +118,28 @@ function buildRoutes() {
     }
   }
 
-  const mobilePages = ['index.html', 'vendas.html', 'compras.html', 'estoque.html', 'financas.html', 'folha_pagamento/folha.html', 'ajuda.html'];
+  const mobilePages = [
+    'index.html',
+    'company.html',
+    'client.html',
+    'fornecedor.html',
+    'species.html',
+    'preromaneio.html',
+    'romaneiotl.html',
+    'romaneiopct.html',
+    'romaneiopes.html',
+    'romaneiotora.html',
+    'vendas.html',
+    'compras.html',
+    'estoque.html',
+    'financas.html',
+    'folha_pagamento/folha.html',
+    'notas-fiscais.html',
+    'subscription-status.html',
+    'subscription.html',
+    'user-profile.html',
+    'ajuda.html'
+  ];
   for (const route of mobilePages) {
     if (!pages.some((page) => page.route === route)) continue;
     const pageId = routeSlug(route);
