@@ -405,10 +405,17 @@
 
         .subscription-guide-shot {
             margin-top: 14px;
-            border: 1px solid rgba(228, 214, 188, 0.2);
-            border-radius: 12px;
-            background: #161009;
+            border: 1px solid rgba(228, 214, 188, 0.16);
+            border-radius: 14px;
+            background: rgba(18, 12, 7, 0.75);
             overflow: hidden;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .subscription-guide-card:hover .subscription-guide-shot {
+            border-color: rgba(227, 154, 45, 0.4);
+            box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
         }
 
         .subscription-guide-shot button {
@@ -422,19 +429,148 @@
             color: inherit;
         }
 
-        .subscription-guide-shot img {
+        /* Mockup Desktop (Browser / Monitor) */
+        .guide-mockup-desktop {
+            background: #140E08;
+            border-bottom: 1px solid rgba(228, 214, 188, 0.12);
+        }
+
+        .guide-mockup-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #19120B;
+            padding: 6px 12px;
+            border-bottom: 1px solid rgba(228, 214, 188, 0.1);
+        }
+
+        .guide-mockup-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .guide-mockup-dots span {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .guide-mockup-dots span:nth-child(1) { background: #ff5f56; }
+        .guide-mockup-dots span:nth-child(2) { background: #ffbd2e; }
+        .guide-mockup-dots span:nth-child(3) { background: #27c93f; }
+
+        .guide-mockup-url {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            font-size: 10px;
+            color: #8A7B68;
+            padding: 2px 8px;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+
+        .guide-mockup-screen {
+            position: relative;
             width: 100%;
-            height: 150px;
+            height: 145px;
+            overflow: hidden;
+            background: #0D0A06;
+        }
+
+        .guide-mockup-screen img {
+            width: 100%;
+            height: 100%;
             object-fit: cover;
+            object-position: top center;
             display: block;
-            background: #161009;
+            transition: transform 0.35s ease;
+        }
+
+        .subscription-guide-shot button:hover .guide-mockup-screen img,
+        .subscription-guide-shot button:hover .guide-phone-screen img {
+            transform: scale(1.04);
+        }
+
+        /* Mockup Mobile (Smartphone / iPhone) */
+        .guide-mockup-mobile-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 0 6px;
+            background: radial-gradient(circle at center, rgba(38, 26, 15, 0.5) 0%, rgba(13, 10, 6, 0.9) 100%);
+            border-bottom: 1px solid rgba(228, 214, 188, 0.1);
+        }
+
+        .guide-phone-frame {
+            position: relative;
+            width: 96px;
+            background: #090704;
+            border-radius: 20px;
+            padding: 6px 4px 6px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.6), inset 0 0 0 1.5px #3A2E1E;
+        }
+
+        .guide-phone-island {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 32px;
+            height: 7px;
+            background: #000;
+            border-radius: 999px;
+            z-index: 4;
+        }
+
+        .guide-phone-screen {
+            position: relative;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #140E08;
+            height: 135px;
+        }
+
+        .guide-phone-screen img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top center;
+            display: block;
+            transition: transform 0.35s ease;
+        }
+
+        .guide-phone-home {
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 28px;
+            height: 2px;
+            background: #F5ECDA;
+            border-radius: 999px;
+            opacity: 0.6;
         }
 
         .subscription-guide-shot figcaption {
             color: #CDBFA4;
             font-size: 12px;
             line-height: 1.45;
-            padding: 9px 10px;
+            padding: 9px 12px;
+            background: rgba(22, 16, 9, 0.95);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .subscription-guide-shot figcaption i {
+            color: var(--lv-serragem-light);
+            font-size: 11px;
+            flex-shrink: 0;
         }
 
         .subscription-guide-lightbox {
@@ -1268,7 +1404,7 @@
                 <a class="subscription-guide-cta" href="subscription.html?cupom=DESCONTO5&utm_source=guide&utm_medium=subscription&utm_campaign=madeireiro"><i class="fas fa-tag"></i> Ver oferta</a>
             </div>
             <div class="subscription-guide-grid">
-                <div class="subscription-guide-card" data-subscription-guide-keywords="empresa cadastro cnpj logo tenant companyid">
+                <div class="subscription-guide-card" data-subscription-guide-keywords="empresa cadastro cnpj logo tenant companyid filial">
                     <h3><i class="fas fa-building"></i> Configuração inicial</h3>
                     <ul>
                         <li>Cadastre a empresa e confirme contato/CNPJ.</li>
@@ -1276,38 +1412,65 @@
                     </ul>
                     <figure class="subscription-guide-shot">
                         <button type="button" data-guide-image="assets/help-manual/empresa-1.png?v=20260606" data-guide-caption="Cadastro da empresa com CNPJ, contato, logo e tenant.">
-                            <img src="assets/help-manual/empresa-1.png?v=20260606" alt="Print sanitizado do cadastro de empresa" loading="lazy" decoding="async">
-                            <figcaption>Empresa: base correta antes de operar.</figcaption>
+                            <div class="guide-mockup-desktop">
+                                <div class="guide-mockup-bar">
+                                    <div class="guide-mockup-dots"><span></span><span></span><span></span></div>
+                                    <div class="guide-mockup-url"><i class="fas fa-lock"></i> sisweb.app/empresa</div>
+                                </div>
+                                <div class="guide-mockup-screen">
+                                    <img src="assets/help-manual/empresa-1.png?v=20260606" alt="Print sanitizado do cadastro de empresa" loading="lazy" decoding="async">
+                                </div>
+                            </div>
+                            <figcaption><i class="fas fa-desktop"></i> Empresa: base correta antes de operar.</figcaption>
                         </button>
                     </figure>
                 </div>
-                <div class="subscription-guide-card" data-subscription-guide-keywords="clientes fornecedores especies cadastros base">
+
+                <div class="subscription-guide-card" data-subscription-guide-keywords="clientes fornecedores especies cadastros base francon">
                     <h3><i class="fas fa-users"></i> Cadastros base</h3>
                     <ul>
-                        <li>Clientes, fornecedores e espécies organizados.</li>
+                        <li>Clientes, fornecedores e espécies botânicas.</li>
                         <li>Busca e ações rápidas para rotina diária.</li>
                     </ul>
                     <figure class="subscription-guide-shot">
                         <button type="button" data-guide-image="assets/help-manual/cadastros-1.png?v=20260606" data-guide-caption="Cadastros base com filtros, edição e listagem.">
-                            <img src="assets/help-manual/cadastros-1.png?v=20260606" alt="Print sanitizado de cadastros base" loading="lazy" decoding="async">
-                            <figcaption>Cadastros: a base para vendas, compras e romaneios.</figcaption>
+                            <div class="guide-mockup-desktop">
+                                <div class="guide-mockup-bar">
+                                    <div class="guide-mockup-dots"><span></span><span></span><span></span></div>
+                                    <div class="guide-mockup-url"><i class="fas fa-lock"></i> sisweb.app/cadastros</div>
+                                </div>
+                                <div class="guide-mockup-screen">
+                                    <img src="assets/help-manual/cadastros-1.png?v=20260606" alt="Print sanitizado de cadastros base" loading="lazy" decoding="async">
+                                </div>
+                            </div>
+                            <figcaption><i class="fas fa-desktop"></i> Cadastros: a base para vendas, compras e romaneios.</figcaption>
                         </button>
                     </figure>
                 </div>
-                <div class="subscription-guide-card" data-subscription-guide-keywords="romaneio tora tl pct pes impressão desdobramento">
+
+                <div class="subscription-guide-card" data-subscription-guide-keywords="romaneio tora tl pct pes impressão desdobramento cubagem patio">
                     <h3><i class="fas fa-file-alt"></i> Romaneios e toras</h3>
                     <ul>
-                        <li>Pré-romaneio e emissão por tipo.</li>
-                        <li>Totais, medições e impressão profissional.</li>
+                        <li>Pré-romaneio e emissão por tipo (Tora/PCT/TL/PES).</li>
+                        <li>Cubagem Francon e geométrica em tempo real.</li>
                     </ul>
                     <figure class="subscription-guide-shot">
                         <button type="button" data-guide-image="assets/help-manual/romaneios-1.png?v=20260606" data-guide-caption="Romaneios com cliente, espécie, itens, totais e impressão.">
-                            <img src="assets/help-manual/romaneios-1.png?v=20260606" alt="Print sanitizado de romaneios" loading="lazy" decoding="async">
-                            <figcaption>Romaneios: controle operacional do segmento madeireiro.</figcaption>
+                            <div class="guide-mockup-mobile-wrap">
+                                <div class="guide-phone-frame">
+                                    <div class="guide-phone-island"></div>
+                                    <div class="guide-phone-screen">
+                                        <img src="assets/help-manual/romaneiotora-overview-mobile.png?v=20260606" alt="Print sanitizado de romaneios" loading="lazy" decoding="async">
+                                    </div>
+                                    <div class="guide-phone-home"></div>
+                                </div>
+                            </div>
+                            <figcaption><i class="fas fa-mobile-alt"></i> Romaneios: apontamento no pátio pelo celular.</figcaption>
                         </button>
                     </figure>
                 </div>
-                <div class="subscription-guide-card" data-subscription-guide-keywords="vendas pedido cliente produto receber relatorio">
+
+                <div class="subscription-guide-card" data-subscription-guide-keywords="vendas pedido cliente produto receber relatorio faturamento">
                     <h3><i class="fas fa-shopping-cart"></i> Vendas</h3>
                     <ul>
                         <li>Pedidos com itens, parcelas e relatórios.</li>
@@ -1315,12 +1478,21 @@
                     </ul>
                     <figure class="subscription-guide-shot">
                         <button type="button" data-guide-image="assets/help-manual/vendas-1.png?v=20260606" data-guide-caption="Pedidos de venda com itens, totais e lista para impressão.">
-                            <img src="assets/help-manual/vendas-1.png?v=20260606" alt="Print sanitizado de vendas" loading="lazy" decoding="async">
-                            <figcaption>Vendas: pedido, totalização e acompanhamento.</figcaption>
+                            <div class="guide-mockup-desktop">
+                                <div class="guide-mockup-bar">
+                                    <div class="guide-mockup-dots"><span></span><span></span><span></span></div>
+                                    <div class="guide-mockup-url"><i class="fas fa-lock"></i> sisweb.app/vendas</div>
+                                </div>
+                                <div class="guide-mockup-screen">
+                                    <img src="assets/help-manual/vendas-1.png?v=20260606" alt="Print sanitizado de vendas" loading="lazy" decoding="async">
+                                </div>
+                            </div>
+                            <figcaption><i class="fas fa-desktop"></i> Vendas: pedido, totalização e acompanhamento.</figcaption>
                         </button>
                     </figure>
                 </div>
-                <div class="subscription-guide-card" data-subscription-guide-keywords="compras fornecedor pedido pagar produto carrinho">
+
+                <div class="subscription-guide-card" data-subscription-guide-keywords="compras fornecedor pedido pagar produto carrinho materia prima">
                     <h3><i class="fas fa-shopping-bag"></i> Compras</h3>
                     <ul>
                         <li>Pedido de compra com fornecedor e itens.</li>
@@ -1328,38 +1500,65 @@
                     </ul>
                     <figure class="subscription-guide-shot">
                         <button type="button" data-guide-image="assets/help-manual/compras-1.png?v=20260606" data-guide-caption="Compras com fornecedor, carrinho, parcelas e detalhes.">
-                            <img src="assets/help-manual/compras-1.png?v=20260606" alt="Print sanitizado de compras" loading="lazy" decoding="async">
-                            <figcaption>Compras: rotina de entrada e pagamento.</figcaption>
+                            <div class="guide-mockup-desktop">
+                                <div class="guide-mockup-bar">
+                                    <div class="guide-mockup-dots"><span></span><span></span><span></span></div>
+                                    <div class="guide-mockup-url"><i class="fas fa-lock"></i> sisweb.app/compras</div>
+                                </div>
+                                <div class="guide-mockup-screen">
+                                    <img src="assets/help-manual/compras-1.png?v=20260606" alt="Print sanitizado de compras" loading="lazy" decoding="async">
+                                </div>
+                            </div>
+                            <figcaption><i class="fas fa-desktop"></i> Compras: rotina de entrada e pagamento.</figcaption>
                         </button>
                     </figure>
                 </div>
-                <div class="subscription-guide-card" data-subscription-guide-keywords="estoque toras almoxarifado rastreabilidade baixa saldo">
+
+                <div class="subscription-guide-card" data-subscription-guide-keywords="estoque toras almoxarifado rastreabilidade baixa saldo plaqueta">
                     <h3><i class="fas fa-warehouse"></i> Estoque</h3>
                     <ul>
-                        <li>Saldo, entrada, saída e rastreabilidade.</li>
+                        <li>Saldo, entrada, saída e rastreabilidade por plaqueta.</li>
                         <li>Relatórios para conferência de volume.</li>
                     </ul>
                     <figure class="subscription-guide-shot">
                         <button type="button" data-guide-image="assets/help-manual/estoque-1.png?v=20260606" data-guide-caption="Estoque com saldo, baixas, rastreabilidade e relatórios.">
-                            <img src="assets/help-manual/estoque-1.png?v=20260606" alt="Print sanitizado de estoque" loading="lazy" decoding="async">
-                            <figcaption>Estoque: visão operacional por volume e movimentação.</figcaption>
+                            <div class="guide-mockup-mobile-wrap">
+                                <div class="guide-phone-frame">
+                                    <div class="guide-phone-island"></div>
+                                    <div class="guide-phone-screen">
+                                        <img src="assets/help-manual/estoque-mobile.png?v=20260606" alt="Print sanitizado de estoque" loading="lazy" decoding="async">
+                                    </div>
+                                    <div class="guide-phone-home"></div>
+                                </div>
+                            </div>
+                            <figcaption><i class="fas fa-mobile-alt"></i> Estoque: saldo de toras e plaquetas no celular.</figcaption>
                         </button>
                     </figure>
                 </div>
-                <div class="subscription-guide-card" data-subscription-guide-keywords="financeiro pagar receber vencimento caixa anexo pagamento">
+
+                <div class="subscription-guide-card" data-subscription-guide-keywords="financeiro pagar receber vencimento caixa anexo pagamento juros">
                     <h3><i class="fas fa-coins"></i> Financeiro</h3>
                     <ul>
-                        <li>Contas a pagar, receber e vencimentos.</li>
-                        <li>Registro de pagamentos e anexos.</li>
+                        <li>Contas a pagar, receber e vencimentos civis.</li>
+                        <li>Registro de pagamentos e anexos de comprovantes.</li>
                     </ul>
                     <figure class="subscription-guide-shot">
                         <button type="button" data-guide-image="assets/help-manual/financas-1.png?v=20260606" data-guide-caption="Financeiro com contas, vencimentos, anexos e pagamentos.">
-                            <img src="assets/help-manual/financas-1.png?v=20260606" alt="Print sanitizado do financeiro" loading="lazy" decoding="async">
-                            <figcaption>Financeiro: controle do caixa operacional.</figcaption>
+                            <div class="guide-mockup-desktop">
+                                <div class="guide-mockup-bar">
+                                    <div class="guide-mockup-dots"><span></span><span></span><span></span></div>
+                                    <div class="guide-mockup-url"><i class="fas fa-lock"></i> sisweb.app/financas</div>
+                                </div>
+                                <div class="guide-mockup-screen">
+                                    <img src="assets/help-manual/financas-1.png?v=20260606" alt="Print sanitizado do financeiro" loading="lazy" decoding="async">
+                                </div>
+                            </div>
+                            <figcaption><i class="fas fa-desktop"></i> Financeiro: controle do caixa operacional.</figcaption>
                         </button>
                     </figure>
                 </div>
-                <div class="subscription-guide-card" data-subscription-guide-keywords="folha funcionario pix qrcode recibo quinzena">
+
+                <div class="subscription-guide-card" data-subscription-guide-keywords="folha funcionario pix qrcode recibo quinzena diaria">
                     <h3><i class="fas fa-file-invoice-dollar"></i> Folha e PIX</h3>
                     <ul>
                         <li>Lançamentos, recibos e QR Code PIX.</li>
@@ -1367,8 +1566,16 @@
                     </ul>
                     <figure class="subscription-guide-shot">
                         <button type="button" data-guide-image="assets/help-manual/folha-1.png?v=20260606" data-guide-caption="Folha com lançamentos, QR Code PIX, valores pagos e recibos.">
-                            <img src="assets/help-manual/folha-1.png?v=20260606" alt="Print sanitizado de folha de pagamento" loading="lazy" decoding="async">
-                            <figcaption>Folha: pagamentos e comprovantes mais claros.</figcaption>
+                            <div class="guide-mockup-mobile-wrap">
+                                <div class="guide-phone-frame">
+                                    <div class="guide-phone-island"></div>
+                                    <div class="guide-phone-screen">
+                                        <img src="assets/help-manual/folha-folha-mobile.png?v=20260606" alt="Print sanitizado de folha de pagamento" loading="lazy" decoding="async">
+                                    </div>
+                                    <div class="guide-phone-home"></div>
+                                </div>
+                            </div>
+                            <figcaption><i class="fas fa-mobile-alt"></i> Folha: pagamentos por PIX no smartphone.</figcaption>
                         </button>
                     </figure>
                 </div>

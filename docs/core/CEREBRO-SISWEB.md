@@ -746,3 +746,12 @@ o-cache para sempre buscar byte novo. setupUpdateChecks ja cobre PWA instalado: 
     3. Teste Gratis: 30 dias de teste completo sem compromisso na primeira ativacao da empresa.
     4. Vantagens Comerciais: descontos progressivos nos planos Trimestral e Anual com suporte e atualizacoes inclusas.
 - **Validacao:** Testes direcionados (54/54 pass), build:hosting executado com 477 arquivos gerados.
+
+
+## 74. Sessao 2026-09-17 - Mockups Desktop e Mobile com Imagens Reais no Guia Rapido (subscription.html)
+- **Design de Mockups & Capturas Reais:**
+  - Mockup Desktop (.guide-mockup-desktop): Moldura de navegador/monitor com barra superior escura, controles da janela (vermelho, amarelo, verde) e barra de URL institucional (`sisweb.app/modulo`). Aplicado nos modais empresariais: Empresa, Cadastros Base, Vendas, Compras e Financeiro.
+  - Mockup Mobile (.guide-phone-frame): Moldura de smartphone com cantos arredondados (`border-radius: 20px`), Dynamic Island no topo e Home Indicator na base. Aplicado nos modais de campo e patio: Romaneios (Tora/TL/PCT/PES), Estoque de Toras por Plaqueta e Folha de Pagamento & PIX.
+  - Capturas Reais Sanitizadas: Integracao com as imagens reais de `assets/help-manual/` (`empresa-1.png`, `cadastros-1.png`, `romaneiotora-overview-mobile.png`, `vendas-1.png`, `compras-1.png`, `estoque-mobile.png`, `financas-1.png`, `folha-folha-mobile.png`).
+  - Lightbox Interativo: Mantida integracao com visualizador em tela cheia ao clicar em qualquer mockup do Guia Rapido.
+- **Validacao:** `npm test` (571 testes passando, 0 falhas), `inject-cachebusters.mjs` e `build:hosting` (477 arquivos) executados.
