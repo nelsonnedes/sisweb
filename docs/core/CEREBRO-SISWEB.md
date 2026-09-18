@@ -735,3 +735,14 @@ o-cache para sempre buscar byte novo. setupUpdateChecks ja cobre PWA instalado: 
   - Modais de Pagamento & Guia Rapido: Modais modernizados com contraste nitido, suporte a QR Code PIX responsivo, copia e cola e guia rapido com lightbox visual.
 - **Integridade Tecnica & Zero Regressoes:** Todos os seletores, IDs, scripts (`plansContainer`, `campaignStrip`, `subscriptionTitle`, `paymentBrick_container`, `partnerCodeBox`, etc.), integracao Mercado Pago, PIX e testes unitarios rigorosamente preservados.
 - **Validacao:** `npm test` (571 testes passando, 0 falhas), `npm run validate:pr` (6/6 etapas OK), `inject-cachebusters.mjs` e `build:hosting` executados com sucesso (477 arquivos).
+
+
+## 73. Sessao 2026-09-17 - Adaptacao do Banner e Cards Comerciais ao Programa de Parceiros em subscription.html
+- **Compatibilizacao com Programa de Parceiros:**
+  - Banner Promocional (.promo-box): Formatado com icone de tag verde, eliminando repeticao de texto e concatenacao redundante de percentuais.
+  - Faixa Comercial (.campaign-strip): Substituidos os textos legados e termos tecnicos/inativos ('Escada ativa: Sem escada configurada', 'Saldo especie: nao habilitado', 'novo cliente ganha 0% e indicador recebe 2%') por 4 cards focados e alinhados ao Programa de Parceiros oficial:
+    1. Codigo de Parceiro: orientacao para quem foi indicado informar o codigo PAR-XXXX no checkout e registrar seu vinculo.
+    2. Seja um Parceiro: explicacao sobre comissao recorrente sobre mensalidades pagas com link direto para cadastro-parceiro.html.
+    3. Teste Gratis: 30 dias de teste completo sem compromisso na primeira ativacao da empresa.
+    4. Vantagens Comerciais: descontos progressivos nos planos Trimestral e Anual com suporte e atualizacoes inclusas.
+- **Validacao:** Testes direcionados (54/54 pass), build:hosting executado com 477 arquivos gerados.
