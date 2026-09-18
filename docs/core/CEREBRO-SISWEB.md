@@ -757,3 +757,21 @@ o-cache para sempre buscar byte novo. setupUpdateChecks ja cobre PWA instalado: 
 - **Validacao:** `npm test` (571 testes passando, 0 falhas), `inject-cachebusters.mjs` e `build:hosting` (477 arquivos) executados.
 - **Fix paginacao v10b (analise do usuario correta):** paginacao com ackground:transparent e position:static rolava junto com os cards (dentro do modal-body com overflow:visible no mobile, tabela expandia e paginacao ia para o meio). Fix: position:sticky; bottom:0; background:#ffffff; border-top:1px #e2e8f0; z-index:10 + modal-body {display:flex; flex-direction:column; overflow:hidden} e .table-container {flex:1 1 auto; overflow-y:auto; max-height:55vh} para tabela rolar e paginacao ficar fixa no rodape, fora do scroll, com fundo solido. Testado com Exibir 5/10/50/100 e Densidade em 5 paginas.
 - **Fix paginacao v11 + Firebase unified:** usuario confirmou paginacao subindo junto com cards (transparente) em todos os modais de lista (clientes, fornecedores, especies, romaneios) ao rolar para cima. Causa: omaneio-comum.css:3053 com position:static; background:transparent dentro de modal-body overflow:visible fazia barra rolar junto. Fix: position:relative com lex-shrink:0 fora do scroller, modal-body overflow:hidden; display:flex; flex-direction:column e .table-container {flex:1 1 auto; overflow-y:auto; max-height:min(55vh,420px)} para tabela rolar e paginacao ficar fixa no rodape, fora do scroll, com fundo solido #ffffff. Firebase: irebaseService.unified.js:1527 com window.firebaseService.initialize is not a function em preromaneio.html devido a corrida entre irebaseService.js (plain object) e unified (classe) - fix com fallback para irebaseServiceInstance.initialize() direto.
+
+
+G# 75. Sessao 2026-09-17 - Captura Completa de Telas Sanitizadas (Desktop & Mobile) e Otimizacao com Sharp
+- **Captura Automatizada de Todas as Telas:**
+  - Criado o script orquestrador `tools/help-screenshots/run-local-capture.mjs` que sobe servidor HTTP estatico local na porta 8766.
+  - Expandido `tools/help-screenshots/build-full-routes.mjs` para mapear 186 rotas operacionais (desktop e mobile viewports para todas as telas principais).
+  - Executada captura via Playwright com seed de treinamento `__SISWEB_MANUAL_TRAINING__` (100% de dados ficticios, zero exposicao de dados reais de clientes ou PII).
+  - Atualizadas todas as imagens em `assets/help-manual/` e espelhadas em `tmp/help-manual-optimized/` (214 arquivos PNG)>
+
+- **Otimizacao de Imagens com Sharp em Memoria:**
+  - Refatorado `tools/help-screenshots/optimize.mjs` para trabalhar com buffers em memoria e desabilitar cache de arquivo do Sharp (`sharp.cache(false)`), eliminando conflitos de bloqueio de arquivo no Windows.
+  - Reducao drastica de peso: tamanho total comprimido de ~52.3 MB para ~14.6 MB com compressao level 9 e paletizacao sem perda perceptivel de qualidade.
+  - Atualizado manifesto `assets/help-manual/help-gallery.generated.js` com a contagem exata por topico (suporte: 2, romaneios: 48, cadastros: 10, empresa: 6, compras: 22, estoque: 25, financas: 16, folha: 11, navegacao: 5, fiscal: 15, assinatura: 7, perfil: 3, vendas: 16).
+
+- **Quality Gates & Validacao:**
+  - `npm test`: 571 testes passando, 0 falhas, 1 skipped.
+  - `npm run validate:pr`: 6/6 etapas aprovadas com sucesso.
+  - Injetados cachebusters e gerado build de hosting (`build:hosting` 477 arquivos).
