@@ -1585,9 +1585,14 @@ class FolhaFuncionarios {
     updateFuncionariosListTable() {
         const tableBody = document.getElementById('funcionariosListTable');
         const infoSpan = document.getElementById('funcionariosModalInfo');
-        
+
         if (!tableBody) return;
-        
+
+        // Blindagem: array principal sempre array (reload/load parciais já o
+        // corromperam para {} e o sort quebrava, travando em "Carregando...")
+        if (!Array.isArray(this.funcionarios)) this.funcionarios = [];
+        if (!Array.isArray(this.funcionariosFiltrados)) this.funcionariosFiltrados = [];
+
         console.log(`📊 Atualizando tabela de funcionários com ${this.funcionarios.length} itens`);
         
         if (this.funcionarios.length === 0) {
@@ -2112,10 +2117,9 @@ class FolhaFuncionarios {
         console.log('🔄 Recarregando funcionários...');
         
         try {
-            // Limpar dados existentes
-            this.funcionarios = {};
-            
-            // Recarregar do banco
+            // Não limpar o array antes: se a recarga falhar/demorar, a lista
+            // atual continua válida (antes: = {} quebrava o update e o modal
+            // travava em "Carregando..." até mexer em "Itens por página")
             await this.loadFuncionarios();
             
             // Atualizar interface se modal estiver aberto
