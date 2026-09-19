@@ -947,6 +947,10 @@ class FolhaLancamentos {
         if (modal) {
             modal.style.display = 'block';
         }
+
+        // Liga o change do funcionário de forma síncrona (sem esperar o
+        // setTimeout abaixo): seleção rápida na lista disparava change no vazio.
+        try { this.bindFolhaFuncionarioChange(); } catch {}
         
         setTimeout(() => {
             this.setupCalculoRealTime();
@@ -2953,6 +2957,81 @@ class FolhaLancamentos {
         });
     }
 
+    // Liga change/focus do campo funcionário de forma síncrona e idempotente
+    // (sem depender do setTimeout de setupEventListeners): seleção rápida na
+    // lista disparava change antes do binding existir e caía no vazio.
+    bindFolhaFuncionarioChange() {
+        // ✅ Garantir que seleção de funcionário preencha o campo correto e atualize dados
+        const funcInput = document.getElementById('folhaFuncionario');
+        if (!funcInput || funcInput._funcBound) return;
+        funcInput.addEventListener('focus', () => {
+            funcInput.dataset.lastFocused = 'true';
+            if (window.folhaFuncionarios) window.folhaFuncionarios.targetField = 'folhaFuncionario';
+        });
+        const applyFuncionarioChange = () => {
+            const dataStr = funcInput.dataset.funcionarioData || '';
+            console.log('🔄 Aplicando mudança de funcionário:', dataStr ? 'Dados encontrados' : 'Sem dados');
+            try {
+                const dados = dataStr ? JSON.parse(dataStr) : null;
+                if (dados) {
+                    const tipoContrato = dados.tipoContrato || dados.funcionarioTipoContrato || dados.contrato || undefined;
+                    console.log('👤 Funcionário selecionado:', dados.nome, 'Contrato:', tipoContrato);
+                    
+                    this.lancamentoAtual.funcionario = {
+                        id: dados.id,
+                        nome: dados.nome,
+                        salarioBase: Number(dados.salarioBase || dados.salario || 0) || 0,
+                        tipoContrato: tipoContrato,
+                        cargo: dados.cargo || undefined
+                    };
+                    this.lancamentoAtual.salarioBase = this.lancamentoAtual.funcionario.salarioBase || 0;
+                    const salEl = document.getElementById('funcionarioSalario');
+                    if (salEl && salEl.closest && salEl.closest('#folhaModal') && this.lancamentoAtual.funcionario.salarioBase > 0) {
+                        salEl.value = this.lancamentoAtual.funcionario.salarioBase;
+                    }
+                    
+                    // Forçar atualização da interface de encargos imediatamente
+                    try { 
+                        this.applyEncargoRestrictionsByLancamento(); 
+                    } catch (e) {
+                        console.warn('⚠️ Erro ao aplicar restrições:', e);
+                    }
+                    
+                    try { this.ensureEncargoFieldsEnabledForCLT(); } catch {}
+                    this.scheduleCalcularFolhaRealTime();
+                }
+            } catch (e) {
+                console.warn('⚠️ Falha ao aplicar dados de funcionário selecionado:', e);
+            }
+        };
+        funcInput.addEventListener('change', applyFuncionarioChange);
+        funcInput.addEventListener('input', () => {
+            if (!funcInput.value) {
+                funcInput.dataset.funcionarioId = '';
+                funcInput.dataset.funcionarioData = '';
+                this.lancamentoAtual.funcionario = { nome: '' };
+            }
+        });
+        try {
+            const icon = funcInput.parentElement && funcInput.parentElement.querySelector('.autocomplete-icon');
+            if (icon) {
+                icon.onclick = null;
+                const newIcon = icon.cloneNode(true);
+                icon.parentNode.replaceChild(newIcon, icon);
+                newIcon.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    funcInput.dataset.lastFocused = 'true';
+                    if (window.folhaFuncionarios) window.folhaFuncionarios.targetField = 'folhaFuncionario';
+                    if (window.openFuncionariosListModal) window.openFuncionariosListModal();
+                });
+            }
+        } catch (e) {
+            console.warn('⚠️ Não foi possível ajustar ícone de lista de funcionários:', e);
+        }
+        funcInput._funcBound = true;
+    }
+
     // Adicionar método setupEventListeners similar a outros módulos para configurar submit do form sem duplicação
     setupEventListeners() {
         // Evitar configuração dupla
@@ -3027,76 +3106,8 @@ class FolhaLancamentos {
             const bindCalc = (id) => { const el = document.getElementById(id); if (el && !el._calcBound) { el.addEventListener('input', () => this.scheduleCalcularFolhaRealTime()); el._calcBound = true; } };
             ['folhaDiasTrabalhados','folhaHorasExtras','folhaPercentualExtra','folhaPremioAssiduidade','folhaBonificacoes','folhaQtdFilhos','folhaSalarioFamilia','folhaFaltas','folhaVales','folhaDescRepousoRemunerado','folhaDescontoINSSManual','folhaContribuicaoConfederativa','folhaContribuicaoSindical','folhaDescontoIRPJ','folhaEmprestimoConsignado','folhaOutrosDescontos','quinzenaPercentual','folhaTipoPagamento','quinzenaValorManual','usarSalarioBrutoParaQuinzena'].forEach(bindCalc);
 
-            // ✅ Garantir que seleção de funcionário preencha o campo correto e atualize dados
-            const funcInput = document.getElementById('folhaFuncionario');
-            if (funcInput && !funcInput._funcBound) {
-                funcInput.addEventListener('focus', () => {
-                    funcInput.dataset.lastFocused = 'true';
-                    if (window.folhaFuncionarios) window.folhaFuncionarios.targetField = 'folhaFuncionario';
-                });
-                const applyFuncionarioChange = () => {
-                    const dataStr = funcInput.dataset.funcionarioData || '';
-                    console.log('🔄 Aplicando mudança de funcionário:', dataStr ? 'Dados encontrados' : 'Sem dados');
-                    try {
-                        const dados = dataStr ? JSON.parse(dataStr) : null;
-                        if (dados) {
-                            const tipoContrato = dados.tipoContrato || dados.funcionarioTipoContrato || dados.contrato || undefined;
-                            console.log('👤 Funcionário selecionado:', dados.nome, 'Contrato:', tipoContrato);
-                            
-                            this.lancamentoAtual.funcionario = {
-                                id: dados.id,
-                                nome: dados.nome,
-                                salarioBase: Number(dados.salarioBase || dados.salario || 0) || 0,
-                                tipoContrato: tipoContrato,
-                                cargo: dados.cargo || undefined
-                            };
-                            this.lancamentoAtual.salarioBase = this.lancamentoAtual.funcionario.salarioBase || 0;
-                            const salEl = document.getElementById('funcionarioSalario');
-                            if (salEl && this.lancamentoAtual.funcionario.salarioBase > 0) {
-                                salEl.value = this.lancamentoAtual.funcionario.salarioBase;
-                            }
-                            
-                            // Forçar atualização da interface de encargos imediatamente
-                            try { 
-                                this.applyEncargoRestrictionsByLancamento(); 
-                            } catch (e) {
-                                console.warn('⚠️ Erro ao aplicar restrições:', e);
-                            }
-                            
-                            try { this.ensureEncargoFieldsEnabledForCLT(); } catch {}
-                            this.scheduleCalcularFolhaRealTime();
-                        }
-                    } catch (e) {
-                        console.warn('⚠️ Falha ao aplicar dados de funcionário selecionado:', e);
-                    }
-                };
-                funcInput.addEventListener('change', applyFuncionarioChange);
-                funcInput.addEventListener('input', () => {
-                    if (!funcInput.value) {
-                        funcInput.dataset.funcionarioId = '';
-                        funcInput.dataset.funcionarioData = '';
-                        this.lancamentoAtual.funcionario = { nome: '' };
-                    }
-                });
-                try {
-                    const icon = funcInput.parentElement && funcInput.parentElement.querySelector('.autocomplete-icon');
-                    if (icon) {
-                        icon.onclick = null;
-                        const newIcon = icon.cloneNode(true);
-                        icon.parentNode.replaceChild(newIcon, icon);
-                        newIcon.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            funcInput.dataset.lastFocused = 'true';
-                            if (window.folhaFuncionarios) window.folhaFuncionarios.targetField = 'folhaFuncionario';
-                            if (window.openFuncionariosListModal) window.openFuncionariosListModal();
-                        });
-                    }
-                } catch (e) {
-                    console.warn('⚠️ Não foi possível ajustar ícone de lista de funcionários:', e);
-                }
-                funcInput._funcBound = true;
-            }
+            // Binding do campo funcionário (extraído para método síncrono idempotente)
+            this.bindFolhaFuncionarioChange();
         } catch (e) {
             console.warn('⚠️ Falha ao configurar listeners de mudança de selects:', e);
         }

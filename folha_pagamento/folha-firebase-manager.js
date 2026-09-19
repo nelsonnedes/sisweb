@@ -558,8 +558,14 @@ class FirebaseConnectionManager {
                     try { getAuthPerformanceDiagnosticsPayrollManager()?.read(pathKey, 'payroll_page', 'listener_first_value', 'success', 0); } catch (_) {}
                 }
                 
-                // Atualizar cache
-                this.updateCache(pathKey, data);
+            // Atualizar cache do registro + invalidar a coleção pai para que
+            // leitores de coleção com useCache:true refaçam a leitura (antes o
+            // item novo só aparecia após mexer na paginação).
+            this.updateCache(pathKey, data);
+            try {
+                const parentKey = String(pathKey || '').replace(/\/[^/]+\/?$/, '');
+                if (parentKey && parentKey !== pathKey) this.invalidateCache(parentKey);
+            } catch (_) {}
                 
                 // Chamar callback
                 callback(data);
