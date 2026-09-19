@@ -3185,44 +3185,200 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
     }
 }
 
-/* FIX mobile 390px: paginacao dos modais de lista no modo edicao (2026-09-19).
-   A barra quebrava em 2-3 linhas dentro do modal de altura fixa e cobria os
-   cards. Empilha options/controles, scroll-x interno nos botoes, sem sobrepor. */
+/* LISTA DE ROMANEIOS mobile (2026-09-19, redesign equipe: arquiteto+designer).
+   Requisito: modal EXPANDE mostrando os 5 cards; a rolagem revela paginacao +
+   Exibir/Densidade NO FLUXO apos a lista (nada sticky/fixed); Exibir e
+   Densidade LADO A LADO com tamanhos adaptativos (390/360/320).
+   Substitui o empilhamento anterior. Escopo: #listaModal + #romaneioListModal
+   (clientes/fornecedores/especies mantem o modelo fixo). Desktop intacto. */
 @media (max-width: 768px) {
-    html body #clientListModal .modal-body > .rlc-pagination-bar,
-    html body #fornecedorListModal .modal-body > .rlc-pagination-bar,
-    html body #speciesListModal .modal-body > .rlc-pagination-bar,
+    /* (a) modal expande; unico scroller = modal-body */
+    html body #listaModal .modal-content,
+    html body #romaneioListModal .modal-content {
+        height: auto !important;
+        max-height: calc(100vh - 20px) !important;
+        max-height: calc(100dvh - 20px) !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    html body #listaModal .modal-body,
+    html body #romaneioListModal .modal-body {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    html body #listaModal .modal-body > .table-container,
+    html body #listaModal .modal-body > .table-responsive,
+    html body #listaModal .modal-body > .modal-table-scroll,
+    html body #romaneioListModal .modal-body > .table-container,
+    html body #romaneioListModal .modal-body > .table-responsive,
+    html body #romaneioListModal .modal-body > .modal-table-scroll {
+        flex: none !important;
+        overflow: visible !important;
+        max-height: none !important;
+        height: auto !important;
+        min-height: 0 !important;
+    }
+    /* (b) barra no fluxo, apos a lista */
     html body #listaModal .modal-body > .rlc-pagination-bar,
-    html body #romaneioListModal .modal-body > .rlc-pagination-bar,
-    html body #clientListModal .modal-body > [id$="Pagination"],
-    html body #fornecedorListModal .modal-body > [id$="Pagination"],
-    html body #speciesListModal .modal-body > [id$="Pagination"],
     html body #listaModal .modal-body > [id$="Pagination"],
+    html body #romaneioListModal .modal-body > .rlc-pagination-bar,
     html body #romaneioListModal .modal-body > [id$="Pagination"] {
+        position: static !important;
+        flex: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        z-index: auto !important;
+        box-shadow: none !important;
+        border-top: 1px solid #e2e8f0 !important;
+        background: #fff !important;
+        margin: 12px 0 4px !important;
+        padding: 12px 0 8px !important;
+        display: flex !important;
         flex-direction: column !important;
         align-items: stretch !important;
+        gap: 10px !important;
         flex-wrap: nowrap !important;
+        overflow: hidden !important;
+    }
+    /* (c) Exibir + Densidade lado a lado, adaptativos */
+    html body #listaModal .rlc-pagination-options,
+    html body #romaneioListModal .rlc-pagination-options {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        justify-content: center !important;
+        align-items: center !important;
         gap: 8px !important;
+        width: 100% !important;
         max-width: 100% !important;
+        min-width: 0 !important;
         overflow: hidden !important;
         box-sizing: border-box !important;
     }
-    html body .rlc-pagination-bar .rlc-pagination-options,
-    html body .rlc-pagination-bar .rlc-pagination-controls {
+    html body #listaModal .rlc-pagination-options label,
+    html body #romaneioListModal .rlc-pagination-options label {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 5px !important;
+        margin: 0 !important;
+        font-size: 12.5px !important;
+        white-space: nowrap !important;
+    }
+    html body #listaModal .rlc-page-size-select,
+    html body #listaModal .rlc-density-select,
+    html body #romaneioListModal .rlc-page-size-select,
+    html body #romaneioListModal .rlc-density-select {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        font-size: 12.5px !important;
+        padding: 5px 8px !important;
+        height: 30px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    html body #listaModal .rlc-page-size-select,
+    html body #romaneioListModal .rlc-page-size-select {
+        max-width: 132px !important;
+    }
+    html body #listaModal .rlc-density-select,
+    html body #romaneioListModal .rlc-density-select {
+        max-width: 124px !important;
+    }
+    /* controles de pagina: linha propria com scroll-x */
+    html body #listaModal .rlc-pagination-controls,
+    html body #romaneioListModal .rlc-pagination-controls {
         display: flex !important;
-        flex-wrap: wrap !important;
+        flex-wrap: nowrap !important;
         justify-content: center !important;
         max-width: 100% !important;
         overflow-x: auto !important;
+        overflow-y: hidden !important;
+        gap: 4px !important;
+        padding: 2px 2px 4px !important;
         scrollbar-width: none !important;
     }
-    html body .rlc-pagination-bar .rlc-pagination-options::-webkit-scrollbar,
-    html body .rlc-pagination-bar .rlc-pagination-controls::-webkit-scrollbar {
+    html body #listaModal .rlc-pagination-controls::-webkit-scrollbar,
+    html body #romaneioListModal .rlc-pagination-controls::-webkit-scrollbar {
         display: none !important;
     }
-    html body .rlc-pagination-bar .rlc-pagination-options select {
-        font-size: 14px !important;
-        max-width: 140px !important;
+    html body #listaModal .rlc-pagination-controls button,
+    html body #romaneioListModal .rlc-pagination-controls button {
+        flex: 0 0 auto !important;
+    }
+}
+@media (max-width: 390px) {
+    html body #listaModal .rlc-pagination-options,
+    html body #romaneioListModal .rlc-pagination-options {
+        gap: 6px !important;
+    }
+    html body #listaModal .rlc-pagination-options label,
+    html body #romaneioListModal .rlc-pagination-options label {
+        font-size: 12px !important;
+        gap: 4px !important;
+    }
+    html body #listaModal .rlc-page-size-select,
+    html body #listaModal .rlc-density-select,
+    html body #romaneioListModal .rlc-page-size-select,
+    html body #romaneioListModal .rlc-density-select {
+        font-size: 12px !important;
+        padding: 4px 6px !important;
+    }
+    html body #listaModal .rlc-page-size-select,
+    html body #romaneioListModal .rlc-page-size-select {
+        max-width: 118px !important;
+    }
+    html body #listaModal .rlc-density-select,
+    html body #romaneioListModal .rlc-density-select {
+        max-width: 108px !important;
+    }
+}
+@media (max-width: 340px) {
+    html body #listaModal .modal-body > .rlc-pagination-bar,
+    html body #romaneioListModal .modal-body > .rlc-pagination-bar {
+        gap: 6px !important;
+    }
+    html body #listaModal .rlc-pagination-options,
+    html body #romaneioListModal .rlc-pagination-options {
+        gap: 4px !important;
+    }
+    html body #listaModal .rlc-pagination-options label,
+    html body #romaneioListModal .rlc-pagination-options label {
+        font-size: 11.5px !important;
+    }
+    html body #listaModal .rlc-page-size-select,
+    html body #listaModal .rlc-density-select,
+    html body #romaneioListModal .rlc-page-size-select,
+    html body #romaneioListModal .rlc-density-select {
+        font-size: 11.5px !important;
+        padding: 4px 4px !important;
+    }
+    html body #listaModal .rlc-page-size-select,
+    html body #romaneioListModal .rlc-page-size-select {
+        max-width: 102px !important;
+    }
+    html body #listaModal .rlc-density-select,
+    html body #romaneioListModal .rlc-density-select {
+        max-width: 96px !important;
+    }
+    html body #listaModal .rlc-pagination-controls button,
+    html body #romaneioListModal .rlc-pagination-controls button {
+        min-width: 30px !important;
+        height: 30px !important;
+        font-size: 12px !important;
     }
 }
 
