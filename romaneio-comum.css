@@ -3500,6 +3500,7 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
     html body #tabela-toras tbody tr td[data-label="Ações"]:not([colspan]) {
         align-items: center !important;
         justify-content: flex-start !important;
+        gap: 6px !important;
         overflow: visible !important;
         min-height: 48px !important;
         border-bottom: 0 !important;
@@ -3568,5 +3569,120 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
     html body #tabela-serrados tbody tr td[data-label]:not([colspan])::before,
     html body #tabela-toras tbody tr td[data-label]:not([colspan])::before {
         max-width: 38% !important;
+    }
+}
+
+/* LISTA DE ROMANEIOS mobile (2026-09-19): cards horizontais 1 linha
+   "LABEL valor" igual aos itens (print mostrava empilhado). Escopo:
+   #listaModal + #romaneioListModal. Desktop intacto. */
+@media (max-width: 768px) {
+    html body #listaModal .table tbody tr,
+    html body #romaneioListModal .table tbody tr {
+        overflow: hidden !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+    }
+    html body #listaModal .table tbody tr td[data-label]:not([colspan]),
+    html body #romaneioListModal .table tbody tr td[data-label]:not([colspan]) {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: baseline !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
+        text-align: right !important;
+        font-variant-numeric: tabular-nums !important;
+        padding: 6px 0 !important;
+        border: 0 !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        height: auto !important;
+        min-height: 22px !important;
+    }
+    html body #listaModal .table tbody tr td[data-label]:not([colspan])::before,
+    html body #romaneioListModal .table tbody tr td[data-label]:not([colspan])::before {
+        content: attr(data-label) !important;
+        display: inline-block !important;
+        flex: 0 0 auto !important;
+        width: auto !important;
+        max-width: 45% !important;
+        margin: 0 !important;
+        padding: 0 8px 0 0 !important;
+        position: static !important;
+        float: none !important;
+        transform: none !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-weight: 700 !important;
+        color: #64748b !important;
+        font-size: 11px !important;
+        line-height: 1.2 !important;
+        text-transform: uppercase !important;
+        letter-spacing: .4px !important;
+        text-align: left !important;
+    }
+    /* ACOES da lista: label esq + botoes dir, sem wrap, sem clip */
+    html body #listaModal .table tbody tr td[data-label="Ações"]:not([colspan]),
+    html body #romaneioListModal .table tbody tr td[data-label="Ações"]:not([colspan]) {
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 6px !important;
+        overflow: visible !important;
+        min-height: 48px !important;
+        border-bottom: 0 !important;
+        border-top: 1px solid #e2e8f0 !important;
+        margin-top: 6px !important;
+        padding-top: 8px !important;
+    }
+    html body #listaModal .table tbody tr td[data-label="Ações"]:not([colspan]) .btn-group,
+    html body #romaneioListModal .table tbody tr td[data-label="Ações"]:not([colspan]) .btn-group {
+        display: inline-flex !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
+        margin-left: auto !important;
+        width: auto !important;
+        max-width: 100% !important;
+    }
+}
+
+/* ACOES padronizadas mobile (padrao Folha: fileira centrada, botoes 36px).
+   Vale p/ modais de lista + tabelas de itens + tabelas serrados/toras.
+   Desktop intacto. */
+@media (max-width: 768px) {
+    html body #listaModal .table tbody tr td[data-label="Ações"]:not([colspan]) button,
+    html body #romaneioListModal .table tbody tr td[data-label="Ações"]:not([colspan]) button,
+    html body #romaneioTable tbody tr td[data-label="Ações"]:not([colspan]) button,
+    html body #tabela-serrados tbody tr td[data-label="Ações"]:not([colspan]) button,
+    html body #tabela-toras tbody tr td[data-label="Ações"]:not([colspan]) button,
+    html body #listaModal .table tbody tr td[data-label="Ações"]:not([colspan]) .btn-editar,
+    html body #listaModal .table tbody tr td[data-label="Ações"]:not([colspan]) .btn-excluir,
+    html body #romaneioTable tbody tr td[data-label="Ações"]:not([colspan]) .btn-editar,
+    html body #romaneioTable tbody tr td[data-label="Ações"]:not([colspan]) .btn-excluir {
+        flex: 0 0 auto !important;
+        width: 36px !important;
+        min-width: 36px !important;
+        max-width: 36px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 15px !important;
+        line-height: 1 !important;
+        box-sizing: border-box !important;
+        white-space: nowrap !important;
+    }
+    html body #listaModal .table tbody tr td[data-label="Ações"]:not([colspan]) .btn-group > button + button,
+    html body #romaneioListModal .table tbody tr td[data-label="Ações"]:not([colspan]) .btn-group > button + button {
+        margin-left: 6px !important;
     }
 }

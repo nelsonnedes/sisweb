@@ -281,7 +281,7 @@ window.RenderizarTabela = (function() {
         let paginationContainer = document.getElementById('romaneioTablePagination');
         
         if (!paginationContainer) {
-            const tableSection = document.getElementById('romaneio-table-section');
+            const tableSection = document.getElementById('romaneio-items-section');
             if (tableSection) {
                 paginationContainer = document.createElement('div');
                 paginationContainer.id = 'romaneioTablePagination';
