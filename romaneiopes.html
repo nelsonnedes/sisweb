@@ -2326,9 +2326,16 @@
             const qtdInput = document.getElementById('quantidade');
             const pcpInput = document.getElementById('pecasPorPacote');
 
-            if (espInput) espInput.value = formatarMilimetros(espessura);
-            if (largInput) largInput.value = formatarMilimetros(largura);
-            if (compInput) compInput.value = formatarMilimetros(comprimento);
+            // Preencher campos com numeros puros SEM unidade (a tabela exibe com
+            // 'mm', mas o input deve receber "10" / "10,50": ponto seria lido
+            // como milhar por toNumberValue e "mm" polui a edicao).
+            const fmtCampoPes = (v) => {
+                const s = formatarNumero(v, 2);
+                return s.endsWith(',00') ? s.slice(0, -3) : s;
+            };
+            if (espInput) espInput.value = fmtCampoPes(espessura);
+            if (largInput) largInput.value = fmtCampoPes(largura);
+            if (compInput) compInput.value = fmtCampoPes(comprimento);
             if (qtdInput) qtdInput.value = String(quantidade);
             if (pcpInput) pcpInput.value = String(pecasPorPacote);
 
