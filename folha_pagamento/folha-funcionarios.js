@@ -1153,8 +1153,22 @@ class FolhaFuncionarios {
         } else if (window.FirebaseService && window.FirebaseService.save) {
             await window.FirebaseService.save(collection, funcionarioData.id, funcionarioData);
         }
-        
-        window.FolhaUtils.showToast(`Funcionário ${funcionarioData.nome} criado com sucesso!`, 'success');
+
+        // Verificação pós-gravação: saveData retorna true até quando só
+        // enfileirou offline — confirma leitura antes de cantar sucesso
+        let confirmadoNoBanco = false;
+        try {
+            if (manager && typeof manager.loadData === 'function') {
+                const conf = await manager.loadData(`${collection}/${funcionarioData.id}`, { useCache: false });
+                const payload = (conf && typeof conf === 'object' && 'data' in conf) ? conf.data : conf;
+                confirmadoNoBanco = !!(payload && typeof payload === 'object' && (payload.id || payload.nome));
+            }
+        } catch (_) {}
+        if (confirmadoNoBanco) {
+            window.FolhaUtils.showToast(`Funcionário ${funcionarioData.nome} criado com sucesso!`, 'success');
+        } else {
+            window.FolhaUtils.showToast(`Funcionário ${funcionarioData.nome} salvo localmente. Será sincronizado.`, 'warning');
+        }
         console.log('✅ Funcionário criado:', funcionarioData.id);
     }
     
