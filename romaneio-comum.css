@@ -3225,3 +3225,51 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
         max-width: 140px !important;
     }
 }
+
+/* FIX 390px: paginacao da TABELA DE ITENS + cards + totais (TL/PCT/PES/Tora/Pre).
+   A barra (3 x flex 1 1 320px + min-width 220px inline) somava ~660px minimos
+   num container de ~350px e o nowrap do "Itens por pagina" estourava sobre o
+   card Totais; valores td em nowrap vazavam sobre os labels. Empilha tudo. */
+@media (max-width: 768px) {
+    #romaneio-items-section #romaneioTablePagination,
+    #romaneio-items-section .pagination-container,
+    .itens-container #romaneioTablePagination,
+    .itens-container .pagination-container {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        flex-wrap: nowrap !important;
+        gap: 8px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+    }
+    #romaneio-items-section #romaneioTablePagination > div,
+    .itens-container #romaneioTablePagination > div,
+    .itens-container .pagination-container > div {
+        flex: none !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        text-align: center !important;
+        justify-content: center !important;
+    }
+    #romaneio-items-section #romaneioTablePagination [style*="nowrap"],
+    .itens-container .pagination-container [style*="nowrap"] {
+        white-space: normal !important;
+        flex-wrap: wrap !important;
+    }
+    #romaneioTable tbody tr td {
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow-wrap: anywhere !important;
+    }
+    .itens-container .totais-container {
+        clear: both !important;
+        margin-top: 12px !important;
+    }
+}

@@ -19,7 +19,7 @@
 
     <script type="module">
 
-        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebaseService.js?v=1fe3a35cb4c8';
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebaseService.js?v=7e1ef38adf49';
     import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     </script><!-- compat shim do singleton (window.firebase para módulos antigos) --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -1907,7 +1907,7 @@
     <!-- Serviço Firebase canônico: uma única instância compartilhada por toda a página. -->
     <script>
         window.__siswebFirebaseServiceReady = (async function () {
-            const firebaseSvc = await import('./firebaseService.js?v=1fe3a35cb4c8');
+            const firebaseSvc = await import('./firebaseService.js?v=7e1ef38adf49');
             window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
             window.FirebaseService = window.firebaseService;
             return window.firebaseService;

@@ -1837,7 +1837,10 @@ async function loadFromFirebaseCore(path) {
             'system/operationalAlerts/firebaseBilling',
             'system/deployHealth/firebase'
         ]);
-        if (OPTIONAL_EMPTY_PATHS.has(path) || path.startsWith('configuracoes/')) {
+        if (OPTIONAL_EMPTY_PATHS.has(path) || path.startsWith('configuracoes/')
+            // Preferências de UI (larguras de coluna etc.): vazio é o estado
+            // normal — sem warn no console, só debug throttled abaixo.
+            || /\/preferences(\/|$)/.test(String(path || ''))) {
             console.log('ℹ️ Caminho consultado está vazio no Firebase');
             return { success: true, data: null, source: 'firebase' };
         }
