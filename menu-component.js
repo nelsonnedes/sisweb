@@ -1267,6 +1267,9 @@ if (window.customElements && !window.customElements.get('main-menu')) {
             
             // ✅ CORREÇÃO CRÍTICA: Forçar navegação manual dos links dos submenus
             this.setupSubmenuNavigation();
+            } catch (err) {
+                console.error('Erro no MenuComponent connectedCallback:', err);
+            }
         }
 
         setupMobileSidebar() {

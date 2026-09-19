@@ -186,7 +186,10 @@ test('falha na logo nao aborta salvamento da empresa (onboarding sem claim)', ()
 });
 
 test('toasts nunca renderizam vazios', () => {
-  const menu = read('menu-component.js');
+  // Toast unificado em modules/core/toast.js (refactor 88db5bc/d48e5c6):
+  // menu-component.js não tem mais inline, o guard vive no módulo canônico.
+  const toast = read('modules/core/toast.js');
 
-  assert.match(menu, /s=String\(message\|\|''\);if\(!s\)return;/);
+  assert.match(toast, /String\(message \|\| ''\)/);
+  assert.match(toast, /if \(!s\) return;/);
 });
