@@ -17,7 +17,7 @@
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
-<script src="menu-component.js?v=344efae10b79"></script>
+<script src="menu-component.js?v=d24004475028"></script>
     <style>
         * {
             margin: 0;
@@ -1449,7 +1449,7 @@
 
     <script src="auth.js?v=4173d8da9343"></script>
     <script type="module">
-        import { authService, isFirebaseOperational, getSubscriptionSettings, requestSubscriptionExtension, getAll, loadFromFirebase, getTenantId, getCurrentUid, grantReadOnlyGrace } from './firebaseService.js?v=1eac6daf5e74';
+        import { authService, isFirebaseOperational, getSubscriptionSettings, requestSubscriptionExtension, getAll, loadFromFirebase, getTenantId, getCurrentUid, grantReadOnlyGrace } from './firebaseService.js?v=9fca00708205';
         
         window.firebaseService = {
             ...(window.firebaseService || {}),

@@ -469,9 +469,9 @@ async function handleSave(e) {
             await window.clientService.saveClient({ ...dataToSave, __editMode: isEditMode });
             result = { success: true };
         } else if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
-            result = await window.firebaseService.saveData(`clients/${finalId}`, dataToSave);
+            result = await window.firebaseService.saveData('clients', String(finalId), dataToSave);
         } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            result = await window.firebaseService.saveToFirebase(`clients/${finalId}`, null, dataToSave);
+            result = await window.firebaseService.saveToFirebase('clients', String(finalId), dataToSave);
         } else {
             throw new Error('Serviço de salvamento não disponível');
         }

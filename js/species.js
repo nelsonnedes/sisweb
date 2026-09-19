@@ -304,9 +304,9 @@ async function handleSave(e) {
 
         let result;
         if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
-            result = await window.firebaseService.saveData(`especies/${finalId}`, dataToSave);
+            result = await window.firebaseService.saveData('especies', String(finalId), dataToSave);
         } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            result = await window.firebaseService.saveToFirebase(`especies/${finalId}`, null, dataToSave);
+            result = await window.firebaseService.saveToFirebase('especies', String(finalId), dataToSave);
         } else {
             throw new Error('Serviço de salvamento não disponível');
         }

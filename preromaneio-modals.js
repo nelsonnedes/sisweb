@@ -543,7 +543,8 @@ if (clientForm) {
             // caminho base + id + payload (2 args gravava em "[object Object]").
             const tenantId = (typeof resolveTenantId === 'function' ? resolveTenantId() : null);
             if (!tenantId) {
-                throw new Error('Empresa não identificada na sessão. Recarregue a página e tente novamente.');
+                alert('Empresa não identificada na sessão. Recarregue a página e tente novamente.');
+                return;
             }
             const basePath = `companies/${tenantId}/clients`;
             const payload = {};
@@ -772,7 +773,8 @@ if (speciesForm) {
             // saveData/saveToFirebase tem assinatura (path, key, data)
             const speciesTenant = (typeof resolveTenantId === 'function' ? resolveTenantId() : null);
             if (!speciesTenant) {
-                throw new Error('Empresa não identificada na sessão. Recarregue a página e tente novamente.');
+                alert('Empresa não identificada na sessão. Recarregue a página e tente novamente.');
+                return;
             }
             const speciesBase = `companies/${speciesTenant}/especies`;
             const speciesPayload = {};

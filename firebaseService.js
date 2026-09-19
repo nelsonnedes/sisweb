@@ -4626,8 +4626,10 @@ export const authService = {
     },
 
     // Alias para compatibilidade com chamadas antigas
-    registerUser(email, password, companyId) {
-        return this.register(email, password, null, companyId);
+    // (auth.js) registerUser(email, password, companyId, { plan, cupom, partner }):
+    // encaminha options + companyId para register(email, password, username, options).
+    registerUser(email, password, companyId, options = {}) {
+        return this.register(email, password, null, { ...options, companyId });
     }
 };
 

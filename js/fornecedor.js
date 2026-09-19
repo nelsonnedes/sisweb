@@ -519,9 +519,9 @@ async function handleSave(e) {
         
         let result;
         if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
-            result = await window.firebaseService.saveData(`fornecedores/${finalId}`, dataToSave);
+            result = await window.firebaseService.saveData('fornecedores', String(finalId), dataToSave);
         } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            result = await window.firebaseService.saveToFirebase(`fornecedores/${finalId}`, null, dataToSave);
+            result = await window.firebaseService.saveToFirebase('fornecedores', String(finalId), dataToSave);
         } else {
             throw new Error('Serviço de salvamento não disponível');
         }
