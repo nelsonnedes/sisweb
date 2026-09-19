@@ -3429,3 +3429,144 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
         margin-top: 12px !important;
     }
 }
+
+/* CARDS DE ITENS mobile (2026-09-19, equipe: arquiteto+designer).
+   Requisito: cada campo em 1 linha "LABEL valor" (label esq, valor dir),
+   sem quebra, ellipsis se exceder. Vale p/ #romaneioTable (PCT/TL/PES/Tora)
+   + #tabela-serrados/#tabela-toras (pre). Desktop e modais intactos. */
+@media (max-width: 768px) {
+    html body #romaneioTable tbody,
+    html body #tabela-serrados tbody,
+    html body #tabela-toras tbody {
+        gap: 10px !important;
+    }
+    html body #romaneioTable tbody tr,
+    html body #tabela-serrados tbody tr,
+    html body #tabela-toras tbody tr {
+        padding: 10px 12px !important;
+        overflow: hidden !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+    }
+    html body #romaneioTable tbody tr td[data-label]:not([colspan]),
+    html body #tabela-serrados tbody tr td[data-label]:not([colspan]),
+    html body #tabela-toras tbody tr td[data-label]:not([colspan]) {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: baseline !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
+        text-align: right !important;
+        font-variant-numeric: tabular-nums !important;
+        padding: 6px 0 !important;
+        border: 0 !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        height: auto !important;
+        min-height: 22px !important;
+    }
+    html body #romaneioTable tbody tr td[data-label]:not([colspan])::before,
+    html body #tabela-serrados tbody tr td[data-label]:not([colspan])::before,
+    html body #tabela-toras tbody tr td[data-label]:not([colspan])::before {
+        content: attr(data-label) !important;
+        display: inline-block !important;
+        flex: 0 0 auto !important;
+        width: auto !important;
+        max-width: 45% !important;
+        margin: 0 !important;
+        padding: 0 8px 0 0 !important;
+        position: static !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-weight: 700 !important;
+        color: #64748b !important;
+        font-size: 11px !important;
+        line-height: 1.2 !important;
+        text-transform: uppercase !important;
+        letter-spacing: .4px !important;
+        text-align: left !important;
+    }
+    /* Linha ACOES: label esq + botoes 36px dir, sem wrap, sem clip */
+    html body #romaneioTable tbody tr td[data-label="Ações"]:not([colspan]),
+    html body #tabela-serrados tbody tr td[data-label="Ações"]:not([colspan]),
+    html body #tabela-toras tbody tr td[data-label="Ações"]:not([colspan]) {
+        align-items: center !important;
+        justify-content: flex-start !important;
+        overflow: visible !important;
+        min-height: 48px !important;
+        border-bottom: 0 !important;
+        border-top: 1px solid #e2e8f0 !important;
+        margin-top: 6px !important;
+        padding-top: 8px !important;
+    }
+    html body #romaneioTable tbody tr td[data-label="Ações"]:not([colspan]) button,
+    html body #tabela-serrados tbody tr td[data-label="Ações"]:not([colspan]) button,
+    html body #tabela-toras tbody tr td[data-label="Ações"]:not([colspan]) button,
+    html body #romaneioTable tbody tr td[data-label="Ações"]:not([colspan]) .btn-editar,
+    html body #romaneioTable tbody tr td[data-label="Ações"]:not([colspan]) .btn-excluir {
+        flex: 0 0 auto !important;
+        width: 36px !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        margin: 0 0 0 8px !important;
+        white-space: nowrap !important;
+    }
+    html body #romaneioTable tbody tr td[data-label="Ações"]:not([colspan]) > button:first-of-type,
+    html body #tabela-serrados tbody tr td[data-label="Ações"]:not([colspan]) > button:first-of-type,
+    html body #tabela-toras tbody tr td[data-label="Ações"]:not([colspan]) > button:first-of-type {
+        margin-left: auto !important;
+    }
+    /* Edicao inline defensiva: input ocupa o resto da linha sem estourar */
+    html body #romaneioTable tbody tr td[data-label]:not([colspan]) input,
+    html body #romaneioTable tbody tr td[data-label]:not([colspan]) select,
+    html body #tabela-serrados tbody tr td[data-label]:not([colspan]) input,
+    html body #tabela-serrados tbody tr td[data-label]:not([colspan]) select,
+    html body #tabela-toras tbody tr td[data-label]:not([colspan]) input,
+    html body #tabela-toras tbody tr td[data-label]:not([colspan]) select {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    /* TORA: reafirmar colunas Geo ocultas (só na tabela de 19 cols da Tora;
+       :has evita esconder colunas legitimas de PCT/TL/PES que usam o mesmo id) */
+    html body #romaneioTable tbody tr:has(> td:nth-child(19)) > td:nth-child(7),
+    html body #romaneioTable tbody tr:has(> td:nth-child(19)) > td:nth-child(8),
+    html body #romaneioTable tbody tr:has(> td:nth-child(19)) > td:nth-child(11),
+    html body #romaneioTable tbody tr:has(> td:nth-child(19)) > td:nth-child(12),
+    html body #romaneioTable tbody tr:has(> td:nth-child(19)) > td:nth-child(13),
+    html body #romaneioTable tbody tr:has(> td:nth-child(19)) > td:nth-child(14),
+    html body #romaneioTable tbody tr:has(> td:nth-child(19)) > td:nth-child(15) {
+        display: none !important;
+    }
+}
+@media (max-width: 360px) {
+    html body #romaneioTable tbody tr td[data-label]:not([colspan]),
+    html body #tabela-serrados tbody tr td[data-label]:not([colspan]),
+    html body #tabela-toras tbody tr td[data-label]:not([colspan]) {
+        gap: 6px !important;
+        font-size: 12.5px !important;
+    }
+    html body #romaneioTable tbody tr td[data-label]:not([colspan])::before,
+    html body #tabela-serrados tbody tr td[data-label]:not([colspan])::before,
+    html body #tabela-toras tbody tr td[data-label]:not([colspan])::before {
+        font-size: 10.5px !important;
+        max-width: 40% !important;
+    }
+}
+@media (max-width: 320px) {
+    html body #romaneioTable tbody tr td[data-label]:not([colspan])::before,
+    html body #tabela-serrados tbody tr td[data-label]:not([colspan])::before,
+    html body #tabela-toras tbody tr td[data-label]:not([colspan])::before {
+        max-width: 38% !important;
+    }
+}
