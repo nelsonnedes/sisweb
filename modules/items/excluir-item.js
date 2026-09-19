@@ -122,7 +122,17 @@ window.ExcluirItem = (function() {
             
             // Atualizar interface
             atualizarInterface();
-            
+
+            // Sair do modo edição se estava editando (o índice ficaria
+            // obsoleto e o botão preso em "Atualizar Item")
+            try {
+                if (window.EditarItem && typeof window.EditarItem.estaEditando === 'function'
+                    && window.EditarItem.estaEditando()
+                    && typeof window.EditarItem.cancelarEdicao === 'function') {
+                    window.EditarItem.cancelarEdicao();
+                }
+            } catch (_) {}
+
             // Notificar sucesso
             notificarSucesso(item, index);
             

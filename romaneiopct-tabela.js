@@ -728,6 +728,17 @@ function removerItem(index) {
         
         if (confirm('Tem certeza que deseja remover este item?')) {
             window.romaneioItems.splice(index, 1);
+            // ✅ Se excluiu o item em edição (ou anterior a ele), sair do modo
+            // edição: o botão ficava preso em "Atualizar Item" com índice
+            // obsoleto e o próximo salvar corrompia outro item.
+            if (window.itemEmEdicao !== false && window.itemEmEdicao !== undefined && window.itemEmEdicao !== null) {
+                if (index === window.itemEmEdicao) {
+                    window.itemEmEdicao = false;
+                    restaurarBotaoNormal();
+                } else if (index < window.itemEmEdicao) {
+                    window.itemEmEdicao = window.itemEmEdicao - 1;
+                }
+            }
             reconstruirTabela();
             atualizarTotais();
             salvarEstadoRomaneioEmEdicao();

@@ -2360,6 +2360,7 @@
 
         // Função para excluir item
         function excluirItem(id) {
+            const removedPos = itens.findIndex(item => item && item.id === id);
             if (itemEmEdicaoIndex >= 0 && itens[itemEmEdicaoIndex] && itens[itemEmEdicaoIndex].id === id) {
                 itemEmEdicaoIndex = -1;
                 const btnAdicionar = document.getElementById('btnAdicionar');
@@ -2367,6 +2368,10 @@
                     btnAdicionar.innerHTML = '<i class="fas fa-plus"></i> Adicionar';
                     btnAdicionar.classList.remove('btn-atualizar-item');
                 }
+            } else if (itemEmEdicaoIndex >= 0 && removedPos >= 0 && removedPos < itemEmEdicaoIndex) {
+                // Excluiu item anterior ao em edição: ajustar índice (evita
+                // atualizar o item errado no próximo "Atualizar Item")
+                itemEmEdicaoIndex = itemEmEdicaoIndex - 1;
             }
             itens = itens.filter(item => item.id !== id);
             renderizarTabelaPes();

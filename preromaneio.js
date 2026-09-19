@@ -400,8 +400,11 @@ function setupEnterNavigation() {
  * @param {string} tab - 'PCT', 'TL', 'PES', 'TORA'
  */
 function mudarAba(tab) {
-    // Se houver itens, perguntar antes de trocar (para evitar mistura)
-    if (romaneioItens.length > 0 && tab !== currentTab) {
+    // Se houver itens, perguntar antes de trocar (para evitar mistura).
+    // Pulada ao carregar pré-romaneio para edição: os itens atuais serão
+    // substituídos pelos carregados (antes perguntava e, ao cancelar, os
+    // itens do tipo novo eram renderizados na aba antiga).
+    if (!window.__LOADING_PREROMANEIO && romaneioItens.length > 0 && tab !== currentTab) {
         if (!confirm("Trocar de aba limpará os itens atuais. Deseja continuar?")) {
             return;
         }
@@ -1367,8 +1370,14 @@ function loadPreRomaneioData(data) {
     romaneioItens = normalizeItens(itensRaw, tipo);
     renderizarTabela();
     atualizarTotais();
-    
-    alert(`Pré-Romaneio carregado: ${tipo} - ${nomeCliente || data.fornecedorNome}`);
+
+    // Feedback não-bloqueante (antes: alert nativo travava a tela a cada load)
+    try {
+        const msgCarregado = `Pré-romaneio ${tipo} carregado.`;
+        if (typeof window.__toast === 'function') window.__toast(msgCarregado, 'success');
+        else if (window.Utils && typeof window.Utils.showToast === 'function') window.Utils.showToast(msgCarregado, 'success');
+        else console.log(msgCarregado);
+    } catch (_) {}
 }
 
 /**

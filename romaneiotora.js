@@ -2483,6 +2483,23 @@ function removerItemFallback(index) {
     try {
         if (Array.isArray(window.romaneioItems) && window.romaneioItems[index]) {
             window.romaneioItems.splice(index, 1);
+
+            // Sair do modo edição se excluiu o item em edição (ou anterior):
+            // o botão ficava preso em "Atualizar Item" com índice obsoleto.
+            try {
+                if (typeof window.itemEditandoIndex === 'number' && window.itemEditandoIndex !== null) {
+                    if (index === window.itemEditandoIndex) {
+                        window.itemEditandoIndex = null;
+                        const btnAdicionar = document.getElementById('btnAdicionar');
+                        if (btnAdicionar) {
+                            btnAdicionar.innerHTML = '<i class="fas fa-plus"></i> Adicionar';
+                            btnAdicionar.className = 'btn-adicionar';
+                        }
+                    } else if (index < window.itemEditandoIndex) {
+                        window.itemEditandoIndex = window.itemEditandoIndex - 1;
+                    }
+                }
+            } catch (_) {}
             
             // Ajustar página atual se necessário
             const itemsPerPage = window.itemsPerPage || 10;
