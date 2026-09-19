@@ -3424,9 +3424,23 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
         min-height: 0 !important;
         overflow-wrap: anywhere !important;
     }
-    .itens-container .totais-container {
-        clear: both !important;
-        margin-top: 12px !important;
+}
+/* WRAPPER DOS ITENS mobile (2026-09-19): sem teto de altura.
+   Causa raiz medida no navegador: .table-responsive travado em
+   max-height:min(55vh,420px) COM overflow:visible (regra do gesto de rolagem)
+   fazia as linhas transbordarem SOBRE paginacao+totais. Sem o teto, o
+   conteudo flui e a pagina rola. Desktop intacto. */
+@media (max-width: 768px) {
+    #romaneio-items-section .table-responsive,
+    #romaneio-items-section .table-container,
+    .itens-container > .table-responsive,
+    .itens-container > .table-container,
+    .table-responsive:has(> #romaneioTable),
+    .table-responsive:has(> #tabela-serrados),
+    .table-responsive:has(> #tabela-toras) {
+        max-height: none !important;
+        height: auto !important;
+        min-height: 0 !important;
     }
 }
 
