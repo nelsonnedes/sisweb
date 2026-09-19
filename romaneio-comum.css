@@ -3184,3 +3184,44 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
         font-size: 16px !important;
     }
 }
+
+/* FIX mobile 390px: paginacao dos modais de lista no modo edicao (2026-09-19).
+   A barra quebrava em 2-3 linhas dentro do modal de altura fixa e cobria os
+   cards. Empilha options/controles, scroll-x interno nos botoes, sem sobrepor. */
+@media (max-width: 768px) {
+    html body #clientListModal .modal-body > .rlc-pagination-bar,
+    html body #fornecedorListModal .modal-body > .rlc-pagination-bar,
+    html body #speciesListModal .modal-body > .rlc-pagination-bar,
+    html body #listaModal .modal-body > .rlc-pagination-bar,
+    html body #romaneioListModal .modal-body > .rlc-pagination-bar,
+    html body #clientListModal .modal-body > [id$="Pagination"],
+    html body #fornecedorListModal .modal-body > [id$="Pagination"],
+    html body #speciesListModal .modal-body > [id$="Pagination"],
+    html body #listaModal .modal-body > [id$="Pagination"],
+    html body #romaneioListModal .modal-body > [id$="Pagination"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        flex-wrap: nowrap !important;
+        gap: 8px !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+    }
+    html body .rlc-pagination-bar .rlc-pagination-options,
+    html body .rlc-pagination-bar .rlc-pagination-controls {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        scrollbar-width: none !important;
+    }
+    html body .rlc-pagination-bar .rlc-pagination-options::-webkit-scrollbar,
+    html body .rlc-pagination-bar .rlc-pagination-controls::-webkit-scrollbar {
+        display: none !important;
+    }
+    html body .rlc-pagination-bar .rlc-pagination-options select {
+        font-size: 14px !important;
+        max-width: 140px !important;
+    }
+}

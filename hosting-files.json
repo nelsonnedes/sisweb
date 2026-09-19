@@ -323,6 +323,7 @@
   "modules/core/client-list-columns.js",
   "modules/core/romaneio-list-columns.js",
   "modules/core/stock-table-columns.js",
+  "modules/core/toast.js",
   "modules/core/firebase-service.js",
   "modules/core/formatacao-campos.js",
   "modules/core/hybrid-sync-service.js",

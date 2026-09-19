@@ -902,12 +902,15 @@ class FolhaFuncionarios {
                 }, 300);
             }
             
-            // ✅ CORREÇÃO CRÍTICA: Forçar atualização da lista de funcionários se o modal estiver aberto
+            // ✅ CORREÇÃO: após salvar, voltar à página 1 e reconstruir a lista
+            // filtrada com os dados frescos — o item novo ficava invisível até
+            // mexer em "Itens por página" porque página/filtro estavam stale.
+            try { this.funcListPaginaAtual = 1; } catch (_) {}
             const listModal = document.getElementById('funcionariosListModal');
             if (listModal && listModal.style && listModal.style.display === 'block') {
                 console.log('🔄 Modal de lista aberto - atualizando tabela...');
-                this.updateFuncionariosListTable();
             }
+            try { this.updateFuncionariosListTable(); } catch (_) {}
             
             // ✅ CORREÇÃO CRÍTICA: Sincronizar todos os módulos após salvamento
             if (window.folhaSystem && typeof window.folhaSystem.sincronizarModulos === 'function') {
@@ -1257,12 +1260,26 @@ class FolhaFuncionarios {
                 input.dispatchEvent(new Event('change'));
                 input.dispatchEvent(new Event('input'));
 
-                // Integração com modal de folha: preencher salário e disparar recálculo
-                // (Executado dentro do timeout para garantir que o change listener do input já processou os dados)
+                // Integração com modal de folha: hidratar o lançamento direto
+                // (o input #funcionarioSalario é do modal de cadastro — só tocar
+                // nele se estiver dentro da folhaModal) e disparar recálculo.
                 if (targetId === 'folhaFuncionario') {
-                    const salInput = document.getElementById('funcionarioSalario');
                     const sal = Number(funcionario.salarioBase || funcionario.salario || 0) || 0;
-                    if (salInput && sal > 0) {
+                    try {
+                        const L = window.folhaLancamentos;
+                        if (L) {
+                            if (!L.lancamentoAtual) L.lancamentoAtual = { status: 'rascunho', funcionario: {}, tipo: 'mes', tipoPagamento: 'mes', mesAno: '' };
+                            if (!L.lancamentoAtual.funcionario) L.lancamentoAtual.funcionario = {};
+                            L.lancamentoAtual.funcionario.id = funcionario.id || L.lancamentoAtual.funcionario.id;
+                            L.lancamentoAtual.funcionario.nome = funcionario.nome || L.lancamentoAtual.funcionario.nome;
+                            if (sal > 0) {
+                                L.lancamentoAtual.funcionario.salarioBase = sal;
+                                L.lancamentoAtual.salarioBase = sal;
+                            }
+                        }
+                    } catch {}
+                    const salInput = document.getElementById('funcionarioSalario');
+                    if (salInput && salInput.closest && salInput.closest('#folhaModal') && sal > 0) {
                         salInput.value = String(sal);
                         salInput.dispatchEvent(new Event('input', { bubbles: true }));
                         salInput.dispatchEvent(new Event('change', { bubbles: true }));
@@ -1969,9 +1986,25 @@ class FolhaFuncionarios {
             campoAtivo.dataset.funcionarioData = JSON.stringify(funcionario);
 
             if (campoAtivo.id === 'folhaFuncionario') {
-                const salInput = document.getElementById('funcionarioSalario');
                 const salario = Number(funcionario.salarioBase || funcionario.salario || 0) || 0;
-                if (salInput) {
+                // Hidratar direto o lançamento (sem depender do evento change):
+                // o input #funcionarioSalario pertence ao modal de cadastro,
+                // não à Nova Folha — escrever nele não aparece em lugar nenhum.
+                try {
+                    const L = window.folhaLancamentos;
+                    if (L) {
+                        if (!L.lancamentoAtual) L.lancamentoAtual = { status: 'rascunho', funcionario: {}, tipo: 'mes', tipoPagamento: 'mes', mesAno: '' };
+                        if (!L.lancamentoAtual.funcionario) L.lancamentoAtual.funcionario = {};
+                        L.lancamentoAtual.funcionario.id = funcionario.id || L.lancamentoAtual.funcionario.id;
+                        L.lancamentoAtual.funcionario.nome = funcionario.nome || L.lancamentoAtual.funcionario.nome;
+                        if (salario > 0) {
+                            L.lancamentoAtual.funcionario.salarioBase = salario;
+                            L.lancamentoAtual.salarioBase = salario;
+                        }
+                    }
+                } catch {}
+                const salInput = document.getElementById('funcionarioSalario');
+                if (salInput && salInput.closest && salInput.closest('#folhaModal')) {
                     salInput.value = salario > 0 ? String(salario) : '';
                     try { salInput.dispatchEvent(new Event('input', { bubbles: true })); salInput.dispatchEvent(new Event('change', { bubbles: true })); } catch {}
                 }

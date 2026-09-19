@@ -117,16 +117,29 @@
         } catch (_) {}
     }
 
+    function isPermissionLike(e) {
+        var m = String(((e && e.code) || '') + ' ' + ((e && e.message) || e || '')).toLowerCase();
+        return m.indexOf('permission') !== -1 || m.indexOf('denied') !== -1 || m.indexOf('unauthorized') !== -1;
+    }
+
     function remoteSave(clean) {
         var path = buildPath();
         var svc = window.firebaseService;
         if (svc && typeof svc.saveToFirebase === 'function') {
             return svc.saveToFirebase(path, null, clean).catch(function (e) {
+                if (isPermissionLike(e)) {
+                    try { if (window.__SISWEB_DEBUG_BOOT) console.debug('[clc] remoto sem acesso, mantido local'); } catch (_) {}
+                    return;
+                }
                 console.error('client-list-columns: falha ao salvar remoto', e);
             });
         }
         if (svc && typeof svc.saveData === 'function') {
             return svc.saveData(path, clean).catch(function (e) {
+                if (isPermissionLike(e)) {
+                    try { if (window.__SISWEB_DEBUG_BOOT) console.debug('[clc] remoto sem acesso, mantido local'); } catch (_) {}
+                    return;
+                }
                 console.error('client-list-columns: falha ao salvar remoto', e);
             });
         }
@@ -151,6 +164,7 @@
         var loader = (svc && typeof svc.loadFromFirebase === 'function') ? svc.loadFromFirebase.bind(svc) : null;
         if (!loader) return Promise.resolve(null);
         return loader(path).then(function (result) {
+            if (result && result.permissionDenied) return null;
             var data = (result && result.success && result.data) ? result.data : result;
             var clean = sanitize(data);
             if (Object.keys(clean).length > 0) saveLocal(clean);

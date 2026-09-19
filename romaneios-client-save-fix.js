@@ -907,8 +907,33 @@ function corrigirDeleteClientGlobal() {
         window.firebaseService.deleteClient = deleteClientImplementation;
     }
 
-    // ✅ PATCH AGRESSIVO PARA MÓDULOS ESPECÍFICOS (TL, PCT)
-    if (window.ModalClientes) {
+    // ✅ PATCH PARA MÓDULOS ESPECÍFICOS (TL, PCT): embrulhar o delete do modal
+    // preservando a assinatura (id, nome) + confirm/refresh próprios, e
+    // garantindo invalidação dos dois caches + refresh após o delete.
+    if (window.ModalClientes && typeof window.ModalClientes.deleteClient === 'function'
+        && window.ModalClientes.deleteClient !== deleteClientImplementation
+        && !window.ModalClientes.deleteClient.__siswebDeleteWrapped) {
+        const modalDeleteOriginal = window.ModalClientes.deleteClient.bind(window.ModalClientes);
+        window.ModalClientes.deleteClient = async function (clientId, clientName) {
+            let result = null;
+            let usedOriginal = false;
+            try {
+                result = await modalDeleteOriginal(clientId, clientName);
+                usedOriginal = true;
+            } catch (_) {
+                usedOriginal = false;
+            }
+            if (!usedOriginal) {
+                result = await deleteClientImplementation(clientId);
+            }
+            try { window.FirebaseService?.cache?.delete('clients'); } catch (_) {}
+            try { await window.firebaseService?.invalidateCache?.('clients'); } catch (_) {}
+            try { await window.ModalClientes?.refresh?.(); } catch (_) {}
+            return result;
+        };
+        window.ModalClientes.deleteClient.__siswebDeleteWrapped = true;
+        console.log("✅ ModalClientes.deleteClient embrulhado (TL, com refresh)");
+    } else if (window.ModalClientes) {
         window.ModalClientes.deleteClient = deleteClientImplementation;
         console.log("✅ ModalClientes.deleteClient corrigido (TL)");
     }

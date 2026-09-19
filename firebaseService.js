@@ -1647,15 +1647,22 @@ async function loadFromFirebaseCore(path) {
                 aliases.forEach(a => pushUnique(a));
             }
             
-            // Variantes comuns: snake_case e caminho com barra
-            const snake = toSnake(input);
-            pushUnique(snake);
+            // Variantes comuns: snake_case e caminho com barra.
+            // Paths users/* contêm UID case-sensitive: snake corromperia o uid
+            // e geraria Permission denied garantido — não gerar nesses casos.
+            if (!/^users(\/|$)/.test(String(input || ''))) {
+                pushUnique(toSnake(input));
+            }
             const slash = toSlash(input);
             pushUnique(slash);
             
             // Para snake, também tentar como caminho com barra (romaneios_tl -> romaneios/tl)
-            if (snake.startsWith('romaneios_')) {
-                pushUnique(`romaneios/${snake.replace('romaneios_', '')}`);
+            // (fora de users/* pelo mesmo motivo acima)
+            if (!/^users(\/|$)/.test(String(input || ''))) {
+                const snakeForSlash = toSnake(input);
+                if (snakeForSlash.startsWith('romaneios_')) {
+                    pushUnique(`romaneios/${snakeForSlash.replace('romaneios_', '')}`);
+                }
             }
 
             return candidates;
@@ -1777,6 +1784,15 @@ async function loadFromFirebaseCore(path) {
                     console.log('ℹ️ Nenhum dado encontrado no caminho consultado');
                 }
             } catch (e) {
+                // Preferências de UI e paths opcionais negados: fallback local
+                // silencioso (só debug), sem warn ruidoso no console.
+                if (isPermissionDeniedError(e) && !isPrivilegedAdminPath(candidate)) {
+                    hadPermissionDenied = true;
+                    try {
+                        if (window.__SISWEB_DEBUG_BOOT) console.debug('[prefs] permission_denied esperado, usando local:', candidate);
+                    } catch (_) {}
+                    continue;
+                }
                 if (isPermissionDeniedError(e) && isPrivilegedAdminPath(candidate)) {
                     hadPermissionDenied = true;
                     const recovered = await ensurePrivilegedReadAccess();
