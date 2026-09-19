@@ -1041,15 +1041,16 @@ window.editarRomaneioTora = async function(romaneioId, dadosPreCarregados = null
     window.clienteSelecionado = romaneio.fornecedor || romaneio.cliente;
     
     // ✅ CORREÇÃO: Normalizar itens para garantir que seja um array
+    // (aceita as chaves itens/items/toras/romaneioItems usadas nos registros)
+    const rawItens = romaneio.itens ?? romaneio.items ?? romaneio.toras ?? romaneio.romaneioItems ?? [];
     let itensNormalizados = [];
-    if (romaneio.itens) {
-        if (Array.isArray(romaneio.itens)) {
-            itensNormalizados = romaneio.itens;
-        } else if (typeof romaneio.itens === 'object') {
-            itensNormalizados = Object.values(romaneio.itens);
-        }
+    if (Array.isArray(rawItens)) {
+        itensNormalizados = rawItens;
+    } else if (rawItens && typeof rawItens === 'object') {
+        itensNormalizados = Object.values(rawItens);
     }
     window.romaneioItems = itensNormalizados;
+    window.currentPage = 1;
     
     // ✅ ATUALIZAR UI PARA MODO EDIÇÃO (Sincronizado com romaneiotora.js)
     const btnSalvar = document.getElementById('btnSalvar');
@@ -1070,7 +1071,8 @@ window.editarRomaneioTora = async function(romaneioId, dadosPreCarregados = null
     
     // Atualizar Tabela de Itens (função global do romaneiotora.js)
     if (typeof window.updateTableBody === 'function') window.updateTableBody();
-    if (typeof window.atualizarTotais === 'function') window.atualizarTotais();
+    if (typeof window.atualizarTotaisRomaneio === 'function') window.atualizarTotaisRomaneio();
+    else if (typeof window.atualizarTotais === 'function') window.atualizarTotais();
     
     // Fechar modal
     const modal = document.getElementById(manager.modalId);

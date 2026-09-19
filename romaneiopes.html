@@ -13,7 +13,7 @@
     <title>Romaneio PES - Sistema Sisweb</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <link rel="stylesheet" href="romaneio-comum.css?v=38e28c24bd8f">
+    <link rel="stylesheet" href="romaneio-comum.css?v=1c15014e677a">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <script src="menu-component.js?v=d24004475028"></script>
     <link rel="stylesheet" href="print-styles.css">
@@ -4259,6 +4259,7 @@
             preco = parseFloat(alvo.preco) || 0;
             const rawItens = alvo.itens || alvo.items || [];
             itens = Array.isArray(rawItens) ? rawItens.map(item => ({ ...item })) : [];
+            itensTablePage = 1;
             atualizarTabela();
             const btnSalvar = document.getElementById('btnSalvar');
             if (btnSalvar) btnSalvar.innerHTML = '<i class="fas fa-save"></i> Atualizar';
@@ -4303,6 +4304,7 @@
             preco = parseFloat(alvo.preco) || 0;
             const rawItens = alvo.itens || alvo.items || [];
             itens = Array.isArray(rawItens) ? rawItens.map(item => ({ ...item })) : [];
+            itensTablePage = 1;
             atualizarTabela();
             const btnSalvar = document.getElementById('btnSalvar');
             if (btnSalvar) btnSalvar.innerHTML = '<i class="fas fa-save"></i> Salvar';

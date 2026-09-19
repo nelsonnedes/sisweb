@@ -989,6 +989,12 @@ window.SalvarRomaneio = (function() {
             console.log(`✅ ${itensNormalizados.length} itens carregados no array global`);
             console.log('📊 Array global após carregamento:', window.romaneioItems);
             
+            // Voltar à primeira página: a paginação é estado de sessão e o
+            // clamp exibiria só o rabo da lista ao editar romaneio curto
+            if (window.RenderizarTabela && typeof window.RenderizarTabela.resetarPaginacao === 'function') {
+                window.RenderizarTabela.resetarPaginacao();
+            }
+
             // Atualizar interface
             if (window.RenderizarTabela && window.RenderizarTabela.renderizarTabela) {
                 console.log('🔄 Renderizando tabela...');

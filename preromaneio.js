@@ -1368,6 +1368,9 @@ function loadPreRomaneioData(data) {
 
     const itensRaw = data.itens || data.items || data.romaneioItens || [];
     romaneioItens = normalizeItens(itensRaw, tipo);
+    // Página 1 + fora do modo edição de item (paginação é estado de sessão)
+    paginaAtual = 1;
+    itemEmEdicaoIndex = -1;
     renderizarTabela();
     atualizarTotais();
 

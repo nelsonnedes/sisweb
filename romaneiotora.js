@@ -1841,7 +1841,8 @@ async function carregarRomaneioParaEdicao(romaneioId) {
             window.romaneioOriginalCriadoEm = romaneio.criadoEm;
             
             window.clienteSelecionado = romaneio.fornecedor;
-            window.romaneioItems = romaneio.itens || [];
+            window.romaneioItems = romaneio.itens || romaneio.items || romaneio.toras || romaneio.romaneioItems || [];
+            window.currentPage = 1;
             
             // ✅ ATUALIZAR UI PARA MODO EDIÇÃO
             const btnSalvar = document.getElementById('btnSalvar');

@@ -152,7 +152,9 @@
         return (Array.isArray(list) ? list : []).filter(item => {
             if (!item || typeof item !== 'object') return false;
             const itemTenant = item.companyId || item.tenantId || item.companyID || null;
-            if (!itemTenant) return false;
+            // Alinhado à lista (modal): registros legados sem tenant exibem e
+            // abrem normalmente; o isolamento vive na consulta do tenant ativo
+            if (!itemTenant) return true;
             return String(itemTenant) === String(tenant);
         });
     }
@@ -397,7 +399,8 @@
                         console.warn('⚠️ PCT: Firebase indisponível, correção automática não foi persistida.');
                     }
                     
-                    // Carregar os itens
+                    // Carregar os itens (página 1: paginação é estado de sessão)
+                    window.currentPage = 1;
                     window.romaneioItems = itensConvertidos;
                     if (typeof window.romaneioItems !== 'undefined') {
                         window.romaneioItems = itensConvertidos;
