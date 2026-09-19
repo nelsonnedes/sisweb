@@ -1150,6 +1150,20 @@ function closeAllSuggestions() {
 /**
  * Integração Firebase e Salvamento
  */
+/**
+ * Parser numérico pt-BR para textos de display ("0,766 m³", "R$ 1.914,06").
+ * parseFloat puro quebrava na vírgula/sufixo e zerava os totais salvos.
+ */
+function parseNumBR(val) {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === 'number') return Number.isFinite(val) ? val : 0;
+    const s = String(val).trim();
+    if (!s) return 0;
+    const cleaned = s.replace('R$', '').trim().replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+    const n = parseFloat(cleaned);
+    return Number.isFinite(n) ? n : 0;
+}
+
 async function salvarPreRomaneio() {
     if (romaneioItens.length === 0) {
         alert('Adicione itens antes de salvar.');
@@ -1219,9 +1233,10 @@ async function salvarPreRomaneio() {
         companyId: tenantId,
         itens: itensToSave,
         totais: {
-            volume: parseFloat(document.getElementById('totalVolume').textContent),
+            // parseFloat quebrava no pt-BR ("0,766 m³" virava 0): parser BR
+            volume: parseNumBR(document.getElementById('totalVolume').textContent),
             volumeGeo: parseFloat(romaneioItens.reduce((acc, it) => acc + (normalizarCamposGeoTora(it).volumeGeo || 0), 0).toFixed(3)),
-            valor: parseFloat(document.getElementById('totalValor').textContent.replace('R$', '').replace(/\./g,'').replace(',', '.'))
+            valor: parseNumBR(document.getElementById('totalValor').textContent)
         },
         criadoEm: createdIso,
         createdAt: preRomaneioEmEdicao?.createdAt || createdIso,

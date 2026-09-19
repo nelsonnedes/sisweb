@@ -1043,7 +1043,19 @@ function renderRomaneiosList(list = null) {
         let value = 'R$ 0,00';
         
         if (item.totais) {
-            volume = (item.totais.volume !== undefined) ? parseFloat(item.totais.volume).toFixed(3) : '0.000';
+            let volNum = parseFloat(item.totais.volume);
+            // Repara exibição de registros salvos com volume zerado pelo parse
+            // antigo (display-only: soma os volumes dos itens quando há)
+            if ((!Number.isFinite(volNum) || volNum === 0) && item) {
+                try {
+                    const arrItens = item.itens || item.items || item.romaneioItens || [];
+                    if (Array.isArray(arrItens) && arrItens.length > 0) {
+                        const soma = arrItens.reduce((acc, it) => acc + (parseFloat(it && it.volume) || 0), 0);
+                        if (soma > 0) volNum = soma;
+                    }
+                } catch (_) {}
+            }
+            volume = Number.isFinite(volNum) ? volNum.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : '0,000';
             value = (item.totais.valor !== undefined) ? item.totais.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
         } else {
             // Fallback para estrutura antiga
