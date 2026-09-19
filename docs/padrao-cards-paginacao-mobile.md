@@ -40,6 +40,13 @@
 - `td` com reset de wrap ( conflita com item 1 — item 1 vence por especificidade/ordem onde ambos se aplicam).
 - `.totais-container` com `clear + margin-top` (sem sobreposição).
 
+## 4b. Wrapper dos itens SEM teto de altura (lição 2026-09-19)
+
+- Causa medida no navegador: `.table-responsive` travado em `max-height:min(55vh,420px)` COM `overflow:visible` (regra do gesto) = linhas transbordando SOBRE paginação+totais.
+- Regra: no mobile, wrappers de itens têm `max-height:none; height:auto; min-height:0` (o conteúdo flui, a página rola).
+- Seletores: `#romaneio-items-section .table-responsive/.table-container`, `.itens-container > ...`, `.table-responsive:has(> #tabela)` (ancora no id da tabela, sem tocar HTML).
+- Nunca combine teto de altura com `overflow:visible` no mesmo bloco.
+
 ## 5. Regras de ouro (anti-regressão)
 
 1. `!important` em tudo (codebase usa `!important` ubíquo + estilos inline via JS).
