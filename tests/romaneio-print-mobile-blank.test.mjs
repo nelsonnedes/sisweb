@@ -70,6 +70,10 @@ test('Mobile print fase 2: PES abre janela depois do conteúdo com Voltar', () =
     assert.match(html, /fonts\.ready/);
     assert.match(html, /RomaneioPrintConfig\.applyToPrintDocument\(printWindow\.document, 'PES'\)/);
     assert.match(html, /printWindow\.onload = function/);
+    assert.match(html, /&#8592; Voltar/);
+    const pesVoltarIdx = html.indexOf('&#8592; Voltar');
+    const pesImprimirIdx = html.indexOf('onclick="window.print()">Imprimir');
+    assert.ok(pesVoltarIdx > 0 && pesImprimirIdx > 0 && pesVoltarIdx < pesImprimirIdx, 'PES: Voltar vem antes de Imprimir, igual aos demais romaneios');
 });
 
 test('Mobile print fase 2: company usa helper canônico com fallback completo', () => {

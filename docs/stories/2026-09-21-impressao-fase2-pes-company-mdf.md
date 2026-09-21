@@ -38,6 +38,7 @@ Fase 1 (story 2026-09-21-impressao-mobile-about-blank-voltar, commit `98f3c0d`, 
 - [x] `npm run validate:pr` 6/6 (unit 578/0/1, e2e passou desta vez)
 - [x] `git diff --stat` pequeno, sem BOM, sem `logs.md`
 - [x] Commit `f9e7521` + push + deploy hosting (com fase 3 junta; inject 1 HTML `mdf-e.html`; build 478 arquivos; deploy "Deploy complete!" 6 arquivos novos)
+- [x] Pós-deploy: PES padronizado para `← Voltar` + `Imprimir` (antes `Imprimir` + `Fechar`), mesma ordem dos demais romaneios — commit seguinte
 
 ## Evidências
 
