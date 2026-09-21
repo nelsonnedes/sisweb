@@ -2205,7 +2205,9 @@ class FolhaFuncionarios {
 
         // Rede de segurança do scroll: ao voltar o foco para a aba ou
         // restaurar a página, destravar se nenhum modal estiver visível
-        // (cura qualquer travamento residual sem tocar no fluxo normal)
+        // (cura qualquer travamento residual sem tocar no fluxo normal).
+        // Vigia passivo: revalida a cada 8s (só age + loga se houver trava
+        // real sem modal visível — evidência para diagnóstico).
         if (!window.__folhaScrollGuardBound) {
             window.__folhaScrollGuardBound = true;
             const healScroll = () => {
@@ -2217,6 +2219,18 @@ class FolhaFuncionarios {
             };
             window.addEventListener('focus', healScroll);
             window.addEventListener('pageshow', healScroll);
+            try {
+                setInterval(() => {
+                    try {
+                        const semModal = document.querySelectorAll('.modal[style*="display: block"], .modal[style*="display:block"]').length === 0;
+                        const travado = document.body.style.overflow === 'hidden' || document.body.style.overflowY === 'hidden';
+                        if (semModal && travado) {
+                            healScroll();
+                            console.log('[scroll-guard] vigia: destravou scroll sem modal visível');
+                        }
+                    } catch (_) {}
+                }, 8000);
+            } catch (_) {}
         }
     }
 }
