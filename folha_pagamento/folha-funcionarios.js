@@ -2183,6 +2183,22 @@ class FolhaFuncionarios {
         });
         
         console.log('✅ Listeners de sincronização configurados');
+
+        // Rede de segurança do scroll: ao voltar o foco para a aba ou
+        // restaurar a página, destravar se nenhum modal estiver visível
+        // (cura qualquer travamento residual sem tocar no fluxo normal)
+        if (!window.__folhaScrollGuardBound) {
+            window.__folhaScrollGuardBound = true;
+            const healScroll = () => {
+                try {
+                    if (window.FolhaUtils && typeof window.FolhaUtils.verificarScrollGlobal === 'function') {
+                        window.FolhaUtils.verificarScrollGlobal();
+                    }
+                } catch (_) {}
+            };
+            window.addEventListener('focus', healScroll);
+            window.addEventListener('pageshow', healScroll);
+        }
     }
 }
 

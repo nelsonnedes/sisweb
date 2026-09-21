@@ -2247,6 +2247,7 @@ class FolhaUtils {
 
         if (modaisVisiveis.length === 0) {
             // Se não há modais visíveis, garantir que o scroll esteja habilitado
+            const antes = document.body.style.overflow + '/' + document.body.style.overflowY + '/' + document.documentElement.style.overflowY;
             if (document.body.style.overflow === 'hidden') {
                 document.body.style.overflow = 'auto';
                 if (debugAll) console.log('🔧 Scroll corrigido automaticamente - nenhum modal visível');
@@ -2258,6 +2259,8 @@ class FolhaUtils {
             if (document.documentElement.style.overflowY === 'hidden') {
                 document.documentElement.style.overflowY = 'auto';
             }
+            const depois = document.body.style.overflow + '/' + document.body.style.overflowY + '/' + document.documentElement.style.overflowY;
+            if (antes !== depois) console.log(`[scroll-guard] modais:0 ${antes} → ${depois}`);
         } else {
             if (debugAll) console.log(`📋 ${modaisVisiveis.length} modal(is) ainda visível(is), mantendo scroll bloqueado`);
         }
