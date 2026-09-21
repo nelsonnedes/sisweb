@@ -726,6 +726,9 @@ class FolhaFuncionarios {
             if (window.FolhaUtils && typeof window.FolhaUtils.verificarScrollGlobal === 'function') {
                 window.FolhaUtils.verificarScrollGlobal();
             }
+            if (window.FolhaUtils && typeof window.FolhaUtils.ressincronizarRolagem === 'function') {
+                window.FolhaUtils.ressincronizarRolagem();
+            }
         } catch (_) {}
 
         this.clearFuncionarioForm();
@@ -1614,6 +1617,9 @@ class FolhaFuncionarios {
         try {
             if (window.FolhaUtils && typeof window.FolhaUtils.verificarScrollGlobal === 'function') {
                 window.FolhaUtils.verificarScrollGlobal();
+            }
+            if (window.FolhaUtils && typeof window.FolhaUtils.ressincronizarRolagem === 'function') {
+                window.FolhaUtils.ressincronizarRolagem();
             }
         } catch (_) {}
         try {

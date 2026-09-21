@@ -2251,6 +2251,35 @@ class FolhaUtils {
         } catch (_) { return []; }
     }
 
+    /**
+     * 🔄 RESSINCRONIZAR ROLAGEM (compositor)
+     * Quando o wheel chega à página, não é prevenido, não há overlay nem
+     * overflow travado — e mesmo assim a página não se move — o estado de
+     * rolagem do compositor dessincronizou (típico após ciclos de modal com
+     * toggle de overflow + rebuild de tabelas). Força a ressincronização:
+     * alterna o overflow do <html> em 2 frames (recalcula a cadeia de scroll)
+     * + nudge de 1px (scroll iniciado pela main thread ressincroniza o estado).
+     * Invisível (saldo zero) e idempotente. Nunca previne eventos.
+     */
+    static ressincronizarRolagem() {
+        try {
+            const de = document.documentElement;
+            const prev = de.style.overflow;
+            de.style.overflow = 'hidden';
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    try { de.style.overflow = prev || ''; } catch (_) {}
+                    try {
+                        const y = window.scrollY;
+                        window.scrollBy(0, 1);
+                        window.scrollBy(0, -1);
+                        if (window.scrollY !== y) window.scrollTo(0, y);
+                    } catch (_) {}
+                });
+            });
+        } catch (_) {}
+    }
+
     static verificarScrollGlobal() {
         const debugAll = FolhaUtils.getDebugMode() === 'all';
         const body = document.body;
