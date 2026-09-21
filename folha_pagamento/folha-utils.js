@@ -2240,16 +2240,23 @@ class FolhaUtils {
         const debugAll = FolhaUtils.getDebugMode() === 'all';
         const body = document.body;
         const html = document.documentElement;
-        const bodyHidden = body && body.style && body.style.overflow === 'hidden';
-        const htmlHidden = html && html.style && html.style.overflow === 'hidden';
+        const bodyHidden = body && body.style && (body.style.overflow === 'hidden' || body.style.overflowY === 'hidden');
+        const htmlHidden = html && html.style && (html.style.overflow === 'hidden' || html.style.overflowY === 'hidden');
         if (!bodyHidden && !htmlHidden) return;
         const modaisVisiveis = document.querySelectorAll('.modal[style*="display: block"], .modal[style*="display:block"]');
-        
+
         if (modaisVisiveis.length === 0) {
             // Se não há modais visíveis, garantir que o scroll esteja habilitado
             if (document.body.style.overflow === 'hidden') {
                 document.body.style.overflow = 'auto';
                 if (debugAll) console.log('🔧 Scroll corrigido automaticamente - nenhum modal visível');
+            }
+            if (document.body.style.overflowY === 'hidden') {
+                document.body.style.overflowY = 'auto';
+                if (debugAll) console.log('🔧 Scroll-Y corrigido automaticamente - nenhum modal visível');
+            }
+            if (document.documentElement.style.overflowY === 'hidden') {
+                document.documentElement.style.overflowY = 'auto';
             }
         } else {
             if (debugAll) console.log(`📋 ${modaisVisiveis.length} modal(is) ainda visível(is), mantendo scroll bloqueado`);

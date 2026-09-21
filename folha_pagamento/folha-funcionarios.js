@@ -866,7 +866,15 @@ class FolhaFuncionarios {
             }
             
             this.closeFuncionarioModal();
-            
+
+            // Rede de segurança: garantir scroll liberado após salvar (só age
+            // se nenhum modal estiver visível)
+            try {
+                if (window.FolhaUtils && typeof window.FolhaUtils.verificarScrollGlobal === 'function') {
+                    window.FolhaUtils.verificarScrollGlobal();
+                }
+            } catch (_) {}
+
             // ✅ CORREÇÃO CRÍTICA: Recarregar funcionários ANTES de notificar outros módulos
             console.log('🔄 Recarregando funcionários após salvamento...');
             await this.loadFuncionarios();
