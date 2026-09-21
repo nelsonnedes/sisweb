@@ -3423,6 +3423,45 @@ if (typeof window.renderizarTabelaLancamentos === 'function') {
     console.error('❌ Função global renderizarTabelaLancamentos NÃO disponível');
 }
 
+// ✅ MEDIDOR DE ROLAGEM REAL: ativado via console com window.__siswebDiagWheel = true.
+// Apenas OBSERVA (capture + passive, nunca previne): registra se o evento
+// chega à página, em qual elemento, e se a página se moveu. Para caçar casos
+// onde wheel/teclado morrem com a página saudável (fora do DOM acessível).
+window.__siswebDiagWheel = false;
+try {
+    window.addEventListener('wheel', (e) => {
+        if (!window.__siswebDiagWheel) return;
+        const y0 = window.scrollY;
+        const t = e.target;
+        let chain = '?';
+        try {
+            const parts = [];
+            let n = t;
+            while (n && parts.length < 5) {
+                parts.push((n.tagName || '?') + '#' + (n.id || '-'));
+                n = n.parentElement;
+            }
+            chain = parts.join('<');
+        } catch (_) {}
+        setTimeout(() => {
+            try {
+                console.log(`[wheel-diag] dy:${e.deltaY} alvo:${(t && t.tagName) || '?'}#${(t && t.id) || '-'} cadeia:${chain} y:${y0}->${window.scrollY} moveu:${window.scrollY !== y0} cancelavel:${e.cancelable} prevenido:${e.defaultPrevented}`);
+            } catch (_) {}
+        }, 150);
+    }, { capture: true, passive: true });
+    window.addEventListener('keydown', (e) => {
+        if (!window.__siswebDiagWheel) return;
+        if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', ' '].indexOf(e.key) === -1) return;
+        const y0 = window.scrollY;
+        const ae = document.activeElement;
+        setTimeout(() => {
+            try {
+                console.log(`[key-diag] tecla:${e.key} foco:${(ae && ae.tagName) || '?'}#${(ae && ae.id) || '-'} y:${y0}->${window.scrollY} moveu:${window.scrollY !== y0}`);
+            } catch (_) {}
+        }, 150);
+    }, true);
+} catch (_) {}
+
 // ✅ DIAGNÓSTICO DE ROLAGEM: rode no console quando o wheel morrer.
 // Ex.: diagnosticarRolagem() — mostra overflow, métricas, modais visíveis
 // (computed) e a pilha de elementos sob o cursor. Se tudo estiver saudável,
