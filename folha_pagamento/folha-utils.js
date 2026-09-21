@@ -2236,6 +2236,21 @@ class FolhaUtils {
      * 🔍 VERIFICAR E CORRIGIR SCROLL GLOBAL
      * Função de segurança para garantir que o scroll nunca fique travado
      */
+    static modaisVisiveis() {
+        // Detecção robusta (computed, não só inline): um modal pode estar
+        // visível via classe CSS mesmo sem style="display: block" inline
+        try {
+            return Array.from(document.querySelectorAll('.modal')).filter((m) => {
+                try {
+                    const cs = getComputedStyle(m);
+                    if (!cs || cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return false;
+                    const r = m.getBoundingClientRect();
+                    return r.width > 0 && r.height > 0;
+                } catch (_) { return false; }
+            }).map((m) => m.id || m.className || m.tagName);
+        } catch (_) { return []; }
+    }
+
     static verificarScrollGlobal() {
         const debugAll = FolhaUtils.getDebugMode() === 'all';
         const body = document.body;
@@ -2243,7 +2258,7 @@ class FolhaUtils {
         const bodyHidden = body && body.style && (body.style.overflow === 'hidden' || body.style.overflowY === 'hidden');
         const htmlHidden = html && html.style && (html.style.overflow === 'hidden' || html.style.overflowY === 'hidden');
         if (!bodyHidden && !htmlHidden) return;
-        const modaisVisiveis = document.querySelectorAll('.modal[style*="display: block"], .modal[style*="display:block"]');
+        const modaisVisiveis = FolhaUtils.modaisVisiveis();
 
         if (modaisVisiveis.length === 0) {
             // Se não há modais visíveis, garantir que o scroll esteja habilitado
@@ -3407,6 +3422,40 @@ if (typeof window.renderizarTabelaLancamentos === 'function') {
 } else {
     console.error('❌ Função global renderizarTabelaLancamentos NÃO disponível');
 }
+
+// ✅ DIAGNÓSTICO DE ROLAGEM: rode no console quando o wheel morrer.
+// Ex.: diagnosticarRolagem() — mostra overflow, métricas, modais visíveis
+// (computed) e a pilha de elementos sob o cursor. Se tudo estiver saudável,
+// rode também getEventListeners(document).wheel no console (API do DevTools)
+// para listar interceptadores fora do código da página (ex.: extensões).
+window.diagnosticarRolagem = function() {
+    const info = {};
+    try {
+        info.bodyOverflow = document.body.style.overflow + '/' + document.body.style.overflowY;
+        info.htmlOverflow = document.documentElement.style.overflow + '/' + document.documentElement.style.overflowY;
+        info.scrollH = document.documentElement.scrollHeight;
+        info.innerH = window.innerHeight;
+        info.scrollY = window.scrollY;
+        info.rolavel = document.documentElement.scrollHeight > window.innerHeight;
+        info.modaisVisiveis = (window.FolhaUtils && typeof window.FolhaUtils.modaisVisiveis === 'function')
+            ? window.FolhaUtils.modaisVisiveis() : 'n/d';
+        try {
+            const cx = Math.round(window.innerWidth / 2), cy = Math.round(window.innerHeight / 2);
+            info.pilhaNoCentro = document.elementsFromPoint(cx, cy).slice(0, 6).map((e) => {
+                let cs = {};
+                try { const c = getComputedStyle(e); cs = { pe: c.pointerEvents, pos: c.position, z: c.zIndex }; } catch (_) {}
+                return (e.tagName || '?') + '#' + (e.id || '-') + ' ' + JSON.stringify(cs);
+            });
+        } catch (e) { info.pilhaNoCentro = 'erro: ' + e; }
+        try {
+            const t = new WheelEvent('wheel', { deltaY: 100, cancelable: true, bubbles: true });
+            document.body.dispatchEvent(t);
+            info.wheelSinteticoBloqueado = t.defaultPrevented;
+        } catch (e) { info.wheelSinteticoBloqueado = 'erro: ' + e; }
+    } catch (e) { info.erro = String((e && e.message) || e); }
+    console.log('[diagnostico-rolagem]', JSON.stringify(info, null, 1));
+    return info;
+};
 
 // ✅ FUNÇÃO GLOBAL DE EMERGÊNCIA PARA SCROLL
 window.corrigirScrollTravado = function() {

@@ -873,7 +873,7 @@ class FolhaFuncionarios {
                 if (window.FolhaUtils && typeof window.FolhaUtils.verificarScrollGlobal === 'function') {
                     window.FolhaUtils.verificarScrollGlobal();
                 }
-                console.log(`[scroll-guard] pos-save scrollH:${document.documentElement.scrollHeight} innerH:${window.innerHeight} body:[${document.body.style.overflow}] modais:${document.querySelectorAll('.modal[style*="display: block"], .modal[style*="display:block"]').length}`);
+                console.log(`[scroll-guard] pos-save scrollH:${document.documentElement.scrollHeight} innerH:${window.innerHeight} body:[${document.body.style.overflow}] modais:${(window.FolhaUtils && typeof window.FolhaUtils.modaisVisiveis === 'function') ? JSON.stringify(window.FolhaUtils.modaisVisiveis()) : document.querySelectorAll('.modal[style*="display: block"], .modal[style*="display:block"]').length}`);
             } catch (_) {}
 
             // ✅ CORREÇÃO CRÍTICA: Recarregar funcionários ANTES de notificar outros módulos
