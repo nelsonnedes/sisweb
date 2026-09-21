@@ -4813,12 +4813,13 @@
             const profileUnitColPx = comprimentosUnicos.length >= 14 ? 44 : 48;
             let profileCompColPx = comprimentosUnicos.length >= 18 ? 12 : (comprimentosUnicos.length >= 14 ? 14 : (comprimentosUnicos.length >= 10 ? 16 : 18));
             let profileScale = comprimentosUnicos.length >= 18 ? 0.88 : (comprimentosUnicos.length >= 14 ? 0.91 : (comprimentosUnicos.length >= 10 ? 0.94 : 0.97));
-            const printWindow = window.open('', '_blank');
+            // MOBILE: janela aberta DEPOIS do conteúdo (abrir antes exibe about:blank vazio).
             const printContent = `
                 <!DOCTYPE html>
                 <html lang="pt-BR">
                 <head>
                     <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>ROMANEIO DE PÉS - ${clienteNome}</title>
                     <style>
                         body { font-family: Arial, sans-serif; margin: 0; padding: 16px; color: #222; }
@@ -5043,7 +5044,7 @@
                 <body class="${printProfileClass}" data-print-mode="${printMode}" data-cols="${visibleCols}" data-comp-count="${comprimentosUnicos.length}" style="--pes-translate-x:${profileTranslateMm}mm; --pes-last-col-width:${profileLastColPx}px; --pes-unit-col-width:${profileUnitColPx}px; --pes-comp-col:${profileCompColPx}px; --pes-scale:${profileScale};">
                     <div class="print-actions">
                         <button onclick="window.print()">Imprimir</button>
-                        <button onclick="window.close()">Fechar</button>
+                        <button onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}">Fechar</button>
                     </div>
                     <div class="header-romaneio-container">
                         <div class="romaneio-principal">
@@ -5149,9 +5150,31 @@
                 </body>
                 </html>
             `;
-            printWindow.document.open();
-            printWindow.document.write(printContent);
-            printWindow.document.close();
+            let printWindow = null;
+            try {
+                printWindow = window.open('', '_blank');
+            } catch (_) {
+                printWindow = null;
+            }
+            if (!printWindow || printWindow.closed === true) {
+                alert('Falha ao abrir janela de impressão. Verifique se os pop-ups estão permitidos.');
+                return;
+            }
+            try {
+                if (!printWindow.document) throw new Error('alvo parcial');
+            } catch (_) {
+                alert('Impressão bloqueada no mobile. Permita popups para imprimir.');
+                try { if (!printWindow.closed) printWindow.close(); } catch (_) {}
+                return;
+            }
+            try {
+                printWindow.document.open();
+                printWindow.document.write(printContent);
+                printWindow.document.close();
+            } catch (_) {
+                alert('Falha ao preparar documento de impressão.');
+                return;
+            }
             try {
                 if (window.RomaneioPrintConfig && typeof window.RomaneioPrintConfig.applyToPrintDocument === 'function') {
                     window.RomaneioPrintConfig.applyToPrintDocument(printWindow.document, 'PES');
@@ -5159,6 +5182,24 @@
             } catch (error) {
                 console.warn('PES: não foi possível aplicar configuração de colunas na impressão.', error);
             }
+            // Trigger robusto: onload nem sempre dispara após document.write no mobile.
+            try {
+                let pesDisparado = false;
+                const dispararPes = () => {
+                    if (pesDisparado) return;
+                    pesDisparado = true;
+                    try { printWindow.focus(); } catch (_) {}
+                };
+                try {
+                    const pesDoc = printWindow.document;
+                    if (pesDoc && pesDoc.fonts && typeof pesDoc.fonts.ready.then === 'function') {
+                        pesDoc.fonts.ready.then(() => setTimeout(dispararPes, 60)).catch(() => {});
+                    }
+                } catch (_) {}
+                try { printWindow.focus(); } catch (_) {}
+                setTimeout(dispararPes, 600);
+                setTimeout(dispararPes, 1500);
+            } catch (_) {}
             printWindow.onload = function() {
                 try {
                     const body = printWindow.document.body;

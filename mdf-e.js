@@ -816,17 +816,42 @@ async function gerarRelatorioMdfe() {
         relatorio += `${mdfe.numero} - ${mdfe.veiculo.placa} - ${mdfe.status.toUpperCase()}\n`;
     });
     
-    // Exibir relatório
-    const novaJanela = window.open('', '_blank');
-    novaJanela.document.write(`
-        <html>
-            <head><title>Relatório MDF-e</title></head>
+    // Exibir relatório (MOBILE: valida alvo parcial + Voltar; mantém Imprimir manual)
+    let novaJanela = null;
+    try {
+        novaJanela = window.open('', '_blank');
+    } catch (_) {
+        novaJanela = null;
+    }
+    if (!novaJanela || novaJanela.closed === true) {
+        alert('Falha ao abrir janela de impressão. Verifique se os pop-ups estão permitidos.');
+        return;
+    }
+    try {
+        if (!novaJanela.document) throw new Error('alvo parcial');
+    } catch (_) {
+        alert('Impressão bloqueada no mobile. Permita popups para imprimir.');
+        try { if (!novaJanela.closed) novaJanela.close(); } catch (_) {}
+        return;
+    }
+    try {
+        novaJanela.document.open();
+        novaJanela.document.write(`
+        <!doctype html>
+        <html lang="pt-BR">
+            <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Relatório MDF-e</title><style>.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:Arial,sans-serif;}@media print{.sisweb-print-back{display:none !important;}}</style></head>
             <body>
+                <div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #2c3e50;background:#2c3e50;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div>
                 <pre style="font-family: monospace; white-space: pre-wrap;">${escapeHtmlMdfe(relatorio)}</pre>
-                <button onclick="window.print()">Imprimir</button>
             </body>
         </html>
     `);
+        novaJanela.document.close();
+    } catch (_) {
+        alert('Falha ao preparar documento de impressão.');
+        return;
+    }
+    try { novaJanela.focus(); } catch (_) {}
     
     console.log('📊 Relatório gerado:', mdfesRelatorio.length, 'MDF-es');
 }

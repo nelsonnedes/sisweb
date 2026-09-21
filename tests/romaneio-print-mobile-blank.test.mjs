@@ -57,3 +57,49 @@ test('Mobile print: fallback do manager tem HTML completo com Voltar', () => {
     assert.match(js, /fonts\.ready/);
     assert.match(js, /window\.ImprimirRomaneio\.imprimirRomaneioTora/);
 });
+
+test('Mobile print fase 2: PES abre janela depois do conteúdo com Voltar', () => {
+    const html = read('romaneiopes.html');
+    assert.doesNotMatch(html, /const printWindow = window\.open\('', '_blank'\);\n            const printContent = `/);
+    const openIdx = html.indexOf('window.open');
+    const contentIdx = html.indexOf('const printContent = `');
+    assert.ok(openIdx > 0 && contentIdx > 0, 'ambos os marcos devem existir');
+    assert.ok(openIdx > contentIdx, 'PES: window.open deve ocorrer após printContent');
+    assert.match(html, /<meta name="viewport" content="width=device-width, initial-scale=1\.0">/);
+    assert.match(html, /history\.back/);
+    assert.match(html, /fonts\.ready/);
+    assert.match(html, /RomaneioPrintConfig\.applyToPrintDocument\(printWindow\.document, 'PES'\)/);
+    assert.match(html, /printWindow\.onload = function/);
+});
+
+test('Mobile print fase 2: company usa helper canônico com fallback completo', () => {
+    const html = read('company.html');
+    assert.match(html, /window\.SiswebCommercePdf/);
+    assert.match(html, /<meta name="viewport" content="width=device-width, initial-scale=1\.0">/);
+    assert.match(html, /sisweb-print-back/);
+    assert.match(html, /history\.back/);
+    assert.match(html, /fonts\.ready/);
+});
+
+test('Mobile print fase 2: MDF-e valida janela e tem Voltar sem mudar conteúdo', () => {
+    const js = read('mdf-e.js');
+    assert.match(js, /novaJanela\.closed === true/);
+    assert.match(js, /<meta name="viewport" content="width=device-width, initial-scale=1\.0">/);
+    assert.match(js, /sisweb-print-back/);
+    assert.match(js, /history\.back/);
+    assert.match(js, /escapeHtmlMdfe\(relatorio\)/);
+    assert.doesNotMatch(js, /<button onclick="window\.print\(\)">Imprimir<\/button>/);
+});
+
+test('Mobile print fase 3: folha injeta viewport + Voltar sem quebrar contratos', () => {
+    const js = read('folha_pagamento/folha-relatorios.js');
+    // Contratos preservados
+    assert.match(js, /window\.open\('', '_blank'\)/);
+    assert.doesNotMatch(js, /popup=yes/);
+    assert.match(js, /this\.imprimirRelatorio\(relatorioHTML, titulo, tipoRelatorio, printOptions\)/);
+    // Novas implementações
+    assert.match(js, /folha-print-back/);
+    assert.match(js, /name="viewport" content="width=device-width, initial-scale=1\.0"/);
+    assert.match(js, /history\.back/);
+    assert.match(js, /@media print\{\.folha-print-back\{display:none !important;\}\}/);
+});

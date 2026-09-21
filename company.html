@@ -1731,7 +1731,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     ${qrDataUrl ? `<img src="${escapeHtml(qrDataUrl)}" alt="QR Code de navegação" style="width:128px;height:128px;">` : ''}
                 </section>
             `;
-            const helper = window.SiswebCommercePrint || window.SiswebPrintHelper || null;
+            const helper = window.SiswebCommercePdf || window.SiswebCommercePrint || window.SiswebPrintHelper || null;
             if (helper && typeof helper.printHtmlDocument === 'function') {
                 const options = {
                     title: 'Relatório da Empresa',
@@ -1745,12 +1745,44 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 helper.printHtmlDocument(preparedOptions);
                 return;
             }
-            const win = window.open('', '_blank', 'noopener,noreferrer');
-            if (!win) return;
-            win.document.write(`<!doctype html><html><head><title>Relatório da Empresa</title></head><body>${html}</body></html>`);
-            win.document.close();
-            win.focus();
-            win.print();
+            let win = null;
+            try {
+                win = window.open('', '_blank', 'noopener,noreferrer');
+            } catch (_) {
+                win = null;
+            }
+            if (!win || win.closed === true) return;
+            try {
+                if (!win.document) throw new Error('alvo parcial');
+            } catch (_) {
+                try { if (!win.closed) win.close(); } catch (_) {}
+                return;
+            }
+            try {
+                win.document.open();
+                win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Relatório da Empresa</title><style>.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:"Segoe UI",Arial,sans-serif;}@media print{.sisweb-print-back{display:none !important;}}</style></head><body><div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #2c3e50;background:#2c3e50;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div>${html}</body></html>`);
+                win.document.close();
+            } catch (_) {
+                return;
+            }
+            try {
+                let companyDisparado = false;
+                const dispararCompany = () => {
+                    if (companyDisparado) return;
+                    companyDisparado = true;
+                    try { win.focus(); } catch (_) {}
+                    try { win.print(); } catch (_) {}
+                };
+                try { win.onload = dispararCompany; } catch (_) {}
+                try {
+                    if (win.document && win.document.fonts && typeof win.document.fonts.ready.then === 'function') {
+                        win.document.fonts.ready.then(() => setTimeout(dispararCompany, 60)).catch(() => {});
+                    }
+                } catch (_) {}
+                try { win.focus(); } catch (_) {}
+                setTimeout(dispararCompany, 400);
+                setTimeout(dispararCompany, 1200);
+            } catch (_) {}
         };
 
         // ========================================

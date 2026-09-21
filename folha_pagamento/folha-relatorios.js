@@ -2063,6 +2063,21 @@ class FolhaRelatorios {
             }
         }
 
+        // MOBILE: garante viewport + barra Voltar/Imprimir (visível na tela, oculta no print).
+        try {
+            if (!/name=["']viewport["']/i.test(finalHTML)) {
+                finalHTML = finalHTML.replace(/<head[^>]*>/i, (m) => `${m}<meta name="viewport" content="width=device-width, initial-scale=1.0">`);
+            }
+            if (!/folha-print-back/.test(finalHTML)) {
+                const folhaBackBar = `<style>@media print{.folha-print-back{display:none !important;}}</style><div class="folha-print-back" style="display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:Arial,sans-serif;"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #2c3e50;background:#2c3e50;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div>`;
+                if (/<body[^>]*>/i.test(finalHTML)) {
+                    finalHTML = finalHTML.replace(/<body[^>]*>/i, (m) => `${m}${folhaBackBar}`);
+                } else {
+                    finalHTML += folhaBackBar;
+                }
+            }
+        } catch (_) {}
+
         printWindow.document.open();
         printWindow.document.write(finalHTML);
         printWindow.document.close();
@@ -2286,7 +2301,7 @@ class FolhaRelatorios {
                         '<button type="button" class="btn-print-action btn-print-primary" onclick="window.focus(); window.print();"><i class="fas fa-print"></i> Imprimir / Salvar PDF</button>' +
                         '<button type="button" id="btnOrientPortrait" class="btn-print-action btn-orient' + (currentOrient === 'portrait' ? ' active' : '') + '" onclick="window.trocarOrientacao(\\'portrait\\');"><i class="fas fa-file"></i> Retrato</button>' +
                         '<button type="button" id="btnOrientLandscape" class="btn-print-action btn-orient' + (currentOrient === 'landscape' ? ' active' : '') + '" onclick="window.trocarOrientacao(\\'landscape\\');"><i class="fas fa-file-alt"></i> Paisagem</button>' +
-                        '<button type="button" class="btn-print-action btn-print-close" onclick="window.close();"><i class="fas fa-times"></i> Fechar</button>' +
+                        '<button type="button" class="btn-print-action btn-print-close" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}"><i class="fas fa-times"></i> Fechar</button>' +
                         '</div>';
                     document.body.insertBefore(bar, document.body.firstChild);
                 } catch (e) {}
@@ -2373,6 +2388,7 @@ class FolhaRelatorios {
                 <head>
                     <title>Relatório - ${nomeArquivo}</title>
                     <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     ${cssEstilos}
                 </head>
                 <body>
