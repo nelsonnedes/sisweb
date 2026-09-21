@@ -2013,15 +2013,21 @@ tbody tr:last-child td {
         display: none;
     }
 
-    .vales-detalhados-table tr {
+    #folhaModal .vales-detalhados-table tr {
         border: 1px solid #e2e8f0;
         border-radius: 8px;
         padding: 8px;
         margin-bottom: 10px;
         background: #fdfefe;
+        /* print-styles.css vaza .modal table tbody tr { height:50px !important }
+           no mobile: sem este override o card fica com 50px e as linhas
+           vazam umas sobre as outras */
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
     }
 
-    .vales-detalhados-table td {
+    #folhaModal .vales-detalhados-table td {
         display: flex !important;
         flex-direction: row !important;
         align-items: center !important;
@@ -2036,6 +2042,9 @@ tbody tr:last-child td {
         border-bottom: 1px solid #f1f5f9 !important;
         padding: 6px 0 !important;
         min-height: 22px !important;
+        /* print-styles.css vaza .modal table td { height:50px !important } no
+           mobile: sem este override o card nunca contém as linhas */
+        height: auto !important;
     }
 
     .vales-detalhados-table td::before {
