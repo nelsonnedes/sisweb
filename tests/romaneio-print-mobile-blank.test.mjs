@@ -74,6 +74,7 @@ test('Mobile print fase 2: PES abre janela depois do conteúdo com Voltar', () =
     const pesVoltarIdx = html.indexOf('&#8592; Voltar');
     const pesImprimirIdx = html.indexOf('onclick="window.print()">Imprimir');
     assert.ok(pesVoltarIdx > 0 && pesImprimirIdx > 0 && pesVoltarIdx < pesImprimirIdx, 'PES: Voltar vem antes de Imprimir, igual aos demais romaneios');
+    assert.match(html, /\.print-actions\s*\{[^}]*justify-content:\s*space-between/, 'PES: barra com Voltar à esquerda e Imprimir à direita, igual aos demais');
 });
 
 test('Mobile print fase 2: company usa helper canônico com fallback completo', () => {
