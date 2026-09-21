@@ -719,7 +719,15 @@ class FolhaFuncionarios {
         if (modal) {
             modal.style.display = 'none';
         }
-        
+
+        // Restaurar scroll se nenhum outro modal estiver visível (antes ficava
+        // travado em 'hidden' após Atualizar e a página não rolava mais)
+        try {
+            if (window.FolhaUtils && typeof window.FolhaUtils.verificarScrollGlobal === 'function') {
+                window.FolhaUtils.verificarScrollGlobal();
+            }
+        } catch (_) {}
+
         this.clearFuncionarioForm();
         this.funcionarioAtual = null;
         this.isEditMode = false;
