@@ -56,6 +56,12 @@
 5. `node --check` nos JS + `npm run lint` + `npm run typecheck` + `npm test` antes de publicar.
 6. Console: prefs de UI vazias (`*/preferences/*`) e coleções opcionais NÃO geram warn (só debug throttled); `toSnake` nunca se aplica a paths `users/*` (UID case-sensitive).
 
+## 7. Cuidado com `print-styles.css` no mobile (lição 2026-09-21)
+
+- O arquivo é carregado SEM `media="print"` e contém um bloco `@media (max-width:768px)` com `.modal table tbody tr { height:50px !important }` e `.modal table td { height:50px !important }` — congela a altura de QUALQUER tabela dentro de modal no mobile (cards colapsam e linhas vazam umas sobre as outras).
+- Correção: overrides com escopo de ID (`#folhaModal .tabela tr/td { height:auto !important }`, especificidade 1,x,x vence 0,1,3) — nunca confie só em classe contra esse vazamento.
+- Regra geral: ao debugar card com altura travada, varra as folhas aplicadas por `height` com `!important` (via `document.styleSheets`, recursivo em `@media`).
+
 ## 6. Onde falta aplicar (mobile)
 
 - [ ] Vendas/compras (lista de pedidos + cards)
