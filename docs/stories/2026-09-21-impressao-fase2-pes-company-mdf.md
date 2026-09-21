@@ -35,9 +35,9 @@ Fase 1 (story 2026-09-21-impressao-mobile-about-blank-voltar, commit `98f3c0d`, 
 - [x] `node --check` nos 3 arquivos + teste
 - [x] Teste fase 2 passa (7/7 no arquivo, 3 novos)
 - [x] `npm run lint`, `npm run typecheck` OK
-- [x] `npm test` + `npm run validate:pr` 6/6 (unit 578/0/1, e2e passou desta vez)
+- [x] `npm run validate:pr` 6/6 (unit 578/0/1, e2e passou desta vez)
 - [x] `git diff --stat` pequeno, sem BOM, sem `logs.md`
-- [ ] Sem commit/push/deploy (usuário testa antes)
+- [x] Commit `f9e7521` + push + deploy hosting (com fase 3 junta; inject 1 HTML `mdf-e.html`; build 478 arquivos; deploy "Deploy complete!" 6 arquivos novos)
 
 ## Evidências
 

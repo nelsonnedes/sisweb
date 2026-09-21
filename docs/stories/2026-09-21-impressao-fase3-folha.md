@@ -31,7 +31,7 @@ Fases 1–2 corrigiram TL/Tora/PCT/PES/Company/MDF + motor compartilhado (deploy
 - [x] `npm run lint`, `npm run typecheck` OK
 - [x] `npm run validate:pr` 6/6 (unit 579/0/1, e2e passou)
 - [x] `git diff --stat` pequeno, sem BOM, sem `logs.md`
-- [ ] Sem commit/push/deploy (usuário testa antes)
+- [x] Commit `f9e7521` + push + deploy hosting (com fase 2 junta; `folha.html` cachebuster manual `afaec4b7134d` pois injetor cobre só raiz; deploy "Deploy complete!" 6 arquivos novos; `hosting-dist` verificado)
 
 ## Evidências
 
