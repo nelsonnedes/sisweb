@@ -1608,6 +1608,24 @@ class FolhaFuncionarios {
             modal.style.display = 'none';
             document.body.style.overflow = 'auto';
         }
+        // Auto-refresh leve ao fechar: recarrega os dados em background para
+        // refletir mudanças (sem reload da página: mantém filtros e scroll) e
+        // garante a rolagem destravada se nenhum outro modal estiver visível
+        try {
+            if (window.FolhaUtils && typeof window.FolhaUtils.verificarScrollGlobal === 'function') {
+                window.FolhaUtils.verificarScrollGlobal();
+            }
+        } catch (_) {}
+        try {
+            const self = this;
+            setTimeout(() => {
+                try {
+                    if (self && typeof self.reloadFuncionarios === 'function') {
+                        self.reloadFuncionarios().catch(() => {});
+                    }
+                } catch (_) {}
+            }, 300);
+        } catch (_) {}
     }
     
     /**
