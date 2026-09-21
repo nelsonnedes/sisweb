@@ -1221,7 +1221,7 @@
                     } else if (result.error && result.error.includes('auth/invalid-email')) {
                         errorMsg = 'Email inválido.';
                     } else if (result.error && result.error.includes('auth/network-request-failed')) {
-                        errorMsg = 'Erro de conexão. Verifique sua internet.';
+                        errorMsg = 'Erro de conexão. Verifique sua internet. Se usa navegador com proteção anti-rastreamento (Thor, Brave), desative o escudo para este site.';
                     }
                     errorMessage.textContent = errorMsg;
                     errorMessage.style.display = 'block';
@@ -1240,7 +1240,7 @@
                 } else if (error && error.code === 'auth/invalid-email') {
                     errorMsg = 'Email inválido.';
                 } else if (error && error.code === 'auth/network-request-failed') {
-                    errorMsg = 'Erro de conexão. Verifique sua internet.';
+                    errorMsg = 'Erro de conexão. Verifique sua internet. Se usa navegador com proteção anti-rastreamento (Thor, Brave), desative o escudo para este site.';
                 }
                 errorMessage.textContent = errorMsg;
                 errorMessage.style.display = 'block';
@@ -1684,7 +1684,7 @@
                 } else if (error && error.code === 'auth/missing-email') {
                     mensagemErro = 'Por favor, informe seu email.';
                 } else if (error && error.code === 'auth/network-request-failed') {
-                    mensagemErro = 'Erro de conexão. Verifique sua internet e tente novamente.';
+                    mensagemErro = 'Erro de conexão. Verifique sua internet. Se usa navegador com proteção anti-rastreamento (Thor, Brave), desative o escudo para este site.';
                 } else if (error && error.code === 'auth/too-many-requests') {
                     mensagemErro = 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
                 }
