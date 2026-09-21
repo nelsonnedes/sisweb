@@ -2022,26 +2022,70 @@ tbody tr:last-child td {
     }
 
     .vales-detalhados-table td {
-        border-bottom: 0;
-        padding: 5px 0;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        border: 0 !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        padding: 6px 0 !important;
+        min-height: 22px !important;
     }
 
     .vales-detalhados-table td::before {
         content: attr(data-label);
-        display: block;
+        display: inline-block !important;
+        flex: 0 0 auto !important;
+        width: auto !important;
+        max-width: 42% !important;
+        margin: 0 !important;
+        padding: 0 8px 0 0 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        text-align: left !important;
         color: var(--primary-color);
         font-size: 12px;
         font-weight: 700;
-        margin-bottom: 4px;
+    }
+
+    .vales-detalhados-table td:nth-child(1),
+    .vales-detalhados-table td:nth-child(2) {
+        width: 100% !important;
+        text-align: right !important;
+    }
+
+    .vales-detalhados-table td input {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     .vales-detalhados-table td:nth-child(4) {
-        width: 100%;
-        text-align: left;
+        width: 100% !important;
+        text-align: left !important;
+        border-bottom: 0 !important;
+        min-height: 48px !important;
+        padding-top: 8px !important;
     }
 
     .vale-remover-btn {
-        width: 100%;
+        flex: 0 0 auto !important;
+        width: 36px !important;
+        min-width: 36px !important;
+        max-width: 36px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        padding: 0 !important;
+        margin: 0 0 0 auto !important;
     }
 }
 
