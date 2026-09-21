@@ -2086,7 +2086,7 @@ tbody tr:last-child td {
         padding-top: 8px !important;
     }
 
-    .vale-remover-btn {
+    #folhaModal .vales-detalhados-table .vale-remover-btn {
         flex: 0 0 auto !important;
         width: 36px !important;
         min-width: 36px !important;
