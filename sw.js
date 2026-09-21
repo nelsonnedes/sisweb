@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-09-18-species-scroll-v18';
+const APP_VERSION = '2026-09-21-folha-scroll-resync-v1';
 const CACHE_NAME = `sisweb-runtime-${APP_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',
