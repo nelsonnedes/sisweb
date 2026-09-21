@@ -3150,16 +3150,35 @@ window.ImprimirRomaneio = (function() {
      * Abrir janela de impressão
      */
     function abrirJanelaImpressao(html, romaneioId, printModule = 'TL') {
-        // ✅ CORREÇÃO: Abrir em nova aba sem dimensões fixas para mostrar opções de layout
-        const janelaImpressao = window.open('', '_blank');
-        
-        if (!janelaImpressao) {
+        // ✅ MOBILE: janela só é aberta aqui (dados já carregados pelos chamadores).
+        // Evita about:blank antecipado; valida alvo parcial e injeta Voltar + trigger robusto.
+        let janelaImpressao = null;
+        try {
+            janelaImpressao = window.open('', '_blank');
+        } catch (_) {
+            janelaImpressao = null;
+        }
+
+        if (!janelaImpressao || janelaImpressao.closed === true) {
             mostrarErro('Popup bloqueado. Permita popups para imprimir.');
             return;
         }
-        
-        janelaImpressao.document.write(html);
-        janelaImpressao.document.close();
+        try {
+            if (!janelaImpressao.document) throw new Error('alvo parcial');
+        } catch (_) {
+            mostrarErro('Impressão bloqueada no mobile. Permita popups para imprimir.');
+            try { if (!janelaImpressao.closed) janelaImpressao.close(); } catch (_) {}
+            return;
+        }
+
+        try {
+            janelaImpressao.document.open();
+            janelaImpressao.document.write(html);
+            janelaImpressao.document.close();
+        } catch (error) {
+            mostrarErro('Falha ao preparar documento de impressão.');
+            return;
+        }
 
         try {
             if (window.RomaneioPrintConfig && typeof window.RomaneioPrintConfig.applyToPrintDocument === 'function') {
@@ -3168,11 +3187,54 @@ window.ImprimirRomaneio = (function() {
         } catch (error) {
             console.warn(`⚠️ Não foi possível aplicar configuração de colunas (${printModule}).`, error);
         }
-        
-        // Focar na janela
-        janelaImpressao.focus();
-        
+
+        try { ensureRomaneioPrintAux(janelaImpressao.document); } catch (_) {}
+
+        // Trigger robusto: onload nem sempre dispara após document.write no mobile.
+        try {
+            let disparado = false;
+            const disparar = () => {
+                if (disparado) return;
+                disparado = true;
+                try { janelaImpressao.focus(); } catch (_) {}
+            };
+            try { janelaImpressao.onload = disparar; } catch (_) {}
+            try {
+                const doc = janelaImpressao.document;
+                if (doc && doc.fonts && typeof doc.fonts.ready.then === 'function') {
+                    doc.fonts.ready.then(() => setTimeout(disparar, 60)).catch(() => {});
+                }
+            } catch (_) {}
+            try { janelaImpressao.focus(); } catch (_) {}
+            setTimeout(disparar, 600);
+        } catch (_) {}
+
         console.log(`✅ Janela de impressão aberta para romaneio ${romaneioId} - Opções de layout disponíveis`);
+    }
+
+    function ensureRomaneioPrintAux(doc) {
+        try {
+            if (!doc) return;
+            const head = doc.head || (doc.getElementsByTagName && doc.getElementsByTagName('head')[0]);
+            if (head && !head.querySelector('meta[name="viewport"]')) {
+                const meta = doc.createElement('meta');
+                meta.setAttribute('name', 'viewport');
+                meta.setAttribute('content', 'width=device-width, initial-scale=1.0');
+                head.appendChild(meta);
+            }
+            const body = doc.body;
+            if (body && !body.querySelector('.sisweb-print-back')) {
+                const bar = doc.createElement('div');
+                bar.className = 'sisweb-print-back';
+                bar.setAttribute('style', 'display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;');
+                bar.innerHTML = '<button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #2c3e50;background:#2c3e50;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button>';
+                const style = doc.createElement('style');
+                style.setAttribute('data-sisweb-print-back', '1');
+                style.textContent = '@media print{.sisweb-print-back{display:none !important;}}';
+                try { (doc.head || body).appendChild(style); } catch (_) {}
+                body.insertBefore(bar, body.firstChild);
+            }
+        } catch (_) {}
     }
 
     /**

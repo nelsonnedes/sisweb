@@ -965,9 +965,22 @@ window.imprimirRomaneioTora = async function(romaneioId, tipo = 'completo') {
     const companyPhone = companyInfo.phone || companyInfo.telefone || '-';
     const companyLogo = companyInfo.logo || companyInfo.logoUrl || '';
     
-    // Lógica de Impressão Restaurada (Simplificada para HTML)
-    const w = window.open('', '_blank');
-    if(!w) { alert('Popup bloqueado'); return; }
+    // Fallback básico (somente se o módulo especializado não estiver carregado).
+    // MOBILE: HTML completo com viewport + Voltar + trigger robusto para não prender em about:blank.
+    let w = null;
+    try {
+        w = window.open('', '_blank');
+    } catch (_) {
+        w = null;
+    }
+    if(!w || w.closed === true) { alert('Popup bloqueado'); return; }
+    try {
+        if (!w.document) throw new Error('alvo parcial');
+    } catch (_) {
+        alert('Impressão bloqueada no mobile. Permita popups para imprimir.');
+        try { if (!w.closed) w.close(); } catch (_) {}
+        return;
+    }
     
     const itensHtml = (romaneio.itens || []).map(i => `
         <tr>
@@ -979,11 +992,13 @@ window.imprimirRomaneioTora = async function(romaneioId, tipo = 'completo') {
         </tr>`).join('');
         
     const html = `
-        <html>
-        <head><title>Romaneio ${romaneioId}</title>
-        <style>table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:8px}.hdr{display:flex;gap:12px;align-items:center;margin-bottom:12px}.hdr-logo{width:72px;height:72px;border:1px solid #ddd;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center}.hdr-logo img{width:100%;height:100%;object-fit:contain}.hdr-fallback{background:#0d2339;color:#fff;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700}.hdr-info{font-size:12px;line-height:1.35}.hdr-name{font-size:18px;font-weight:700}</style>
+        <!doctype html>
+        <html lang="pt-BR">
+        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Romaneio ${romaneioId}</title>
+        <style>table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:8px}.hdr{display:flex;gap:12px;align-items:center;margin-bottom:12px}.hdr-logo{width:72px;height:72px;border:1px solid #ddd;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center}.hdr-logo img{width:100%;height:100%;object-fit:contain}.hdr-fallback{background:#0d2339;color:#fff;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700}.hdr-info{font-size:12px;line-height:1.35}.hdr-name{font-size:18px;font-weight:700}.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;}@media print{.sisweb-print-back{display:none !important;}}</style>
         </head>
         <body>
+            <div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #2c3e50;background:#2c3e50;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div>
             <div class="hdr">
                 <div class="hdr-logo">${companyLogo ? `<img src="${companyLogo}" alt="Logo">` : '<div class="hdr-fallback">SW</div>'}</div>
                 <div class="hdr-info">
@@ -999,12 +1014,28 @@ window.imprimirRomaneioTora = async function(romaneioId, tipo = 'completo') {
                 <thead><tr><th>Plaqueta</th><th>Espécie</th><th>Comp.</th><th>Diam.</th><th>Vol.</th></tr></thead>
                 <tbody>${itensHtml}</tbody>
             </table>
-            <script>window.onload = () => window.print();</script>
+            <script>
+            (function(){
+                var done=false;
+                function go(){ if(done) return; done=true; try{window.focus();}catch(e){} try{window.print();}catch(e){} }
+                try{ window.addEventListener('load', function(){ setTimeout(go, 120); }, { once:true }); }catch(e){}
+                try{ if(document.fonts && document.fonts.ready && document.fonts.ready.then){ document.fonts.ready.then(function(){ setTimeout(go, 60); }).catch(function(){}); } }catch(e){}
+                setTimeout(go, 700);
+                setTimeout(go, 1600);
+            })();
+            </script>
         </body>
         </html>
     `;
-    w.document.write(html);
-    w.document.close();
+    try {
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
+    } catch (_) {
+        alert('Falha ao preparar documento de impressão.');
+        return;
+    }
+    try { w.focus(); } catch (_) {}
 };
 
 window.editarRomaneioTora = async function(romaneioId, dadosPreCarregados = null) {

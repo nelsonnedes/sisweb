@@ -508,11 +508,43 @@
             .action-buttons,
             .acoes-buttons,
             .commerce-actions-wrap,
-            button,
-            .no-print,
+            button:not(.sisweb-print-back-btn),
+            .no-print:not(.sisweb-print-back),
             .sel-carrego,
             .sel-carrego-all {
                 display: none !important;
+            }
+
+            .sisweb-print-back:not(.no-print),
+            .sisweb-print-back {
+                display: flex !important;
+                gap: 10px;
+                align-items: center;
+                justify-content: space-between;
+                margin: 0 0 14px;
+                padding: 10px 12px;
+                border: 1px solid #d6dde8;
+                border-radius: 6px;
+                background: #f8fafc;
+            }
+
+            .sisweb-print-back-btn {
+                display: inline-flex !important;
+                align-items: center;
+                min-height: 40px;
+                padding: 0 16px;
+                border-radius: 6px;
+                border: 1px solid #cbd5e1;
+                background: #fff;
+                color: #24384d;
+                font-weight: 700;
+                cursor: pointer;
+            }
+
+            .sisweb-print-back-btn.primary {
+                border-color: #2c3e50;
+                background: #2c3e50;
+                color: #fff;
             }
 
             .status-badge {
@@ -581,6 +613,10 @@
                     padding: 0;
                 }
 
+                .sisweb-print-back {
+                    display: none !important;
+                }
+
                 .sisweb-print-header,
                 .sisweb-print-info-box,
                 .summary-box,
@@ -615,12 +651,36 @@
 </head>
 <body class="sisweb-commerce-print">
     <main class="sisweb-print-page ${options.compact ? 'compact' : ''}">
+        ${options.showBackBar === false ? '' : `<div class="sisweb-print-back">
+            <button type="button" class="sisweb-print-back-btn" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}setTimeout(function(){if(!window.closed){try{history.back()}catch(e3){}}},300)">&#8592; Voltar</button>
+            <button type="button" class="sisweb-print-back-btn primary" onclick="window.focus();window.print()">Imprimir</button>
+        </div>`}
         ${buildPrintHeader(options)}
         ${options.bodyHtml || ''}
         ${footer}
     </main>
 </body>
 </html>`;
+    }
+
+    function ensurePrintAux(doc) {
+        try {
+            if (!doc) return;
+            const head = doc.head || (doc.getElementsByTagName && doc.getElementsByTagName('head')[0]);
+            if (head && !head.querySelector('meta[name="viewport"]')) {
+                const meta = doc.createElement('meta');
+                meta.setAttribute('name', 'viewport');
+                meta.setAttribute('content', 'width=device-width, initial-scale=1.0');
+                head.appendChild(meta);
+            }
+            const body = doc.body;
+            if (body && !body.querySelector('.sisweb-print-back')) {
+                const bar = doc.createElement('div');
+                bar.className = 'sisweb-print-back';
+                bar.innerHTML = '<button type="button" class="sisweb-print-back-btn" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}">&#8592; Voltar</button><button type="button" class="sisweb-print-back-btn primary" onclick="window.focus();window.print()">Imprimir</button>';
+                body.insertBefore(bar, body.firstChild);
+            }
+        } catch (_) {}
     }
 
     function printHtmlDocument(options = {}) {
@@ -632,19 +692,32 @@
         const target = suppliedTarget || window.open('', '_blank', options.windowFeatures || 'width=1100,height=800');
 
         if (target) {
-            let printed = false;
-            const triggerPrint = () => {
-                if (printed) return;
-                printed = true;
-                setTimeout(() => target.print(), delay);
-            };
-            target.document.open();
-            target.onload = triggerPrint;
-            target.document.write(html);
-            target.document.close();
-            target.focus();
-            setTimeout(triggerPrint, delay + 500);
-            return target;
+            try {
+                if (target.closed === true || !target.document) throw new Error('print target parcial');
+                let printed = false;
+                const safePrint = () => {
+                    if (printed) return;
+                    printed = true;
+                    try { target.focus(); } catch (_) {}
+                    setTimeout(() => { try { target.print(); } catch (_) {} }, delay);
+                };
+                target.document.open();
+                try { target.onload = safePrint; } catch (_) {}
+                target.document.write(html);
+                target.document.close();
+                try { ensurePrintAux(target.document); } catch (_) {}
+                try { target.focus(); } catch (_) {}
+                try {
+                    if (target.document && target.document.fonts && typeof target.document.fonts.ready.then === 'function') {
+                        target.document.fonts.ready.then(() => setTimeout(safePrint, 60)).catch(() => {});
+                    }
+                } catch (_) {}
+                setTimeout(safePrint, delay + 500);
+                setTimeout(safePrint, delay + 1500);
+                return target;
+            } catch (_) {
+                try { if (target && !target.closed) target.close(); } catch (_) {}
+            }
         }
 
         const iframe = document.createElement('iframe');

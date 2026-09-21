@@ -149,6 +149,34 @@ async function carregarRomaneiosMergedPct() {
 }
 
 // ============================================================================
+// AUXILIAR MOBILE: garante viewport + barra Voltar/Imprimir no documento PCT
+// ============================================================================
+function ensurePctPrintAux(doc) {
+    try {
+        if (!doc) return;
+        const head = doc.head || (doc.getElementsByTagName && doc.getElementsByTagName('head')[0]);
+        if (head && !head.querySelector('meta[name="viewport"]')) {
+            const meta = doc.createElement('meta');
+            meta.setAttribute('name', 'viewport');
+            meta.setAttribute('content', 'width=device-width, initial-scale=1.0');
+            head.appendChild(meta);
+        }
+        const body = doc.body;
+        if (body && !body.querySelector('.sisweb-print-back')) {
+            const bar = doc.createElement('div');
+            bar.className = 'sisweb-print-back';
+            bar.setAttribute('style', 'display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;');
+            bar.innerHTML = '<button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #2c3e50;background:#2c3e50;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button>';
+            const style = doc.createElement('style');
+            style.setAttribute('data-sisweb-print-back', '1');
+            style.textContent = '@media print{.sisweb-print-back{display:none !important;}}';
+            try { (doc.head || body).appendChild(style); } catch (_) {}
+            body.insertBefore(bar, body.firstChild);
+        }
+    } catch (_) {}
+}
+
+// ============================================================================
 // FUNÇÃO PRINCIPAL DE IMPRESSÃO PCT
 // ============================================================================
 
@@ -232,18 +260,8 @@ async function imprimirRomaneio(index, tipo = 'completo', romaneioId = null) {
             }
         }
         
-        // Criar janela de impressão
-        const printWindow = window.open('', '_blank');
-        
-        // Garantir que a janela foi criada corretamente
-        if (!printWindow) {
-            // Remover indicador de carregamento
-            document.body.removeChild(loadingIndicator);
-            alert("Falha ao abrir janela de impressão. Verifique se os pop-ups estão permitidos.");
-            return;
-        }
-        
-        // Validar o tipo de impressão
+        // Validar o tipo de impressão antes de preparar o documento (sem abrir janela ainda:
+        // no mobile, abrir antes dos dados exibe about:blank vazio por segundos).
         const tiposValidos = ['completo', 'sem_preco_unitario', 'sem_preco'];
         if (!tiposValidos.includes(tipo)) {
             console.warn(`Tipo de impressão inválido: ${tipo}. Usando 'completo' como padrão.`);
@@ -261,12 +279,32 @@ async function imprimirRomaneio(index, tipo = 'completo', romaneioId = null) {
         // ✅ CARREGAR DADOS DA EMPRESA
         const company = await getCompanyData();
         
-        // ✅ GERAR CONTEÚDO DE IMPRESSÃO
+        // ✅ GERAR CONTEÚDO DE IMPRESSÃO ANTES de abrir a janela (evita about:blank vazio no mobile)
         const printContent = await gerarConteudoImpressao(romaneio, company, tipo);
-        
+
+        // ✅ ABRIR JANELA SOMENTE COM O DOCUMENTO PRONTO
+        let printWindow = null;
+        try {
+            printWindow = window.open('', '_blank');
+        } catch (_) {
+            printWindow = null;
+        }
+        if (!printWindow || printWindow.closed === true) {
+            document.body.removeChild(loadingIndicator);
+            alert("Falha ao abrir janela de impressão. Verifique se os pop-ups estão permitidos.");
+            return;
+        }
+
         // ✅ INSERIR CONTEÚDO NA JANELA DE IMPRESSÃO
-        printWindow.document.write(printContent);
-        printWindow.document.close();
+        try {
+            printWindow.document.open();
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+        } catch (error) {
+            document.body.removeChild(loadingIndicator);
+            alert('Falha ao preparar documento de impressão.');
+            return;
+        }
 
         try {
             if (window.RomaneioPrintConfig && typeof window.RomaneioPrintConfig.applyToPrintDocument === 'function') {
@@ -275,15 +313,31 @@ async function imprimirRomaneio(index, tipo = 'completo', romaneioId = null) {
         } catch (error) {
             console.warn('PCT: não foi possível aplicar configuração de colunas na impressão.', error);
         }
+
+        try { ensurePctPrintAux(printWindow.document); } catch (_) {}
         
         // Remover indicador de carregamento
         document.body.removeChild(loadingIndicator);
         
-        // Aguardar um pouco para o conteúdo carregar e então imprimir
-        setTimeout(() => {
-            printWindow.focus();
-            printWindow.print();
-        }, 500);
+        // Trigger robusto: onload nem sempre dispara após document.write no mobile.
+        // O documento gerado já possui auto-print interno; aqui garantimos foco + fallbacks.
+        try {
+            let pctDisparado = false;
+            const dispararPct = () => {
+                if (pctDisparado) return;
+                pctDisparado = true;
+                try { printWindow.focus(); } catch (_) {}
+            };
+            try { printWindow.onload = dispararPct; } catch (_) {}
+            try {
+                const pctDoc = printWindow.document;
+                if (pctDoc && pctDoc.fonts && typeof pctDoc.fonts.ready.then === 'function') {
+                    pctDoc.fonts.ready.then(() => setTimeout(dispararPct, 60)).catch(() => {});
+                }
+            } catch (_) {}
+            try { printWindow.focus(); } catch (_) {}
+            setTimeout(dispararPct, 600);
+        } catch (_) {}
         
         console.log('✅ Impressão preparada com sucesso');
         
