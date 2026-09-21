@@ -2511,14 +2511,14 @@ class FolhaLancamentos {
 
                         // Preencher campos com valores calculados se não estiverem focados (sincronização reativa)
                         if (elINSS && document.activeElement !== elINSS) {
-                            elINSS.value = inss > 0 ? inss.toFixed(2) : '0,00';
+                            elINSS.value = inss > 0 ? inss.toFixed(2) : '0.00';
                             if(elINSS._ptbrDisplay) elINSS._ptbrDisplay.textContent = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(inss);
                             // Atualizar variável local para o cálculo final bater com o visual
                             descINSSManual = inss; 
                         }
                         
                         if (elIRRF && document.activeElement !== elIRRF) {
-                            elIRRF.value = irrf > 0 ? irrf.toFixed(2) : '0,00';
+                            elIRRF.value = irrf > 0 ? irrf.toFixed(2) : '0.00';
                             if(elIRRF._ptbrDisplay) elIRRF._ptbrDisplay.textContent = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(irrf);
                             // Atualizar variável local
                             irpj = irrf;
@@ -2529,7 +2529,7 @@ class FolhaLancamentos {
                             const baseFGTS = (r && r.salarioBruto) ? r.salarioBruto : (salarioBase + bonificacoes + valorExtra + premioAssiduidade);
                             const valFGTS = baseFGTS * 0.08;
                             
-                            elFGTS.value = valFGTS > 0 ? valFGTS.toFixed(2) : '0,00';
+                            elFGTS.value = valFGTS > 0 ? valFGTS.toFixed(2) : '0.00';
                             if(elFGTS._ptbrDisplay) elFGTS._ptbrDisplay.textContent = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valFGTS);
                         }
                     }
