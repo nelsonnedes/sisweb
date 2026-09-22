@@ -36,9 +36,9 @@ Aplicar A+B+C completo (escolha do usuário): levar DataURL em cache + espera de
 
 - [x] `node --check` nos fontes alterados
 - [x] Focado 10/10
-- [x] `npm run validate:pr` 6/6
+- [x] `npm run validate:pr` 6/6 (581/0/1 após atualizar `estoque-pwa-impressao` para DataURL-primeiro)
 - [x] `git diff --stat` revisado, sem segredos/BOM/`logs.md`
-- [ ] Sem commit/push/deploy (aguardando ordem)
+- [x] Commit `4ce9f95` (16 arquivos) + push + deploy hosting (inject 5 HTMLs; build 478; deploy 13 arquivos novos; `hosting-dist` verificado)
 
 ## Evidências
 

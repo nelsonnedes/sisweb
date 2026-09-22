@@ -842,3 +842,10 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Fix (pacote escolhido pelo usuário):** A: `logoDataUrlCache` em memória no `commerce-pdf-share.js` (+ `clearPrintLogoCache` exposto); B: warm-up em `requestIdleCallback` no init de vendas/compras; C: `printHtmlDocument` aguarda `fonts.ready` + `img.decode()` com teto 1800ms; D: lote resolve empresa+logo 1× e injeta via 2º argumento (contrato já existente). E (paralelizar) e F (persistir DataURL) rejeitadas — F conflita com a remoção deliberada de `data:` do `company_info` + §31 quota.
 - **Incidente no caminho:** `commerce-responsive-pwa:393` quebrou (regex exigia chamada de 1 arg) — teste atualizado para o novo contrato intencional (§6.5).
 - **Gates:** focado 9/9, `validate:pr` 6/6 (580/0/1). Commit `12cec5a` (11 arquivos: 3 fontes + 2 testes + 5 HTMLs cachebuster + story) + push + deploy (8 arquivos); `hosting-dist` verificado.
+
+## 81. Sessao 2026-09-21 — Logo-cache sistema-wide: romaneios, estoque, folha e DANFE
+
+- **Achado da auditoria (2 especialistas):** finanças/company/MDF já herdavam cache+espera do motor; romaneios (URL crua, `print@500/120ms` fixo), estoque (preferia URL https crua), folha (URL/path cru) e DANFE (`fetch` próprio sem memo) sofriam a mesma doença dos pedidos.
+- **Fix A+B+C:** motor incluído em TL/PCT/Tora/PES + `folha.html` + `notas-fiscais.html` (IIFE sem deps, guardas `typeof`); DataURL em cache em TL/Tora (`upgradeRomaneioLogoToDataUrl`), PCT, PES inline, manager fallback, estoque (`prepararLogoEmpresaRelatorio` tenta cache primeiro), folha (`obterDadosEmpresa` 2 saídas) e DANFE (`carregarLogoDANFE`, que de brinde passa a resolver paths do Storage); espera de imagem nos auto-prints inline (TL/Tora `replaceAll`, PES `onload`, manager `goWhenReady`, tetos 1500ms).
+- **Incidente:** `estoque-pwa-impressao:134` travava prioridade antiga (URL crua) — atualizado para DataURL-primeiro (§6.5).
+- **Gates:** focado 10/10, `validate:pr` 6/6 (581/0/1). Commit `4ce9f95` (16 arquivos) + push + deploy (13 arquivos); `hosting-dist` verificado (upgrade TL, resolver no DANFE, cache no estoque).
