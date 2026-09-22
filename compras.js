@@ -576,6 +576,170 @@ let itensPedido = [];
 let itemEmEdicaoIndex = null;
 let contasPagar = [];
 let autoRedistribuirEnabled = true; // ✅ Igual Vendas: controla redistribuição automática ao alterar totais
+
+// ----------------------------------------------------------------------------
+// Romaneio -> Pedido (compras): preview selecionável + trava de reuso.
+// Aditivo: não altera schema de romaneios nem financeiro. Fail-open.
+// ----------------------------------------------------------------------------
+let romaneioPreviewExcluidosCompra = new Set(); // Set<number> índices do preview
+let romaneioPreviewUsoCompra = null;
+let romaneioAtualCompra = null; // {id, numero, tipo, dados}
+let romaneioItensAtuaisCompra = [];
+const RC_USO_CACHE_TTL_MS = 20000;
+let __rcUsoCache = { id: '', result: null, ts: 0 };
+
+function obterIdEstavelRomaneioCompra(r) {
+    if (!r || typeof r !== 'object') return '';
+    const v = r.id || r.numero || r.numeroRomaneio || r.romaneioId || r.firebaseKey || '';
+    return String(v).trim();
+}
+
+function obterNumeroExibicaoRomaneioCompra(r, fallbackId) {
+    if (!r || typeof r !== 'object') return String(fallbackId || '—');
+    const v = r.numero || r.numeroRomaneio || r.id || r.firebaseKey || fallbackId || '—';
+    return String(v);
+}
+
+function __rcStatusEhCancelado(status) {
+    return String(status || '').trim().toLowerCase() === 'cancelado';
+}
+
+function __rcExtrairIdsRomaneioDePedido(pedido) {
+    const ids = [];
+    try {
+        if (pedido && Array.isArray(pedido.romaneiosOrigem)) {
+            pedido.romaneiosOrigem.forEach(o => {
+                const v = (o && typeof o === 'object') ? (o.id || o.romaneioId || o.origemId) : o;
+                if (v !== undefined && v !== null && String(v).trim() !== '') ids.push(String(v).trim());
+            });
+        }
+        if (pedido && Array.isArray(pedido.itens)) {
+            pedido.itens.forEach(it => {
+                if (!it || typeof it !== 'object') return;
+                const v = it.origemId || it.romaneioId;
+                if (v !== undefined && v !== null && String(v).trim() !== '') ids.push(String(v).trim());
+            });
+        }
+    } catch (_) { /* best-effort */ }
+    return ids;
+}
+
+async function buscarUsoRomaneioCompra(idEstavel) {
+    const id = String(idEstavel || '').trim();
+    if (!id) return null;
+    try {
+        const agora = Date.now();
+        if (__rcUsoCache.id === id && (agora - __rcUsoCache.ts) < RC_USO_CACHE_TTL_MS) {
+            return __rcUsoCache.result;
+        }
+        const ignorarId = String((pedidoEmEdicao && pedidoEmEdicao.id) || '').trim();
+        let vendasPedidos = [];
+        let comprasPedidos = [];
+        try {
+            if (Array.isArray(window.compras) && window.compras.length > 0) {
+                comprasPedidos = window.compras;
+            } else if (typeof getData === 'function') {
+                comprasPedidos = await getData('pedidosCompra') || [];
+            }
+        } catch (_) { comprasPedidos = Array.isArray(window.compras) ? window.compras : []; }
+        try {
+            if (typeof getData === 'function') {
+                vendasPedidos = await getData('vendas/pedidos') || [];
+            }
+        } catch (_) { vendasPedidos = []; }
+        if (!Array.isArray(vendasPedidos)) vendasPedidos = [];
+        if (!Array.isArray(comprasPedidos)) comprasPedidos = [];
+        const verificar = (lista, modulo) => {
+            for (let i = 0; i < lista.length; i++) {
+                const p = lista[i];
+                if (!p || typeof p !== 'object') continue;
+                if (ignorarId && String(p.id || '') === ignorarId) continue;
+                if (__rcStatusEhCancelado(p.status)) continue;
+                const ids = __rcExtrairIdsRomaneioDePedido(p);
+                for (let j = 0; j < ids.length; j++) {
+                    if (String(ids[j]) === id) {
+                        return { pedidoNumero: String(p.numero || p.id || '—'), pedidoId: String(p.id || ''), modulo };
+                    }
+                }
+            }
+            return null;
+        };
+        const achadoC = verificar(comprasPedidos, 'compra');
+        const resultado = achadoC || verificar(vendasPedidos, 'venda');
+        __rcUsoCache = { id, result: resultado, ts: agora };
+        return resultado;
+    } catch (e) {
+        console.warn('Compras: falha ao verificar uso do romaneio (fail-open):', e);
+        return null;
+    }
+}
+
+async function construirMapaUsosRomaneioCompra() {
+    const mapa = new Map();
+    try {
+        const ignorarId = String((pedidoEmEdicao && pedidoEmEdicao.id) || '').trim();
+        let vendasPedidos = [];
+        let comprasPedidos = [];
+        try {
+            if (Array.isArray(window.compras) && window.compras.length > 0) {
+                comprasPedidos = window.compras;
+            } else if (typeof getData === 'function') {
+                comprasPedidos = await getData('pedidosCompra') || [];
+            }
+        } catch (_) { comprasPedidos = Array.isArray(window.compras) ? window.compras : []; }
+        try {
+            if (typeof getData === 'function') {
+                vendasPedidos = await getData('vendas/pedidos') || [];
+            }
+        } catch (_) { vendasPedidos = []; }
+        const absorver = (lista, modulo) => {
+            (Array.isArray(lista) ? lista : []).forEach(p => {
+                if (!p || typeof p !== 'object') return;
+                if (ignorarId && String(p.id || '') === ignorarId) return;
+                if (__rcStatusEhCancelado(p.status)) return;
+                __rcExtrairIdsRomaneioDePedido(p).forEach(rid => {
+                    const k = String(rid);
+                    if (!mapa.has(k)) {
+                        mapa.set(k, { pedidoNumero: String(p.numero || p.id || '—'), pedidoId: String(p.id || ''), modulo });
+                    }
+                });
+            });
+        };
+        absorver(comprasPedidos, 'compra');
+        absorver(vendasPedidos, 'venda');
+    } catch (e) {
+        console.warn('Compras: falha ao montar mapa de usos (fail-open):', e);
+    }
+    return mapa;
+}
+
+function mensagemUsoRomaneioCompra(idExibicao, uso) {
+    const moduloLabel = uso && uso.modulo === 'venda' ? 'Venda' : 'Compra';
+    return `Este romaneio (${idExibicao}) já foi utilizado no pedido de ${moduloLabel} Nº ${uso ? uso.pedidoNumero : '—'}. Selecione outro romaneio para evitar duplicidade.`;
+}
+
+function normalizarItensRomaneioCompra(romaneio) {
+    const raw = (romaneio && (romaneio.itens || romaneio.items || romaneio.romaneioItems)) || [];
+    let arr = [];
+    if (Array.isArray(raw)) arr = raw.slice();
+    else if (raw && typeof raw === 'object') {
+        try { arr = Object.values(raw); } catch (_) { arr = []; }
+    }
+    return (Array.isArray(arr) ? arr : []).filter(item => {
+        if (!item) return false;
+        if (typeof item !== 'object') return false;
+        if (item['0'] === 'r' && item['1'] === 'o') return false;
+        return true;
+    });
+}
+
+function rotuloItemRomaneioCompra(item, idx) {
+    const nome = String(item.especie || item.produto || item.descricao || `Item ${idx + 1}`).trim();
+    const qtd = parseFloat(item.volumeLiquido || item.volume || item.volumeSerraria || item.quantidade || 0) || 0;
+    const preco = parseFloat(item.preco || item.precoUnitario || 0) || 0;
+    const unidade = String(item.unidade || 'm³');
+    return { nome, qtd, preco, unidade };
+}
 let comprasFornecedoresEditingId = null;
 let comprasFornecedoresFiltered = [];
 let pedidosListPage = 1;
@@ -630,6 +794,25 @@ function novoPedido(gerarNumero = true) {
     itemEmEdicaoIndex = null;
     contasPagar = [];
     autoRedistribuirEnabled = true; // ✅ Novo pedido: redistribuição automática ativada
+    // Resetar estado do preview de romaneio (exclusões + trava de reuso)
+    try {
+        romaneioPreviewExcluidosCompra = new Set();
+        romaneioPreviewUsoCompra = null;
+        romaneioAtualCompra = null;
+        romaneioItensAtuaisCompra = [];
+        __rcUsoCache = { id: '', result: null, ts: 0 };
+        const btnLoad = document.querySelector('#secaoProdutoRomaneio .romaneio-load-btn');
+        if (btnLoad) {
+            btnLoad.disabled = false;
+            btnLoad.title = '';
+            btnLoad.style.opacity = '';
+            btnLoad.style.cursor = '';
+        }
+        const prevBox = document.getElementById('previewConama');
+        if (prevBox) prevBox.style.display = 'none';
+        const prevTora = document.getElementById('previewTora');
+        if (prevTora) prevTora.style.display = 'none';
+    } catch (_) { /* best-effort */ }
 
     // Resetar formulário
     document.getElementById('pedidoForm').reset();
@@ -1103,11 +1286,20 @@ function agruparItensRomaneioNoCarrinho() {
         const totalItem = Number(item && item.total || 0) || (qtd * (Number(item && item.precoUnitario || 0) || 0));
         const unidade = String(item && item.unidade || 'm³');
         if (!agrupadosMap[key]) {
-            agrupadosMap[key] = { origemId, nome, quantidade: 0, total: 0, unidade, originais: [] };
+            agrupadosMap[key] = { origemId, nome, quantidade: 0, total: 0, unidade, originais: [], romaneioId: (item && (item.romaneioId || item.origemId)) || '', romaneioNumero: (item && item.romaneioNumero) || '', romaneioTipo: (item && item.romaneioTipo) || '' };
         }
         agrupadosMap[key].quantidade += qtd;
         agrupadosMap[key].total += totalItem;
         agrupadosMap[key].originais.push(item);
+        if (!agrupadosMap[key].romaneioId && item && (item.romaneioId || item.origemId)) {
+            agrupadosMap[key].romaneioId = item.romaneioId || item.origemId;
+        }
+        if (!agrupadosMap[key].romaneioNumero && item && item.romaneioNumero) {
+            agrupadosMap[key].romaneioNumero = item.romaneioNumero;
+        }
+        if (!agrupadosMap[key].romaneioTipo && item && item.romaneioTipo) {
+            agrupadosMap[key].romaneioTipo = item.romaneioTipo;
+        }
     });
     const itensAgrupados = Object.values(agrupadosMap).map(grp => {
         const precoMedio = grp.quantidade > 0 ? (grp.total / grp.quantidade) : 0;
@@ -1115,6 +1307,9 @@ function agruparItensRomaneioNoCarrinho() {
             id: Date.now() + Math.random(),
             tipo: 'romaneio_agrupado',
             origemId: grp.origemId,
+            romaneioId: grp.romaneioId || grp.origemId,
+            romaneioNumero: grp.romaneioNumero,
+            romaneioTipo: grp.romaneioTipo,
             produtoNome: grp.nome,
             quantidade: parseFloat(grp.quantidade.toFixed(3)),
             unidade: grp.unidade,
@@ -2001,6 +2196,33 @@ async function salvarPedido(event) {
             total: parseCurrency(document.getElementById('totalGeral').textContent),
             updatedAt: new Date().toISOString()
         };
+
+        // Vínculo aditivo romaneio->pedido (para trava de reuso). Não afeta leitores antigos.
+        try {
+            const mapaOrigens = new Map();
+            const absorverOrigem = (id, numero, tipo) => {
+                const k = String(id || '').trim();
+                if (!k) return;
+                if (!mapaOrigens.has(k)) {
+                    mapaOrigens.set(k, { id: k, numero: String(numero || k), tipo: String(tipo || '') });
+                }
+            };
+            if (pedidoEmEdicao && Array.isArray(pedidoEmEdicao.romaneiosOrigem)) {
+                pedidoEmEdicao.romaneiosOrigem.forEach(o => {
+                    if (o && typeof o === 'object') absorverOrigem(o.id || o.romaneioId || o.origemId, o.numero || o.romaneioNumero, o.tipo || o.romaneioTipo);
+                    else absorverOrigem(o, o, '');
+                });
+            }
+            (Array.isArray(pedido.itens) ? pedido.itens : []).forEach(it => {
+                if (!it || typeof it !== 'object') return;
+                const t = String(it.tipo || '').toLowerCase();
+                if (t !== 'romaneio' && t !== 'romaneio_agrupado') return;
+                absorverOrigem(it.origemId || it.romaneioId, it.romaneioNumero || it.origemId || it.romaneioId, it.romaneioTipo || '');
+                const alt = it.romaneioId && it.origemId && String(it.romaneioId) !== String(it.origemId) ? it.romaneioId : null;
+                if (alt) absorverOrigem(alt, it.romaneioNumero || alt, it.romaneioTipo || '');
+            });
+            pedido.romaneiosOrigem = Array.from(mapaOrigens.values());
+        } catch (_) { /* vínculo best-effort: nunca bloqueia salvamento */ }
 
         const statusNext = String(pedido.status || '').toLowerCase();
         const shouldGenerateFinance = statusNext !== 'pendente' && statusNext !== 'cancelado';
@@ -4967,8 +5189,32 @@ window.carregarRomaneiosPorTipo = async function() {
             const volumeLabel = volumeTotal > 0 ? ` | ${volumeTotal.toFixed(3)}m³` : '';
             
             opt.textContent = `${tipoLabel}${data} - ${nome} (${itensCount} itens${volumeLabel})`;
+            opt.dataset.romaneioId = String(r.id || r.firebaseKey || '');
             select.appendChild(opt);
         });
+
+        // Anotação best-effort de reuso (não bloqueia, não desabilita options).
+        try {
+            Promise.resolve(construirMapaUsosRomaneioCompra()).then((mapaUsos) => {
+                try {
+                    if (!mapaUsos || mapaUsos.size === 0) return;
+                    const opts = select.querySelectorAll('option[data-romaneio-id]');
+                    opts.forEach((opt) => {
+                        const rid = String(opt.dataset.romaneioId || '').trim();
+                        if (!rid || opt.dataset.usoAnotado === '1') return;
+                        const uso = mapaUsos.get(rid);
+                        if (uso) {
+                            opt.dataset.usoAnotado = '1';
+                            opt.dataset.usadoPedido = String(uso.pedidoNumero || '');
+                            opt.title = `Já utilizado no pedido de ${uso.modulo === 'venda' ? 'Venda' : 'Compra'} Nº ${uso.pedidoNumero}`;
+                            if (!/USADO/i.test(opt.textContent || '')) {
+                                opt.textContent = `${opt.textContent} • USADO Ped. Nº ${uso.pedidoNumero}`;
+                            }
+                        }
+                    });
+                } catch (_) { /* best-effort */ }
+            }).catch(() => {});
+        } catch (_) { /* best-effort */ }
         
     } catch (e) {
         console.error("Erro ao carregar romaneios:", e);
@@ -4979,21 +5225,166 @@ window.carregarRomaneiosPorTipo = async function() {
 window.carregarDadosRomaneio = async function() {
     const tipo = document.getElementById('tipoRomaneio').value;
     const id = document.getElementById('romaneioSelect').value;
-    
-    if (!tipo || !id) return;
-    
+    const previewBox = document.getElementById('previewConama');
+    const previewList = document.getElementById('listaConama');
+    const previewToraBox = document.getElementById('previewTora');
+
+    romaneioPreviewExcluidosCompra = new Set();
+    romaneioPreviewUsoCompra = null;
+    romaneioAtualCompra = null;
+    romaneioItensAtuaisCompra = [];
+    if (previewToraBox) previewToraBox.style.display = 'none';
+    if (!tipo || !id) {
+        if (previewBox) previewBox.style.display = 'none';
+        try {
+            const btn = document.querySelector('#secaoProdutoRomaneio .romaneio-load-btn');
+            if (btn) {
+                btn.disabled = false;
+                btn.title = '';
+                btn.style.opacity = '';
+                btn.style.cursor = '';
+            }
+        } catch (_) { /* best-effort */ }
+        return;
+    }
+
     try {
         const dados = await getData(tipo);
-        const romaneio = dados.find(r => (r.id === id || r.firebaseKey === id));
-        
-        if (!romaneio) return;
-        
-        // Mostrar preview se necessário (implementar lógica visual se pedido)
-        // Por enquanto, apenas logs
+        const romaneio = (Array.isArray(dados) ? dados : []).find(r => (String(r.id) === String(id) || String(r.firebaseKey) === String(id)));
+
+        if (!romaneio) {
+            if (previewBox) previewBox.style.display = 'none';
+            return;
+        }
+
+        const idEstavel = obterIdEstavelRomaneioCompra(romaneio);
+        const numeroExibicao = obterNumeroExibicaoRomaneioCompra(romaneio, idEstavel);
+        romaneioAtualCompra = { id: idEstavel, numero: numeroExibicao, tipo, dados: romaneio };
+        romaneioItensAtuaisCompra = normalizarItensRomaneioCompra(romaneio);
+
+        try {
+            if (idEstavel) {
+                romaneioPreviewUsoCompra = await buscarUsoRomaneioCompra(idEstavel);
+                if (romaneioPreviewUsoCompra) {
+                    ToastManager.warning(mensagemUsoRomaneioCompra(numeroExibicao, romaneioPreviewUsoCompra), undefined, 6000);
+                }
+            }
+        } catch (_) { romaneioPreviewUsoCompra = null; }
+
         console.log("Romaneio selecionado:", romaneio);
-        
+        renderizarPreviewRomaneioCompra();
+
     } catch (e) {
         console.error("Erro ao carregar detalhes do romaneio:", e);
+    }
+};
+
+function renderizarPreviewRomaneioCompra() {
+    const previewBox = document.getElementById('previewConama');
+    const previewList = document.getElementById('listaConama');
+    const previewToraBox = document.getElementById('previewTora');
+    if (!previewBox || !previewList) return;
+    if (previewToraBox) previewToraBox.style.display = 'none';
+    const uso = romaneioPreviewUsoCompra || null;
+    const itens = Array.isArray(romaneioItensAtuaisCompra) ? romaneioItensAtuaisCompra : [];
+    let html = '';
+
+    if (uso) {
+        const moduloLabel = uso.modulo === 'venda' ? 'Venda' : 'Compra';
+        html += `<div style="background:#fdf2f2;border:1px solid #f5c6cb;color:#721c24;padding:10px 12px;border-radius:4px;margin-bottom:10px;font-size:13px;">`
+            + `<strong><i class="fas fa-lock"></i> Romaneio já utilizado no pedido de ${escapeHtml(moduloLabel)} Nº ${escapeHtml(uso.pedidoNumero)}.</strong><br>`
+            + `<span>Os itens abaixo estão desativados. O botão "Carregar Itens" ficará bloqueado para este romaneio.</span></div>`;
+    } else {
+        html += '<p style="color:#666;font-size:12px;margin:0 0 10px 0;">Desmarque ou exclua os itens que <strong>não</strong> devem ir para o pedido. O botão "Carregar Itens" carrega apenas o que permanecer selecionado.</p>';
+    }
+
+    if (itens.length === 0) {
+        html += '<p style="color:#666;font-style:italic;">Nenhum item válido encontrado no romaneio selecionado.</p>';
+    } else {
+        html += '<div style="display:grid;gap:8px;">';
+        itens.forEach((item, idx) => {
+            const rot = rotuloItemRomaneioCompra(item, idx);
+            const excluido = romaneioPreviewExcluidosCompra.has(idx);
+            const desativado = !!uso;
+            const checkedAttr = (!excluido && !desativado) ? 'checked' : '';
+            const disabledAttr = desativado ? 'disabled' : '';
+            const rowOpacity = (excluido || desativado) ? 'opacity:0.55;' : '';
+            html += `<div style="display:flex;gap:8px;align-items:flex-start;background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:8px 10px;${rowOpacity}">`;
+            html += `<input type="checkbox" data-rc-idx="${idx}" ${checkedAttr} ${disabledAttr} onchange="window.romaneioPreviewToggleCompra(this)" title="Incluir este item no carregamento" style="margin-top:4px;">`;
+            html += `<div style="flex:1;min-width:0;">`;
+            html += `<div style="font-weight:600;color:#2c3e50;font-size:13px;">${escapeHtml(rot.nome)}</div>`;
+            html += `<div style="color:#666;font-size:12px;">Qtd/Vol: ${escapeHtml(formatNumber(rot.qtd))} ${escapeHtml(rot.unidade)} • ${escapeHtml(formatCurrency(rot.preco))} unit.</div>`;
+            if (desativado) {
+                const moduloLabel = uso.modulo === 'venda' ? 'Venda' : 'Compra';
+                html += `<span style="display:inline-block;margin-top:4px;background:#e9ecef;color:#495057;font-size:11px;padding:2px 8px;border-radius:10px;"><i class="fas fa-lock"></i> Usado no pedido Nº ${escapeHtml(uso.pedidoNumero)} (${escapeHtml(moduloLabel)})</span>`;
+            } else if (excluido) {
+                html += `<span style="display:inline-block;margin-top:4px;background:#fff3cd;color:#856404;font-size:11px;padding:2px 8px;border-radius:10px;">Excluído — não será carregado</span>`;
+            }
+            html += `</div>`;
+            html += `<button type="button" data-rc-idx="${idx}" ${disabledAttr} onclick="window.romaneioPreviewExcluirCompra(this)" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid ${excluido ? '#28a745' : '#dc3545'};background:${excluido ? '#e8f5e9' : '#fff'};color:${excluido ? '#1e7e34' : '#c82333'};cursor:${desativado ? 'not-allowed' : 'pointer'};" title="${excluido ? 'Reincluir este item' : 'Excluir este item do carregamento'}">${excluido ? '<i class="fas fa-undo"></i> Reincluir' : '<i class="fas fa-trash"></i> Excluir'}</button>`;
+            html += `</div>`;
+        });
+        html += '</div>';
+        if (!uso) {
+            try {
+                const total = itens.length;
+                const sel = itens.filter((_, i) => !romaneioPreviewExcluidosCompra.has(i)).length;
+                html += `<p style="color:#495057;font-size:12px;margin:10px 0 0 0;">${sel} de ${total} itens selecionados — apenas os selecionados serão carregados.</p>`;
+            } catch (_) { /* best-effort */ }
+        }
+    }
+
+    previewList.innerHTML = html;
+    previewBox.style.display = 'block';
+
+    try {
+        const btn = document.querySelector('#secaoProdutoRomaneio .romaneio-load-btn');
+        if (btn) {
+            if (uso) {
+                btn.disabled = true;
+                btn.title = `Bloqueado: romaneio já usado no pedido Nº ${uso.pedidoNumero}`;
+                btn.style.opacity = '0.55';
+                btn.style.cursor = 'not-allowed';
+            } else {
+                btn.disabled = false;
+                btn.title = '';
+                btn.style.opacity = '';
+                btn.style.cursor = '';
+            }
+        }
+    } catch (_) { /* best-effort */ }
+}
+
+window.romaneioPreviewToggleCompra = function (el) {
+    try {
+        if (romaneioPreviewUsoCompra) {
+            ToastManager.warning('Este romaneio já foi utilizado e está bloqueado para carregamento.');
+            renderizarPreviewRomaneioCompra();
+            return;
+        }
+        const idx = parseInt(el && el.dataset ? el.dataset.rcIdx : '', 10);
+        if (isNaN(idx)) return;
+        if (el.checked) romaneioPreviewExcluidosCompra.delete(idx);
+        else romaneioPreviewExcluidosCompra.add(idx);
+        renderizarPreviewRomaneioCompra();
+    } catch (e) {
+        console.warn('Compras: falha ao alternar item do preview:', e);
+    }
+};
+
+window.romaneioPreviewExcluirCompra = function (el) {
+    try {
+        if (romaneioPreviewUsoCompra) {
+            ToastManager.warning('Este romaneio já foi utilizado e está bloqueado para carregamento.');
+            return;
+        }
+        const idx = parseInt(el && el.dataset ? el.dataset.rcIdx : '', 10);
+        if (isNaN(idx)) return;
+        if (romaneioPreviewExcluidosCompra.has(idx)) romaneioPreviewExcluidosCompra.delete(idx);
+        else romaneioPreviewExcluidosCompra.add(idx);
+        renderizarPreviewRomaneioCompra();
+    } catch (e) {
+        console.warn('Compras: falha ao excluir item do preview:', e);
     }
 };
 
@@ -5009,17 +5400,36 @@ window.adicionarItensRomaneio = async function() {
     
     try {
         const dados = await getData(tipo);
-        const romaneio = dados.find(r => (r.id === id || r.firebaseKey === id));
+        const romaneio = (Array.isArray(dados) ? dados : []).find(r => (String(r.id) === String(id) || String(r.firebaseKey) === String(id)));
         if (!romaneio) {
             ToastManager.warning('Romaneio selecionado não foi encontrado.');
             return;
         }
+        // origemId legado (compat: id||firebaseKey) + id estável (cobre numero/fallbacks).
         const origemRomaneioId = String(romaneio.id || romaneio.firebaseKey || id);
-        const jaAdicionado = itensPedido.some(item => String(item && item.origemId || '') === origemRomaneioId);
+        const idEstavel = obterIdEstavelRomaneioCompra(romaneio) || origemRomaneioId;
+        const numeroExibicao = obterNumeroExibicaoRomaneioCompra(romaneio, origemRomaneioId);
+        const jaAdicionado = itensPedido.some(item => String(item && item.origemId || '') === origemRomaneioId || (idEstavel && String(item && (item.origemId || item.romaneioId) || '') === String(idEstavel)));
         if (jaAdicionado) {
             ToastManager.warning('Este romaneio já foi adicionado ao carrinho. Remova os itens dele antes de carregar novamente.');
             return;
         }
+        // Trava persistente de reuso (outro pedido). Fail-open: erro => segue fluxo.
+        let usoPersistente = romaneioPreviewUsoCompra || null;
+        try {
+            if (!usoPersistente && origemRomaneioId) {
+                usoPersistente = await buscarUsoRomaneioCompra(origemRomaneioId);
+            }
+            if (!usoPersistente && idEstavel && idEstavel !== origemRomaneioId) {
+                usoPersistente = await buscarUsoRomaneioCompra(idEstavel);
+            }
+            if (usoPersistente) {
+                romaneioPreviewUsoCompra = usoPersistente;
+                try { renderizarPreviewRomaneioCompra(); } catch (_) { /* best-effort */ }
+                ToastManager.warning(mensagemUsoRomaneioCompra(numeroExibicao, usoPersistente), undefined, 6000);
+                return;
+            }
+        } catch (_) { /* fail-open */ }
         
         // ✅ CORREÇÃO: Normalizar itens (array vs objeto)
         const itemsRaw = romaneio.itens || romaneio.items || romaneio.romaneioItems;
@@ -5041,9 +5451,31 @@ window.adicionarItensRomaneio = async function() {
             if (item['0'] === 'r' && item['1'] === 'o') return false;
             return true;
         });
-        
+
+        // Respeitar exclusões do preview (somente quando o preview corresponde
+        // ao romaneio atual e ao mesmo tamanho; senão, fail-safe carrega tudo).
+        let previewAplicavel = false;
+        try {
+            previewAplicavel = !!(
+                romaneioAtualCompra &&
+                String(romaneioAtualCompra.id || '') === String(idEstavel || '') &&
+                String(romaneioAtualCompra.tipo || '') === String(tipo || '') &&
+                Array.isArray(romaneioItensAtuaisCompra) &&
+                romaneioItensAtuaisCompra.length === itemsArray.length
+            );
+        } catch (_) { previewAplicavel = false; }
+        const totalExcluidosPreview = previewAplicavel ? romaneioPreviewExcluidosCompra.size : 0;
+        let itensParaCarregar = itemsArray;
+        if (previewAplicavel && romaneioPreviewExcluidosCompra.size > 0) {
+            itensParaCarregar = itemsArray.filter((_, idx) => !romaneioPreviewExcluidosCompra.has(idx));
+        }
+
         if (itemsArray.length === 0) {
             ToastManager.warning('Romaneio sem itens válidos ou não encontrado.');
+            return;
+        }
+        if (itensParaCarregar.length === 0) {
+            ToastManager.warning('Todos os itens foram excluídos no preview. Reative ao menos um item para carregar.');
             return;
         }
         
@@ -5053,7 +5485,7 @@ window.adicionarItensRomaneio = async function() {
             // Lógica de Agrupamento por Espécie
             const agrupados = {};
             
-            itemsArray.forEach(item => {
+            itensParaCarregar.forEach(item => {
                 const especie = (item.especie || item.produto || item.descricao || 'Item Romaneio').trim();
                 const key = especie.toUpperCase(); // Agrupar case-insensitive
                 
@@ -5078,6 +5510,9 @@ window.adicionarItensRomaneio = async function() {
                     id: Date.now() + Math.random(),
                     tipo: 'romaneio',
                     origemId: origemRomaneioId,
+                    romaneioId: idEstavel,
+                    romaneioNumero: numeroExibicao,
+                    romaneioTipo: tipo,
                     produtoNome: especie,
                     quantidade: qtd,
                     unidade: item.unidade || 'm³',
@@ -5095,6 +5530,9 @@ window.adicionarItensRomaneio = async function() {
                     id: Date.now() + Math.random(),
                     tipo: 'romaneio_agrupado',
                     origemId: origemRomaneioId,
+                    romaneioId: idEstavel,
+                    romaneioNumero: numeroExibicao,
+                    romaneioTipo: tipo,
                     produtoNome: grp.nome, // Sem prefixo [tipo]
                     quantidade: parseFloat(grp.quantidade.toFixed(3)),
                     unidade: grp.unidade,
@@ -5106,7 +5544,7 @@ window.adicionarItensRomaneio = async function() {
             
         } else {
             // Lógica Item a Item
-            itemsArray.forEach((item, idx) => {
+            itensParaCarregar.forEach((item, idx) => {
                 // Tentar mapear campos variados (Tora, Pct, etc)
                 const nomeProduto = item.especie || item.produto || item.descricao || 'Item Romaneio';
                 
@@ -5125,6 +5563,9 @@ window.adicionarItensRomaneio = async function() {
                     id: Date.now() + idx,
                     tipo: 'romaneio',
                     origemId: origemRomaneioId,
+                    romaneioId: idEstavel,
+                    romaneioNumero: numeroExibicao,
+                    romaneioTipo: tipo,
                     produtoNome: nomeProduto, // Sem prefixo [tipo]
                     quantidade: qtd,
                     unidade: unidade,
@@ -5146,7 +5587,22 @@ window.adicionarItensRomaneio = async function() {
             renderizarItensPedido();
             atualizarTotais();
         }
-        ToastManager.success(`${novosItens.length} itens adicionados.`);
+        const msgExtra = totalExcluidosPreview > 0 ? ` (${totalExcluidosPreview} excluído(s) no preview, não carregado(s))` : '';
+        ToastManager.success(`${novosItens.length} itens adicionados.${msgExtra}`);
+        // Limpar estado do preview após carga (mantém selects para outro romaneio).
+        try {
+            romaneioPreviewExcluidosCompra = new Set();
+            romaneioPreviewUsoCompra = null;
+            const previewBox = document.getElementById('previewConama');
+            if (previewBox) previewBox.style.display = 'none';
+            const btn = document.querySelector('#secaoProdutoRomaneio .romaneio-load-btn');
+            if (btn) {
+                btn.disabled = false;
+                btn.title = '';
+                btn.style.opacity = '';
+                btn.style.cursor = '';
+            }
+        } catch (_) { /* best-effort */ }
         
     } catch (e) {
         console.error("Erro ao adicionar itens do romaneio:", e);

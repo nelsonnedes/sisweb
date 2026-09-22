@@ -1,0 +1,106 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import test from 'node:test';
+
+const vendas = fs.readFileSync(new URL('../vendas.js', import.meta.url), 'utf8');
+const compras = fs.readFileSync(new URL('../compras.js', import.meta.url), 'utf8');
+
+// ---------------------------------------------------------------------------
+// Vendas: helpers de vínculo (aditivos, fail-open)
+// ---------------------------------------------------------------------------
+test('vendas expõe helpers de vínculo do romaneio sem quebrar fluxo antigo', () => {
+  assert.match(vendas, /function obterIdEstavelRomaneioVendas\(/);
+  assert.match(vendas, /function buscarUsoRomaneioVendas\(/);
+  assert.match(vendas, /function construirMapaUsosRomaneioVendas\(/);
+  assert.match(vendas, /function mensagemUsoRomaneioVendas\(/);
+  assert.match(vendas, /fail-open/);
+  // Pedidos cancelados não bloqueiam reuso
+  assert.match(vendas, /cancelado/);
+});
+
+test('vendas: preview tem exclusão por item e estado desativado com nº do pedido', () => {
+  assert.match(vendas, /window\.romaneioPreviewToggleVendas/);
+  assert.match(vendas, /window\.romaneioPreviewExcluirVendas/);
+  assert.match(vendas, /data-rv-pk/);
+  assert.match(vendas, /Usado no pedido Nº/);
+  assert.match(vendas, /Excluído — não será carregado/);
+  assert.match(vendas, /apenas os selecionados serão carregados/i);
+});
+
+test('vendas: carregar itens respeita preview e trava reuso com toast claro', async () => {
+  assert.match(vendas, /async function adicionarItensRomaneio\(\)/);
+  assert.match(vendas, /romaneioPreviewExcluidos/);
+  assert.match(vendas, /resumoFiltrado/);
+  assert.match(vendas, /Todos os itens foram excluídos no preview/);
+  assert.match(vendas, /mensagemUsoRomaneioVendas\(numeroExibicaoAtual, usoAtual\)/);
+  assert.match(vendas, /Romaneio já utilizado/);
+  // Itens criados passam a carregar vínculo (aditivo, leitores antigos ignoram)
+  assert.match(vendas, /origemId: idEstavelAtual/);
+  assert.match(vendas, /romaneioNumero: numeroExibicaoAtual/);
+});
+
+test('vendas: dropdown anota reuso sem desabilitar e preview bloqueia botão', () => {
+  assert.match(vendas, /USADO Ped\. Nº/);
+  assert.match(vendas, /romaneio-load-btn/);
+  assert.match(vendas, /btn\.disabled = true/);
+  assert.doesNotMatch(vendas, /opt\.disabled = true/);
+});
+
+test('vendas: salvamento persiste romaneiosOrigem sem afetar financeiro', () => {
+  const block = vendas.slice(
+    vendas.indexOf('const pedidoData = {'),
+    vendas.indexOf('if (editandoPedidoId) {', vendas.indexOf('const pedidoData = {'))
+  );
+  assert.match(block, /itensCarrinho/);
+  assert.match(vendas, /pedidoData\.romaneiosOrigem = Array\.from\(mapaOrigens\.values\(\)\)/);
+  // Vínculo nunca bloqueia salvamento
+  assert.match(vendas, /vínculo best-effort: nunca bloqueia salvamento/);
+});
+
+// ---------------------------------------------------------------------------
+// Compras: espelho do comportamento
+// ---------------------------------------------------------------------------
+test('compras expõe helpers de vínculo do romaneio sem quebrar fluxo antigo', () => {
+  assert.match(compras, /function obterIdEstavelRomaneioCompra\(/);
+  assert.match(compras, /function buscarUsoRomaneioCompra\(/);
+  assert.match(compras, /function construirMapaUsosRomaneioCompra\(/);
+  assert.match(compras, /function mensagemUsoRomaneioCompra\(/);
+  assert.match(compras, /function renderizarPreviewRomaneioCompra\(/);
+  assert.match(compras, /fail-open/);
+});
+
+test('compras: preview real com exclusão por item e desativado com nº pedido', () => {
+  assert.match(compras, /window\.romaneioPreviewToggleCompra/);
+  assert.match(compras, /window\.romaneioPreviewExcluirCompra/);
+  assert.match(compras, /data-rc-idx/);
+  assert.match(compras, /Usado no pedido Nº/);
+  assert.match(compras, /Excluído — não será carregado/);
+  // Preview unificado no CONAMA; TORA legado permanece oculto
+  assert.match(compras, /previewToraBox\) previewToraBox\.style\.display = 'none'/);
+});
+
+test('compras: carregar itens respeita preview e trava reuso com toast claro', () => {
+  assert.match(compras, /romaneioPreviewExcluidosCompra/);
+  assert.match(compras, /itensParaCarregar/);
+  assert.match(compras, /Todos os itens foram excluídos no preview/);
+  assert.match(compras, /mensagemUsoRomaneioCompra\(numeroExibicao, usoPersistente\)/);
+  assert.match(compras, /já foi utilizado no pedido de/);
+  // Mantém trava de sessão pré-existente
+  assert.match(compras, /já foi adicionado ao carrinho/);
+  // Vínculo aditivo nos itens
+  assert.match(compras, /romaneioNumero: numeroExibicao/);
+  assert.match(compras, /romaneioTipo: tipo/);
+});
+
+test('compras: salvamento persiste romaneiosOrigem sem afetar financeiro', () => {
+  assert.match(compras, /pedido\.romaneiosOrigem = Array\.from\(mapaOrigens\.values\(\)\)/);
+  assert.match(compras, /vínculo best-effort: nunca bloqueia salvamento/);
+  assert.match(compras, /financeSyncCompra/);
+});
+
+test('edicao do proprio pedido nao se autobloqueia (ignora id em edicao)', () => {
+  assert.match(vendas, /ignorarId/);
+  assert.match(vendas, /String\(p\.id \|\| ''\) === ignorarId/);
+  assert.match(compras, /ignorarId/);
+  assert.match(compras, /String\(p\.id \|\| ''\) === ignorarId/);
+});

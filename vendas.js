@@ -44,6 +44,164 @@ let contasReceber = [];
 let romaneioSelecionado = null;
 let romaneiosPorTipoCache = {}; // Cache da lista ordenada por tipo para manter índice consistente
 
+// ----------------------------------------------------------------------------
+// Romaneio -> Pedido: preview selecionável + trava de reuso (cirúrgico/aditivo)
+// - Não altera schema de romaneios nem fluxo financeiro.
+// - Campos novos (origemId/romaneioId/romaneiosOrigem) são opcionais e ignorados
+//   por leitores antigos. Falha de lookup => fail-open (não bloqueia venda).
+// ----------------------------------------------------------------------------
+let romaneioPreviewExcluidos = new Set(); // Set<string> chave "especie||categoria"
+let romaneioPreviewUsoInfo = null; // {pedidoNumero, pedidoId, modulo} | null
+let romaneioPreviewTipoAtual = '';
+let __rvPreviewChaves = []; // [{especie, categoria}] na ordem renderizada
+let __rvUsoCache = { id: '', result: null, ts: 0 };
+const RV_USO_CACHE_TTL_MS = 20000;
+
+function escaparHtmlRomaneioVendas(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function obterIdEstavelRomaneioVendas(romaneio) {
+    if (!romaneio || typeof romaneio !== 'object') return '';
+    const v = romaneio.id || romaneio.numero || romaneio.numeroRomaneio || romaneio.romaneioId || romaneio.firebaseKey || '';
+    return String(v).trim();
+}
+
+function obterNumeroExibicaoRomaneioVendas(romaneio, fallbackId) {
+    if (!romaneio || typeof romaneio !== 'object') return String(fallbackId || '—');
+    const v = romaneio.numero || romaneio.numeroRomaneio || romaneio.id || romaneio.firebaseKey || fallbackId || '—';
+    return String(v);
+}
+
+function chaveCategoriaPreviewVendas(especie, categoria) {
+    return `${String(especie || '')}||${String(categoria || '')}`;
+}
+
+function __rvStatusEhCancelado(status) {
+    return String(status || '').trim().toLowerCase() === 'cancelado';
+}
+
+function __rvExtrairIdsRomaneioDePedido(pedido) {
+    const ids = [];
+    try {
+        const origens = pedido && pedido.romaneiosOrigem;
+        if (Array.isArray(origens)) {
+            origens.forEach(o => {
+                const v = (o && typeof o === 'object') ? (o.id || o.romaneioId || o.origemId) : o;
+                if (v !== undefined && v !== null && String(v).trim() !== '') ids.push(String(v).trim());
+            });
+        }
+        const itens = pedido && pedido.itens;
+        if (Array.isArray(itens)) {
+            itens.forEach(it => {
+                if (!it || typeof it !== 'object') return;
+                const v = it.origemId || it.romaneioId;
+                if (v !== undefined && v !== null && String(v).trim() !== '') ids.push(String(v).trim());
+            });
+        }
+    } catch (_) { /* best-effort */ }
+    return ids;
+}
+
+async function buscarUsoRomaneioVendas(idEstavel) {
+    const id = String(idEstavel || '').trim();
+    if (!id) return null;
+    try {
+        const agora = Date.now();
+        if (__rvUsoCache.id === id && (agora - __rvUsoCache.ts) < RV_USO_CACHE_TTL_MS) {
+            return __rvUsoCache.result;
+        }
+        const ignorarId = String((typeof editandoPedidoId !== 'undefined' && editandoPedidoId) || (typeof pedidoAtual !== 'undefined' && pedidoAtual && pedidoAtual.id) || '').trim();
+        let vendasPedidos = [];
+        let comprasPedidos = [];
+        try {
+            if (Array.isArray(window.pedidos) && window.pedidos.length > 0) {
+                vendasPedidos = window.pedidos;
+            } else if (typeof getData === 'function') {
+                vendasPedidos = await getData('vendas/pedidos') || [];
+            }
+        } catch (_) { vendasPedidos = Array.isArray(window.pedidos) ? window.pedidos : []; }
+        try {
+            if (typeof getData === 'function') {
+                comprasPedidos = await getData('pedidosCompra') || [];
+            }
+        } catch (_) { comprasPedidos = []; }
+        if (!Array.isArray(vendasPedidos)) vendasPedidos = [];
+        if (!Array.isArray(comprasPedidos)) comprasPedidos = [];
+        const verificar = (lista, modulo) => {
+            for (let i = 0; i < lista.length; i++) {
+                const p = lista[i];
+                if (!p || typeof p !== 'object') continue;
+                if (ignorarId && String(p.id || '') === ignorarId) continue;
+                if (__rvStatusEhCancelado(p.status)) continue;
+                const ids = __rvExtrairIdsRomaneioDePedido(p);
+                for (let j = 0; j < ids.length; j++) {
+                    if (String(ids[j]) === id) {
+                        return { pedidoNumero: String(p.numero || p.id || '—'), pedidoId: String(p.id || ''), modulo };
+                    }
+                }
+            }
+            return null;
+        };
+        const achadoV = verificar(vendasPedidos, 'venda');
+        const resultado = achadoV || verificar(comprasPedidos, 'compra');
+        __rvUsoCache = { id, result: resultado, ts: agora };
+        return resultado;
+    } catch (e) {
+        console.warn('Vendas: falha ao verificar uso do romaneio (fail-open):', e);
+        return null;
+    }
+}
+
+function mensagemUsoRomaneioVendas(idExibicao, uso) {
+    const moduloLabel = uso && uso.modulo === 'compra' ? 'Compra' : 'Venda';
+    return `Este romaneio (${idExibicao}) já foi utilizado no pedido de ${moduloLabel} Nº ${uso ? uso.pedidoNumero : '—'}. Selecione outro romaneio para evitar duplicidade.`;
+}
+
+async function construirMapaUsosRomaneioVendas() {
+    const mapa = new Map();
+    try {
+        const ignorarId = String((typeof editandoPedidoId !== 'undefined' && editandoPedidoId) || (typeof pedidoAtual !== 'undefined' && pedidoAtual && pedidoAtual.id) || '').trim();
+        let vendasPedidos = [];
+        let comprasPedidos = [];
+        try {
+            if (Array.isArray(window.pedidos) && window.pedidos.length > 0) {
+                vendasPedidos = window.pedidos;
+            } else if (typeof getData === 'function') {
+                vendasPedidos = await getData('vendas/pedidos') || [];
+            }
+        } catch (_) { vendasPedidos = Array.isArray(window.pedidos) ? window.pedidos : []; }
+        try {
+            if (typeof getData === 'function') {
+                comprasPedidos = await getData('pedidosCompra') || [];
+            }
+        } catch (_) { comprasPedidos = []; }
+        const absorver = (lista, modulo) => {
+            (Array.isArray(lista) ? lista : []).forEach(p => {
+                if (!p || typeof p !== 'object') return;
+                if (ignorarId && String(p.id || '') === ignorarId) return;
+                if (__rvStatusEhCancelado(p.status)) return;
+                __rvExtrairIdsRomaneioDePedido(p).forEach(rid => {
+                    const k = String(rid);
+                    if (!mapa.has(k)) {
+                        mapa.set(k, { pedidoNumero: String(p.numero || p.id || '—'), pedidoId: String(p.id || ''), modulo });
+                    }
+                });
+            });
+        };
+        absorver(vendasPedidos, 'venda');
+        absorver(comprasPedidos, 'compra');
+    } catch (e) {
+        console.warn('Vendas: falha ao montar mapa de usos (fail-open):', e);
+    }
+    return mapa;
+}
+
 // ✅ CONFIGURAÇÕES GLOBAIS DO MÓDULO
 const VendasConfig = {
     precoPorM3Padrao: 1500,
@@ -1408,6 +1566,24 @@ async function novoPedido() {
     contasReceber = []; // Limpar contas a receber
     autoRedistribuirEnabled = true;
     contasReceberEdicaoBloqueada = false;
+    // Resetar estado do preview de romaneio (exclusões + trava de reuso)
+    try {
+        romaneioSelecionado = null;
+        romaneioPreviewExcluidos = new Set();
+        romaneioPreviewUsoInfo = null;
+        romaneioPreviewTipoAtual = '';
+        __rvPreviewChaves = [];
+        __rvUsoCache = { id: '', result: null, ts: 0 };
+        const btnLoad = document.querySelector('#secaoProdutoRomaneio .romaneio-load-btn');
+        if (btnLoad) {
+            btnLoad.disabled = false;
+            btnLoad.title = '';
+            btnLoad.style.opacity = '';
+            btnLoad.style.cursor = '';
+        }
+        const prevBox = document.getElementById('previewConama');
+        if (prevBox) prevBox.style.display = 'none';
+    } catch (_) { /* best-effort */ }
     
     // Resetar formulário
     document.getElementById('pedidoForm').reset();
@@ -2075,6 +2251,31 @@ async function salvarPedido(event) {
             created: editandoPedidoId ? (pedidoAtual && pedidoAtual.created ? pedidoAtual.created : undefined) : nowIso,
             updated: nowIso
         };
+        // Vínculo aditivo romaneio->pedido (para trava de reuso). Não afeta leitores antigos.
+        try {
+            const mapaOrigens = new Map();
+            const absorverOrigem = (id, numero, tipo) => {
+                const k = String(id || '').trim();
+                if (!k) return;
+                if (!mapaOrigens.has(k)) {
+                    mapaOrigens.set(k, { id: k, numero: String(numero || k), tipo: String(tipo || '') });
+                }
+            };
+            const pedidoPrevOrigens = (window.pedidos || []).find(p => String(p.id) === String(idFinal));
+            if (pedidoPrevOrigens && Array.isArray(pedidoPrevOrigens.romaneiosOrigem)) {
+                pedidoPrevOrigens.romaneiosOrigem.forEach(o => {
+                    if (o && typeof o === 'object') absorverOrigem(o.id || o.romaneioId || o.origemId, o.numero || o.romaneioNumero, o.tipo || o.romaneioTipo);
+                    else absorverOrigem(o, o, '');
+                });
+            }
+            (Array.isArray(pedidoData.itens) ? pedidoData.itens : []).forEach(it => {
+                if (!it || typeof it !== 'object') return;
+                const t = String(it.tipo || '').toLowerCase();
+                if (t !== 'romaneio' && t !== 'romaneio_agrupado') return;
+                absorverOrigem(it.origemId || it.romaneioId, it.romaneioNumero || it.origemId || it.romaneioId, it.romaneioTipo || '');
+            });
+            pedidoData.romaneiosOrigem = Array.from(mapaOrigens.values());
+        } catch (_) { /* vínculo best-effort: nunca bloqueia salvamento */ }
         if (pedidoData.created === undefined) { delete pedidoData.created; }
 
         if (editandoPedidoId) {
@@ -3125,6 +3326,15 @@ async function editarPedido(pedidoId) {
     editandoPedidoId = pedidoId;
     pedidoAtual = pedido;
     itensCarrinho = [...pedido.itens];
+    // Resetar estado do preview de romaneio (o cache de uso depende do pedido em edição)
+    try {
+        romaneioSelecionado = null;
+        romaneioPreviewExcluidos = new Set();
+        romaneioPreviewUsoInfo = null;
+        romaneioPreviewTipoAtual = '';
+        __rvPreviewChaves = [];
+        __rvUsoCache = { id: '', result: null, ts: 0 };
+    } catch (_) { /* best-effort */ }
     
     // Preencher formulário
     const numeroEl = document.getElementById('pedidoNumero');
@@ -5104,8 +5314,36 @@ async function carregarRomaneiosPorTipo() {
         option.textContent = totalMoeda ? 
             `${dataFormatada} - ${clienteNome} - ${volumeTotal} m³ - ${totalMoeda}` : 
             `${dataFormatada} - ${clienteNome} - ${volumeTotal} m³`;
+        option.dataset.romaneioIdx = String(index);
         selectRomaneio.appendChild(option);
     });
+
+        // Anotação best-effort de reuso no dropdown (não bloqueia, não desabilita).
+        // Um único scan de pedidos; falha => mantém texto original (fail-open).
+        try {
+            Promise.resolve(construirMapaUsosRomaneioVendas()).then((mapaUsos) => {
+                try {
+                    if (!mapaUsos || mapaUsos.size === 0) return;
+                    const opts = selectRomaneio.querySelectorAll('option[data-romaneio-idx]');
+                    opts.forEach((opt) => {
+                        const idx = parseInt(opt.dataset.romaneioIdx, 10);
+                        const r = romaneiosOrdenados[idx];
+                        if (!r) return;
+                        const rid = obterIdEstavelRomaneioVendas(r);
+                        if (!rid || opt.dataset.usoAnotado === '1') return;
+                        const uso = mapaUsos.get(String(rid));
+                        if (uso) {
+                            opt.dataset.usoAnotado = '1';
+                            opt.dataset.usadoPedido = String(uso.pedidoNumero || '');
+                            opt.title = `Já utilizado no pedido de ${uso.modulo === 'compra' ? 'Compra' : 'Venda'} Nº ${uso.pedidoNumero}`;
+                            if (!/USADO/i.test(opt.textContent || '')) {
+                                opt.textContent = `${opt.textContent} • USADO Ped. Nº ${uso.pedidoNumero}`;
+                            }
+                        }
+                    });
+                } catch (_) { /* best-effort */ }
+            }).catch(() => {});
+        } catch (_) { /* best-effort */ }
         
         console.log(`Carregados ${romaneiosOrdenados.length} romaneios do tipo ${tipoSelecionado} (mesclados e ordenados por mais recente)`);
     } catch (error) {
@@ -5122,6 +5360,10 @@ async function carregarDadosRomaneio() {
     if (!tipoRomaneio || indiceRomaneio === '') {
         document.getElementById('previewConama').style.display = 'none';
         romaneioSelecionado = null;
+        romaneioPreviewExcluidos = new Set();
+        romaneioPreviewUsoInfo = null;
+        romaneioPreviewTipoAtual = '';
+        __rvPreviewChaves = [];
         return;
     }
     
@@ -5140,12 +5382,29 @@ async function carregarDadosRomaneio() {
         }
         
         romaneioSelecionado = romaneio;
+        romaneioPreviewTipoAtual = tipoRomaneio;
+        romaneioPreviewExcluidos = new Set();
+        __rvPreviewChaves = [];
+        romaneioPreviewUsoInfo = null;
+
+        // Trava de reuso: verifica se este romaneio já foi usado em outro pedido.
+        // Fail-open: se a verificação falhar, permite o fluxo normal.
+        try {
+            const idEstavel = obterIdEstavelRomaneioVendas(romaneio);
+            if (idEstavel) {
+                romaneioPreviewUsoInfo = await buscarUsoRomaneioVendas(idEstavel);
+                if (romaneioPreviewUsoInfo) {
+                    const idExibicao = obterNumeroExibicaoRomaneioVendas(romaneio, idEstavel);
+                    ToastManager.warning(mensagemUsoRomaneioVendas(idExibicao, romaneioPreviewUsoInfo), 'Romaneio já utilizado', 6000);
+                }
+            }
+        } catch (_) { romaneioPreviewUsoInfo = null; }
         
         // Extrair resumo CONAMA do romaneio
         const resumoConama = extrairResumoConama(romaneio);
         
-        // Mostrar preview
-        mostrarPreviewConama(resumoConama);
+        // Mostrar preview (com exclusão por item + estado de uso)
+        mostrarPreviewConama(resumoConama, romaneioPreviewUsoInfo);
         
         console.log('Romaneio carregado:', romaneio);
         console.log('Resumo CONAMA extraído:', resumoConama);
@@ -5383,30 +5642,59 @@ function classificarProdutoConama(espessura, largura) {
     }
 }
 
-// Função para mostrar preview do resumo CONAMA
-function mostrarPreviewConama(resumoConama) {
+// Função para mostrar preview do resumo CONAMA (com exclusão por item + trava de reuso)
+function mostrarPreviewConama(resumoConama, usoInfo) {
     const container = document.getElementById('listaConama');
+    const uso = usoInfo || romaneioPreviewUsoInfo || null;
+    __rvPreviewChaves = [];
     let html = '';
-    
-    if (Object.keys(resumoConama).length === 0) {
-        html = '<p style="color: #666; font-style: italic;">Nenhum dado CONAMA encontrado no romaneio selecionado.</p>';
+
+    if (uso) {
+        const moduloLabel = uso.modulo === 'compra' ? 'Compra' : 'Venda';
+        html += `<div style="background:#fdf2f2;border:1px solid #f5c6cb;color:#721c24;padding:10px 12px;border-radius:4px;margin-bottom:10px;font-size:13px;">`
+            + `<strong><i class="fas fa-lock"></i> Romaneio já utilizado no pedido de ${escaparHtmlRomaneioVendas(moduloLabel)} Nº ${escaparHtmlRomaneioVendas(uso.pedidoNumero)}.</strong><br>`
+            + `<span>Os itens abaixo estão desativados. O botão "Carregar Itens" ficará bloqueado para este romaneio.</span></div>`;
     } else {
-        html = '<div style="display: grid; gap: 10px;">';
-        
+        html += '<p style="color:#666;font-size:12px;margin:0 0 10px 0;">Desmarque ou exclua os itens que <strong>não</strong> devem ir para o pedido. O botão "Carregar Itens" carrega apenas o que permanecer selecionado.</p>';
+    }
+
+    if (Object.keys(resumoConama).length === 0) {
+        html += '<p style="color: #666; font-style: italic;">Nenhum dado CONAMA encontrado no romaneio selecionado.</p>';
+    } else {
+        html += '<div style="display: grid; gap: 10px;">';
+
         Object.keys(resumoConama).forEach(especie => {
+            const especieSafe = escaparHtmlRomaneioVendas(especie);
             html += `<div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;">`;
-            html += `<h5 style="margin: 0 0 8px 0; color: #2c3e50;">${especie}</h5>`;
-            
+            html += `<h5 style="margin: 0 0 8px 0; color: #2c3e50;">${especieSafe}</h5>`;
+
             Object.keys(resumoConama[especie].categorias).forEach(categoria => {
                 const cat = resumoConama[especie].categorias[categoria];
                 const volume = cat.volume;
                 const precoUnitario = cat.precoUnitario || 0;
                 const pecasInfo = construirResumoPecasParaDescricao(cat);
-                
-                html += `<div style="display: flex; justify-content: space-between; margin-bottom: 4px; padding: 4px 0; border-bottom: 1px solid #eee;">`;
+                const chave = chaveCategoriaPreviewVendas(especie, categoria);
+                const pk = __rvPreviewChaves.length;
+                __rvPreviewChaves.push({ especie, categoria });
+                const excluido = romaneioPreviewExcluidos.has(chave);
+                const desativado = !!uso;
+                const checkedAttr = (!excluido && !desativado) ? 'checked' : '';
+                const disabledAttr = desativado ? 'disabled' : '';
+                const rowOpacity = (excluido || desativado) ? 'opacity:0.55;' : '';
+                const categoriaSafe = escaparHtmlRomaneioVendas(categoria);
+                const pecasSafe = escaparHtmlRomaneioVendas(pecasInfo || '');
+
+                html += `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:4px;padding:6px 0;border-bottom:1px solid #eee;${rowOpacity}">`;
+                html += `<input type="checkbox" data-rv-pk="${pk}" ${checkedAttr} ${disabledAttr} onchange="window.romaneioPreviewToggleVendas(this)" title="Incluir este item no carregamento" style="margin-top:4px;">`;
                 html += `<div style="flex: 1;">`;
-                html += `<span style="font-weight: 600;">${categoria}:</span><br>`;
-                html += `<span style="color: #666; font-size: 12px;">Vol: ${formatNumber(volume, 3)} m³${pecasInfo ? ` • ${pecasInfo}` : ''}</span>`;
+                html += `<span style="font-weight: 600;">${categoriaSafe}:</span><br>`;
+                html += `<span style="color: #666; font-size: 12px;">Vol: ${formatNumber(volume, 3)} m³${pecasInfo ? ` • ${pecasSafe}` : ''}</span><br>`;
+                if (desativado) {
+                    const moduloLabel = uso.modulo === 'compra' ? 'Compra' : 'Venda';
+                    html += `<span style="display:inline-block;margin-top:4px;background:#e9ecef;color:#495057;font-size:11px;padding:2px 8px;border-radius:10px;"><i class="fas fa-lock"></i> Usado no pedido Nº ${escaparHtmlRomaneioVendas(uso.pedidoNumero)} (${escaparHtmlRomaneioVendas(moduloLabel)})</span>`;
+                } else if (excluido) {
+                    html += `<span style="display:inline-block;margin-top:4px;background:#fff3cd;color:#856404;font-size:11px;padding:2px 8px;border-radius:10px;">Excluído — não será carregado</span>`;
+                }
                 html += `</div>`;
                 html += `<div style="text-align: right;">`;
                 if (precoUnitario > 0) {
@@ -5416,19 +5704,49 @@ function mostrarPreviewConama(resumoConama) {
                     html += `<span style="color: #e74c3c; font-size: 12px;">Sem preço</span><br>`;
                     html += `<span style="color: #f39c12; font-size: 11px;">Padrão: ${formatCurrency(VendasConfig.precoPorM3Padrao)}</span>`;
                 }
+                html += `<br><button type="button" data-rv-pk="${pk}" ${disabledAttr} onclick="window.romaneioPreviewExcluirVendas(this)" style="margin-top:6px;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid ${excluido ? '#28a745' : '#dc3545'};background:${excluido ? '#e8f5e9' : '#fff'};color:${excluido ? '#1e7e34' : '#c82333'};cursor:${desativado ? 'not-allowed' : 'pointer'};" title="${excluido ? 'Reincluir este item' : 'Excluir este item do carregamento'}">${excluido ? '<i class="fas fa-undo"></i> Reincluir' : '<i class="fas fa-trash"></i> Excluir'}</button>`;
                 html += `</div>`;
                 html += `</div>`;
             });
-            
+
             html += `</div>`;
         });
-        
+
         html += '</div>';
+        try {
+            const total = __rvPreviewChaves.length;
+            let sel = 0;
+            __rvPreviewChaves.forEach(({ especie, categoria }) => {
+                if (!romaneioPreviewExcluidos.has(chaveCategoriaPreviewVendas(especie, categoria))) sel++;
+            });
+            if (!uso) {
+                html += `<p style="color:#495057;font-size:12px;margin:10px 0 0 0;"><span id="rvPreviewContador">${sel} de ${total} itens selecionados</span> — apenas os selecionados serão carregados.</p>`;
+            }
+        } catch (_) { /* contador best-effort */ }
     }
-    
+
     container.innerHTML = html;
     document.getElementById('previewConama').style.display = 'block';
-    
+
+    // Trava visual do botão Carregar quando em reuso (defesa em profundidade;
+    // o bloqueio real acontece em adicionarItensRomaneio).
+    try {
+        const btn = document.querySelector('#secaoProdutoRomaneio .romaneio-load-btn');
+        if (btn) {
+            if (uso) {
+                btn.disabled = true;
+                btn.title = `Bloqueado: romaneio já usado no pedido Nº ${uso.pedidoNumero}`;
+                btn.style.opacity = '0.55';
+                btn.style.cursor = 'not-allowed';
+            } else {
+                btn.disabled = false;
+                btn.title = '';
+                btn.style.opacity = '';
+                btn.style.cursor = '';
+            }
+        }
+    } catch (_) { /* best-effort */ }
+
     // ✅ Rolar até a tabela de itens após mostrar o preview
     setTimeout(() => {
         const itensTable = document.getElementById('itensTable');
@@ -5437,6 +5755,60 @@ function mostrarPreviewConama(resumoConama) {
         }
     }, 300);
 }
+
+// Alternar inclusão de uma categoria do preview (checkbox).
+function __rvRefazerPreviewVendas() {
+    try {
+        if (!romaneioSelecionado) return;
+        const resumo = extrairResumoConama(romaneioSelecionado);
+        mostrarPreviewConama(resumo, romaneioPreviewUsoInfo);
+    } catch (e) {
+        console.warn('Vendas: falha ao redesenhar preview do romaneio:', e);
+    }
+}
+
+window.romaneioPreviewToggleVendas = function (el) {
+    try {
+        if (romaneioPreviewUsoInfo) {
+            ToastManager.warning('Este romaneio já foi utilizado e está bloqueado para carregamento.', 'Romaneio já utilizado', 4000);
+            __rvRefazerPreviewVendas();
+            return;
+        }
+        const pk = parseInt(el && el.dataset ? el.dataset.rvPk : '', 10);
+        const ref = __rvPreviewChaves[pk];
+        if (!ref) return;
+        const chave = chaveCategoriaPreviewVendas(ref.especie, ref.categoria);
+        if (el.checked) {
+            romaneioPreviewExcluidos.delete(chave);
+        } else {
+            romaneioPreviewExcluidos.add(chave);
+        }
+        __rvRefazerPreviewVendas();
+    } catch (e) {
+        console.warn('Vendas: falha ao alternar item do preview:', e);
+    }
+};
+
+window.romaneioPreviewExcluirVendas = function (el) {
+    try {
+        if (romaneioPreviewUsoInfo) {
+            ToastManager.warning('Este romaneio já foi utilizado e está bloqueado para carregamento.', 'Romaneio já utilizado', 4000);
+            return;
+        }
+        const pk = parseInt(el && el.dataset ? el.dataset.rvPk : '', 10);
+        const ref = __rvPreviewChaves[pk];
+        if (!ref) return;
+        const chave = chaveCategoriaPreviewVendas(ref.especie, ref.categoria);
+        if (romaneioPreviewExcluidos.has(chave)) {
+            romaneioPreviewExcluidos.delete(chave);
+        } else {
+            romaneioPreviewExcluidos.add(chave);
+        }
+        __rvRefazerPreviewVendas();
+    } catch (e) {
+        console.warn('Vendas: falha ao excluir item do preview:', e);
+    }
+};
 
 // Função para agrupar itens de romaneio já no carrinho por espécie e espessura
 function agruparItensRomaneioNoCarrinho() {
@@ -5483,6 +5855,9 @@ function agruparItensRomaneioNoCarrinho() {
                 total: 0,
                 unidade: item.unidade || 'm³',
                 origemId: item.origemId,
+                romaneioId: item.romaneioId || item.origemId,
+                romaneioNumero: item.romaneioNumero,
+                romaneioTipo: item.romaneioTipo,
                 originais: []
             };
         }
@@ -5494,6 +5869,15 @@ function agruparItensRomaneioNoCarrinho() {
         }
         if (agrupados[key].originais.length > 1 && !agrupados[key].origemId) {
             agrupados[key].origemId = item.origemId;
+        }
+        if (!agrupados[key].romaneioId && (item.romaneioId || item.origemId)) {
+            agrupados[key].romaneioId = item.romaneioId || item.origemId;
+        }
+        if (!agrupados[key].romaneioNumero && item.romaneioNumero) {
+            agrupados[key].romaneioNumero = item.romaneioNumero;
+        }
+        if (!agrupados[key].romaneioTipo && item.romaneioTipo) {
+            agrupados[key].romaneioTipo = item.romaneioTipo;
         }
         
         agrupados[key].quantidade += (parseFloat(item.quantidade) || 0);
@@ -5507,6 +5891,9 @@ function agruparItensRomaneioNoCarrinho() {
             id: Date.now() + Math.random(),
             tipo: 'romaneio_agrupado',
             origemId: grp.origemId,
+            romaneioId: grp.romaneioId || grp.origemId,
+            romaneioNumero: grp.romaneioNumero,
+            romaneioTipo: grp.romaneioTipo,
             produtoId: `agrupado_${normalizarIdRomaneioParte(grp.especie)}_${normalizarIdRomaneioParte(grp.espessura)}`,
             produtoNome: `${grp.especie}${sufixoBitola}`,
             especie: grp.especie,
@@ -5530,17 +5917,56 @@ function agruparItensRomaneioNoCarrinho() {
     };
 }
 
-// Função para adicionar itens do romaneio ao carrinho
-function adicionarItensRomaneio() {
+// Função para adicionar itens do romaneio ao carrinho (respeita preview + trava de reuso)
+async function adicionarItensRomaneio() {
     if (!romaneioSelecionado) {
         ToastManager.warning('Selecione um romaneio primeiro', 'Atenção');
         return;
     }
-    
+
+    // Trava de reuso em profundidade: revalida no clique (cobre troca de pedido
+    // após o preview e anotações de dropdown desatualizadas). Fail-open.
+    const idEstavelAtual = obterIdEstavelRomaneioVendas(romaneioSelecionado);
+    const numeroExibicaoAtual = obterNumeroExibicaoRomaneioVendas(romaneioSelecionado, idEstavelAtual);
+    const tipoAtual = romaneioPreviewTipoAtual || (document.getElementById('tipoRomaneio') ? document.getElementById('tipoRomaneio').value : '');
+    let usoAtual = romaneioPreviewUsoInfo || null;
+    try {
+        if (idEstavelAtual && !usoAtual) {
+            usoAtual = await buscarUsoRomaneioVendas(idEstavelAtual);
+            romaneioPreviewUsoInfo = usoAtual;
+        }
+    } catch (_) { /* fail-open */ }
+    if (usoAtual) {
+        ToastManager.warning(mensagemUsoRomaneioVendas(numeroExibicaoAtual, usoAtual), 'Romaneio já utilizado', 6000);
+        try {
+            const resumoAtual = extrairResumoConama(romaneioSelecionado);
+            mostrarPreviewConama(resumoAtual, usoAtual);
+        } catch (_) { /* mantém preview atual */ }
+        return;
+    }
+
     const resumoConama = extrairResumoConama(romaneioSelecionado);
-    
-    if (Object.keys(resumoConama).length === 0) {
-        ToastManager.warning('Nenhum item válido encontrado no romaneio selecionado', 'Atenção');
+
+    const resumoFiltrado = {};
+    let totalExcluidos = 0;
+    Object.keys(resumoConama).forEach(especie => {
+        Object.keys(resumoConama[especie].categorias).forEach(categoria => {
+            const chave = chaveCategoriaPreviewVendas(especie, categoria);
+            if (romaneioPreviewExcluidos.has(chave)) {
+                totalExcluidos++;
+                return;
+            }
+            if (!resumoFiltrado[especie]) resumoFiltrado[especie] = { categorias: {} };
+            resumoFiltrado[especie].categorias[categoria] = resumoConama[especie].categorias[categoria];
+        });
+    });
+
+    if (Object.keys(resumoFiltrado).length === 0) {
+        if (Object.keys(resumoConama).length === 0) {
+            ToastManager.warning('Nenhum item válido encontrado no romaneio selecionado', 'Atenção');
+        } else {
+            ToastManager.warning('Todos os itens foram excluídos no preview. Reative ao menos um item para carregar.', 'Nada para carregar');
+        }
         return;
     }
     
@@ -5551,12 +5977,12 @@ function adicionarItensRomaneio() {
     const agruparEspecie = document.getElementById('agruparEspecieCheckbox') ? document.getElementById('agruparEspecieCheckbox').checked : false;
     
     if (agruparEspecie) {
-        Object.keys(resumoConama).forEach(especie => {
+        Object.keys(resumoFiltrado).forEach(especie => {
             const especieLimpa = especie.replace(/^\s*[-–—]\s*/, '').trim();
             const agrupadosPorEspessura = {};
             
-            Object.keys(resumoConama[especie].categorias).forEach(categoria => {
-                const cat = resumoConama[especie].categorias[categoria];
+            Object.keys(resumoFiltrado[especie].categorias).forEach(categoria => {
+                const cat = resumoFiltrado[especie].categorias[categoria];
                 if (cat.volume > 0) {
                     const espessura = cat.espessura || 0;
                     const key = String(espessura);
@@ -5586,7 +6012,11 @@ function adicionarItensRomaneio() {
                         precoUnitario: precoCat,
                         total: cat.valorTotal || (cat.volume * precoCat),
                         tipo: 'romaneio',
-                        unidade: cat.unidade || 'm³'
+                        unidade: cat.unidade || 'm³',
+                        origemId: idEstavelAtual,
+                        romaneioId: idEstavelAtual,
+                        romaneioNumero: numeroExibicaoAtual,
+                        romaneioTipo: tipoAtual
                     });
                 }
             });
@@ -5608,6 +6038,10 @@ function adicionarItensRomaneio() {
                     existente.total = novoTotal;
                     existente.precoUnitario = novoQ > 0 ? novoTotal / novoQ : 0;
                     existente.itensOriginais = [...(Array.isArray(existente.itensOriginais) ? existente.itensOriginais : []), ...grp.originais];
+                    if (!existente.origemId && idEstavelAtual) existente.origemId = idEstavelAtual;
+                    if (!existente.romaneioId && idEstavelAtual) existente.romaneioId = idEstavelAtual;
+                    if (!existente.romaneioNumero) existente.romaneioNumero = numeroExibicaoAtual;
+                    if (!existente.romaneioTipo && tipoAtual) existente.romaneioTipo = tipoAtual;
                 } else {
                     itensCarrinho.push({
                         id: Date.now() + Math.random(),
@@ -5620,16 +6054,20 @@ function adicionarItensRomaneio() {
                         total: grp.valor,
                         tipo: 'romaneio_agrupado',
                         unidade: grp.unidade,
-                        itensOriginais: grp.originais
+                        itensOriginais: grp.originais,
+                        origemId: idEstavelAtual,
+                        romaneioId: idEstavelAtual,
+                        romaneioNumero: numeroExibicaoAtual,
+                        romaneioTipo: tipoAtual
                     });
                 }
             });
         });
     } else {
-        Object.keys(resumoConama).forEach(especie => {
+        Object.keys(resumoFiltrado).forEach(especie => {
             const especieLimpa = especie.replace(/^\s*[-–—]\s*/, '').trim();
-            Object.keys(resumoConama[especie].categorias).forEach(categoria => {
-                const cat = resumoConama[especie].categorias[categoria];
+            Object.keys(resumoFiltrado[especie].categorias).forEach(categoria => {
+                const cat = resumoFiltrado[especie].categorias[categoria];
                 const volume = cat.volume;
                 
                 if (volume > 0) {
@@ -5647,6 +6085,10 @@ function adicionarItensRomaneio() {
                         existente.precoUnitario = precoUnitario;
                         existente.total = novoQ * precoUnitario;
                         existente.unidade = 'm³';
+                        if (!existente.origemId && idEstavelAtual) existente.origemId = idEstavelAtual;
+                        if (!existente.romaneioId && idEstavelAtual) existente.romaneioId = idEstavelAtual;
+                        if (!existente.romaneioNumero) existente.romaneioNumero = numeroExibicaoAtual;
+                        if (!existente.romaneioTipo && tipoAtual) existente.romaneioTipo = tipoAtual;
                     } else {
                         const novoItem = {
                             id: Date.now() + Math.random(),
@@ -5658,7 +6100,11 @@ function adicionarItensRomaneio() {
                             precoUnitario: precoUnitario,
                             total: volume * precoUnitario,
                             tipo: 'romaneio',
-                            unidade: 'm³'
+                            unidade: 'm³',
+                            origemId: idEstavelAtual,
+                            romaneioId: idEstavelAtual,
+                            romaneioNumero: numeroExibicaoAtual,
+                            romaneioTipo: tipoAtual
                         };
                         itensCarrinho.push(novoItem);
                     }
@@ -5674,11 +6120,25 @@ function adicionarItensRomaneio() {
     document.getElementById('tipoRomaneio').value = '';
     document.getElementById('romaneioSelect').innerHTML = '<option value="">Selecione um romaneio</option>';
     document.getElementById('previewConama').style.display = 'none';
+    try {
+        const btnLoad = document.querySelector('#secaoProdutoRomaneio .romaneio-load-btn');
+        if (btnLoad) {
+            btnLoad.disabled = false;
+            btnLoad.title = '';
+            btnLoad.style.opacity = '';
+            btnLoad.style.cursor = '';
+        }
+    } catch (_) { /* best-effort */ }
     romaneioSelecionado = null;
+    romaneioPreviewExcluidos = new Set();
+    romaneioPreviewUsoInfo = null;
+    romaneioPreviewTipoAtual = '';
+    __rvPreviewChaves = [];
     
-    const totalCategorias = Object.keys(resumoConama).length;
-    ToastManager.success(`${totalCategorias} categorias de produtos adicionadas do romaneio`, 'Itens carregados', 3000);
-    console.log(`${totalCategorias} categorias de produtos adicionadas do romaneio`);
+    const totalCarregados = Object.keys(resumoFiltrado).length;
+    const msgExtra = totalExcluidos > 0 ? ` (${totalExcluidos} excluído(s) no preview, não carregado(s))` : '';
+    ToastManager.success(`${totalCarregados} categorias de produtos adicionadas do romaneio${msgExtra}`, 'Itens carregados', 3000);
+    console.log(`${totalCarregados} categorias de produtos adicionadas do romaneio${msgExtra}`);
 }
 
 // Funções para gerenciar contas a receber
