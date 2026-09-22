@@ -36,4 +36,4 @@
 ## Quality Gates
 
 - [x] `node --check`, lint, typecheck, suite cheia
-- [ ] Publicar (commit + push + deploy) — aguardando confirmação
+- [x] Publicar (commit + push + deploy) — aguardando confirmação
