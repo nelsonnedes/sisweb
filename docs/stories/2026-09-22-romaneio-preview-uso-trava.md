@@ -43,6 +43,15 @@ Ao carregar um romaneio em pedidos de Venda/Compra, ainda no "Preview - Resumo":
 - `compras.js` (espelho: helpers `...Compra`, `renderizarPreviewRomaneioCompra`, filtro, vínculo, resets)
 - `tests/romaneio-preview-uso-trava.test.mjs` (10 asserts de contrato)
 
+## Deploy
+
+- **Commit feature:** `206ce62` (`feat(romaneio): preview selecionavel + trava de reuso em vendas/compras`)
+- **Push:** `origin/main` (`000ca5a..206ce62`)
+- **Build:** `npm run build:hosting` — 478 arquivos em `hosting-dist`, código novo confirmado no artefato (`buscarUsoRomaneioVendas`, `renderizarPreviewRomaneioCompra`)
+- **Deploy:** `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app`
+- **Gate CodeRabbit:** pulado por indisponibilidade de ambiente (sem distros WSL nesta máquina) — lint, typecheck e suite cheia verdes como cobertura.
+- **Não incluído:** `sisweb.ico`, `sisweb.svg`, `marqueting/` (sujeira pré-existente do working tree, fora do escopo).
+
 ## Quality Gates
 
 - [x] `node --check vendas.js && node --check compras.js`
