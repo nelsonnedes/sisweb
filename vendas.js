@@ -2381,6 +2381,9 @@ async function salvarPedido(event) {
         
         // Salvar pedido
         // Se já existe, atualizar. Se não, adicionar.
+        // Snapshot para rollback: se o servidor não confirmar, a memória volta
+        // ao estado anterior (evita "sucesso" fantasma que some no reload).
+        const backupPedidos = Array.isArray(window.pedidos) ? window.pedidos.slice() : [];
         if (editandoPedidoId) {
             const index = window.pedidos.findIndex(p => p.id === editandoPedidoId);
             if (index !== -1) {
@@ -2493,6 +2496,7 @@ async function salvarPedido(event) {
                 throw new Error('Não foi possível sincronizar as contas a receber do pedido. Nenhuma alteração foi concluída.');
             }
             // Fallback para salvamento individual (somente pedido sem financeiro obrigatório)
+            __rvSaveDataRemoteOk = false;
             await saveData('vendas/pedidos', window.pedidos);
             
             // Salvar contas individualmente (não ideal, mas funcional como fallback)
@@ -2500,6 +2504,26 @@ async function salvarPedido(event) {
                  // ... lógica de fallback omitida para brevidade, assumindo que updatePaths funcionará
                  // Se updatePaths falhar, o saveData acima já salvou o pedido localmente e no nó principal
             }
+        }
+
+        // Fail-closed: sucesso só com confirmação do servidor. Sem isso, desfaz a
+        // mutação otimista e mantém o formulário aberto para nova tentativa.
+        const salvouServidor = multiUpdateDone || __rvSaveDataRemoteOk;
+        if (salvouServidor) {
+            try {
+                const svcInv = window.firebaseService || window.FirebaseService;
+                if (svcInv && typeof svcInv.invalidateReadCacheForPath === 'function') {
+                    // A callable não invalida o cache de leitura (só updatePaths/saveToFirebase
+                    // o fazem); sem isso, um reload <60s pode mostrar o dado antigo.
+                    svcInv.invalidateReadCacheForPath('vendas/pedidos');
+                    svcInv.invalidateReadCacheForPath('pedidosVenda');
+                }
+            } catch (_) { /* best-effort */ }
+        } else {
+            try { window.pedidos = backupPedidos; } catch (_) {}
+            LoadingManager.hide();
+            ToastManager.error('Não foi possível salvar o pedido no servidor. Verifique sua conexão e permissões e tente novamente. Nenhuma alteração foi perdida.', 'Falha ao salvar', 8000);
+            return;
         }
 
         // Atualizar estoque localmente para refletir na UI imediatamente
@@ -5070,7 +5094,13 @@ async function getRomaneiosMerged(tipoKey) {
     }
 }
 
+// Flag dedicada: resultado REMOTO da última chamada saveData (o retorno boolean
+// de saveData preserva o contrato antigo e não pode ser alterado: outros
+// chamadores dependem dele). Lida logo após o await, no mesmo fluxo.
+let __rvSaveDataRemoteOk = false;
+
 async function saveData(key, data) {
+    __rvSaveDataRemoteOk = false;
     try {
         console.log(`💾 Salvando dados: ${key}`);
         
@@ -5087,24 +5117,29 @@ async function saveData(key, data) {
                 const perRecordKeys = new Set(['contasReceber', 'contasPagar', 'romaneiosPct']);
                 if (Array.isArray(data) && perRecordKeys.has(String(key))) {
                     let ok = 0;
+                    let tentados = 0;
                     for (const item of data) {
                         if (!item || !item.id) continue;
+                        tentados++;
                         const payload = { ...item };
                         Object.keys(payload).forEach(k => { if (payload[k] === undefined) delete payload[k]; });
                         const res = await window.firebaseService.saveToFirebase(String(key), String(item.id), payload);
                         if (res && res.success) ok++;
                     }
+                    __rvSaveDataRemoteOk = tentados > 0 && ok === tentados;
                     console.log(`✅ ${key}: ${ok} registro(s) salvos por registro (sem sobrescrever)`);
                 } else {
                     // Para demais casos, substituir conteúdo inteiro
                     const result = await window.firebaseService.saveToFirebase(key, null, data);
                     if (result && result.success) {
+                        __rvSaveDataRemoteOk = true;
                         console.log(`✅ ${key} salvo no Firebase com sucesso`);
                     } else {
                         console.warn(`⚠️ Falha ao salvar ${key} no Firebase:`, result);
                     }
                 }
             } catch (firebaseError) {
+                __rvSaveDataRemoteOk = false;
                 console.warn(`⚠️ Erro ao salvar ${key} no Firebase:`, firebaseError);
             }
         }

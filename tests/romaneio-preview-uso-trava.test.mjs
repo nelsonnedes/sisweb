@@ -278,3 +278,27 @@ test('lista e impressão exibem itens dimensoes pelo nome (sem re-derivação)',
   const ocorrencias = vendas.match(/item\.tipo === 'romaneio_dimensoes'/g) || [];
   assert.ok(ocorrencias.length >= 3, 'tabela, detalhes e impressão classificam romaneio_dimensoes');
 });
+
+// ---------------------------------------------------------------------------
+// Persistência fail-closed: sem sucesso fantasma (reversão pós-reload)
+// ---------------------------------------------------------------------------
+test('vendas: save só confirma com servidor, com rollback e sem mentir', () => {
+  assert.match(vendas, /__rvSaveDataRemoteOk/);
+  assert.match(vendas, /backupPedidos/);
+  assert.match(vendas, /window\.pedidos = backupPedidos/);
+  assert.match(vendas, /salvouServidor/);
+  assert.match(vendas, /Nenhuma alteração foi perdida/);
+  assert.match(vendas, /invalidateReadCacheForPath\('vendas\/pedidos'\)/);
+  const idxGate = vendas.indexOf('salvouServidor');
+  const idxSucesso = vendas.indexOf("ToastManager.success('Pedido salvo com sucesso!'");
+  assert.ok(idxGate !== -1 && idxSucesso !== -1 && idxGate < idxSucesso, 'sucesso só após gate do servidor');
+});
+
+test('compras: fallback valida remoto antes de confirmar', () => {
+  assert.match(compras, /__rcSaveDataRemoteOk/);
+  assert.match(compras, /Nenhuma alteração foi perdida/);
+  assert.match(compras, /invalidateReadCacheForPath\('pedidosCompra'\)/);
+  const idxGate = compras.indexOf('__rcSaveDataRemoteOk');
+  const idxAssign = compras.indexOf('window.compras = nextCompras');
+  assert.ok(idxGate !== -1 && idxAssign !== -1 && idxGate < idxAssign, 'memória só após confirmação');
+});

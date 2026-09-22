@@ -478,14 +478,20 @@ async function getData(key) {
     }
 }
 
+// Flag dedicada: resultado REMOTO da última chamada saveData (o retorno boolean
+// de saveData preserva o contrato antigo). Lida logo após o await, no mesmo fluxo.
+let __rcSaveDataRemoteOk = false;
+
 // Salvar dados
 async function saveData(key, data) {
+    __rcSaveDataRemoteOk = false;
     try {
         const storageKey = getCompanyKey(key);
         persistLocalValue(storageKey, data);
         
         if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            await window.firebaseService.saveToFirebase(key, null, data);
+            const res = await window.firebaseService.saveToFirebase(key, null, data);
+            __rcSaveDataRemoteOk = !!(res && res.success);
         }
         return true;
     } catch (e) {
@@ -2418,11 +2424,21 @@ async function salvarPedido(event) {
         }
 
         if (!savedToFirebase) {
+            __rcSaveDataRemoteOk = false;
             const savedFallback = await saveData('pedidosCompra', nextCompras);
-            if (!savedFallback) {
-                throw new Error('Não foi possível salvar o pedido de compra no servidor.');
+            if (!savedFallback || !__rcSaveDataRemoteOk) {
+                throw new Error('Não foi possível salvar o pedido no servidor. Verifique sua conexão e permissões e tente novamente. Nenhuma alteração foi perdida.');
             }
         }
+
+        // Servidor confirmou: invalida o cache de leitura (a callable não o faz
+        // sozinha; sem isso, um reload <60s pode mostrar o dado antigo).
+        try {
+            const svcInv = window.firebaseService || window.FirebaseService;
+            if (svcInv && typeof svcInv.invalidateReadCacheForPath === 'function') {
+                svcInv.invalidateReadCacheForPath('pedidosCompra');
+            }
+        } catch (_) { /* best-effort */ }
 
         window.compras = nextCompras;
         persistirComprasCacheLocal(window.compras);
