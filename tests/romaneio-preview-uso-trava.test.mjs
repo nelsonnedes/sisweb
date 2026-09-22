@@ -110,31 +110,52 @@ test('edicao do proprio pedido nao se autobloqueia (ignora id em edicao)', () =>
 // ---------------------------------------------------------------------------
 // Agrupamento: fieldset "Agrupar:" + modos (vendas)
 // ---------------------------------------------------------------------------
-test('vendas: fieldset Agrupar com 2 checkboxes sem quebrar id legado', () => {
+test('vendas: fieldset Agrupar com 3 checkboxes, default E x L', () => {
   assert.match(vendasHtml, /fieldset id="agruparFieldset"/);
   assert.match(vendasHtml, /Agrupar:/);
   assert.match(vendasHtml, /id="agruparDimensoesCheckbox"/);
   assert.match(vendasHtml, /Espécie Espessura x Largura x Comprimento/);
   assert.match(vendasHtml, /id="agruparEspecieCheckbox"/);
-  assert.match(vendasHtml, /Espécie Espessura x Largura/);
-  assert.match(comprasHtml, /Espécie Espessura x Largura/);
+  assert.match(vendasHtml, />Espécie Espessura<\/span>/);
+  assert.match(vendasHtml, /id="agruparEspecieLarguraCheckbox" checked/);
+  assert.match(vendasHtml, />Espécie Espessura x Largura<\/span>/);
+  assert.match(comprasHtml, />Espécie Espessura<\/span>/);
+  assert.match(comprasHtml, /id="agruparEspecieCompra"/);
+  assert.match(comprasHtml, /id="agruparEspecieEspessuraCompra" checked/);
   assert.doesNotMatch(vendasHtml, /Agrupar por Espécie e Espessura/);
 });
 
-test('vendas: modos exclusivos, TORA desabilita dimensões, leitura fail-open', () => {
+test('vendas: 3 modos exatos, default obrigatório, sem ramo morto', () => {
   assert.match(vendas, /window\.alternarModoAgrupamentoVendas = function \(modo\)/);
   assert.match(vendas, /function atualizarEstadoAgrupamentoVendas\(tipoSelecionado\)/);
   assert.match(vendas, /function lerModoAgrupamentoVendas\(\)/);
   assert.match(vendas, /cbDims\.disabled = true/);
   assert.match(vendas, /vale apenas para romaneios PCT\/TL\/PES/);
+  assert.match(vendas, /Selecione ao menos um modo de agrupamento/);
+  assert.match(vendas, /Selecione um modo no quadro "Agrupar:"/);
+  assert.match(vendas, /function chaveGrupoEspVendas\(/);
+  assert.match(vendas, /function agruparResumoPorEspessuraVendas\(/);
+  assert.match(vendas, /function agruparBrutosPorDimensoesVendas\(/);
+  assert.match(vendas, /function limparExclusoesPreviewVendas\(\)/);
+  assert.match(vendas, /Inalcançável: modo obrigatório/);
 });
 
-test('vendas: modo dimensões ancora em brutos com tipo próprio sem colisão', () => {
-  assert.match(vendas, /function derivarChaveCategoriaVendas\(item\)/);
-  assert.match(vendas, /function chaveGrupoDimensoesVendas\(/);
-  assert.match(vendas, /romaneio_dimensoes/);
-  assert.match(vendas, /romaneio_dim_/);
-  assert.match(vendas, /t !== 'romaneio_dimensoes'/);
+test('vendas: preview fiel por modo (linhas = unidades de carga)', () => {
+  assert.match(vendas, /modoAgrupPreviewVendas/);
+  assert.match(vendas, /renderGrupoPrev/);
+  assert.match(vendas, /__rvSetAlvoVendas/);
+  assert.match(vendas, /será carregado 1 item por grupo/);
+  assert.match(vendas, /grupos selecionados/);
+});
+
+test('compras: 3 modos + default + obrigatório, sem item-a-item morto', () => {
+  assert.match(comprasHtml, /alternarModoAgrupamentoCompra\('largura'\)/);
+  assert.match(comprasHtml, /alternarModoAgrupamentoCompra\('especie'\)/);
+  assert.match(compras, /function chaveGrupoEspLargCompra\(/);
+  assert.match(compras, /Selecione um modo no quadro "Agrupar:"/);
+  assert.match(compras, /Selecione ao menos um modo de agrupamento/);
+  assert.match(compras, /por espécie\+espessura\+largura/);
+  assert.doesNotMatch(compras, /Lógica Item a Item/);
 });
 
 // ---------------------------------------------------------------------------
@@ -196,4 +217,53 @@ test('checkboxes atualizam o preview em tempo real', () => {
   assert.match(compras, /if \(romaneioAtualCompra\) renderizarPreviewRomaneioCompra\(\);/);
   assert.match(compras, /cartaoItemPrev/);
   assert.match(compras, /serão carregados os grupos selecionados/);
+});
+
+test('toolbar do romaneio: selects em cima, botões + agrupar embaixo', () => {
+  for (const html of [vendasHtml, comprasHtml]) {
+    const idxTipo = html.indexOf('id="tipoRomaneio"');
+    const idxToolbar = html.indexOf('romaneio-toolbar-row');
+    const idxCarregar = html.indexOf('romaneio-load-btn');
+    const idxLimpar = html.indexOf('romaneio-clear-btn');
+    assert.ok(idxTipo !== -1 && idxToolbar !== -1 && idxCarregar !== -1 && idxLimpar !== -1);
+    assert.ok(idxTipo < idxToolbar, 'selects antes da toolbar');
+    assert.ok(idxToolbar < idxCarregar && idxCarregar < idxLimpar, 'carregar antes de limpar');
+  }
+  assert.match(vendasHtml, /romaneio-group-box/);
+  assert.match(comprasHtml, /id="agruparBoxCompra"/);
+  assert.match(compras, /agruparBoxCompra/);
+});
+
+test('css da toolbar: desktop lado a lado, mobile empilhado full-width', () => {
+  const css = fs.readFileSync(new URL('../commerce-responsive.css', import.meta.url), 'utf8');
+  assert.match(css, /\.romaneio-toolbar-row \{[\s\S]*?align-items: stretch;/);
+  assert.match(css, /\.romaneio-group-box \{[\s\S]*?flex: 1 1 320px;/);
+  assert.match(css, /\.romaneio-group-fieldset \{[\s\S]*?display: flex;/);
+  assert.match(css, /\.romaneio-clear-btn \{[\s\S]*?width: 100%;/);
+  assert.match(css, /\.romaneio-group-fieldset \{[\s\S]*?grid-template-columns: 1fr;/);
+  assert.match(css, /#agruparDimensoesCheckbox,/);
+  assert.match(css, /#agruparDimensoesCompra,/);
+  assert.match(css, /#agruparEspecieEspessuraCompra/);
+});
+
+// ---------------------------------------------------------------------------
+// Editar+recarregar+salvar preserva a lógica (lista/impressão fiéis)
+// ---------------------------------------------------------------------------
+test('resets de preview não são recursivos (limpa os 3 sets)', () => {
+  assert.match(vendas, /function limparExclusoesPreviewVendas\(\) \{\s*\n\s*romaneioPreviewExcluidos = new Set\(\);/);
+  assert.match(vendas, /romaneioPreviewExcluidosEsp = new Set\(\);/);
+  assert.match(vendas, /romaneioPreviewExcluidosDims = new Set\(\);/);
+  assert.doesNotMatch(vendas, /function limparExclusoesPreviewVendas\(\) \{\s*\n\s*limparExclusoesPreviewVendas\(\);/);
+});
+
+test('modo de agrupamento persiste no pedido e restaura na edição', () => {
+  assert.match(vendas, /pedidoData\.modoAgrupamentoRomaneio/);
+  assert.match(vendas, /modoSalvoVenda/);
+  assert.match(compras, /pedido\.modoAgrupamentoRomaneio/);
+  assert.match(compras, /modoSalvoCompra/);
+});
+
+test('lista e impressão exibem itens dimensoes pelo nome (sem re-derivação)', () => {
+  const ocorrencias = vendas.match(/item\.tipo === 'romaneio_dimensoes'/g) || [];
+  assert.ok(ocorrencias.length >= 3, 'tabela, detalhes e impressão classificam romaneio_dimensoes');
 });
