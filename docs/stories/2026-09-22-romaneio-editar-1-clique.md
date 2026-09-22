@@ -1,7 +1,11 @@
 # Story: Romaneio — Editar agrupado em 1 clique (sem confirm)
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado)
+- **Deploy:**
+  - Commit `06b1a6d` → push `origin/main` ✓
+  - Build `hosting-dist` (478 arquivos) com código novo confirmado no artefato ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
 - **Escopo:** `vendas.js` (`editarItem`), `compras.js` (`editarItemCompra`), `tests/romaneio-preview-uso-trava.test.mjs` (+1 teste)
 - **Fora de escopo:** fallback sem `itensOriginais` (inalterado), conversão manual no salvar (legado).
 
