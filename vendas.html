@@ -1147,6 +1147,10 @@
                                 class="btn-success romaneio-load-btn">
                                 <i class="fas fa-plus"></i> Carregar Itens
                             </button>
+                            <button type="button" onclick="limparCarrinhoItens()"
+                                class="btn-danger romaneio-clear-btn" title="Limpar todos os itens do carrinho">
+                                <i class="fas fa-trash"></i> Limpar
+                            </button>
                             <fieldset id="agruparFieldset" class="romaneio-group-fieldset"
                                 style="border: 1px solid #dee2e6; border-radius: 4px; padding: 6px 10px 8px; margin: 0;">
                                 <legend style="font-size: 12px; font-weight: 600; color: #2c3e50; padding: 0 6px;">Agrupar:</legend>
@@ -1160,7 +1164,7 @@
                                     for="agruparEspecieCheckbox">
                                     <input type="checkbox" id="agruparEspecieCheckbox"
                                         onchange="alternarModoAgrupamentoVendas('especie')">
-                                    <span>Agrupar por Espécie e Espessura</span>
+                                    <span>Espécie Espessura x Largura</span>
                                 </label>
                             </fieldset>
                         </div>

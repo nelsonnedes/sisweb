@@ -5666,13 +5666,55 @@ function mostrarPreviewConama(resumoConama, usoInfo) {
         html += '<p style="color: #666; font-style: italic;">Nenhum dado CONAMA encontrado no romaneio selecionado.</p>';
     } else {
         html += '<div style="display: grid; gap: 10px;">';
+        const modoPrevVendas = lerModoAgrupamentoVendas();
+        // Mapa categoria -> comprimentos distintos (modo dimensões), a partir dos brutos.
+        let compPorCategoriaPrev = null;
+        let gruposDimsPrevCount = 0;
+        try {
+            if (modoPrevVendas === 'dimensoes' && romaneioSelecionado) {
+                const brutosPrev = Array.isArray(romaneioSelecionado.items) ? romaneioSelecionado.items : (Array.isArray(romaneioSelecionado.itens) ? romaneioSelecionado.itens : []);
+                compPorCategoriaPrev = new Map();
+                const chavesDimsPrev = new Set();
+                brutosPrev.forEach((it) => {
+                    if (!it || typeof it !== 'object') return;
+                    if (it['0'] === 'r' && it['1'] === 'o') return;
+                    const chaveCatPrev = derivarChaveCategoriaVendas(it);
+                    if (!chaveCatPrev) return;
+                    const compPrev = parseFloat(it.comprimento) || 0;
+                    if (!compPorCategoriaPrev.has(chaveCatPrev)) compPorCategoriaPrev.set(chaveCatPrev, new Set());
+                    compPorCategoriaPrev.get(chaveCatPrev).add(compPrev.toFixed(2));
+                    chavesDimsPrev.add(`${chaveCatPrev}||${compPrev.toFixed(2)}`);
+                });
+                gruposDimsPrevCount = chavesDimsPrev.size;
+            }
+        } catch (_) { compPorCategoriaPrev = null; }
+        if (!uso && modoPrevVendas !== 'nenhum') {
+            try {
+                let linhaModoVendas = '';
+                if (modoPrevVendas === 'especie') {
+                    const gruposEspPrev = new Set();
+                    Object.keys(resumoConama).forEach((esp) => {
+                        Object.keys(resumoConama[esp].categorias).forEach((catN) => {
+                            const catRef = resumoConama[esp].categorias[catN];
+                            gruposEspPrev.add(`${esp}||${(catRef && catRef.espessura) || 0}`);
+                        });
+                    });
+                    linhaModoVendas = `Modo <strong>Espécie x Espessura</strong>: ${gruposEspPrev.size} grupo(s) — será carregado 1 item por grupo.`;
+                } else if (modoPrevVendas === 'dimensoes') {
+                    linhaModoVendas = `Modo <strong>Espessura x Largura x Comprimento</strong>: ${gruposDimsPrevCount} grupo(s) — será carregado 1 item por grupo.`;
+                }
+                if (linhaModoVendas) {
+                    html += `<p style="color:#0c5460;background:#d1ecf1;border:1px solid #bee5eb;font-size:12px;margin:0 0 10px 0;padding:8px 10px;border-radius:4px;"><i class="fas fa-layer-group"></i> ${linhaModoVendas}</p>`;
+                }
+            } catch (_) { /* banner best-effort */ }
+        }
 
         Object.keys(resumoConama).forEach(especie => {
             const especieSafe = escaparHtmlRomaneioVendas(especie);
             html += `<div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;">`;
             html += `<h5 style="margin: 0 0 8px 0; color: #2c3e50;">${especieSafe}</h5>`;
 
-            Object.keys(resumoConama[especie].categorias).forEach(categoria => {
+            const renderLinhaPrev = (categoria) => {
                 const cat = resumoConama[especie].categorias[categoria];
                 const volume = cat.volume;
                 const precoUnitario = cat.precoUnitario || 0;
@@ -5687,31 +5729,59 @@ function mostrarPreviewConama(resumoConama, usoInfo) {
                 const rowOpacity = (excluido || desativado) ? 'opacity:0.55;' : '';
                 const categoriaSafe = escaparHtmlRomaneioVendas(categoria);
                 const pecasSafe = escaparHtmlRomaneioVendas(pecasInfo || '');
+                let badgeDimsPrev = '';
+                try {
+                    if (!uso && modoPrevVendas === 'dimensoes' && compPorCategoriaPrev) {
+                        const setCompPrev = compPorCategoriaPrev.get(chave);
+                        if (setCompPrev && setCompPrev.size > 0) {
+                            badgeDimsPrev = ` • <span style="display:inline-block;background:#d1ecf1;color:#0c5460;font-size:11px;padding:1px 7px;border-radius:10px;">→ ${setCompPrev.size} grupo(s) E×L×C</span>`;
+                        }
+                    }
+                } catch (_) { /* best-effort */ }
 
-                html += `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:4px;padding:6px 0;border-bottom:1px solid #eee;${rowOpacity}">`;
-                html += `<input type="checkbox" data-rv-pk="${pk}" ${checkedAttr} ${disabledAttr} onchange="window.romaneioPreviewToggleVendas(this)" title="Incluir este item no carregamento" style="margin-top:4px;">`;
-                html += `<div style="flex: 1;">`;
-                html += `<span style="font-weight: 600;">${categoriaSafe}:</span><br>`;
-                html += `<span style="color: #666; font-size: 12px;">Vol: ${formatNumber(volume, 3)} m³${pecasInfo ? ` • ${pecasSafe}` : ''}</span><br>`;
+                let row = `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:4px;padding:6px 0;border-bottom:1px solid #eee;${rowOpacity}">`;
+                row += `<input type="checkbox" data-rv-pk="${pk}" ${checkedAttr} ${disabledAttr} onchange="window.romaneioPreviewToggleVendas(this)" title="Incluir este item no carregamento" style="margin-top:4px;">`;
+                row += `<div style="flex: 1;">`;
+                row += `<span style="font-weight: 600;">${categoriaSafe}:</span><br>`;
+                row += `<span style="color: #666; font-size: 12px;">Vol: ${formatNumber(volume, 3)} m³${pecasInfo ? ` • ${pecasSafe}` : ''}${badgeDimsPrev}</span><br>`;
                 if (desativado) {
                     const moduloLabel = uso.modulo === 'compra' ? 'Compra' : 'Venda';
-                    html += `<span style="display:inline-block;margin-top:4px;background:#e9ecef;color:#495057;font-size:11px;padding:2px 8px;border-radius:10px;"><i class="fas fa-lock"></i> Usado no pedido Nº ${escaparHtmlRomaneioVendas(uso.pedidoNumero)} (${escaparHtmlRomaneioVendas(moduloLabel)})</span>`;
+                    row += `<span style="display:inline-block;margin-top:4px;background:#e9ecef;color:#495057;font-size:11px;padding:2px 8px;border-radius:10px;"><i class="fas fa-lock"></i> Usado no pedido Nº ${escaparHtmlRomaneioVendas(uso.pedidoNumero)} (${escaparHtmlRomaneioVendas(moduloLabel)})</span>`;
                 } else if (excluido) {
-                    html += `<span style="display:inline-block;margin-top:4px;background:#fff3cd;color:#856404;font-size:11px;padding:2px 8px;border-radius:10px;">Excluído — não será carregado</span>`;
+                    row += `<span style="display:inline-block;margin-top:4px;background:#fff3cd;color:#856404;font-size:11px;padding:2px 8px;border-radius:10px;">Excluído — não será carregado</span>`;
                 }
-                html += `</div>`;
-                html += `<div style="text-align: right;">`;
+                row += `</div>`;
+                row += `<div style="text-align: right;">`;
                 if (precoUnitario > 0) {
-                    html += `<span style="color: #27ae60; font-weight: 600;">${formatCurrency(precoUnitario)}</span><br>`;
-                    html += `<span style="color: #666; font-size: 11px;">por m³</span>`;
+                    row += `<span style="color: #27ae60; font-weight: 600;">${formatCurrency(precoUnitario)}</span><br>`;
+                    row += `<span style="color: #666; font-size: 11px;">por m³</span>`;
                 } else {
-                    html += `<span style="color: #e74c3c; font-size: 12px;">Sem preço</span><br>`;
-                    html += `<span style="color: #f39c12; font-size: 11px;">Padrão: ${formatCurrency(VendasConfig.precoPorM3Padrao)}</span>`;
+                    row += `<span style="color: #e74c3c; font-size: 12px;">Sem preço</span><br>`;
+                    row += `<span style="color: #f39c12; font-size: 11px;">Padrão: ${formatCurrency(VendasConfig.precoPorM3Padrao)}</span>`;
                 }
-                html += `<br><button type="button" data-rv-pk="${pk}" ${disabledAttr} onclick="window.romaneioPreviewExcluirVendas(this)" style="margin-top:6px;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid ${excluido ? '#28a745' : '#dc3545'};background:${excluido ? '#e8f5e9' : '#fff'};color:${excluido ? '#1e7e34' : '#c82333'};cursor:${desativado ? 'not-allowed' : 'pointer'};" title="${excluido ? 'Reincluir este item' : 'Excluir este item do carregamento'}">${excluido ? '<i class="fas fa-undo"></i> Reincluir' : '<i class="fas fa-trash"></i> Excluir'}</button>`;
-                html += `</div>`;
-                html += `</div>`;
-            });
+                row += `<br><button type="button" data-rv-pk="${pk}" ${disabledAttr} onclick="window.romaneioPreviewExcluirVendas(this)" style="margin-top:6px;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid ${excluido ? '#28a745' : '#dc3545'};background:${excluido ? '#e8f5e9' : '#fff'};color:${excluido ? '#1e7e34' : '#c82333'};cursor:${desativado ? 'not-allowed' : 'pointer'};" title="${excluido ? 'Reincluir este item' : 'Excluir este item do carregamento'}">${excluido ? '<i class="fas fa-undo"></i> Reincluir' : '<i class="fas fa-trash"></i> Excluir'}</button>`;
+                row += `</div>`;
+                row += `</div>`;
+                return row;
+            };
+
+            const nomesCatPrev = Object.keys(resumoConama[especie].categorias);
+            if (!uso && modoPrevVendas === 'especie') {
+                const gruposEspPrev = new Map();
+                nomesCatPrev.forEach((c) => {
+                    const catRef = resumoConama[especie].categorias[c];
+                    const e = (catRef && catRef.espessura) || 0;
+                    if (!gruposEspPrev.has(e)) gruposEspPrev.set(e, { cats: [], vol: 0 });
+                    gruposEspPrev.get(e).cats.push(c);
+                    gruposEspPrev.get(e).vol += (catRef && catRef.volume) || 0;
+                });
+                gruposEspPrev.forEach((g, e) => {
+                    html += `<div style="background:#eef2f7;border:1px solid #d5dce5;border-radius:4px;padding:5px 8px;margin:6px 0 2px 0;font-size:12px;color:#2c3e50;"><i class="fas fa-layer-group"></i> <strong>Espessura ${escaparHtmlRomaneioVendas(formatarMedidaCm(e))}cm</strong> — ${g.cats.length} categoria(s) • ${formatNumber(g.vol, 3)} m³</div>`;
+                    g.cats.forEach((c) => { html += renderLinhaPrev(c); });
+                });
+            } else {
+                nomesCatPrev.forEach((c) => { html += renderLinhaPrev(c); });
+            }
 
             html += `</div>`;
         });
@@ -5832,6 +5902,9 @@ window.alternarModoAgrupamentoVendas = function (modo) {
         } else if (modo === 'especie' && cbEsp.checked) {
             cbDims.checked = false;
         }
+        try {
+            if (romaneioSelecionado) __rvRefazerPreviewVendas();
+        } catch (_) { /* best-effort */ }
     } catch (e) {
         console.warn('Vendas: falha ao alternar modo de agrupamento:', e);
     }
@@ -6333,6 +6406,26 @@ async function adicionarItensRomaneio() {
     const msgFinal = resumoCarregamentoMsg || `${totalCarregados} categorias de produtos adicionadas do romaneio`;
     ToastManager.success(`${msgFinal}${msgExtra}`, 'Itens carregados', 3000);
     console.log(`${msgFinal}${msgExtra}`);
+}
+
+// Limpar todos os itens do carrinho (botão Limpar ao lado de Carregar Itens)
+function limparCarrinhoItens() {
+    try {
+        if (!Array.isArray(itensCarrinho) || itensCarrinho.length === 0) {
+            ToastManager.info('O carrinho já está vazio', 'Nada a limpar', 2500);
+            return;
+        }
+        if (typeof confirm === 'function' && !confirm('Limpar todos os itens do carrinho? Esta ação não pode ser desfeita.')) {
+            return;
+        }
+        itensCarrinho = [];
+        itemEmEdicaoId = null;
+        atualizarTabelaItens();
+        atualizarTotais();
+        ToastManager.success('Todos os itens foram removidos do carrinho', 'Carrinho limpo', 2500);
+    } catch (e) {
+        console.warn('Vendas: falha ao limpar carrinho:', e);
+    }
 }
 
 // Funções para gerenciar contas a receber

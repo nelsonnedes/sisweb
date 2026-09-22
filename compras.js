@@ -733,12 +733,13 @@ function normalizarItensRomaneioCompra(romaneio) {
     });
 }
 
-function rotuloItemRomaneioCompra(item, idx) {
+function rotuloItemRomaneioCompra(item, idx, tipo) {
     const nome = String(item.especie || item.produto || item.descricao || `Item ${idx + 1}`).trim();
     const qtd = parseFloat(item.volumeLiquido || item.volume || item.volumeSerraria || item.quantidade || 0) || 0;
     const preco = parseFloat(item.preco || item.precoUnitario || 0) || 0;
     const unidade = String(item.unidade || 'm³');
-    return { nome, qtd, preco, unidade };
+    const pecasInfo = infoPecasItemCompra(item, tipo);
+    return { nome, qtd, preco, unidade, pecasInfo };
 }
 let comprasFornecedoresEditingId = null;
 let comprasFornecedoresFiltered = [];
@@ -5301,31 +5302,110 @@ function renderizarPreviewRomaneioCompra() {
         html += '<p style="color:#666;font-size:12px;margin:0 0 10px 0;">Desmarque ou exclua os itens que <strong>não</strong> devem ir para o pedido. O botão "Carregar Itens" carrega apenas o que permanecer selecionado.</p>';
     }
 
+    const tipoAtualPrev = (romaneioAtualCompra && romaneioAtualCompra.tipo) || '';
+    const modoPrev = lerModoAgrupamentoCompra();
+    if (!uso && modoPrev !== 'nenhum') {
+        try {
+            let linhaModoPrev = '';
+            if (modoPrev === 'resumo') {
+                const especiesPrev = new Set();
+                itens.forEach((item) => {
+                    especiesPrev.add(String((item && (item.especie || item.produto || item.descricao)) || 'Item').trim().toUpperCase());
+                });
+                linhaModoPrev = `Modo <strong>Resumo por Espécie</strong>: ${especiesPrev.size} espécie(s) — será carregado 1 item por espécie.`;
+            } else {
+                const porDimPrev = (modoPrev === 'dimensoes');
+                const chavesPrev = new Set();
+                itens.forEach((item) => {
+                    if (!item || typeof item !== 'object') return;
+                    const espPrev = String(item.especie || item.produto || item.descricao || 'Item Romaneio').trim();
+                    if (porDimPrev) {
+                        chavesPrev.add(chaveGrupoDimsCompra(espPrev, lerEspessuraCompra(item), parseFloat(item.largura) || 0, parseFloat(item.comprimento) || 0));
+                    } else {
+                        chavesPrev.add(chaveGrupoEspecieCompra(espPrev, lerEspessuraCompra(item)));
+                    }
+                });
+                const nomeModoPrev = porDimPrev ? 'Espécie Espessura x Largura x Comprimento' : 'Espécie Espessura x Largura';
+                linhaModoPrev = `Modo <strong>${escapeHtml(nomeModoPrev)}</strong>: ${chavesPrev.size} grupo(s) — serão carregados os grupos selecionados abaixo.`;
+            }
+            if (linhaModoPrev) {
+                html += `<p style="color:#0c5460;background:#d1ecf1;border:1px solid #bee5eb;font-size:12px;margin:0 0 10px 0;padding:8px 10px;border-radius:4px;"><i class="fas fa-layer-group"></i> ${linhaModoPrev}</p>`;
+            }
+        } catch (_) { /* banner best-effort */ }
+    }
+
+    const cartaoItemPrev = (item, idx) => {
+        const rot = rotuloItemRomaneioCompra(item, idx, tipoAtualPrev);
+        const excluido = romaneioPreviewExcluidosCompra.has(idx);
+        const desativado = !!uso;
+        const checkedAttr = (!excluido && !desativado) ? 'checked' : '';
+        const disabledAttr = desativado ? 'disabled' : '';
+        const rowOpacity = (excluido || desativado) ? 'opacity:0.55;' : '';
+        let cartao = `<div style="display:flex;gap:8px;align-items:flex-start;background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:8px 10px;${rowOpacity}">`;
+        cartao += `<input type="checkbox" data-rc-idx="${idx}" ${checkedAttr} ${disabledAttr} onchange="window.romaneioPreviewToggleCompra(this)" title="Incluir este item no carregamento" style="margin-top:4px;">`;
+        cartao += `<div style="flex:1;min-width:0;">`;
+        cartao += `<div style="font-weight:600;color:#2c3e50;font-size:13px;">${escapeHtml(rot.nome)}</div>`;
+        cartao += `<div style="color:#666;font-size:12px;">Qtd/Vol: ${escapeHtml(formatNumber(rot.qtd))} ${escapeHtml(rot.unidade)} • ${escapeHtml(formatCurrency(rot.preco))} unit.${rot.pecasInfo ? ` • ${escapeHtml(rot.pecasInfo)}` : ''}</div>`;
+        if (desativado) {
+            const moduloLabel = uso.modulo === 'venda' ? 'Venda' : 'Compra';
+            cartao += `<span style="display:inline-block;margin-top:4px;background:#e9ecef;color:#495057;font-size:11px;padding:2px 8px;border-radius:10px;"><i class="fas fa-lock"></i> Usado no pedido Nº ${escapeHtml(uso.pedidoNumero)} (${escapeHtml(moduloLabel)})</span>`;
+        } else if (excluido) {
+            cartao += `<span style="display:inline-block;margin-top:4px;background:#fff3cd;color:#856404;font-size:11px;padding:2px 8px;border-radius:10px;">Excluído — não será carregado</span>`;
+        }
+        cartao += `</div>`;
+        cartao += `<button type="button" data-rc-idx="${idx}" ${disabledAttr} onclick="window.romaneioPreviewExcluirCompra(this)" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid ${excluido ? '#28a745' : '#dc3545'};background:${excluido ? '#e8f5e9' : '#fff'};color:${excluido ? '#1e7e34' : '#c82333'};cursor:${desativado ? 'not-allowed' : 'pointer'};" title="${excluido ? 'Reincluir este item' : 'Excluir este item do carregamento'}">${excluido ? '<i class="fas fa-undo"></i> Reincluir' : '<i class="fas fa-trash"></i> Excluir'}</button>`;
+        cartao += `</div>`;
+        return cartao;
+    };
+
     if (itens.length === 0) {
         html += '<p style="color:#666;font-style:italic;">Nenhum item válido encontrado no romaneio selecionado.</p>';
+    } else if (!uso && (modoPrev === 'dimensoes' || modoPrev === 'especie')) {
+        const porDimPrev = (modoPrev === 'dimensoes');
+        const gruposPrev = new Map();
+        itens.forEach((item, idx) => {
+            if (!item || typeof item !== 'object') return;
+            const espPrev = String(item.especie || item.produto || item.descricao || 'Item Romaneio').trim();
+            const ePrev = lerEspessuraCompra(item);
+            const lPrev = parseFloat(item.largura) || 0;
+            const cPrev = parseFloat(item.comprimento) || 0;
+            const chavePrev = porDimPrev ? chaveGrupoDimsCompra(espPrev, ePrev, lPrev, cPrev) : chaveGrupoEspecieCompra(espPrev, ePrev);
+            const rotuloPrev = porDimPrev
+                ? `${espPrev} - ${fmtDimCompra(ePrev)}x${fmtDimCompra(lPrev)}x${fmtDimCompra(cPrev)}cm`
+                : `${espPrev} - ${fmtDimCompra(ePrev)}cm`;
+            if (!gruposPrev.has(chavePrev)) gruposPrev.set(chavePrev, { rotulo: rotuloPrev, idxs: [] });
+            gruposPrev.get(chavePrev).idxs.push(idx);
+        });
+        html += '<div style="display:grid;gap:10px;">';
+        gruposPrev.forEach((grp) => {
+            let volGrp = 0;
+            let pecasGrp = 0;
+            let selGrp = 0;
+            grp.idxs.forEach((idx) => {
+                const it = itens[idx];
+                const r = rotuloItemRomaneioCompra(it, idx, tipoAtualPrev);
+                volGrp += r.qtd;
+                pecasGrp += quantidadePecasItemCompra(it, tipoAtualPrev);
+                if (!romaneioPreviewExcluidosCompra.has(idx)) selGrp++;
+            });
+            html += `<div style="border:1px solid #dee2e6;border-radius:4px;background:#f8f9fa;padding:8px;">`;
+            html += `<div style="font-size:12px;color:#2c3e50;margin-bottom:6px;"><strong>${escapeHtml(grp.rotulo)}</strong><br><span style="color:#666;">${selGrp} de ${grp.idxs.length} itens • ${escapeHtml(formatNumber(volGrp))} m³${pecasGrp > 0 ? ` • ${pecasGrp} Peças` : ''}</span></div>`;
+            html += '<div style="display:grid;gap:8px;">';
+            grp.idxs.forEach((idx) => { html += cartaoItemPrev(itens[idx], idx); });
+            html += '</div></div>';
+        });
+        html += '</div>';
+        if (!uso) {
+            try {
+                const total = itens.length;
+                const sel = itens.filter((_, i) => !romaneioPreviewExcluidosCompra.has(i)).length;
+                html += `<p style="color:#495057;font-size:12px;margin:10px 0 0 0;">${sel} de ${total} itens selecionados — apenas os selecionados serão carregados.</p>`;
+            } catch (_) { /* best-effort */ }
+        }
     } else {
         html += '<div style="display:grid;gap:8px;">';
         itens.forEach((item, idx) => {
-            const rot = rotuloItemRomaneioCompra(item, idx);
-            const excluido = romaneioPreviewExcluidosCompra.has(idx);
-            const desativado = !!uso;
-            const checkedAttr = (!excluido && !desativado) ? 'checked' : '';
-            const disabledAttr = desativado ? 'disabled' : '';
-            const rowOpacity = (excluido || desativado) ? 'opacity:0.55;' : '';
-            html += `<div style="display:flex;gap:8px;align-items:flex-start;background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:8px 10px;${rowOpacity}">`;
-            html += `<input type="checkbox" data-rc-idx="${idx}" ${checkedAttr} ${disabledAttr} onchange="window.romaneioPreviewToggleCompra(this)" title="Incluir este item no carregamento" style="margin-top:4px;">`;
-            html += `<div style="flex:1;min-width:0;">`;
-            html += `<div style="font-weight:600;color:#2c3e50;font-size:13px;">${escapeHtml(rot.nome)}</div>`;
-            html += `<div style="color:#666;font-size:12px;">Qtd/Vol: ${escapeHtml(formatNumber(rot.qtd))} ${escapeHtml(rot.unidade)} • ${escapeHtml(formatCurrency(rot.preco))} unit.</div>`;
-            if (desativado) {
-                const moduloLabel = uso.modulo === 'venda' ? 'Venda' : 'Compra';
-                html += `<span style="display:inline-block;margin-top:4px;background:#e9ecef;color:#495057;font-size:11px;padding:2px 8px;border-radius:10px;"><i class="fas fa-lock"></i> Usado no pedido Nº ${escapeHtml(uso.pedidoNumero)} (${escapeHtml(moduloLabel)})</span>`;
-            } else if (excluido) {
-                html += `<span style="display:inline-block;margin-top:4px;background:#fff3cd;color:#856404;font-size:11px;padding:2px 8px;border-radius:10px;">Excluído — não será carregado</span>`;
-            }
-            html += `</div>`;
-            html += `<button type="button" data-rc-idx="${idx}" ${disabledAttr} onclick="window.romaneioPreviewExcluirCompra(this)" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid ${excluido ? '#28a745' : '#dc3545'};background:${excluido ? '#e8f5e9' : '#fff'};color:${excluido ? '#1e7e34' : '#c82333'};cursor:${desativado ? 'not-allowed' : 'pointer'};" title="${excluido ? 'Reincluir este item' : 'Excluir este item do carregamento'}">${excluido ? '<i class="fas fa-undo"></i> Reincluir' : '<i class="fas fa-trash"></i> Excluir'}</button>`;
-            html += `</div>`;
+            html += cartaoItemPrev(item, idx);
         });
         html += '</div>';
         if (!uso) {
@@ -5409,6 +5489,9 @@ window.alternarModoAgrupamentoCompra = function (modo) {
             if (cbResumo) cbResumo.checked = false;
             if (cbDims) cbDims.checked = false;
         }
+        try {
+            if (romaneioAtualCompra) renderizarPreviewRomaneioCompra();
+        } catch (_) { /* best-effort */ }
     } catch (e) {
         console.warn('Compras: falha ao alternar modo de agrupamento:', e);
     }
@@ -5600,6 +5683,8 @@ window.adicionarItensRomaneio = async function() {
                 const rotuloDims = porDimensoes
                     ? `${especie} - ${fmtDimCompra(esp)}x${fmtDimCompra(larg)}x${fmtDimCompra(comp)}cm`
                     : `${especie} - ${fmtDimCompra(esp)}cm`;
+                const infoPecasItem = infoPecasItemCompra(item, tipo);
+                const nomeItemDims = infoPecasItem ? `${rotuloDims} - ${infoPecasItem}` : rotuloDims;
 
                 if (!agrupados[key]) {
                     agrupados[key] = {
@@ -5607,6 +5692,7 @@ window.adicionarItensRomaneio = async function() {
                         rotulo: rotuloDims,
                         quantidade: 0,
                         total: 0,
+                        pecas: 0,
                         unidade: item.unidade || 'm³',
                         originais: []
                     };
@@ -5614,6 +5700,7 @@ window.adicionarItensRomaneio = async function() {
 
                 agrupados[key].quantidade += qtd;
                 agrupados[key].total += totalItem;
+                agrupados[key].pecas += quantidadePecasItemCompra(item, tipo);
                 agrupados[key].originais.push({
                     id: Date.now() + Math.random(),
                     tipo: 'romaneio',
@@ -5621,7 +5708,7 @@ window.adicionarItensRomaneio = async function() {
                     romaneioId: idEstavel,
                     romaneioNumero: numeroExibicao,
                     romaneioTipo: tipo,
-                    produtoNome: rotuloDims,
+                    produtoNome: nomeItemDims,
                     especie: especie,
                     espessura: esp,
                     largura: larg,
@@ -5637,6 +5724,7 @@ window.adicionarItensRomaneio = async function() {
             Object.values(agrupados).forEach(grp => {
                 // Preço médio ponderado
                 const precoMedio = grp.quantidade > 0 ? (grp.total / grp.quantidade) : 0;
+                const nomeGrupo = (grp.pecas > 0 && ehTipoSerradoCompra(tipo)) ? `${grp.rotulo} - ${grp.pecas} Peças` : grp.rotulo;
 
                 novosItens.push({
                     id: Date.now() + Math.random(),
@@ -5645,7 +5733,7 @@ window.adicionarItensRomaneio = async function() {
                     romaneioId: idEstavel,
                     romaneioNumero: numeroExibicao,
                     romaneioTipo: tipo,
-                    produtoNome: grp.rotulo,
+                    produtoNome: nomeGrupo,
                     quantidade: parseFloat(grp.quantidade.toFixed(3)),
                     unidade: grp.unidade,
                     precoUnitario: parseFloat(precoMedio.toFixed(2)),
@@ -5719,7 +5807,10 @@ window.adicionarItensRomaneio = async function() {
             // Lógica Item a Item
             itensParaCarregar.forEach((item, idx) => {
                 // Tentar mapear campos variados (Tora, Pct, etc)
-                const nomeProduto = item.especie || item.produto || item.descricao || 'Item Romaneio';
+                const nomeBase = item.especie || item.produto || item.descricao || 'Item Romaneio';
+                // PCT/TL/PES: sufixo " - N Peças" igual Vendas; TORA mantém nome puro.
+                const infoPecasAvulso = infoPecasItemCompra(item, tipo);
+                const nomeProduto = infoPecasAvulso ? `${nomeBase} - ${infoPecasAvulso}` : nomeBase;
                 
                 // Priorizar volumeLiquido para Toras, ou volume/quantidade genérico.
                 // Campos geométricos novos permanecem fora do pedido de compra.
@@ -5781,5 +5872,85 @@ window.adicionarItensRomaneio = async function() {
     } catch (e) {
         console.error("Erro ao adicionar itens do romaneio:", e);
         ToastManager.error("Erro ao processar itens: " + e.message);
+    }
+};
+
+// Limpar todos os itens do pedido (botão Limpar ao lado de Carregar Itens)
+window.limparCarrinhoItens = function() {
+    try {
+        if (!Array.isArray(itensPedido) || itensPedido.length === 0) {
+            ToastManager.info('O pedido já está sem itens.');
+            return;
+        }
+        if (typeof confirm === 'function' && !confirm('Limpar todos os itens do pedido? Esta ação não pode ser desfeita.')) {
+            return;
+        }
+        itensPedido = [];
+        itemEmEdicaoIndex = null;
+        renderizarItensPedido();
+        atualizarTotais();
+        ToastManager.success('Todos os itens foram removidos do pedido.');
+    } catch (e) {
+        console.warn('Compras: falha ao limpar itens:', e);
+    }
+};
+
+// Quantidade de peças de um item (PCT/TL/PES). TORA e demais retornam 0.
+function quantidadePecasItemCompra(item, tipo) {
+    try {
+        if (!ehTipoSerradoCompra(tipo)) return 0;
+        if (!item || typeof item !== 'object') return 0;
+        const qtd = parseInt(item.quantidade, 10) || 0;
+        const pppRaw = item.pecasPorPacote;
+        const temPpp = (typeof pppRaw !== 'undefined' && pppRaw !== null && String(pppRaw) !== '');
+        const ppp = temPpp ? (parseInt((typeof pppRaw === 'object' && pppRaw !== null ? pppRaw.valor : pppRaw), 10) || 1) : 1;
+        const totalPecasRaw = (item.totalPecas != null && item.totalPecas !== '') ? parseInt(item.totalPecas, 10) : null;
+        const ehPct = temPpp || (totalPecasRaw != null && !isNaN(totalPecasRaw)) || String(tipo || '').toLowerCase().includes('pct');
+        if (ehPct) {
+            if (totalPecasRaw != null && !isNaN(totalPecasRaw) && totalPecasRaw > 0) return totalPecasRaw;
+            return qtd * (ppp || 1);
+        }
+        return qtd;
+    } catch (_) {
+        return 0;
+    }
+}
+
+// Descrição de peças no padrão Vendas ("10 Peças", "2 Pacotes C/5 Peças").
+// Só para serrados (PCT/TL/PES); demais retornam ''.
+function infoPecasItemCompra(item, tipo) {
+    try {
+        if (!ehTipoSerradoCompra(tipo)) return '';
+        if (!item || typeof item !== 'object') return '';
+        const qtd = parseInt(item.quantidade, 10) || 0;
+        const pppRaw = item.pecasPorPacote;
+        const temPpp = (typeof pppRaw !== 'undefined' && pppRaw !== null && String(pppRaw) !== '');
+        const ppp = temPpp ? (parseInt((typeof pppRaw === 'object' && pppRaw !== null ? pppRaw.valor : pppRaw), 10) || 1) : 1;
+        const totalPecasRaw = (item.totalPecas != null && item.totalPecas !== '') ? parseInt(item.totalPecas, 10) : null;
+        const ehPct = temPpp || (totalPecasRaw != null && !isNaN(totalPecasRaw)) || String(tipo || '').toLowerCase().includes('pct');
+        let pacotes = 0;
+        let pecas = 0;
+        const pppTotals = {};
+        if (ehPct) {
+            pacotes = qtd;
+            pecas = (totalPecasRaw != null && !isNaN(totalPecasRaw) && totalPecasRaw > 0) ? totalPecasRaw : (pacotes * (ppp || 1));
+            pppTotals[String(ppp || 0)] = pacotes;
+        } else {
+            pecas = qtd;
+        }
+        if (pacotes > 0) {
+            const keys = Object.keys(pppTotals).filter(k => k && k !== '0');
+            if (keys.length === 1) {
+                const pk = keys[0];
+                if (pk === '1') return `${pecas} Peça${pecas === 1 ? '' : 's'}`;
+                return `${pacotes} Pacote${pacotes === 1 ? '' : 's'} C/${pk} Peça${pk === '1' ? '' : 's'}`;
+            }
+            if (pecas > 0) return `${pecas} Peças (${pacotes} pacote${pacotes === 1 ? '' : 's'})`;
+            return `${pacotes} Pacote${pacotes === 1 ? '' : 's'}`;
+        }
+        if (pecas > 0) return `${pecas} Peça${pecas === 1 ? '' : 's'}`;
+        return '';
+    } catch (_) {
+        return '';
     }
 };

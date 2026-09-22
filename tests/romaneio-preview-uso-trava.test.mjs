@@ -116,7 +116,9 @@ test('vendas: fieldset Agrupar com 2 checkboxes sem quebrar id legado', () => {
   assert.match(vendasHtml, /id="agruparDimensoesCheckbox"/);
   assert.match(vendasHtml, /Espécie Espessura x Largura x Comprimento/);
   assert.match(vendasHtml, /id="agruparEspecieCheckbox"/);
-  assert.match(vendasHtml, /Agrupar por Espécie e Espessura/);
+  assert.match(vendasHtml, /Espécie Espessura x Largura/);
+  assert.match(comprasHtml, /Espécie Espessura x Largura/);
+  assert.doesNotMatch(vendasHtml, /Agrupar por Espécie e Espessura/);
 });
 
 test('vendas: modos exclusivos, TORA desabilita dimensões, leitura fail-open', () => {
@@ -162,4 +164,36 @@ test('compras: novos modos agrupam por dims com chaves estáveis', () => {
   assert.match(compras, /function lerEspessuraCompra\(item\)/);
   assert.match(compras, /modoAgrupa === 'dimensoes'/);
   assert.match(compras, /grupos/);
+});
+
+// ---------------------------------------------------------------------------
+// Limpar carrinho + peças + preview ao vivo
+// ---------------------------------------------------------------------------
+test('vendas e compras têm botão Limpar ao lado de Carregar Itens', () => {
+  assert.match(vendasHtml, /onclick="limparCarrinhoItens\(\)"/);
+  assert.match(vendasHtml, /romaneio-clear-btn/);
+  assert.match(comprasHtml, /onclick="limparCarrinhoItens\(\)"/);
+  assert.match(comprasHtml, /romaneio-clear-btn/);
+  assert.match(vendas, /function limparCarrinhoItens\(\)/);
+  assert.match(compras, /window\.limparCarrinhoItens = function\(\)/);
+  assert.match(vendas, /Limpar todos os itens do carrinho\? Esta ação não pode ser desfeita/);
+  assert.match(compras, /Limpar todos os itens do pedido\? Esta ação não pode ser desfeita/);
+});
+
+test('compras PCT/TL/PES exibe peças igual vendas', () => {
+  assert.match(compras, /function infoPecasItemCompra\(item, tipo\)/);
+  assert.match(compras, /function quantidadePecasItemCompra\(item, tipo\)/);
+  assert.match(compras, /Peças/);
+  assert.match(compras, /rot\.pecasInfo/);
+  assert.match(compras, /nomeItemDims/);
+  assert.match(compras, /nomeGrupo/);
+});
+
+test('checkboxes atualizam o preview em tempo real', () => {
+  assert.match(vendas, /if \(romaneioSelecionado\) __rvRefazerPreviewVendas\(\);/);
+  assert.match(vendas, /modoPrevVendas/);
+  assert.match(vendas, /será carregado 1 item por grupo/);
+  assert.match(compras, /if \(romaneioAtualCompra\) renderizarPreviewRomaneioCompra\(\);/);
+  assert.match(compras, /cartaoItemPrev/);
+  assert.match(compras, /serão carregados os grupos selecionados/);
 });

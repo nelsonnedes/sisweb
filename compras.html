@@ -1076,6 +1076,10 @@
                                 class="btn-success romaneio-load-btn">
                                 <i class="fas fa-plus"></i> Carregar Itens
                             </button>
+                            <button type="button" onclick="limparCarrinhoItens()"
+                                class="btn-danger romaneio-clear-btn" title="Limpar todos os itens do pedido">
+                                <i class="fas fa-trash"></i> Limpar
+                            </button>
                             <label id="opcaoResumoEspecie" class="commerce-check-option romaneio-group-option"
                                 for="agruparItensRomaneio">
                                 <input type="checkbox" id="agruparItensRomaneio"
@@ -1098,7 +1102,7 @@
                             for="agruparEspecieEspessuraCompra">
                             <input type="checkbox" id="agruparEspecieEspessuraCompra"
                                 onchange="alternarModoAgrupamentoCompra('especie')">
-                            <span>Agrupar por Espécie e Espessura</span>
+                            <span>Espécie Espessura x Largura</span>
                         </label>
                     </fieldset>
                     
