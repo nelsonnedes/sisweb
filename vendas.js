@@ -2003,11 +2003,13 @@ function editarItem(itemId) {
             }
             const idx = itensCarrinho.findIndex(i => String(i.id) === String(itemId));
             if (idx === -1) return;
-            const desagrupados = originais.map(o => ({
-                ...o,
-                id: Date.now() + Math.random(),
-                itensOriginais: undefined
-            }));
+            // Sem chave itensOriginais (delete em vez de undefined: o SDK do
+            // Firebase rejeita propriedades undefined e aborta o save).
+            const desagrupados = originais.map(o => {
+                const copia = { ...o, id: Date.now() + Math.random() };
+                delete copia.itensOriginais;
+                return copia;
+            });
             itensCarrinho.splice(idx, 1, ...desagrupados);
             atualizarTabelaItens();
             atualizarTotais();
@@ -2120,6 +2122,28 @@ function atualizarTotais() {
             console.log(`✅ Campo Valor sincronizado com Total Geral: ${formatCurrency(Math.max(0, totalGeral))}`);
         }
     }
+}
+
+// Remove chaves undefined recursivamente (in place). O SDK do Firebase
+// (update/set) rejeita propriedades undefined e aborta a escrita inteira;
+// JSON.stringify as descartaria, mas o SDK valida antes de serializar.
+function sanearIndefinidosFirebase(valor) {
+    try {
+        if (Array.isArray(valor)) {
+            for (let i = valor.length - 1; i >= 0; i--) {
+                if (valor[i] === undefined) valor.splice(i, 1);
+                else sanearIndefinidosFirebase(valor[i]);
+            }
+            return valor;
+        }
+        if (valor && typeof valor === 'object') {
+            Object.keys(valor).forEach(k => {
+                if (valor[k] === undefined) delete valor[k];
+                else sanearIndefinidosFirebase(valor[k]);
+            });
+        }
+    } catch (_) { /* best-effort: nunca bloqueia salvamento */ }
+    return valor;
 }
 
 // Função para salvar pedido
@@ -2302,6 +2326,8 @@ async function salvarPedido(event) {
             }
         } catch (_) { /* best-effort: nunca bloqueia salvamento */ }
         if (pedidoData.created === undefined) { delete pedidoData.created; }
+        // Saneamento anti-undefined antes de qualquer escrita remota.
+        sanearIndefinidosFirebase(pedidoData);
 
         if (editandoPedidoId) {
             const pedidoPrev = (window.pedidos || []).find(p => String(p.id) === String(editandoPedidoId)) || null;
@@ -2478,6 +2504,7 @@ async function salvarPedido(event) {
             updatesAdd[`pedidosVenda/${String(pedidoData.id)}`] = pedidoData;
 
             console.log('📦 Tentando updatePaths direto:', Object.keys(updatesAdd).length, 'caminhos');
+            sanearIndefinidosFirebase(updatesAdd);
             const res = await window.firebaseService.updatePaths(updatesAdd);
             if (res && res.success) {
                 multiUpdateDone = true;
@@ -2606,6 +2633,7 @@ async function verifyReceberAccountsConsistency(pedido) {
 }
 
 // Função para remover contas a receber anteriores (evitar duplicação)
+// Retorna true se o servidor confirmou (ou nada havia a remover); false se falhou.
 async function removerContasReceberAnteriores(pedidoId) {
     try {
         const vinculadas = await carregarContasReceberVinculadasPedidoVenda(pedidoId);
@@ -2613,27 +2641,34 @@ async function removerContasReceberAnteriores(pedidoId) {
         if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
             const updates = montarUpdatesRemocaoContasReceberVenda(semRecebimento, { includeLegacy: false });
             if (Object.keys(updates).length > 0) {
-                await window.firebaseService.updatePaths(updates);
+                const resRem = await window.firebaseService.updatePaths(updates);
+                if (!(resRem && resRem.success)) return false;
                 console.log(`🗑️ Removidas ${semRecebimento.length} contas anteriores do pedido ${pedidoId} (firebase)`);
             } else {
                 console.log('Nenhuma conta anterior sem recebimento para remover');
             }
+            return true;
         } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
             for (const c of semRecebimento) {
                 if (c && c.id) {
                     const mk = toMonthKey(c.dataVencimento || c.vencimento);
-                    await window.firebaseService.saveToFirebase(`financas/receber/${mk}`, String(c.id), null);
+                    const resRem = await window.firebaseService.saveToFirebase(`financas/receber/${mk}`, String(c.id), null);
+                    if (resRem && resRem.success === false) return false;
                 }
             }
             if (semRecebimento.length > 0) console.log(`🗑️ Removidas ${semRecebimento.length} contas anteriores do pedido ${pedidoId}`);
+            return true;
         } else {
             const atual = await getData('financas/receber') || [];
             const atualizadas = flattenContasReceberData(atual).filter(c => !semRecebimento.some(r => String(r.id) === String(c.id)));
+            __rvSaveDataRemoteOk = false;
             await saveData('contasReceber', atualizadas);
             console.log(`Contas anteriores do pedido ${pedidoId} removidas (fallback): ${semRecebimento.length}`);
+            return __rvSaveDataRemoteOk;
         }
     } catch (error) {
         console.error('Erro ao remover contas anteriores:', error);
+        return false;
     }
 }
 
@@ -2648,20 +2683,30 @@ async function removerContasReceberPorLista(lista) {
     try {
         if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
             const updates = montarUpdatesRemocaoContasReceberVenda(lista, { includeLegacy: false });
-            if (Object.keys(updates).length > 0) await window.firebaseService.updatePaths(updates);
+            if (Object.keys(updates).length > 0) {
+                const resRem = await window.firebaseService.updatePaths(updates);
+                return !!(resRem && resRem.success);
+            }
+            return true;
         } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
             for (const c of (lista || [])) {
                 if (c && c.id) {
                     const mk = toMonthKey(c.dataVencimento || c.vencimento);
-                    await window.firebaseService.saveToFirebase(`financas/receber/${mk}`, String(c.id), null);
+                    const resRem = await window.firebaseService.saveToFirebase(`financas/receber/${mk}`, String(c.id), null);
+                    if (resRem && resRem.success === false) return false;
                 }
             }
+            return true;
         } else {
             const atual = await getData('financas/receber') || [];
             const filtrado = (atual || []).filter(c => !(lista || []).some(r => String(r.id) === String(c.id)));
+            __rvSaveDataRemoteOk = false;
             await saveData('contasReceber', filtrado);
+            return __rvSaveDataRemoteOk;
         }
-    } catch (_) {}
+    } catch (_) {
+        return false;
+    }
 }
 
 async function logAuditoriaTransacao(evento, detalhes) {
@@ -3554,30 +3599,75 @@ async function excluirPedido(pedidoId) {
     
     try {
         const pedido = window.pedidos.find(p => getPedidoVendaId(p) === String(pedidoId));
+        // Snapshots para rollback se o servidor não confirmar a exclusão.
+        const backupPedidosVenda = Array.isArray(window.pedidos) ? window.pedidos.slice() : [];
+        let backupEstoqueVenda = null;
+        try {
+            backupEstoqueVenda = new Map((window.produtos || []).map(p => [p && p.id, p && p.estoque]));
+        } catch (_) { backupEstoqueVenda = null; }
         if (pedido) {
             // Reverter estoque
             await atualizarEstoqueProdutos(pedido.itens, 'entrada');
             
-            // Remover contas a receber relacionadas
+            // Remover contas a receber relacionadas (fail-closed: sem confirmação, aborta)
             const vinculadas = await carregarContasReceberVinculadasPedidoVenda(pedido);
+            let finRemotoOk = true;
             if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
                 const updates = montarUpdatesRemocaoContasReceberVenda(vinculadas, { includeLegacy: false });
-                if (Object.keys(updates).length > 0) await window.firebaseService.updatePaths(updates);
+                if (Object.keys(updates).length > 0) {
+                    const resFin = await window.firebaseService.updatePaths(updates);
+                    finRemotoOk = !!(resFin && resFin.success);
+                }
             } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-                await removerContasReceberPorLista(vinculadas);
+                finRemotoOk = await removerContasReceberPorLista(vinculadas);
             } else {
                 const contasReceberLista = await getData('financas/receber') || [];
                 const contasAtualizadas = flattenContasReceberData(contasReceberLista).filter(conta => !contaReceberPertenceAoPedidoVenda(conta, pedido));
+                __rvSaveDataRemoteOk = false;
                 await saveData('contasReceber', contasAtualizadas);
+                finRemotoOk = __rvSaveDataRemoteOk;
+            }
+            if (!finRemotoOk) {
+                try {
+                    if (backupEstoqueVenda) {
+                        (window.produtos || []).forEach(p => {
+                            if (p && backupEstoqueVenda.has(p.id)) p.estoque = backupEstoqueVenda.get(p.id);
+                        });
+                    }
+                } catch (_) {}
+                ToastManager.error('Não foi possível remover o financeiro vinculado no servidor. Verifique sua conexão e permissões e tente novamente. Nenhuma alteração foi concluída.', 'Falha ao excluir', 8000);
+                return;
             }
         }
         
-        // Remover pedido
+        // Remover pedido (fail-closed: só confirma após o servidor)
         window.pedidos = window.pedidos.filter(p => getPedidoVendaId(p) !== String(pedidoId));
+        let pedidoRemotoOk = false;
         if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            await window.firebaseService.saveToFirebase('vendas/pedidos', String(pedidoId), null);
+            try {
+                const resDel = await window.firebaseService.saveToFirebase('vendas/pedidos', String(pedidoId), null);
+                pedidoRemotoOk = !!(resDel && resDel.success);
+            } catch (e) {
+                console.warn('Falha ao excluir pedido no Firebase:', e);
+                pedidoRemotoOk = false;
+            }
         } else {
+            __rvSaveDataRemoteOk = false;
             await saveData('vendas/pedidos', window.pedidos);
+            pedidoRemotoOk = __rvSaveDataRemoteOk;
+        }
+        if (!pedidoRemotoOk) {
+            try { window.pedidos = backupPedidosVenda; } catch (_) {}
+            try {
+                if (backupEstoqueVenda) {
+                    (window.produtos || []).forEach(p => {
+                        if (p && backupEstoqueVenda.has(p.id)) p.estoque = backupEstoqueVenda.get(p.id);
+                    });
+                }
+            } catch (_) {}
+            try { await carregarTabelaPedidos(); } catch (_) {}
+            ToastManager.error('Não foi possível excluir o pedido no servidor. Verifique sua conexão e permissões e tente novamente. Nenhuma alteração foi perdida.', 'Falha ao excluir', 8000);
+            return;
         }
         
         // Atualizar listagem (modal aberto)
@@ -3736,7 +3826,8 @@ async function salvarProduto(event) {
             return;
         }
         
-        // Salvar produto
+        // Salvar produto (fail-closed: memória só vale após confirmação do servidor)
+        const backupProdutos = Array.isArray(window.produtos) ? window.produtos.slice() : [];
         if (produtoId) {
             const index = window.produtos.findIndex(p => p.id === produtoId);
             if (index !== -1) {
@@ -3747,22 +3838,33 @@ async function salvarProduto(event) {
         }
         window.produtos = normalizeProdutosList(window.produtos);
         
+        let produtoRemotoOk = false;
         if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
             try {
-                await window.firebaseService.saveToFirebase('produtos', String(produto.id), produto);
+                const resProd = await window.firebaseService.saveToFirebase('produtos', String(produto.id), produto);
+                produtoRemotoOk = !!(resProd && resProd.success);
             } catch (e) {
-                const msg = String((e && e.message) || e || '').toLowerCase();
-                if (msg.includes('permission') || msg.includes('denied')) {
-                    ToastManager.warning('Sem permissão no Firebase. Produto salvo localmente.', 'Atenção');
-                }
+                console.warn('⚠️ Erro ao salvar produto no Firebase:', e);
             }
+        } else {
+            __rvSaveDataRemoteOk = false;
+            await saveData('produtos', window.produtos);
+            produtoRemotoOk = __rvSaveDataRemoteOk;
         }
         try {
             const storageKey = getStorageKey('produtos');
             persistLocalValue(storageKey, window.produtos);
         } catch (_) {}
-        if (!(window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function')) {
-            await saveData('produtos', window.produtos);
+        if (!produtoRemotoOk) {
+            try { window.produtos = backupProdutos; } catch (_) {}
+            try { atualizarSelectProdutos(); } catch (_) {}
+            try {
+                if (document.getElementById('produtosList').style.display !== 'none') {
+                    carregarTabelaProdutos();
+                }
+            } catch (_) {}
+            ToastManager.error('Não foi possível salvar o produto no servidor. Verifique sua conexão e permissões e tente novamente. Nenhuma alteração foi perdida.', 'Falha ao salvar', 8000);
+            return;
         }
         
         // Atualizar selects
@@ -3869,8 +3971,15 @@ async function excluirProduto(produtoId) {
     }
     
     try {
+        const backupProdutos = Array.isArray(window.produtos) ? window.produtos.slice() : [];
         window.produtos = window.produtos.filter(p => p.id !== produtoId);
+        __rvSaveDataRemoteOk = false;
         await saveData('produtos', window.produtos);
+        if (!__rvSaveDataRemoteOk) {
+            try { window.produtos = backupProdutos; } catch (_) {}
+            ToastManager.error('Não foi possível excluir o produto no servidor. Verifique sua conexão e permissões e tente novamente.', 'Falha ao excluir', 8000);
+            return;
+        }
         
         atualizarSelectProdutos();
         carregarTabelaProdutos();
@@ -8287,6 +8396,7 @@ async function excluirCarregoSelecionados() {
         LoadingManager.show('Excluindo carrego dos pedidos selecionados...');
         const now = new Date().toISOString();
         const atualizados = [];
+        const backupCarrego = [];
         ids.forEach(id => {
             const pedido = (window._relPedidosPeriodo || []).find(p => getPedidoVendaId(p) === String(id)) || (window.pedidos || []).find(p => getPedidoVendaId(p) === String(id));
             if (!pedido) return;
@@ -8294,6 +8404,7 @@ async function excluirCarregoSelecionados() {
             const nameOf = it => normalizeStr(String(it.produtoNome || it.nome || it.produto || ''));
             const hasCarrego = itens.some(it => nameOf(it) === 'carrego');
             if (!hasCarrego) return;
+            backupCarrego.push({ pedido, itens: pedido.itens, carregoPago: pedido.carregoPago, carregoPagoAt: pedido.carregoPagoAt, updated: pedido.updated });
             const novos = itens.filter(it => nameOf(it) !== 'carrego');
             pedido.itens = novos;
             pedido.carregoPago = false;
@@ -8305,6 +8416,7 @@ async function excluirCarregoSelecionados() {
             ToastManager.info('Nenhum pedido com carrego para excluir', 'Info');
             return;
         }
+        let carregoRemotoOk = false;
         try {
             if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
                 const updates = {};
@@ -8313,18 +8425,42 @@ async function excluirCarregoSelecionados() {
                     updates[`vendas/pedidos/${pid}`] = p;
                     updates[`vendas/pagamentos_carrego/${pid}`] = null;
                 });
-                await window.firebaseService.updatePaths(updates);
+                const resCarrego = await window.firebaseService.updatePaths(updates);
+                carregoRemotoOk = !!(resCarrego && resCarrego.success);
             } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+                carregoRemotoOk = true;
                 for (const p of atualizados) {
                     const pid = getPedidoVendaId(p);
-                    await window.firebaseService.saveToFirebase('vendas/pedidos', String(pid), p);
-                    await window.firebaseService.saveToFirebase('vendas/pagamentos_carrego', String(pid), null);
+                    const r1 = await window.firebaseService.saveToFirebase('vendas/pedidos', String(pid), p);
+                    const r2 = await window.firebaseService.saveToFirebase('vendas/pagamentos_carrego', String(pid), null);
+                    if (!((r1 && r1.success) && (r2 && r2.success))) {
+                        carregoRemotoOk = false;
+                        break;
+                    }
                 }
             } else {
+                __rvSaveDataRemoteOk = false;
                 await saveData('vendas/pedidos', window.pedidos || []);
+                carregoRemotoOk = __rvSaveDataRemoteOk;
             }
         } catch (e) {
             console.warn('Falha ao persistir exclusão de carrego:', e);
+            carregoRemotoOk = false;
+        }
+        if (!carregoRemotoOk) {
+            try {
+                backupCarrego.forEach(b => {
+                    b.pedido.itens = b.itens;
+                    b.pedido.carregoPago = b.carregoPago;
+                    b.pedido.carregoPagoAt = b.carregoPagoAt;
+                    b.pedido.updated = b.updated;
+                });
+            } catch (_) {}
+            gerarRelatorio();
+            window.relCarregoSelection = new Set();
+            updateRelCarregoSelectionCount();
+            ToastManager.error('Não foi possível excluir o carrego no servidor. Verifique sua conexão e permissões e tente novamente. Nenhuma alteração foi perdida.', 'Falha ao excluir', 8000);
+            return;
         }
         gerarRelatorio();
         window.relCarregoSelection = new Set();
@@ -8348,20 +8484,41 @@ async function excluirCarrego(pedidoId) {
         const nameOf = it => normalizeStr(String(it.produtoNome || it.nome || it.produto || ''));
         const hasCarrego = itens.some(it => nameOf(it) === 'carrego');
         if (!hasCarrego) { ToastManager.info('Este pedido não possui carrego', 'Info'); return; }
+        const backupUnico = { itens: pedido.itens, carregoPago: pedido.carregoPago, carregoPagoAt: pedido.carregoPagoAt, updated: pedido.updated };
         pedido.itens = itens.filter(it => nameOf(it) !== 'carrego');
         pedido.carregoPago = false; pedido.carregoPagoAt = null; pedido.updated = now;
+        let carregoUnicoOk = false;
         try {
             if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
                 const pid = getPedidoVendaId(pedido);
-                const updates = {}; updates[`vendas/pedidos/${pid}`] = pedido; updates[`vendas/pagamentos_carrego/${pid}`] = null; await window.firebaseService.updatePaths(updates);
+                const updates = {}; updates[`vendas/pedidos/${pid}`] = pedido; updates[`vendas/pagamentos_carrego/${pid}`] = null;
+                const resUnico = await window.firebaseService.updatePaths(updates);
+                carregoUnicoOk = !!(resUnico && resUnico.success);
             } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
                 const pid = getPedidoVendaId(pedido);
-                await window.firebaseService.saveToFirebase('vendas/pedidos', String(pid), pedido);
-                await window.firebaseService.saveToFirebase('vendas/pagamentos_carrego', String(pid), null);
+                const r1 = await window.firebaseService.saveToFirebase('vendas/pedidos', String(pid), pedido);
+                const r2 = await window.firebaseService.saveToFirebase('vendas/pagamentos_carrego', String(pid), null);
+                carregoUnicoOk = !!((r1 && r1.success) && (r2 && r2.success));
             } else {
+                __rvSaveDataRemoteOk = false;
                 await saveData('vendas/pedidos', window.pedidos || []);
+                carregoUnicoOk = __rvSaveDataRemoteOk;
             }
-        } catch(e) { console.warn('Falha ao persistir exclusão de carrego:', e); }
+        } catch(e) {
+            console.warn('Falha ao persistir exclusão de carrego:', e);
+            carregoUnicoOk = false;
+        }
+        if (!carregoUnicoOk) {
+            try {
+                pedido.itens = backupUnico.itens;
+                pedido.carregoPago = backupUnico.carregoPago;
+                pedido.carregoPagoAt = backupUnico.carregoPagoAt;
+                pedido.updated = backupUnico.updated;
+            } catch (_) {}
+            gerarRelatorio(); updateRelCarregoSelectionCount();
+            ToastManager.error('Não foi possível excluir o carrego no servidor. Verifique sua conexão e permissões e tente novamente. Nenhuma alteração foi perdida.', 'Falha ao excluir', 8000);
+            return;
+        }
         gerarRelatorio(); updateRelCarregoSelectionCount(); ToastManager.success('Carrego excluído do pedido', 'Sucesso');
     } catch(err) {
         console.error(err); ToastManager.error('Falha ao excluir carrego', 'Erro');

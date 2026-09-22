@@ -908,9 +908,17 @@ function ensureCodigoProdutoUnico(baseCodigo, currentId = null) {
 }
 
 async function persistProdutosCatalog(lista) {
+    const backup = Array.isArray(window.produtos) ? window.produtos.slice() : [];
     window.produtos = Array.isArray(lista) ? lista : [];
+    __rcSaveDataRemoteOk = false;
     await saveData('produtos', window.produtos);
+    if (!__rcSaveDataRemoteOk) {
+        window.produtos = backup;
+        try { atualizarSelectProdutos(); } catch (_) {}
+        return false;
+    }
     atualizarSelectProdutos();
+    return true;
 }
 
 function preencherFormularioProduto(produto = null) {
@@ -999,8 +1007,12 @@ window.excluirProdutoCadastro = async function(produtoId) {
     if (!produto) return;
     if (!confirm(`Excluir produto "${getProdutoNomeCadastro(produto)}"?`)) return;
     const novaLista = (window.produtos || []).filter(p => String(p?.id || '') !== String(produtoId || ''));
-    await persistProdutosCatalog(novaLista);
+    const okCatalogo = await persistProdutosCatalog(novaLista);
     renderProdutosCadastroTable();
+    if (!okCatalogo) {
+        ToastManager.error('Não foi possível excluir o produto no servidor. Verifique sua conexão e permissões e tente novamente.');
+        return;
+    }
     ToastManager.success('Produto excluído com sucesso!');
 };
 
@@ -1042,9 +1054,13 @@ async function salvarProdutoCadastro(event) {
     };
     const next = current.slice();
     if (index >= 0) next[index] = produto; else next.push(produto);
-    await persistProdutosCatalog(next);
-    window.fecharModal('produtoModal');
+    const okCatalogo = await persistProdutosCatalog(next);
     renderProdutosCadastroTable();
+    if (!okCatalogo) {
+        ToastManager.error('Não foi possível salvar o produto no servidor. Verifique sua conexão e permissões e tente novamente. Nenhuma alteração foi perdida.');
+        return;
+    }
+    window.fecharModal('produtoModal');
     ToastManager.success(index >= 0 ? 'Produto atualizado com sucesso!' : 'Produto cadastrado com sucesso!');
 }
 
@@ -1232,11 +1248,13 @@ function editarItemCompra(index) {
         const originais = Array.isArray(item.itensOriginais) ? item.itensOriginais : [];
         if (originais.length > 0) {
             // Desagrupa e já carrega o primeiro item no formulário (1 clique, sem confirm).
-            const desagrupados = originais.map(o => ({
-                ...o,
-                id: Date.now() + Math.random(),
-                itensOriginais: undefined
-            }));
+            // Sem chave itensOriginais (delete em vez de undefined: o SDK do
+            // Firebase rejeita propriedades undefined e aborta o save).
+            const desagrupados = originais.map(o => {
+                const copia = { ...o, id: Date.now() + Math.random() };
+                delete copia.itensOriginais;
+                return copia;
+            });
             itensPedido.splice(index, 1, ...desagrupados);
             renderizarItensPedido();
             atualizarTotais();
@@ -2184,6 +2202,27 @@ function persistirComprasCacheLocal(lista) {
     try { persistLocalValue(getCompanyKey('compras'), lista); } catch (_) {}
 }
 
+// Remove chaves undefined recursivamente (in place). O SDK do Firebase
+// (update/set) rejeita propriedades undefined e aborta a escrita inteira.
+function sanearIndefinidosFirebase(valor) {
+    try {
+        if (Array.isArray(valor)) {
+            for (let i = valor.length - 1; i >= 0; i--) {
+                if (valor[i] === undefined) valor.splice(i, 1);
+                else sanearIndefinidosFirebase(valor[i]);
+            }
+            return valor;
+        }
+        if (valor && typeof valor === 'object') {
+            Object.keys(valor).forEach(k => {
+                if (valor[k] === undefined) delete valor[k];
+                else sanearIndefinidosFirebase(valor[k]);
+            });
+        }
+    } catch (_) { /* best-effort: nunca bloqueia salvamento */ }
+    return valor;
+}
+
 async function salvarPedido(event) {
     if (event) event.preventDefault();
     console.log('🚀 Iniciando salvamento do pedido...');
@@ -2251,6 +2290,9 @@ async function salvarPedido(event) {
                 pedido.modoAgrupamentoRomaneio = pedidoEmEdicao.modoAgrupamentoRomaneio;
             }
         } catch (_) { /* best-effort: nunca bloqueia salvamento */ }
+
+        // Saneamento anti-undefined antes de qualquer escrita remota.
+        sanearIndefinidosFirebase(pedido);
 
         const statusNext = String(pedido.status || '').toLowerCase();
         const shouldGenerateFinance = statusNext !== 'pendente' && statusNext !== 'cancelado';
@@ -2378,6 +2420,7 @@ async function salvarPedido(event) {
                                 };
                                 updates[`financas/pagar/${mk}/${contaId}`] = conta;
                             });
+                            sanearIndefinidosFirebase(updates);
                             const res = await window.firebaseService.updatePaths(updates);
                             if (res && res.success) {
                                 savedToFirebase = true;
@@ -4326,8 +4369,9 @@ function comprasFornecedoresGetService() {
             if (index >= 0) next[index] = normalized;
             else next.push(normalized);
             const ordered = comprasFornecedoresNormalizarLista(next);
+            __rcSaveDataRemoteOk = false;
             const saved = await saveData('fornecedores', ordered);
-            if (!saved) throw new Error('Não foi possível salvar o fornecedor no servidor.');
+            if (!saved || !__rcSaveDataRemoteOk) throw new Error('Não foi possível salvar o fornecedor no servidor. Nenhuma alteração foi perdida.');
             window.fornecedores = ordered;
             return normalized;
         },
@@ -4335,8 +4379,9 @@ function comprasFornecedoresGetService() {
             const fornecedorId = String(id || '').trim();
             const next = comprasFornecedoresNormalizarLista(window.fornecedores)
                 .filter((item) => String(item.id || '') !== fornecedorId);
+            __rcSaveDataRemoteOk = false;
             const saved = await saveData('fornecedores', next);
-            if (!saved) throw new Error('Não foi possível excluir o fornecedor no servidor.');
+            if (!saved || !__rcSaveDataRemoteOk) throw new Error('Não foi possível excluir o fornecedor no servidor. Nenhuma alteração foi perdida.');
             window.fornecedores = next;
             return true;
         }

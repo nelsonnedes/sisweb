@@ -316,3 +316,58 @@ test('romaneio-manager: save/delete falham fechado em success:false explícito',
   assert.match(manager, /Não foi possível excluir o romaneio no servidor/);
   assert.match(manager, /Remoto primeiro/);
 });
+
+// ---------------------------------------------------------------------------
+// Anti-undefined: SDK do Firebase aborta escrita com propriedades undefined
+// ---------------------------------------------------------------------------
+test('desagrupar não cria chave undefined (delete em vez de atribuir)', () => {
+  assert.doesNotMatch(vendas, /itensOriginais: undefined/);
+  assert.doesNotMatch(compras, /itensOriginais: undefined/);
+});
+
+test('save saneia undefined profundos antes de qualquer escrita remota', () => {
+  assert.match(vendas, /function sanearIndefinidosFirebase\(valor\)/);
+  assert.match(vendas, /sanearIndefinidosFirebase\(pedidoData\);/);
+  assert.match(vendas, /sanearIndefinidosFirebase\(updatesAdd\);/);
+  assert.match(compras, /function sanearIndefinidosFirebase\(valor\)/);
+  assert.match(compras, /sanearIndefinidosFirebase\(pedido\);/);
+  assert.match(compras, /sanearIndefinidosFirebase\(updates\);/);
+});
+
+// ---------------------------------------------------------------------------
+// Fail-closed expandido: produtos, carregos, excluirPedido, fornecedores
+// ---------------------------------------------------------------------------
+test('vendas: produtos e carregos com rollback e sem sucesso fantasma', () => {
+  assert.match(vendas, /backupProdutos/);
+  assert.match(vendas, /produtoRemotoOk/);
+  assert.match(vendas, /backupCarrego/);
+  assert.match(vendas, /carregoRemotoOk/);
+  assert.match(vendas, /carregoUnicoOk/);
+  assert.match(vendas, /Nenhuma alteração foi perdida/);
+});
+
+test('vendas: excluirPedido com rollback de estoque+financeiro', () => {
+  assert.match(vendas, /backupPedidosVenda/);
+  assert.match(vendas, /backupEstoqueVenda/);
+  assert.match(vendas, /finRemotoOk/);
+  assert.match(vendas, /pedidoRemotoOk/);
+  assert.match(vendas, /Nenhuma alteração foi concluída/);
+});
+
+test('vendas: cleanups financeiros retornam status', () => {
+  const blockA = vendas.slice(vendas.indexOf('async function removerContasReceberAnteriores('), vendas.indexOf('async function listarContasReceberSemRecebimento('));
+  assert.match(blockA, /return true/);
+  assert.match(blockA, /return false/);
+  assert.match(vendas, /async function removerContasReceberPorLista\(lista\)/);
+  const blockB = vendas.slice(vendas.indexOf('async function removerContasReceberPorLista(lista)'), vendas.indexOf('async function logAuditoriaTransacao('));
+  assert.match(blockB, /return true/);
+  assert.match(blockB, /return false/);
+});
+
+test('compras: produtos e fornecedores com rollback e sem sucesso fantasma', () => {
+  assert.match(compras, /persistProdutosCatalog/);
+  assert.match(compras, /okCatalogo/);
+  assert.match(compras, /Nenhuma alteração foi perdida/);
+  const svc = compras.slice(compras.indexOf('function comprasFornecedoresGetService()'), compras.indexOf('function comprasFornecedoresMostrarEstado('));
+  assert.match(svc, /__rcSaveDataRemoteOk/);
+});
