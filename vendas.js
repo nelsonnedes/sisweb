@@ -1983,7 +1983,8 @@ function editarItem(itemId) {
     document.getElementById('precoUnitario').value = formatCurrency(item.precoUnitario);
             break;
         case 'romaneio_agrupado': {
-            // ✅ DESAGRUPAR PARA EDIÇÃO: item agrupado só pode ser editado após desagrupar
+            // ✅ DESAGRUPAR + CARREGAR em 1 clique: expande o grupo e já carrega
+            // o primeiro item no formulário (sem pergunta de confirmação).
             const originais = Array.isArray(item.itensOriginais) ? item.itensOriginais : [];
             if (originais.length === 0) {
                 // Dados legados sem originais preservados: fallback para edição manual
@@ -2000,9 +2001,6 @@ function editarItem(itemId) {
                 itemEmEdicaoId = String(itemId);
                 break;
             }
-            if (!window.confirm('Deseja Desagrupar para Edição?')) {
-                return;
-            }
             const idx = itensCarrinho.findIndex(i => String(i.id) === String(itemId));
             if (idx === -1) return;
             const desagrupados = originais.map(o => ({
@@ -2011,15 +2009,26 @@ function editarItem(itemId) {
                 itensOriginais: undefined
             }));
             itensCarrinho.splice(idx, 1, ...desagrupados);
-            itemEmEdicaoId = null;
             atualizarTabelaItens();
             atualizarTotais();
+            const primeiroDesagrupado = desagrupados[0];
+            if (!primeiroDesagrupado) {
+                itemEmEdicaoId = null;
+                break;
+            }
+            // Carrega o primeiro item direto no formulário de edição manual.
+            alterarTipoProduto('manual');
+            document.getElementById('produtoManual').value = (primeiroDesagrupado.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
+            document.getElementById('quantidadeManual').value = primeiroDesagrupado.quantidade;
+            document.getElementById('unidadeManual').value = primeiroDesagrupado.unidade || 'm³';
+            document.getElementById('precoManual').value = formatCurrency(primeiroDesagrupado.precoUnitario);
+            itemEmEdicaoId = String(primeiroDesagrupado.id);
             ToastManager.success(
-                `Item desagrupado em ${desagrupados.length} itens para edição.`,
+                `Grupo desagrupado em ${desagrupados.length} itens — primeiro carregado para edição. Ajuste e clique em Adicionar.`,
                 'Item desagrupado',
-                3000
+                4000
             );
-            break;
+            return;
         }
     }
     

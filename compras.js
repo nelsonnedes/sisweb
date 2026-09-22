@@ -1225,17 +1225,27 @@ function editarItemCompra(index) {
     if (tipo === 'romaneio_agrupado') {
         const originais = Array.isArray(item.itensOriginais) ? item.itensOriginais : [];
         if (originais.length > 0) {
-            if (!window.confirm('Deseja Desagrupar para Edição?')) return;
+            // Desagrupa e já carrega o primeiro item no formulário (1 clique, sem confirm).
             const desagrupados = originais.map(o => ({
                 ...o,
                 id: Date.now() + Math.random(),
                 itensOriginais: undefined
             }));
             itensPedido.splice(index, 1, ...desagrupados);
-            itemEmEdicaoIndex = null;
             renderizarItensPedido();
             atualizarTotais();
-            ToastManager.success(`Item desagrupado em ${desagrupados.length} itens para edição.`, 'Item desagrupado', 3000);
+            const primeiroDesagrupado = desagrupados[0];
+            if (!primeiroDesagrupado) {
+                itemEmEdicaoIndex = null;
+                return;
+            }
+            alterarTipoProduto('manual');
+            document.getElementById('produtoManual').value = (primeiroDesagrupado.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
+            document.getElementById('quantidadeManual').value = primeiroDesagrupado.quantidade;
+            document.getElementById('unidadeManual').value = primeiroDesagrupado.unidade || 'm³';
+            document.getElementById('precoManual').value = formatCurrency(primeiroDesagrupado.precoUnitario);
+            itemEmEdicaoIndex = index;
+            ToastManager.success(`Grupo desagrupado em ${desagrupados.length} itens — primeiro carregado para edição. Ajuste e clique em "Adicionar".`, 'Item desagrupado', 4000);
             return;
         }
         alterarTipoProduto('manual');

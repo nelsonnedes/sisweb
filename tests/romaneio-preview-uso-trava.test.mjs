@@ -263,6 +263,17 @@ test('modo de agrupamento persiste no pedido e restaura na edição', () => {
   assert.match(compras, /modoSalvoCompra/);
 });
 
+test('editar agrupado desagrupa e carrega em 1 clique (sem confirm)', () => {
+  assert.doesNotMatch(vendas, /Deseja Desagrupar para Edição/);
+  assert.doesNotMatch(compras, /Deseja Desagrupar para Edição/);
+  assert.match(vendas, /primeiroDesagrupado/);
+  assert.match(vendas, /itemEmEdicaoId = String\(primeiroDesagrupado\.id\)/);
+  assert.match(compras, /primeiroDesagrupado/);
+  assert.match(compras, /itemEmEdicaoIndex = index;/);
+  assert.match(vendas, /primeiro carregado para edição/);
+  assert.match(compras, /primeiro carregado para edição/);
+});
+
 test('lista e impressão exibem itens dimensoes pelo nome (sem re-derivação)', () => {
   const ocorrencias = vendas.match(/item\.tipo === 'romaneio_dimensoes'/g) || [];
   assert.ok(ocorrencias.length >= 3, 'tabela, detalhes e impressão classificam romaneio_dimensoes');
