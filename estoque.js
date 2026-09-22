@@ -7885,6 +7885,22 @@ function obterLogoStoragePathEmpresaRelatorio(empresa = {}) {
 
 async function prepararLogoEmpresaRelatorio(empresa = {}) {
     const prepared = { ...(empresa || {}) };
+    // DataURL em cache primeiro (instantâneo após a 1ª resolução da sessão).
+    try {
+        const pdfHelper = window.SiswebCommercePdf;
+        if (pdfHelper && typeof pdfHelper.resolveCompanyLogoDataUrl === 'function') {
+            const cachedDataUrl = String(await pdfHelper.resolveCompanyLogoDataUrl(prepared) || '').trim();
+            if (/^data:image\/(png|jpe?g|webp);base64,/i.test(cachedDataUrl)) {
+                prepared.logo = cachedDataUrl;
+                prepared.logoDataUrl = cachedDataUrl;
+                prepared.logoUrl = cachedDataUrl;
+                prepared.logoSvg = false;
+                return prepared;
+            }
+        }
+    } catch (error) {
+        console.warn('Logo da empresa indisponivel por DataURL em cache:', error);
+    }
     if (obterLogoEmpresaSrc(prepared)) return prepared;
 
     const logoStoragePath = obterLogoStoragePathEmpresaRelatorio(prepared);

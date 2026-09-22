@@ -89,7 +89,7 @@ test('estoque resolve logo multitenant antes de montar cabecalho HTML', async ()
       },
       SiswebCommercePdf: {
         async resolveCompanyLogoDataUrl(company) {
-          calls.push({ type: 'resolveCompanyLogoDataUrl', path: company.logoStoragePath || company.logoPath });
+          calls.push({ type: 'resolveCompanyLogoDataUrl', path: company.logoStoragePath || company.logoPath || company.logo });
           return logoDataUrl;
         },
       },
@@ -115,11 +115,11 @@ test('estoque resolve logo multitenant antes de montar cabecalho HTML', async ()
     name: 'Empresa Teste',
     logoStoragePath: storagePath,
   });
-  assert.equal(prepared.logoUrl, downloadUrl);
-  assert.equal(prepared.logoStoragePath, storagePath);
-  assert.equal(api.obterLogoEmpresaSrc(prepared), downloadUrl);
-  assert.ok(calls.some((call) => call.type === 'getStorageDownloadURL' && call.path === storagePath));
-  assert.ok(!calls.some((call) => call.type === 'resolveCompanyLogoDataUrl'));
+  assert.equal(prepared.logoUrl, logoDataUrl);
+  assert.equal(prepared.logoDataUrl, logoDataUrl);
+  assert.equal(api.obterLogoEmpresaSrc(prepared), logoDataUrl);
+  assert.ok(calls.some((call) => call.type === 'resolveCompanyLogoDataUrl'));
+  assert.ok(!calls.some((call) => call.type === 'getStorageDownloadURL'));
 
   calls.length = 0;
   context.window.firebaseService.getStorageDownloadURL = async (path) => {

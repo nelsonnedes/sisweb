@@ -713,7 +713,23 @@ window.ImprimirRomaneio = (function() {
                     if (window.__tlAutoPrintExecutado) return;
                     window.__tlAutoPrintExecutado = true;
                     sessionStorage.setItem(storageKey, '1');
-                    window.print();
+                    var doPrintOnce = function() { try { window.print(); } catch (e) {} };
+                    try {
+                        var autoImgs = Array.prototype.slice.call(document.images || []);
+                        var autoPend = autoImgs.filter(function(im) { return !(im.complete && im.naturalWidth > 0); });
+                        if (!autoPend.length) { doPrintOnce(); return; }
+                        var autoLeft = autoPend.length;
+                        var autoDone = false;
+                        var autoFinish = function() { if (!autoDone) { autoDone = true; doPrintOnce(); } };
+                        var autoOne = function() { autoLeft -= 1; if (autoLeft <= 0) autoFinish(); };
+                        autoPend.forEach(function(im) {
+                            try { if (typeof im.decode === 'function') { im.decode().then(autoOne, autoOne); return; } } catch (e) {}
+                            if (im.complete) { autoOne(); return; }
+                            im.addEventListener('load', autoOne, { once: true });
+                            im.addEventListener('error', autoOne, { once: true });
+                        });
+                        setTimeout(autoFinish, 1500);
+                    } catch (e) { doPrintOnce(); }
                 }, 500);
             } catch (e) {}
         };
@@ -1109,7 +1125,23 @@ window.ImprimirRomaneio = (function() {
                     if (window.__tlAutoPrintExecutado) return;
                     window.__tlAutoPrintExecutado = true;
                     sessionStorage.setItem(storageKey, '1');
-                    window.print();
+                    var doPrintOnce = function() { try { window.print(); } catch (e) {} };
+                    try {
+                        var autoImgs = Array.prototype.slice.call(document.images || []);
+                        var autoPend = autoImgs.filter(function(im) { return !(im.complete && im.naturalWidth > 0); });
+                        if (!autoPend.length) { doPrintOnce(); return; }
+                        var autoLeft = autoPend.length;
+                        var autoDone = false;
+                        var autoFinish = function() { if (!autoDone) { autoDone = true; doPrintOnce(); } };
+                        var autoOne = function() { autoLeft -= 1; if (autoLeft <= 0) autoFinish(); };
+                        autoPend.forEach(function(im) {
+                            try { if (typeof im.decode === 'function') { im.decode().then(autoOne, autoOne); return; } } catch (e) {}
+                            if (im.complete) { autoOne(); return; }
+                            im.addEventListener('load', autoOne, { once: true });
+                            im.addEventListener('error', autoOne, { once: true });
+                        });
+                        setTimeout(autoFinish, 1500);
+                    } catch (e) { doPrintOnce(); }
                 }, 500);
             } catch (e) {}
         };
@@ -2003,6 +2035,19 @@ window.ImprimirRomaneio = (function() {
     /**
      * ✅ OBTER DADOS DA EMPRESA (CORRIGIDO - com logo local como fallback)
      */
+    // Logo em DataURL via cache compartilhado: evita logo em branco na 1ª
+    // impressão. Sem o motor na página, mantém a URL crua (anterior).
+    async function upgradeRomaneioLogoToDataUrl(logoUrl) {
+        try {
+            const raw = String(logoUrl || '').trim();
+            if (!raw || /^data:image\//i.test(raw)) return raw;
+            if (window.SiswebCommercePdf && typeof window.SiswebCommercePdf.resolveCompanyLogoDataUrl === 'function') {
+                const dataUrl = await window.SiswebCommercePdf.resolveCompanyLogoDataUrl({ logo: raw });
+                if (dataUrl) return dataUrl;
+            }
+        } catch (_) {}
+        return String(logoUrl || '');
+    }
     async function obterDadosEmpresa(romaneio = null) {
         console.log('🏢 Carregando dados da empresa...');
 
@@ -2032,7 +2077,7 @@ window.ImprimirRomaneio = (function() {
                         city: centralCompany.city || '-',
                         state: centralCompany.state || '-',
                         phone: centralCompany.phone || '-',
-                        logo: logoUrl
+                        logo: await upgradeRomaneioLogoToDataUrl(logoUrl)
                     };
                 }
             } catch (error) {
@@ -2134,7 +2179,7 @@ window.ImprimirRomaneio = (function() {
             city: companyData.city || '-',
             state: companyData.state || '-',
             phone: companyData.phone || '-',
-            logo: logoUrl // Logo corrigida com fallback local
+            logo: await upgradeRomaneioLogoToDataUrl(logoUrl) // DataURL em cache; crua se indisponível
         };
     }
 

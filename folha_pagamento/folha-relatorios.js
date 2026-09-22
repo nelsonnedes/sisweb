@@ -4259,7 +4259,15 @@ class FolhaRelatorios {
                         : null;
                     if (centralData && typeof centralData === 'object') {
                         const logoCandidate = centralData.logoUrl || centralData.logoURL || centralData.logoDownloadURL || centralData.logoStoragePath || centralData.logoPath || centralData.logo || centralData.logoBase64 || centralData.logoData || '';
-                        return { ...centralData, logo: normalizeLogo(logoCandidate) };
+                        let logoFinal = normalizeLogo(logoCandidate);
+                        // Logo em DataURL via cache compartilhado (evita branco na 1ª impressão).
+                        try {
+                            if (logoFinal && !/^data:/i.test(logoFinal) && window.SiswebCommercePdf && typeof window.SiswebCommercePdf.resolveCompanyLogoDataUrl === 'function') {
+                                const dataUrl = await window.SiswebCommercePdf.resolveCompanyLogoDataUrl({ logo: logoFinal });
+                                if (dataUrl) logoFinal = dataUrl;
+                            }
+                        } catch (_) {}
+                        return { ...centralData, logo: logoFinal };
                     }
                 } catch (error) {
                     console.warn('Aviso ao obter empresa pelo helper central:', error);
@@ -4382,6 +4390,14 @@ class FolhaRelatorios {
             }
             const logoCandidate = empresaFinal.logoUrl || empresaFinal.logoURL || empresaFinal.logoDownloadURL || empresaFinal.logoStoragePath || empresaFinal.logoPath || empresaFinal.logo || empresaFinal.logoBase64 || empresaFinal.logoData || '';
             empresaFinal.logo = normalizeLogo(logoCandidate);
+            // Logo em DataURL via cache compartilhado (evita branco na 1ª impressão).
+            try {
+                const rawFolhaLogo = String(empresaFinal.logo || '').trim();
+                if (rawFolhaLogo && !/^data:/i.test(rawFolhaLogo) && window.SiswebCommercePdf && typeof window.SiswebCommercePdf.resolveCompanyLogoDataUrl === 'function') {
+                    const dataUrl = await window.SiswebCommercePdf.resolveCompanyLogoDataUrl({ logo: rawFolhaLogo });
+                    if (dataUrl) empresaFinal.logo = dataUrl;
+                }
+            } catch (_) {}
 
             return empresaFinal;
         } catch (error) {

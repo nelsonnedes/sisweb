@@ -963,7 +963,15 @@ window.imprimirRomaneioTora = async function(romaneioId, tipo = 'completo') {
     const companyName = companyInfo.name || companyInfo.nome || companyInfo.companyName || 'Empresa não informada';
     const companyCnpj = companyInfo.cnpj || companyInfo.document || companyInfo.cpfCnpj || '-';
     const companyPhone = companyInfo.phone || companyInfo.telefone || '-';
-    const companyLogo = companyInfo.logo || companyInfo.logoUrl || '';
+    let companyLogo = companyInfo.logo || companyInfo.logoUrl || '';
+    // Logo em DataURL via cache compartilhado (evita branco na 1ª impressão).
+    try {
+        const rawLogo = String(companyLogo || '').trim();
+        if (rawLogo && !/^data:image\//i.test(rawLogo) && window.SiswebCommercePdf && typeof window.SiswebCommercePdf.resolveCompanyLogoDataUrl === 'function') {
+            const dataUrl = await window.SiswebCommercePdf.resolveCompanyLogoDataUrl({ logo: rawLogo });
+            if (dataUrl) companyLogo = dataUrl;
+        }
+    } catch (_) {}
     
     // Fallback básico (somente se o módulo especializado não estiver carregado).
     // MOBILE: HTML completo com viewport + Voltar + trigger robusto para não prender em about:blank.
@@ -1018,9 +1026,26 @@ window.imprimirRomaneioTora = async function(romaneioId, tipo = 'completo') {
             (function(){
                 var done=false;
                 function go(){ if(done) return; done=true; try{window.focus();}catch(e){} try{window.print();}catch(e){} }
-                try{ window.addEventListener('load', function(){ setTimeout(go, 120); }, { once:true }); }catch(e){}
-                try{ if(document.fonts && document.fonts.ready && document.fonts.ready.then){ document.fonts.ready.then(function(){ setTimeout(go, 60); }).catch(function(){}); } }catch(e){}
-                setTimeout(go, 700);
+                function goWhenReady(){
+                    try {
+                        var imgs = Array.prototype.slice.call(document.images || []);
+                        var pend = imgs.filter(function(im){ return !(im.complete && im.naturalWidth > 0); });
+                        if (!pend.length) { go(); return; }
+                        var left = pend.length; var fin = false;
+                        var finish = function(){ if(!fin){ fin=true; go(); } };
+                        var one = function(){ left -= 1; if (left <= 0) finish(); };
+                        pend.forEach(function(im){
+                            try { if (typeof im.decode === 'function') { im.decode().then(one, one); return; } } catch(e){}
+                            if (im.complete) { one(); return; }
+                            im.addEventListener('load', one, { once:true });
+                            im.addEventListener('error', one, { once:true });
+                        });
+                        setTimeout(finish, 1500);
+                    } catch(e){ go(); }
+                }
+                try{ window.addEventListener('load', function(){ setTimeout(goWhenReady, 120); }, { once:true }); }catch(e){}
+                try{ if(document.fonts && document.fonts.ready && document.fonts.ready.then){ document.fonts.ready.then(function(){ setTimeout(goWhenReady, 60); }).catch(function(){}); } }catch(e){}
+                setTimeout(goWhenReady, 700);
                 setTimeout(go, 1600);
             })();
             </script>

@@ -475,6 +475,14 @@ const NFDanfe = (() => {
     const source = pickDanfeLogoSource(nfeData);
     if (!source) return '';
     if (/^data:image\//i.test(source)) return source;
+    // DataURL em cache compartilhado primeiro (evita fetch repetido por DANFE;
+    // também resolve paths do Storage via SDK, antes só URL https funcionava).
+    try {
+      if (window.SiswebCommercePdf && typeof window.SiswebCommercePdf.resolveCompanyLogoDataUrl === 'function') {
+        const cached = await window.SiswebCommercePdf.resolveCompanyLogoDataUrl({ logo: source });
+        if (/^data:image\//i.test(String(cached || ''))) return cached;
+      }
+    } catch (_) {}
     if (!/^https?:\/\//i.test(source) || typeof fetch !== 'function' || typeof FileReader === 'undefined') return '';
     try {
       const response = await fetch(source, { mode: 'cors' });

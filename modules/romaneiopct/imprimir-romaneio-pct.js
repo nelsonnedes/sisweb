@@ -149,6 +149,22 @@ async function carregarRomaneiosMergedPct() {
 }
 
 // ============================================================================
+// LOGO EM DATAURL (CACHE COMPARTILHADO): evita logo em branco na impressão.
+// Sem o motor na página, mantém a URL crua (comportamento anterior).
+// ============================================================================
+async function upgradePctLogoToDataUrl(logoProcessado) {
+    try {
+        const raw = String(logoProcessado || '').trim();
+        if (!raw || /^data:image\//i.test(raw)) return raw;
+        if (window.SiswebCommercePdf && typeof window.SiswebCommercePdf.resolveCompanyLogoDataUrl === 'function') {
+            const dataUrl = await window.SiswebCommercePdf.resolveCompanyLogoDataUrl({ logo: raw });
+            if (dataUrl) return dataUrl;
+        }
+    } catch (_) {}
+    return String(logoProcessado || '');
+}
+
+// ============================================================================
 // AUXILIAR MOBILE: garante viewport + barra Voltar/Imprimir no documento PCT
 // ============================================================================
 function ensurePctPrintAux(doc) {
@@ -442,7 +458,7 @@ async function getCompanyData() {
             city: companyData.city || '-',
             state: companyData.state || '-',
             phone: companyData.phone || '-',
-            logo: logoProcessado
+            logo: await upgradePctLogoToDataUrl(logoProcessado)
         };
         
         console.log("📋 === DADOS FINAIS DA EMPRESA ===");

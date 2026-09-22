@@ -1442,6 +1442,7 @@
     <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
     <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
     <script src="romaneio-print-config.js?v=0c4709b882a7"></script>
+    <script src="commerce-pdf-share.js?v=19fcca9630d5"></script>
     <script src="modules/core/client-list-columns.js?v=4dcbe8e9c2f7" data-page="pes" data-target="clientListBody"></script>
     <script src="modules/core/romaneio-list-columns.js?v=4a678c769887" data-page="pes" data-target="romaneioListBody"></script>
     <script>
@@ -4502,7 +4503,14 @@
                 } catch (_) {}
             }
             const selected = profileData || {};
-            const logo = selected.logo && String(selected.logo).trim() ? selected.logo : '';
+            let logo = selected.logo && String(selected.logo).trim() ? String(selected.logo).trim() : '';
+            // Logo em DataURL via cache compartilhado (evita branco na 1ª impressão).
+            try {
+                if (logo && !/^data:image\//i.test(logo) && window.SiswebCommercePdf && typeof window.SiswebCommercePdf.resolveCompanyLogoDataUrl === 'function') {
+                    const dataUrl = await window.SiswebCommercePdf.resolveCompanyLogoDataUrl({ logo });
+                    if (dataUrl) logo = dataUrl;
+                }
+            } catch (_) {}
             return {
                 name: selected.name || 'Empresa não informada',
                 cnpj: selected.cnpj || '-',
@@ -5227,7 +5235,23 @@
                         }
                     }
                 } catch (_) {}
-                setTimeout(function() { printWindow.print(); }, 120);
+                try {
+                    var pdoc = printWindow.document;
+                    var pimgs = Array.prototype.slice.call((pdoc && pdoc.images) || []);
+                    var ppend = pimgs.filter(function(im) { return !(im.complete && im.naturalWidth > 0); });
+                    if (!ppend.length) { printWindow.print(); return; }
+                    var prem = ppend.length;
+                    var pfin = false;
+                    var pfinish = function() { if (!pfin) { pfin = true; try { printWindow.print(); } catch (e) {} } };
+                    var pone = function() { prem -= 1; if (prem <= 0) pfinish(); };
+                    ppend.forEach(function(im) {
+                        try { if (typeof im.decode === 'function') { im.decode().then(pone, pone); return; } } catch (e) {}
+                        if (im.complete) { pone(); return; }
+                        im.addEventListener('load', pone, { once: true });
+                        im.addEventListener('error', pone, { once: true });
+                    });
+                    setTimeout(pfinish, 1500);
+                } catch (e) { try { printWindow.print(); } catch (e2) {} }
             };
         }
         

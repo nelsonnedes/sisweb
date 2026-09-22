@@ -127,3 +127,29 @@ test('Pedidos: logo em cache + espera de imagem + lote 1x + warm-up', () => {
     assert.match(compras, /schedulePrintLogoWarmUpCompras/);
     assert.match(compras, /gerarHTMLImpressaoPedidoCompra\(pedido, empresaLote/);
 });
+
+test('Logo-cache sistema-wide: romaneios, estoque, folha e DANFE usam resolvedor em cache', () => {
+    const tl = read('modules/reports/imprimir-romaneio.js');
+    assert.match(tl, /upgradeRomaneioLogoToDataUrl/);
+    assert.match(tl, /resolveCompanyLogoDataUrl\(\{ logo: raw \}\)/);
+    assert.match(tl, /autoPend/);
+    const pct = read('modules/romaneiopct/imprimir-romaneio-pct.js');
+    assert.match(pct, /upgradePctLogoToDataUrl/);
+    const pes = read('romaneiopes.html');
+    assert.match(pes, /resolveCompanyLogoDataUrl\(\{ logo \}\)/);
+    assert.match(pes, /ppend/);
+    const mgr = read('romaneio-manager.js');
+    assert.match(mgr, /resolveCompanyLogoDataUrl\(\{ logo: rawLogo \}\)/);
+    assert.match(mgr, /goWhenReady/);
+    const est = read('estoque.js');
+    assert.match(est, /DataURL em cache primeiro/);
+    const folha = read('folha_pagamento/folha-relatorios.js');
+    assert.match(folha, /resolveCompanyLogoDataUrl\(\{ logo: logoFinal \}\)/);
+    assert.match(folha, /resolveCompanyLogoDataUrl\(\{ logo: rawFolhaLogo \}\)/);
+    const danfe = read('nf-danfe.js');
+    assert.match(danfe, /resolveCompanyLogoDataUrl\(\{ logo: source \}\)/);
+    for (const h of ['romaneiotl.html', 'romaneiopct.html', 'romaneiotora.html', 'romaneiopes.html', 'notas-fiscais.html']) {
+        assert.match(read(h), /commerce-pdf-share\.js\?v=[0-9a-f]+/, `${h} carrega o motor compartilhado`);
+    }
+    assert.match(read('folha_pagamento/folha.html'), /\.\.\/commerce-pdf-share\.js\?v=[0-9a-f]+/, 'folha.html carrega o motor compartilhado');
+});
