@@ -302,3 +302,17 @@ test('compras: fallback valida remoto antes de confirmar', () => {
   const idxAssign = compras.indexOf('window.compras = nextCompras');
   assert.ok(idxGate !== -1 && idxAssign !== -1 && idxGate < idxAssign, 'memória só após confirmação');
 });
+
+test('compras: excluir também é fail-closed no fallback', () => {
+  const block = compras.slice(compras.indexOf('async function excluirPedido(id)'), compras.indexOf('async function excluirPedido(id)') + 4000);
+  assert.match(block, /__rcSaveDataRemoteOk/);
+  assert.match(block, /Nenhuma alteração foi perdida/);
+});
+
+test('romaneio-manager: save/delete falham fechado em success:false explícito', () => {
+  const manager = fs.readFileSync(new URL('../romaneio-manager.js', import.meta.url), 'utf8');
+  assert.match(manager, /falhas/);
+  assert.match(manager, /return count > 0 && falhas === 0/);
+  assert.match(manager, /Não foi possível excluir o romaneio no servidor/);
+  assert.match(manager, /Remoto primeiro/);
+});

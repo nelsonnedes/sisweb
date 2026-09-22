@@ -4155,9 +4155,10 @@ async function excluirPedido(id) {
         // 5. Atualizar Local
         const nextCompras = (window.compras || []).filter(p => getPedidoCompraId(p) !== String(id));
         if (!savedToFirebase) {
+            __rcSaveDataRemoteOk = false;
             const savedFallback = await saveData('pedidosCompra', nextCompras);
-            if (!savedFallback) {
-                throw new Error('Não foi possível excluir o pedido de compra no servidor.');
+            if (!savedFallback || !__rcSaveDataRemoteOk) {
+                throw new Error('Não foi possível excluir o pedido no servidor. Verifique sua conexão e permissões e tente novamente. Nenhuma alteração foi perdida.');
             }
         }
         window.compras = nextCompras;

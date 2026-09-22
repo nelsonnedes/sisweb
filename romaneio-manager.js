@@ -205,6 +205,9 @@ class RomaneioManager {
 
             if (!Array.isArray(data)) data = data ? [data] : [];
             let count = 0;
+            // Falha remota explícita ({success:false}) vira false no retorno
+            // (fail-closed: chamadores exibem erro em vez de "sucesso" fantasma).
+            let falhas = 0;
             
             // ✅ ATUALIZAÇÃO LOCAL IMEDIATA (Optimistic UI)
             // Isso previne o "sumiço" do romaneio enquanto o Firebase sincroniza
@@ -229,12 +232,17 @@ class RomaneioManager {
                 // Salvar no Firebase
                 if (window.firebaseService) {
                     if (typeof window.firebaseService.saveToFirebase === 'function') {
-                        await window.firebaseService.saveToFirebase(this.collectionKey, String(id), record, { silent: true });
+                        const resSave = await window.firebaseService.saveToFirebase(this.collectionKey, String(id), record, { silent: true });
+                        if (resSave && resSave.success === false) falhas++;
+                        else count++;
                     } else if (typeof window.firebaseService.saveData === 'function') {
                         // saveData(path, key, data) no singleton (2 args gravava "[object Object]")
-                        await window.firebaseService.saveData(this.collectionKey, String(id), record);
+                        const resSave = await window.firebaseService.saveData(this.collectionKey, String(id), record);
+                        if (resSave && resSave.success === false) falhas++;
+                        else count++;
+                    } else {
+                        count++;
                     }
-                    count++;
                 }
                 
                 // Atualizar cache local imediatamente
@@ -275,7 +283,7 @@ class RomaneioManager {
                 this.renderFilteredTable();
             }
             
-            return count > 0;
+            return count > 0 && falhas === 0;
         } catch (e) {
             console.error(`❌ [${this.type}] Erro ao salvar:`, e);
             throw e;
@@ -288,21 +296,29 @@ class RomaneioManager {
             const rec = this.allRomaneios.find(r => String(r?.id) === sid || String(r?.firebaseKey) === sid) || null;
             const deleteKey = String((rec && (rec.firebaseKey || rec.id)) || sid);
 
+            // 1. Remoto primeiro: falha explícita aborta antes de tocar o local
+            // (fail-closed: sem isso o item sumia da lista e voltava no reload).
+            if (window.firebaseService) {
+                let resDel = null;
+                if (typeof window.firebaseService.saveToFirebase === 'function') {
+                    resDel = await window.firebaseService.saveToFirebase(this.collectionKey, deleteKey, null, { silent: true });
+                } else if (typeof window.firebaseService.updatePaths === 'function') {
+                    resDel = await window.firebaseService.updatePaths({ [`${this.collectionKey}/${deleteKey}`]: null });
+                } else if (typeof window.firebaseService.deleteData === 'function') {
+                    resDel = await window.firebaseService.deleteData(`${this.collectionKey}/${deleteKey}`);
+                }
+                if (resDel && resDel.success === false) {
+                    throw new Error('Não foi possível excluir o romaneio no servidor. Nenhuma alteração foi feita.');
+                }
+            }
+
             const tombKey = getStorageKey(this.deletedKey);
             const tomb = tombKey ? JSON.parse(localStorage.getItem(tombKey) || '[]').map(String) : [];
             if (!tomb.includes(deleteKey)) {
                 tomb.push(deleteKey);
                 if (tombKey) localStorage.setItem(tombKey, JSON.stringify(tomb));
             }
-            if (window.firebaseService) {
-                if (typeof window.firebaseService.saveToFirebase === 'function') {
-                    await window.firebaseService.saveToFirebase(this.collectionKey, deleteKey, null, { silent: true });
-                } else if (typeof window.firebaseService.updatePaths === 'function') {
-                    await window.firebaseService.updatePaths({ [`${this.collectionKey}/${deleteKey}`]: null });
-                } else if (typeof window.firebaseService.deleteData === 'function') {
-                    await window.firebaseService.deleteData(`${this.collectionKey}/${deleteKey}`);
-                }
-            }
+            // Remoto já confirmado acima (ou sem serviço: mantém comportamento offline-first).
 
             try {
                 const sk = getStorageKey(this.collectionKey);
@@ -1143,7 +1159,19 @@ window.editarRomaneioTora = async function(romaneioId, dadosPreCarregados = null
 
 window.excluirRomaneioTora = function(id) {
     if (confirm('Excluir romaneio Tora?')) {
-        window.romaneioToraManager.deleteData(id);
+        try {
+            const r = window.romaneioToraManager.deleteData(id);
+            if (r && typeof r.catch === 'function') {
+                r.catch((e) => {
+                    console.warn('Falha ao excluir romaneio no servidor:', e);
+                    if (window.Utils && typeof window.Utils.showToast === 'function') {
+                        window.Utils.showToast('Não foi possível excluir o romaneio no servidor.', 'error');
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn('Falha ao excluir romaneio:', e);
+        }
     }
 };
 
