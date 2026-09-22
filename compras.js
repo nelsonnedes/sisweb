@@ -2562,9 +2562,23 @@ async function imprimirPedidosCompraSelecionadosDesktop(pedidosParaImprimir) {
 
     LoadingManager.show('Preparando impressão...');
     try {
+        // Empresa+logo resolvidos UMA vez e reutilizados por pedido
+        // (gerarHTMLImpressaoPedidoCompra aceita a empresa pronta no 2º argumento).
+        let empresaLote = null;
+        try {
+            const base = await obterDadosEmpresa();
+            if (window.SiswebCommercePdf && typeof window.SiswebCommercePdf.preparePrintOptions === 'function') {
+                const prepared = await window.SiswebCommercePdf.preparePrintOptions({ company: base });
+                empresaLote = (prepared && prepared.company) || base;
+            } else {
+                empresaLote = base;
+            }
+        } catch (_) {
+            empresaLote = null;
+        }
         const documentos = [];
         for (const pedido of pedidos) {
-            documentos.push(await gerarHTMLImpressaoPedidoCompra(pedido));
+            documentos.push(await gerarHTMLImpressaoPedidoCompra(pedido, empresaLote || undefined));
         }
         const html = montarHTMLImpressaoLotePedidos(documentos, 'Pedidos de Compra');
         if (window.SiswebCommercePdf && typeof window.SiswebCommercePdf.printHtmlDocument === 'function') {
@@ -4638,6 +4652,26 @@ async function salvarFornecedorInline(event) {
 // 6. INICIALIZAÇÃO DO SISTEMA
 // ============================================================================
 
+// Warm-up da logo de impressão em background: resolve e memoriza o DataURL
+// para a 1ª impressão sair instantânea. Nunca bloqueia nem quebra o init.
+function schedulePrintLogoWarmUpCompras() {
+    try {
+        const warmUp = () => {
+            try {
+                if (!window.SiswebCommercePdf || typeof window.SiswebCommercePdf.preparePrintOptions !== 'function') return;
+                Promise.resolve()
+                    .then(() => obterDadosEmpresa())
+                    .then((company) => window.SiswebCommercePdf.preparePrintOptions({ company: company || {} }))
+                    .catch(() => {});
+            } catch (_) {}
+        };
+        if (typeof requestIdleCallback === 'function') {
+            requestIdleCallback(warmUp, { timeout: 8000 });
+        } else {
+            setTimeout(warmUp, 3000);
+        }
+    } catch (_) {}
+}
 async function inicializarSistemaCompras() {
     LoadingManager.show('Inicializando sistema de compras...');
     configurarAbaFornecedoresCompras();
@@ -4767,6 +4801,8 @@ async function inicializarSistemaCompras() {
         });
         agruparRomaneioCheckbox.dataset.bound = '1';
     }
+
+    try { schedulePrintLogoWarmUpCompras(); } catch (_) {}
 }
 
 function iniciarSistemaComprasUmaVez() {

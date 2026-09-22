@@ -191,10 +191,53 @@
         ]);
     }
 
+    // Cache em memória do DataURL da logo (por page-load): a 1ª impressão resolve
+    // via rede e as seguintes reutilizam, sem rebaixar os bytes. Chave = fonte
+    // da logo; logo trocada no meio da sessão aparece após recarregar a página.
+    const logoDataUrlCache = new Map();
+
+    function logoCacheKeyFor(company = {}) {
+        try {
+            const normalized = normalizeCompany(company);
+            return `${normalized.logo}||${normalized.logoStoragePath}`;
+        } catch (_) {
+            return '';
+        }
+    }
+
+    function getCachedLogoDataUrl(company = {}) {
+        try {
+            const key = logoCacheKeyFor(company);
+            if (!key || key === '||') return '';
+            const hit = logoDataUrlCache.get(key);
+            return typeof hit === 'string' && isPdfImageDataUrl(hit) ? hit : '';
+        } catch (_) {
+            return '';
+        }
+    }
+
+    function setCachedLogoDataUrl(company = {}, dataUrl = '') {
+        try {
+            if (!isPdfImageDataUrl(dataUrl)) return;
+            const key = logoCacheKeyFor(company);
+            if (!key || key === '||') return;
+            if (logoDataUrlCache.size > 20) logoDataUrlCache.clear();
+            logoDataUrlCache.set(key, dataUrl);
+        } catch (_) {}
+    }
+
+    function clearPrintLogoCache() {
+        try {
+            logoDataUrlCache.clear();
+        } catch (_) {}
+    }
+
     async function resolveCompanyLogoDataUrl(company = {}, options = {}) {
         const normalized = normalizeCompany(company);
         const logoSource = normalized.logo;
         if (isPdfImageDataUrl(logoSource)) return logoSource;
+        const cachedLogo = getCachedLogoDataUrl(company);
+        if (cachedLogo) return cachedLogo;
         const timeoutMs = Number(options.timeoutMs || 6000);
 
         const storageCandidates = uniqueValues([
@@ -236,7 +279,10 @@
                         timeoutMs,
                         'Logo da empresa'
                     );
-                    if (isPdfImageDataUrl(dataUrl)) return dataUrl;
+                    if (isPdfImageDataUrl(dataUrl)) {
+                        setCachedLogoDataUrl(company, dataUrl);
+                        return dataUrl;
+                    }
                 } catch (error) {
                     console.warn('Logo da empresa indisponível para PDF via Storage:', error);
                 }
@@ -246,11 +292,13 @@
         for (const candidate of urlCandidates) {
             if (isFirebaseStorageHttpUrl(candidate)) continue;
             try {
-                return await withTimeout(
+                const fetchedLogo = await withTimeout(
                     fetchLogoAsDataUrl(candidate),
                     timeoutMs,
                     'Logo da empresa'
                 );
+                if (isPdfImageDataUrl(fetchedLogo)) setCachedLogoDataUrl(company, fetchedLogo);
+                return fetchedLogo;
             } catch (error) {
                 console.warn('Logo da empresa indisponível para PDF via URL:', error);
             }
@@ -711,6 +759,35 @@
                     if (target.document && target.document.fonts && typeof target.document.fonts.ready.then === 'function') {
                         target.document.fonts.ready.then(() => setTimeout(safePrint, 60)).catch(() => {});
                     }
+                } catch (_) {}
+                // Aguarda o decode das imagens (ex.: logo via URL) antes do print,
+                // com teto para nunca travar o diálogo. Backstop abaixo preservado.
+                try {
+                    const printDoc = target.document;
+                    const waitImages = (() => {
+                        try {
+                            const imgs = Array.from((printDoc && printDoc.images) || []);
+                            const pending = imgs.filter((img) => !(img.complete && img.naturalWidth > 0));
+                            if (!pending.length) return Promise.resolve();
+                            return Promise.all(pending.map((img) => {
+                                try {
+                                    if (typeof img.decode === 'function') return img.decode().catch(() => {});
+                                } catch (_) {}
+                                if (img.complete) return Promise.resolve();
+                                return new Promise((resolve) => {
+                                    img.addEventListener('load', resolve, { once: true });
+                                    img.addEventListener('error', resolve, { once: true });
+                                    setTimeout(resolve, 1500);
+                                });
+                            }));
+                        } catch (_) {
+                            return Promise.resolve();
+                        }
+                    })();
+                    Promise.race([
+                        waitImages,
+                        new Promise((resolve) => setTimeout(resolve, 1800))
+                    ]).then(() => setTimeout(safePrint, 60)).catch(() => {});
                 } catch (_) {}
                 setTimeout(safePrint, delay + 500);
                 setTimeout(safePrint, delay + 1500);
@@ -1370,6 +1447,7 @@
         getPrintStyles,
         printHtmlDocument,
         preparePrintOptions,
-        resolveCompanyLogoDataUrl
+        resolveCompanyLogoDataUrl,
+        clearPrintLogoCache
     };
 })();

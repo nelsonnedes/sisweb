@@ -390,7 +390,7 @@ test('lista de pedidos usa impressao HTML no PC e PDF apenas em PWA', () => {
   assert.doesNotMatch(comprasJs, /\|\| window\.innerWidth <= 768/);
   assert.doesNotMatch(comprasJs, /return window\.innerWidth <= 768/);
   assert.match(comprasJs, /await imprimirPedido\(getPedidoCompraId\(pedidos\[0\]\)\)/);
-  assert.match(comprasJs, /await gerarHTMLImpressaoPedidoCompra\(pedido\)/);
+  assert.match(comprasJs, /await gerarHTMLImpressaoPedidoCompra\(pedido, empresaLote/);
   assert.match(comprasJs, /await helper\.preparePrintOptions\(printOptions\)/);
   assert.match(comprasJs, /function montarHTMLImpressaoLotePedidos\(documentos, title = 'Pedidos'\)/);
   assert.match(comprasJs, /async function gerarHTMLImpressaoPedidoCompra\(pedido\)/);

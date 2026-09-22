@@ -108,3 +108,22 @@ test('Mobile print fase 3: folha injeta viewport + Voltar sem quebrar contratos'
     assert.match(js, /history\.back/);
     assert.match(js, /@media print\{\.folha-print-back\{display:none !important;\}\}/);
 });
+
+test('Pedidos: logo em cache + espera de imagem + lote 1x + warm-up', () => {
+    const helper = read('commerce-pdf-share.js');
+    assert.match(helper, /logoDataUrlCache/);
+    assert.match(helper, /getCachedLogoDataUrl\(company\)/);
+    assert.match(helper, /setCachedLogoDataUrl\(company, dataUrl\)/);
+    assert.match(helper, /clearPrintLogoCache/);
+    assert.match(helper, /img\.decode/);
+    assert.match(helper, /printDoc\.images/);
+    // Contrato targetWindow preservado (anti-regressão fase 1)
+    assert.match(helper, /options\.targetWindow && options\.targetWindow\.closed !== true/);
+    const vendas = read('vendas.js');
+    assert.match(vendas, /schedulePrintLogoWarmUpVendas/);
+    assert.match(vendas, /requestIdleCallback/);
+    assert.match(vendas, /gerarHTMLImpressaoPedido\(pedido, empresaLote/);
+    const compras = read('compras.js');
+    assert.match(compras, /schedulePrintLogoWarmUpCompras/);
+    assert.match(compras, /gerarHTMLImpressaoPedidoCompra\(pedido, empresaLote/);
+});
