@@ -4,6 +4,8 @@ import test from 'node:test';
 
 const vendas = fs.readFileSync(new URL('../vendas.js', import.meta.url), 'utf8');
 const compras = fs.readFileSync(new URL('../compras.js', import.meta.url), 'utf8');
+const vendasHtml = fs.readFileSync(new URL('../vendas.html', import.meta.url), 'utf8');
+const comprasHtml = fs.readFileSync(new URL('../compras.html', import.meta.url), 'utf8');
 
 // ---------------------------------------------------------------------------
 // Vendas: helpers de vínculo (aditivos, fail-open)
@@ -103,4 +105,61 @@ test('edicao do proprio pedido nao se autobloqueia (ignora id em edicao)', () =>
   assert.match(vendas, /String\(p\.id \|\| ''\) === ignorarId/);
   assert.match(compras, /ignorarId/);
   assert.match(compras, /String\(p\.id \|\| ''\) === ignorarId/);
+});
+
+// ---------------------------------------------------------------------------
+// Agrupamento: fieldset "Agrupar:" + modos (vendas)
+// ---------------------------------------------------------------------------
+test('vendas: fieldset Agrupar com 2 checkboxes sem quebrar id legado', () => {
+  assert.match(vendasHtml, /fieldset id="agruparFieldset"/);
+  assert.match(vendasHtml, /Agrupar:/);
+  assert.match(vendasHtml, /id="agruparDimensoesCheckbox"/);
+  assert.match(vendasHtml, /Espécie Espessura x Largura x Comprimento/);
+  assert.match(vendasHtml, /id="agruparEspecieCheckbox"/);
+  assert.match(vendasHtml, /Agrupar por Espécie e Espessura/);
+});
+
+test('vendas: modos exclusivos, TORA desabilita dimensões, leitura fail-open', () => {
+  assert.match(vendas, /window\.alternarModoAgrupamentoVendas = function \(modo\)/);
+  assert.match(vendas, /function atualizarEstadoAgrupamentoVendas\(tipoSelecionado\)/);
+  assert.match(vendas, /function lerModoAgrupamentoVendas\(\)/);
+  assert.match(vendas, /cbDims\.disabled = true/);
+  assert.match(vendas, /vale apenas para romaneios PCT\/TL\/PES/);
+});
+
+test('vendas: modo dimensões ancora em brutos com tipo próprio sem colisão', () => {
+  assert.match(vendas, /function derivarChaveCategoriaVendas\(item\)/);
+  assert.match(vendas, /function chaveGrupoDimensoesVendas\(/);
+  assert.match(vendas, /romaneio_dimensoes/);
+  assert.match(vendas, /romaneio_dim_/);
+  assert.match(vendas, /t !== 'romaneio_dimensoes'/);
+});
+
+// ---------------------------------------------------------------------------
+// Agrupamento condicional (compras): Resumo só TORA, fieldset só PCT/TL/PES
+// ---------------------------------------------------------------------------
+test('compras: resumo legado identificado e fieldset oculto por padrão', () => {
+  assert.match(comprasHtml, /id="opcaoResumoEspecie"/);
+  assert.match(comprasHtml, /id="agruparDimsFieldset"/);
+  assert.match(comprasHtml, /hidden/);
+  assert.match(comprasHtml, /id="agruparDimensoesCompra"/);
+  assert.match(comprasHtml, /id="agruparEspecieEspessuraCompra"/);
+  assert.match(comprasHtml, /Carregar apenas o Resumo/);
+});
+
+test('compras: visibilidade condicional ANDada com tipo, sem modo fantasma', () => {
+  assert.match(compras, /window\.alternarModoAgrupamentoCompra = function \(modo\)/);
+  assert.match(compras, /function atualizarVisibilidadeAgrupamentoCompra\(tipo\)/);
+  assert.match(compras, /function lerModoAgrupamentoCompra\(\)/);
+  assert.match(compras, /fieldset\.hidden = !isSerrado/);
+  assert.match(compras, /cbResumo\.checked = false/);
+});
+
+test('compras: novos modos agrupam por dims com chaves estáveis', () => {
+  assert.match(compras, /function chaveGrupoDimsCompra\(/);
+  assert.match(compras, /function chaveGrupoEspecieCompra\(/);
+  assert.match(compras, /function normDimCompra\(valor\)/);
+  assert.match(compras, /function lerEspessuraCompra\(item\)/);
+  assert.match(compras, /modoAgrupa === 'dimensoes'/);
+  assert.match(compras, /grupos/);
 });

@@ -812,6 +812,7 @@ function novoPedido(gerarNumero = true) {
         if (prevBox) prevBox.style.display = 'none';
         const prevTora = document.getElementById('previewTora');
         if (prevTora) prevTora.style.display = 'none';
+        atualizarVisibilidadeAgrupamentoCompra('');
     } catch (_) { /* best-effort */ }
 
     // Resetar formulário
@@ -5215,6 +5216,7 @@ window.carregarRomaneiosPorTipo = async function() {
                 } catch (_) { /* best-effort */ }
             }).catch(() => {});
         } catch (_) { /* best-effort */ }
+        atualizarVisibilidadeAgrupamentoCompra(tipo);
         
     } catch (e) {
         console.error("Erro ao carregar romaneios:", e);
@@ -5245,6 +5247,7 @@ window.carregarDadosRomaneio = async function() {
                 btn.style.cursor = '';
             }
         } catch (_) { /* best-effort */ }
+        atualizarVisibilidadeAgrupamentoCompra(tipo);
         return;
     }
 
@@ -5388,10 +5391,108 @@ window.romaneioPreviewExcluirCompra = function (el) {
     }
 };
 
+// Modos de agrupamento (mutuamente exclusivos entre os 3 checkboxes).
+// Resumo-legado só vale para TORA; modos do fieldset só para PCT/TL/PES.
+window.alternarModoAgrupamentoCompra = function (modo) {
+    try {
+        const cbResumo = document.getElementById('agruparItensRomaneio');
+        const cbDims = document.getElementById('agruparDimensoesCompra');
+        const cbEsp = document.getElementById('agruparEspecieEspessuraCompra');
+        const marcados = { resumo: cbResumo && cbResumo.checked, dimensoes: cbDims && cbDims.checked, especie: cbEsp && cbEsp.checked };
+        if (modo === 'resumo' && marcados.resumo) {
+            if (cbDims) cbDims.checked = false;
+            if (cbEsp) cbEsp.checked = false;
+        } else if (modo === 'dimensoes' && marcados.dimensoes) {
+            if (cbResumo) cbResumo.checked = false;
+            if (cbEsp) cbEsp.checked = false;
+        } else if (modo === 'especie' && marcados.especie) {
+            if (cbResumo) cbResumo.checked = false;
+            if (cbDims) cbDims.checked = false;
+        }
+    } catch (e) {
+        console.warn('Compras: falha ao alternar modo de agrupamento:', e);
+    }
+};
+
+function ehTipoToraCompra(tipo) {
+    return String(tipo || '').toLowerCase().includes('tora');
+}
+
+function ehTipoSerradoCompra(tipo) {
+    const t = String(tipo || '').toLowerCase();
+    return t.includes('pct') || t.includes('tl') || t.includes('pes');
+}
+
+// Visibilidade condicional: Resumo-legado só TORA; fieldset só PCT/TL/PES.
+// Ao esconder, desmarca (evita modo fantasma: hidden não desmarca sozinho).
+function atualizarVisibilidadeAgrupamentoCompra(tipo) {
+    try {
+        const labelResumo = document.getElementById('opcaoResumoEspecie');
+        const fieldset = document.getElementById('agruparDimsFieldset');
+        const cbResumo = document.getElementById('agruparItensRomaneio');
+        const cbDims = document.getElementById('agruparDimensoesCompra');
+        const cbEsp = document.getElementById('agruparEspecieEspessuraCompra');
+        const isTora = ehTipoToraCompra(tipo);
+        const isSerrado = ehTipoSerradoCompra(tipo);
+        if (labelResumo) labelResumo.style.display = isTora ? '' : 'none';
+        if (fieldset) fieldset.hidden = !isSerrado;
+        if (!isTora && cbResumo) cbResumo.checked = false;
+        if (!isSerrado) {
+            if (cbDims) cbDims.checked = false;
+            if (cbEsp) cbEsp.checked = false;
+        }
+    } catch (_) { /* best-effort */ }
+}
+
+// Lê o modo efetivo, ANDando checkbox com o tipo (fail-safe contra modo fantasma).
+function lerModoAgrupamentoCompra() {
+    try {
+        const tipo = document.getElementById('tipoRomaneio') ? document.getElementById('tipoRomaneio').value : '';
+        const isTora = ehTipoToraCompra(tipo);
+        const isSerrado = ehTipoSerradoCompra(tipo);
+        if (isTora && document.getElementById('agruparItensRomaneio') && document.getElementById('agruparItensRomaneio').checked) return 'resumo';
+        if (isSerrado && document.getElementById('agruparDimensoesCompra') && document.getElementById('agruparDimensoesCompra').checked) return 'dimensoes';
+        if (isSerrado && document.getElementById('agruparEspecieEspessuraCompra') && document.getElementById('agruparEspecieEspessuraCompra').checked) return 'especie';
+    } catch (_) { /* fail-open: item-a-item */ }
+    return 'nenhum';
+}
+
+function normDimCompra(valor) {
+    const n = parseFloat(valor);
+    if (isNaN(n) || !isFinite(n)) return '0.00';
+    return n.toFixed(2);
+}
+
+function fmtDimCompra(valor) {
+    const n = parseFloat(valor);
+    if (isNaN(n) || !isFinite(n)) return '0';
+    return String(parseFloat(n.toFixed(2)));
+}
+
+function lerEspessuraCompra(item) {
+    if (!item || typeof item !== 'object') return 0;
+    const candidatos = [item.espessura, item.bitola, item.b];
+    for (let i = 0; i < candidatos.length; i++) {
+        const v = parseFloat(candidatos[i]);
+        if (!isNaN(v) && isFinite(v)) return v;
+    }
+    return 0;
+}
+
+function chaveGrupoDimsCompra(especie, esp, larg, comp) {
+    return `${String(especie || '').trim().toUpperCase()}__${normDimCompra(esp)}__${normDimCompra(larg)}__${normDimCompra(comp)}`;
+}
+
+function chaveGrupoEspecieCompra(especie, esp) {
+    return `${String(especie || '').trim().toUpperCase()}__${normDimCompra(esp)}`;
+}
+
 window.adicionarItensRomaneio = async function() {
     const tipo = document.getElementById('tipoRomaneio').value;
     const id = document.getElementById('romaneioSelect').value;
-    const agrupar = document.getElementById('agruparItensRomaneio') ? document.getElementById('agruparItensRomaneio').checked : false;
+    // Modo efetivo ANDado com o tipo (resumo=TORA; dimensoes/especie=PCT-TL-PES).
+    const modoAgrupa = lerModoAgrupamentoCompra();
+    const agrupar = (modoAgrupa === 'resumo');
     
     if (!tipo || !id) {
         ToastManager.warning('Selecione um romaneio.');
@@ -5481,7 +5582,79 @@ window.adicionarItensRomaneio = async function() {
         
         let novosItens = [];
 
-        if (agrupar) {
+        if (modoAgrupa === 'dimensoes' || modoAgrupa === 'especie') {
+            // Modos do fieldset "Agrupar:" (PCT/TL/PES): por 4 dimensões ou por espécie+espessura.
+            const porDimensoes = (modoAgrupa === 'dimensoes');
+            const agrupados = {};
+
+            itensParaCarregar.forEach(item => {
+                const especie = (item.especie || item.produto || item.descricao || 'Item Romaneio').trim();
+                const esp = lerEspessuraCompra(item);
+                const larg = parseFloat(item.largura) || 0;
+                const comp = parseFloat(item.comprimento) || 0;
+                const key = porDimensoes ? chaveGrupoDimsCompra(especie, esp, larg, comp) : chaveGrupoEspecieCompra(especie, esp);
+
+                const qtd = parseFloat(item.volumeLiquido || item.volume || item.quantidade || 0);
+                const preco = parseFloat(item.preco || item.precoUnitario || 0);
+                const totalItem = qtd * preco;
+                const rotuloDims = porDimensoes
+                    ? `${especie} - ${fmtDimCompra(esp)}x${fmtDimCompra(larg)}x${fmtDimCompra(comp)}cm`
+                    : `${especie} - ${fmtDimCompra(esp)}cm`;
+
+                if (!agrupados[key]) {
+                    agrupados[key] = {
+                        nome: especie,
+                        rotulo: rotuloDims,
+                        quantidade: 0,
+                        total: 0,
+                        unidade: item.unidade || 'm³',
+                        originais: []
+                    };
+                }
+
+                agrupados[key].quantidade += qtd;
+                agrupados[key].total += totalItem;
+                agrupados[key].originais.push({
+                    id: Date.now() + Math.random(),
+                    tipo: 'romaneio',
+                    origemId: origemRomaneioId,
+                    romaneioId: idEstavel,
+                    romaneioNumero: numeroExibicao,
+                    romaneioTipo: tipo,
+                    produtoNome: rotuloDims,
+                    especie: especie,
+                    espessura: esp,
+                    largura: larg,
+                    comprimento: comp,
+                    quantidade: qtd,
+                    unidade: item.unidade || 'm³',
+                    precoUnitario: preco,
+                    total: totalItem
+                });
+            });
+
+            // Converter agrupados para lista de itens do pedido
+            Object.values(agrupados).forEach(grp => {
+                // Preço médio ponderado
+                const precoMedio = grp.quantidade > 0 ? (grp.total / grp.quantidade) : 0;
+
+                novosItens.push({
+                    id: Date.now() + Math.random(),
+                    tipo: 'romaneio_agrupado',
+                    origemId: origemRomaneioId,
+                    romaneioId: idEstavel,
+                    romaneioNumero: numeroExibicao,
+                    romaneioTipo: tipo,
+                    produtoNome: grp.rotulo,
+                    quantidade: parseFloat(grp.quantidade.toFixed(3)),
+                    unidade: grp.unidade,
+                    precoUnitario: parseFloat(precoMedio.toFixed(2)),
+                    total: parseFloat(grp.total.toFixed(2)),
+                    itensOriginais: grp.originais
+                });
+            });
+
+        } else if (agrupar) {
             // Lógica de Agrupamento por Espécie
             const agrupados = {};
             
@@ -5588,7 +5761,8 @@ window.adicionarItensRomaneio = async function() {
             atualizarTotais();
         }
         const msgExtra = totalExcluidosPreview > 0 ? ` (${totalExcluidosPreview} excluído(s) no preview, não carregado(s))` : '';
-        ToastManager.success(`${novosItens.length} itens adicionados.${msgExtra}`);
+        const rotuloCarga = (modoAgrupa === 'dimensoes' || modoAgrupa === 'especie') ? 'grupos' : 'itens';
+        ToastManager.success(`${novosItens.length} ${rotuloCarga} adicionados.${msgExtra}`);
         // Limpar estado do preview após carga (mantém selects para outro romaneio).
         try {
             romaneioPreviewExcluidosCompra = new Set();

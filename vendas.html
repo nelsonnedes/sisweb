@@ -1147,11 +1147,22 @@
                                 class="btn-success romaneio-load-btn">
                                 <i class="fas fa-plus"></i> Carregar Itens
                             </button>
-                            <label class="commerce-check-option romaneio-group-option"
-                                for="agruparEspecieCheckbox">
-                                <input type="checkbox" id="agruparEspecieCheckbox">
-                                <span>Agrupar por Espécie e Espessura</span>
-                            </label>
+                            <fieldset id="agruparFieldset" class="romaneio-group-fieldset"
+                                style="border: 1px solid #dee2e6; border-radius: 4px; padding: 6px 10px 8px; margin: 0;">
+                                <legend style="font-size: 12px; font-weight: 600; color: #2c3e50; padding: 0 6px;">Agrupar:</legend>
+                                <label class="commerce-check-option romaneio-group-option"
+                                    for="agruparDimensoesCheckbox">
+                                    <input type="checkbox" id="agruparDimensoesCheckbox"
+                                        onchange="alternarModoAgrupamentoVendas('dimensoes')">
+                                    <span>Espécie Espessura x Largura x Comprimento</span>
+                                </label>
+                                <label class="commerce-check-option romaneio-group-option"
+                                    for="agruparEspecieCheckbox">
+                                    <input type="checkbox" id="agruparEspecieCheckbox"
+                                        onchange="alternarModoAgrupamentoVendas('especie')">
+                                    <span>Agrupar por Espécie e Espessura</span>
+                                </label>
+                            </fieldset>
                         </div>
                     </div>
 
