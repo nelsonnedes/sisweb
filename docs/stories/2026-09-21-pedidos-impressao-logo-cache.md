@@ -31,9 +31,9 @@ Pacote A+B+C+D (escolhido pelo usuário; E paralelização e F persistência rej
 - [x] `node --check` nos 3 fontes + testes
 - [x] Focado 9/9 + `commerce-responsive-pwa` 11/11
 - [x] `npm run lint`, `npm run typecheck` OK (via validate:pr)
-- [x] `npm run validate:pr` 6/6
+- [x] `npm run validate:pr` 6/6 (580/0/1 após correção do regex do lote)
 - [x] `git diff --stat` revisado, sem segredos/BOM/`logs.md`
-- [ ] Sem commit/push/deploy (aguardando ordem)
+- [x] Commit `12cec5a` (11 arquivos) + push + deploy hosting (inject 5 HTMLs; build 478; deploy 8 arquivos novos; `hosting-dist` verificado)
 
 ## Evidências
 

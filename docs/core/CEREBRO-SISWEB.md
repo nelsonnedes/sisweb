@@ -835,3 +835,10 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Gates:** `node --check` OK, teste `romaneio-print-mobile-blank` 8/8, lint/typecheck OK, `validate:pr` 6/6 (unit 579/0/1). Commit `f9e7521` (9 arquivos) + push main OK + `firebase deploy --only hosting` complete (6 arquivos); `hosting-dist` verificado.
 - **Pós-deploy PES:** barra era `Imprimir` + `Fechar` (ordem/rótulo diferentes dos demais) — padronizada para `← Voltar` + `Imprimir` (`romaneiopes.html`, teste travando ordem). Commit `ac28d86` + push + deploy (1 arquivo).
 - **Pós-deploy PES (posição):** botões ficavam centralizados juntos (`.print-actions` centrado) vs Voltar-esquerda/Imprimir-direita dos demais — barra refeita em flex `space-between` com mesmo visual (Voltar claro, Imprimir navy). Commit `10d630d` + push + deploy (1 arquivo).
+
+## 80. Sessao 2026-09-21 — Performance impressão pedidos: logo em cache + warm-up (A+B+C+D)
+
+- **Sintoma:** imprimir pedido demorava (mobile e desktop) e a logo nem sempre vinha na 1ª tentativa. Causa: cada clique re-resolvia tudo do zero (`obterDadosEmpresa` + `resolveCompanyLogoDataUrl` com 4 serviços × N candidatos sequenciais de até 6s, sem cache) e o `print()` saía em delay fixo sem aguardar a imagem; no lote, tudo × N pedidos.
+- **Fix (pacote escolhido pelo usuário):** A: `logoDataUrlCache` em memória no `commerce-pdf-share.js` (+ `clearPrintLogoCache` exposto); B: warm-up em `requestIdleCallback` no init de vendas/compras; C: `printHtmlDocument` aguarda `fonts.ready` + `img.decode()` com teto 1800ms; D: lote resolve empresa+logo 1× e injeta via 2º argumento (contrato já existente). E (paralelizar) e F (persistir DataURL) rejeitadas — F conflita com a remoção deliberada de `data:` do `company_info` + §31 quota.
+- **Incidente no caminho:** `commerce-responsive-pwa:393` quebrou (regex exigia chamada de 1 arg) — teste atualizado para o novo contrato intencional (§6.5).
+- **Gates:** focado 9/9, `validate:pr` 6/6 (580/0/1). Commit `12cec5a` (11 arquivos: 3 fontes + 2 testes + 5 HTMLs cachebuster + story) + push + deploy (8 arquivos); `hosting-dist` verificado.
