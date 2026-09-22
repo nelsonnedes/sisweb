@@ -1,7 +1,11 @@
 # Story: Pedidos — Save fail-closed (fim do "sucesso fantasma" pós-reload)
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado)
+- **Deploy:**
+  - Commit `994e597` → push `origin/main` ✓
+  - Build `hosting-dist` (478 arquivos) com código novo confirmado no artefato ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
 - **Escopo:** `vendas.js` (`salvarPedido`, `saveData`), `compras.js` (`salvarPedido`, `saveData`), `tests/romaneio-preview-uso-trava.test.mjs` (+2 testes)
 - **Fora de escopo:** regras/validações do servidor, callables, reconciliação offline.
 
