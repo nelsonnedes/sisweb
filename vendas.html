@@ -1142,6 +1142,8 @@
                                 <option value="">Selecione um romaneio</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="form-row romaneio-toolbar-row">
                         <div class="form-group romaneio-actions">
                             <button type="button" onclick="adicionarItensRomaneio()"
                                 class="btn-success romaneio-load-btn">
@@ -1151,20 +1153,28 @@
                                 class="btn-danger romaneio-clear-btn" title="Limpar todos os itens do carrinho">
                                 <i class="fas fa-trash"></i> Limpar
                             </button>
+                        </div>
+                        <div class="form-group romaneio-group-box">
                             <fieldset id="agruparFieldset" class="romaneio-group-fieldset"
                                 style="border: 1px solid #dee2e6; border-radius: 4px; padding: 6px 10px 8px; margin: 0;">
                                 <legend style="font-size: 12px; font-weight: 600; color: #2c3e50; padding: 0 6px;">Agrupar:</legend>
+                                <label class="commerce-check-option romaneio-group-option"
+                                    for="agruparEspecieCheckbox">
+                                    <input type="checkbox" id="agruparEspecieCheckbox"
+                                        onchange="alternarModoAgrupamentoVendas('especie')">
+                                    <span>Espécie Espessura</span>
+                                </label>
+                                <label class="commerce-check-option romaneio-group-option"
+                                    for="agruparEspecieLarguraCheckbox">
+                                    <input type="checkbox" id="agruparEspecieLarguraCheckbox" checked
+                                        onchange="alternarModoAgrupamentoVendas('largura')">
+                                    <span>Espécie Espessura x Largura</span>
+                                </label>
                                 <label class="commerce-check-option romaneio-group-option"
                                     for="agruparDimensoesCheckbox">
                                     <input type="checkbox" id="agruparDimensoesCheckbox"
                                         onchange="alternarModoAgrupamentoVendas('dimensoes')">
                                     <span>Espécie Espessura x Largura x Comprimento</span>
-                                </label>
-                                <label class="commerce-check-option romaneio-group-option"
-                                    for="agruparEspecieCheckbox">
-                                    <input type="checkbox" id="agruparEspecieCheckbox"
-                                        onchange="alternarModoAgrupamentoVendas('especie')">
-                                    <span>Espécie Espessura x Largura</span>
                                 </label>
                             </fieldset>
                         </div>
