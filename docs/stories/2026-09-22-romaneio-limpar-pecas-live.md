@@ -1,7 +1,11 @@
 # Story: Romaneio — Botão Limpar + Peças Compras + Preview ao vivo + Rename
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado)
+- **Deploy:**
+  - Commit feature `619e16f` → push `origin/main` ✓
+  - Build `hosting-dist` (478 arquivos) com código novo confirmado no artefato ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
 - **Escopo:** `vendas.html`, `vendas.js`, `compras.html`, `compras.js`, `tests/romaneio-preview-uso-trava.test.mjs` (+3 testes, 1 atualizado)
 - **Fora de escopo:** CSS global, financeiro, rules.
 
