@@ -274,6 +274,9 @@
         // Falhou há pouco nesta sessão? Retorna vazio de imediato (sem rede).
         if (logoFalhouRecente(company)) return '';
         const timeoutMs = Number(options.timeoutMs || 6000);
+        // quiet=true (warm-up em background): não polui o console com warns
+        // esperados; o fluxo de impressão real continua verboso.
+        const quiet = !!(options && options.quiet);
 
         const storageCandidates = uniqueValues([
             normalized.logoStoragePath,
@@ -319,7 +322,7 @@
                         return dataUrl;
                     }
                 } catch (error) {
-                    console.warn('Logo da empresa indisponível para PDF via Storage:', error);
+                    if (!quiet) console.warn('Logo da empresa indisponível para PDF via Storage:', error);
                 }
             }
         }
@@ -335,7 +338,7 @@
                 if (isPdfImageDataUrl(fetchedLogo)) setCachedLogoDataUrl(company, fetchedLogo);
                 return fetchedLogo;
             } catch (error) {
-                console.warn('Logo da empresa indisponível para PDF via URL:', error);
+                if (!quiet) console.warn('Logo da empresa indisponível para PDF via URL:', error);
             }
         }
         marcarLogoFalha(company);
@@ -358,7 +361,8 @@
         const safeOptions = options || {};
         const company = { ...(safeOptions.company || {}) };
         const logoDataUrl = await resolveCompanyLogoDataUrl(company, {
-            timeoutMs: safeOptions.logoTimeoutMs || 6000
+            timeoutMs: safeOptions.logoTimeoutMs || 6000,
+            quiet: safeOptions.quiet
         });
         if (logoDataUrl) {
             company.logo = logoDataUrl;
