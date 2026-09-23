@@ -1,7 +1,12 @@
 # Story: Pré-romaneio TL — campos nas posições do Romaneio TL
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado)
+- **Deploy:**
+  - Commits `2a616c1` + `00ba9c2` (bumps) → push `origin/main` ✓
+  - `inject-cachebusters`: bump `preromaneio.js` + catch-up dos prints ✓
+  - Build `hosting-dist` (478 arquivos) ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
 - **Escopo:** `preromaneio.html` (ordem dos blocos), `preromaneio.js` (ordem do Enter), `tests/romaneio-preview-uso-trava.test.mjs` (+1 teste)
 - **De:** Espécie | Espessura | Largura / Preço (sozinho) / Comprimento | Quantidade.
 - **Para (espelho TL):** Espécie | Espessura | Preço / Comprimento | Largura | Quantidade (+ Peças/Pacote condicional por último, como antes).
