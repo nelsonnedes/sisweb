@@ -1,7 +1,7 @@
 # Story: Romaneio — 3 modos exatos + default obrigatório + sem código morto
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado junto com ce372c5+e1a16b5 — ver evidências em 2026-09-22-romaneio-editar-preserva-logica)
 - **Escopo:** `vendas.html`, `vendas.js`, `compras.html`, `compras.js`, `commerce-responsive.css` (nowrap), `tests/romaneio-preview-uso-trava.test.mjs` (+4 testes)
 - **Fora de escopo:** financeiro, rules, reagrupadores pós-carga (intocados).
 

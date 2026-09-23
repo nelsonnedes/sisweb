@@ -1,7 +1,7 @@
 # Story: Impressão — memo de falha da logo (fim da lentidão repetida)
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado — ver evidências em 2026-09-22-logo-upload-dual)
 - **Escopo:** `commerce-pdf-share.js`, `tests/romaneio-preview-uso-trava.test.mjs` (+1 teste)
 - **Fora de escopo:** validação de formato da logo no backend; re-upload da logo (ação do usuário).
 

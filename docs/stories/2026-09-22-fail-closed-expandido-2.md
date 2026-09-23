@@ -1,7 +1,7 @@
 # Story: Fail-closed expandido 2 — produtos, carregos, excluirPedido, fornecedores
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado junto com 1fdc2ea — ver evidências em 2026-09-22-pedidos-anti-undefined)
 - **Escopo:** `vendas.js` (produtos salvar/excluir, carregos ×2, excluirPedido, cleanups), `compras.js` (produtos, fornecedores), `tests/romaneio-preview-uso-trava.test.mjs` (+4 testes)
 - **Fora de escopo:** `atualizarEstoqueProdutos` remoto (reversão de memória coberta pelos rollbacks), legado offline-first.
 

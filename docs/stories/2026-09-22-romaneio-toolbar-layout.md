@@ -1,7 +1,7 @@
 # Story: Romaneio — Toolbar em 2 linhas + CSS mobile
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado; código em HEAD e nos deploys desde o lote e1a16b5)
 - **Escopo:** `vendas.html`, `compras.html`, `compras.js` (toggle da caixa), `commerce-responsive.css`, `tests/romaneio-preview-uso-trava.test.mjs` (+2 testes)
 - **Fora de escopo:** lógica de carga/preview (intocada), CSS fora de `.romaneio-*`.
 
