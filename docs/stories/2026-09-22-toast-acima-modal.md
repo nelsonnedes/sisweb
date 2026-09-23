@@ -1,7 +1,11 @@
 # Story: Toasts acima do modal Lista de Pedidos
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado)
+- **Deploy:**
+  - Commits `7c8e5dc` + `02c457b` (bumps toast.js) → push `origin/main` ✓
+  - Build `hosting-dist` (478 arquivos) ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
 - **Escopo:** `vendas.html`, `compras.html`, `modules/core/toast.js`, `tests/romaneio-preview-uso-trava.test.mjs` (+1 teste)
 - **Sintoma:** com Lista de Pedidos aberta, toasts abriam por baixo (invisíveis).
 
