@@ -1,7 +1,7 @@
 # Story: Warm-up da logo silencioso (fim do warn toda abertura)
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado junto com abf4ce7 — ver evidências em 2026-09-22-listar-boot-honesto)
 - **Escopo:** `commerce-pdf-share.js` (`quiet`), `vendas.js` + `compras.js` (warm-up), `tests/romaneio-preview-uso-trava.test.mjs` (+ asserts)
 - **Sintoma:** `Logo da empresa indisponível para PDF via Storage: ...excedeu 6000ms` a cada abertura de vendas/compras.
 

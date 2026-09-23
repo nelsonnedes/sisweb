@@ -3,8 +3,8 @@
 - **Data:** 2026-09-22
 - **Status:** Done (publicado)
 - **Deploy:**
-  - Commits `8b381b3` (código) + `6b60beb` (cachebusters) + `8dd58bc` (company toast) → push `origin/main` ✓
-  - `inject-cachebusters`: bump `vendas.js?v=162c17a5237f` + `compras.js?v=b66aa9e79e8a` ✓
+  - Commits `8b381b3` + `c16b0e3` (trava JS) + `abf4ce7` (warm-up quiet + bumps) → push `origin/main` ✓
+  - `inject-cachebusters`: bump `vendas.js?v=5689a9c5cb9c`, `compras.js?v=69afe911a9e6`, `commerce-pdf-share.js?v=a358ef9d0e41` ✓
   - Build `hosting-dist` (478 arquivos) ✓
   - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
 - **Escopo:** `vendas.js`, `compras.js`, `vendas.html`, `compras.html`, `tests/operational-route-state.test.mjs` (atualizado), `tests/romaneio-preview-uso-trava.test.mjs` (+2 testes)
