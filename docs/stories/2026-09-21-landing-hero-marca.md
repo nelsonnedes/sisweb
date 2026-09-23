@@ -36,4 +36,5 @@ O bloco circulado **não existia** no `landing-vendas.html` atual (0 ocorrência
 ## Evidências
 
 - Servido local: `landing-vendas.html` 200 com `lv-hero-brand` + Archivo; `assets/brand/*.ico` 200.
-- Commit `C2B` (a preencher) + `firebase deploy --only hosting`.
+- Commit `1318c47` + push + `firebase deploy --only hosting` ("Deploy complete!", 5 arquivos); produção 200 com marca + Archivo.
+- `sisweb.ico`/`svg` e `modules/romaneiopct/imprimir-romaneio-pct.js` (+5 CSS) são de outra sessão concorrente — fora deste escopo.
