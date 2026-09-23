@@ -1,7 +1,11 @@
 # Story: Vendas — Editar item E×L×C abre o formulário (case ausente)
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado)
+- **Deploy:**
+  - Commit `2d27be5` → push `origin/main` ✓
+  - Build `hosting-dist` (478 arquivos) com código novo confirmado no artefato ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
 - **Escopo:** `vendas.js` (`editarItem`), `tests/romaneio-preview-uso-trava.test.mjs` (+1 teste)
 - **Sintoma (produção, via logs.md):** editar item `romaneio_dimensoes` → `alterarTipoProduto('romaneio_dimensoes')` sem `case` → caía no default `cadastrado` com as 3 seções ocultas e formulário vazio.
 
