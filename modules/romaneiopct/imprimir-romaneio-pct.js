@@ -711,7 +711,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                     font-family: Arial, sans-serif;
                     margin: 0;
                     padding: 20px;
-                    color: #333;
+                    color: #000;
                     font-size: 12px;
                     line-height: 1.4;
                     background: #fff;
@@ -793,7 +793,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                 .company-details {
                     font-size: 12px;
                     margin-bottom: 2px;
-                    color: #555;
+                    color: #1f2937;
                     line-height: 1.3;
                 }
                 
@@ -1044,7 +1044,8 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                 }
                 
                 .total-geral-row {
-                    background-color: #f8f9fa;
+                    background-color: #e6f2ff;
+                    color: #0066cc;
                     font-weight: bold;
                 }
                 
@@ -2313,7 +2314,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         flex-direction: column;
                         margin-bottom: 3px;
                         font-size: 11px;
-                        border-bottom: 1px solid #eee;
+                        border-bottom: 1px solid #dcdcdc;
                         padding-bottom: 3px;
                         line-height: 1.3;
                     }

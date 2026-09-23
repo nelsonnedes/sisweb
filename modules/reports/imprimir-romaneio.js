@@ -762,9 +762,23 @@ window.ImprimirRomaneio = (function() {
             .info-value { border-bottom: 1px dotted #ccc; }
             table { width: 100%; border-collapse: collapse; }
             .main-table { table-layout: fixed; }
+            /* ✅ TORA 20 colunas: partes iguais estouravam (Custódia/AUTEF
+               transbordavam e Valor quebrava no meio do número). Larguras
+               fixas somam <100%; o fixo distribui a folga sozinho. */
+            .tora-main-table { width: 100%; }
+            .col-plaqueta-tora { width: 6.5%; }
+            .col-custodia-tora, .col-autef-tora { width: 7.5%; word-break: break-all; overflow-wrap: anywhere; }
+            .col-especie-tora { width: 12%; overflow-wrap: anywhere; }
+            .col-rodo-tora, .col-comprimento-tora, .col-compgeo-tora { width: 3.5%; }
+            .col-oco1-tora, .col-oco2-tora { width: 3%; }
+            .col-vb-tora, .col-vd-tora, .col-vl-tora { width: 4.5%; white-space: nowrap; }
+            .col-x1-tora, .col-x2-tora, .col-x3-tora, .col-x4-tora { width: 2.8%; }
+            .col-vgeo-tora { width: 4.5%; white-space: nowrap; }
+            .col-difperc-tora { width: 4%; white-space: nowrap; }
+            .col-unit-tora { width: 5.5%; white-space: nowrap; }
+            .col-total-tora { width: 6.8%; white-space: nowrap; }
             th, td { border: 1px solid #ccc; padding: 4px 3px; font-size: 10px; line-height: 1.18; }
             thead th { background: #eef3f7; color: #0d2339; }
-            .col-especie-tora { width: 16%; }
             .text-right { text-align: right; }
             .text-center { text-align: center; }
             .text-left { text-align: left; }
@@ -1011,16 +1025,8 @@ window.ImprimirRomaneio = (function() {
             <h3 class="resumo-titulo">RESUMO POR CLASSIFICAÇÃO CONAMA</h3>
             ${resumoConamaHtml}
         </div>
-        
-        <!-- ✅ BOTÃO DE IMPRESSÃO VISÍVEL -->
-        <div style="text-align: center; margin: 20px 0; page-break-inside: avoid;">
-            <button onclick="imprimirRelatorio()" style="background: #2c3e50; color: white; border: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
-                🖨️ Imprimir Relatório
-            </button>
-            <div style="margin-top: 8px; font-size: 12px; color: #666;">
-                Ou pressione <kbd style="background: #f5f5f5; padding: 2px 6px; border-radius: 3px;">Ctrl+P</kbd>
-            </div>
-        </div>
+        <!-- Barra Voltar/Imprimir de topo via ensureRomaneioPrintAux (única fonte;
+             o botão legado de rodapé foi removido para não duplicar/sair no papel) -->
     </div>
 
     <script>
@@ -1148,10 +1154,6 @@ window.ImprimirRomaneio = (function() {
         
         window.addEventListener('resize', runtimePrintLayoutTL);
         window.addEventListener('beforeprint', runtimePrintLayoutTL);
-        
-        function imprimirRelatorio() {
-            window.print();
-        }
         
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'p') {
