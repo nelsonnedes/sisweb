@@ -1,7 +1,12 @@
 # Story: Impressão — barra Voltar/Imprimir fora do papel
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado)
+- **Deploy:**
+  - Commits `4ee2663` + `d669f0a` (bumps) → push `origin/main` ✓
+  - `inject-cachebusters`: bump `commerce-pdf-share.js?v=41257785cd5a` em 10 HTMLs ✓
+  - Build `hosting-dist` (478 arquivos) ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
 - **Escopo:** `commerce-pdf-share.js`, `tests/romaneio-preview-uso-trava.test.mjs` (+1 teste)
 - **Sintoma:** botões Voltar/Imprimir impressos em todas as impressões.
 
