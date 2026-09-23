@@ -1,7 +1,7 @@
 # Story: Save bloqueado por validação nativa (min=1 vs volumes m³)
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado junto com 9fbb43c — ver evidências em 2026-09-22-itens-unidade-enter)
 - **Escopo:** `vendas.html`, `compras.html` (4 inputs), `tests/romaneio-preview-uso-trava.test.mjs` (+1 teste)
 - **Sintoma (produção, via logs.md):** `An invalid form control with name='' is not focusable (quantidadeManual)` ao salvar pedido editado.
 
