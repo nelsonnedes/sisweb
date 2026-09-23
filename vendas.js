@@ -5356,7 +5356,7 @@ function adicionarItemManual() {
             alvo.tipo = 'manual';
             document.getElementById('produtoManual').value = '';
             document.getElementById('quantidadeManual').value = '';
-            document.getElementById('unidadeManual').value = 'UN';
+            document.getElementById('unidadeManual').value = 'm³';
             document.getElementById('precoManual').value = '';
             atualizarTabelaItens();
             atualizarTotais();
@@ -5381,7 +5381,7 @@ function adicionarItemManual() {
     // Limpar campos
     document.getElementById('produtoManual').value = '';
     document.getElementById('quantidadeManual').value = '';
-    document.getElementById('unidadeManual').value = 'UN'; // Resetar para valor padrão
+    document.getElementById('unidadeManual').value = 'm³'; // Padrão m³
     document.getElementById('precoManual').value = '';
     
     atualizarTabelaItens();

@@ -1097,7 +1097,7 @@
                         </div>
                         <div class="form-group form-group-small">
                             <label for="quantidadeManual">Quantidade:</label>
-                            <input type="number" id="quantidadeManual" min="1" step="0.001">
+                            <input type="number" id="quantidadeManual" min="0" step="0.001">
                         </div>
                         <div class="form-group form-group-small">
                             <label for="unidadeManual">Unidade:</label>
@@ -1105,14 +1105,14 @@
                                 <option value="UN">UN</option>
                                 <option value="DZ">DZ</option>
                                 <option value="PC">PC</option>
-                                <option value="m³">m³</option>
+                                <option value="m³" selected>m³</option>
                                 <option value="m²">m²</option>
                                 <option value="LN">LN</option>
                             </select>
                         </div>
                         <div class="form-group form-group-small">
                             <label for="precoManual">Preço Unit.:</label>
-                            <input type="text" id="precoManual" placeholder="R$ 0,00">
+                            <input type="text" id="precoManual" placeholder="R$ 0,00" onkeydown="if(event.key==='Enter'){event.preventDefault();adicionarItemManual();}">
                         </div>
                         <div class="form-group form-group-small">
                             <label>&nbsp;</label>
@@ -1201,11 +1201,11 @@
                         </div>
                         <div class="form-group form-group-small">
                             <label for="quantidade">Quantidade:</label>
-                            <input type="number" id="quantidade" min="1" step="0.001">
+                            <input type="number" id="quantidade" min="0" step="0.001">
                         </div>
                         <div class="form-group form-group-small">
                             <label for="precoUnitario">Preço Unit.:</label>
-                            <input type="text" id="precoUnitario" placeholder="R$ 0,00">
+                            <input type="text" id="precoUnitario" placeholder="R$ 0,00" onkeydown="if(event.key==='Enter'){event.preventDefault();adicionarItem();}">
                         </div>
                         <div class="form-group form-group-small">
                             <label>&nbsp;</label>

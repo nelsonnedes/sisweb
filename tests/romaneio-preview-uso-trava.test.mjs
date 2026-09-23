@@ -280,6 +280,24 @@ test('editarItem cobre romaneio_dimensoes (formulário nunca fica vazio)', () =>
   assert.match(vendas, /tipoSeguro/);
 });
 
+test('quantidades aceitam frações (volumes m³) sem travar submit nativo', () => {
+  for (const html of [vendasHtml, comprasHtml]) {
+    assert.match(html, /id="quantidadeManual" min="0"/);
+    assert.match(html, /id="quantidade" min="0"/);
+  }
+  assert.doesNotMatch(vendasHtml, /id="quantidadeManual" min="1"/);
+  assert.doesNotMatch(comprasHtml, /id="quantidadeManual" min="1"/);
+});
+
+test('unidade m³ padrão e Enter no preço adiciona (vendas+compras)', () => {
+  for (const html of [vendasHtml, comprasHtml]) {
+    assert.match(html, /option value="m³" selected/);
+    assert.match(html, /id="precoManual"[^>]*onkeydown="if\(event\.key==='Enter'\)/);
+    assert.match(html, /id="precoUnitario"[^>]*onkeydown="if\(event\.key==='Enter'\)/);
+  }
+  assert.match(vendas, /unidadeManual'\)\.value = 'm³'/);
+});
+
 test('lista e impressão exibem itens dimensoes pelo nome (sem re-derivação)', () => {
   const ocorrencias = vendas.match(/item\.tipo === 'romaneio_dimensoes'/g) || [];
   assert.ok(ocorrencias.length >= 3, 'tabela, detalhes e impressão classificam romaneio_dimensoes');
