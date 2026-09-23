@@ -1646,7 +1646,7 @@
                 <div class="buttons-container" style="display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap; align-items: center;">
                     <button type="button" id="addButton" class="btn-adicionar"><i class="fas fa-plus"></i> Adicionar</button>
                     <button type="button" id="btnSalvar" class="btn-salvar" onclick="salvarRomaneio()"><i class="fas fa-save"></i> Salvar</button>
-                    <button type="button" id="btnListar" class="btn-listar" onclick="abrirListaRomaneios()"><i class="fas fa-list"></i> Listar</button>
+                    <button type="button" id="btnListar" class="btn-listar" onclick="if(typeof window.abrirListaRomaneios === 'function') { window.abrirListaRomaneios(); } else if(typeof abrirListaRomaneios === 'function') { abrirListaRomaneios(); } else { alert('Lista ainda carregando. Aguarde e tente novamente.'); }"><i class="fas fa-list"></i> Listar</button>
                     <div class="pre-romaneio-group" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                         <div class="pre-romaneio-left" style="display: flex; gap: 5px; align-items: center;">
                             <label for="preRomaneioSelect" style="margin: 0;">Pré-Romaneio (TL):</label>

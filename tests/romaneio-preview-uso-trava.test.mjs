@@ -368,6 +368,15 @@ test('toasts acima do modal Lista de Pedidos (vendas+compras+unificado)', () => 
   assert.match(unified, /z-index:10000000/);
 });
 
+test('btnListar nunca quebra com scripts ainda carregando (PCT/TL/Tora)', () => {
+  for (const page of ['romaneiopct.html', 'romaneiotl.html', 'romaneiotora.html']) {
+    const html = fs.readFileSync(new URL(`../${page}`, import.meta.url), 'utf8');
+    assert.doesNotMatch(html, /id="btnListar"[^>]*onclick="abrirListaRomaneios\(\)"/);
+    assert.match(html, /typeof window\.abrirListaRomaneios === 'function'/);
+    assert.match(html, /Lista ainda carregando/);
+  }
+});
+
 test('barra Voltar/Imprimir nunca sai no papel (todos os fluxos)', () => {
   const helper = fs.readFileSync(new URL('../commerce-pdf-share.js', import.meta.url), 'utf8');
   assert.match(helper, /\.sisweb-print-back:not\(\.no-print\),\s*\n\s*\.sisweb-print-back \{\s*\n\s*display: none !important;/);

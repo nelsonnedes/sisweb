@@ -2207,7 +2207,7 @@
                 <button type="button" id="btnSalvar" class="btn-salvar" onclick="if(typeof window.salvarRomaneio === 'function') { window.salvarRomaneio(); } else if(typeof salvarRomaneio === 'function') { salvarRomaneio(); } else { alert('Erro: Função salvarRomaneio não disponível. Tente recarregar a página.'); }">
                     <i class="fas fa-save"></i> Salvar
                 </button>
-                <button type="button" id="btnListar" class="btn-listar" onclick="abrirListaRomaneios()">
+                <button type="button" id="btnListar" class="btn-listar" onclick="if(typeof window.abrirListaRomaneios === 'function') { window.abrirListaRomaneios(); } else if(typeof abrirListaRomaneios === 'function') { abrirListaRomaneios(); } else { alert('Lista ainda carregando. Aguarde e tente novamente.'); }">
                     <i class="fas fa-list"></i> Listar
                 </button>
                 <div class="pre-romaneio-group">

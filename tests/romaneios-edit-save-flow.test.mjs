@@ -31,8 +31,11 @@ test('Fluxo de Edição e Salvamento de Romaneios em todas as 5 abas', async (t)
     const listModalJs = read('modules/modals/modal-lista-romaneios.js');
     const saveJs = read('modules/romaneio/salvar-romaneio.js');
 
-    // Botão de listar existe
-    assert.match(html, /onclick="abrirListaRomaneios\(\)"/, 'Botão Listar deve chamar abrirListaRomaneios');
+    // Botão de listar existe e chama abrirListaRomaneios com guarda anti-race
+    // (scripts ainda carregando): nunca chamada nua que quebra com ReferenceError.
+    assert.match(html, /onclick="[^"]*abrirListaRomaneios\(\)[^"]*"/, 'Botão Listar deve chamar abrirListaRomaneios');
+    assert.match(html, /typeof window\.abrirListaRomaneios === 'function'/, 'Botão Listar deve checar antes de chamar');
+    assert.doesNotMatch(html, /id="btnListar"[^>]*onclick="abrirListaRomaneios\(\)"/, 'Botão Listar não pode ter chamada nua');
     // Botão de editar na lista chama editRomaneio
     assert.match(listModalJs, /editRomaneio\('\$\{romaneio\.id\}'\)/, 'Botão editar deve chamar editRomaneio com ID');
     // Botão de clonar na lista chama clonarRomaneio
@@ -53,8 +56,10 @@ test('Fluxo de Edição e Salvamento de Romaneios em todas as 5 abas', async (t)
     const loadJs = read('modules/romaneiopct/carregar-romaneio-pct.js');
     const tableJs = read('romaneiopct-tabela.js');
 
-    // Botão de listar existe
-    assert.match(html, /onclick="abrirListaRomaneios\(\)"/, 'Botão Listar deve chamar abrirListaRomaneios');
+    // Botão de listar existe e chama abrirListaRomaneios com guarda anti-race.
+    assert.match(html, /onclick="[^"]*abrirListaRomaneios\(\)[^"]*"/, 'Botão Listar deve chamar abrirListaRomaneios');
+    assert.match(html, /typeof window\.abrirListaRomaneios === 'function'/, 'Botão Listar deve checar antes de chamar');
+    assert.doesNotMatch(html, /id="btnListar"[^>]*onclick="abrirListaRomaneios\(\)"/, 'Botão Listar não pode ter chamada nua');
     // Botão de editar chama editRomaneio
     assert.match(listModalJs, /editRomaneio\('\$\{romaneio\.id\}'\)/, 'Botão editar deve chamar editRomaneio com ID');
     // Botão de clonar chama clonarRomaneio
@@ -96,8 +101,10 @@ test('Fluxo de Edição e Salvamento de Romaneios em todas as 5 abas', async (t)
     const managerJs = read('romaneio-manager.js');
     const tableJs = read('romaneiotora_tabela.js');
 
-    // Botão de listar existe
-    assert.match(html, /onclick="abrirListaRomaneios\(\)"/, 'Botão Listar deve chamar abrirListaRomaneios');
+    // Botão de listar existe e chama abrirListaRomaneios com guarda anti-race.
+    assert.match(html, /onclick="[^"]*abrirListaRomaneios\(\)[^"]*"/, 'Botão Listar deve chamar abrirListaRomaneios');
+    assert.match(html, /typeof window\.abrirListaRomaneios === 'function'/, 'Botão Listar deve checar antes de chamar');
+    assert.doesNotMatch(html, /id="btnListar"[^>]*onclick="abrirListaRomaneios\(\)"/, 'Botão Listar não pode ter chamada nua');
     // Botão de editar chama editarRomaneioTora
     assert.match(managerJs, /onclick="window\.editarRomaneioTora\(\$\{actionId\}\)"/, 'Botão editar deve chamar editarRomaneioTora');
     // Botão de clonar chama clonarRomaneioTora

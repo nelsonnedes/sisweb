@@ -1337,7 +1337,7 @@
             <button type="button" id="btnSalvar" class="btn btn-primary" onclick="salvarRomaneio()">
                 <i class="fas fa-save"></i> Salvar
             </button>
-            <button type="button" id="btnListar" class="btn btn-info" onclick="abrirListaRomaneios()">
+            <button type="button" id="btnListar" class="btn btn-info" onclick="if(typeof window.abrirListaRomaneios === 'function') { window.abrirListaRomaneios(); } else if(typeof abrirListaRomaneios === 'function') { abrirListaRomaneios(); } else { alert('Lista ainda carregando. Aguarde e tente novamente.'); }">
                 <i class="fas fa-list"></i> Listar
             </button>
             <button type="button" id="btnImportar" class="btn btn-secondary" onclick="importarRomaneio()">
