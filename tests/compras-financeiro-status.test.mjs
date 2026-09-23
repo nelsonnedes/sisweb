@@ -109,3 +109,12 @@ test('compras versiona script e evita falso sucesso quando financeiro nao sincro
   assert.doesNotMatch(js, /await saveData\('compras', window\.compras\)/);
   assert.doesNotMatch(js, /await saveData\('contasPagar'/);
 });
+
+test('compras nao recria financeiro ao voltar para pendente/cancelado (paridade vendas)', () => {
+  const js = read('compras.js');
+
+  assert.match(js, /const contasCriar = shouldGenerateFinance \? contasParaGerar\.map/);
+  assert.match(js, /Financeiro do pedido .* estornado/);
+  assert.match(js, /Paridade com Vendas: em pendente\/cancelado, só remove/);
+  assert.match(js, /Paridade com Vendas: sem financeiro/);
+});

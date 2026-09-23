@@ -2312,6 +2312,11 @@ async function salvarPedido(event) {
         if (temPagamento && pedidoEmEdicao) {
             throw new Error('Este pedido possui pagamentos realizados. Cancele os pagamentos antes de salvar.');
         }
+        // Paridade com Vendas: sem financeiro (pendente/cancelado), não recria
+        // contas — apenas remove as vinculadas (estorno).
+        if (pedidoEmEdicao && !shouldGenerateFinance && vinculadas.length > 0) {
+            ToastManager.info(`Financeiro do pedido ${pedido.numero} estornado: ${vinculadas.length} parcela(s).`, 'Edição de Pedido');
+        }
 
         // Adicionar novas contas
         // Usar o array global `contasPagar` que reflete o estado atual da UI (editado)
@@ -2343,10 +2348,12 @@ async function salvarPedido(event) {
             contaId: String(c.id)
         }));
 
-        // Contas a criar: payload canônico validado pela callable no servidor
+        // Contas a criar: payload canônico validado pela callable no servidor.
+        // Paridade com Vendas: só gera quando o status exige financeiro; em
+        // pendente/cancelado, envia apenas remoções (estorno), nunca recria.
         // Normaliza para centavos antes de enviar para evitar 0.30000000000000004 etc.
         const toCentsValue = (v) => Math.round((typeof v === 'number' ? v : parseCurrency(v)) * 100) / 100;
-        const contasCriar = contasParaGerar.map(c => ({
+        const contasCriar = shouldGenerateFinance ? contasParaGerar.map(c => ({
             id: String(c.id),
             fornecedor: pedido.fornecedor.nome,
             descricao: `Compra ${pedido.numero} - ${c.observacao || getTipoContaLabel(c.tipo)}`,
@@ -2358,7 +2365,7 @@ async function salvarPedido(event) {
             status: c.status || 'pendente',
             tipoPagamento: c.tipo,
             observacoes: c.observacao || ''
-        }));
+        })) : [];
 
         // 2. Executar persistência atômica (pedido + financeiro no servidor)
         let savedToFirebase = false;
@@ -2395,6 +2402,8 @@ async function salvarPedido(event) {
                             if (typeof montarUpdatesRemocaoContasPagarCompra === 'function') {
                                 Object.assign(updates, montarUpdatesRemocaoContasPagarCompra(vinculadas));
                             }
+                            // Paridade com Vendas: em pendente/cancelado, só remove (estorno).
+                            if (shouldGenerateFinance) {
                             contasParaGerar.forEach((c, idx) => {
                                 const mk = toMonthKey(c.vencimento);
                                 const contaId = c.id || `CP-${pedido.id}-${idx}`;
@@ -2421,6 +2430,7 @@ async function salvarPedido(event) {
                                 };
                                 updates[`financas/pagar/${mk}/${contaId}`] = conta;
                             });
+                            }
                             sanearIndefinidosFirebase(updates);
                             const res = await window.firebaseService.updatePaths(updates);
                             if (res && res.success) {
@@ -4069,11 +4079,23 @@ async function editarPedido(id) {
       try {
          const mapaModoCompra = { resumo: 'agruparItensRomaneio', especie: 'agruparEspecieCompra', largura: 'agruparEspecieEspessuraCompra', dimensoes: 'agruparDimensoesCompra' };
          const modoSalvoCompra = pedido && pedido.modoAgrupamentoRomaneio;
+         let tipoInferidoCompra = '';
+         try {
+             const tipos = [];
+             (pedido.itens || []).forEach(it => { if (it && it.romaneioTipo) tipos.push(String(it.romaneioTipo)); });
+             (pedido.romaneiosOrigem || []).forEach(o => { if (o && o.tipo) tipos.push(String(o.tipo)); });
+             if (tipos.length > 0) {
+                 tipoInferidoCompra = tipos.slice().sort((a, b) =>
+                     tipos.filter(x => x === b).length - tipos.filter(x => x === a).length)[0] || '';
+             }
+         } catch (_) { tipoInferidoCompra = ''; }
+         atualizarVisibilidadeAgrupamentoCompra(tipoInferidoCompra);
          if (modoSalvoCompra && mapaModoCompra[modoSalvoCompra]) {
              Object.keys(mapaModoCompra).forEach(k => {
                  const cb = document.getElementById(mapaModoCompra[k]);
                  if (cb) cb.checked = (k === modoSalvoCompra);
              });
+             atualizarVisibilidadeAgrupamentoCompra(tipoInferidoCompra);
          }
       } catch (_) { /* best-effort */ }
       
@@ -5262,6 +5284,9 @@ window.carregarRomaneiosPorTipo = async function() {
         select.innerHTML = '<option value="">Selecione o tipo primeiro</option>';
         return;
     }
+
+    // Visibilidade imediata (antes da rede): vale mesmo se a lista vier vazia.
+    atualizarVisibilidadeAgrupamentoCompra(tipo);
     
     try {
         let dados = await getData(tipo); // 'romaneiosTora', 'romaneiosPct', etc.
@@ -5341,7 +5366,6 @@ window.carregarRomaneiosPorTipo = async function() {
                 } catch (_) { /* best-effort */ }
             }).catch(() => {});
         } catch (_) { /* best-effort */ }
-        atualizarVisibilidadeAgrupamentoCompra(tipo);
         
     } catch (e) {
         console.error("Erro ao carregar romaneios:", e);
