@@ -276,6 +276,8 @@ test('editar agrupado desagrupa e carrega em 1 clique (sem confirm)', () => {
 
 test('editarItem cobre romaneio_dimensoes (formulário nunca fica vazio)', () => {
   assert.match(vendas, /case 'romaneio':\s*\n\s*case 'romaneio_dimensoes':/);
+  assert.match(vendas, /tiposConhecidos/);
+  assert.match(vendas, /tipoSeguro/);
 });
 
 test('lista e impressão exibem itens dimensoes pelo nome (sem re-derivação)', () => {

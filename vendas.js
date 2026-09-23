@@ -1941,12 +1941,15 @@ function editarItem(itemId) {
     
     // Determinar tipo do item e preencher os campos apropriados
     const tipo = item.tipo || 'cadastrado';
+    // Firewall: tipo desconhecido cai no manual (nunca deixa o formulário em branco).
+    const tiposConhecidos = ['manual', 'romaneio', 'cadastrado', 'romaneio_agrupado', 'romaneio_dimensoes'];
+    const tipoSeguro = tiposConhecidos.includes(tipo) ? tipo : 'manual';
     
     // Alternar para o tipo correto de produto
-    alterarTipoProduto(tipo);
+    alterarTipoProduto(tipoSeguro);
     
     // Preencher campos baseado no tipo
-    switch(tipo) {
+    switch(tipoSeguro) {
         case 'manual':
             document.getElementById('produtoManual').value = (item.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
             document.getElementById('quantidadeManual').value = item.quantidade;
