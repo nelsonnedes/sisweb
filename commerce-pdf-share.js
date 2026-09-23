@@ -230,6 +230,39 @@
         try {
             logoDataUrlCache.clear();
         } catch (_) {}
+        try {
+            logoFailMemo.clear();
+        } catch (_) {}
+    }
+
+    // Memo de FALHAS (negativo, curto, por page-load): quando a logo é
+    // irrecuperável (ex.: content-type rejeitado pelo backend), evita pagar
+    // a cadeia lenta (callable + fallbacks + timeouts) de novo a cada
+    // impressão/warm-up da mesma sessão. Sucesso continua no cache acima.
+    const logoFailMemo = new Map();
+    const LOGO_FAIL_TTL_MS = 5 * 60 * 1000;
+
+    function logoFalhouRecente(company = {}) {
+        try {
+            const key = logoCacheKeyFor(company);
+            if (!key || key === '||') return false;
+            const ts = logoFailMemo.get(key);
+            if (!ts) return false;
+            if (Date.now() - ts > LOGO_FAIL_TTL_MS) {
+                logoFailMemo.delete(key);
+                return false;
+            }
+            return true;
+        } catch (_) { return false; }
+    }
+
+    function marcarLogoFalha(company = {}) {
+        try {
+            const key = logoCacheKeyFor(company);
+            if (!key || key === '||') return;
+            if (logoFailMemo.size > 20) logoFailMemo.clear();
+            logoFailMemo.set(key, Date.now());
+        } catch (_) {}
     }
 
     async function resolveCompanyLogoDataUrl(company = {}, options = {}) {
@@ -238,6 +271,8 @@
         if (isPdfImageDataUrl(logoSource)) return logoSource;
         const cachedLogo = getCachedLogoDataUrl(company);
         if (cachedLogo) return cachedLogo;
+        // Falhou há pouco nesta sessão? Retorna vazio de imediato (sem rede).
+        if (logoFalhouRecente(company)) return '';
         const timeoutMs = Number(options.timeoutMs || 6000);
 
         const storageCandidates = uniqueValues([
@@ -303,6 +338,7 @@
                 console.warn('Logo da empresa indisponível para PDF via URL:', error);
             }
         }
+        marcarLogoFalha(company);
         return '';
     }
 
