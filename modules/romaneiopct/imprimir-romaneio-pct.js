@@ -2270,6 +2270,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                     }
                     .resumo-dimensoes-table td {
                         color: #000;
+                        font-weight: bold;
                     }
                     .resumo-dimensoes-table .number {
                         text-align: right;
@@ -2442,6 +2443,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         background-color: #e3f2fd;
                         border-radius: 12px;
                         border: 1px solid #bbdefb;
+                        font-weight: bold;
                     }
                     .total-global-pill {
                         background-color: #ffebee;
@@ -2559,6 +2561,9 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         padding: 8px;
                         text-align: left;
                         color: #000;
+                    }
+                    .resumo-conama td {
+                        font-weight: bold;
                     }
                     .resumo-conama th {
                         background-color: #0d2339;

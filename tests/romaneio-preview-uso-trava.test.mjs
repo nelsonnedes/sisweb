@@ -412,6 +412,13 @@ test('TL sem botão duplicado; PCT com contraste nítido (só cores)', () => {
   assert.match(pct, /\.resumo-conama th, \.resumo-conama td \{[\s\S]*?color: #000;/);
 });
 
+test('PCT resumos com corpo em negrito padrão TL (dims + CONAMA + pills)', () => {
+  const pct = fs.readFileSync(new URL('../modules/romaneiopct/imprimir-romaneio-pct.js', import.meta.url), 'utf8');
+  assert.match(pct, /\.resumo-dimensoes-table td \{\s*\n\s*color: #000;\s*\n\s*font-weight: bold;/);
+  assert.match(pct, /\.resumo-conama td \{\s*\n\s*font-weight: bold;/);
+  assert.match(pct, /\.total-info-pill \{[\s\S]*?font-weight: bold;/);
+});
+
 test('Tora: colunas com largura fixa, numéricos sem quebra, texto com quebra', () => {
   const tora = fs.readFileSync(new URL('../modules/reports/imprimir-romaneio.js', import.meta.url), 'utf8');
   assert.match(tora, /\.col-total-tora \{ width: 6\.8%; white-space: nowrap; \}/);
