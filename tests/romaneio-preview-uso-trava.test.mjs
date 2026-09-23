@@ -289,6 +289,21 @@ test('quantidades aceitam frações (volumes m³) sem travar submit nativo', () 
   assert.doesNotMatch(comprasHtml, /id="quantidadeManual" min="1"/);
 });
 
+test('logo da impressão: memo de falha evita repagar cadeia lenta', () => {
+  const helper = fs.readFileSync(new URL('../commerce-pdf-share.js', import.meta.url), 'utf8');
+  assert.match(helper, /logoFailMemo/);
+  assert.match(helper, /LOGO_FAIL_TTL_MS/);
+  assert.match(helper, /logoFalhouRecente\(company\)/);
+  assert.match(helper, /marcarLogoFalha\(company\)/);
+});
+
+test('upload legado funciona no bridge modular (dual-world)', () => {
+  const legacy = fs.readFileSync(new URL('../src/services/firebaseService.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(legacy, /const downloadURL = await snapshot\.ref\.getDownloadURL\(\);/);
+  assert.match(legacy, /snapRef/);
+  assert.match(legacy, /await ref\.getDownloadURL\(\)/);
+});
+
 test('unidade m³ padrão e Enter no preço adiciona (vendas+compras)', () => {
   for (const html of [vendasHtml, comprasHtml]) {
     assert.match(html, /option value="m³" selected/);

@@ -202,7 +202,12 @@ async function uploadFile(path, file) {
         const storage = firebase.storage();
         const ref = storage.ref().child(path);
         const snapshot = await ref.put(file);
-        const downloadURL = await snapshot.ref.getDownloadURL();
+        // Dual-world: compat retorna snapshot.ref.getDownloadURL(); o bridge
+        // modular retorna ref modular puro (sem o método) — usa o wrapper.
+        const snapRef = snapshot && snapshot.ref ? snapshot.ref : null;
+        const downloadURL = (snapRef && typeof snapRef.getDownloadURL === 'function')
+            ? await snapRef.getDownloadURL()
+            : await ref.getDownloadURL();
         return { success: true, path, downloadURL, url: downloadURL };
     } catch (error) {
         return { success: false, error: error.message };
