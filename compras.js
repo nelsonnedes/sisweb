@@ -310,6 +310,7 @@ function renderOperationalAccessStateCompras(contexto = {}) {
 
 function clearOperationalAccessStateCompras() {
     window.__siswebComprasOperationalReady = true;
+    window.__siswebComprasBootState = 'ready';
     window.__siswebComprasLastContext = null;
     setOperationalActionsDisabledCompras(false);
     const panel = document.getElementById('comprasOperationalAccessState');
@@ -2502,6 +2503,22 @@ async function salvarPedido(event) {
 
 
 async function listarPedidos() {
+    // Boot ainda em curso: enfileira UMA abertura pós-pronto em vez do
+    // falso "entre novamente". Sem promise/fila pendente, segue o fluxo normal.
+    if (window.__siswebComprasBootState === 'booting' && window.__siswebComprasBootPromise && !window.__siswebComprasListarPendente) {
+        window.__siswebComprasListarPendente = true;
+        ToastManager.info('Conectando à sua empresa, abrindo a lista em instantes...');
+        window.__siswebComprasBootPromise.then(
+            () => {
+                window.__siswebComprasListarPendente = false;
+                try {
+                    if (window.__siswebComprasOperationalReady === true) listarPedidos();
+                } catch (_) {}
+            },
+            () => { window.__siswebComprasListarPendente = false; }
+        );
+        return;
+    }
     if (!guardOperationalAccessCompras()) return;
     pedidosSelecionados.clear();
     
@@ -5009,6 +5026,7 @@ async function inicializarSistemaCompras() {
                 : 'Sessão sem empresa ativa. Entre novamente para carregar Compras com segurança.';
             console.warn(`⚠️ Compras sem tenant operacional: ${msg}`, contextoEmpresa || {});
             ToastManager.warning(msg);
+            window.__siswebComprasBootState = 'failed';
         } else {
             clearOperationalAccessStateCompras();
 
@@ -5026,6 +5044,7 @@ async function inicializarSistemaCompras() {
         
     } catch (e) {
         console.error('Erro na inicialização:', e);
+        window.__siswebComprasBootState = 'failed';
         renderOperationalAccessStateCompras({ error: e && e.message ? e.message : 'Erro ao carregar dados iniciais.' });
         ToastManager.error('Erro ao carregar dados iniciais.');
     } finally {
@@ -5128,7 +5147,9 @@ async function inicializarSistemaCompras() {
 function iniciarSistemaComprasUmaVez() {
     if (window.__siswebComprasInitStarted) return;
     window.__siswebComprasInitStarted = true;
-    inicializarSistemaCompras();
+    // Estado do boot p/ UX honesta: 'booting' até clear/render decidirem.
+    window.__siswebComprasBootState = 'booting';
+    window.__siswebComprasBootPromise = inicializarSistemaCompras();
 }
 
 if (document.readyState === 'loading') {

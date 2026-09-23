@@ -676,6 +676,7 @@ function renderOperationalAccessStateVendas(contexto = {}) {
 
 function clearOperationalAccessStateVendas() {
     window.__siswebVendasOperationalReady = true;
+    window.__siswebVendasBootState = 'ready';
     window.__siswebVendasLastContext = null;
     setOperationalActionsDisabledVendas(false);
     const panel = document.getElementById('vendasOperationalAccessState');
@@ -729,7 +730,9 @@ async function garantirContextoEmpresaVendas() {
 function iniciarSistemaVendasUmaVez() {
     if (window.__siswebVendasInitStarted) return;
     window.__siswebVendasInitStarted = true;
-    inicializarSistema();
+    // Estado do boot p/ UX honesta: 'booting' até clear/render decidirem.
+    window.__siswebVendasBootState = 'booting';
+    window.__siswebVendasBootPromise = inicializarSistema();
 }
 
 if (document.readyState === 'loading') {
@@ -796,6 +799,7 @@ async function inicializarSistema() {
                 : 'Sessão sem empresa ativa. Entre novamente para carregar Vendas com segurança.';
             console.warn(`⚠️ Vendas sem tenant operacional: ${msg}`, contextoEmpresa || {});
             if (typeof ToastManager !== 'undefined') ToastManager.warning(msg);
+            window.__siswebVendasBootState = 'failed';
             renderOperationalAccessStateVendas(contextoEmpresa || { error: 'Empresa da sessão não identificada.' });
         }
         
@@ -821,6 +825,7 @@ async function inicializarSistema() {
     } catch (error) {
         console.error("Erro fatal na inicialização:", error);
         if (typeof ToastManager !== 'undefined') ToastManager.error("Erro ao inicializar: " + error.message);
+        window.__siswebVendasBootState = 'failed';
         renderOperationalAccessStateVendas({ error: error && error.message ? error.message : 'Erro ao inicializar Vendas.' });
     } finally {
         if (typeof LoadingManager !== 'undefined') LoadingManager.hide();
@@ -2880,6 +2885,22 @@ async function atualizarEstoqueProdutos(itens, tipo) {
 
 // Funções de listagem de pedidos
 async function listarPedidos() {
+    // Boot ainda em curso: enfileira UMA abertura pós-pronto em vez do
+    // falso "entre novamente". Sem promise/fila pendente, segue o fluxo normal.
+    if (window.__siswebVendasBootState === 'booting' && window.__siswebVendasBootPromise && !window.__siswebVendasListarPendente) {
+        window.__siswebVendasListarPendente = true;
+        if (typeof ToastManager !== 'undefined') ToastManager.info('Conectando à sua empresa, abrindo a lista em instantes...', 'Aguarde');
+        window.__siswebVendasBootPromise.then(
+            () => {
+                window.__siswebVendasListarPendente = false;
+                try {
+                    if (window.__siswebVendasOperationalReady === true) listarPedidos();
+                } catch (_) {}
+            },
+            () => { window.__siswebVendasListarPendente = false; }
+        );
+        return;
+    }
     if (!guardOperationalAccessVendas()) return;
     try {
         pedidosListPage = 1;

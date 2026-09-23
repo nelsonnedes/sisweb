@@ -43,9 +43,13 @@ test('acoes principais de vendas e compras sao protegidas quando tenant operacio
   const comprasJs = read('compras.js');
 
   assert.match(vendasJs, /async function novoPedido\(\) \{\s*if \(!guardOperationalAccessVendas\(\)\) return;/);
-  assert.match(vendasJs, /async function listarPedidos\(\) \{\s*if \(!guardOperationalAccessVendas\(\)\) return;/);
+  // Listar: guarda continua protegendo, mas com fila one-shot durante o boot
+  // (sem falso "entre novamente" enquanto a sessão ainda conecta).
+  assert.match(vendasJs, /async function listarPedidos\(\) \{[\s\S]{0,1200}if \(!guardOperationalAccessVendas\(\)\) return;/);
+  assert.match(vendasJs, /__siswebVendasListarPendente/);
   assert.match(comprasJs, /function novoPedido\(gerarNumero = true\) \{\s*if \(!guardOperationalAccessCompras\(\)\) return;/);
-  assert.match(comprasJs, /async function listarPedidos\(\) \{\s*if \(!guardOperationalAccessCompras\(\)\) return;/);
+  assert.match(comprasJs, /async function listarPedidos\(\) \{[\s\S]{0,1200}if \(!guardOperationalAccessCompras\(\)\) return;/);
+  assert.match(comprasJs, /__siswebComprasListarPendente/);
 
   assert.doesNotMatch(vendasJs, /if \(tenant\) return \{ success: true, companyId: tenant, fallback: true \};/);
   assert.doesNotMatch(comprasJs, /if \(tenant\) return \{ success: true, companyId: tenant, fallback: true \};/);

@@ -297,11 +297,45 @@ test('logo da impressão: memo de falha evita repagar cadeia lenta', () => {
   assert.match(helper, /marcarLogoFalha\(company\)/);
 });
 
+// ---------------------------------------------------------------------------
+// Boot honesto: sem falso "entre novamente", fila one-shot, botões travados
+// ---------------------------------------------------------------------------
+test('vendas: boot state machine + fila one-shot no listar', () => {
+  assert.match(vendas, /__siswebVendasBootState = 'booting'/);
+  assert.match(vendas, /__siswebVendasBootPromise = inicializarSistema\(\);/);
+  assert.match(vendas, /__siswebVendasBootState = 'ready'/);
+  assert.match(vendas, /__siswebVendasBootState = 'failed'/);
+  assert.match(vendas, /__siswebVendasListarPendente/);
+  assert.match(vendas, /Conectando à sua empresa, abrindo a lista em instantes/);
+  assert.match(vendasHtml, /onclick="listarPedidos\(\)"[^>]*disabled/);
+  assert.match(vendasHtml, /data-sisweb-operational-locked="true"/);
+});
+
+test('compras: boot state machine + fila one-shot no listar', () => {
+  assert.match(compras, /__siswebComprasBootState = 'booting'/);
+  assert.match(compras, /__siswebComprasBootPromise = inicializarSistemaCompras\(\);/);
+  assert.match(compras, /__siswebComprasBootState = 'ready'/);
+  assert.match(compras, /__siswebComprasBootState = 'failed'/);
+  assert.match(compras, /__siswebComprasListarPendente/);
+  assert.match(compras, /Conectando à sua empresa, abrindo a lista em instantes/);
+  assert.match(comprasHtml, /onclick="listarPedidos\(\)"[^>]*disabled/);
+  assert.match(comprasHtml, /data-sisweb-operational-locked="true"/);
+});
+
 test('upload legado funciona no bridge modular (dual-world)', () => {
   const legacy = fs.readFileSync(new URL('../src/services/firebaseService.js', import.meta.url), 'utf8');
   assert.doesNotMatch(legacy, /const downloadURL = await snapshot\.ref\.getDownloadURL\(\);/);
   assert.match(legacy, /snapRef/);
   assert.match(legacy, /await ref\.getDownloadURL\(\)/);
+});
+
+test('company: toasts do fluxo logo/save blindados e rastreáveis', () => {
+  const company = fs.readFileSync(new URL('../company.html', import.meta.url), 'utf8');
+  assert.match(company, /function companyToast\(msg, type, opts\)/);
+  assert.match(company, /\[company-toast\]/);
+  assert.match(company, /companyToast\(msg, 'warning', \{ duration: 6000 \}\);/);
+  assert.match(company, /companyToast\(msg, 'success'\);/);
+  assert.match(company, /companyToast\(msg, 'error', \{ duration: 5000 \}\);/);
 });
 
 test('unidade m³ padrão e Enter no preço adiciona (vendas+compras)', () => {
