@@ -115,6 +115,22 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-hero-proofs .lv-proof-pill{min-height:36px;padding:8px 14px;font-size:.78rem;border-radius:999px;transition:background .2s,transform .15s,box-shadow .2s}
 .lv-hero-proofs .lv-proof-pill:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(28,19,11,.14)}
 .lv-hero-proofs .lv-proof-pill--accent:hover{background:#5F300F}
+/* Refinamento editorial (equipe design): só cores/tipo/detalhes, métricas intactas */
+.lv-badge{border:1px solid #4A3A26;font-weight:600;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;padding:8px 13px}
+.lv-hero-copy h1{letter-spacing:-.022em;line-height:1.04;max-width:16ch;text-wrap:balance;margin:14px 0 12px}
+.lv-hero-copy h1 em{font-weight:620;letter-spacing:-.01em}
+.lv-hero-copy p{color:#2A2118;font-size:1.02rem;line-height:1.65;letter-spacing:-.006em;max-width:46ch;margin:0}
+.lv-hero-copy p strong{color:#1C130B;font-weight:650}
+.lv-hero-proofs{gap:10px;margin-top:16px}
+.lv-proof-pill{font-weight:600;letter-spacing:.01em}
+.lv-hero-proofs .lv-proof-pill:nth-child(2){background:#FFFDF7;color:#2A2118;border:1px solid #D8C7A5}
+.lv-hero-proofs .lv-proof-pill:nth-child(2) i{color:#1F4D3A}
+.lv-hero-proofs .lv-proof-pill:nth-child(2):hover{background:#E9EFE7;border-color:#1F4D3A}
+.lv-hero-proofs .lv-proof-pill:nth-child(3){background:#FFFDF7;color:#1C130B;border:1px solid #D9B87A}
+.lv-hero-proofs .lv-proof-pill:nth-child(3) i{color:#1F4D3A}
+.lv-hero-proofs .lv-proof-pill:nth-child(3) strong{color:#1C130B;font-weight:700;text-decoration:underline;text-decoration-color:#E39A2D;text-decoration-thickness:1.5px;text-underline-offset:3px}
+.lv-hero-proofs .lv-proof-pill:nth-child(3):hover{background:#1F4D3A;border-color:#1F4D3A;color:#F7F1E5}
+.lv-hero-proofs .lv-proof-pill:nth-child(3):hover i,.lv-hero-proofs .lv-proof-pill:nth-child(3):hover strong{color:#F7F1E5;text-decoration-color:#E39A2D}
 .lv-hero-proof{color:var(--lv-muted);font-size:0.87rem;margin-top:10px}
 .lv-hero-proof i{color:var(--lv-mata)}
 .lv-hero-proofs{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}

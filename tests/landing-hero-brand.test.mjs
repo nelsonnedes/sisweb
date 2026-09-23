@@ -57,6 +57,19 @@ test('Landing hero: CTAs e pills com mesma métrica, só cor varia + hover eleva
   assert.match(css, /\.lv-btn-secondary\{background:var\(--lv-mata\)/);
 });
 
+test('Landing hero: refinamento editorial (ordem das pills + tokens)', () => {
+  const html = read('landing-vendas.html');
+  const css = read('landing-vendas.css');
+  const iAccent = html.indexOf('lv-proof-pill--accent');
+  const iFidel = html.indexOf('Sem fidelidade');
+  const iSup = html.indexOf('Suporte <strong>(91)');
+  assert.ok(iAccent > 0 && iAccent < iFidel && iFidel < iSup, 'ordem travada: grátis > fidelidade > suporte (nth-child do CSS)');
+  assert.match(css, /\.lv-badge\{[^}]*letter-spacing:\.09em[^}]*text-transform:uppercase/);
+  assert.match(css, /\.lv-hero-copy h1\{[^}]*max-width:16ch[^}]*text-wrap:balance/);
+  assert.match(css, /\.lv-hero-copy p\{[^}]*max-width:46ch/);
+  assert.match(css, /\.lv-hero-proofs \.lv-proof-pill:nth-child\(3\):hover\{[^}]*background:#1F4D3A/);
+});
+
 test('Landing hero: assets da marca publicados (disco + allowlist)', () => {
   const manifest = read('hosting-files.json');
   for (const asset of ['assets/brand/icone.ico', 'assets/brand/nome.ico']) {

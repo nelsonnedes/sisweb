@@ -51,3 +51,7 @@ O bloco circulado era a topbar (.lv-logo). Revertida a inserção no hero; marca
 ## Badge hero (mesma sessão)
 
 - Ícone do badge Romaneio/Cubagem/Estoque/NF-e -> assets/brand/icone.ico 18px (igual topbar). Teste 6/6.
+
+## Refinamento editorial (equipe design, mesma sessão)
+
+- Badge uppercase + borda caixa-alta; h1 com tracking/balance/16ch; parágrafo 46ch tinta quente; pills por intenção (fidelidade borda areia/hover esverdeado; suporte borda ocre + fone sublinhado + hover invertido mata). Métricas travadas, ordem das pills travada em teste. Focado 7/7.
