@@ -122,6 +122,12 @@ input[type="checkbox"].sel-carrego-all,
     min-width: 0;
 }
 
+/* O display:flex/grid acima anularia o atributo hidden: garantir que
+   hidden sempre esconda (visibilidade condicional TORA x serrados). */
+.romaneio-group-fieldset[hidden] {
+    display: none !important;
+}
+
 .rel-filter-available,
 .rel-select-all,
 .summary-print-option {

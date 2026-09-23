@@ -53,6 +53,7 @@ let romaneiosPorTipoCache = {}; // Cache da lista ordenada por tipo para manter 
 let romaneioPreviewExcluidos = new Set(); // Set<string> chave "especie||categoria" (modo Espécie x Largura)
 let romaneioPreviewExcluidosEsp = new Set(); // Set<string> chave "ESPECIE||espessura" (modo Espécie Espessura)
 let romaneioPreviewExcluidosDims = new Set(); // Set<string> chave 4-tupla (modo E x L x C)
+let romaneioPreviewExcluidosResumo = new Set(); // Set<string> chave "ESPECIE" (modo Resumo)
 let modoAgrupPreviewVendas = ''; // último modo renderizado no preview (para limpar seleção ao trocar)
 let romaneioPreviewUsoInfo = null; // {pedidoNumero, pedidoId, modulo} | null
 let romaneioPreviewTipoAtual = '';
@@ -3462,17 +3463,28 @@ async function editarPedido(pedidoId) {
         romaneioPreviewTipoAtual = '';
         __rvPreviewChaves = [];
         __rvUsoCache = { id: '', result: null, ts: 0 };
-        atualizarEstadoAgrupamentoVendas('');
+        // Inferir o tipo de romaneio do pedido (para visibilidade TORA x serrados).
+        let tipoInferidoVenda = '';
+        try {
+            const tipos = [];
+            (pedido.itens || []).forEach(it => { if (it && it.romaneioTipo) tipos.push(String(it.romaneioTipo)); });
+            (pedido.romaneiosOrigem || []).forEach(o => { if (o && o.tipo) tipos.push(String(o.tipo)); });
+            if (tipos.length > 0) {
+                tipoInferidoVenda = tipos.slice().sort((a, b) =>
+                    tipos.filter(x => x === b).length - tipos.filter(x => x === a).length)[0] || '';
+            }
+        } catch (_) { tipoInferidoVenda = ''; }
+        atualizarEstadoAgrupamentoVendas(tipoInferidoVenda);
         // Restaurar o modo de agrupamento com que o pedido foi salvo.
         try {
-            const mapaModoVenda = { especie: 'agruparEspecieCheckbox', largura: 'agruparEspecieLarguraCheckbox', dimensoes: 'agruparDimensoesCheckbox' };
+            const mapaModoVenda = { especie: 'agruparEspecieCheckbox', largura: 'agruparEspecieLarguraCheckbox', dimensoes: 'agruparDimensoesCheckbox', resumo: 'agruparResumoVendas' };
             const modoSalvoVenda = pedido && pedido.modoAgrupamentoRomaneio;
             if (modoSalvoVenda && mapaModoVenda[modoSalvoVenda]) {
                 Object.keys(mapaModoVenda).forEach(k => {
                     const cb = document.getElementById(mapaModoVenda[k]);
                     if (cb) cb.checked = (k === modoSalvoVenda);
                 });
-                atualizarEstadoAgrupamentoVendas('');
+                atualizarEstadoAgrupamentoVendas(tipoInferidoVenda);
             }
         } catch (_) { /* best-effort */ }
     } catch (_) { /* best-effort */ }
@@ -5604,13 +5616,15 @@ async function carregarDadosRomaneio() {
         limparExclusoesPreviewVendas();
         __rvPreviewChaves = [];
         romaneioPreviewUsoInfo = null;
-        // Invariante: sempre um modo selecionado (padrão = Espécie x Largura).
+        // Invariante: sempre um modo selecionado (padrão por tipo).
         try {
             const cbA = document.getElementById('agruparEspecieCheckbox');
             const cbB = document.getElementById('agruparEspecieLarguraCheckbox');
             const cbC = document.getElementById('agruparDimensoesCheckbox');
-            if (cbA && cbB && cbC && !cbA.checked && !cbB.checked && !cbC.checked) {
-                cbB.checked = true;
+            const cbR = document.getElementById('agruparResumoVendas');
+            if (cbA && cbB && cbC && cbR && !cbA.checked && !cbB.checked && !cbC.checked && !cbR.checked) {
+                if (String(tipoRomaneio || '').toLowerCase().includes('tora')) cbR.checked = true;
+                else cbB.checked = true;
             }
         } catch (_) { /* best-effort */ }
 
@@ -5917,6 +5931,8 @@ function mostrarPreviewConama(resumoConama, usoInfo) {
                     linhaModoVendas = `Modo <strong>Espécie x Espessura x Largura</strong>: ${nCatsPrev} grupo(s) — será carregado 1 item por grupo.`;
                 } else if (modoPrevVendas === 'dimensoes') {
                     linhaModoVendas = `Modo <strong>Espessura x Largura x Comprimento</strong>: ${gruposDimsPrev.length} grupo(s) — será carregado 1 item por grupo.`;
+                } else if (modoPrevVendas === 'resumo') {
+                    linhaModoVendas = `Modo <strong>Resumo por Espécie</strong>: ${Object.keys(resumoConama).length} grupo(s) — será carregado 1 item por grupo.`;
                 }
                 if (linhaModoVendas) {
                     html += `<p style="color:#0c5460;background:#d1ecf1;border:1px solid #bee5eb;font-size:12px;margin:0 0 10px 0;padding:8px 10px;border-radius:4px;"><i class="fas fa-layer-group"></i> ${linhaModoVendas}</p>`;
@@ -5988,6 +6004,30 @@ function mostrarPreviewConama(resumoConama, usoInfo) {
                         `Vol: ${formatNumber(g.volume, 3)} m³${pecas ? ` • ${pecasSafe}` : ''}`,
                         preco);
                 });
+            } else if (!uso && modoPrevVendas === 'resumo') {
+                // 1 linha por espécie (agregado) — mesma partição da carga.
+                let volRes = 0;
+                let valorRes = 0;
+                let pacRes = 0;
+                let pecRes = 0;
+                const pppRes = {};
+                Object.keys(resumoConama[especie].categorias).forEach(c => {
+                    const k = resumoConama[especie].categorias[c];
+                    volRes += (k && k.volume) || 0;
+                    valorRes += (k && k.valorTotal) || 0;
+                    pacRes += (k && k.pacotesTotal) || 0;
+                    pecRes += (k && k.pecasTotal) || 0;
+                    Object.keys((k && k.pppTotals) || {}).forEach(pk2 => {
+                        pppRes[pk2] = (pppRes[pk2] || 0) + (k.pppTotals[pk2] || 0);
+                    });
+                });
+                const precoRes = volRes > 0 ? valorRes / volRes : 0;
+                const pecasRes = construirResumoPecasParaDescricao({ pecasTotal: pecRes, pacotesTotal: pacRes, pppTotals: pppRes });
+                const pecasResSafe = escaparHtmlRomaneioVendas(pecasRes || '');
+                html += renderGrupoPrev('res', especieLimpaPrev.toUpperCase(),
+                    `${especieSafe} (Resumo)`,
+                    `Vol: ${formatNumber(volRes, 3)} m³${pecasRes ? ` • ${pecasResSafe}` : ''}`,
+                    precoRes);
             } else {
                 Object.keys(resumoConama[especie].categorias).forEach(categoria => {
                     const cat = resumoConama[especie].categorias[categoria];
@@ -6065,7 +6105,10 @@ function __rvRefazerPreviewVendas() {
 }
 
 function __rvSetAlvoVendas(kind) {
-    return kind === 'esp' ? romaneioPreviewExcluidosEsp : kind === 'dims' ? romaneioPreviewExcluidosDims : romaneioPreviewExcluidos;
+    if (kind === 'esp') return romaneioPreviewExcluidosEsp;
+    if (kind === 'dims') return romaneioPreviewExcluidosDims;
+    if (kind === 'res') return romaneioPreviewExcluidosResumo;
+    return romaneioPreviewExcluidos;
 }
 
 function __rvChaveRefVendas(ref) {
@@ -6121,14 +6164,19 @@ window.romaneioPreviewExcluirVendas = function (el) {
     }
 };
 
-// Modos de agrupamento do fieldset "Agrupar:" (mutuamente exclusivos).
+// Modos de agrupamento (mutuamente exclusivos entre os 4 checkboxes).
+// Resumo só vale para TORA; modos do fieldset só para PCT/TL/PES.
 // Sempre há um selecionado: desmarcar o último reverte (obrigatório para carregar).
 window.alternarModoAgrupamentoVendas = function (modo) {
     try {
         const cbDims = document.getElementById('agruparDimensoesCheckbox');
         const cbEsp = document.getElementById('agruparEspecieCheckbox');
         const cbLarg = document.getElementById('agruparEspecieLarguraCheckbox');
-        if (!cbDims || !cbEsp || !cbLarg) return;
+        const cbResumo = document.getElementById('agruparResumoVendas');
+        if (!cbDims || !cbEsp || !cbLarg || !cbResumo) return;
+        const desmarcarOutros = (...manter) => {
+            [cbDims, cbEsp, cbLarg, cbResumo].forEach(cb => { if (!manter.includes(cb)) cb.checked = false; });
+        };
         if (modo === 'dimensoes' && cbDims.checked) {
             const tipoSel = document.getElementById('tipoRomaneio') ? document.getElementById('tipoRomaneio').value : '';
             if (String(tipoSel || '').toLowerCase().includes('tora')) {
@@ -6136,18 +6184,20 @@ window.alternarModoAgrupamentoVendas = function (modo) {
                 ToastManager.warning('O modo Espessura x Largura x Comprimento vale apenas para romaneios PCT/TL/PES.', 'Agrupamento', 4000);
                 return;
             }
-            cbEsp.checked = false;
-            cbLarg.checked = false;
+            desmarcarOutros(cbDims);
         } else if (modo === 'especie' && cbEsp.checked) {
-            cbDims.checked = false;
-            cbLarg.checked = false;
+            desmarcarOutros(cbEsp);
         } else if (modo === 'largura' && cbLarg.checked) {
-            cbDims.checked = false;
-            cbEsp.checked = false;
+            desmarcarOutros(cbLarg);
+        } else if (modo === 'resumo' && cbResumo.checked) {
+            desmarcarOutros(cbResumo);
         }
         // Invariante: sempre um modo selecionado.
-        if (!cbDims.checked && !cbEsp.checked && !cbLarg.checked) {
-            const alvo = modo === 'dimensoes' ? cbDims : (modo === 'especie' ? cbEsp : cbLarg);
+        const todos = [cbDims, cbEsp, cbLarg, cbResumo];
+        if (!todos.some(cb => cb.checked && !cb.disabled)) {
+            const alvo = (modo === 'dimensoes' && !cbDims.disabled) ? cbDims
+                : (modo === 'especie' ? cbEsp : modo === 'largura' ? cbLarg
+                : (modo === 'resumo' ? cbResumo : null)) || cbLarg;
             alvo.checked = true;
             ToastManager.info('Selecione ao menos um modo de agrupamento para carregar os itens.', 'Agrupamento', 3000);
             return;
@@ -6165,33 +6215,51 @@ window.alternarModoAgrupamentoVendas = function (modo) {
     }
 };
 
-// Habilita o modo dimensões apenas para serrados (PCT/TL/PES); TORA desabilita
-// e migra a seleção para "Espécie Espessura x Largura".
+// Visibilidade condicional: Resumo só TORA; fieldset só PCT/TL/PES.
+// Ao esconder, desmarca (anti modo-fantasma); ao mostrar sem seleção, aplica o padrão.
 function atualizarEstadoAgrupamentoVendas(tipoSelecionado) {
     try {
         const cbDims = document.getElementById('agruparDimensoesCheckbox');
+        const cbEsp = document.getElementById('agruparEspecieCheckbox');
         const cbLarg = document.getElementById('agruparEspecieLarguraCheckbox');
-        if (!cbDims) return;
-        const ehTora = String(tipoSelecionado || '').toLowerCase().includes('tora');
-        if (ehTora) {
-            const estavaDims = cbDims.checked;
+        const cbResumo = document.getElementById('agruparResumoVendas');
+        const fieldset = document.getElementById('agruparFieldset');
+        const labelResumo = document.getElementById('opcaoResumoVenda');
+        if (!cbDims || !cbEsp || !cbLarg || !cbResumo) return;
+        const t = String(tipoSelecionado || '').toLowerCase();
+        const isTora = t.includes('tora');
+        const isSerrado = t.includes('pct') || t.includes('tl') || t.includes('pes');
+        if (fieldset) fieldset.hidden = isTora && !isSerrado;
+        if (labelResumo) labelResumo.style.display = isTora ? '' : 'none';
+        if (isTora) {
             cbDims.checked = false;
             cbDims.disabled = true;
             cbDims.title = 'Disponível apenas para romaneios PCT/TL/PES';
-            if (estavaDims && cbLarg) cbLarg.checked = true;
+            cbEsp.checked = false;
+            cbLarg.checked = false;
+            if (!cbResumo.checked) cbResumo.checked = true;
         } else {
             cbDims.disabled = false;
             cbDims.title = '';
+            if (cbResumo) cbResumo.checked = false;
+            if (isSerrado && !cbDims.checked && !cbEsp.checked && !cbLarg.checked) {
+                cbLarg.checked = true;
+            }
         }
     } catch (_) { /* best-effort */ }
 }
 
 function lerModoAgrupamentoVendas() {
     try {
-        if (document.getElementById('agruparDimensoesCheckbox') && document.getElementById('agruparDimensoesCheckbox').checked) return 'dimensoes';
-        if (document.getElementById('agruparEspecieCheckbox') && document.getElementById('agruparEspecieCheckbox').checked) return 'especie';
-        if (document.getElementById('agruparEspecieLarguraCheckbox') && document.getElementById('agruparEspecieLarguraCheckbox').checked) return 'largura';
-    } catch (_) { /* fail-open: legado */ }
+        const tipo = document.getElementById('tipoRomaneio') ? document.getElementById('tipoRomaneio').value : '';
+        const t = String(tipo || '').toLowerCase();
+        const isTora = t.includes('tora');
+        const isSerrado = t.includes('pct') || t.includes('tl') || t.includes('pes');
+        if (isTora && document.getElementById('agruparResumoVendas') && document.getElementById('agruparResumoVendas').checked) return 'resumo';
+        if (isSerrado && document.getElementById('agruparDimensoesCheckbox') && document.getElementById('agruparDimensoesCheckbox').checked) return 'dimensoes';
+        if (isSerrado && document.getElementById('agruparEspecieCheckbox') && document.getElementById('agruparEspecieCheckbox').checked) return 'especie';
+        if (isSerrado && document.getElementById('agruparEspecieLarguraCheckbox') && document.getElementById('agruparEspecieLarguraCheckbox').checked) return 'largura';
+    } catch (_) { /* sem modo: bloqueia abaixo */ }
     return 'nenhum';
 }
 
@@ -6225,6 +6293,7 @@ function limparExclusoesPreviewVendas() {
     romaneioPreviewExcluidos = new Set();
     romaneioPreviewExcluidosEsp = new Set();
     romaneioPreviewExcluidosDims = new Set();
+    romaneioPreviewExcluidosResumo = new Set();
 }
 
 // Agrega o resumo por (espécie, espessura) — fonte ÚNICA do modo "Espécie Espessura"
@@ -6725,6 +6794,96 @@ async function adicionarItensRomaneio() {
             return;
         }
         resumoCarregamentoMsg = `${gruposLarg} grupos (Espécie x Espessura x Largura) adicionados do romaneio`;
+    } else if (modoAgrupamento === 'resumo') {
+        // Resumo por Espécie (TORA): 1 item agrupado por espécie.
+        // Fonte: resumo integral + set de espécies (mesma partição do preview).
+        let gruposRes = 0;
+        Object.keys(resumoConama).forEach(especie => {
+            const especieLimpa = especie.replace(/^\s*[-–—]\s*/, '').trim();
+            const chaveRes = especieLimpa.toUpperCase();
+            if (romaneioPreviewExcluidosResumo.has(chaveRes)) {
+                totalExcluidos++;
+                return;
+            }
+            let volume = 0;
+            let valor = 0;
+            let pacotes = 0;
+            let pecas = 0;
+            const pppTotals = {};
+            const originaisRes = [];
+            Object.keys(resumoConama[especie].categorias).forEach(categoria => {
+                const cat = resumoConama[especie].categorias[categoria];
+                if (!(cat.volume > 0)) return;
+                const precoCat = cat.precoUnitario > 0 ? cat.precoUnitario : precoPadraoPorM3;
+                volume += cat.volume;
+                valor += cat.valorTotal || (cat.volume * precoCat);
+                pacotes += cat.pacotesTotal || 0;
+                pecas += cat.pecasTotal || 0;
+                Object.keys(cat.pppTotals || {}).forEach(k => {
+                    pppTotals[k] = (pppTotals[k] || 0) + (cat.pppTotals[k] || 0);
+                });
+                const pecasInfoCat = construirResumoPecasParaDescricao(cat);
+                originaisRes.push({
+                    id: Date.now() + Math.random(),
+                    produtoId: `romaneio_${normalizarIdRomaneioParte(especieLimpa)}_${normalizarIdRomaneioParte(cat.categoriaBase || categoria)}_${normalizarIdRomaneioParte(cat.dimensoesKey || '')}`,
+                    produtoNome: `${especieLimpa} - ${categoria}${pecasInfoCat ? ` - ${pecasInfoCat}` : ''}`,
+                    especie: especieLimpa,
+                    espessura: cat.espessura || 0,
+                    quantidade: cat.volume,
+                    precoUnitario: precoCat,
+                    total: cat.valorTotal || (cat.volume * precoCat),
+                    tipo: 'romaneio',
+                    unidade: cat.unidade || 'm³',
+                    origemId: idEstavelAtual,
+                    romaneioId: idEstavelAtual,
+                    romaneioNumero: numeroExibicaoAtual,
+                    romaneioTipo: tipoAtual
+                });
+            });
+            if (!(volume > 0)) return;
+            const precoMedio = volume > 0 ? valor / volume : 0;
+            const pecasInfo = construirResumoPecasParaDescricao({ pecasTotal: pecas, pacotesTotal: pacotes, pppTotals });
+            const produtoId = `agrupado_${normalizarIdRomaneioParte(especieLimpa)}_resumo`;
+            const produtoNome = `${especieLimpa}${pecasInfo ? ` - ${pecasInfo}` : ''}`;
+            const existente = itensCarrinho.find(i => String(i.tipo || '').toLowerCase() === 'romaneio_agrupado' && String(i.produtoId || '') === produtoId);
+            if (existente) {
+                const qAtual = typeof existente.quantidade === 'number' ? existente.quantidade : parseNumberFlexible(existente.quantidade);
+                const novoQ = (isNaN(qAtual) ? 0 : qAtual) + volume;
+                const novoTotal = (parseFloat(existente.total) || 0) + valor;
+                existente.quantidade = novoQ;
+                existente.total = novoTotal;
+                existente.precoUnitario = novoQ > 0 ? novoTotal / novoQ : 0;
+                existente.itensOriginais = [...(Array.isArray(existente.itensOriginais) ? existente.itensOriginais : []), ...originaisRes];
+                if (!existente.origemId && idEstavelAtual) existente.origemId = idEstavelAtual;
+                if (!existente.romaneioId && idEstavelAtual) existente.romaneioId = idEstavelAtual;
+                if (!existente.romaneioNumero) existente.romaneioNumero = numeroExibicaoAtual;
+                if (!existente.romaneioTipo && tipoAtual) existente.romaneioTipo = tipoAtual;
+            } else {
+                itensCarrinho.push({
+                    id: Date.now() + Math.random(),
+                    produtoId,
+                    produtoNome,
+                    especie: especieLimpa,
+                    espessura: 0,
+                    quantidade: volume,
+                    precoUnitario: precoMedio,
+                    total: valor,
+                    tipo: 'romaneio_agrupado',
+                    unidade: 'm³',
+                    itensOriginais: originaisRes,
+                    origemId: idEstavelAtual,
+                    romaneioId: idEstavelAtual,
+                    romaneioNumero: numeroExibicaoAtual,
+                    romaneioTipo: tipoAtual
+                });
+            }
+            gruposRes++;
+        });
+        if (gruposRes === 0) {
+            ToastManager.warning('Nenhum item válido para o modo Resumo por Espécie', 'Atenção');
+            return;
+        }
+        resumoCarregamentoMsg = `${gruposRes} grupos (Resumo por Espécie) adicionados do romaneio`;
     } else {
         // Inalcançável: modo obrigatório validado acima. Guarda defensiva (fail-closed).
         ToastManager.warning('Selecione um modo no quadro "Agrupar:" para carregar os itens.', 'Agrupamento', 4000);

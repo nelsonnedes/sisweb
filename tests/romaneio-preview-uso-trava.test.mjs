@@ -335,6 +335,23 @@ test('upload legado funciona no bridge modular (dual-world)', () => {
   assert.match(legacy, /await ref\.getDownloadURL\(\)/);
 });
 
+test('TORA mostra só Resumo; serrados só fieldset (vendas+compras)', () => {
+  assert.match(vendasHtml, /id="opcaoResumoVenda"/);
+  assert.match(vendasHtml, /id="agruparResumoVendas"/);
+  assert.match(vendas, /labelResumo\) labelResumo\.style\.display = isTora/);
+  assert.match(vendas, /fieldset\.hidden = /);
+  assert.match(compras, /labelResumo\) labelResumo\.style\.display = isTora/);
+  const css = fs.readFileSync(new URL('../commerce-responsive.css', import.meta.url), 'utf8');
+  assert.match(css, /\.romaneio-group-fieldset\[hidden\]/);
+});
+
+test('vendas: modo resumo por espécie com preview e carga fiéis', () => {
+  assert.match(vendas, /romaneioPreviewExcluidosResumo/);
+  assert.match(vendas, /agrupado_.*_resumo/);
+  assert.match(vendas, /Resumo por Espécie/);
+  assert.match(vendas, /tipoInferido/);
+});
+
 test('company: toasts do fluxo logo/save blindados e rastreáveis', () => {
   const company = fs.readFileSync(new URL('../company.html', import.meta.url), 'utf8');
   assert.match(company, /function companyToast\(msg, type, opts\)/);
