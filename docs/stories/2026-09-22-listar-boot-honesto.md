@@ -1,7 +1,12 @@
 # Story: Listar Pedidos — boot honesto (fim do falso "entre novamente")
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado)
+- **Deploy:**
+  - Commits `8b381b3` (código) + `6b60beb` (cachebusters) + `8dd58bc` (company toast) → push `origin/main` ✓
+  - `inject-cachebusters`: bump `vendas.js?v=162c17a5237f` + `compras.js?v=b66aa9e79e8a` ✓
+  - Build `hosting-dist` (478 arquivos) ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
 - **Escopo:** `vendas.js`, `compras.js`, `vendas.html`, `compras.html`, `tests/operational-route-state.test.mjs` (atualizado), `tests/romaneio-preview-uso-trava.test.mjs` (+2 testes)
 - **Fora de escopo:** paralelizar cadeia auth/tenant, cache-first no listar, `allowCached` morto (mapeados, não mexidos).
 
