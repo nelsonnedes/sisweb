@@ -99,9 +99,13 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 /* ---------- Hero ---------- */
 .lv-badge{background:var(--lv-casca);color:var(--lv-dark-ink);padding:7px 12px;border-radius:999px;font-size:0.75rem;font-weight:700;display:inline-flex;gap:8px;align-items:center;letter-spacing:.02em}
 .lv-badge i{color:var(--lv-serragem)}
+.lv-hero-brand{display:flex;align-items:center;gap:14px;margin:0 0 6px}
+.lv-hero-brand img{display:block;height:auto;object-fit:contain;flex-shrink:0}
+.lv-hero-brand img[src*="icone"]{width:64px;height:64px}
+.lv-hero-brand img[src*="nome"]{width:min(230px,58vw)}
 .lv-hero{padding:52px 0 10px;background:linear-gradient(180deg,#FBF7EE 0%,var(--lv-tora) 100%)}
 .lv-hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:36px;align-items:center}
-.lv-hero-copy h1{font-family:var(--lv-font-display);font-size:clamp(2rem,4.6vw,3rem);line-height:1.06;margin:16px 0 14px;color:var(--lv-casca);letter-spacing:-.01em;font-weight:800}
+.lv-hero-copy h1{font-family:"Archivo",var(--lv-font-display);font-stretch:125%;font-size:clamp(2rem,4.6vw,3rem);line-height:1.06;margin:16px 0 14px;color:var(--lv-casca);letter-spacing:-.01em;font-weight:800}
 .lv-hero-copy h1 em{font-style:italic;color:var(--lv-mogno)}
 .lv-hero-copy p{color:#4A3D2C;font-size:1.05rem}
 .lv-hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0 6px}
