@@ -368,6 +368,25 @@ test('toasts acima do modal Lista de Pedidos (vendas+compras+unificado)', () => 
   assert.match(unified, /z-index:10000000/);
 });
 
+test('pré-romaneio TL: campos nas posições do romaneio TL + Enter acompanha', () => {
+  const preHtml = fs.readFileSync(new URL('../preromaneio.html', import.meta.url), 'utf8');
+  const preJs = fs.readFileSync(new URL('../preromaneio.js', import.meta.url), 'utf8');
+  const idxEspessura = preHtml.indexOf('id="espessura"');
+  const idxPrice = preHtml.indexOf('id="price"');
+  const idxComprimento = preHtml.indexOf('id="comprimento"');
+  const idxLargura = preHtml.indexOf('id="largura"');
+  const idxQuantidade = preHtml.indexOf('id="quantidade"');
+  for (const [nome, idx] of [['espessura', idxEspessura], ['price', idxPrice], ['comprimento', idxComprimento], ['largura', idxLargura], ['quantidade', idxQuantidade]]) {
+    assert.ok(idx !== -1, `campo ${nome} existe uma única vez`);
+  }
+  assert.ok(idxEspessura < idxPrice, 'espessura antes do preço');
+  assert.ok(idxPrice < idxComprimento, 'preço antes do comprimento');
+  assert.ok(idxComprimento < idxLargura, 'comprimento antes da largura');
+  assert.ok(idxLargura < idxQuantidade, 'largura antes da quantidade');
+  assert.match(preJs, /tlOrder = \['especieInput', 'espessura', 'price', 'comprimento', 'largura', 'quantidade'\]/);
+  assert.match(preJs, /serradosOrder = \['especieInput', 'espessura', 'price', 'comprimento', 'largura', 'quantidade', 'pecasPorPacote'\]/);
+});
+
 test('btnListar nunca quebra com scripts ainda carregando (PCT/TL/Tora)', () => {
   for (const page of ['romaneiopct.html', 'romaneiotl.html', 'romaneiotora.html']) {
     const html = fs.readFileSync(new URL(`../${page}`, import.meta.url), 'utf8');
@@ -375,6 +394,27 @@ test('btnListar nunca quebra com scripts ainda carregando (PCT/TL/Tora)', () => 
     assert.match(html, /typeof window\.abrirListaRomaneios === 'function'/);
     assert.match(html, /Lista ainda carregando/);
   }
+});
+
+test('TL sem botão duplicado; PCT com contraste nítido (só cores)', () => {
+  const tl = fs.readFileSync(new URL('../modules/reports/imprimir-romaneio.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(tl, /imprimirRelatorio\(\)/);
+  assert.doesNotMatch(tl, /BOTÃO DE IMPRESSÃO VISÍVEL/);
+  assert.match(tl, /ensureRomaneioPrintAux/);
+  const pct = fs.readFileSync(new URL('../modules/romaneiopct/imprimir-romaneio-pct.js', import.meta.url), 'utf8');
+  assert.match(pct, /color: #000;/);
+  assert.match(pct, /\.company-details \{[\s\S]*?color: #1f2937;/);
+  assert.match(pct, /\.total-geral-row \{[\s\S]*?color: #0066cc;/);
+  assert.match(pct, /border-bottom: 1px solid #dcdcdc;/);
+  assert.doesNotMatch(pct, /color: #555;/);
+});
+
+test('Tora: colunas com largura fixa, numéricos sem quebra, texto com quebra', () => {
+  const tora = fs.readFileSync(new URL('../modules/reports/imprimir-romaneio.js', import.meta.url), 'utf8');
+  assert.match(tora, /\.col-total-tora \{ width: 6\.8%; white-space: nowrap; \}/);
+  assert.match(tora, /\.col-custodia-tora, \.col-autef-tora \{ width: 7\.5%; word-break: break-all;/);
+  assert.match(tora, /\.col-vb-tora, \.col-vd-tora, \.col-vl-tora \{ width: 4\.5%; white-space: nowrap; \}/);
+  assert.match(tora, /\.tora-main-table \{ width: 100%; \}/);
 });
 
 test('barra Voltar/Imprimir nunca sai no papel (todos os fluxos)', () => {

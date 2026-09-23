@@ -323,8 +323,8 @@ function setupEnterNavigation() {
     if (window.__PREROMANEIO_ENTER_NAV_READY) return;
     window.__PREROMANEIO_ENTER_NAV_READY = true;
 
-    const serradosOrder = ['especieInput', 'espessura', 'largura', 'price', 'comprimento', 'quantidade', 'pecasPorPacote'];
-    const tlOrder = ['especieInput', 'espessura', 'largura', 'price', 'comprimento', 'quantidade'];
+    const serradosOrder = ['especieInput', 'espessura', 'price', 'comprimento', 'largura', 'quantidade', 'pecasPorPacote'];
+    const tlOrder = ['especieInput', 'espessura', 'price', 'comprimento', 'largura', 'quantidade'];
     const toraOrder = ['placaTora', 'custodiaTora', 'autefTora', 'especieToraInput', 'rodoTora', 'compTora', 'oco1Tora', 'oco2Tora', 'compGeoTora', 'x1Tora', 'x2Tora', 'x3Tora', 'x4Tora', 'precoTora'];
 
     const addAndFocus = () => {
