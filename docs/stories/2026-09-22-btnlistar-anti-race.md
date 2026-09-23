@@ -1,7 +1,12 @@
 # Story: btnListar anti-race (PCT/TL/Tora)
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado)
+- **Deploy:**
+  - Commit `b70bf5d` → push `origin/main` ✓
+  - Sem bump de `?v=` (só HTML, servido no-cache) ✓
+  - Build `hosting-dist` (478 arquivos) com botão defensivo confirmado no artefato ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
 - **Escopo:** `romaneiopct.html`, `romaneiotl.html`, `romaneiotora.html`, `tests/romaneios-edit-save-flow.test.mjs` (atualizado), `tests/romaneio-preview-uso-trava.test.mjs` (+1 teste)
 - **Sintoma (produção):** `Uncaught ReferenceError: abrirListaRomaneios is not defined` ao clicar Listar no PCT.
 
