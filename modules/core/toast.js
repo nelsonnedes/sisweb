@@ -37,7 +37,7 @@ function ensureContainer() {
         c.id = '__toast_container__';
         c.setAttribute('role', 'status');
         c.setAttribute('aria-live', 'polite');
-        c.style.cssText = 'position:fixed;top:16px;right:16px;z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+        c.style.cssText = 'position:fixed;top:16px;right:16px;z-index:10000000;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
         document.body.appendChild(c);
     }
     return c;

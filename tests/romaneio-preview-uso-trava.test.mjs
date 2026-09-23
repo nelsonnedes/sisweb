@@ -361,6 +361,13 @@ test('company: toasts do fluxo logo/save blindados e rastreáveis', () => {
   assert.match(company, /companyToast\(msg, 'error', \{ duration: 5000 \}\);/);
 });
 
+test('toasts acima do modal Lista de Pedidos (vendas+compras+unificado)', () => {
+  assert.match(vendasHtml, /\.toast-container \{[\s\S]*?z-index: 10000000;/);
+  assert.match(comprasHtml, /\.toast-container \{[\s\S]*?z-index: 10000000;/);
+  const unified = fs.readFileSync(new URL('../modules/core/toast.js', import.meta.url), 'utf8');
+  assert.match(unified, /z-index:10000000/);
+});
+
 test('unidade m³ padrão e Enter no preço adiciona (vendas+compras)', () => {
   for (const html of [vendasHtml, comprasHtml]) {
     assert.match(html, /option value="m³" selected/);

@@ -650,12 +650,12 @@
             }
         }
 
-        /* Sistema de Toasts/Notificações */
+        /* Sistema de Toasts/Notificações (acima dos modais: .modal usa 9999990) */
         .toast-container {
             position: fixed;
             top: 20px;
             right: 20px;
-            z-index: 9999;
+            z-index: 10000000;
             display: flex;
             flex-direction: column;
             gap: 10px;
