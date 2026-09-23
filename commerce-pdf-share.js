@@ -701,6 +701,9 @@
                     padding: 0;
                 }
 
+                /* Mesmos seletores da regra de tela (0-2-0): sem espelhar,
+                   o display:flex !important da tela venceria no impresso. */
+                .sisweb-print-back:not(.no-print),
                 .sisweb-print-back {
                     display: none !important;
                 }
@@ -751,7 +754,7 @@
 </html>`;
     }
 
-    function ensurePrintAux(doc) {
+    function ensurePrintAux(doc, opts = {}) {
         try {
             if (!doc) return;
             const head = doc.head || (doc.getElementsByTagName && doc.getElementsByTagName('head')[0]);
@@ -761,6 +764,29 @@
                 meta.setAttribute('content', 'width=device-width, initial-scale=1.0');
                 head.appendChild(meta);
             }
+            // Fluxos com HTML próprio (ex.: lote de pedidos, estoque) não trazem
+            // a regra de ocultação: injeta uma mínima (uma vez) para a barra
+            // nunca sair no papel.
+            if (head && !head.querySelector('style[data-sisweb-print-back]')) {
+                let hasHide = false;
+                try {
+                    const styles = head.querySelectorAll('style');
+                    for (const st of styles) {
+                        const t = String((st && st.textContent) || '').replace(/\s+/g, '');
+                        if (t.includes('.sisweb-print-back') && t.includes('@mediaprint') && t.includes('display:none')) {
+                            hasHide = true;
+                            break;
+                        }
+                    }
+                } catch (_) {}
+                if (!hasHide) {
+                    const style = doc.createElement('style');
+                    style.setAttribute('data-sisweb-print-back', '1');
+                    style.textContent = '@media print{.sisweb-print-back{display:none !important;}}';
+                    head.appendChild(style);
+                }
+            }
+            if (opts.showBackBar === false) return;
             const body = doc.body;
             if (body && !body.querySelector('.sisweb-print-back')) {
                 const bar = doc.createElement('div');
@@ -793,7 +819,7 @@
                 try { target.onload = safePrint; } catch (_) {}
                 target.document.write(html);
                 target.document.close();
-                try { ensurePrintAux(target.document); } catch (_) {}
+                try { ensurePrintAux(target.document, options); } catch (_) {}
                 try { target.focus(); } catch (_) {}
                 try {
                     if (target.document && target.document.fonts && typeof target.document.fonts.ready.then === 'function') {

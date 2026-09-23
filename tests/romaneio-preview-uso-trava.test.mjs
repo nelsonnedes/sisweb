@@ -368,6 +368,13 @@ test('toasts acima do modal Lista de Pedidos (vendas+compras+unificado)', () => 
   assert.match(unified, /z-index:10000000/);
 });
 
+test('barra Voltar/Imprimir nunca sai no papel (todos os fluxos)', () => {
+  const helper = fs.readFileSync(new URL('../commerce-pdf-share.js', import.meta.url), 'utf8');
+  assert.match(helper, /\.sisweb-print-back:not\(\.no-print\),\s*\n\s*\.sisweb-print-back \{\s*\n\s*display: none !important;/);
+  assert.match(helper, /data-sisweb-print-back/);
+  assert.match(helper, /showBackBar === false/);
+});
+
 test('unidade m³ padrão e Enter no preço adiciona (vendas+compras)', () => {
   for (const html of [vendasHtml, comprasHtml]) {
     assert.match(html, /option value="m³" selected/);
