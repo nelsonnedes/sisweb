@@ -1,7 +1,12 @@
 # Story: Upload da logo — dual compat/modular no serviço legado
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado)
+- **Deploy:**
+  - Commits `2121b8f` (fix) + `4b2a808` (memo) + `5561a52` (cachebusters) → push `origin/main` ✓
+  - `inject-cachebusters`: bump `src/services/firebaseService.js` + `commerce-pdf-share.js` em 10 HTMLs ✓
+  - Build `hosting-dist` (478 arquivos) com código novo confirmado no artefato ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
 - **Escopo:** `src/services/firebaseService.js` (`uploadFile`), `tests/romaneio-preview-uso-trava.test.mjs` (+1 teste)
 - **Sintoma (produção):** `snapshot.ref.getDownloadURL is not a function` ao enviar PNG na tela de Empresa.
 
