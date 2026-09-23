@@ -25,8 +25,13 @@ test('Landing favicons: icone oficial em todas as refs (apple-touch preservado)'
   assert.match(html, /<link rel="manifest" href="manifest\.json">/);
 });
 
-test('Landing hero: h1 preservado com Archivo expandido + logo dimensionada (anti-regressão)', () => {
+test('Landing badge: icone oficial da marca (igual topbar)', () => {
   const html = read('landing-vendas.html');
+  assert.match(html, /<span class="lv-badge"><img src="assets\/brand\/icone\.ico" alt="" aria-hidden="true" width="18" height="18"/);
+  assert.ok(html.indexOf('lv-badge') < html.indexOf('Sua madeireira do <em>pátio</em>'), 'badge antes do h1');
+});
+
+test('Landing hero: h1 preservado com Archivo expandido + logo dimensionada (anti-regressão)', () => {  const html = read('landing-vendas.html');
   const css = read('landing-vendas.css');
   assert.match(html, /<h1>Sua madeireira do <em>pátio<\/em> à <em>nota<\/em> em um só sistema\.<\/h1>/);
   assert.match(html, /family=Archivo:ital,wdth,wght/);

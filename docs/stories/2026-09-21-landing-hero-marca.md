@@ -43,6 +43,7 @@ O bloco circulado era a topbar (.lv-logo). Revertida a inserção no hero; marca
 - Commit `1318c47` + push + `firebase deploy --only hosting` ("Deploy complete!", 5 arquivos); produção 200 com marca + Archivo.
 - `sisweb.ico`/`svg` e `modules/romaneiopct/imprimir-romaneio-pct.js` (+5 CSS) são de outra sessão concorrente — fora deste escopo.
 
-## Publicação final (topbar)
+## Correção de alvo v2 (badge) + Publicação final (topbar)
 
 - Commit 0ef812d + push + deploy (2 arquivos); produção 200 com topbar-marca, hero limpo e favicon brand.
+- Badge hero: icone oficial 18px no lugar do icon-192 (teste 5/5).
