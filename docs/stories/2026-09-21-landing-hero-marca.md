@@ -33,6 +33,10 @@ O bloco circulado **não existia** no `landing-vendas.html` atual (0 ocorrência
 - [x] `git diff --stat` revisado (sem segredos/BOM/`logs.md`; `sisweb.ico`/`svg` de outra sessão fora do escopo)
 - [x] Commit + push + deploy (ver abaixo)
 
+## Correção de alvo (topbar, não hero)
+
+O bloco circulado era a topbar (.lv-logo). Revertida a inserção no hero; marca aplicada na topbar (icone 30px + nome 88x26) e favicons para assets/brand/icone.ico (apple-touch PNG e manifest preservados). Headline Archivo mantida. Teste reescrito (4/4).
+
 ## Evidências
 
 - Servido local: `landing-vendas.html` 200 com `lv-hero-brand` + Archivo; `assets/brand/*.ico` 200.
