@@ -1493,6 +1493,23 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             return target;
         }
 
+        // ✅ Toast blindado da tela de Empresa: mensagem sempre visível + rastro
+        // no console ([company-toast]) para diagnosticar qualquer anomalia.
+        // Não altera o renderer global (usado por outras páginas).
+        function companyToast(msg, type, opts) {
+            let s = '';
+            try {
+                s = String(msg ?? '');
+                if (!s.trim()) s = 'Ação concluída. (Sem detalhes — ver console F12.)';
+                console.log('[company-toast]', type || 'info', s);
+                if (typeof window.__toast === 'function') { window.__toast(s, type, opts); return; }
+                if (window.Utils && typeof window.Utils.showToast === 'function') { window.Utils.showToast(s, type); return; }
+                alert(s);
+            } catch (_) {
+                try { alert(s || 'Aviso'); } catch (_) {}
+            }
+        }
+
         // ✅ FUNÇÃO PARA UPLOAD DA LOGO NO FIREBASE STORAGE
         async function uploadLogoToFirebase(file, companyId, existingLogoPayload = {}) {
             console.log('📤 Iniciando upload da logo para Firebase Storage...');
@@ -1967,8 +1984,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     logoPayload = {};
                     try {
                         const msg = 'A logo será adicionada depois: na primeira empresa, salve sem logo e edite em seguida em Cadastro de Empresa.';
-                        if (typeof window.__toast === 'function') window.__toast(msg, 'warning', { duration: 6000 });
-                        else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
+                        companyToast(msg, 'warning', { duration: 6000 });
                     } catch (_) {}
                 } else try {
                     if (!draftCompanyId) {
@@ -1989,8 +2005,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                         const msg = denied
                             ? 'Sem permissão para enviar a logo agora. A empresa será salva sem a nova logo; adicione-a depois em Cadastro de Empresa.'
                             : ((rawMsg || 'Erro ao processar a imagem do logo.') + ' A empresa será salva sem a nova logo.');
-                        if (typeof window.__toast === 'function') window.__toast(msg, 'warning', { duration: 6000 });
-                        else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
+                        companyToast(msg, 'warning', { duration: 6000 });
                     } catch (_) {}
                 }
             } else {
@@ -2124,8 +2139,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     }
                     try {
                         const msg = 'Empresa salva com sucesso!';
-                        if (typeof window.__toast === 'function') window.__toast(msg, 'success');
-                        else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'success');
+                        companyToast(msg, 'success');
                     } catch (_) {}
                     clearForm();
                     try {
@@ -2184,9 +2198,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 }
                 
                 try {
-                    if (typeof window.__toast === 'function') window.__toast(msg, 'error', { duration: 5000 });
-                    else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'error');
-                    else alert(msg); // Fallback para alert
+                    companyToast(msg, 'error', { duration: 5000 });
                 } catch (_) {
                     alert(msg);
                 }
