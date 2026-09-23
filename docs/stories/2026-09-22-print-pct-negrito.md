@@ -1,7 +1,12 @@
 # Story: Impressão PCT — resumos em negrito padrão TL
 
 - **Data:** 2026-09-22
-- **Status:** Done (código + gates; publicar pendente de confirmação)
+- **Status:** Done (publicado)
+- **Deploy:**
+  - Commits `229d494` + `fd506b1` (bump) → push `origin/main` ✓
+  - `inject-cachebusters`: bump `imprimir-romaneio-pct.js?v=ca867f01b3a1` ✓
+  - Build `hosting-dist` (480 arquivos) ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
 - **Escopo:** `modules/romaneiopct/imprimir-romaneio-pct.js` (3 regras `font-weight`), `tests/romaneio-preview-uso-trava.test.mjs` (+1 teste)
 - **Evidência (anexo):** TL nítido e forte; PCT com corpo fino lavado nos resumos.
 
