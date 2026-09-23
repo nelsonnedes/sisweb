@@ -4998,7 +4998,7 @@ function schedulePrintLogoWarmUpCompras() {
                 if (!window.SiswebCommercePdf || typeof window.SiswebCommercePdf.preparePrintOptions !== 'function') return;
                 Promise.resolve()
                     .then(() => obterDadosEmpresa())
-                    .then((company) => window.SiswebCommercePdf.preparePrintOptions({ company: company || {} }))
+                    .then((company) => window.SiswebCommercePdf.preparePrintOptions({ company: company || {}, quiet: true }))
                     .catch(() => {});
             } catch (_) {}
         };
@@ -5147,7 +5147,14 @@ async function inicializarSistemaCompras() {
 function iniciarSistemaComprasUmaVez() {
     if (window.__siswebComprasInitStarted) return;
     window.__siswebComprasInitStarted = true;
-    // Estado do boot p/ UX honesta: 'booting' até clear/render decidirem.
+    // Trava inicial via JS (vale mesmo com HTML em cache sem os attrs):
+    // o clear() destrava ao assentar; o render() mantém travado se falhar.
+    try { setOperationalActionsDisabledCompras(true); } catch (_) {}
+    try {
+        document.querySelectorAll('#pedidos > .action-buttons button').forEach((b) => {
+            if (b && b.dataset && b.dataset.siswebOperationalLocked === 'true') b.title = 'Conectando à sua empresa...';
+        });
+    } catch (_) {}
     window.__siswebComprasBootState = 'booting';
     window.__siswebComprasBootPromise = inicializarSistemaCompras();
 }

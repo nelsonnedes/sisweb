@@ -295,6 +295,10 @@ test('logo da impressão: memo de falha evita repagar cadeia lenta', () => {
   assert.match(helper, /LOGO_FAIL_TTL_MS/);
   assert.match(helper, /logoFalhouRecente\(company\)/);
   assert.match(helper, /marcarLogoFalha\(company\)/);
+  assert.match(helper, /quiet/);
+  assert.match(helper, /if \(!quiet\) console\.warn/);
+  assert.match(vendas, /preparePrintOptions\(\{ company: company \|\| \{\}, quiet: true \}\)/);
+  assert.match(compras, /preparePrintOptions\(\{ company: company \|\| \{\}, quiet: true \}\)/);
 });
 
 // ---------------------------------------------------------------------------
@@ -309,6 +313,7 @@ test('vendas: boot state machine + fila one-shot no listar', () => {
   assert.match(vendas, /Conectando à sua empresa, abrindo a lista em instantes/);
   assert.match(vendasHtml, /onclick="listarPedidos\(\)"[^>]*disabled/);
   assert.match(vendasHtml, /data-sisweb-operational-locked="true"/);
+  assert.match(vendas, /b\.title = 'Conectando à sua empresa\.\.\.';/);
 });
 
 test('compras: boot state machine + fila one-shot no listar', () => {
@@ -320,6 +325,7 @@ test('compras: boot state machine + fila one-shot no listar', () => {
   assert.match(compras, /Conectando à sua empresa, abrindo a lista em instantes/);
   assert.match(comprasHtml, /onclick="listarPedidos\(\)"[^>]*disabled/);
   assert.match(comprasHtml, /data-sisweb-operational-locked="true"/);
+  assert.match(compras, /b\.title = 'Conectando à sua empresa\.\.\.';/);
 });
 
 test('upload legado funciona no bridge modular (dual-world)', () => {

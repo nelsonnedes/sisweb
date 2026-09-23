@@ -28,6 +28,15 @@ Guarda síncrono sobre boot assíncrono serial (até ~20s: service 8s → tenant
 - [x] Falha real mantém painel de login + botões travados.
 - [x] Gates verdes (625 pass, 0 fail, 1 skip emulator).
 
+## Adendo — trava inicial via JS
+
+Auditoria posterior não encontrou nenhum caminho que reabilite os botões
+indevidamente em compras (lógica simétrica à de vendas; HTML correto).
+Como blindagem contra HTML em cache sem os attrs, o boot agora também trava
+via `setOperationalActionsDisabled*(true)` no `iniciarSistema*UmaVez`
+(o `clear()` destrava; o `render()` mantém). Comportamento final idêntico
+nos dois módulos.
+
 ## File List
 
 - `vendas.js`, `compras.js`, `vendas.html`, `compras.html`, `tests/operational-route-state.test.mjs`, `tests/romaneio-preview-uso-trava.test.mjs`
