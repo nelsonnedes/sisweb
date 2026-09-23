@@ -47,3 +47,7 @@ O bloco circulado era a topbar (.lv-logo). Revertida a inserção no hero; marca
 
 - Commit 0ef812d + push + deploy (2 arquivos); produção 200 com topbar-marca, hero limpo e favicon brand.
 - Badge hero: icone oficial 18px no lugar do icon-192 (teste 5/5).
+
+## Badge hero (mesma sessão)
+
+- Ícone do badge Romaneio/Cubagem/Estoque/NF-e -> assets/brand/icone.ico 18px (igual topbar). Teste 6/6.

@@ -44,6 +44,19 @@ test('Landing hero: h1 preservado com Archivo expandido + logo dimensionada (ant
   assert.match(html, /login\.html\?mode=register/);
 });
 
+test('Landing hero: CTAs e pills com mesma métrica, só cor varia + hover elevado', () => {
+  const css = read('landing-vendas.css');
+  assert.match(css, /\.lv-hero-ctas \.lv-btn\{[^}]*min-height:56px[^}]*padding:14px 26px[^}]*font-size:1rem[^}]*border-radius:12px/);
+  assert.match(css, /\.lv-hero-ctas \.lv-btn:hover\{[^}]*transform:translateY\(-2px\)[^}]*brightness\(1\.07\)/);
+  assert.match(css, /\.lv-hero-ctas \.lv-btn-primary:hover\{[^}]*background:#5F300F/);
+  assert.match(css, /\.lv-hero-ctas \.lv-btn-secondary:hover\{[^}]*background:#153527/);
+  assert.match(css, /\.lv-hero-proofs \.lv-proof-pill\{[^}]*min-height:36px[^}]*border-radius:999px/);
+  assert.match(css, /\.lv-hero-proofs \.lv-proof-pill:hover\{[^}]*translateY\(-2px\)/);
+  // Cores do sistema preservadas (sem inventar paleta)
+  assert.match(css, /\.lv-btn-primary\{background:var\(--lv-mogno\)/);
+  assert.match(css, /\.lv-btn-secondary\{background:var\(--lv-mata\)/);
+});
+
 test('Landing hero: assets da marca publicados (disco + allowlist)', () => {
   const manifest = read('hosting-files.json');
   for (const asset of ['assets/brand/icone.ico', 'assets/brand/nome.ico']) {

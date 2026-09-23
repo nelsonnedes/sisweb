@@ -108,6 +108,13 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-hero-copy h1 em{font-style:italic;color:var(--lv-mogno)}
 .lv-hero-copy p{color:#4A3D2C;font-size:1.05rem}
 .lv-hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0 6px}
+.lv-hero-ctas .lv-btn{min-height:56px;padding:14px 26px;font-size:1rem;border-radius:12px;transition:background .2s,transform .15s,box-shadow .2s,filter .2s}
+.lv-hero-ctas .lv-btn:hover{transform:translateY(-2px);filter:brightness(1.07)}
+.lv-hero-ctas .lv-btn-primary:hover{background:#5F300F;box-shadow:0 10px 24px rgba(124,63,22,.4)}
+.lv-hero-ctas .lv-btn-secondary:hover{background:#153527;box-shadow:0 10px 24px rgba(31,77,58,.4)}
+.lv-hero-proofs .lv-proof-pill{min-height:36px;padding:8px 14px;font-size:.78rem;border-radius:999px;transition:background .2s,transform .15s,box-shadow .2s}
+.lv-hero-proofs .lv-proof-pill:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(28,19,11,.14)}
+.lv-hero-proofs .lv-proof-pill--accent:hover{background:#5F300F}
 .lv-hero-proof{color:var(--lv-muted);font-size:0.87rem;margin-top:10px}
 .lv-hero-proof i{color:var(--lv-mata)}
 .lv-hero-proofs{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
