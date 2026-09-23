@@ -274,6 +274,10 @@ test('editar agrupado desagrupa e carrega em 1 clique (sem confirm)', () => {
   assert.match(compras, /primeiro carregado para edição/);
 });
 
+test('editarItem cobre romaneio_dimensoes (formulário nunca fica vazio)', () => {
+  assert.match(vendas, /case 'romaneio':\s*\n\s*case 'romaneio_dimensoes':/);
+});
+
 test('lista e impressão exibem itens dimensoes pelo nome (sem re-derivação)', () => {
   const ocorrencias = vendas.match(/item\.tipo === 'romaneio_dimensoes'/g) || [];
   assert.ok(ocorrencias.length >= 3, 'tabela, detalhes e impressão classificam romaneio_dimensoes');

@@ -1954,8 +1954,11 @@ function editarItem(itemId) {
             document.getElementById('precoManual').value = formatCurrency(item.precoUnitario);
             break;
         case 'romaneio':
+        case 'romaneio_dimensoes':
             // ✅ Opção 2: Permitir edição de itens de romaneio via Produto Manual
             // Converter para edição manual preservando dados originais
+            // (romaneio_dimensoes cai aqui: sem este case ia para o default
+            // 'cadastrado' com todas as seções ocultas e formulário vazio).
             alterarTipoProduto('manual');
             
             // ✅ CORREÇÃO: Preservar a unidade correta do item de romaneio
