@@ -8,7 +8,7 @@ test('menu mobile usa gatilhos completos para alertas/configuracoes e exibe sair
   const menuComponent = read('menu-component.js');
   const menuCss = read('menu.css');
 
-  assert.match(menuComponent, /const PWA_VERSION = '2026-09-21-folha-scroll-resync-v1'/);
+  assert.match(menuComponent, /const PWA_VERSION = '2026-09-25-redesign-fases-1-20-v1'/);
   assert.match(menuComponent, /class="sisweb-menu-shell"/);
   assert.match(menuComponent, /class="menu-quick-actions" aria-label="Ações rápidas"/);
   assert.ok(
@@ -48,7 +48,7 @@ test('PWA verifica updates instalados e service worker responde versao atual', (
   const menuComponent = read('menu-component.js');
   const sw = read('sw.js');
 
-  assert.match(sw, /const APP_VERSION = '2026-09-21-folha-scroll-resync-v1'/);
+  assert.match(sw, /const APP_VERSION = '2026-09-25-redesign-fases-1-20-v1'/);
   assert.match(menuComponent, /window\.addEventListener\('online', \(\) => checkForUpdate\(true\)\)/);
   assert.match(menuComponent, /window\.addEventListener\('pageshow', \(\) => checkForUpdate\(true\)\)/);
   assert.match(menuComponent, /window\.setTimeout\(\(\) => checkForUpdate\(true\), 1500\)/);

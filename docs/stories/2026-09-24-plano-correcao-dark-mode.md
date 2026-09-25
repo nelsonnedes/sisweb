@@ -32,7 +32,16 @@ Consolidação do backlog das Fases 1A–13 + auditoria do crawler (`tmp/qa-fase
 - [ ] Labels Almoxarifado + h2 folha/romaneio: veredito ao vivo (crawler vê abas ocultas).
 - [ ] Recontagem do crawler.
 
-## Onda C — Mobile 390px + consolidação
+## Onda C — Mobile 390px (Done 25/09)
+- [x] 390px em 6 páginas sem overflow (`tmp/qa-fase20/m390-*`); paleta 358px; 0 erros.
+
+## Publish (standing rule do usuário, 25/09)
+- Trabalhar em `D:\Sisweb_redesigner`, sincronizar p/ `C:\Sisweb`, publicar DE `C:\Sisweb`
+  (build + deploy), git commit/branch em `C:\Sisweb`, atualizar cérebro.
+- Publish Fases 1-20: branch `redesign/fases-1-20` sobre 20a0b61 + merge `4f879a6` no main;
+  `hosting-files.json` +6 assets; deploy hosting+database OK (roundtrip `ui/theme`
+  validado, tenant resetado); commit publish `9ee0d68`; push pendente.
+- Detalhes em `docs/stories/2026-09-25-redesign-fase20-bitolas-pagamento-mobile.md`.
 - [ ] 390px nas páginas temizadas; toast system check; story final; gates.
 
 ## Declarado fora do plano
