@@ -854,6 +854,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 
 ## 83. Sessao 2026-09-25 — Fase 21 (P0) + Fase 22 (P1/favicon/PWA) + publish
 
+## 84. Sessao 2026-09-25 — Fase 23 (P2/Onda A/dupes) + publish
+
+- **P2:** hovers/borders residuais species, fallback index e register login em vars.
+- **Onda A:** print-config dark com evidência; labels/h2 em texto-1; recount 53/3
+  (branco-sobre-marca ≥3.0, aceito sem mudança).
+- **Dupes raiz:** `icone.ico`/`nome.ico` avulsos removidos (dupes de `assets/brand/`).
+- **Gates:** suite 664/0/1. Commit `add2a3b` + build 486 + deploy hosting + push OK.
+
 - **Base:** trabalho direto em `C:\Sisweb` (nova regra); QA em `:5501` (`:5500` serve D:\).
 - **P0:** injetados romaneio/species theme-aware (+ `species-modal-standard.css`, achado via
   CDP em 3 fontes); MFA/labels/h4/estoque/financas/subscription/admin/romaneio labels.
