@@ -849,3 +849,32 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Fix A+B+C:** motor incluído em TL/PCT/Tora/PES + `folha.html` + `notas-fiscais.html` (IIFE sem deps, guardas `typeof`); DataURL em cache em TL/Tora (`upgradeRomaneioLogoToDataUrl`), PCT, PES inline, manager fallback, estoque (`prepararLogoEmpresaRelatorio` tenta cache primeiro), folha (`obterDadosEmpresa` 2 saídas) e DANFE (`carregarLogoDANFE`, que de brinde passa a resolver paths do Storage); espera de imagem nos auto-prints inline (TL/Tora `replaceAll`, PES `onload`, manager `goWhenReady`, tetos 1500ms).
 - **Incidente:** `estoque-pwa-impressao:134` travava prioridade antiga (URL crua) — atualizado para DataURL-primeiro (§6.5).
 - **Gates:** focado 10/10, `validate:pr` 6/6 (581/0/1). Commit `4ce9f95` (16 arquivos) + push + deploy (13 arquivos); `hosting-dist` verificado (upgrade TL, resolver no DANFE, cache no estoque).
+
+## 82. Sessao 2026-09-25 — Redesign Fases 1-20: merge dev→prod + publish (standing rule)
+
+- **Standing rule (usuário):** `C:\Sisweb` deixou de ser intocável p/ publish — fluxo oficial:
+  trabalhar em `D:\Sisweb_redesigner`, sincronizar p/ `C:\Sisweb`, publicar (build+deploy)
+  DE `C:\Sisweb`, git commit/branch em `C:\Sisweb`, atualizar este cérebro.
+- **Divergência real:** dev (redesign Fases 1-20, base 20a0b61) vs main (fixes prod + landing).
+  Sync ingênuo por cópia foi descartado (reverteria fixes prod: pedidos boot/save, TORA).
+  Caminho usado: `git checkout -b redesign/fases-1-20 20a0b61` (ancestral comum existe no
+  repo prod) + cópia do set dev + commit `a7713b2` + `git merge --no-ff` no main → só
+  2 conflitos genuínos (ambos print-review de outro fluxo; resolvidos mantendo o main).
+- **Lição encoding (incidente):** `Get-Content -Raw` (PS 5.1 lê ANSI) + `Set-Content`/
+  `WriteAllBytes` com string corrompe UTF-8 (mojibake `é→Ã©`, quebrou 5 asserts de
+  `romaneio-preview-uso-trava`). Regra: NUNCA reescrever arquivos via cmdlets de texto
+  do PS 5.1 — usar `Copy-Item` (bytes), `cmd /c` p/ redirect, `default.edit`, ou node
+  com utf8 explícito. `git merge-file` em Windows: exit codes não confiáveis + temp via
+  redirect PS gera UTF-16 (merge recusa binário) — detectar conflito por marcadores.
+- **Conteúdo publicado:** tema claro/escuro (tokens/shell/content/auth/dashboard),
+  `.sw-page-title` 22 págs, rodapé no container, paginação global + 6 abas, fluxo
+  realizado+previsto, paleta 11 cores, páginas na marca, `ui/theme` por tenant.
+- **Gates (dev e prod):** lint+typecheck OK; `npm test` 654-655 pass/0 fail; regressão tema
+  20/20; QA autenticado 0 erros (dark/light/390px em `tmp/qa-fase{17,19,20}/`).
+- **Deploy:** merge `4f879a6` no main (branch `redesign/fases-1-20` commit `a7713b2`);
+  `hosting-files.json` +6 assets (js/sisweb-theme.js, styles/* — sem eles o hosting dava
+  404 e o tema não carregava); `npm run build:hosting` 486 arquivos;
+  `firebase deploy --only hosting,database` complete em `https://sisweb-7ce82.web.app`
+  (hosting 6 arquivos novos + rules `ui/theme` released); roundtrip nuvem validado
+  (`source:firebase`, custom aplicado, tenant resetado p/ padrão após o teste).
+  Push p/ origin pendente de confirmação.
