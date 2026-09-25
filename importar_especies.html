@@ -15,6 +15,28 @@
     <!-- CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="layout-comum.css">
 
     <!-- Firebase SDK -->
@@ -26,7 +48,8 @@
 import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     </script><!-- Menu Component -->
-    <script src="menu-component.js?v=6c70fd8f5206"></script>
+    <script src="js/sisweb-theme.js?v=1"></script>
+<script src="menu-component.js?v=6c70fd8f5206"></script>
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
@@ -36,7 +59,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <style>
         /* Page Specific Styles */
         .instructions {
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
             padding: 20px;
             border-radius: 8px;
             border-left: 4px solid #3498db;
@@ -57,7 +80,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             width: 100%;
             height: 200px;
             padding: 15px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             border-radius: 4px;
             font-size: 14px;
             font-family: monospace;
@@ -67,7 +90,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         .preview-container {
             margin-top: 30px;
             display: none;
-            background: white;
+            background: var(--sw-surface);
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -92,7 +115,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         th {
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
             position: sticky;
             top: 0;
             z-index: 10;
@@ -144,7 +167,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         <main-menu></main-menu>
         
         <div class="page-header" style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
-            <h1 style="color: #2c3e50; margin: 0;"><i class="fas fa-file-import"></i> Importação de Espécies</h1>
+            <h1 class="sw-page-title" style="color: #2c3e50; margin: 0;"><i class="fas fa-file-import"></i> Importação de Espécies</h1>
         </div>
         
         <div class="instructions">
@@ -175,7 +198,7 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
         
         <div id="previewContainer" class="preview-container">
             <h2>Prévia da Importação</h2>
-            <p style="color: #666; margin-bottom: 15px;">Verifique os dados abaixo antes de confirmar.</p>
+            <p style="color: var(--sw-text-2) ; margin-bottom: 15px;">Verifique os dados abaixo antes de confirmar.</p>
             
             <div class="table-responsive">
                 <table>
@@ -206,7 +229,7 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
     
     <div id="loadingOverlay" class="loading-overlay">
         <div class="spinner"></div>
-        <p style="margin-top: 15px; color: #555;">Processando dados...</p>
+        <p style="margin-top: 15px; color: var(--sw-text-2) ;">Processando dados...</p>
     </div>
 
     <!-- Scripts -->

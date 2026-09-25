@@ -13,6 +13,27 @@
     <title>Configurações Administrativas - Sistema</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="admin-modern.css">
     <style>
         * {
@@ -31,11 +52,11 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background-color: white;
+            background-color: var(--sw-surface);
             padding: 20px;
             border-radius: 14px;
             box-shadow: 0 16px 48px rgba(15, 23, 42, 0.12);
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--sw-border) ;
         }
 
         .page-header {
@@ -62,7 +83,7 @@
             border-radius: 12px;
             padding: 18px;
             box-shadow: 0 8px 24px rgba(15,23,42,0.08);
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--sw-border) ;
             min-width: 0;
             overflow: hidden;
         }
@@ -136,7 +157,7 @@
             font-size: 16px;
             transition: border-color 0.2s, box-shadow 0.2s;
             resize: vertical;
-            background: #fff;
+            background: var(--sw-surface);
         }
 
         .form-group input:focus,
@@ -238,7 +259,7 @@
             width: 16px;
             left: 4px;
             bottom: 4px;
-            background-color: white;
+            background-color: var(--sw-surface);
             transition: .4s;
             border-radius: 50%;
         }
@@ -301,7 +322,7 @@
         }
 
         .permission-item {
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--sw-border) ;
             border-radius: 8px;
             padding: 10px;
             font-size: 13px;
@@ -320,7 +341,7 @@
 
         .subusers-table th,
         .subusers-table td {
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid var(--sw-border) ;
             text-align: left;
             padding: 10px 8px;
             font-size: 13px;
@@ -333,11 +354,11 @@
 
         .audit-table-wrap {
             margin-top: 10px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--sw-border) ;
             border-radius: 10px;
             overflow: auto;
             max-height: 560px;
-            background: #fff;
+            background: var(--sw-surface);
         }
 
         .audit-table-wrap .subusers-table {
@@ -377,7 +398,7 @@
         }
 
         .audit-diff-item {
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--sw-border) ;
             border-radius: 8px;
             padding: 8px;
             background: #f8fafc;
@@ -427,7 +448,7 @@
 
         .permission-matrix th,
         .permission-matrix td {
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid var(--sw-border) ;
             padding: 8px 6px;
             text-align: left;
             vertical-align: top;
@@ -534,9 +555,9 @@
             .subusers-table.responsive-stack tbody { display: block; width: 100%; }
             .subusers-table.responsive-stack tbody tr {
                 display: block;
-                border: 1px solid #e2e8f0;
+                border: 1px solid var(--sw-border) ;
                 border-radius: 10px;
-                background: #fff;
+                background: var(--sw-surface);
                 margin: 0 0 10px;
                 padding: 6px 8px;
             }
@@ -577,7 +598,7 @@
         <main-menu></main-menu>
 
         <div class="page-header">
-            <h1>Configurações Administrativas</h1>
+            <h1 class="sw-page-title">Configurações Administrativas</h1>
         </div>
 
         <div class="settings-container">
@@ -685,7 +706,7 @@
                                 <i class="fas fa-upload"></i> Importar Backup
                                 <div class="loading-spinner" id="import-spinner"></div>
                             </button>
-                            <span id="selectedFileName" style="font-size: 12px; color: #666;"></span>
+                            <span id="selectedFileName" style="font-size: 12px; color: var(--sw-text-2) ;"></span>
                         </div>
                     </li>
                     
@@ -895,7 +916,7 @@
                         </table>
                     </div>
                 </div>
-                <hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;">
+                <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--sw-border) ;">
                 <form id="extendAccessForm">
                     <div class="form-group">
                         <label for="extendTargetUid">UID do usuário para prorrogar acesso</label>
@@ -970,7 +991,8 @@
         import * as firebaseSvc from './firebaseService.js';
         window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
     </script>
-    <script src="menu-component.js?v=6c70fd8f5206"></script>
+    <script src="js/sisweb-theme.js?v=1"></script>
+<script src="menu-component.js?v=6c70fd8f5206"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
     <script>
         function getAnyUid(user) {

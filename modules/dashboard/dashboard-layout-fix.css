@@ -240,11 +240,11 @@
     }
     
     .data-table tr {
-        border: 1px solid #ccc !important;
+        border: 1px solid var(--sw-border) !important;
         margin-bottom: 10px !important;
         padding: 10px !important;
         border-radius: 8px !important;
-        background: #fff !important;
+        background: var(--sw-surface) !important;
     }
     
     .data-table td {
@@ -304,7 +304,7 @@
     .chart-container,
     .table-container {
         box-shadow: none !important;
-        border: 1px solid #ddd !important;
+        border: 1px solid var(--sw-border) !important;
         break-inside: avoid !important;
     }
     

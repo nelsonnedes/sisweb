@@ -97,7 +97,7 @@
     position: absolute;
     top: 100%;
     left: 0;
-    background-color: #f9f9f9;
+    background-color: var(--sw-surface-2) ;
     min-width: 200px;
     width: max-content;
     max-width: 300px;
@@ -398,10 +398,10 @@ a.alerts-item-message:hover {
         left: auto;
         width: min(340px, calc(100vw - 20px));
         max-width: min(340px, calc(100vw - 20px));
-        background: #ffffff;
-        color: #1f2937;
+        background: var(--sw-island-bg);
+        color: var(--sw-island-ink);
         box-shadow: 0 16px 32px rgba(15, 23, 42, 0.22);
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--sw-island-border);
     }
 
     .menu-quick-actions .dropdown-content a {

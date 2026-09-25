@@ -419,7 +419,7 @@ test('compras possui relatórios e busca de fornecedor carregados no script ativ
   assert.match(comprasHtml, /<th class="actions-col">Ações<\/th>/);
   assert.match(comprasHtml, /commerce-responsive\.js\?v=[^"'\s]+/);
 
-  assert.match(comprasJs, /async function gerarRelatorioCompras\(\)/);
+  assert.match(comprasJs, /async function gerarRelatorioCompras\(/);
   assert.match(comprasJs, /function exportarRelatorioComprasCSV\(\)/);
   assert.match(comprasJs, /function exportarRelatorioComprasPDF\(\)/);
   assert.match(comprasJs, /clone\.querySelectorAll\('h3, button, input, \.action-buttons, \.acoes-buttons, \.no-print, \[data-col="acoes"\]'\)/);

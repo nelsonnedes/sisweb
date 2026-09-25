@@ -95,7 +95,8 @@
         setFooterModuleName(footer);
         bindFooterContact(footer);
         bindFooterTitleObserver(footer);
-        if (!legacyFooter) document.body.appendChild(footer);
+        /* Fase 18: espelha menu-component.js — rodapé dentro do .container. */
+        if (!legacyFooter) (document.querySelector('.container') || document.body).appendChild(footer);
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureFooter);
     else ensureFooter();

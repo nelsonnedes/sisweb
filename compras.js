@@ -750,6 +750,12 @@ function rotuloItemRomaneioCompra(item, idx, tipo) {
 }
 let comprasFornecedoresEditingId = null;
 let comprasFornecedoresFiltered = [];
+let comprasFornecedoresPage = 1;
+const comprasFornecedoresPerPage = 10;
+let comprasProdutosPage = 1;
+const comprasProdutosPerPage = 10;
+let comprasRelatorioPage = 1;
+const comprasRelatorioPerPage = 10;
 let pedidosListPage = 1;
 const pedidosListItemsPerPage = 10;
 let pedidosListFiltered = [];
@@ -959,10 +965,16 @@ function renderProdutosCadastroTable() {
     if (lista.length === 0) {
         table.innerHTML = '<tr><td colspan="5" data-label="Mensagem" class="text-center commerce-full-row">Nenhum produto cadastrado.</td></tr>';
         refreshCommerceResponsiveTables();
+        renderComprasProdutosPagination(0);
         return;
     }
     const ordered = lista.slice().sort((a, b) => getProdutoNomeCadastro(a).localeCompare(getProdutoNomeCadastro(b)));
-    table.innerHTML = ordered.map(produto => `
+    const totalProdutosPages = Math.max(1, Math.ceil(ordered.length / comprasProdutosPerPage));
+    if (comprasProdutosPage > totalProdutosPages) comprasProdutosPage = totalProdutosPages;
+    if (comprasProdutosPage < 1) comprasProdutosPage = 1;
+    const produtosStart = (comprasProdutosPage - 1) * comprasProdutosPerPage;
+    const produtosPaginados = ordered.slice(produtosStart, produtosStart + comprasProdutosPerPage);
+    table.innerHTML = produtosPaginados.map(produto => `
         <tr>
             <td data-label="Código"><span class="commerce-card-value commerce-card-number">${escapeHtml(String(produto.codigo || '-'))}</span></td>
             <td data-label="Nome"><span class="commerce-card-value commerce-card-title">${escapeHtml(getProdutoNomeCadastro(produto) || '-')}</span></td>
@@ -977,6 +989,71 @@ function renderProdutosCadastroTable() {
         </tr>
     `).join('');
     refreshCommerceResponsiveTables();
+    renderComprasProdutosPagination(ordered.length);
+}
+
+function renderComprasProdutosPagination(totalItems) {
+    const container = document.getElementById('comprasProdutosPagination');
+    if (!container) return;
+    const totalPages = Math.ceil(totalItems / comprasProdutosPerPage);
+    container.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    const addBtn = (label, page, disabled = false, active = false) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = label;
+        if (active) btn.classList.add('active');
+        btn.disabled = disabled;
+        btn.onclick = () => goToComprasProdutosPage(page);
+        container.appendChild(btn);
+    };
+
+    addBtn('<<<', 1, comprasProdutosPage === 1);
+    addBtn('<', comprasProdutosPage - 1, comprasProdutosPage === 1);
+
+    const startPage = Math.max(1, comprasProdutosPage - 2);
+    const endPage = Math.min(totalPages, comprasProdutosPage + 2);
+
+    if (startPage > 1) {
+        addBtn('1', 1, false, comprasProdutosPage === 1);
+        if (startPage > 2) {
+            const span = document.createElement('span');
+            span.textContent = '...';
+            container.appendChild(span);
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        addBtn(String(i), i, false, i === comprasProdutosPage);
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            const span = document.createElement('span');
+            span.textContent = '...';
+            container.appendChild(span);
+        }
+        addBtn(String(totalPages), totalPages, false, comprasProdutosPage === totalPages);
+    }
+
+    addBtn('>', comprasProdutosPage + 1, comprasProdutosPage === totalPages);
+    addBtn('>>>', totalPages, comprasProdutosPage === totalPages);
+}
+
+function goToComprasProdutosPage(page) {
+    const termo = String((document.getElementById('searchProdutos')?.value || '')).toLowerCase().trim();
+    const lista = (window.produtos || []).filter((p) => {
+        const nome = getProdutoNomeCadastro(p).toLowerCase();
+        const codigo = String(p?.codigo || '').toLowerCase();
+        if (!termo) return true;
+        return nome.includes(termo) || codigo.includes(termo);
+    });
+    const totalPages = Math.max(1, Math.ceil(lista.length / comprasProdutosPerPage));
+    const next = Math.min(totalPages, Math.max(1, Number(page) || 1));
+    if (next === comprasProdutosPage) return;
+    comprasProdutosPage = next;
+    renderProdutosCadastroTable();
 }
 
 window.novoProduto = function() {
@@ -988,10 +1065,12 @@ window.novoProduto = function() {
 window.listarProdutos = function() {
     const list = document.getElementById('produtosList');
     if (list) list.style.display = 'block';
+    comprasProdutosPage = 1;
     renderProdutosCadastroTable();
 };
 
 window.filtrarProdutos = function() {
+    comprasProdutosPage = 1;
     renderProdutosCadastroTable();
 };
 
@@ -3269,10 +3348,17 @@ function renderRelatorioComprasPedidos(pedidos) {
         tbody.innerHTML = '<tr><td colspan="6" data-label="Mensagem" class="commerce-full-row" style="text-align:center;">Nenhum pedido encontrado para os filtros informados.</td></tr>';
         aplicarColunasRelatorioCompras();
         refreshCommerceResponsiveTables();
+        renderRelComprasRelatorioPagination(0);
         return;
     }
 
-    tbody.innerHTML = pedidos.map((pedido) => {
+    const totalRelPedidosPages = Math.max(1, Math.ceil(pedidos.length / comprasRelatorioPerPage));
+    if (comprasRelatorioPage > totalRelPedidosPages) comprasRelatorioPage = totalRelPedidosPages;
+    if (comprasRelatorioPage < 1) comprasRelatorioPage = 1;
+    const relPedidosStart = (comprasRelatorioPage - 1) * comprasRelatorioPerPage;
+    const relPedidosPaginados = pedidos.slice(relPedidosStart, relPedidosStart + comprasRelatorioPerPage);
+
+    tbody.innerHTML = relPedidosPaginados.map((pedido) => {
         const id = escapeJsString(pedido.id || pedido.firebaseKey || '');
         const fornecedor = pedido.fornecedor?.nome || pedido.fornecedor?.name || 'Fornecedor não informado';
         const status = String(pedido.status || 'pendente');
@@ -3295,6 +3381,63 @@ function renderRelatorioComprasPedidos(pedidos) {
 
     aplicarColunasRelatorioCompras();
     refreshCommerceResponsiveTables();
+    renderRelComprasRelatorioPagination(pedidos.length);
+}
+
+function renderRelComprasRelatorioPagination(totalItems) {
+    const container = document.getElementById('relComprasRelatorioPagination');
+    if (!container) return;
+    const totalPages = Math.ceil(totalItems / comprasRelatorioPerPage);
+    container.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    const addBtn = (label, page, disabled = false, active = false) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = label;
+        if (active) btn.classList.add('active');
+        btn.disabled = disabled;
+        btn.onclick = () => goToRelComprasRelatorioPage(page);
+        container.appendChild(btn);
+    };
+
+    addBtn('<<<', 1, comprasRelatorioPage === 1);
+    addBtn('<', comprasRelatorioPage - 1, comprasRelatorioPage === 1);
+
+    const startPage = Math.max(1, comprasRelatorioPage - 2);
+    const endPage = Math.min(totalPages, comprasRelatorioPage + 2);
+
+    if (startPage > 1) {
+        addBtn('1', 1, false, comprasRelatorioPage === 1);
+        if (startPage > 2) {
+            const span = document.createElement('span');
+            span.textContent = '...';
+            container.appendChild(span);
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        addBtn(String(i), i, false, i === comprasRelatorioPage);
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            const span = document.createElement('span');
+            span.textContent = '...';
+            container.appendChild(span);
+        }
+        addBtn(String(totalPages), totalPages, false, comprasRelatorioPage === totalPages);
+    }
+
+    addBtn('>', comprasRelatorioPage + 1, comprasRelatorioPage === totalPages);
+    addBtn('>>>', totalPages, comprasRelatorioPage === totalPages);
+}
+
+function goToRelComprasRelatorioPage(page) {
+    const next = Math.max(1, Number(page) || 1);
+    if (next === comprasRelatorioPage) return;
+    comprasRelatorioPage = next;
+    gerarRelatorioCompras(true);
 }
 
 function agruparPedidosRelatorioCompras(pedidos, agrupamento) {
@@ -3356,8 +3499,15 @@ function renderRelatorioComprasAgrupado(pedidos, agrupamento) {
             </table>
         `;
         refreshCommerceResponsiveTables();
+        renderRelComprasRelatorioPagination(0);
         return;
     }
+
+    const totalGruposPages = Math.max(1, Math.ceil(rows.length / comprasRelatorioPerPage));
+    if (comprasRelatorioPage > totalGruposPages) comprasRelatorioPage = totalGruposPages;
+    if (comprasRelatorioPage < 1) comprasRelatorioPage = 1;
+    const gruposStart = (comprasRelatorioPage - 1) * comprasRelatorioPerPage;
+    const gruposPaginados = rows.slice(gruposStart, gruposStart + comprasRelatorioPerPage);
 
     tabelaAgrupada.innerHTML = `
         <table class="table commerce-report-table" id="relComprasAgrupadoTable">
@@ -3372,7 +3522,7 @@ function renderRelatorioComprasAgrupado(pedidos, agrupamento) {
                 </tr>
             </thead>
             <tbody>
-                ${rows.map((row) => {
+                ${gruposPaginados.map((row) => {
                     const precoMedio = row.volume > 0 ? row.valorTotal / row.volume : 0;
                     return `
                         <tr>
@@ -3389,9 +3539,11 @@ function renderRelatorioComprasAgrupado(pedidos, agrupamento) {
         </table>
     `;
     refreshCommerceResponsiveTables();
+    renderRelComprasRelatorioPagination(rows.length);
 }
 
-async function gerarRelatorioCompras() {
+async function gerarRelatorioCompras(keepPage = false) {
+    if (!keepPage) comprasRelatorioPage = 1;
     LoadingManager.show('Gerando relatório de compras...');
     try {
         prepararRelatoriosCompras();
@@ -4570,10 +4722,17 @@ function renderizarFornecedoresCompra() {
             </tr>
         `;
         refreshCommerceResponsiveTables();
+        renderComprasFornecedoresPagination(0);
         return;
     }
 
-    tbody.innerHTML = comprasFornecedoresFiltered.map((fornecedor) => {
+    const totalFornecedoresPages = Math.max(1, Math.ceil(comprasFornecedoresFiltered.length / comprasFornecedoresPerPage));
+    if (comprasFornecedoresPage > totalFornecedoresPages) comprasFornecedoresPage = totalFornecedoresPages;
+    if (comprasFornecedoresPage < 1) comprasFornecedoresPage = 1;
+    const fornecedoresStart = (comprasFornecedoresPage - 1) * comprasFornecedoresPerPage;
+    const fornecedoresPaginados = comprasFornecedoresFiltered.slice(fornecedoresStart, fornecedoresStart + comprasFornecedoresPerPage);
+
+    tbody.innerHTML = fornecedoresPaginados.map((fornecedor) => {
         const id = String(fornecedor.id || '').trim();
         const encodedId = escapeHtml(encodeURIComponent(id).replace(/'/g, '%27'));
         const nome = escapeHtml(comprasFornecedoresNome(fornecedor) || 'Sem nome');
@@ -4608,6 +4767,64 @@ function renderizarFornecedoresCompra() {
         `;
     }).join('');
     refreshCommerceResponsiveTables();
+    renderComprasFornecedoresPagination(comprasFornecedoresFiltered.length);
+}
+
+function renderComprasFornecedoresPagination(totalItems) {
+    const container = document.getElementById('comprasFornecedoresPagination');
+    if (!container) return;
+    const totalPages = Math.ceil(totalItems / comprasFornecedoresPerPage);
+    container.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    const addBtn = (label, page, disabled = false, active = false) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = label;
+        if (active) btn.classList.add('active');
+        btn.disabled = disabled;
+        btn.onclick = () => goToComprasFornecedoresPage(page);
+        container.appendChild(btn);
+    };
+
+    addBtn('<<<', 1, comprasFornecedoresPage === 1);
+    addBtn('<', comprasFornecedoresPage - 1, comprasFornecedoresPage === 1);
+
+    const startPage = Math.max(1, comprasFornecedoresPage - 2);
+    const endPage = Math.min(totalPages, comprasFornecedoresPage + 2);
+
+    if (startPage > 1) {
+        addBtn('1', 1, false, comprasFornecedoresPage === 1);
+        if (startPage > 2) {
+            const span = document.createElement('span');
+            span.textContent = '...';
+            container.appendChild(span);
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        addBtn(String(i), i, false, i === comprasFornecedoresPage);
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            const span = document.createElement('span');
+            span.textContent = '...';
+            container.appendChild(span);
+        }
+        addBtn(String(totalPages), totalPages, false, comprasFornecedoresPage === totalPages);
+    }
+
+    addBtn('>', comprasFornecedoresPage + 1, comprasFornecedoresPage === totalPages);
+    addBtn('>>>', totalPages, comprasFornecedoresPage === totalPages);
+}
+
+function goToComprasFornecedoresPage(page) {
+    const totalPages = Math.max(1, Math.ceil(comprasFornecedoresFiltered.length / comprasFornecedoresPerPage));
+    const next = Math.min(totalPages, Math.max(1, Number(page) || 1));
+    if (next === comprasFornecedoresPage) return;
+    comprasFornecedoresPage = next;
+    renderizarFornecedoresCompra();
 }
 
 async function comprasFornecedoresCarregarCidades(uf, selectedCity = '') {
@@ -4865,7 +5082,7 @@ function configurarAbaFornecedoresCompras() {
     }
     const busca = document.getElementById('comprasFornecedoresBusca');
     if (busca && !busca.dataset.bound) {
-        busca.addEventListener('input', renderizarFornecedoresCompra);
+        busca.addEventListener('input', () => { comprasFornecedoresPage = 1; renderizarFornecedoresCompra(); });
         busca.dataset.bound = '1';
     }
     const state = document.getElementById('comprasFornecedorState');

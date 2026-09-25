@@ -1237,6 +1237,12 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                                     ${!adminContext.isSuperAdmin ? `<a href="#" class="support-link settings-action"><i class="fas fa-headset"></i> Suporte</a>` : ''}
                                     <a href="#" class="settings-action about-link"><i class="fas fa-info-circle"></i> Sobre</a>
                                 </div>
+                                <div class="settings-section settings-theme-section">
+                                    <span class="settings-section-title">Tema</span>
+                                    <a href="#" class="settings-action theme-option" data-theme-option="light" role="menuitemradio" aria-checked="false"><i class="fas fa-sun"></i> Claro</a>
+                                    <a href="#" class="settings-action theme-option" data-theme-option="dark" role="menuitemradio" aria-checked="false"><i class="fas fa-moon"></i> Escuro</a>
+                                    <a href="#" class="settings-action theme-option" data-theme-option="config" role="menuitem" aria-checked="false"><i class="fas fa-palette"></i> Configurações</a>
+                                </div>
                                 ${isAdmin ? `
                                 <div class="settings-section admin-section">
                                     <span class="settings-section-title">Administração</span>
@@ -1407,6 +1413,15 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                 settingsTrigger.addEventListener('click', toggleSettings);
                 settingsTrigger.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') toggleSettings(e);
+                });
+                // Fase 13: recolhe o painel ao escolher um item (navegação ou Tema).
+                settingsDropdown.addEventListener('click', (e) => {
+                    const item = e.target && e.target.closest ? e.target.closest('a.settings-action') : null;
+                    if (!item) return;
+                    window.setTimeout(() => {
+                        settingsDropdown.classList.remove('show-dropdown');
+                        settingsTrigger.setAttribute('aria-expanded', 'false');
+                    }, 80);
                 });
             }
 
@@ -4566,7 +4581,9 @@ if (document.readyState === 'loading') {
         setFooterModuleName(footer);
         bindFooterContact(footer);
         bindFooterTitleObserver(footer);
-        if (!legacyFooter) document.body.appendChild(footer);
+        /* Fase 18: rodapé ancora no .container (largura = conteúdo da página,
+           do dashboard 1200px aos módulos 1300/1400px); fallback no body. */
+        if (!legacyFooter) (document.querySelector('.container') || document.body).appendChild(footer);
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureFooter);
     else ensureFooter();

@@ -13,10 +13,33 @@
     <title>Status da Assinatura - Sistema</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
+<script src="js/sisweb-theme.js?v=1"></script>
 <script src="menu-component.js?v=6c70fd8f5206"></script>
     <style>
         * {
@@ -27,28 +50,28 @@
         }
 
         body {
-            background-color: #f5f5f5;
+            background-color: var(--sw-surface-2) ;
             padding: 20px;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background-color: white;
+            background-color: var(--sw-surface);
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .subscription-status {
-            background-color: white;
+            background-color: var(--sw-surface);
             border-radius: 8px;
             padding: 30px;
             margin-top: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .help-hub {
-            background-color: white;
+            background-color: var(--sw-surface);
             border-radius: 8px;
             padding: 24px;
             margin-top: 20px;
@@ -93,13 +116,13 @@
             min-height: 42px;
         }
         .message-center-action.primary {
-            background: #2563eb;
+            background: var(--sw-gradient);
             color: #fff;
         }
         .message-center-action.secondary {
-            background: #ffffff;
-            color: #1e293b;
-            border: 1px solid #cbd5e1;
+            background: var(--sw-surface);
+            color: var(--sw-text-1);
+            border: 1px solid var(--sw-border);
         }
         .message-center-preview {
             display: flex;
@@ -139,7 +162,7 @@
             gap: 7px;
             padding: 11px 13px;
             border-radius: 8px;
-            background: #2563eb;
+            background: var(--sw-gradient);
             color: #fff;
             text-decoration: none;
             font-weight: 800;
@@ -150,15 +173,15 @@
             align-items: center;
             gap: 6px;
             margin-top: 10px;
-            color: #1d4ed8;
+            color: var(--sw-brand);
             font-size: 13px;
             font-weight: 800;
             text-decoration: none;
         }
         .module-card {
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--sw-border) ;
             border-radius: 10px;
-            background: #fafafa;
+            background: var(--sw-surface-2) ;
             padding: 14px;
         }
         .module-card h4 {
@@ -177,7 +200,7 @@
             border: 1px solid #dbe4ef;
             border-radius: 8px;
             padding: 8px;
-            background: #fff;
+            background: var(--sw-surface);
             color: #475569;
             font-size: 13px;
             margin-top: 10px;
@@ -188,7 +211,7 @@
             object-fit: cover;
             border-radius: 6px;
             display: block;
-            background: #f1f5f9;
+            background: var(--sw-surface-2) ;
         }
         .screen-print figcaption {
             margin-top: 8px;
@@ -225,7 +248,7 @@
         }
 
         .info-card {
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
             padding: 20px;
             border-radius: 8px;
             text-align: center;
@@ -319,7 +342,7 @@
             display: none;
             position: absolute;
             right: 0;
-            background-color: #f9f9f9;
+            background-color: var(--sw-surface-2) ;
             min-width: 200px;
             box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
             z-index: 1;
@@ -402,7 +425,7 @@
         }
 
         .developer-card {
-            background: #f8f9fa;
+            background: var(--sw-surface-2) ;
             border-radius: 12px;
             padding: 25px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
@@ -461,7 +484,7 @@
             color: #34495e;
             font-size: 16px;
             padding: 10px;
-            background: white;
+            background: var(--sw-surface);
             border-radius: 8px;
             transition: transform 0.2s;
         }
@@ -537,7 +560,7 @@
             margin-top: 10px;
         }
         #helpModal .module-card {
-            background: #fff;
+            background: var(--sw-surface);
         }
         #helpModal .screen-print img {
             height: 140px;
@@ -672,8 +695,7 @@
             padding: 28px;
             border-bottom: 0;
             color: #fff;
-            background:
-                linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 64, 175, 0.92) 55%, rgba(15, 118, 110, 0.9));
+            background: var(--sw-gradient);
         }
 
         .status-eyebrow {
@@ -684,7 +706,7 @@
             font-weight: 800;
             letter-spacing: 0;
             text-transform: uppercase;
-            color: #bfdbfe;
+            color: rgba(255, 255, 255, 0.85);
             margin-bottom: 8px;
         }
 
@@ -696,7 +718,7 @@
         }
 
         .status-header p {
-            color: #dbeafe;
+            color: rgba(255, 255, 255, 0.92);
             font-size: 15px;
             line-height: 1.5;
             margin: 0;
@@ -781,7 +803,7 @@
             gap: 14px;
             align-items: start;
             text-align: left;
-            background: #fff;
+            background: var(--sw-surface);
             padding: 18px;
         }
 
@@ -792,24 +814,24 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: #eff6ff;
-            color: var(--sisweb-blue);
+            background: rgba(254, 106, 0, 0.14);
+            color: var(--sw-brand);
             font-size: 17px;
         }
 
         .status-card:nth-child(2) .status-card-icon {
-            background: #ecfdf5;
-            color: var(--sisweb-green);
+            background: rgba(254, 106, 0, 0.14);
+            color: var(--sw-brand);
         }
 
         .status-card:nth-child(3) .status-card-icon {
-            background: #fff7ed;
-            color: var(--sisweb-amber);
+            background: rgba(254, 106, 0, 0.14);
+            color: var(--sw-brand);
         }
 
         .status-card:nth-child(4) .status-card-icon {
-            background: #fef2f2;
-            color: var(--sisweb-red);
+            background: rgba(254, 106, 0, 0.14);
+            color: var(--sw-brand);
         }
 
         .status-card h3,
@@ -848,7 +870,7 @@
         .subscription-action-card {
             text-align: left;
             padding: 20px;
-            background: #fff;
+            background: var(--sw-surface);
             border: 1px solid var(--sisweb-line);
             border-radius: 16px;
         }
@@ -893,7 +915,7 @@
             border: 1px solid #cbd5e1;
             border-radius: 11px;
             padding: 11px 12px;
-            background: #fff;
+            background: var(--sw-surface);
             color: var(--sisweb-ink);
             font-size: 14px;
             outline: none;
@@ -902,8 +924,8 @@
         .extension-form input:focus,
         .extension-form textarea:focus,
         .quick-guide-search:focus {
-            border-color: var(--sisweb-blue);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+            border-color: var(--sw-focus);
+            box-shadow: 0 0 0 3px var(--sw-focus-ring);
         }
 
         .action-buttons {
@@ -922,7 +944,8 @@
             padding: 12px 16px;
             font-size: 14px;
             font-weight: 800;
-            background: var(--sisweb-green);
+            background: var(--sw-gradient);
+            color: #fff;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -930,37 +953,39 @@
         }
 
         .renew-button:hover {
-            background: #0d9488;
+            filter: brightness(1.08);
         }
 
         .renew-button.secondary-action {
-            background: #334155;
+            background: var(--sw-surface-2);
+            color: var(--sw-text-1);
+            border: 1px solid var(--sw-border);
         }
 
         .renew-button.secondary-action:hover {
-            background: #475569;
+            border-color: var(--sw-brand);
+            color: var(--sw-brand);
+            filter: none;
         }
 
         .renew-button.subscription-primary-renew {
             margin-bottom: 14px;
-            background: var(--sisweb-blue);
+            background: var(--sw-gradient);
         }
 
         .renew-button.subscription-primary-renew:hover {
-            background: #1d4ed8;
+            filter: brightness(1.08);
         }
 
         .message-center {
-            background:
-                linear-gradient(135deg, rgba(239, 246, 255, 0.96), rgba(255, 255, 255, 0.98) 58%),
-                #fff;
-            border-color: #bfdbfe;
+            background: var(--sw-surface);
+            border-color: var(--sw-border);
             padding: 20px;
         }
 
         .message-center .action-card-heading i {
-            background: #eff6ff;
-            color: var(--sisweb-blue);
+            background: rgba(254, 106, 0, 0.14);
+            color: var(--sw-brand);
         }
 
         .message-center-action {
@@ -969,11 +994,12 @@
         }
 
         .message-center-action.primary {
-            background: var(--sisweb-blue);
+            background: var(--sw-gradient);
+            color: #fff;
         }
 
         .message-center-action.secondary {
-            background: #fff;
+            background: var(--sw-surface);
         }
 
         #readOnlyNotice {
@@ -995,14 +1021,14 @@
 
         .module-card {
             border-radius: 14px;
-            background: #fff;
+            background: var(--sw-surface);
             padding: 16px;
             transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
         }
 
         .module-card:hover {
             transform: translateY(-2px);
-            border-color: #bfdbfe;
+            border-color: var(--sw-brand);
             box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09);
         }
 
@@ -1941,7 +1967,7 @@
                 const title = String(item.title || 'Mensagem').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 const message = String(item.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 const date = item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : '';
-                return `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;background:#fff;"><strong style="display:block;color:#1e293b;">${title}</strong><span style="display:block;color:#334155;font-size:13px;">${message}</span><small style="color:#94a3b8;">${date}</small></div>`;
+                return `<div style="border: 1px solid var(--sw-border) ;border-radius:8px;padding:8px 10px;background: var(--sw-surface);"><strong style="display:block;color:#1e293b;">${title}</strong><span style="display:block;color:#334155;font-size:13px;">${message}</span><small style="color:#94a3b8;">${date}</small></div>`;
             }).join('');
         }
 

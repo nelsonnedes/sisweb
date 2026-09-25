@@ -26,15 +26,38 @@
     <link rel="stylesheet" href="../layout-comum.css">
     <link rel="stylesheet" href="../print-styles.css">
     <link rel="stylesheet" href="../menu.css">
+    <link rel="stylesheet" href="../styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="../styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="../styles/content-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="../ui-components.css">
     <link rel="stylesheet" href="folha.css?v=9ae124a8e2aa">
     <link rel="stylesheet" href="folha-menu-original-completo.css">
-    <script src="../menu-component.js?v=d24004475028"></script>
+    <script src="../js/sisweb-theme.js?v=1"></script>
+<script src="../menu-component.js?v=d24004475028"></script>
     <!-- 🎨 LOADING E CONEXÃO OTIMIZADOS -->
     <link rel="stylesheet" href="folha-loading-styles.css">
     <style>
       .calc-badge { display:none; margin-top:4px; }
-      .calc-pill { display:inline-block; background:#eef; border-radius:12px; padding:2px 8px; margin-right:6px; margin-top:2px; font-size:12px; color:#333; }
+      .calc-pill { display:inline-block; background:#eef; border-radius:12px; padding:2px 8px; margin-right:6px; margin-top:2px; font-size:12px; color: var(--sw-text-1) ; }
       .info-toggle { cursor:pointer; color:#1976d2; margin-left:6px; vertical-align:middle; }
       .info-toggle.active { color:#0d47a1; }
     </style>
@@ -244,7 +267,7 @@
         <main-menu></main-menu>
         
         <!-- ✅ TÍTULO PADRÃO -->
-        <h1><i class="fas fa-file-invoice-dollar"></i> Folha de Pagamento</h1>
+        <h1 class="sw-page-title"><i class="fas fa-file-invoice-dollar"></i> Folha de Pagamento</h1>
         
         <!-- 🔍 SEÇÃO DE FILTROS -->
         <section id="filtros-section">
@@ -425,7 +448,7 @@
                     </thead>
                     <tbody id="folhasTableBody">
                         <tr>
-                            <td colspan="12" style="text-align: center; padding: 20px; color: #666;">
+                            <td colspan="12" style="text-align: center; padding: 20px; color: var(--sw-text-2) ;">
                                 <i class="fas fa-inbox" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
                                 Nenhuma folha de pagamento cadastrada
                             </td>
@@ -1141,7 +1164,7 @@
                 </div>
             </div>
             <div class="modal-footer footer-with-info">
-                <div class="footer-info" style="color: #666; font-size: 14px;">
+                <div class="footer-info" style="color: var(--sw-text-2) ; font-size: 14px;">
                     <i class="fas fa-info-circle"></i> <span id="cargosModalInfo">Carregando...</span>
                 </div>
                 <div class="footer-secondary cargos-footer-actions">
@@ -1208,7 +1231,7 @@
                         </thead>
                         <tbody id="folhasFechadasTable">
                             <tr>
-                                <td colspan="9" style="text-align: center; padding: 20px; color: #666;">
+                                <td colspan="9" style="text-align: center; padding: 20px; color: var(--sw-text-2) ;">
                                     <i class="fas fa-inbox" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
                                     Nenhuma folha fechada encontrada
                                 </td>
@@ -1218,7 +1241,7 @@
                 </div>
             </div>
             <div class="modal-footer footer-with-info">
-                <div class="footer-info" style="color: #666; font-size: 14px;">
+                <div class="footer-info" style="color: var(--sw-text-2) ; font-size: 14px;">
                     <i class="fas fa-info-circle"></i> <span id="folhasFechadasInfo">Carregando...</span>
                 </div>
                 <div class="footer-secondary">
@@ -1230,9 +1253,9 @@
 
     <!-- Ferramentas Admin: Normalizar Quinzena (executa na sessão autenticada) -->
     <section id="admin-tools-normalizer" style="display:none; margin: 12px 20px;">
-      <div style="border:1px solid #ddd;border-radius:8px;padding:12px;">
+      <div style="border: 1px solid var(--sw-border) ;border-radius:8px;padding:12px;">
         <h3 style="margin:0 0 8px 0;">Ferramentas (Admin)</h3>
-        <p style="margin:0 0 6px 0; font-size:13px; color:#444;">Atualiza somente <code>tipoPagamento</code> para registros de quinzena sem este campo. Mês/Mês Fechado não são alterados.</p>
+        <p style="margin:0 0 6px 0; font-size:13px; color: var(--sw-text-1) ;">Atualiza somente <code>tipoPagamento</code> para registros de quinzena sem este campo. Mês/Mês Fechado não são alterados.</p>
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
           <button id="btnDryFolhas" class="btn" style="background:#f39c12;color:#fff;">Dry Run (folhas)</button>
           <button id="btnApplyFolhas" class="btn" style="background:#1976d2;color:#fff;">Aplicar (folhas)</button>
@@ -1243,12 +1266,12 @@
         </div>
         <div style="margin-top:8px; display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
           <div>
-            <label for="pctIdInput" style="font-size:12px;color:#555;">ID da Folha</label>
-            <input id="pctIdInput" type="text" placeholder="ex.: -OdUKrvio1JpzUFF9wL7" style="padding:6px;border:1px solid #ddd;border-radius:6px;min-width:280px;" />
+            <label for="pctIdInput" style="font-size:12px;color: var(--sw-text-2) ;">ID da Folha</label>
+            <input id="pctIdInput" type="text" placeholder="ex.: -OdUKrvio1JpzUFF9wL7" style="padding:6px;border: 1px solid var(--sw-border) ;border-radius:6px;min-width:280px;" />
           </div>
           <div>
-            <label for="pctValueInput" style="font-size:12px;color:#555;">Percentual (%)</label>
-            <input id="pctValueInput" type="number" min="1" max="100" step="1" placeholder="ex.: 40" style="padding:6px;border:1px solid #ddd;border-radius:6px;min-width:120px;" />
+            <label for="pctValueInput" style="font-size:12px;color: var(--sw-text-2) ;">Percentual (%)</label>
+            <input id="pctValueInput" type="number" min="1" max="100" step="1" placeholder="ex.: 40" style="padding:6px;border: 1px solid var(--sw-border) ;border-radius:6px;min-width:120px;" />
           </div>
           <div>
             <button id="btnApplyPctIdFolhas" class="btn" style="background:#27ae60;color:#fff;">Aplicar % por ID (folhas)</button>

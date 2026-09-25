@@ -1,0 +1,155 @@
+/* Dashboard — camada específica do index (Fase 1A/2).
+   Shell compartilhado (canvas, preflight, menu, Tema) vive em shell-theme.css.
+   Todos os seletores prefixados com html[data-theme] — zero vazamento global.
+   Referência: marqueting/lab-index-a.html + lab-tema-madeireira.css. */
+
+/* Invólucro: neutro para o shell do dashboard respirar (padrão lab-index-a) */
+html[data-theme="dark"] body .container {
+  background: transparent;
+  background-color: transparent;
+  box-shadow: none;
+  border: none;
+}
+
+/* Cabeçalho */
+html[data-theme="dark"] .dashboard-header .header-info h1 {
+  color: var(--sw-brand);
+  font-family: var(--sw-font-sans);
+  letter-spacing: -0.3px;
+}
+
+html[data-theme="light"] .dashboard-header .header-info h1 {
+  font-family: var(--sw-font-sans);
+  letter-spacing: -0.3px;
+}
+
+html[data-theme="dark"] .last-update {
+  color: var(--sw-text-3);
+}
+
+html[data-theme="dark"] .btn-refresh {
+  background: var(--sw-surface);
+  border: 1px solid var(--sw-border);
+  color: var(--sw-brand);
+  border-radius: var(--sw-radius-control);
+  font-family: var(--sw-font-sans);
+  font-weight: 600;
+}
+
+html[data-theme="dark"] .btn-refresh:hover {
+  background: var(--sw-surface-2);
+  border-color: var(--sw-brand);
+}
+
+/* Superfícies */
+html[data-theme="dark"] .kpi-card,
+html[data-theme="dark"] .dollar-widget,
+html[data-theme="dark"] .table-container,
+html[data-theme="dark"] .dashboard-card,
+html[data-theme="dark"] .stat-card,
+html[data-theme="dark"] .chart-card,
+html[data-theme="dark"] .currency-section {
+  background: var(--sw-surface);
+  background-color: var(--sw-surface);
+  border: 1px solid var(--sw-border);
+  border-radius: 14px;
+  color: var(--sw-text-2);
+}
+
+html[data-theme="dark"] .table-container h3 {
+  color: var(--sw-text-1);
+  font-family: var(--sw-font-sans);
+}
+
+html[data-theme="dark"] .dashboard-loading,
+html[data-theme="dark"] .dashboard-placeholder {
+  background: var(--sw-surface);
+  border: 1px solid var(--sw-border);
+  color: var(--sw-text-2);
+  border-radius: 12px;
+}
+
+html[data-theme="dark"] .dashboard-loading .loading-spinner {
+  color: var(--sw-brand);
+}
+
+html[data-theme="dark"] .dashboard-skeleton-card {
+  background: linear-gradient(90deg, #242b33 25%, #2e353d 37%, #242b33 63%);
+  border-radius: 12px;
+}
+
+/* Métricas em fonte mono oficial */
+html[data-theme] .kpi-value,
+html[data-theme] .dollar-rate {
+  font-family: var(--sw-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Coerência light: o tema do app vence a preferência do SO ----------
+   dashboard-styles.css usa @media (prefers-color-scheme: dark) para escurecer
+   superfícies; estas regras (maior especificidade) garantem que html[data-theme]
+   seja a única fonte da verdade. */
+html[data-theme="light"] .kpi-card,
+html[data-theme="light"] .dollar-card,
+html[data-theme="light"] .chart-container,
+html[data-theme="light"] .table-container,
+html[data-theme="light"] .dashboard-header {
+  background: var(--sw-surface);
+  background-color: var(--sw-surface);
+  border: 1px solid var(--sw-border);
+  color: var(--sw-text-2);
+}
+
+html[data-theme="light"] .data-table th {
+  background: var(--sw-surface-2);
+  color: var(--sw-text-2);
+}
+
+html[data-theme="light"] .data-table tr:hover {
+  background: var(--sw-surface-2);
+}
+
+/* Texto do módulo no tema claro: o módulo força texto claro via
+   @media (prefers-color-scheme: dark); o tema do app prevalece. */
+html[data-theme="light"] .kpi-value {
+  color: #1e293b;
+}
+
+html[data-theme="light"] .kpi-label {
+  color: #475569;
+}
+
+html[data-theme="light"] .kpi-detail {
+  color: #64748b;
+}
+
+html[data-theme="light"] .chart-container h3,
+html[data-theme="light"] .table-container h3,
+html[data-theme="light"] .dollar-header h3 {
+  color: var(--sw-text-1);
+}
+
+/* ---------- Título do cabeçalho: gradiente oficial da marca ----------
+   O h1 é estático no index.html; o roxo do módulo é substituído pela marca.
+   NOTA: font-family vai só no h1 — o <i> precisa manter a fonte do Font Awesome,
+   senão o glifo quebra (herança venceria a classe .fas). */
+html[data-theme] .dashboard-header .header-info h1 {
+  font-family: var(--sw-font-sans);
+  letter-spacing: -0.3px;
+  background: var(--sw-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html[data-theme] .dashboard-header .header-info h1 i {
+  background: var(--sw-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html[data-theme] .dashboard-header::before {
+  background: var(--sw-gradient);
+}
+

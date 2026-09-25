@@ -30,6 +30,12 @@ let pedidosListFiltered = [];
 let pedidosSelecionados = new Set();
 let vendasClientesEditingId = null;
 let vendasClientesFiltered = [];
+let vendasClientesPage = 1;
+const vendasClientesPerPage = 10;
+let vendasProdutosPage = 1;
+const vendasProdutosPerPage = 10;
+let vendasRelatorioPage = 1;
+const vendasRelatorioPerPage = 10;
 const DEBOUNCE_DIAS_MS = Number((window.SiswebUiConfig && window.SiswebUiConfig.DEBOUNCE_DIAS_MS) || 180);
 const debounceDiasContaTimers = new Map();
 const debounceValorContaTimers = new Map();
@@ -1024,11 +1030,11 @@ function configurarEventos() {
 
     const vendasClientesBusca = document.getElementById('vendasClientesBusca');
     if (vendasClientesBusca) {
-        vendasClientesBusca.addEventListener('input', () => renderizarClientesVenda());
+        vendasClientesBusca.addEventListener('input', () => { vendasClientesPage = 1; renderizarClientesVenda(); });
     }
     const vendasClientesFiltroStatus = document.getElementById('vendasClientesFiltroStatus');
     if (vendasClientesFiltroStatus) {
-        vendasClientesFiltroStatus.addEventListener('change', () => renderizarClientesVenda());
+        vendasClientesFiltroStatus.addEventListener('change', () => { vendasClientesPage = 1; renderizarClientesVenda(); });
     }
     const vendasClienteForm = document.getElementById('vendasClienteForm');
     if (vendasClienteForm && !vendasClienteForm.dataset.boundVendasClientes) {
@@ -1278,10 +1284,17 @@ function renderizarClientesVenda() {
                 <td class="sales-clients-empty" colspan="6">Nenhum cliente encontrado.</td>
             </tr>
         `;
+        renderVendasClientesPagination(0);
         return;
     }
 
-    tbody.innerHTML = vendasClientesFiltered.map((cliente) => {
+    const totalClientesPages = Math.max(1, Math.ceil(vendasClientesFiltered.length / vendasClientesPerPage));
+    if (vendasClientesPage > totalClientesPages) vendasClientesPage = totalClientesPages;
+    if (vendasClientesPage < 1) vendasClientesPage = 1;
+    const clientesStart = (vendasClientesPage - 1) * vendasClientesPerPage;
+    const clientesPaginados = vendasClientesFiltered.slice(clientesStart, clientesStart + vendasClientesPerPage);
+
+    tbody.innerHTML = clientesPaginados.map((cliente) => {
         const id = String(cliente.id || '').trim();
         const encodedId = escapeOperationalHtmlVendas(encodeURIComponent(id).replace(/'/g, '%27'));
         const nome = escapeOperationalHtmlVendas(vendasClientesNome(cliente) || 'Sem nome');
@@ -1319,6 +1332,64 @@ function renderizarClientesVenda() {
         `;
     }).join('');
     refreshCommerceResponsiveTables();
+    renderVendasClientesPagination(vendasClientesFiltered.length);
+}
+
+function renderVendasClientesPagination(totalItems) {
+    const container = document.getElementById('vendasClientesPagination');
+    if (!container) return;
+    const totalPages = Math.ceil(totalItems / vendasClientesPerPage);
+    container.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    const addBtn = (label, page, disabled = false, active = false) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = label;
+        if (active) btn.classList.add('active');
+        btn.disabled = disabled;
+        btn.onclick = () => goToVendasClientesPage(page);
+        container.appendChild(btn);
+    };
+
+    addBtn('<<<', 1, vendasClientesPage === 1);
+    addBtn('<', vendasClientesPage - 1, vendasClientesPage === 1);
+
+    const startPage = Math.max(1, vendasClientesPage - 2);
+    const endPage = Math.min(totalPages, vendasClientesPage + 2);
+
+    if (startPage > 1) {
+        addBtn('1', 1, false, vendasClientesPage === 1);
+        if (startPage > 2) {
+            const span = document.createElement('span');
+            span.textContent = '...';
+            container.appendChild(span);
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        addBtn(String(i), i, false, i === vendasClientesPage);
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            const span = document.createElement('span');
+            span.textContent = '...';
+            container.appendChild(span);
+        }
+        addBtn(String(totalPages), totalPages, false, vendasClientesPage === totalPages);
+    }
+
+    addBtn('>', vendasClientesPage + 1, vendasClientesPage === totalPages);
+    addBtn('>>>', totalPages, vendasClientesPage === totalPages);
+}
+
+function goToVendasClientesPage(page) {
+    const totalPages = Math.max(1, Math.ceil(vendasClientesFiltered.length / vendasClientesPerPage));
+    const next = Math.min(totalPages, Math.max(1, Number(page) || 1));
+    if (next === vendasClientesPage) return;
+    vendasClientesPage = next;
+    renderizarClientesVenda();
 }
 
 async function vendasClientesCarregarCidades(uf, selectedCity = '') {
@@ -3934,6 +4005,7 @@ async function salvarProduto(event) {
 
 function listarProdutos() {
     document.getElementById('produtosList').style.display = 'block';
+    vendasProdutosPage = 1;
     carregarTabelaProdutos();
 }
 
@@ -3953,10 +4025,17 @@ function carregarTabelaProdutos(filtro = '') {
     if (produtosFiltrados.length === 0) {
         tbody.innerHTML = '<tr><td class="commerce-full-row" data-label="" colspan="5" style="text-align: center;">Nenhum produto encontrado</td></tr>';
         refreshCommerceResponsiveTables();
+        renderVendasProdutosPagination(0);
         return;
     }
-    
-    tbody.innerHTML = produtosFiltrados.map(produto => `
+
+    const totalProdutosPages = Math.max(1, Math.ceil(produtosFiltrados.length / vendasProdutosPerPage));
+    if (vendasProdutosPage > totalProdutosPages) vendasProdutosPage = totalProdutosPages;
+    if (vendasProdutosPage < 1) vendasProdutosPage = 1;
+    const produtosStart = (vendasProdutosPage - 1) * vendasProdutosPerPage;
+    const produtosPaginados = produtosFiltrados.slice(produtosStart, produtosStart + vendasProdutosPerPage);
+
+    tbody.innerHTML = produtosPaginados.map(produto => `
         <tr>
             <td data-label="Código">${produto.codigo || '-'}</td>
             <td data-label="Nome">${produto.nome || 'Produto sem nome'}</td>
@@ -3975,10 +4054,78 @@ function carregarTabelaProdutos(filtro = '') {
         </tr>
     `).join('');
     refreshCommerceResponsiveTables();
+    renderVendasProdutosPagination(produtosFiltrados.length);
+}
+
+function renderVendasProdutosPagination(totalItems) {
+    const container = document.getElementById('vendasProdutosPagination');
+    if (!container) return;
+    const totalPages = Math.ceil(totalItems / vendasProdutosPerPage);
+    container.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    const currentFilter = () => String(document.getElementById('searchProdutos')?.value || '');
+    const addBtn = (label, page, disabled = false, active = false) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = label;
+        if (active) btn.classList.add('active');
+        btn.disabled = disabled;
+        btn.onclick = () => goToVendasProdutosPage(page);
+        container.appendChild(btn);
+    };
+
+    addBtn('<<<', 1, vendasProdutosPage === 1);
+    addBtn('<', vendasProdutosPage - 1, vendasProdutosPage === 1);
+
+    const startPage = Math.max(1, vendasProdutosPage - 2);
+    const endPage = Math.min(totalPages, vendasProdutosPage + 2);
+
+    if (startPage > 1) {
+        addBtn('1', 1, false, vendasProdutosPage === 1);
+        if (startPage > 2) {
+            const span = document.createElement('span');
+            span.textContent = '...';
+            container.appendChild(span);
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        addBtn(String(i), i, false, i === vendasProdutosPage);
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            const span = document.createElement('span');
+            span.textContent = '...';
+            container.appendChild(span);
+        }
+        addBtn(String(totalPages), totalPages, false, vendasProdutosPage === totalPages);
+    }
+
+    addBtn('>', vendasProdutosPage + 1, vendasProdutosPage === totalPages);
+    addBtn('>>>', totalPages, vendasProdutosPage === totalPages);
+}
+
+function goToVendasProdutosPage(page) {
+    const filtro = String(document.getElementById('searchProdutos')?.value || '');
+    const source = Array.isArray(window.produtos) ? window.produtos : [];
+    const filtroLower = filtro.toLowerCase();
+    const filtered = filtro
+        ? source.filter((produto) =>
+            String(produto.codigo || '').toLowerCase().includes(filtroLower) ||
+            String(produto.nome || '').toLowerCase().includes(filtroLower))
+        : source;
+    const totalPages = Math.max(1, Math.ceil(filtered.length / vendasProdutosPerPage));
+    const next = Math.min(totalPages, Math.max(1, Number(page) || 1));
+    if (next === vendasProdutosPage) return;
+    vendasProdutosPage = next;
+    carregarTabelaProdutos(filtro);
 }
 
 function filtrarProdutos() {
     const filtro = document.getElementById('searchProdutos').value;
+    vendasProdutosPage = 1;
     carregarTabelaProdutos(filtro);
 }
 
@@ -4039,13 +4186,14 @@ async function excluirProduto(produtoId) {
 }
 
 // Funções de relatórios
-function gerarRelatorio() {
+function gerarRelatorio(keepPage = false) {
     const inicioVal = (document.getElementById('periodoInicio')?.value || '').trim();
     const fimVal = (document.getElementById('periodoFim')?.value || '').trim();
     if (!inicioVal || !fimVal) {
         ToastManager.warning('Informe o período do relatório', 'Atenção');
         return;
     }
+    if (!keepPage) vendasRelatorioPage = 1;
     const periodoInicio = new Date(inicioVal + 'T00:00:00');
     const periodoFim = new Date(fimVal + 'T23:59:59');
     const filtroClienteId = (document.getElementById('relFiltroCliente')?.value || '').trim();
@@ -4124,6 +4272,7 @@ function gerarRelatorio() {
         aplicarOrdemColunasRelatorio(window.relatorioColunasOrdem || ['numero','data','cliente','total','status','carrego','atualizado','acoes']);
         updateRelCarregoSelectionCount();
         refreshCommerceResponsiveTables();
+        renderVendasRelatorioPagination(0);
         return;
     }
     const latestMap = getCarregoLatestStatusMap();
@@ -4150,6 +4299,7 @@ function gerarRelatorio() {
             aplicarOrdemColunasRelatorio(window.relatorioColunasOrdem || ['numero','data','cliente','total','status','carrego','atualizado','acoes']);
             updateRelCarregoSelectionCount();
             refreshCommerceResponsiveTables();
+            renderVendasRelatorioPagination(0);
             return;
         }
     }
@@ -4158,7 +4308,7 @@ function gerarRelatorio() {
     const idsRelatorioAtual = new Set(pedidosPeriodo.map(getPedidoVendaId).filter(Boolean));
     window.relCarregoSelection = new Set(Array.from(window.relCarregoSelection).filter(id => idsRelatorioAtual.has(String(id))));
     let totalCarrego = 0;
-    tbody.innerHTML = pedidosPeriodo.map(pedido => {
+    const relRows = pedidosPeriodo.map(pedido => {
         let nomeCliente = 'Cliente não encontrado';
         if (pedido.cliente) {
             nomeCliente = pedido.cliente.nome || pedido.cliente.name || 'Nome não informado';
@@ -4212,7 +4362,13 @@ function gerarRelatorio() {
             `</td>` +
             '</tr>'
         );
-    }).join('');
+    });
+    const totalRelPages = Math.max(1, Math.ceil(relRows.length / vendasRelatorioPerPage));
+    if (vendasRelatorioPage > totalRelPages) vendasRelatorioPage = totalRelPages;
+    if (vendasRelatorioPage < 1) vendasRelatorioPage = 1;
+    const relStart = (vendasRelatorioPage - 1) * vendasRelatorioPerPage;
+    tbody.innerHTML = relRows.slice(relStart, relStart + vendasRelatorioPerPage).join('');
+    renderVendasRelatorioPagination(relRows.length);
     if (container && container.style) container.style.display = 'block';
     aplicarColunasEstadoInicialRelatorio();
     const footerCarregoEl = document.getElementById('relFooterTotalCarrego');
@@ -4221,6 +4377,62 @@ function gerarRelatorio() {
     updateRelCarregoSelectionCount();
     try { toggleFiltroCarregoDisponivel(!!document.getElementById('relFiltroDisponivel')?.checked); } catch (_) {}
     refreshCommerceResponsiveTables();
+}
+
+function renderVendasRelatorioPagination(totalItems) {
+    const container = document.getElementById('vendasRelatorioPagination');
+    if (!container) return;
+    const totalPages = Math.ceil(totalItems / vendasRelatorioPerPage);
+    container.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    const addBtn = (label, page, disabled = false, active = false) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = label;
+        if (active) btn.classList.add('active');
+        btn.disabled = disabled;
+        btn.onclick = () => goToVendasRelatorioPage(page);
+        container.appendChild(btn);
+    };
+
+    addBtn('<<<', 1, vendasRelatorioPage === 1);
+    addBtn('<', vendasRelatorioPage - 1, vendasRelatorioPage === 1);
+
+    const startPage = Math.max(1, vendasRelatorioPage - 2);
+    const endPage = Math.min(totalPages, vendasRelatorioPage + 2);
+
+    if (startPage > 1) {
+        addBtn('1', 1, false, vendasRelatorioPage === 1);
+        if (startPage > 2) {
+            const span = document.createElement('span');
+            span.textContent = '...';
+            container.appendChild(span);
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        addBtn(String(i), i, false, i === vendasRelatorioPage);
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            const span = document.createElement('span');
+            span.textContent = '...';
+            container.appendChild(span);
+        }
+        addBtn(String(totalPages), totalPages, false, vendasRelatorioPage === totalPages);
+    }
+
+    addBtn('>', vendasRelatorioPage + 1, vendasRelatorioPage === totalPages);
+    addBtn('>>>', totalPages, vendasRelatorioPage === totalPages);
+}
+
+function goToVendasRelatorioPage(page) {
+    const next = Math.max(1, Number(page) || 1);
+    if (next === vendasRelatorioPage) return;
+    vendasRelatorioPage = next;
+    gerarRelatorio(true);
 }
 
 // Funções auxiliares

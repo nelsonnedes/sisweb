@@ -18,6 +18,28 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="romaneio-comum.css?v=1c15014e677a">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
@@ -25,7 +47,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Loading / status styles reutilizáveis -->
     <link rel="stylesheet" href="folha_pagamento/folha-loading-styles.css">
-    <script src="menu-component.js?v=6c70fd8f5206"></script>
+    <script src="js/sisweb-theme.js?v=1"></script>
+<script src="menu-component.js?v=6c70fd8f5206"></script>
     
     <!--
     ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -412,14 +435,14 @@
         }
 
         body {
-            background-color: #f5f5f5;
+            background-color: var(--sw-surface-2) ;
             padding: 20px;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background-color: white;
+            background-color: var(--sw-surface);
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -451,7 +474,7 @@
         input, select {
             width: 100%;
             padding: 8px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             border-radius: 4px;
             margin-bottom: 10px;
         }
@@ -517,7 +540,7 @@
         th, td {
             padding: 4px 6px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--sw-border) ;
             height: 24px;
             vertical-align: middle;
             font-size: 13px;
@@ -531,7 +554,7 @@
         }
 
         tr:hover {
-            background-color: #f5f5f5;
+            background-color: var(--sw-surface-2) ;
         }
 
         /* ✅ CONTAINER DA TABELA - PADRONIZADO ROMANEIOPCT */
@@ -545,8 +568,8 @@
         /* ✅ ESTILOS DOS TOTAIS - PADRONIZADO ROMANEIOPCT */
         .totais-container {
             margin-top: 20px;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
+            background-color: var(--sw-surface-2) ;
+            border: 1px solid var(--sw-border) ;
             border-radius: 5px;
             padding: 15px;
         }
@@ -728,7 +751,7 @@
         }
 
         .developer-card {
-            background: #f8f9fa;
+            background: var(--sw-surface-2) ;
             border-radius: 12px;
             padding: 25px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
@@ -787,7 +810,7 @@
             color: #34495e;
             font-size: 16px;
             padding: 10px;
-            background: white;
+            background: var(--sw-surface);
             border-radius: 8px;
             transition: transform 0.2s;
         }
@@ -1043,7 +1066,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 15px 20px;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--sw-border) ;
             margin: 0 0 20px 0; /* Removidas margens negativas laterais que causavam o estouro */
             background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
             color: white;
@@ -1147,7 +1170,7 @@
         #listaModal td {
             padding: 6px 8px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--sw-border) ;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -1157,7 +1180,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 15px 20px;
-            border-top: 1px solid #ddd;
+            border-top: 1px solid var(--sw-border) ;
             margin-top: 0;
             background-color: #f8fbff;
             border-radius: 0 0 8px 8px;
@@ -1232,7 +1255,7 @@
 
         .pagination-controls button {
             border: 1px solid #d0d7de;
-            background: #fff;
+            background: var(--sw-surface);
             color: #2c3e50;
             padding: 6px 10px;
             border-radius: 4px;
@@ -1271,7 +1294,7 @@
             display: none;
             position: absolute;
             left: 0; /* Mudado de right: 0 para left: 0 para alinhar à esquerda */
-            background-color: #fff;
+            background-color: var(--sw-surface);
             min-width: 220px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             border-radius: 4px;
@@ -1284,7 +1307,7 @@
             z-index: 10000080 !important;
             display: block !important;
             min-width: 220px;
-            background: #fff;
+            background: var(--sw-surface);
             border: 1px solid #d6e1ec;
             border-radius: 6px;
             box-shadow: 0 14px 34px rgba(13, 35, 57, 0.32);
@@ -1313,7 +1336,7 @@
         }
 
         .dropdown-content a:hover {
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
             color: #3498db;
         }
 
@@ -1338,7 +1361,7 @@
         }
 
         .external-print-menu.tl-print-dropdown-menu .tl-print-option:hover {
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
             color: #3498db;
         }
 
@@ -1464,7 +1487,7 @@
 
         /* Efeito hover das linhas do modal - suavizar */
         .modal table tbody tr:hover {
-            background-color: #f8f9fa !important;
+            background-color: var(--sw-surface-2) !important;
         }
 
         /* Centralização da coluna Ações */
@@ -1509,9 +1532,9 @@
         @media (max-width: 768px) {
             #romaneioTable thead, #romaneioTable colgroup { display: none !important; }
             #romaneioTable tbody { display: flex !important; flex-direction: column !important; gap: 12px !important; width: 100% !important; }
-            #romaneioTable tbody tr { display: block !important; height: auto !important; min-height: 0 !important; max-height: none !important; background: #fff !important; border: 1px solid #e2e8f0 !important; border-radius: 10px !important; box-shadow: 0 2px 8px rgba(15,23,42,.05) !important; padding: 12px 14px !important; }
+            #romaneioTable tbody tr { display: block !important; height: auto !important; min-height: 0 !important; max-height: none !important; background: var(--sw-surface) !important; border: 1px solid var(--sw-border) !important; border-radius: 10px !important; box-shadow: 0 2px 8px rgba(15,23,42,.05) !important; padding: 12px 14px !important; }
             #romaneioTable tbody tr td { display: block !important; width: 100% !important; box-sizing: border-box !important; border: none !important; border-bottom: 1px solid #f0f0f0 !important; padding: 10px 12px !important; min-height: 0 !important; text-align: left !important; align-items: inherit !important; }
-            #romaneioTable tbody tr td:last-child { border-bottom: none !important; border-top: 1px solid #e2e8f0 !important; margin-top: 4px !important; padding-top: 10px !important; }
+            #romaneioTable tbody tr td:last-child { border-bottom: none !important; border-top: 1px solid var(--sw-border) !important; margin-top: 4px !important; padding-top: 10px !important; }
             #romaneioTable tbody tr td[data-label]::before { content: attr(data-label) !important; display: block !important; font-weight: 700 !important; color: #64748b !important; font-size: 11px !important; text-transform: uppercase !important; letter-spacing: .4px !important; text-align: left !important; margin: 0 0 4px !important; flex: none !important; white-space: normal !important; position: static !important; width: 100% !important; max-width: none !important; top: auto !important; left: auto !important; transform: none !important; padding-right: 0 !important; }
             #romaneioTable tbody tr td[style*="display: none"] { display: none !important; }
             .table-responsive { overflow: visible !important; }
@@ -1577,7 +1600,7 @@
 <body>
     <div class="container">
         <main-menu></main-menu>
-        <h1>Romaneio TL</h1>
+        <h1 class="sw-page-title">Romaneio TL</h1>
         
         <section id="romaneio-form-section">
             <form id="romaneioForm" onsubmit="event.preventDefault(); console.log('Submit prevenido via HTML'); return false;">
@@ -1721,9 +1744,9 @@
             <div class="modal-body">
                     <div style="margin-bottom: 15px;">
                         <input type="text" id="clientListFilter" placeholder="🔍 Filtrar por nome, cidade, estado, telefone ou email..." 
-                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                               style="width: 100%; padding: 10px; border: 1px solid var(--sw-border) ; border-radius: 4px; font-size: 14px;">
                     </div>
-                    <div class="table-container" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
+                    <div class="table-container" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--sw-border) ; border-radius: 4px;">
                 <table class="table">
                     <thead>
                         <tr>
@@ -1747,7 +1770,7 @@
                     <div id="clientListPagination" class="pagination-controls" style="display: none;"></div>
             </div>
             <div class="modal-footer">
-                    <div style="color: #666; font-size: 14px;">
+                    <div style="color: var(--sw-text-2) ; font-size: 14px;">
                         <i class="fas fa-info-circle"></i> <span id="clientModalInfo">Carregando...</span>
             </div>
                     <div>
@@ -1772,7 +1795,7 @@
                 <div class="modal-body">
                     <div style="margin-bottom: 15px;">
                         <input type="text" id="speciesListFilter" placeholder="🔍 Filtrar por espécie ou nome científico..."
-                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                               style="width: 100%; padding: 10px; border: 1px solid var(--sw-border) ; border-radius: 4px; font-size: 14px;">
                     </div>
                     <div class="table-container">
                     <table class="table">
@@ -1795,7 +1818,7 @@
                     <div id="speciesListPagination" class="pagination-controls" style="display: none;"></div>
             </div>
             <div class="modal-footer">
-                    <div style="color: #666; font-size: 14px;">
+                    <div style="color: var(--sw-text-2) ; font-size: 14px;">
                         <i class="fas fa-info-circle"></i> <span id="speciesModalInfo">Carregando...</span>
                     </div>
                     <div>
@@ -1823,7 +1846,7 @@
                 <div class="modal-body">
                     <div style="margin-bottom: 15px;">
                         <input type="text" id="romaneioListFilter" placeholder="🔍 Filtrar por cliente, espécie ou data..." 
-                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                               style="width: 100%; padding: 10px; border: 1px solid var(--sw-border) ; border-radius: 4px; font-size: 14px;">
                 </div>
                     <div class="table-container">
                         <table class="table">
@@ -1850,7 +1873,7 @@
                     <div id="romaneioListPagination" style="margin-top: 15px;"></div>
                 </div>
                 <div class="modal-footer">
-                    <div class="modal-info-text" style="color: #666; font-size: 14px; text-align: left;">
+                    <div class="modal-info-text" style="color: var(--sw-text-2) ; font-size: 14px; text-align: left;">
                         <i class="fas fa-info-circle"></i> <span id="romaneioModalInfo">Carregando...</span>
                     </div>
                     <div class="modal-footer-buttons" style="display: flex; gap: 8px; align-items: center;">

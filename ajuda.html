@@ -14,12 +14,36 @@
     <meta name="description" content="Manual ilustrado do Sisweb com fluxos, modais e funcionalidades por módulo, usando dados fictícios.">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
+<script src="js/sisweb-theme.js?v=1"></script>
 <script src="menu-component.js?v=6c70fd8f5206"></script>
     <style>
         :root {
@@ -39,24 +63,25 @@
         .manual-hero {
             margin: 14px 0;
             padding: 18px;
-            border: 1px solid var(--manual-line);
-            border-radius: 10px;
-            background: var(--manual-panel);
+            border: 0;
+            border-radius: 16px;
+            background: var(--sw-gradient);
+            color: #fff;
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto;
             gap: 14px;
             align-items: center;
         }
-        .manual-hero h1 { margin: 0; font-size: 24px; letter-spacing: 0; }
-        .manual-hero p { margin: 6px 0 0; color: var(--manual-muted); line-height: 1.5; max-width: 860px; }
+        .manual-hero h1 { margin: 0; font-size: 24px; letter-spacing: 0; color: #fff; }
+        .manual-hero p { margin: 6px 0 0; color: rgba(255, 255, 255, 0.92); line-height: 1.5; max-width: 860px; }
         .manual-hero .safe-badge {
             display: inline-flex;
             align-items: center;
             gap: 8px;
             padding: 9px 12px;
             border-radius: 999px;
-            background: #ecfdf5;
-            color: #166534;
+            background: rgba(255, 255, 255, 0.16);
+            color: #fff;
             font-weight: 800;
             white-space: nowrap;
         }
@@ -132,9 +157,9 @@
             cursor: pointer;
             color: var(--manual-ink);
         }
-        .manual-topic:hover { background: #f8fafc; }
-        .manual-topic.active { background: #eff6ff; }
-        .manual-topic i { color: var(--manual-blue); margin-top: 2px; text-align: center; }
+        .manual-topic:hover { background: var(--sw-hover); }
+        .manual-topic.active { background: rgba(254, 106, 0, 0.12); }
+        .manual-topic i { color: var(--sw-brand); margin-top: 2px; text-align: center; }
         .manual-topic strong { display: block; font-size: 13px; line-height: 1.35; }
         .manual-topic span { display: block; margin-top: 2px; color: var(--manual-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .manual-content { min-height: 72vh; padding: 18px; }
@@ -148,7 +173,7 @@
             border-bottom: 1px solid var(--manual-line);
         }
         .manual-kicker {
-            color: var(--manual-teal);
+            color: var(--sw-brand);
             font-size: 12px;
             font-weight: 900;
             text-transform: uppercase;
@@ -170,7 +195,7 @@
         .manual-box {
             border: 1px solid var(--manual-line);
             border-radius: 8px;
-            background: #ffffff;
+            background: var(--sw-surface);
             padding: 12px;
         }
         .manual-box h3 { margin: 0 0 8px; font-size: 15px; letter-spacing: 0; }
@@ -193,8 +218,8 @@
             align-items: center;
             justify-content: center;
             border-radius: 999px;
-            background: #e0f2fe;
-            color: #0369a1;
+            background: rgba(254, 106, 0, 0.14);
+            color: var(--sw-brand);
             font-weight: 900;
             font-size: 12px;
         }
@@ -218,16 +243,16 @@
             margin: 0;
             border: 1px solid var(--manual-line);
             border-radius: 8px;
-            background: #ffffff;
+            background: var(--sw-surface);
             overflow: hidden;
         }
-        .manual-shot-button { display: block; width: 100%; padding: 0; text-align: inherit; border: 0; border-radius: 0; background: #ffffff; cursor: zoom-in; }
+        .manual-shot-button { display: block; width: 100%; padding: 0; text-align: inherit; border: 0; border-radius: 0; background: var(--sw-surface); cursor: zoom-in; }
         .manual-shot-image {
             width: 100%;
             display: block;
             aspect-ratio: 16 / 10;
             object-fit: cover;
-            background: #f1f5f9;
+            background: var(--sw-surface-2) ;
         }
         .manual-shot-placeholder {
             min-height: 250px;
@@ -280,9 +305,9 @@
         .mock-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
         .mock-kpi {
             min-height: 54px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--sw-border) ;
             border-radius: 8px;
-            background: #ffffff;
+            background: var(--sw-surface);
             padding: 8px;
         }
         .mock-kpi span { display: block; color: var(--manual-muted); font-size: 11px; font-weight: 800; }
@@ -292,20 +317,20 @@
         .mock-form,
         .mock-table,
         .mock-modal-card {
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--sw-border) ;
             border-radius: 8px;
-            background: #ffffff;
+            background: var(--sw-surface);
             padding: 9px;
         }
         .mock-title { font-size: 13px; font-weight: 900; margin-bottom: 7px; }
-        .mock-field { height: 28px; border-radius: 7px; background: #f1f5f9; border: 1px solid #e2e8f0; margin-bottom: 6px; display: flex; align-items: center; padding: 0 8px; color: #64748b; font-size: 11px; }
+        .mock-field { height: 28px; border-radius: 7px; background: var(--sw-surface-2) ; border: 1px solid var(--sw-border) ; margin-bottom: 6px; display: flex; align-items: center; padding: 0 8px; color: #64748b; font-size: 11px; }
         .mock-table table { width: 100%; border-collapse: collapse; font-size: 11px; }
         .mock-table th,
-        .mock-table td { border-bottom: 1px solid #e5e7eb; padding: 6px 4px; text-align: left; white-space: nowrap; }
+        .mock-table td { border-bottom: 1px solid var(--sw-border) ; padding: 6px 4px; text-align: left; white-space: nowrap; }
         .mock-table th { color: #475569; background: #f8fafc; }
         .mock-table td:last-child { text-align: right; }
         .mock-modal-card { box-shadow: 0 16px 38px rgba(15, 23, 42, 0.18); }
-        .mock-modal-header { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 7px; margin-bottom: 8px; font-weight: 900; }
+        .mock-modal-header { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--sw-border) ; padding-bottom: 7px; margin-bottom: 8px; font-weight: 900; }
         .mock-modal-body { display: grid; gap: 6px; }
         .manual-shot figcaption {
             padding: 10px;
@@ -334,7 +359,7 @@
             width: min(1160px, 100%);
             max-height: calc(100vh - 36px);
             overflow: auto;
-            background: #ffffff;
+            background: var(--sw-surface);
             border-radius: 10px;
             border: 1px solid rgba(255,255,255,0.18);
         }
@@ -390,7 +415,7 @@
             .manual-hero .safe-badge,
             .manual-top-action,
             .manual-lightbox { display: none !important; }
-            body { background: #ffffff; }
+            body { background: var(--sw-surface); }
             .manual-shell { max-width: none; padding: 0; }
             .manual-layout { display: block; }
             .manual-content { border: 0; padding: 0; }
@@ -419,7 +444,7 @@
             width: min(100%, 940px);
             border: 1px solid var(--manual-line);
             border-radius: 16px;
-            background: #ffffff;
+            background: var(--sw-surface);
             box-shadow: 0 24px 70px rgba(15, 23, 42, 0.14);
             padding: 28px;
             display: grid;
@@ -455,24 +480,24 @@
             text-decoration: none;
         }
         .manual-public-action.primary {
-            background: #1d4ed8;
+            background: var(--sw-gradient);
             color: #ffffff;
         }
         .manual-public-action.secondary {
-            background: #f8fafc;
-            color: #0f172a;
-            border: 1px solid #cbd5e1;
+            background: var(--sw-surface);
+            color: var(--sw-text-1);
+            border: 1px solid var(--sw-border);
         }
         .manual-public-card {
-            border: 1px solid #dbeafe;
+            border: 1px solid var(--sw-border);
             border-radius: 14px;
-            background: linear-gradient(145deg, #eff6ff, #ecfdf5);
+            background: var(--sw-surface);
             padding: 18px;
-            color: #1e3a8a;
+            color: var(--sw-text-1);
         }
         .manual-public-card strong {
             display: block;
-            color: #0f172a;
+            color: var(--sw-text-1);
             margin-bottom: 8px;
         }
         .manual-public-card ul {

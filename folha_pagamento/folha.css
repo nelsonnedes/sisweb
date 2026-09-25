@@ -18,19 +18,19 @@
     --gray-color: #6c757d;         /* Cinza médio */
     
     /* Cores específicas dos botões */
-    --btn-adicionar: #27ae60;      /* Verde para adicionar */
-    --btn-salvar: #3498db;         /* Azul para salvar */
-    --btn-listar: #f39c12;         /* Laranja para listar */
-    --btn-editar: #28a745;         /* Verde escuro para editar */
-    --btn-excluir: #e74c3c;        /* Vermelho para excluir */
-    --btn-cancelar: #6c757d;       /* Cinza para cancelar */
+    --btn-adicionar: var(--sw-success);      /* Verde para adicionar */
+    --btn-salvar: var(--sw-info);         /* Azul para salvar */
+    --btn-listar: var(--sw-warning);         /* Laranja para listar */
+    --btn-editar: var(--sw-success);         /* Verde escuro para editar */
+    --btn-excluir: var(--sw-danger);        /* Vermelho para excluir */
+    --btn-cancelar: var(--sw-muted);       /* Cinza para cancelar */
 }
 
 /* ✅ CONTAINER PRINCIPAL - IDÊNTICO AO ROMANEIOPCT */
 .container {
     max-width: 1200px;             /* ✅ Largura exata do romaneiopct */
     margin: 0 auto;
-    background-color: white;
+    background-color: var(--sw-surface) ;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -92,7 +92,7 @@ h3 {
 section {
     margin-bottom: 30px;
     padding: 20px;
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
     border-radius: 6px;
     border: 1px solid #dee2e6;
 }
@@ -152,14 +152,14 @@ input, select, textarea {
     font-family: Arial, sans-serif;
     transition: border-color 0.3s;
     box-sizing: border-box;        /* ✅ Inclui padding e border na altura total */
-    background-color: white;       /* ✅ CORREÇÃO: Fundo branco sempre */
+    background-color: var(--sw-surface) ;       /* ✅ CORREÇÃO: Fundo branco sempre */
 }
 
 /* ✅ CORREÇÃO ESPECÍFICA: Campos de data e mês */
 input[type="date"],
 input[type="month"],
 input[type="datetime-local"] {
-    background-color: white !important;
+    background-color: var(--sw-surface) !important;
     color: #2c3e50 !important;
 }
 
@@ -212,7 +212,7 @@ input[type="month"]::-webkit-calendar-picker-indicator {
 .vales-detalhados-section {
     border: 1px solid #dbe3ec;
     border-radius: 8px;
-    background: #fff;
+    background: var(--sw-surface) ;
     padding: 12px;
     margin: -8px 0 20px;
 }
@@ -400,7 +400,7 @@ button:focus-visible {
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 8px 12px;
-    background: #ffffff;
+    background: var(--sw-surface) ;
     color: var(--primary-color);
     border: 1px solid #d7dde4;
     box-shadow: none;
@@ -477,7 +477,7 @@ button:focus-visible {
 table {
     width: 100%;
     border-collapse: collapse;
-    background-color: white;
+    background-color: var(--sw-surface) ;
     border-radius: 6px;
     overflow: hidden;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -567,7 +567,7 @@ tbody td {
 }
 
 tbody tr:hover {
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
 }
 
 tbody tr:last-child td {
@@ -576,7 +576,7 @@ tbody tr:last-child td {
 
 /* ✅ BOTÕES DE AÇÃO NA TABELA */
 #folhasTable .actions-cell {
-    background: #fff;
+    background: var(--sw-surface) ;
     background-clip: padding-box;
     box-shadow: -10px 0 14px -14px rgba(15, 23, 42, 0.55);
     position: sticky;
@@ -608,11 +608,11 @@ tbody tr:last-child td {
 }
 
 #folhasTable tbody tr:hover td.actions-cell {
-    background: #f8f9fa;
+    background: var(--sw-surface-2);
 }
 
 #folhasTable tbody tr.folha-fechada td.actions-cell {
-    background: #f8f9fa;
+    background: var(--sw-surface-2);
 }
 
 #folhasTable .actions-cell .action-button {
@@ -635,7 +635,7 @@ tbody tr:last-child td {
 
 .paid-actions-toggle {
     align-items: center;
-    background: #ffffff;
+    background: var(--sw-surface) ;
     border: 1px solid #cfd8e3;
     border-radius: 6px;
     box-shadow: none;
@@ -663,7 +663,7 @@ tbody tr:last-child td {
 
 .paid-actions-panel {
     align-items: center;
-    background: #ffffff;
+    background: var(--sw-surface) ;
     border: 1px solid #dfe5ec;
     border-radius: 6px;
     display: flex;
@@ -705,7 +705,7 @@ tbody tr:last-child td {
     }
 
     #folhasTable tbody tr {
-        background: #fff;
+        background: var(--sw-surface) ;
         border: 1px solid #dfe7ef;
         border-radius: 8px;
         box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
@@ -715,7 +715,7 @@ tbody tr:last-child td {
     }
 
     #folhasTable tbody tr:hover {
-        background: #fff;
+        background: var(--sw-surface) ;
     }
 
     #folhasTable tbody td {
@@ -839,7 +839,7 @@ tbody tr:last-child td {
     #funcionariosListModal tbody tr,
     #cargosListModal tbody tr,
     #folhasFechadasModal tbody tr {
-        background: #fff;
+        background: var(--sw-surface) ;
         border: 1px solid #dfe7ef;
         border-radius: 8px;
         box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
@@ -988,7 +988,7 @@ tbody tr:last-child td {
     margin-top: 20px;
     text-align: center;
     padding: 15px;
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
     border-radius: 6px;
     border: 1px solid #dee2e6;
 }
@@ -1013,7 +1013,7 @@ tbody tr:last-child td {
 .btn-paginacao {
     padding: 8px 12px;
     border: 1px solid #dee2e6;
-    background-color: white;
+    background-color: var(--sw-surface) ;
     color: #495057;
     border-radius: 4px;
     cursor: pointer;
@@ -1185,7 +1185,7 @@ tbody tr:last-child td {
 
 .pix-qrcode-container {
     align-items: center;
-    background: #fff;
+    background: var(--sw-surface) ;
     border: 1px solid #e1e7ef;
     border-radius: 8px;
     display: flex;
@@ -1337,9 +1337,9 @@ tbody tr:last-child td {
     align-items: start;
     gap: 10px;
     padding: 10px 12px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--sw-border) ;
     border-radius: 10px;
-    background: #fff;
+    background: var(--sw-surface) ;
 }
 
 #reportColumnsConfigModal .report-col-label {
@@ -1357,7 +1357,7 @@ tbody tr:last-child td {
 }
 
 .modal-content {
-    background-color: white;
+    background-color: var(--sw-surface) ;
     margin: 50px auto;
     padding: 0;
     border-radius: 8px;
@@ -1692,7 +1692,7 @@ tbody tr:last-child td {
     gap: 10px;
     margin: 20px 0;
     padding: 15px;
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
     border-radius: 6px;
     border: 1px solid #e9ecef;
 }
@@ -1705,8 +1705,8 @@ tbody tr:last-child td {
 
 #folhasFechadasModal .btn-paginacao {
     padding: 8px 12px;
-    border: 1px solid #ddd;
-    background-color: white;
+    border: 1px solid var(--sw-border) ;
+    background-color: var(--sw-surface) ;
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -1726,7 +1726,7 @@ tbody tr:last-child td {
 #folhasFechadasModal .btn-paginacao:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
 }
 
 #folhasFechadasModal .paginacao-atual {
@@ -1741,7 +1741,7 @@ tbody tr:last-child td {
 
 #folhasFechadasModal .paginacao-texto {
     font-size: 14px;
-    color: #666;
+    color: var(--sw-text-2) ;
     font-weight: 500;
 }
 
@@ -2014,7 +2014,7 @@ tbody tr:last-child td {
     }
 
     #folhaModal .vales-detalhados-table tr {
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--sw-border) ;
         border-radius: 8px;
         padding: 8px;
         margin-bottom: 10px;
@@ -2144,7 +2144,7 @@ tbody tr:last-child td {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
     padding: 20px;
-    background-color: white;
+    background-color: var(--sw-surface) ;
     border-radius: 6px;
     border: 2px solid var(--light-color);
     margin-top: 20px;
@@ -2154,7 +2154,7 @@ tbody tr:last-child td {
     text-align: center;
     padding: 15px;
     border-radius: 4px;
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
 }
 
 .resumo-item h3, .resumo-item h4 {
@@ -2268,7 +2268,7 @@ tbody tr:last-child td {
 }
 
 .loading-content {
-    background-color: white;
+    background-color: var(--sw-surface) ;
     padding: 30px;
     border-radius: 8px;
     text-align: center;
@@ -2407,7 +2407,7 @@ tbody tr:last-child td {
     }
     
     section {
-        background-color: white;
+        background-color: var(--sw-surface) ;
         border: none;
         padding: 10px 0;
     }
@@ -2490,13 +2490,13 @@ tbody tr:last-child td {
 }
 
 .campo-calculado {
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
     border: 1px dashed #dee2e6;
     font-weight: bold;
 }
 
 .info-funcionario {
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
     padding: 10px;
     border-radius: 4px;
     margin-bottom: 15px;
@@ -2660,11 +2660,11 @@ tbody tr:last-child td {
 }
 
 .folha-row:hover {
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
 }
 
 .folha-fechada {
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
     opacity: 0.8;
 }
 
@@ -2731,7 +2731,7 @@ tbody tr:last-child td {
 
 /* ✅ TOGGLE SWITCH ELEGANTE */
 .toggle-container {
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
     border: 1px solid #e9ecef;
     border-radius: 8px;
     padding: 16px 20px;
@@ -2807,7 +2807,7 @@ tbody tr:last-child td {
     width: 20px;
     left: 3px;
     bottom: 3px;
-    background-color: white;
+    background-color: var(--sw-surface) ;
     transition: 0.3s;
     border-radius: 50%;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
@@ -2835,7 +2835,7 @@ tbody tr:last-child td {
 }
 
 .toggle-container.modo-inativo {
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
     border-color: #e9ecef;
 }
 
@@ -2852,7 +2852,7 @@ tbody tr:last-child td {
 /* Estilos para funcionários inativos na lista */
 .funcionario-inativo {
     opacity: 0.7;
-    background-color: #f8f9fa !important;
+    background-color: var(--sw-surface-2) !important;
 }
 
 .funcionario-inativo td {
@@ -2885,7 +2885,7 @@ tbody tr:last-child td {
 
 /* ✅ ESTILOS PARA MODAL DE FOLHAS FECHADAS */
 .filtros-folhas-fechadas {
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
     padding: 15px;
     border-radius: 6px;
     margin-bottom: 20px;
@@ -2912,7 +2912,7 @@ tbody tr:last-child td {
 }
 
 #folhasFechadasTable tr:hover {
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
 }
 
 #folhasFechadasTable .valor-destaque {
@@ -2922,7 +2922,7 @@ tbody tr:last-child td {
 
 /* ✅ ESTILOS PARA FOLHAS FECHADAS NA TABELA PRINCIPAL */
 .folha-fechada {
-    background-color: #f8f9fa !important;
+    background-color: var(--sw-surface-2) !important;
     opacity: 0.8;
 }
 
@@ -2969,7 +2969,7 @@ tbody tr:last-child td {
     justify-content: space-between;
     align-items: center;
     padding: 15px;
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
     border: 1px solid #dee2e6;
     border-top: none;
     border-radius: 0 0 6px 6px;
@@ -2991,7 +2991,7 @@ tbody tr:last-child td {
 .btn-paginacao {
     padding: 8px 12px;
     border: 1px solid #dee2e6;
-    background-color: white;
+    background-color: var(--sw-surface) ;
     color: #495057;
     border-radius: 4px;
     cursor: pointer;
@@ -3038,7 +3038,7 @@ tbody tr:last-child td {
     padding: 6px 10px;
     border: 1px solid #dee2e6;
     border-radius: 4px;
-    background-color: white;
+    background-color: var(--sw-surface) ;
     color: #495057;
     font-size: 14px;
 }
@@ -3095,7 +3095,7 @@ tbody tr:last-child td {
 }
 
 .folhas-fechadas-table th {
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
     font-weight: 600;
     color: var(--primary-color);
     position: sticky;
@@ -3189,7 +3189,7 @@ tbody tr:last-child td {
 }
 
 .folhas-fechadas-table .detalhes-row {
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
     transition: max-height 0.3s ease, opacity 0.3s ease;
 }
 
@@ -3287,7 +3287,7 @@ tbody tr:last-child td {
     font-weight: 600;
     color: #495057;
     padding: 10px 15px;
-    background: white;
+    background: var(--sw-surface) ;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
@@ -3360,7 +3360,7 @@ tbody tr:last-child td {
 .checkbox-heading {
     margin-top: 8px;
     margin-bottom: 4px;
-    color: #555;
+    color: var(--sw-text-2) ;
 }
 .checkbox-section + .checkbox-section {
     margin-top: 12px;
@@ -3371,7 +3371,7 @@ tbody tr:last-child td {
     gap: 8px;
     font-size: 13px;
     line-height: 1.25;
-    color: #333;
+    color: var(--sw-text-1) ;
     cursor: pointer;
 }
 .checkbox-item input[type="checkbox"] { width: 16px; height: 16px; }
@@ -3393,7 +3393,7 @@ tbody tr:last-child td {
 .checkbox-card {
     border: 1px solid #e0e0e0;
     border-radius: 8px;
-    background: #fff;
+    background: var(--sw-surface) ;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 .checkbox-card-header {
@@ -4013,7 +4013,7 @@ tbody tr:last-child td {
     #funcionariosListModal .funcionarios-list-table tbody tr,
     #cargosListModal table tbody tr,
     #folhasFechadasModal .folhas-fechadas-table tbody tr {
-        background: #fff !important;
+        background: var(--sw-surface) !important;
         border: 1px solid #dfe7ef !important;
         border-radius: 8px !important;
         box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
@@ -4321,7 +4321,7 @@ tbody tr:last-child td {
         padding: 10px 12px !important;
         border: 1px solid #dfe7ef !important;
         border-radius: 8px !important;
-        background: #fff !important;
+        background: var(--sw-surface) !important;
         box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
     }
 

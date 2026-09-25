@@ -2265,6 +2265,11 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         background: #0d2339;
                         color: #fff;
                         text-align: center;
+                        print-color-adjust: exact;
+                        -webkit-print-color-adjust: exact;
+                    }
+                    .resumo-dimensoes-table td {
+                        color: #000;
                     }
                     .resumo-dimensoes-table .number {
                         text-align: right;
@@ -2553,6 +2558,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         border: 1px solid #dcdcdc;
                         padding: 8px;
                         text-align: left;
+                        color: #000;
                     }
                     .resumo-conama th {
                         background-color: #0d2339;

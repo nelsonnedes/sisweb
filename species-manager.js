@@ -2330,6 +2330,11 @@ style.textContent = `
     transition: background-color 0.2s ease !important;
 }
 
+/* Fase 17: hover das tabelas acompanha o tema (o claro acima é só fallback light). */
+html[data-theme="dark"] .table tbody tr:hover {
+    background-color: var(--sw-hover) !important;
+}
+
 /* Coluna de ações com largura fixa (exceto Lista de Pedidos: usa .actions-col/.acoes-cell de 164px) */
 .table th:last-child:not(.actions-col),
 .table td:last-child:not(.acoes-cell) {

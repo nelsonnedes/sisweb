@@ -14,11 +14,11 @@
    ======================================================================== */
 
 :root {
-    --dashboard-primary: #3498db;
-    --dashboard-success: #27ae60;
-    --dashboard-warning: #f39c12;
-    --dashboard-danger: #e74c3c;
-    --dashboard-info: #17a2b8;
+    --dashboard-primary: #fe6a00;
+    --dashboard-success: #16a34a;
+    --dashboard-warning: #f59e0b;
+    --dashboard-danger: #dc2626;
+    --dashboard-info: #2563eb;
     --dashboard-secondary: #6c757d;
     --dashboard-light: #f8f9fa;
     --dashboard-dark: #2c3e50;
@@ -43,7 +43,7 @@
     min-height: 44px;
     margin: 0 0 var(--dashboard-spacing-md) 0;
     background: #f8fafc;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--sw-border) ;
     border-radius: var(--dashboard-border-radius);
     display: none;
     align-items: center;
@@ -80,7 +80,7 @@
 .dashboard-placeholder {
     color: #64748b;
     background: #f8fafc;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--sw-border) ;
     border-radius: 8px;
     padding: 16px;
     font-size: 0.9rem;
@@ -110,7 +110,7 @@
     align-items: center;
     margin: var(--dashboard-spacing-md) 0 var(--dashboard-spacing-lg) 0;
     padding: var(--dashboard-spacing-md);
-    background: white;
+    background: var(--sw-surface) ;
     border-radius: var(--dashboard-border-radius);
     box-shadow: var(--dashboard-box-shadow);
 }
@@ -169,7 +169,7 @@
 }
 
 .kpi-card {
-    background: white;
+    background: var(--sw-surface) ;
     border-radius: var(--dashboard-border-radius);
     padding: var(--dashboard-spacing-md);
     box-shadow: var(--dashboard-box-shadow);
@@ -246,7 +246,7 @@
 }
 
 .dollar-card {
-    background: white;
+    background: var(--sw-surface) ;
     border-radius: var(--dashboard-border-radius);
     padding: var(--dashboard-spacing-md);
     box-shadow: var(--dashboard-box-shadow);
@@ -364,7 +364,7 @@
 }
 
 .chart-container {
-    background: white;
+    background: var(--sw-surface) ;
     border-radius: var(--dashboard-border-radius);
     padding: var(--dashboard-spacing-md);
     box-shadow: var(--dashboard-box-shadow);
@@ -392,7 +392,7 @@
 }
 
 .table-container {
-    background: white;
+    background: var(--sw-surface) ;
     border-radius: var(--dashboard-border-radius);
     padding: var(--dashboard-spacing-md);
     box-shadow: var(--dashboard-box-shadow);

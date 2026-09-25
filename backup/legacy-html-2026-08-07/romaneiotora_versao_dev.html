@@ -40,7 +40,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
         }
 
         body {
-            background-color: #f5f5f5;
+            background-color: var(--sw-surface-2) ;
             padding: 20px;
         }
 
@@ -72,7 +72,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
         input, select {
             width: 100%;
             padding: 8px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             border-radius: 4px;
             margin-bottom: 10px;
         }
@@ -162,7 +162,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
         th, td {
             padding: 4px 6px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--sw-border) ;
             height: 24px;
             vertical-align: middle;
             font-size: 13px;
@@ -176,7 +176,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
         }
 
         tr:hover {
-            background-color: #f5f5f5;
+            background-color: var(--sw-surface-2) ;
         }
 
         .btn-excluir {
@@ -199,7 +199,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
 
         .total-row {
             font-weight: bold;
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
         }
 
         .total-row td {
@@ -543,7 +543,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
             </div>
             <div class="modal-body">
                 <input type="text" id="clientListFilter" placeholder="Filtrar fornecedores..." 
-                       style="margin: 10px 0; width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                       style="margin: 10px 0; width: 100%; padding: 8px; border: 1px solid var(--sw-border) ; border-radius: 4px;">
                 <table class="table">
                     <thead>
                         <tr>
@@ -702,7 +702,7 @@ import './firebase-compat-bridge.js?v=21eb04e409d8';  // compat shim
             </div>
             <div class="modal-body">
                 <input type="text" id="romaneioListFilter" placeholder="Filtrar romaneios..." 
-                       style="margin: 10px 0; width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                       style="margin: 10px 0; width: 100%; padding: 8px; border: 1px solid var(--sw-border) ; border-radius: 4px;">
                 <table class="table">
                     <thead>
                         <tr>

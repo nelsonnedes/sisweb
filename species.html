@@ -15,6 +15,28 @@
     <!-- CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="layout-comum.css">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     
@@ -27,7 +49,8 @@
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
-    <script src="menu-component.js?v=6c70fd8f5206"></script>
+    <script src="js/sisweb-theme.js?v=1"></script>
+<script src="menu-component.js?v=6c70fd8f5206"></script>
     
     <style>
         * {
@@ -68,7 +91,7 @@
         .search-box input {
             width: 100%;
             padding: 10px 15px 10px 40px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             border-radius: 4px;
             font-size: 14px;
             height: 42px;
@@ -79,7 +102,7 @@
             left: 15px;
             top: 50%;
             transform: translateY(-50%);
-            color: #999;
+            color: var(--sw-text-2) ;
         }
         
         .actions-bar .btn {
@@ -90,7 +113,7 @@
         /* Table Styles */
         .table-responsive {
             overflow-x: auto;
-            background: white;
+            background: var(--sw-surface);
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
@@ -107,13 +130,13 @@
         }
 
         th {
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
             color: #2c3e50;
             font-weight: 600;
         }
 
         tr:hover {
-            background-color: #f5f5f5;
+            background-color: var(--sw-surface-2) ;
         }
 
         .actions-cell {
@@ -146,7 +169,7 @@
         }
 
         .modal-content {
-            background-color: white;
+            background-color: var(--sw-surface);
             margin: 10% auto;
             padding: 25px;
             border-radius: 8px;
@@ -174,7 +197,7 @@
             color: #aaa;
         }
 
-        .close:hover { color: #333; }
+        .close:hover { color: var(--sw-text-1) ; }
 
         /* Form Groups */
         .form-group {
@@ -184,14 +207,14 @@
         .form-group label {
             display: block;
             margin-bottom: 5px;
-            color: #555;
+            color: var(--sw-text-2) ;
             font-weight: 500;
         }
 
         .form-group input, .form-group textarea {
             width: 100%;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             border-radius: 4px;
             font-size: 14px;
         }
@@ -261,16 +284,16 @@
 
         .pagination button {
             padding: 5px 10px;
-            border: 1px solid #ddd;
-            background: white;
+            border: 1px solid var(--sw-border) ;
+            background: var(--sw-surface);
             cursor: pointer;
             border-radius: 4px;
         }
 
         .pagination button.active {
-            background-color: #3498db;
+            background-color: var(--sw-brand);
             color: white;
-            border-color: #3498db;
+            border-color: var(--sw-brand);
         }
 
         .pagination button:disabled {
@@ -285,7 +308,7 @@
         <main-menu></main-menu>
 
         <div class="page-header">
-            <h1 class="page-title"><i class="fas fa-tree"></i> Gerenciar Espécies</h1>
+            <h1 class="page-title sw-page-title"><i class="fas fa-tree"></i> Gerenciar Espécies</h1>
             <div class="header-actions">
                 <button onclick="window.location.href='importar_especies.html'" class="btn btn-secondary">
                     <i class="fas fa-file-import"></i> Importar
@@ -322,7 +345,7 @@
         </div>
 
         <div class="pagination" id="pagination"></div>
-        <div id="totalRecords" style="text-align: center; margin-top: 10px; color: #666; font-size: 13px;"></div>
+        <div id="totalRecords" style="text-align: center; margin-top: 10px; color: var(--sw-text-2) ; font-size: 13px;"></div>
 
     </div>
 
@@ -358,7 +381,7 @@
     
     <div id="loadingOverlay" class="loading-overlay">
         <div class="spinner"></div>
-        <p style="margin-top: 15px; color: #555;">Processando...</p>
+        <p style="margin-top: 15px; color: var(--sw-text-2) ;">Processando...</p>
     </div>
 
     <!-- Scripts -->

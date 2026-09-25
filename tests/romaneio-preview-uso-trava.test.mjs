@@ -407,6 +407,9 @@ test('TL sem botão duplicado; PCT com contraste nítido (só cores)', () => {
   assert.match(pct, /\.total-geral-row \{[\s\S]*?color: #0066cc;/);
   assert.match(pct, /border-bottom: 1px solid #dcdcdc;/);
   assert.doesNotMatch(pct, /color: #555;/);
+  assert.match(pct, /\.resumo-dimensoes-table th \{[\s\S]*?print-color-adjust: exact;/);
+  assert.match(pct, /\.resumo-dimensoes-table td \{\s*\n\s*color: #000;/);
+  assert.match(pct, /\.resumo-conama th, \.resumo-conama td \{[\s\S]*?color: #000;/);
 });
 
 test('Tora: colunas com largura fixa, numéricos sem quebra, texto com quebra', () => {

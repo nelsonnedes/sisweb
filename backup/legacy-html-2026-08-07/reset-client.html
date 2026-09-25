@@ -15,7 +15,7 @@
             margin: 0;
         }
         .card {
-            background: white;
+            background: var(--sw-surface) ;
             padding: 40px;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
@@ -24,7 +24,7 @@
             width: 90%;
         }
         h1 { color: #e74c3c; margin-bottom: 20px; }
-        p { color: #555; line-height: 1.6; margin-bottom: 30px; }
+        p { color: var(--sw-text-2) ; line-height: 1.6; margin-bottom: 30px; }
         .btn {
             background-color: #e74c3c;
             color: white;
@@ -41,12 +41,12 @@
         .log {
             margin-top: 20px;
             text-align: left;
-            background: #f8f9fa;
+            background: var(--sw-surface-2) ;
             padding: 10px;
             border-radius: 6px;
             font-family: monospace;
             font-size: 12px;
-            color: #666;
+            color: var(--sw-text-2) ;
             max-height: 150px;
             overflow-y: auto;
             display: none;
@@ -65,7 +65,7 @@
         <div id="log" class="log"></div>
         <div id="successMsg" class="success">
             ✅ Limpeza concluída com sucesso!<br>
-            <span style="font-size: 14px; font-weight: normal; color: #555;">Você será redirecionado em 3 segundos...</span>
+            <span style="font-size: 14px; font-weight: normal; color: var(--sw-text-2) ;">Você será redirecionado em 3 segundos...</span>
         </div>
     </div>
 

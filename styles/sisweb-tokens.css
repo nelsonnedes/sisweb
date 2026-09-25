@@ -1,0 +1,149 @@
+/* Sisweb — tokens globais de tema (única fonte de cor/marca).
+   Fonte da verdade: marqueting/cores.md §3 + lab-pattern.css (marca #FE6A00, timber dark).
+   Regra: nenhum outro CSS pode conter HEX de marca/superfície — tudo via var(--sw-*).
+   :root = Tema Escuro timber (default validado no lab). Claro via html[data-theme="light"]. */
+
+:root {
+  color-scheme: dark;
+
+  /* Marca Sisweb */
+  --sw-brand: #fe6a00;
+  --sw-brand-light: #ff7a45;
+  --sw-brand-dark: #c83818;
+  --sw-gradient: linear-gradient(135deg, #ff7a45 0%, #fe6a00 50%, #c83818 100%);
+  --sw-brand-soft: #fff1e8;
+  --sw-on-brand: #ffffff;
+
+  /* Superfícies + texto (timber escuro) */
+  --sw-bg: #121417;
+  --sw-surface: #1e2228;
+  --sw-surface-2: #242b33;
+  --sw-border: #2e353d;
+  --sw-text-1: #f2ede4;
+  --sw-text-2: #c7cfd6;
+  --sw-text-3: #8b949d;
+
+  /* Inputs (escuro) */
+  --sw-input-bg: #121417;
+  --sw-input-border: #2e353d;
+  --sw-input-placeholder: #8b949d;
+  --sw-focus: #fe6a00;
+  --sw-focus-ring: rgba(254, 106, 0, 0.25);
+
+  /* Links */
+  --sw-link: #ff7a45;
+
+  /* Semânticas (cores.md §3.3) */
+  --sw-success: #16a34a;
+  --sw-warning: #f59e0b;
+  --sw-danger: #dc2626;
+  --sw-info: #2563eb;
+
+  /* Papel (ilha clara do menu topo no dashboard) */
+  --sw-paper: #ffffff;
+  --sw-paper-border: #e5e7eb;
+  --sw-ink: #111827;
+  --sw-muted: #6b7280;
+
+  /* Ilha do menu + dropdown por tema (Fase 4: timber no dark) */
+  --sw-island-bg: #1e2228;
+  --sw-island-border: #2e353d;
+  --sw-island-ink: #f2ede4;
+  --sw-island-muted: #c7cfd6;
+  --sw-island-icon: #8b949d;
+  --sw-island-link: #c7cfd6;
+
+  /* Chrome ajustável (Fase 17: Configurações > Menu do topo).
+     Fundo do menu do topo + painel de mensagens do sininho + dropdown da engrenagem. */
+  --sw-chrome-bg: #1e2228;
+
+  /* Etiquetas ajustáveis (Fase 17: Configurações > Etiquetas).
+     Rótulos de campos, filtros e cartões do dashboard, finanças, compras e vendas. */
+  --sw-label: #c7cfd6;
+
+  /* Sininho por tema (Fase 4) */
+  --sw-alert-bg: #242b33;
+  --sw-alert-unread: rgba(254, 106, 0, 0.1);
+
+  /* Hover do chrome (Fase 6: escuro no dark, suave no light) */
+  --sw-hover: #242b33;
+  --sw-alert-error-bg: rgba(220, 38, 38, 0.14);
+  --sw-alert-warning-bg: rgba(245, 158, 11, 0.12);
+  --sw-alert-info-bg: rgba(37, 99, 235, 0.16);
+  --sw-alert-success-bg: rgba(22, 163, 74, 0.14);
+  --sw-alert-title: #f2ede4;
+  --sw-alert-msg: #c7cfd6;
+  --sw-alert-link: #ff7a45;
+
+  /* Pill de assinatura (Fase 5: estendida, fundo de marca) */
+  --sw-pill-bg: rgba(254, 106, 0, 0.14);
+  --sw-pill-border: rgba(254, 106, 0, 0.4);
+  --sw-pill-ink: #ff7a45;
+
+  /* Tipografia oficial (cores.md §2) */
+  --sw-font-sans: 'Aileron', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --sw-font-mono: 'Source Code Pro', Consolas, Monaco, monospace;
+
+  /* Forma + elevação */
+  --sw-radius-card: 24px;
+  --sw-radius-control: 12px;
+  --sw-radius-pill: 999px;
+  --sw-shadow-card: 0 30px 60px rgba(0, 0, 0, 0.4);
+  --sw-shadow-pop: 0 16px 32px rgba(17, 24, 39, 0.14);
+  --sw-shadow-brand: 0 6px 18px rgba(254, 106, 0, 0.35);
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+
+  /* Superfícies + texto (canvas claro) */
+  --sw-bg: #f8f9fa;
+  --sw-surface: #ffffff;
+  --sw-surface-2: #f3f4f6;
+  --sw-border: #e5e7eb;
+  --sw-text-1: #111827;
+  --sw-text-2: #4b5563;
+  --sw-text-3: #6b7280;
+
+  /* Ilha do menu + dropdown (claros) */
+  --sw-island-bg: #ffffff;
+  --sw-island-border: #e5e7eb;
+  --sw-island-ink: #111827;
+  --sw-island-muted: #6b7280;
+  --sw-island-icon: #9ca3af;
+  --sw-island-link: #4b5563;
+
+  /* Chrome ajustável (Fase 17) + etiquetas ajustáveis (Fase 17) */
+  --sw-chrome-bg: #ffffff;
+  --sw-label: #4b5563;
+
+  /* Sininho (claros) */
+  --sw-alert-bg: #f8fafc;
+  --sw-alert-unread: #eff6ff;
+  --sw-alert-error-bg: #fef2f2;
+  --sw-alert-warning-bg: #fffbeb;
+  --sw-alert-info-bg: #eff6ff;
+  --sw-alert-success-bg: #f0fdf4;
+  --sw-alert-title: #1e293b;
+  --sw-alert-msg: #475569;
+  --sw-alert-link: #2563eb;
+
+  /* Pill de assinatura (Fase 5) */
+  --sw-pill-bg: #fff1e8;
+  --sw-pill-border: #fdba74;
+  --sw-pill-ink: #c83818;
+
+  /* Hover do chrome (Fase 6) */
+  --sw-hover: #e9edf1;
+
+  /* Inputs (claro) */
+  --sw-input-bg: #ffffff;
+  --sw-input-border: #d1d5db;
+  --sw-input-placeholder: #9ca3af;
+
+  /* Links (terracota escura: contraste AA sobre branco) */
+  --sw-link: #c83818;
+
+  --sw-shadow-card: 0 24px 48px rgba(17, 24, 39, 0.12);
+  --sw-shadow-pop: 0 16px 32px rgba(17, 24, 39, 0.12);
+}

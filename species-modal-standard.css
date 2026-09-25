@@ -1,5 +1,5 @@
 #speciesModal .species-standard-modal-content {
-    background: #fff;
+    background: var(--sw-surface);
     border-radius: 8px;
     max-width: 540px;
     width: min(92vw, 540px);
@@ -26,9 +26,9 @@
     justify-content: space-between;
     gap: 12px;
     padding: 18px 20px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--sw-border) ;
     margin: 0;
-    background: #fff;
+    background: var(--sw-surface);
     color: #1f2937;
 }
 
@@ -63,7 +63,7 @@
 #speciesModal .species-standard-close:hover,
 #speciesModal .species-standard-header .close:hover,
 #speciesModal .species-standard-header .close-modal:hover {
-    background: #f3f4f6;
+    background: var(--sw-surface-2) ;
     color: #111827;
 }
 
@@ -92,7 +92,7 @@
     padding: 9px 11px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
-    background: #fff;
+    background: var(--sw-surface);
     color: #111827;
     font-size: 14px;
     line-height: 1.35;
@@ -163,7 +163,7 @@
     overflow-y: auto;
     border: 1px solid #d1d5db;
     border-radius: 6px;
-    background: #fff;
+    background: var(--sw-surface);
     box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
 }
 
@@ -224,7 +224,7 @@
     padding: 9px 11px !important;
     border: 1px solid #d1d5db !important;
     border-radius: 6px !important;
-    background: #fff !important;
+    background: var(--sw-surface) !important;
     color: #111827 !important;
     font-size: 14px !important;
     line-height: 1.35 !important;

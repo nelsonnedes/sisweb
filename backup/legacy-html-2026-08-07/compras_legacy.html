@@ -109,7 +109,7 @@
         .table-container { 
             width: 100%; 
             overflow-x: auto; 
-            background: #fff; 
+            background: var(--sw-surface) ; 
             border: 1px solid #dee2e6; 
             border-radius: 6px; 
             padding: 8px; 
@@ -120,7 +120,7 @@
             font-size: 14px; 
         }
         .main-table thead th, .table thead th { 
-            background: #f8f9fa; 
+            background: var(--sw-surface-2) ; 
             color: #2c3e50; 
             font-weight: 600; 
             border-bottom: 1px solid #dee2e6; 
@@ -140,7 +140,7 @@
             border: 1px solid #dee2e6; 
             border-radius: 6px; 
             padding: 10px; 
-            background: #fff; 
+            background: var(--sw-surface) ; 
             margin: 12px 0; 
         }
         .summary-row { 
@@ -155,8 +155,8 @@
             text-align: center; 
             margin-top: 30px; 
             padding: 20px; 
-            border-top: 1px solid #ddd; 
-            color: #666; 
+            border-top: 1px solid var(--sw-border) ; 
+            color: var(--sw-text-2) ; 
             font-size: 14px; 
         }
 
@@ -302,7 +302,7 @@
                         </thead>
                         <tbody id="contasPagarTable">
                             <tr>
-                                <td colspan="6" style="text-align: center; color: #666;">Nenhuma conta adicionada</td>
+                                <td colspan="6" style="text-align: center; color: var(--sw-text-2) ;">Nenhuma conta adicionada</td>
                             </tr>
                         </tbody>
                     </table>
@@ -386,7 +386,7 @@
                     </button>
                 </div>
             </div>
-            <p style="color:#666;">Ao selecionar, o fornecedor é aplicado no Pedido de Compras.</p>
+            <p style="color: var(--sw-text-2) ;">Ao selecionar, o fornecedor é aplicado no Pedido de Compras.</p>
         </section>
 
         <section id="produtos" class="tab-content" style="display:none;">
@@ -439,12 +439,12 @@
                 </div>
                 <div id="previewTora" style="display: none; margin-top: 15px;">
                     <h4 style="color: #2c3e50; margin-bottom: 10px;">Preview - Resumo por Espécie:</h4>
-                    <div id="listaTora" style="background: #f8f9fa; padding: 15px; border-radius: 4px; border: 1px solid #dee2e6;"></div>
+                    <div id="listaTora" style="background: var(--sw-surface-2) ; padding: 15px; border-radius: 4px; border: 1px solid #dee2e6;"></div>
                 </div>
             </div>
 
             <div id="secaoProdutoCadastradoCompra" style="display:none;">
-                <p style="color:#666;">Em breve: seleção de produtos cadastrados com busca e lista.</p>
+                <p style="color: var(--sw-text-2) ;">Em breve: seleção de produtos cadastrados com busca e lista.</p>
             </div>
         </section>
 

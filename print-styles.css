@@ -43,7 +43,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     }
     
     th, td {
-        border: 1px solid #ddd;
+        border: 1px solid var(--sw-border) ;
         padding: 5px;
     }
     
@@ -66,7 +66,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
 .print-menu {
     position: absolute;
     z-index: 1050;
-    background: white;
+    background: var(--sw-surface) ;
     border: 1px solid rgba(0,0,0,0.15);
     border-radius: 0.25rem;
     min-width: 220px;
@@ -84,8 +84,8 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     content: 'Opções de Impressão';
     display: block;
     padding: 8px 10px;
-    background-color: #f8f9fa;
-    color: #333;
+    background-color: var(--sw-surface-2) ;
+    color: var(--sw-text-1) ;
     font-size: 12px;
     font-weight: bold;
     border-bottom: 1px solid #eee;
@@ -135,7 +135,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #333;
+    color: var(--sw-text-1) ;
 }
 
 .print-menu button:last-child {
@@ -230,7 +230,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
 
 .print-loader .message {
     font-size: 1.2rem;
-    color: #333;
+    color: var(--sw-text-1) ;
 }
 
 @keyframes spin {
@@ -261,14 +261,14 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     height: 30px;
     padding: 0;
     border-radius: 4px;
-    border: 1px solid #ddd;
-    background-color: #fff;
-    color: #333;
+    border: 1px solid var(--sw-border) ;
+    background-color: var(--sw-surface) ;
+    color: var(--sw-text-1) ;
     transition: all 0.2s ease;
 }
 
 .client-action-button:hover {
-    background-color: #f5f5f5;
+    background-color: var(--sw-surface-2) ;
     border-color: #bbb;
     transform: translateY(-1px);
 }
@@ -308,7 +308,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
 #speciesListTable td {
     vertical-align: middle !important;
     padding: 12px 15px !important;
-    border: 1px solid #ddd !important;
+    border: 1px solid var(--sw-border) !important;
     line-height: 1.4 !important;
     font-size: 14px !important;
     height: 50px !important; /* Altura fixa para consistência */
@@ -328,7 +328,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     width: 45% !important;
     max-width: 250px !important;
     font-style: italic !important;
-    color: #666 !important;
+    color: var(--sw-text-2) !important;
     padding-left: 15px !important;
     vertical-align: middle !important;
 }
@@ -369,9 +369,9 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     height: 26px !important;
     padding: 0 !important;
     border-radius: 3px !important;
-    border: 1px solid #ccc !important;
-    background-color: #fff !important;
-    color: #666 !important;
+    border: 1px solid var(--sw-border) !important;
+    background-color: var(--sw-surface) !important;
+    color: var(--sw-text-2) !important;
     transition: all 0.2s ease !important;
     flex-shrink: 0 !important;
     vertical-align: middle !important;
@@ -380,9 +380,9 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
 }
 
 #speciesListTable .client-action-button:hover {
-    background-color: #f8f9fa !important;
+    background-color: var(--sw-surface-2) !important;
     border-color: #aaa !important;
-    color: #333 !important;
+    color: var(--sw-text-1) !important;
     transform: none !important;
 }
 
@@ -426,7 +426,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
 
 /* ✅ ALTERNÂNCIA DE CORES PARA MELHOR LEITURA */
 #speciesListTable tbody tr:nth-child(even) {
-    background-color: #f8f9fa !important;
+    background-color: var(--sw-surface-2) !important;
 }
 
 #speciesListTable tbody tr:nth-child(even):hover {
@@ -495,9 +495,9 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     height: 26px !important;
     padding: 0 !important;
     border-radius: 3px !important;
-    border: 1px solid #ccc !important;
-    background-color: #fff !important;
-    color: #666 !important;
+    border: 1px solid var(--sw-border) !important;
+    background-color: var(--sw-surface) !important;
+    color: var(--sw-text-2) !important;
     transition: all 0.2s ease !important;
     flex-shrink: 0 !important;
     vertical-align: middle !important;
@@ -506,9 +506,9 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
 }
 
 #clientListTable .client-action-button:hover {
-    background-color: #f8f9fa !important;
+    background-color: var(--sw-surface-2) !important;
     border-color: #aaa !important;
-    color: #333 !important;
+    color: var(--sw-text-1) !important;
     transform: none !important;
 }
 
@@ -564,7 +564,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     justify-content: center;
 }
 .especie-card {
-    border: 1px solid #ddd;
+    border: 1px solid var(--sw-border) ;
     border-radius: 6px;
     overflow: hidden;
     width: calc(33.33% - 15px);
@@ -589,9 +589,9 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     font-size: 14px;
 }
 .especie-footer {
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
     padding: 10px;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid var(--sw-border) ;
     text-align: right;
     font-weight: bold;
 }
@@ -602,8 +602,8 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     font-size: 16px;
     color: #d9534f;
     padding: 10px;
-    background-color: #f8f9fa;
-    border: 1px solid #ddd;
+    background-color: var(--sw-surface-2) ;
+    border: 1px solid var(--sw-border) ;
     border-radius: 6px;
 }
 
@@ -618,7 +618,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     justify-content: center;
 }
 .conama-card {
-    border: 1px solid #ddd;
+    border: 1px solid var(--sw-border) ;
     border-radius: 6px;
     overflow: hidden;
     width: calc(33.33% - 15px);
@@ -641,9 +641,9 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     margin-bottom: 8px;
 }
 .conama-footer {
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
     padding: 10px;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid var(--sw-border) ;
     text-align: right;
     font-weight: bold;
 }
@@ -697,7 +697,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
 
 /* ✅ HOVER EFFECTS PARA MELHOR UX EM TODAS AS TABELAS */
 .modal table tbody tr:hover {
-    background-color: #f8f9fa !important;
+    background-color: var(--sw-surface-2) !important;
     transition: background-color 0.2s ease !important;
 }
 
@@ -744,7 +744,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
 #listaModal .dropdown-menu {
     position: fixed !important;
     z-index: 99999 !important;
-    background: white !important;
+    background: var(--sw-surface) !important;
     border: 1px solid rgba(0,0,0,0.15) !important;
     border-radius: 6px !important;
     min-width: 220px !important;
@@ -771,13 +771,13 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     cursor: pointer !important;
     font-size: 13px !important;
     transition: background-color 0.2s ease !important;
-    color: #333 !important;
+    color: var(--sw-text-1) !important;
     white-space: nowrap !important;
 }
 
 #listaModal .dropdown-menu button:hover {
     background-color: #f1f3f4 !important;
-    color: #333 !important;
+    color: var(--sw-text-1) !important;
 }
 
 #listaModal .dropdown-menu h6 {
@@ -788,7 +788,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     color: #6c757d !important;
     font-weight: 600 !important;
     border-bottom: 1px solid #e9ecef !important;
-    background-color: #f8f9fa !important;
+    background-color: var(--sw-surface-2) !important;
 }
 
 /* ✅ MANTER COMPATIBILIDADE COM PRINT-MENU (CASO AINDA SEJA USADO) */
@@ -797,7 +797,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     right: 0 !important;
     top: 100% !important;
     z-index: 99999 !important; /* Máxima prioridade */
-    background: white !important;
+    background: var(--sw-surface) !important;
     border: 1px solid rgba(0,0,0,0.15) !important;
     border-radius: 0.25rem !important;
     min-width: 200px !important;
@@ -876,18 +876,18 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     padding: 0 !important;
     margin: 0 2px !important;
     border-radius: 4px !important;
-    border: 1px solid #ddd !important;
-    background-color: #fff !important;
-    color: #666 !important;
+    border: 1px solid var(--sw-border) !important;
+    background-color: var(--sw-surface) !important;
+    color: var(--sw-text-2) !important;
     transition: all 0.2s ease !important;
     flex-shrink: 0 !important;
     cursor: pointer !important;
 }
 
 #listaModal .client-action-button:hover {
-    background-color: #f8f9fa !important;
+    background-color: var(--sw-surface-2) !important;
     border-color: #aaa !important;
-    color: #333 !important;
+    color: var(--sw-text-1) !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
 }
@@ -1066,7 +1066,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
 .external-print-menu {
     position: fixed !important;
     z-index: 999999 !important;
-    background: white !important;
+    background: var(--sw-surface) !important;
     border: 1px solid rgba(0,0,0,0.15) !important;
     border-radius: 0.25rem !important;
     min-width: 220px !important;
@@ -1086,7 +1086,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     cursor: pointer !important;
     font-size: 0.9rem !important;
     transition: all 0.2s ease !important;
-    color: #333 !important;
+    color: var(--sw-text-1) !important;
     white-space: nowrap !important;
     border-bottom: 1px solid rgba(0,0,0,0.08) !important;
 }
@@ -1186,9 +1186,9 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
     height: 26px !important;
     padding: 0 !important;
     border-radius: 4px !important;
-    border: 1px solid #ddd !important;
-    background-color: #fff !important;
-    color: #666 !important;
+    border: 1px solid var(--sw-border) !important;
+    background-color: var(--sw-surface) !important;
+    color: var(--sw-text-2) !important;
     transition: all 0.2s ease !important;
     flex-shrink: 0 !important;
     cursor: pointer !important;
@@ -1198,9 +1198,9 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
 }
 
 #listaModal .client-action-button:hover {
-    background-color: #f8f9fa !important;
+    background-color: var(--sw-surface-2) !important;
     border-color: #aaa !important;
-    color: #333 !important;
+    color: var(--sw-text-1) !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
 }
@@ -1593,7 +1593,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
 body.sisweb-commerce-print {
     margin: 0;
     padding: 18px;
-    background: #fff;
+    background: var(--sw-surface) ;
     color: #111827;
     font-family: "Segoe UI", Arial, sans-serif;
     font-size: 11px;
@@ -1626,7 +1626,7 @@ body.sisweb-commerce-print {
     border: 1px solid #d6dde8;
     border-top: 5px solid #2c3e50;
     border-radius: 6px;
-    background: #fff;
+    background: var(--sw-surface) ;
     break-inside: avoid;
 }
 
@@ -1636,7 +1636,7 @@ body.sisweb-commerce-print {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--sw-border) ;
     border-radius: 6px;
     background: #f8fafc;
     overflow: hidden;
@@ -1816,7 +1816,7 @@ body.sisweb-commerce-print {
 .sisweb-print-totals {
     width: 290px;
     margin-left: auto;
-    background: #fff;
+    background: var(--sw-surface) ;
 }
 
 .sisweb-print-total-row,
@@ -1825,7 +1825,7 @@ body.sisweb-commerce-print {
     justify-content: space-between;
     gap: 14px;
     padding: 5px 0;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--sw-border) ;
 }
 
 .sisweb-print-total-row:last-child,
@@ -1854,7 +1854,7 @@ body.sisweb-commerce-print {
 .sisweb-print-footer {
     margin-top: 18px;
     padding-top: 8px;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--sw-border) ;
     color: #6b7280;
     text-align: center;
     font-size: 9.5px;

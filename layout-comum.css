@@ -6,7 +6,7 @@
 :root {
     --max-width-container: 1300px;
     --container-padding: 20px;
-    --container-background: white;
+    --container-background: var(--sw-surface);
     --container-border-radius: 8px;
     --container-shadow: 0 2px 4px rgba(0,0,0,0.1);
     --btn-height: 36px;
@@ -44,10 +44,10 @@
 
 /* ✅ ESTILOS PARA BOTÕES DE AÇÃO PADRONIZADOS */
 .btn-action {
-    background-color: #ffffff;
-    border: 1px solid #ddd;
+    background-color: var(--sw-surface);
+    border: 1px solid var(--sw-border) ;
     border-radius: 4px;
-    color: #444;
+    color: var(--sw-text-1);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -60,7 +60,7 @@
 }
 
 .btn-action:hover {
-    background-color: #f5f5f5;
+    background-color: var(--sw-surface-2) ;
     border-color: #ccc;
 }
 
@@ -118,7 +118,7 @@
 .btn-secondary:hover { background-color: #5a6268 !important; }
 
 /* Botão de download do modelo Excel (âncora com aparência de botão) */
-.btn-modelo-excel { background-color: #fff !important; color: #107c41 !important; border: 2px solid #107c41 !important; font-weight: 600 !important; text-decoration: none !important; }
+.btn-modelo-excel { background-color: var(--sw-surface) !important; color: #107c41 !important; border: 2px solid #107c41 !important; font-weight: 600 !important; text-decoration: none !important; }
 .btn-modelo-excel:visited { color: #107c41 !important; }
 .btn-modelo-excel:hover { background-color: #107c41 !important; color: #fff !important; text-decoration: none !important; }
 
@@ -172,7 +172,7 @@
 }
 
 .loading-content {
-    background: white;
+    background: var(--sw-surface);
     padding: 30px;
     border-radius: 12px;
     text-align: center;

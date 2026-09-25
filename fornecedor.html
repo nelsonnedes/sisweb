@@ -20,6 +20,28 @@
     <!-- CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="layout-comum.css">
     <link rel="stylesheet" href="commerce-responsive.css?v=2026-06-07-print-context-v13">
     
@@ -32,7 +54,8 @@
 import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     </script><!-- Menu Component -->
-    <script src="menu-component.js?v=6c70fd8f5206"></script>
+    <script src="js/sisweb-theme.js?v=1"></script>
+<script src="menu-component.js?v=6c70fd8f5206"></script>
     <script src="schema-migration-contatos.js?v=3a574e7e3324"></script>
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
@@ -88,7 +111,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         .search-box input {
             width: 100%;
             padding: 10px 15px 10px 40px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             border-radius: 4px;
             font-size: 14px;
             height: 42px; /* Fixed height for alignment */
@@ -99,7 +122,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             left: 15px;
             top: 50%;
             transform: translateY(-50%);
-            color: #999;
+            color: var(--sw-text-2) ;
         }
 
         /* Ensure buttons match search input height */
@@ -111,7 +134,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         /* Table Styles */
         .table-responsive {
             overflow-x: auto;
-            background: white;
+            background: var(--sw-surface);
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
@@ -128,13 +151,13 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         th {
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
             color: #2c3e50;
             font-weight: 600;
         }
 
         tr:hover {
-            background-color: #f5f5f5;
+            background-color: var(--sw-surface-2) ;
         }
 
         .actions-cell {
@@ -158,7 +181,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .modal-content {
-            background-color: white;
+            background-color: var(--sw-surface);
             margin: 0 auto;
             padding: 0;
             border-radius: 8px;
@@ -216,8 +239,8 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
         .modal-footer {
             align-items: center;
-            background: #fafafa;
-            border-top: 1px solid #e5e7eb;
+            background: var(--sw-surface-2) ;
+            border-top: 1px solid var(--sw-border) ;
             display: flex;
             flex: 0 0 auto;
             gap: 10px;
@@ -260,14 +283,14 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         .form-group label {
             display: block;
             margin-bottom: 5px;
-            color: #555;
+            color: var(--sw-text-2) ;
             font-weight: 500;
         }
 
         .form-group input, .form-group select {
             width: 100%;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             border-radius: 4px;
             font-size: 14px;
         }
@@ -336,17 +359,17 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
         .pagination-controls button {
             padding: 5px 10px;
-            border: 1px solid #ddd;
-            background: white;
+            border: 1px solid var(--sw-border) ;
+            background: var(--sw-surface);
             cursor: pointer;
             border-radius: 4px;
             font-size: 12px;
         }
 
         .pagination-controls button.active {
-            background-color: #3498db;
+            background-color: var(--sw-brand);
             color: white;
-            border-color: #3498db;
+            border-color: var(--sw-brand);
         }
 
         .pagination-controls button:disabled {
@@ -356,7 +379,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
         .pagination-controls span {
             padding: 0 4px;
-            color: #6c757d;
+            color: var(--sw-text-3);
         }
 
         @media (max-width: 768px) {
@@ -422,7 +445,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         <main-menu></main-menu>
 
         <div class="page-header">
-            <h1 class="page-title"><i class="fas fa-truck"></i> Gerenciar Fornecedores</h1>
+            <h1 class="page-title sw-page-title"><i class="fas fa-truck"></i> Gerenciar Fornecedores</h1>
         </div>
 
         <div class="actions-bar">
@@ -456,7 +479,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         </div>
 
         <div class="pagination-controls" id="pagination"></div>
-        <div id="totalRecords" style="text-align: center; margin-top: 10px; color: #666; font-size: 13px;"></div>
+        <div id="totalRecords" style="text-align: center; margin-top: 10px; color: var(--sw-text-2) ; font-size: 13px;"></div>
 
     </div>
 
@@ -667,7 +690,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     
     <div id="loadingOverlay" class="loading-overlay">
         <div class="spinner"></div>
-        <p style="margin-top: 15px; color: #555;">Processando...</p>
+        <p style="margin-top: 15px; color: var(--sw-text-2) ;">Processando...</p>
     </div>
 
     <!-- Scripts -->

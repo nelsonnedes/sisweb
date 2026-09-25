@@ -13,6 +13,28 @@
     <title>Pré-Romaneio - Sistema</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css?v=3">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="romaneio-comum.css?v=1c15014e677a">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     <link rel="stylesheet" href="print-styles.css">
@@ -22,6 +44,7 @@
     <link rel="dns-prefetch" href="https://o4511662240432128.ingest.us.sentry.io">
     <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script defer src="sentry-init.js?v=7530fe3e6fec"></script>
+<script src="js/sisweb-theme.js?v=1"></script>
 <script src="menu-component.js?v=6c70fd8f5206"></script>
     
     <style>
@@ -51,14 +74,14 @@
         }
 
         body {
-            background-color: #f5f5f5;
+            background-color: var(--sw-surface-2) ;
             padding: 20px;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background-color: white;
+            background-color: var(--sw-surface);
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -83,8 +106,8 @@
         .tab-button {
             padding: 10px 20px;
             cursor: pointer;
-            background: #f8f9fa;
-            border: 1px solid #ddd;
+            background: var(--sw-surface-2) ;
+            border: 1px solid var(--sw-border) ;
             border-bottom: none;
             border-radius: 5px 5px 0 0;
             font-weight: bold;
@@ -98,7 +121,7 @@
         }
 
         .tab-button.active {
-            background-color: white;
+            background-color: var(--sw-surface);
             color: #2c3e50;
             border-bottom: 2px solid white;
             margin-bottom: -2px;
@@ -130,7 +153,7 @@
         input, select {
             width: 100%;
             padding: 8px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             border-radius: 4px;
             height: 38px; /* Altura padronizada */
             font-size: 14px;
@@ -262,7 +285,7 @@
             border-radius: 4px;
             overflow: hidden;
             overflow-x: auto;
-            background: white; /* Ensure white background */
+            background: var(--sw-surface); /* Ensure white background */
         }
 
         table {
@@ -283,7 +306,7 @@
         th, td {
             padding: 10px 12px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--sw-border) ;
             font-size: 13px;
             vertical-align: middle;
         }
@@ -328,7 +351,7 @@
             border-radius: 8px;
             max-height: 60vh;
             overflow: hidden;
-            background: #fff;
+            background: var(--sw-surface);
         }
         
         .modal table {
@@ -363,7 +386,7 @@
 
         /* Melhor visibilidade das linhas no modal "Meus Pré-Romaneios" */
         #listaModal .table-responsive {
-            background: #fff;
+            background: var(--sw-surface);
             border-radius: 6px;
             box-shadow: 0 1px 0 rgba(0,0,0,0.03);
         }
@@ -389,7 +412,7 @@
         }
 
         #listaModal tbody tr:nth-child(even) td {
-            background-color: #ffffff;
+            background-color: var(--sw-surface);
         }
 
         #listaModal tbody tr:hover td {
@@ -424,7 +447,7 @@
 
         .pagination-controls button {
             border: 1px solid #d0d7de;
-            background: #fff;
+            background: var(--sw-surface);
             color: #2c3e50;
             padding: 6px 10px;
             border-radius: 4px;
@@ -449,8 +472,8 @@
         }
 
         .pagination-btn {
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
+            background-color: var(--sw-surface-2) ;
+            border: 1px solid var(--sw-border) ;
             color: #2c3e50;
             padding: 6px 12px;
             border-radius: 4px;
@@ -476,8 +499,8 @@
         /* === TOTAIS === */
         .totais-container {
             margin-top: 20px;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
+            background-color: var(--sw-surface-2) ;
+            border: 1px solid var(--sw-border) ;
             border-radius: 5px;
             padding: 15px;
             display: flex;
@@ -539,8 +562,8 @@
         
         .autocomplete-suggestions {
             position: absolute;
-            background: white;
-            border: 1px solid #ddd;
+            background: var(--sw-surface);
+            border: 1px solid var(--sw-border) ;
             width: 100%;
             max-height: 200px;
             overflow-y: auto;
@@ -556,7 +579,7 @@
         }
 
         .autocomplete-suggestions div:hover {
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
             color: #3498db;
         }
 
@@ -644,11 +667,11 @@
         @media (max-width: 768px) {
             #tabela-serrados thead, #tabela-serrados colgroup, #tabela-toras thead, #tabela-toras colgroup { display: none !important; }
             #tabela-serrados tbody, #tabela-toras tbody { display: flex !important; flex-direction: column !important; gap: 12px !important; width: 100% !important; }
-            #tabela-serrados tbody tr, #tabela-toras tbody tr { display: block !important; background: #fff !important; border: 1px solid #e2e8f0 !important; border-radius: 10px !important; box-shadow: 0 2px 8px rgba(15,23,42,.05) !important; padding: 12px 14px !important; }
+            #tabela-serrados tbody tr, #tabela-toras tbody tr { display: block !important; background: var(--sw-surface) !important; border: 1px solid var(--sw-border) !important; border-radius: 10px !important; box-shadow: 0 2px 8px rgba(15,23,42,.05) !important; padding: 12px 14px !important; }
             #tabela-serrados tbody tr td, #tabela-toras tbody tr td { display: block !important; width: 100% !important; box-sizing: border-box !important; border: none !important; border-bottom: 1px solid #f0f0f0 !important; padding: 10px 12px !important; min-height: 0 !important; text-align: left !important; align-items: inherit !important; }
             #tabela-serrados tbody tr td:first-child, #tabela-toras tbody tr td:first-child,
             #tabela-serrados tbody tr td:last-child, #tabela-toras tbody tr td:last-child { position: static !important; left: auto !important; right: auto !important; z-index: auto !important; box-shadow: none !important; background: transparent !important; }
-            #tabela-serrados tbody tr td:last-child, #tabela-toras tbody tr td:last-child { border-bottom: none !important; border-top: 1px solid #e2e8f0 !important; margin-top: 4px !important; padding-top: 10px !important; }
+            #tabela-serrados tbody tr td:last-child, #tabela-toras tbody tr td:last-child { border-bottom: none !important; border-top: 1px solid var(--sw-border) !important; margin-top: 4px !important; padding-top: 10px !important; }
             #tabela-serrados tbody tr td[data-label]::before, #tabela-toras tbody tr td[data-label]::before { content: attr(data-label) !important; display: block !important; font-weight: 700 !important; color: #64748b !important; font-size: 11px !important; text-transform: uppercase !important; letter-spacing: .4px !important; text-align: left !important; margin: 0 0 4px !important; flex: none !important; white-space: normal !important; position: static !important; width: 100% !important; max-width: none !important; top: auto !important; left: auto !important; transform: none !important; padding-right: 0 !important; }
             #tabela-serrados tbody tr td[style*="display: none"], #tabela-toras tbody tr td[style*="display: none"] { display: none !important; }
             .table-responsive { overflow: visible !important; }
@@ -671,7 +694,7 @@
     <div class="container">
         <main-menu></main-menu>
         <div class="header-title-container" style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; position: relative;">
-            <h1 style="margin-bottom: 0;">Pré-Romaneio</h1>
+            <h1 class="sw-page-title" style="margin-bottom: 0;">Pré-Romaneio</h1>
         </div>
         
         <!-- Navegação de Abas -->
@@ -1451,7 +1474,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             <div class="modal-body">
                 <div style="margin-bottom: 15px;">
                     <input type="text" id="preRomaneioListFilter" placeholder="🔍 Filtrar por cliente, data ou tipo..." 
-                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                           style="width: 100%; padding: 10px; border: 1px solid var(--sw-border) ; border-radius: 4px; font-size: 14px;">
                 </div>
                 <div class="table-responsive modal-table-scroll">
                     <table class="table">
@@ -1471,7 +1494,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 <div id="listaRomaneiosPagination" style="margin-top: 15px;"></div>
             </div>
             <div class="modal-footer">
-                <div class="modal-info-text" style="color: #666; font-size: 14px; text-align: left;">
+                <div class="modal-info-text" style="color: var(--sw-text-2) ; font-size: 14px; text-align: left;">
                     <i class="fas fa-info-circle"></i> <span id="preromaneioModalInfo">Carregando...</span>
                 </div>
                 <div class="modal-footer-buttons">
