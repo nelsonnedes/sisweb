@@ -878,3 +878,11 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
   (hosting 6 arquivos novos + rules `ui/theme` released); roundtrip nuvem validado
   (`source:firebase`, custom aplicado, tenant resetado p/ padrão após o teste).
   Push p/ origin pendente de confirmação.
+- **Incidente login “não reflete” (pós-deploy):** arquivos idênticos dev×prod (hash difere
+  só por EOL; prova via normalize); produção serve o redesign (sw-auth, 4 lockups,
+  register modal — screenshots `tmp/qa-prod-login/` no dev). Causa: cache de cliente
+  (aba/PWA antigo). Fix: bump SW `2026-09-25-redesign-fases-1-20-v1` (sw.js + PWA_VERSION
+  + 6 testes) + redeploy; orientar hard refresh (Ctrl+Shift+R) / reinstalar PWA.
+- **Paridade p/ nova sessão em C:\Sisweb:** 2566 arquivos comparados, 9 diffs explicados
+  (cérebro/plano/hosting-files atualizados só num lado; landing + romaneio-print com
+  fixes prod legítimos; `firebase-debug.log` só no dev). Commit `a47e964` + push.
