@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="icon" href="/assets/brand/icone.ico" sizes="any">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
@@ -86,9 +86,9 @@
             margin-bottom: 12px;
         }
         .message-center {
-            border: 1px solid #dbeafe;
+            border: 1px solid var(--sw-border);
             border-radius: 12px;
-            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 62%);
+            background: var(--sw-surface);
             padding: 16px;
         }
         .message-center p {
@@ -1921,33 +1921,33 @@
             const endText = endDate && !Number.isNaN(endDate.getTime()) ? endDate.toLocaleDateString('pt-BR') : '--/--/----';
             if (reason === 'readonly_expired') {
                 box.style.display = 'block';
-                box.style.border = '1px solid #fecaca';
-                box.style.background = '#fef2f2';
-                box.style.color = '#991b1b';
+                box.style.border = '1px solid var(--sw-danger)';
+                box.style.background = 'var(--sw-alert-error-bg)';
+                box.style.color = 'var(--sw-danger)';
                 box.innerHTML = `<h3 style="margin-bottom:6px;">Modo leitura expirou</h3><p style="font-size:13px;line-height:1.45;">O período de modo leitura foi encerrado. Para continuar usando o sistema, renove sua assinatura.</p>`;
                 return;
             }
             if (statusKey === 'expired') {
                 box.style.display = 'block';
-                box.style.border = '1px solid #bfdbfe';
-                box.style.background = '#eff6ff';
-                box.style.color = '#1e3a8a';
+                box.style.border = '1px solid var(--sw-info)';
+                box.style.background = 'var(--sw-alert-info-bg)';
+                box.style.color = 'var(--sw-text-1)';
                 box.innerHTML = `<h3 style="margin-bottom:6px;">Modo leitura temporário disponível</h3><p style="font-size:13px;line-height:1.45;">Sua assinatura está expirada. Você pode renovar agora ou ativar um período temporário somente para consulta. Vencimento registrado: <strong>${endText}</strong>.</p>`;
                 return;
             }
             if (statusKey === 'blocked') {
                 box.style.display = 'block';
-                box.style.border = '1px solid #fcd34d';
-                box.style.background = '#fffbeb';
-                box.style.color = '#92400e';
+                box.style.border = '1px solid var(--sw-warning)';
+                box.style.background = 'var(--sw-alert-warning-bg)';
+                box.style.color = 'var(--sw-text-1)';
                 box.innerHTML = `<h3 style="margin-bottom:6px;">Conta em modo leitura</h3><p style="font-size:13px;line-height:1.45;">Seu acesso está bloqueado para edição. Você pode regularizar ou solicitar prorrogação para manter acesso de consulta.</p>`;
                 return;
             }
             if (statusKey === 'pending' || statusKey === 'pending_grace') {
                 box.style.display = 'block';
-                box.style.border = '1px solid #fcd34d';
-                box.style.background = '#fffbeb';
-                box.style.color = '#92400e';
+                box.style.border = '1px solid var(--sw-warning)';
+                box.style.background = 'var(--sw-alert-warning-bg)';
+                box.style.color = 'var(--sw-text-1)';
                 box.innerHTML = `<h3 style="margin-bottom:6px;">Pagamento em análise</h3><p style="font-size:13px;line-height:1.45;">Enquanto a análise administrativa não é concluída, o sistema pode operar em modo leitura. Use renovar para reenviar pagamento se necessário.</p>`;
                 return;
             }

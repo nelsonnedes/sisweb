@@ -416,7 +416,7 @@ class RomaneioManager {
                         padding: 15px 20px;
                         margin: 0;
                         border-bottom: 1px solid #ddd;
-                        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+                        background: var(--sw-gradient);
                         color: white;
                         border-radius: 8px 8px 0 0;
                         overflow: hidden;
@@ -492,6 +492,16 @@ class RomaneioManager {
                         color: #333;
                         font-size: 0.9rem;
                     }
+                    /* Fase 21: células/cabeçalho/rodapé acompanham o tema (claros acima = fallback light). */
+                    html[data-theme="dark"] #${this.modalId} thead th {
+                        background-color: var(--sw-surface-2);
+                        color: var(--sw-text-1);
+                        border-bottom-color: var(--sw-border);
+                    }
+                    html[data-theme="dark"] #${this.modalId} tbody td {
+                        border-bottom-color: var(--sw-border);
+                        color: var(--sw-text-2);
+                    }
                     #${this.modalId} tbody tr:hover {
                         background-color: #f1f7fb;
                     }
@@ -524,6 +534,10 @@ class RomaneioManager {
                         margin: 0;
                         border-top: 1px solid #e5e7eb;
                         background: #f8fafc;
+                    }
+                    html[data-theme="dark"] #${this.modalId} .modal-footer {
+                        border-top-color: var(--sw-border);
+                        background: var(--sw-surface-2);
                     }
                     #${this.modalId} .modal-body {
                         padding: 14px 16px;
@@ -560,9 +574,9 @@ class RomaneioManager {
                         transition: border-color 0.2s;
                     }
                     #${this.modalId} .filter-input:focus {
-                        border-color: #3498db;
+                        border-color: var(--sw-brand);
                         outline: none;
-                        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+                        box-shadow: 0 0 0 3px var(--sw-focus-ring);
                     }
                     #paginationControls_${this.modalId}.pagination-controls {
                         display: flex;

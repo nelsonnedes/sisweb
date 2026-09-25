@@ -1576,4 +1576,34 @@ html[data-theme] body .sw-page-title i {
   -webkit-text-fill-color: transparent;
 }
 
+/* ===== Fase 21 — links de dropdown e labels de modais de cadastro (romaneios).
+   Slates com !important no legado, sem contraparte dark. */
+html[data-theme="dark"] body #listaModal .dropdown-content a {
+  color: var(--sw-text-2) !important;
+}
+
+html[data-theme="dark"] body #fornecedorModal .form-group label,
+html[data-theme="dark"] body #speciesModal .form-group label,
+html[data-theme="dark"] body #clientModal #clientForm label,
+html[data-theme="dark"] body #fornecedorModal #fornecedorForm label {
+  color: var(--sw-label) !important;
+}
+
+/* ===== Fase 21 — cabeçalho de resultados autocomplete (estoque, claro = fallback). */
+html[data-theme="dark"] body .saida-plaqueta-results-header {
+  background: var(--sw-surface-2);
+  border-bottom-color: var(--sw-border);
+  color: var(--sw-text-2);
+}
+
 /* ===== Fase 18 — paleta Configurações blindada: ver shell-theme.css ===== */
+
+/* ===== Fase 21 — guarda :active das tabelas do estoque (tap sem flash branco). */
+html[data-theme="dark"] body #tabelaEntrada tbody tr:active,
+html[data-theme="dark"] body #tabelaSaidaToras tbody tr:active,
+html[data-theme="dark"] body #tabelaEstoque tbody tr:active,
+html[data-theme="dark"] body #tabelaMovimentacoes tbody tr:active,
+html[data-theme="dark"] body #tabelaProdutos tbody tr:active,
+html[data-theme="dark"] body #tabelaTorasDisponiveis tbody tr:active {
+  background: var(--sw-hover) !important;
+}

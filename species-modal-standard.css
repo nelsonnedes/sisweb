@@ -237,6 +237,18 @@
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14) !important;
 }
 
+/* Fase 21: filtro escuro no dark (regras claras acima = fallback light). */
+html[data-theme="dark"] #speciesListModal #speciesListFilter {
+    border-color: var(--sw-input-border) !important;
+    background: var(--sw-input-bg) !important;
+    color: var(--sw-text-1) !important;
+}
+
+html[data-theme="dark"] #speciesListModal #speciesListFilter:focus {
+    border-color: var(--sw-brand) !important;
+    box-shadow: 0 0 0 3px var(--sw-focus-ring) !important;
+}
+
 #speciesListModal .table {
     width: 100% !important;
     margin: 0 !important;

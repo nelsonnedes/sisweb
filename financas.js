@@ -455,7 +455,7 @@ function ensureFinanceClienteModal() {
     modal.className = 'modal';
     modal.innerHTML = `
         <div class="modal-content" style="max-width: 760px;">
-            <div class="modal-header" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: #fff; padding: 15px 20px; min-height: 56px; border-radius: 8px 8px 0 0;">
+            <div class="modal-header" style="background: var(--sw-gradient); color: #fff; padding: 15px 20px; min-height: 56px; border-radius: 8px 8px 0 0;">
                 <h3 class="modal-title" style="color:#fff;" id="financeClienteModalTitle">Novo Cliente</h3>
                 <button type="button" class="close-modal" onclick="closeFinanceClienteModal()" aria-label="Fechar">&times;</button>
             </div>
@@ -522,7 +522,7 @@ function ensureFinanceFornecedorModal() {
     modal.className = 'modal';
     modal.innerHTML = `
         <div class="modal-content" style="max-width: 760px;">
-            <div class="modal-header" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: #fff; padding: 15px 20px; min-height: 56px; border-radius: 8px 8px 0 0;">
+            <div class="modal-header" style="background: var(--sw-gradient); color: #fff; padding: 15px 20px; min-height: 56px; border-radius: 8px 8px 0 0;">
                 <h3 class="modal-title" style="color:#fff;" id="financeFornecedorModalTitle">Novo Fornecedor</h3>
                 <button type="button" class="close-modal" onclick="closeFinanceFornecedorModal()" aria-label="Fechar">&times;</button>
             </div>
@@ -5545,7 +5545,7 @@ function abrirModalPagamento(contaId, tipo) {
         const infoDiv = document.createElement('div');
         infoDiv.id = 'infoPagamentoParcial';
         infoDiv.innerHTML = `
-            <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin-bottom: 10px; border-left: 4px solid #2196f3;">
+            <div style="background: var(--sw-alert-info-bg); padding: 10px; border-radius: 4px; margin-bottom: 10px; border-left: 4px solid var(--sw-info);">
                 <strong>Informações do Pagamento:</strong><br>
                 Valor original: ${formatCurrency(valorOriginal)}<br>
                 Já pago: ${formatCurrency(valorPago)}<br>
@@ -5905,7 +5905,7 @@ function verHistoricoPagamentos(contaId, tipo = 'receber') {
         resumoStepRows.push(`<tr><td style="padding:3px 6px; border:1px solid #e5e7eb; font-size:11px; line-height:1.1;">Valor restante</td><td style="padding:3px 6px; border:1px solid #e5e7eb; text-align:right; font-size:11px; line-height:1.1; white-space:nowrap;">${formatCurrency(valorRestanteAtualizadoNum)}</td></tr>`);
     }
     historico += `
-        <div class="finance-history-summary" style="margin-top: 10px; padding: 8px; background: #f9f9f9; border-radius: 4px;">
+        <div class="finance-history-summary" style="margin-top: 10px; padding: 8px; background: var(--sw-surface-2); border-radius: 4px;">
             <strong>Resumo:</strong>
             <div style="overflow-x:auto;">
             <table class="finance-history-summary-table" style="width:100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed;">

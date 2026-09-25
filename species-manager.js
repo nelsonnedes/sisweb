@@ -757,8 +757,8 @@ class SpeciesManager {
                 const speciesName = getSpeciesDisplayName(specie);
                 const scientificName = getSpeciesScientificName(specie) || '-';
                 const tr = document.createElement('tr');
-                tr.style.cssText = 'border-bottom: 1px solid #dee2e6; transition: background-color 0.2s; cursor: pointer;';
-                tr.onmouseenter = () => tr.style.backgroundColor = '#f8f9fa';
+                tr.style.cssText = 'border-bottom: 1px solid var(--sw-border); transition: background-color 0.2s; cursor: pointer;';
+                tr.onmouseenter = () => tr.style.backgroundColor = 'var(--sw-hover)';
                 tr.onmouseleave = () => tr.style.backgroundColor = '';
                 
                 // Adicionar evento de clique na linha para selecionar automaticamente
@@ -2119,6 +2119,14 @@ style.textContent = `
     line-height: 1.35 !important;
     box-sizing: border-box !important;
     outline: none !important;
+}
+
+/* Fase 21: filtros escuros no dark (regras claras acima = fallback light). */
+html[data-theme="dark"] .species-list-filter-input,
+html[data-theme="dark"] #speciesListModal #speciesListFilter {
+    border-color: var(--sw-input-border) !important;
+    background: var(--sw-input-bg) !important;
+    color: var(--sw-text-1) !important;
 }
 
 .species-list-filter-input:focus {

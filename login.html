@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="icon" href="/assets/brand/icone.ico" sizes="any">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
@@ -151,9 +151,9 @@
 
         <!-- MFA (2FA) Super Admin — exibido somente quando o login exige verificação TOTP -->
         <div id="mfaSection" style="display:none;text-align:center;">
-            <div style="font-size:40px;color:#1d4ed8;margin-bottom:10px;" aria-hidden="true"><i class="fas fa-shield-alt"></i></div>
-            <h3 style="color:#2c3e50;margin:0 0 8px;">Verificação em duas etapas</h3>
-            <p style="color:#64748b;font-size:14px;margin:0 0 16px;">Digite o código de 6 dígitos do seu aplicativo autenticador.</p>
+            <div style="font-size:40px;color:var(--sw-brand);margin-bottom:10px;" aria-hidden="true"><i class="fas fa-shield-alt"></i></div>
+            <h3 style="color:var(--sw-text-1);margin:0 0 8px;">Verificação em duas etapas</h3>
+            <p style="color:var(--sw-text-2);font-size:14px;margin:0 0 16px;">Digite o código de 6 dígitos do seu aplicativo autenticador.</p>
             <div class="input-group" style="max-width:220px;margin:0 auto 12px;">
                 <input type="text" id="mfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" aria-label="Código de 6 dígitos" style="text-align:center;letter-spacing:6px;font-size:22px;">
             </div>
@@ -272,7 +272,7 @@
                 </button>
                 <div id="reset-loading-spinner" class="loading-spinner" role="status" aria-label="Enviando instruções"></div>
 
-                <p style="margin-top: 20px; font-size: 13px; color: #475569; text-align: center;">
+                <p style="margin-top: 20px; font-size: 13px; color: var(--sw-text-2); text-align: center;">
                     Se existir uma conta com o email informado, um link com instruções para redefinir sua senha será enviado.
                 </p>
             </form>
@@ -287,7 +287,7 @@
                 <img class="sw-lockup-name" src="assets/brand/nome.ico" onerror="this.onerror=null;this.style.display='none';" alt="Sisweb Madeireiras" width="150">
             </div>
             <h2 class="modal-title" id="contactModalTitle"><i class="fas fa-headset" aria-hidden="true"></i> Fale Conosco</h2>
-            <p id="contactModalDescription" style="color: #475569; font-size: 14px; line-height: 1.6; text-align: center;">
+            <p id="contactModalDescription" style="color: var(--sw-text-2); font-size: 14px; line-height: 1.6; text-align: center;">
                 A equipe SisWeb está disponível para ajudar com planos, cadastro, acesso e pagamentos.
             </p>
             <div class="contact-options">

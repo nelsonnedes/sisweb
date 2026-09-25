@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 
 const read = (rel) => fs.readFileSync(path.join(process.cwd(), rel), 'utf8');
 
@@ -252,8 +253,11 @@ test('Fase 14: zebras cadastros + stats compras', () => {
 test('Fase 15: alheios assumidos (dump fora da raiz + regex tolerante)', () => {
   assert.ok(!fs.existsSync(path.join(process.cwd(), 'redesign-do-sisweb-login-index-e-tema-light-dark.json')),
     'dump de sessão fora da raiz pública');
-  assert.ok(fs.existsSync(path.join(process.cwd(), 'tmp', 'redesign-do-sisweb-login-index-e-tema-light-dark.json')),
-    'dump preservado em tmp/');
+  try {
+    const tracked = execSync('git ls-files', { cwd: process.cwd() }).toString();
+    assert.ok(!tracked.includes('redesign-do-sisweb-login-index-e-tema-light-dark.json'),
+      'dump de sessão nunca commitado (tmp é transitório)');
+  } catch (_) {}
   const folhaTest = read('tests/folha-acoes-recolhidas.test.mjs');
   assert.ok(folhaTest.includes('var\\(--sw-surface-2\\)'), 'regex aceita valor tokenizado');
 });
@@ -304,6 +308,59 @@ test('Fase 19: paginação das abas + fluxo real + páginas na marca + tema no b
   const rules = read('database.rules.json');
   assert.ok(rules.includes('"ui"'), 'nó ui nas rules');
   assert.ok(rules.includes('^(light|dark|system)$'), 'modo validado nas rules');
+});
+
+test('Fase 22: P1 — favicon marca, headers, profile, toast, PWA', () => {
+  const slateGrad = 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)';
+  for (const f of ['financas.js', 'compras.html', 'romaneio-manager.js']) {
+    assert.ok(!read(f).includes(slateGrad), `${f} sem header slate`);
+  }
+  const profile = read('user-profile.html');
+  assert.ok(!profile.includes('#667eea') && !profile.includes('#764ba2'), 'profile sem roxo');
+  assert.ok(profile.includes('var(--sw-gradient)'), 'profile na marca');
+  const manifest = JSON.parse(read('manifest.json'));
+  for (const icon of (manifest.icons || [])) {
+    assert.ok(fs.existsSync(path.join(process.cwd(), icon.src.replace(/^\//, ''))), `PWA icon existe: ${icon.src}`);
+  }
+  const vendasHtml = read('vendas.html');
+  assert.ok(vendasHtml.includes('z-index: 10000000'), 'toast acima dos modais');
+  assert.ok(vendasHtml.includes('href="/assets/brand/icone.ico"'), 'favicon da marca');
+  assert.ok(!vendasHtml.includes('href="favicon.ico"') && !read('folha_pagamento/folha.html').includes('href="/favicon.ico"'), 'favicon legado fora');
+  const swVer = (read('sw.js').match(/const APP_VERSION = '([^']+)'/) || [])[1];
+  assert.ok(swVer && read('menu-component.js').includes(`const PWA_VERSION = '${swVer}'`), 'SW e menu na mesma versão');
+});
+
+test('Fase 21: P0 leaks — injetados, h4/legend, admin, romaneio modais', () => {
+  const rom = read('romaneio-manager.js');
+  assert.ok(rom.includes('html[data-theme="dark"] #${this.modalId} tbody td'), 'células theme-aware');
+  assert.ok(rom.includes('html[data-theme="dark"] #${this.modalId} thead th'), 'cabeçalho theme-aware');
+  assert.ok(rom.includes('html[data-theme="dark"] #${this.modalId}.pagination-controls button') || rom.includes('html[data-theme="dark"] #paginationControls_${this.modalId}.pagination-controls button'), 'paginação injetada theme-aware');
+  const sp = read('species-manager.js');
+  assert.ok(sp.includes('html[data-theme="dark"] .species-list-filter-input'), 'filtros theme-aware');
+  const spStd = read('species-modal-standard.css');
+  assert.ok(spStd.includes('html[data-theme="dark"] #speciesListModal #speciesListFilter'), 'filtro standard theme-aware');
+  const content = read('styles/content-theme.css');
+  for (const sel of [
+    '#tabelaEstoque tbody tr:active',
+    '#listaModal .dropdown-content a',
+    '#fornecedorModal .form-group label'
+  ]) {
+    assert.ok(content.includes(sel), `guarda: ${sel}`);
+  }
+  const login = read('login.html');
+  assert.ok(login.includes('Verificação em duas etapas'), 'MFA preservado');
+  assert.ok(!/<h3 style="color:#2c3e50/.test(login), 'MFA sem slate');
+  for (const f of ['vendas.html', 'compras.html']) {
+    const html = read(f);
+    assert.ok(!/<legend[^>]*#2c3e50/.test(html), `${f} legend sem slate`);
+    assert.ok(!/<h4[^>]*#2c3e50/.test(html), `${f} h4 sem slate`);
+  }
+  for (const f of ['admin-settings.html', 'admin-subscriptions.html']) {
+    assert.ok(!read(f).includes('background: #f8fafc'), `${f} sem painel claro`);
+  }
+  const sub = read('subscription-status.html');
+  assert.ok(!sub.includes('linear-gradient(135deg, #eff6ff'), 'message-center sem gradiente claro');
+  assert.ok(sub.includes('var(--sw-alert-warning-bg)'), 'boxes de status em vars');
 });
 
 test('Fase 20: ajudabitolas padronizada + header pagamento/recebimento', () => {

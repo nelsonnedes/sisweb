@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="icon" href="/assets/brand/icone.ico" sizes="any">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
@@ -1114,8 +1114,8 @@
                                 <span>Carregar apenas o Resumo (Agrupar por Espécie)</span>
                             </label>
                             <fieldset id="agruparDimsFieldset" class="romaneio-group-fieldset" hidden
-                                style="border: 1px solid #dee2e6; border-radius: 4px; padding: 6px 10px 8px; margin: 6px 0 0 0;">
-                        <legend style="font-size: 12px; font-weight: 600; color: #2c3e50; padding: 0 6px;">Agrupar:</legend>
+                                style="border: 1px solid var(--sw-border); border-radius: 4px; padding: 6px 10px 8px; margin: 6px 0 0 0;">
+                        <legend style="font-size: 12px; font-weight: 600; color: var(--sw-label); padding: 0 6px;">Agrupar:</legend>
                         <label class="commerce-check-option romaneio-group-option"
                             for="agruparEspecieCompra">
                             <input type="checkbox" id="agruparEspecieCompra"
@@ -1140,16 +1140,16 @@
                     
                     <!-- Preview dos dados CONAMA -->
                     <div id="previewConama" style="display: none; margin-top: 15px;">
-                        <h4 style="color: #2c3e50; margin-bottom: 10px;">Preview - Resumo CONAMA:</h4>
-                        <div id="listaConama" style="background: var(--sw-surface-2) ; padding: 15px; border-radius: 4px; border: 1px solid #dee2e6;">
+                        <h4 style="color: var(--sw-text-1); margin-bottom: 10px;">Preview - Resumo CONAMA:</h4>
+                        <div id="listaConama" style="background: var(--sw-surface-2) ; padding: 15px; border-radius: 4px; border: 1px solid var(--sw-border);">
                             <!-- Dados serão inseridos aqui -->
                         </div>
                     </div>
                     
                     <!-- Preview dos dados TORA -->
                     <div id="previewTora" style="display: none; margin-top: 15px;">
-                        <h4 style="color: #2c3e50; margin-bottom: 10px;">Preview - Resumo TORA por Espécie:</h4>
-                        <div id="listaTora" style="background: var(--sw-surface-2) ; padding: 15px; border-radius: 4px; border: 1px solid #dee2e6;">
+                        <h4 style="color: var(--sw-text-1); margin-bottom: 10px;">Preview - Resumo TORA por Espécie:</h4>
+                        <div id="listaTora" style="background: var(--sw-surface-2) ; padding: 15px; border-radius: 4px; border: 1px solid var(--sw-border);">
                             <!-- Dados serão inseridos aqui -->
                         </div>
                     </div>
@@ -1230,7 +1230,7 @@
 
                 <!-- Nova seção de Forma de Pagamento -->
                 <div class="contas-pagar-section" style="border: 1px solid var(--sw-border) ; padding: 15px; border-radius: 8px; margin-top: 15px; background-color: var(--sw-surface-2) ;">
-                    <h4 style="margin-bottom: 15px; color: #2c3e50;">Forma de Pagamento (Contas a Pagar)</h4>
+                    <h4 style="margin-bottom: 15px; color: var(--sw-text-1);">Forma de Pagamento (Contas a Pagar)</h4>
                     
                     <!-- Formulário para adicionar conta -->
                     <div class="form-row">
@@ -1936,7 +1936,7 @@
     <!-- Modal Novo Fornecedor -->
     <div id="modalFornecedor" class="modal" style="display:none;">
         <div class="modal-content" style="max-width: 900px;">
-            <div class="modal-header" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: #fff; padding: 15px 20px; min-height: 56px; border-radius: 8px 8px 0 0;">
+            <div class="modal-header" style="background: var(--sw-gradient); color: #fff; padding: 15px 20px; min-height: 56px; border-radius: 8px 8px 0 0;">
                 <h2 style="color:#fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.4);"><i class="fas fa-truck"></i> Novo Fornecedor</h2>
                 <span class="close" onclick="fecharModalFornecedor()">&times;</span>
             </div>

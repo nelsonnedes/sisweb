@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" href="/assets/brand/icone.ico" sizes="any">
     <link rel="icon" type="image/svg+xml" href="/assets/icons/icon.svg">
     <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/icon-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
@@ -302,7 +302,7 @@
                                 <i class="fas fa-list"></i>
                             </span>
                             <span class="autocomplete-icon" title="Limpar Filtro" 
-                                  onclick="limparFiltroFuncionario()" style="color: #dc3545;">
+                                  onclick="limparFiltroFuncionario()" style="color: var(--sw-danger);">
                                 <i class="fas fa-times"></i>
                             </span>
                         </div>
@@ -315,15 +315,15 @@
         <section id="indicador-contas-section" style="display: none;">
             <div class="indicador-contas">
                 <div class="indicador-item">
-                    <i class="fas fa-check-circle" style="color: #28a745;"></i>
+                    <i class="fas fa-check-circle" style="color: var(--sw-success);"></i>
                     <span id="contasQuinzena">0</span> Quinzenas Pagas
                 </div>
                 <div class="indicador-item">
-                    <i class="fas fa-archive" style="color: #6f42c1;"></i>
+                    <i class="fas fa-archive" style="color: var(--sw-info);"></i>
                     <span id="contasMes">0</span> Meses Fechados
                 </div>
                 <div class="indicador-item">
-                    <i class="fas fa-external-link-alt" style="color: #007bff;"></i>
+                    <i class="fas fa-external-link-alt" style="color: var(--sw-info);"></i>
                     <a href="../financas.html" target="_blank" class="link-sistema-financeiro">
                         Ver no Sistema Financeiro
                     </a>
@@ -1257,12 +1257,12 @@
         <h3 style="margin:0 0 8px 0;">Ferramentas (Admin)</h3>
         <p style="margin:0 0 6px 0; font-size:13px; color: var(--sw-text-1) ;">Atualiza somente <code>tipoPagamento</code> para registros de quinzena sem este campo. Mês/Mês Fechado não são alterados.</p>
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
-          <button id="btnDryFolhas" class="btn" style="background:#f39c12;color:#fff;">Dry Run (folhas)</button>
-          <button id="btnApplyFolhas" class="btn" style="background:#1976d2;color:#fff;">Aplicar (folhas)</button>
-          <button id="btnDryPctFolhas" class="btn" style="background:#f39c12;color:#fff;">Dry % (folhas)</button>
-          <button id="btnApplyPctFolhas" class="btn" style="background:#1976d2;color:#fff;">Aplicar % (folhas)</button>
-          <button id="btnDryConsistencyFolhas" class="btn" style="background:#f39c12;color:#fff;">Dry Consistência</button>
-          <button id="btnApplyConsistencyFolhas" class="btn" style="background:#1976d2;color:#fff;">Aplicar Consistência</button>
+          <button id="btnDryFolhas" class="btn" style="background:var(--sw-warning);color:#fff;">Dry Run (folhas)</button>
+          <button id="btnApplyFolhas" class="btn" style="background:var(--sw-info);color:#fff;">Aplicar (folhas)</button>
+          <button id="btnDryPctFolhas" class="btn" style="background:var(--sw-warning);color:#fff;">Dry % (folhas)</button>
+          <button id="btnApplyPctFolhas" class="btn" style="background:var(--sw-info);color:#fff;">Aplicar % (folhas)</button>
+          <button id="btnDryConsistencyFolhas" class="btn" style="background:var(--sw-warning);color:#fff;">Dry Consistência</button>
+          <button id="btnApplyConsistencyFolhas" class="btn" style="background:var(--sw-info);color:#fff;">Aplicar Consistência</button>
         </div>
         <div style="margin-top:8px; display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
           <div>
@@ -1274,7 +1274,7 @@
             <input id="pctValueInput" type="number" min="1" max="100" step="1" placeholder="ex.: 40" style="padding:6px;border: 1px solid var(--sw-border) ;border-radius:6px;min-width:120px;" />
           </div>
           <div>
-            <button id="btnApplyPctIdFolhas" class="btn" style="background:#27ae60;color:#fff;">Aplicar % por ID (folhas)</button>
+            <button id="btnApplyPctIdFolhas" class="btn" style="background:var(--sw-success);color:#fff;">Aplicar % por ID (folhas)</button>
           </div>
         </div>
         <div id="adminNormalizerLog" style="background:#f9fafb;border:1px solid #eee;border-radius:6px;padding:8px;height:160px;overflow:auto;font-family:ui-monospace,Consolas,monospace;font-size:12px;"></div>
