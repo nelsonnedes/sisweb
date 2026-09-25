@@ -852,6 +852,18 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 
 ## 82. Sessao 2026-09-25 — Redesign Fases 1-20: merge dev→prod + publish (standing rule)
 
+## 83. Sessao 2026-09-25 — Fase 21 (P0) + Fase 22 (P1/favicon/PWA) + publish
+
+- **Base:** trabalho direto em `C:\Sisweb` (nova regra); QA em `:5501` (`:5500` serve D:\).
+- **P0:** injetados romaneio/species theme-aware (+ `species-modal-standard.css`, achado via
+  CDP em 3 fontes); MFA/labels/h4/estoque/financas/subscription/admin/romaneio labels.
+- **P1:** modal-headers e profile na marca; ilhas em vars; tr JS e quick-actions dark.
+- **Favicon:** 31 refs `favicon.ico` → `/assets/brand/icone.ico` (tab); manifest segue PNG.
+- **Toast/PWA:** toast z10000000 + surface, SW ativo, botão install visível (desktop+390px).
+- **Teste Fase 15:** sem depender do dump 40MB em tmp (fora da raiz + nunca commitado).
+- **Gates:** suite 664/0/1, regressão 22/22. Commit `2524437` + build 486 + deploy hosting
+  + push main OK. Pendente: Onda A (print modal, labels, recount), P2 higiene.
+
 - **Standing rule (usuário):** `C:\Sisweb` deixou de ser intocável p/ publish — fluxo oficial:
   trabalhar em `D:\Sisweb_redesigner`, sincronizar p/ `C:\Sisweb`, publicar (build+deploy)
   DE `C:\Sisweb`, git commit/branch em `C:\Sisweb`, atualizar este cérebro.
