@@ -856,6 +856,17 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 
 ## 84. Sessao 2026-09-25 — Fase 23 (P2/Onda A/dupes) + publish
 
+## 85. Sessao 2026-09-25 — Fase 24 (icone aba+install) + publish
+
+- **Aba e install mostravam ícone antigo:** SVG legado vencia o ICO na aba (Chrome
+  prefere vetor); diálogo install usa PNGs do manifest (design anterior).
+- **Fix:** 31 refs → `/assets/brand/icone.ico`, 31 links SVG removidos; PNGs
+  144/192/512/apple-touch(180, fundo branco)/maskable-512 (timber, 70%) gerados do
+  `icone.ico` via System.Drawing; manifest com maskable dedicado; `favicon.ico`
+  raiz reconstruído válido; testes pwa atualizados. Suite 664/0/1.
+- Commit `dc098b8` + build 487 + deploy hosting + push OK.
+- **Nota cache:** `favicon.ico` antigo pode persistir em abas já abertas — Ctrl+Shift+R.
+
 - **P2:** hovers/borders residuais species, fallback index e register login em vars.
 - **Onda A:** print-config dark com evidência; labels/h2 em texto-1; recount 53/3
   (branco-sobre-marca ≥3.0, aceito sem mudança).
