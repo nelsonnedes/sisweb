@@ -886,3 +886,8 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Paridade p/ nova sessão em C:\Sisweb:** 2566 arquivos comparados, 9 diffs explicados
   (cérebro/plano/hosting-files atualizados só num lado; landing + romaneio-print com
   fixes prod legítimos; `firebase-debug.log` só no dev). Commit `a47e964` + push.
+- **Fix login pós-publish (ícones):** lockup referenciava `marqueting/*.ico` (8 refs) —
+  dir fora do hosting (untracked, sem manifest) → 404 em produção com `onerror`
+  ocultando (no disco local parecia certo). Migrado p/ `assets/brand/` (bytes idênticos,
+  tracked + manifest). Lição: todo asset referenciado precisa estar tracked + no
+  `hosting-files.json`; desconfiar de `onerror` que esconde 404.
