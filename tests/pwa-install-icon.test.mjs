@@ -26,10 +26,11 @@ test('PWA install icons use Sisweb product identity instead of tenant logo', () 
       '/assets/icons/icon-144x144.png',
       '/assets/icons/icon-192x192.png',
       '/assets/icons/icon-512x512.png',
+      '/assets/icons/icon-maskable-512.png',
     ]
   );
-  assert.match(manifest.icons[1].purpose, /maskable/);
-  assert.match(manifest.icons[2].purpose, /maskable/);
+  assert.equal(manifest.icons[2].purpose, 'any');
+  assert.match(manifest.icons[3].purpose, /maskable/);
 
   assert.match(iconSvg, /Sisweb app icon/);
   assert.match(iconSvg, /warehouse, logistics and timber management/);
@@ -41,6 +42,7 @@ test('PWA icon PNG files have installable dimensions and valid favicon exists', 
   assert.deepEqual(pngSize('assets/icons/apple-touch-icon.png'), { width: 180, height: 180 });
   assert.deepEqual(pngSize('assets/icons/icon-192x192.png'), { width: 192, height: 192 });
   assert.deepEqual(pngSize('assets/icons/icon-512x512.png'), { width: 512, height: 512 });
+  assert.deepEqual(pngSize('assets/icons/icon-maskable-512.png'), { width: 512, height: 512 });
 
   const favicon = read('favicon.ico');
   assert.equal(favicon.readUInt16LE(0), 0);

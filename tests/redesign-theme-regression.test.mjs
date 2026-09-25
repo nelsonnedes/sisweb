@@ -324,8 +324,9 @@ test('Fase 22: P1 — favicon marca, headers, profile, toast, PWA', () => {
   }
   const vendasHtml = read('vendas.html');
   assert.ok(vendasHtml.includes('z-index: 10000000'), 'toast acima dos modais');
-  assert.ok(vendasHtml.includes('href="/assets/brand/icone.ico"'), 'favicon da marca');
-  assert.ok(!vendasHtml.includes('href="favicon.ico"') && !read('folha_pagamento/folha.html').includes('href="/favicon.ico"'), 'favicon legado fora');
+  const loginHtml = read('login.html');
+  assert.ok(loginHtml.includes('href="/assets/brand/icone.ico"'), 'aba com icone da marca');
+  assert.ok(!loginHtml.includes('image/svg+xml'), 'sem svg concorrente na aba');
   const swVer = (read('sw.js').match(/const APP_VERSION = '([^']+)'/) || [])[1];
   assert.ok(swVer && read('menu-component.js').includes(`const PWA_VERSION = '${swVer}'`), 'SW e menu na mesma versão');
 });
